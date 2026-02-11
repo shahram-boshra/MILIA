@@ -1,0 +1,132 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANI2X Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL ANI2X-specific configuration in one place:
+#   1. ani2x_config - Dataset paths and settings
+#   2. data_config.property_selection.ANI2X - Property selection for PyG Data
+#   3. property_availability.ANI2X - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ──────────────────────────
+# ANI-2x Dataset Configuration
+# ──────────────────────────
+ani2x_config:
+  # Filename for the preprocessed .npz ANI-2x dataset file (OUTPUT after preprocessing)
+  raw_npz_filename: ani2x.npz
+  
+  # Filename for the raw archive file (INPUT before preprocessing)
+  # ANI-2x is distributed as a tar.gz archive containing an HDF5 file
+  raw_source_filename: ANI-2x-wB97X-631Gd.tar.gz
+  
+  # URL to download the raw ANI-2x archive
+  # Source: Zenodo (DOI: 10.5281/zenodo.10108942)
+  # Reference: Devereux et al., J. Chem. Theory Comput. 2020, 16, 4192-4202
+  # DOI: 10.1021/acs.jctc.0c00121
+  #
+  # NOTE: This is a ~3.7GB file. Download may timeout with default settings.
+  # If timeout errors occur, either:
+  #   1. Increase download timeout in the pipeline (recommended: 600+ seconds)
+  #   2. Manually download and place ANI-2x-wB97X-631Gd.tar.gz in the raw/ directory
+  raw_data_download_url: https://zenodo.org/api/records/10108942/files/ANI-2x-wB97X-631Gd.tar.gz/content
+  
+  # ANI-2x processing configuration
+  processing_config:
+    # Preprocessing parameters (for automatic tar.gz → npz conversion)
+    preprocessing:
+      # Number of conformers to preprocess (null = all conformers)
+      # Use integer for testing/limiting dataset size (e.g., 1000, 10000, 100000)
+      num_molecules: 50
+      
+      # Property keys to extract from HDF5 file
+      # Available: energies, forces
+      property_keys:
+        - energies
+        - forces
+  
+  # ANI-2x does not have uncertainty handling (DFT calculations are deterministic)
+  uncertainty_handling:
+    enabled: false
+
+
+
+
+# ────────────────────────────────────────────────────
+# ANI2X Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    ANI2X:
+      # ANI-2x Dataset Property Selection
+      # Reference: Devereux et al., J. Chem. Theory Comput. 2020, 16, 4192-4202
+      # Level of theory: ωB97X/6-31G(d)
+      # Extends ANI-1x to H, C, N, O, S, F, Cl (7 elements, ~90% of drug-like molecules)
+      
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        - energy          # ωB97X/6-31G(d) DFT total energy (Hartree)
+      
+      # Node-level features to be added to pyg_data.x
+      node_features_to_add:
+        - forces          # Atomic forces (Hartree/Angstrom) - for force-field training
+      
+      # Fixed-size vector graph properties
+      vector_graph_properties_to_include: []
+      
+      # Variable-length graph properties
+      variable_len_graph_properties_to_include: []
+      
+      # ANI2X-specific settings
+      # Calculate atomization energy from total energy
+      calculate_atomization_energy_from: energy
+      # The name of the key for the calculated atomization energy
+      atomization_energy_key_name: energy_ATOM
+
+
+# ────────────────────────────────────────────────────
+# ANI2X Property Availability Matrix
+# ──────────────────────────────────────────────────── 
+property_availability:
+  ANI2X:
+    # ANI-2x Dataset Property Availability
+    # Reference: Devereux et al., J. Chem. Theory Comput. 2020, 16, 4192-4202
+    # DOI: 10.1021/acs.jctc.0c00121
+    # Source: Zenodo (DOI: 10.5281/zenodo.10108942)
+    # Contains DFT conformations for organic molecules (H, C, N, O, S, F, Cl)
+    # Level of theory: ωB97X/6-31G(d)
+    # Coordinate units: Angstrom | Energy units: Hartree | Force units: Hartree/Angstrom
+    # CRITICAL: ANI-2x extends ANI-1x to include sulfur (S), fluorine (F), and chlorine (Cl)
+    # These 7 elements make up ~90% of drug-like molecules
+    
+    # Molecular identifiers (1 key)
+    molecular_identifiers:
+      - molecule_id     # Molecule group identifier from HDF5 (object/string)
+    
+    # Atomic structure properties (2 keys)
+    atomic_structure:
+      - atoms           # Atomic numbers (uint8 array)
+      - coordinates     # Cartesian coordinates in Angstrom (object array, shape: n_atoms x 3)
+    
+    # Scalar graph-level properties (1 key)
+    scalar_graph_targets:
+      - energy          # ωB97X/6-31G(d) DFT total energy (Hartree, float64)
+    
+    # Node-level (atomic) properties (1 key, if available)
+    node_features:
+      - forces          # Atomic forces (Hartree/Angstrom, object array, shape: n_atoms x 3)
+    
+    # Fixed-size vector graph properties
+    vector_graph_properties: []  # ANI-2x does not have dipole or other vector properties
+    
+    # Variable-length graph properties
+    variable_len_graph_properties: []  # Forces are in node_features
+    
+    # Metadata fields (1 key)
+    metadata_fields:
+      - _metadata       # Preprocessing metadata as string array (object)
+    
+    # ANI-2x is DFT-based - no uncertainty fields
+    uncertainty_fields: []

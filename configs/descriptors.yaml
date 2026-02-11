@@ -1,0 +1,141 @@
+# Molecular Descriptors Configuration
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+# ───────────────────────────────────
+# MOLECULAR DESCRIPTORS CONFIGURATION
+# ───────────────────────────────────
+
+molecular_descriptors:
+  # Enable molecular descriptor calculation
+  enabled: true
+  
+  # Descriptor categories to compute
+  # Each category can be individually enabled/disabled
+  # NOTE: Category names must match DescriptorCategory enum values:
+  #   constitutional, topological, electronic, geometric, drug_likeness, fragments
+  # NOTE: Descriptor names must match RDKit function names (case-sensitive)
+  categories:
+    constitutional:
+      enabled: true
+      descriptors:
+        # Basic molecular properties (RDKit names)
+        - MolWt
+        - NumHeavyAtoms
+        - NumHeteroatoms
+        - NumRotatableBonds
+        - NumHDonors
+        - NumHAcceptors
+        - NumAromaticRings
+        - NumAliphaticRings
+        
+        # Lipophilicity and polarity
+        - MolLogP
+        - TPSA
+        - MolMR
+    
+    topological:
+      enabled: true
+      descriptors:
+        # Graph-based descriptors (RDKit names)
+        - BalabanJ
+        - BertzCT
+        
+        # Kappa shape indices
+        - Kappa1
+        - Kappa2
+        - Kappa3
+        
+        # Connectivity indices
+        - Chi0v
+        - Chi1v
+        - Chi2v
+        - HallKierAlpha
+    
+    electronic:
+      enabled: false  # Requires quantum chemistry calculations
+      descriptors:
+        - MaxPartialCharge
+        - MinPartialCharge
+        - MaxAbsPartialCharge
+        - MinAbsPartialCharge
+    
+    # NOTE: 'fingerprints' is NOT a valid DescriptorCategory enum value.
+    # Fingerprints are handled separately by the fingerprint module.
+    # Comment out to avoid "Unknown descriptor category: fingerprints" error.
+    # fingerprints:
+    #   enabled: true
+    #   types:
+    #     # Morgan/ECFP fingerprints
+    #     - morgan:
+    #         radius: 2
+    #         n_bits: 2048
+    #     
+    #     # MACCS keys
+    #     - maccs: {}
+    #     
+    #     # RDKit fingerprints
+    #     - rdkit:
+    #         min_path: 1
+    #         max_path: 7
+    #         n_bits: 2048
+    #     
+    #     # Atom pair fingerprints
+    #     - atom_pair:
+    #         n_bits: 2048
+    #     
+    #     # Topological torsion fingerprints
+    #     - topological_torsion:
+    #         n_bits: 2048
+  
+  # Descriptor normalization
+  normalization:
+    enabled: true
+    method: "standardize"  # Options: "standardize", "minmax", "robust", "none"
+    per_descriptor: true
+  
+  # Feature selection
+  feature_selection:
+    enabled: false
+    method: "variance_threshold"  # Options: "variance_threshold", "correlation", "mutual_info"
+    threshold: 0.01
+  
+  # Advanced fingerprint settings
+  fingerprint_settings:
+    # Use chirality information
+    use_chirality: true
+    
+    # Use bond types
+    use_bond_types: true
+    
+    # Count-based vs binary fingerprints
+    count_based: false
+    
+    # For Morgan fingerprints
+    morgan:
+      use_features: false
+      radius: 2
+      n_bits: 2048
+  
+  # Caching settings
+  cache_descriptors: true
+  # Cache path (null = auto-generate in dataset directory)
+  cache_path: null
+  
+  # Parallel computation settings
+  parallel_computation: false
+  num_workers: 1
+  
+  # Error handling mode
+  # Options: "strict" (raise on error), "warn" (log warning), "skip" (silent skip)
+  error_handling: warn
+  
+  # Validation mode
+  # Options: "strict" (full validation), "standard" (basic validation), "permissive" (minimal validation)
+  validation_mode: standard
+  
+  # Descriptor calculation logging
+  # Options: "minimal" (only initialization), "standard" (+ per-molecule summary), "detailed" (+ failed descriptors per molecule)
+  logging_level: standard
+
+

@@ -1,0 +1,38 @@
+plugin_name: "example_descriptors"
+version: "1.0.0"
+author: "VQM24 Team"
+email: "vqm24@example.com"
+description: "Example descriptor plugin demonstrating best practices"
+license: "MIT"
+homepage: "https://github.com/vqm24/descriptor-plugins"
+vqm24_version: ">=1.0.0"
+python_version: ">=3.8"
+dependencies: []
+
+descriptors:
+  - name: "AromaticRatio"
+    function_name: "calculate_aromatic_ratio"
+    module_path: "descriptors"
+    category: "constitutional"
+    description: "Ratio of aromatic atoms to total atoms"
+    requires_3d: false
+    requires_charges: false
+    version: "1.0.0"
+  
+  - name: "HeteroatomRatio"
+    function_name: "calculate_heteroatom_ratio"
+    module_path: "descriptors"
+    category: "constitutional"
+    description: "Ratio of heteroatoms to total atoms"
+    requires_3d: false
+    requires_charges: false
+    version: "1.0.0"
+  
+  - name: "ChainLength"
+    function_name: "calculate_chain_length"
+    module_path: "descriptors"
+    category: "topological"
+    description: "Length of longest carbon chain"
+    requires_3d: false
+    requires_charges: false
+    version: "1.0.0"

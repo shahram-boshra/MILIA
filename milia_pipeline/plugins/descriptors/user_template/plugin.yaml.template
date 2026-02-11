@@ -1,0 +1,36 @@
+# Plugin Metadata Template
+# Copy this to plugin.yaml and fill in your information
+
+plugin_name: "your_plugin_name"
+version: "1.0.0"
+author: "Your Name"
+email: "your.email@example.com"
+description: "Brief description of your descriptor plugin"
+license: "MIT"  # Or your preferred license
+homepage: "https://github.com/yourusername/your-plugin"  # Optional
+
+# Version Requirements
+vqm24_version: ">=1.0.0"
+python_version: ">=3.8"
+
+# Python Package Dependencies (optional)
+dependencies:
+  # - "numpy>=1.20.0"
+  # - "scipy>=1.7.0"
+
+# Descriptor Declarations
+descriptors:
+  - name: "YourDescriptorName"
+    function_name: "calculate_your_descriptor"
+    module_path: "descriptors"
+    category: "constitutional"  # Options: constitutional, topological, electronic, geometric, drug_likeness, fragments
+    description: "What does this descriptor calculate?"
+    requires_3d: false  # Does it need 3D coordinates?
+    requires_charges: false  # Does it need partial charges?
+    version: "1.0.0"
+  
+  # Add more descriptors here
+  # - name: "AnotherDescriptor"
+  #   function_name: "calculate_another"
+  #   module_path: "descriptors"
+  #   ...

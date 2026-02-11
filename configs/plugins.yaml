@@ -1,0 +1,99 @@
+# Plugins Configuration
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+
+# ───────────────────────────
+# PLUGIN SYSTEM CONFIGURATION 
+# ───────────────────────────
+# The plugin system allows loading custom graph transformations from external packages.
+# This enables extending Milia's capabilities without modifying core code.
+#
+# See docs/PLUGIN_SYSTEM_GUIDE.md for detailed documentation on:
+#   - Creating custom plugins
+#   - Plugin validation requirements
+#   - Security considerations
+#   - Distribution best practices
+
+plugins:
+  # Enable or disable the entire plugin system
+  # When false, all plugin-related operations are skipped
+  enabled: true
+  
+  # List of directories to search for plugins
+  # Paths can be absolute or relative to the project root
+  # Each directory should contain plugin packages with plugin.yaml metadata
+  plugin_paths:
+    - milia_pipeline/plugins        # Local plugins directory (default)
+    # - ~/.milia/plugins             # User-specific plugins
+    # - /opt/milia/shared_plugins    # System-wide shared plugins
+  
+  # Plugin Discovery Settings
+  # Automatically discover plugins in plugin_paths during startup
+  auto_discover: true
+  
+  # Automatically validate plugins when they are discovered
+  # Recommended to keep enabled for security and stability
+  auto_validate: true
+  
+  # Plugin Validation Level
+  # Controls how strictly plugins are validated
+  # Options: "strict", "standard", "permissive", "disabled"
+  #
+  # - strict: Full validation including security scanning (production)
+  # - standard: Basic validation, skip expensive checks (recommended)
+  # - permissive: Minimal validation, trust plugins (development only)
+  # - disabled: No validation (not recommended)
+  validation_level: "standard"
+  
+  # Plugin Whitelisting and Blacklisting
+  
+  # Trusted plugins: Pre-approved plugins that skip some validation steps
+  # Use this to speed up loading of known-good plugins
+  trusted_plugins: []
+    # - official_molecular_transforms
+    # - quantum_chemistry_extensions
+  
+  # Disabled plugins: Plugins that should never be loaded
+  # Use this to prevent loading of problematic or deprecated plugins
+  disabled_plugins: []
+    # - deprecated_transform_v1
+    # - experimental_buggy_plugin
+  
+  # Security Settings
+  
+  # Allow experimental plugins (not fully validated/tested)
+  allow_experimental: true
+  
+  # Allow plugins to override built-in transforms
+  # Set to false in production for security
+  allow_override_builtin: false
+  
+  # Enforce plugin checksums for integrity verification
+  enforce_checksums: false
+  
+  # Enable security scanning of plugin code
+  security_scanning: false
+  
+  # Error Handling
+  
+  # Fail immediately if plugin loading/validation fails
+  # If false, log warning and continue without the plugin
+  fail_on_plugin_error: false
+  
+  # Maximum time (seconds) for plugin initialization
+  # Prevents hanging on slow/buggy plugins
+  initialization_timeout: 30
+  
+  # Logging
+  
+  # Log level for plugin operations
+  # Options: "DEBUG", "INFO", "WARNING", "ERROR"
+  log_level: "INFO"
+  
+  # Log plugin discovery details
+  log_discovery: true
+  
+  # Log plugin validation details
+  log_validation: true
+

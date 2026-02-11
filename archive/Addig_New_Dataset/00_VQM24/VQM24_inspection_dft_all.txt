@@ -1,0 +1,399 @@
+--- NPZ File Inspection Log ---
+Date and Time: 2025-06-22 18:11:16
+NPZ File URL: https://zenodo.org/records/15442257/files/DFT_all.npz?download=1
+Download Path: /home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
+Full Local File Path: /home/shahram/Chem_Data/VQM24_PyG_Dataset/raw/DFT_all.npz
+Log Filename: dft_all_inspection.log
+------------------------------
+
+File '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw/DFT_all.npz' already exists. Skipping download.
+
+==============================
+Inspecting NPZ File Contents:
+==============================
+
+NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw/DFT_all.npz'. Keys found:
+  Key: 'compounds'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: ['SH2_0/conformer_1', 'BrH1_0/conformer_1', 'ClH1_0/conformer_1', 'SiH4_0/conformer_1', 'OH2_0/conformer_1']...
+
+  Key: 'atoms' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([16,  1,  1], dtype=int32), array([35,  1], dtype=int32), array([17,  1], dtype=int32), array([14,  1,  1,  1,  1], dtype=int32), array([8, 1, 1], dtype=int32)]...
+
+  Key: 'freqs'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([1203.0843+0.j, 2754.7343+0.j, 2773.877 +0.j, 1203.0843+0.j,
+       2754.7343+0.j, 2773.877 +0.j]), array([2706.1969+0.j, 2706.1969+0.j]), array([3010.0183+0.j, 3010.0183+0.j]), array([ 911.0521+0.j,  911.0783+0.j,  911.108 +0.j,  974.8779+0.j,
+        974.9141+0.j, 2243.7191+0.j, 2252.4678+0.j, 2252.4786+0.j,
+       2252.5038+0.j]), array([1669.153 +0.j, 3851.61  +0.j, 3956.8914+0.j, 1669.153 +0.j,
+       3851.61  +0.j, 3956.8914+0.j])]...
+
+  Key: 'vibmodes'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([[[ 0.  , -0.  , -0.03],
+        [-0.49,  0.  ,  0.51],
+        [ 0.49, -0.  ,  0.51]],
+
+       [[ 0.  ,  0.  , -0.03],
+        [ 0.52,  0.  ,  0.48],
+        [-0.52, -0.  ,  0.48]],
+
+       [[-0.03,  0.  , -0.  ],
+        [ 0.51,  0.  ,  0.49],
+        [ 0.51, -0.  , -0.49]],
+
+       [[ 0.  , -0.  , -0.03],
+        [-0.49,  0.  ,  0.51],
+        [ 0.49, -0.  ,  0.51]],
+
+       [[ 0.  ,  0.  , -0.03],
+        [ 0.52,  0.  ,  0.48],
+        [-0.52, -0.  ,  0.48]],
+
+       [[-0.03,  0.  , -0.  ],
+        [ 0.51,  0.  ,  0.49],
+        [ 0.51, -0.  , -0.49]]]), array([[list([np.float64(0.0), np.float64(0.0), np.float64(-0.01)]),
+        list([np.float64(0.0), np.float64(0.0), np.float64(1.0)])],
+       [list([]), list([])],
+       [list([]), list([])],
+       [list([np.float64(0.0), np.float64(0.0), np.float64(-0.01)]),
+        list([np.float64(0.0), np.float64(0.0), np.float64(1.0)])],
+       [list([]), list([])],
+       [list([]), list([])]], dtype=object), array([[list([np.float64(0.0), np.float64(0.0), np.float64(-0.03)]),
+        list([np.float64(0.0), np.float64(0.0), np.float64(1.0)])],
+       [list([]), list([])],
+       [list([]), list([])],
+       [list([np.float64(0.0), np.float64(0.0), np.float64(-0.03)]),
+        list([np.float64(0.0), np.float64(0.0), np.float64(1.0)])],
+       [list([]), list([])],
+       [list([]), list([])]], dtype=object), array([[[ 0.02, -0.05, -0.02],
+        [-0.41,  0.23, -0.  ],
+        [ 0.15,  0.26, -0.09],
+        [-0.28,  0.45,  0.29],
+        [-0.05,  0.42,  0.37]],
+
+       [[-0.05, -0.03,  0.01],
+        [ 0.35, -0.02, -0.31],
+        [ 0.33,  0.42,  0.08],
+        [ 0.33, -0.05,  0.21],
+        [ 0.39,  0.36, -0.22]],
+
+       [[-0.02,  0.01, -0.05],
+        [ 0.05, -0.36,  0.42],
+        [ 0.26, -0.22,  0.49],
+        [ 0.35,  0.1 ,  0.32],
+        [-0.2 ,  0.07,  0.24]],
+
+       [[ 0.  ,  0.  ,  0.  ],
+        [-0.37,  0.32, -0.12],
+        [-0.19, -0.44,  0.14],
+        [ 0.36, -0.33, -0.09],
+        [ 0.2 ,  0.45,  0.08]],
+
+       [[-0.  ,  0.  ,  0.  ],
+        [-0.26, -0.14,  0.41],
+        [-0.31,  0.01, -0.39],
+        [ 0.27,  0.19,  0.38],
+        [ 0.3 , -0.06, -0.4 ]],
+
+       [[ 0.  , -0.  , -0.  ],
+        [ 0.22,  0.36,  0.26],
+        [ 0.34, -0.24, -0.28],
+        [-0.22, -0.33,  0.31],
+        [-0.35,  0.2 , -0.3 ]],
+
+       [[-0.02,  0.  , -0.03],
+        [ 0.23,  0.39,  0.27],
+        [-0.06,  0.04,  0.03],
+        [-0.15, -0.21,  0.19],
+        [ 0.55, -0.32,  0.46]],
+
+       [[-0.01, -0.04,  0.  ],
+        [ 0.31,  0.49,  0.37],
+        [-0.17,  0.1 ,  0.14],
+        [ 0.28,  0.42, -0.42],
+        [-0.16,  0.07, -0.13]],
+
+       [[-0.03,  0.01,  0.02],
+        [-0.04, -0.04, -0.02],
+        [ 0.56, -0.4 , -0.46],
+        [ 0.19,  0.31, -0.29],
+        [ 0.2 , -0.12,  0.19]]]), array([[[-0.  ,  0.  , -0.07],
+        [ 0.43, -0.  ,  0.56],
+        [-0.43,  0.  ,  0.56]],
+
+       [[ 0.  ,  0.  ,  0.05],
+        [ 0.58, -0.  , -0.4 ],
+        [-0.58,  0.  , -0.4 ]],
+
+       [[-0.07, -0.  ,  0.  ],
+        [ 0.55, -0.  , -0.44],
+        [ 0.55,  0.  ,  0.44]],
+
+       [[-0.  ,  0.  , -0.07],
+        [ 0.43, -0.  ,  0.56],
+        [-0.43,  0.  ,  0.56]],
+
+       [[ 0.  ,  0.  ,  0.05],
+        [ 0.58, -0.  , -0.4 ],
+        [-0.58,  0.  , -0.4 ]],
+
+       [[-0.07, -0.  ,  0.  ],
+        [ 0.55, -0.  , -0.44],
+        [ 0.55,  0.  ,  0.44]]])]...
+
+  Key: 'zpves'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [0.01533593, 0.00616517, 0.00685733, 0.0311749, 0.02159169]...
+
+  Key: 'U0'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-399.37392, -2574.65263229, -460.79869078, -291.83764101, -76.37903538]...
+
+  Key: 'U298'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-399.37107085, -2574.6502718, -460.79633032, -291.83457116, -76.37620041]...
+
+  Key: 'H' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-399.37012667, -2574.64932761, -460.79538613, -291.83362698, -76.37525622]...
+
+  Key: 'S' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [0.07836468, 0.07556271, 0.07109479, 0.08585002, 0.07189093]...
+
+  Key: 'G' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-399.39349109, -2574.67185663, -460.81658304, -291.85922316, -76.3966905]...
+
+  Key: 'Cv'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [6.166, 4.969, 4.968, 8.246, 6.003]...
+
+  Key: 'Cp'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [8.153, 6.956, 6.955, 10.233, 7.99]...
+
+  Key: 'coordinates' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([[ 0.        ,  0.        ,  0.05532906],
+       [-0.97673841,  0.        , -0.87762485],
+       [ 0.97673841,  0.        , -0.87762485]]), array([[ 0.        ,  0.        ,  0.01794665],
+       [ 0.        ,  0.        , -1.40532325]]), array([[ 0.        ,  0.        ,  0.03611665],
+       [ 0.        ,  0.        , -1.25315196]]), array([[ 5.27080000e-08,  1.03036000e-07, -1.09318000e-07],
+       [ 6.69309603e-01,  1.07912747e+00,  7.88286438e-01],
+       [ 1.01586009e+00, -7.09695761e-01, -8.35611434e-01],
+       [-6.44251130e-01, -9.72781334e-01,  9.34088936e-01],
+       [-1.04092003e+00,  6.03346768e-01, -8.86760906e-01]]), array([[ 8.40000000e-11,  0.00000000e+00,  6.71801021e-02],
+       [ 7.53985306e-01,  0.00000000e+00, -5.33098487e-01],
+       [-7.53985307e-01,  0.00000000e+00, -5.33098485e-01]])]...
+
+  Key: 'Vesp' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([-59.21451974,  -1.00597411,  -1.00597411]), array([-175.76837655,   -0.94735577]), array([-64.40666238,  -0.93698744]), array([-49.25702209,  -1.09966689,  -1.09966686,  -1.09966714,
+        -1.0996668 ]), array([-22.35171914,  -1.00730679,  -1.00730679])]...
+
+  Key: 'Qmulliken' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([-0.18989,  0.09494,  0.09494]), array([-0.13606,  0.13606]), array([-0.17256,  0.17256]), array([ 0.21049, -0.05262, -0.05262, -0.05262, -0.05262]), array([-0.27419,  0.13709,  0.13709])]...
+
+  Key: 'dipole' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([ 0.        , -0.        , -1.33243243]), array([ 0.        , -0.        , -1.08459387]), array([ 0.        ,  0.        , -1.39957037]), array([ 0.00000000e+00,  4.57514321e-06, -6.10019095e-06]), array([-0.        , -0.        , -1.97599266])]...
+
+  Key: 'quadrupole' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([-11.99278847,  -0.        ,   0.        , -16.18327123,
+         0.        , -13.1227993 ]), array([-19.55750493,  -0.        ,  -0.        , -19.55750493,
+        -0.        , -15.35268626]), array([-13.67412692,  -0.        ,   0.        , -13.67412692,
+        -0.        , -10.02272606]), array([-1.65065735e+01, -1.21053076e-06,  6.72517087e-07, -1.65065763e+01,
+        2.69006835e-07, -1.65065727e+01]), array([-4.26550446,  0.        , -0.        , -6.99429352,  0.        ,
+       -5.64988357])]...
+
+  Key: 'octupole' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([ 0.        ,  0.        , -0.75437815,  0.        ,  0.        ,
+       -0.        , -0.        ,  0.34752734,  0.        ,  0.19788149]), array([ 0.        , -0.        ,  0.64316172, -0.        , -0.        ,
+        0.        , -0.        ,  0.64316172, -0.        , -0.85808997]), array([ 0.        ,  0.        ,  0.24196906,  0.        , -0.        ,
+        0.        ,  0.        ,  0.24196906,  0.        , -1.84426077]), array([ 1.55343356e-02, -3.30542008e-04,  3.57132988e-01, -9.98172094e-02,
+       -7.63606987e-01,  8.42827315e-02, -6.54251107e-02, -3.49197987e-01,
+        6.57735179e-02, -7.96219042e-03]), array([-0.        , -0.        , -0.95059419,  0.        , -0.        ,
+        0.        , -0.        ,  0.09883598, -0.        , -0.18218915])]...
+
+  Key: 'hexadecapole' 
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([-21.11418494,  -0.        ,  -0.        ,  -7.45231236,
+         0.        ,  -6.00633913,   0.        ,  -0.        ,
+        -0.        ,  -0.        , -21.17733837,   0.        ,
+        -7.56695395,   0.        , -22.46626627]), array([-22.29555273,  -0.        ,   0.        ,  -7.43185092,
+         0.        ,  -7.98823345,  -0.        ,   0.        ,
+        -0.        ,  -0.        , -22.29555273,   0.        ,
+        -7.98823345,  -0.        , -19.57660889]), array([-14.63839469,  -0.        ,   0.        ,  -4.87946488,
+        -0.        ,  -5.32336922,  -0.        ,   0.        ,
+        -0.        ,   0.        , -14.63839469,  -0.        ,
+        -5.32336922,  -0.        , -12.51008375]), array([-4.24689346e+01, -2.05736116e-01,  2.70833615e-02, -1.39218933e+01,
+        8.85608592e-03, -1.38278120e+01,  2.06130693e-01, -1.14037704e-02,
+       -3.95894675e-04, -1.56907399e-02, -4.24625824e+01,  5.74118842e-02,
+       -1.38341409e+01, -6.62856349e-02, -4.25566148e+01]), array([-5.84236687,  0.        ,  0.        , -2.04427841,  0.        ,
+       -1.49253147,  0.        ,  0.        ,  0.        , -0.        ,
+       -4.81703658,  0.        , -1.83985009,  0.        , -5.79376576])]...
+
+  Key: 'rots'   
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: object
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [array([306219.58499, 262812.20378, 141430.13723]), array([250708.21467, 250708.21467]), array([310373.70011, 310373.70011]), array([84178.80525, 84178.72501, 84178.59927]), array([783504.98042, 441038.29188, 282191.49626])]...
+
+  Key: 'gap'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [0.46395200000000003, 0.475748, 0.522899, 0.567573, 0.5389349999999999]...
+
+  Key: 'Eee'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [183.84897463986522, 1090.3671198794343, 203.34449725977728, 148.4850755691655, 44.06516030092289]...
+
+  Key: 'Exc'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-19.427147652016448, -70.13829888080645, -21.188736640673756, -16.170319198107663, -6.5041291370309]...
+
+  Key: 'Edisp'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-0.0002500726286095, -1.7687400282500002e-05, -1.0612440169500002e-05, -0.007042850678641, -3.3470003611500005e-05]...
+
+  Key: 'Etot'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-399.3892559269622, -2574.6587974545887, -460.8055481096974, -291.8688159120195, -76.40062706306152]...
+
+  Key: 'Eatomization'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: float64
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [-0.2846070662168927, -0.1449882177194013, -0.16466729001064095, -0.5058834217790036, -0.3505994021369787]...
+
+  Key: 'frags'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: bool
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: [False, False, False, False, False]...
+
+  Key: 'graphs'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: <U40
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: ['S', 'Br', 'Cl', '[SiH4]', 'O']...
+
+  Key: 'inchi'
+    Type: <class 'numpy.ndarray'>
+    NumPy dtype: <U71
+    Shape: (784875,)
+    Number of dimensions: 1
+    Total elements: 784875
+    Sample first 5 elements: ['InChI=1S/H2S/h1H2', 'InChI=1S/BrH/h1H', 'InChI=1S/ClH/h1H', 'InChI=1S/H4Si/h1H4', 'InChI=1S/H2O/h1H2']...
+
+
+--- Inspection Complete ---

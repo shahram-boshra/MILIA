@@ -1,0 +1,92 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANI1CCX Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL ANI1CCX-specific configuration in one place:
+#   1. ani1ccx_config - Dataset paths and settings
+#   2. data_config.property_selection.ANI1CCX - Property selection for PyG Data
+#   3. property_availability.ANI1CCX - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────
+# ANI-1ccx Dataset Configuration
+# ──────────────────────────────
+ani1ccx_config:
+  raw_npz_filename: ani1ccx.npz
+  raw_source_filename: ani1x-release.h5
+  raw_data_download_url: https://figshare.com/ndownloader/files/18112775
+  processing_config:
+    preprocessing:
+      num_molecules: 50
+      property_keys:
+      - ccsd(t)_cbs.energy
+      - wb97x_dz.energy
+      - wb97x_dz.forces
+      - wb97x_dz.hirshfeld_charges
+      - wb97x_dz.cm5_charges
+      - wb97x_dz.dipole
+  uncertainty_handling:
+    enabled: false
+
+
+# ────────────────────────────────────────────────────
+# ANI1CCX Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    ANI1CCX:
+      # ANI-1ccx Dataset Property Selection
+      # Reference: Smith et al., Scientific Data 7, 134 (2020)
+      # Level of theory: CCSD(T)/CBS (primary), ωB97x/6-31G* (secondary)
+      # CRITICAL: ANI-1ccx is a ~500k conformer subset of ANI-1x with CC energies
+      
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        - ccsd_energy     # CCSD(T)/CBS coupled-cluster energy (Hartree) - PRIMARY TARGET
+        # - dft_energy    # ωB97x/6-31G* DFT energy (Hartree) - uncomment for comparison
+      
+      # Node-level features to be added to pyg_data.x
+      node_features_to_add:
+        - hirshfeld_charges   # Hirshfeld atomic charges (e) - recommended for charge features
+        # - cm5_charges       # CM5 atomic charges (e) - alternative charge scheme
+        # - forces            # Atomic forces (Hartree/Angstrom) - for force-field training
+      
+      # Fixed-size vector graph properties
+      vector_graph_properties_to_include:
+        - dipole          # Molecular dipole moment (Debye)
+      
+      # Variable-length graph properties
+      variable_len_graph_properties_to_include: []
+      
+      # ANI1CCX-specific settings
+      # Calculate atomization energy from coupled-cluster energy (higher accuracy than DFT)
+      calculate_atomization_energy_from: ccsd_energy
+      # The name of the key for the calculated atomization energy
+      atomization_energy_key_name: ccsd_energy_ATOM
+
+
+# ────────────────────────────────────────────────────
+# ANI1CCX Property Availability Matrix
+# ──────────────────────────────────────────────────── 
+property_availability:
+  ANI1CCX:
+    molecular_identifiers:
+    - molecule_id
+    atomic_structure:
+    - atoms
+    - coordinates
+    scalar_graph_targets:
+    - ccsd_energy
+    - dft_energy
+    node_features:
+    - forces
+    - hirshfeld_charges
+    - cm5_charges
+    vector_graph_properties:
+    - dipole
+    variable_len_graph_properties: []
+    metadata_fields:
+    - _metadata
+    uncertainty_fields: []

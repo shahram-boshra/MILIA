@@ -1,0 +1,36 @@
+# pyg_augmentation/plugin.yaml
+
+plugin_name: "pyg_augmentation"
+version: "1.0.0"
+author: "Shahram Boshra, Ilia Boshra"
+description: "PyG augmentation transforms missing from PyG 2.6.1"
+plugin_type: "pyg_fallback"  # ← PyG transforms fallback
+milia_version: ">=4.0.0"
+pyg_version: ">=2.0.0"
+python_version: ">=3.8"
+license: "MIT"
+
+transforms:
+  - name: "DropEdge"
+    class_name: "DropEdge"
+    module_path: "transforms"
+    category: "augmentation"
+    description: "Randomly drops edges from the graph"
+    
+  - name: "DropNode"
+    class_name: "DropNode"
+    module_path: "transforms"
+    category: "augmentation"
+    description: "Randomly drops nodes and incident edges"
+    
+  - name: "MaskFeatures"
+    class_name: "MaskFeatures"
+    module_path: "transforms"
+    category: "augmentation"
+    description: "Randomly masks node features"
+    
+  - name: "RandomNodeSample"
+    class_name: "RandomNodeSample"
+    module_path: "transforms"
+    category: "sampling"
+    description: "Randomly samples subset of nodes"

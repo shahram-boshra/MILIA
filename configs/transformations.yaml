@@ -1,0 +1,140 @@
+# Transformations Configuration
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+
+# ───────────────────────────────────────────────
+# PYTORCH GEOMETRIC TRANSFORMATIONS CONFIGURATION
+# ───────────────────────────────────────────────
+transformations:
+  # ──────────────────────────────────────────────────────────────────
+  # STANDARD TRANSFORMS - Always applied before any experimental setup
+  # ──────────────────────────────────────────────────────────────────
+  # Production-ready PyG transforms applied during dataset loading.
+  # These run BEFORE any experimental setup transforms.
+  standard_transforms:
+    - name: "AddSelfLoops"
+      enabled: false
+      params:
+        # CRITICAL: attr='edge_attr' tells AddSelfLoops to handle edge_attr tensor
+        # Without this, AddSelfLoops only handles edge_weight, causing shape mismatch:
+        #   edge_index.size(1) != edge_attr.size(0)
+        # See: https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.transforms.AddSelfLoops.html
+        attr: "edge_attr"
+        fill_value: 0.0  # Fill self-loop edge features with zeros
+    
+    # Normalize node features (X)
+    - name: "NormalizeFeatures"
+      enabled: true
+      params:
+        attrs: ["x"]
+    
+    # Standardize target labels (Y) - CRITICAL for large energy values
+    # Z-score normalization: mean=0, std=1
+    - name: "StandardizeTargets"
+      enabled: true
+      params:
+        attrs: ["y"]
+        eps: 1.0e-8
+
+  # ───────────────────────────────────────────────────────
+  # EXPERIMENTAL SETUPS - For research and ablation studies
+  # ───────────────────────────────────────────────────────
+  # Named configurations for systematic experiments.
+  # These run AFTER standard transforms.
+  experimental_setups:
+    # Baseline: empty transforms list - uses only standard_transforms (not experimental)
+    baseline:
+      name: "baseline"
+      description: "Baseline configuration - uses only standard transforms"
+      enabled: true
+      transforms: []
+    
+    # Custom Milia-specific transforms 
+    milia_quantum_enhanced:
+      name: "milia_quantum_enhanced"
+      description: "Milia quantum-enhanced setup with vibrational mode normalization and charge scaling"
+      enabled: false
+      transforms:
+        - name: "NormalizeVibrationalModes"
+          enabled: true
+          params:
+            normalize_per_mode: true
+            epsilon: 1.0e-8
+        - name: "ScaleMullikenCharges"
+          enabled: true
+          params:
+            scale_factor: 1.0
+            center: false
+        - name: "GCNNorm"
+          enabled: true
+          params:
+            add_self_loops: false
+    
+    milia_filtered:
+      name: "milia_filtered"
+      description: "Milia setup with DMC uncertainty filtering for high-quality training data"
+      enabled: false
+      transforms:
+        - name: "FilterByDMCUncertainty"
+          enabled: true
+          params:
+            max_uncertainty: 0.05
+            remove: false
+        - name: "NormalizeVibrationalModes"
+          enabled: true
+          params:
+            normalize_per_mode: true
+        - name: "GCNNorm"
+          enabled: true
+    
+    milia_ablation_no_vibmodes:
+      name: "milia_ablation_no_vibmodes"
+      description: "Milia ablation study setup - no vibrational mode normalization"
+      enabled: false
+      transforms:
+        - name: "ScaleMullikenCharges"
+          enabled: true
+          params:
+            scale_factor: 1.0
+            center: false
+        - name: "GCNNorm"
+          enabled: true
+    
+    # Example: Using plugin transforms in experimental setup
+    # Uncomment and modify when you have plugins enabled
+    # plugin_example_setup:
+    #   name: "plugin_example_setup"
+    #   description: "Example setup using custom plugin transforms"
+    #   enabled: false
+    #   transforms:
+    #     # Plugin transforms are referenced by name just like built-in transforms
+    #     - name: "EnergyScaleAugmentation"  # From quantum_transforms_extended plugin
+    #       enabled: true
+    #       params:
+    #         scale_range: [0.95, 1.05]
+    #     - name: "ComplexityFilter"  # From molecular_filters_advanced plugin
+    #       enabled: true
+    #       params:
+    #         max_complexity: 0.8
+  
+  # Default setup to use
+  default_setup: "baseline"
+ 
+  # Validation settings
+  validation:
+    enabled: true
+    strict_mode: false
+    warn_on_unavailable: true
+  # - name: Distance
+  #  kwargs:
+  #    norm: False
+  #    max_value: 10.0  # Works well with bond_length features
+  # - name: OneHotDegree
+  #  kwargs:
+  #      max_degree: 5  
+  # Additional transforms that work well with enhanced structural features
+
+
+
+

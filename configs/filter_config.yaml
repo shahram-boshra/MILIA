@@ -1,0 +1,54 @@
+# Filter Config Configuration
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+# ─────────────────────────────────────────────────────────────────────────
+# Dataset Filtering Configuration: Defines criteria for filtering molecules
+# ─────────────────────────────────────────────────────────────────────────
+filter_config:
+  # Common filters applied to both DFT and DMC datasets
+  
+  # Maximum number of atoms allowed in a molecule
+  max_atoms: 50
+  
+  # Minimum number of atoms allowed in a molecule
+  # min_atoms: 5 # Uncomment and set if needed
+
+  # Heavy atom filter:
+  # mode: 'include' - only include molecules with specified heavy atoms
+  # mode: 'exclude' - exclude molecules with specified heavy atoms
+  # atoms: list of atom symbols (e.g., ['C', 'N'])
+
+  # Example 1: Exclude molecules containing Bromine or Chlorine
+  # heavy_atom_filter:
+  #   mode: exclude
+  #   atoms:
+  #     - Br
+  #     - Cl
+
+  # Example 2: Only include molecules that contain ONLY Carbon, Nitrogen, Oxygen, and Fluorine as heavy atoms
+  # heavy_atom_filter:
+  #   mode: include
+  #   atoms:
+  #     - C
+  #     - N
+  #     - O
+  #     - F
+
+  # Example 3: Focus on drug-like molecules (common pharmaceutical atoms)
+  # heavy_atom_filter:
+  #   mode: include
+  #   atoms:
+  #     - C
+  #     - N
+  #     - O
+  #     - F
+  #     - S
+  #     - P
+  #     - Cl
+
+  # DMC-specific filtering (only applied when dataset_type = "DMC")
+  # Filter based on DMC uncertainty
+  # dmc_uncertainty_filter:
+  #   max_uncertainty: 0.05  # Exclude molecules with std > 0.05 Hartree
+  #   filter_invalid_uncertainties: true  # Remove NaN/infinite uncertainties

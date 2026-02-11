@@ -1,0 +1,74 @@
+# MILIA Main Configuration - Global Settings
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+# ────────────
+# Global Paths
+# ────────────
+global_paths:
+  working_root_dir: ~/Chem_Data/Milia_PyG_Dataset
+
+# ────────────
+# Dataset Type      
+# ────────────
+dataset_type: "DFT"  # Options: "DFT", "DMC", "Wavefunction", "QM9", "ANI1X", "ANI1CCX", "RMD17", "ANI2X", "XXMD", "QDPi"
+
+
+# ────────────────
+# Global Constants      
+# ────────────────
+global_constants:
+  # ────────────────
+  # Unit Conversions      
+  # ────────────────
+  har2ev: 27.211386245988
+  bohr_to_angstrom: 0.529177210903
+# ─────────────────────────────
+# Atomic Energies (in Hartrees)      
+# ─────────────────────────────
+atomic_energies_hartree:
+  # Atomic energies in Hartree for common heavy atoms (and Hydrogen)
+  1: -0.5012728848846926      # H
+  6: -37.83859584856468       # C
+  7: -54.5760607136932450     # N
+  8: -75.0474818911551438     # O
+  9: -99.7031524437270917     # F
+  17: -460.13960793480203     # Cl
+  15: -341.2510291850040858   # P
+  35: -2574.01253635198464    # Br
+  16: -398.1021030909759020   # S
+  14: -289.3578409507016431   # Si
+# ────────────────────────────────────
+# Heavy Atom Symbols (with relevant z)      
+# ────────────────────────────────────
+heavy_atom_symbols_to_z:
+  C: 6
+  N: 7
+  O: 8
+  F: 9
+  Cl: 17
+  P: 15
+  Br: 35
+  S: 16
+  Si: 14
+
+# ──────────────────────────────────────
+# Common settings for all available datasets
+# ──────────────────────────────────────
+# NOTE: This is GLOBAL configuration that applies to ALL datasets.
+# Per the YAML Splitting Blueprint's Colocation Principle:
+# - Dataset-specific configs go in datasets/{dataset}.yaml
+# - Global/shared settings go in main.yaml
+data_config:
+  common_settings:
+    # Test molecule limit for debugging
+    test_molecule_limit: 100  # Set to a specific number for testing, or 'null' for full dataset
+    
+    # Enhanced structural features integration
+    structural_feature_integration:
+      # Pass coordinates to structural feature extraction for 3D features
+      pass_coordinates: true
+      # Pass Mulliken charges for enhanced atom features (DFT only)
+      pass_mulliken_charges: true
+      # Enable stereochemistry assignment before structural feature extraction
+      enable_stereochemistry_preprocessing: true

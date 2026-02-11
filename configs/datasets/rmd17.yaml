@@ -1,0 +1,159 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# RMD17 Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL RMD17-specific configuration in one place:
+#   1. rmd17_config - Dataset paths and settings
+#   2. data_config.property_selection.RMD17 - Property selection for PyG Data
+#   3. property_availability.RMD17 - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ──────────────────────────
+# rMD17 Dataset Configuration
+# ──────────────────────────
+rmd17_config:
+  # Filename for the preprocessed .npz rMD17 dataset file (OUTPUT after preprocessing)
+  raw_npz_filename: rmd17.npz
+  
+  # Filename for the raw archive file (INPUT before preprocessing)
+  # rMD17 is distributed as a tar.bz2 archive containing 10 NPZ files (one per molecule)
+  raw_source_filename: rmd17.tar.bz2
+  
+  # URL to download the raw rMD17 archive
+  # Source: Materials Cloud Archive (DOI: 10.24435/materialscloud:wy-kn)
+  # Reference: Christensen & von Lilienfeld, Mach. Learn.: Sci. Technol. 1, 045018 (2020)
+  # DOI: 10.1088/2632-2153/abba6f | arXiv: 2007.09593
+  #
+  # NOTE: This is a ~1GB file. Download may timeout with default settings.
+  # The download redirects to rgw.cscs.ch (CSCS Swiss storage server).
+  # If timeout errors occur, either:
+  #   1. Increase download timeout in the pipeline (recommended: 600+ seconds)
+  #   2. Manually download and place rmd17.tar.bz2 in the raw/ directory
+  #
+  # Alternative source (Figshare): https://figshare.com/ndownloader/articles/12672038/versions/3
+  # Note: Figshare returns a .zip file, not .tar.bz2, requiring preprocessor modification
+  raw_data_download_url: https://archive.materialscloud.org/records/pfffs-fff86/files/rmd17.tar.bz2?download=1
+  
+  # rMD17 processing configuration
+  processing_config:
+    # Preprocessing parameters (for automatic tar.bz2 → unified npz conversion)
+    #
+    # NOTE: rMD17 structure differs from ANI-1x/ANI-1ccx
+    # ─────────────────────────────────────────────────────
+    # rMD17 contains 10 separate molecule files (aspirin, benzene, etc.),
+    # each with ~100k conformers. Unlike ANI-1x which uses 'num_molecules' 
+    # for total conformers, rMD17 uses two parameters:
+    #   - molecules_to_include: which molecule types to process
+    #   - max_conformers_per_molecule: conformers per molecule type
+    #
+    # For testing: set max_conformers_per_molecule=10 → 10×10=100 total conformers
+    #
+    preprocessing:
+      # Molecules to include (null = all 10 molecules)
+      # Available: aspirin, azobenzene, benzene, ethanol, malonaldehyde,
+      #            naphthalene, paracetamol, salicylic, toluene, uracil
+      molecules_to_include: null
+      
+      # Maximum conformers per molecule (null = all ~100k per molecule)
+      # Use integer for testing/limiting dataset size (e.g., 100, 1000, 10000)
+      # CRITICAL WARNING: DO NOT train on >1000 samples due to autocorrelation
+      max_conformers_per_molecule: 5
+      
+      # Whether to include old MD17 data (old_energies, old_forces, old_indices)
+      # for comparison with original noisy dataset
+      include_old_data: false
+      
+      # Whether to clean up temporary extraction directory after preprocessing
+      cleanup_temp: true
+  
+  # rMD17 does not have uncertainty handling (DFT calculations are deterministic)
+  uncertainty_handling:
+    enabled: false
+
+
+
+
+# ────────────────────────────────────────────────────
+# RMD17 Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    RMD17:
+      # rMD17 (Revised MD17) Dataset Property Selection
+      # Reference: Christensen & von Lilienfeld, Mach. Learn.: Sci. Technol. 1, 045018 (2020)
+      # Level of theory: PBE/def2-SVP with very tight SCF convergence
+      # CRITICAL: DO NOT train on >1000 samples due to autocorrelation in MD time-series
+      
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        - energies        # PBE/def2-SVP total energy (Hartree)
+      
+      # Node-level features to be added to pyg_data.x
+      node_features_to_add:
+        - forces          # Atomic forces (Hartree/Angstrom) - key feature for force-field training
+      
+      # Fixed-size vector graph properties
+      vector_graph_properties_to_include: []
+      
+      # Variable-length graph properties
+      variable_len_graph_properties_to_include: []
+      
+      # RMD17-specific settings
+      # Calculate atomization energy from total energy
+      calculate_atomization_energy_from: energies
+      # The name of the key for the calculated atomization energy
+      atomization_energy_key_name: energies_ATOM
+
+
+# ────────────────────────────────────────────────────
+# rMD17 Property Availability Matrix
+# ──────────────────────────────────────────────────── 
+property_availability:
+  RMD17:
+    # rMD17 (Revised MD17) Dataset Property Availability (6+ keys in rmd17.npz)
+    # Reference: Christensen & von Lilienfeld, Mach. Learn.: Sci. Technol. 1, 045018 (2020)
+    # DOI: 10.1088/2632-2153/abba6f | arXiv: 2007.09593
+    # Source: Materials Cloud Archive (DOI: 10.24435/materialscloud:wy-kn)
+    # Contains ~100k conformations for each of 10 small organic molecules
+    # Level of theory: PBE/def2-SVP with very tight SCF convergence (ORCA)
+    # Coordinate units: Angstrom | Energy units: Hartree (converted from kcal/mol)
+    # Force units: Hartree/Angstrom (converted from kcal/mol/Angstrom)
+    # CRITICAL: DO NOT train on >1000 samples due to autocorrelation in MD time-series
+    
+    # Molecular identifiers (1 key)
+    molecular_identifiers:
+      - molecule_name   # Molecule type identifier (aspirin, benzene, etc.)
+    
+    # Atomic structure properties (2 keys)
+    atomic_structure:
+      - atoms           # Atomic numbers (uint8 array, constant per molecule)
+      - coordinates     # Cartesian coordinates in Angstrom (object array, shape: n_atoms x 3)
+    
+    # Scalar graph-level properties (1 key)
+    scalar_graph_targets:
+      - energies        # PBE/def2-SVP total energy (Hartree, float64) - converted from kcal/mol
+    
+    # Node-level (atomic) properties (1 key)
+    node_features:
+      - forces          # Atomic forces (Hartree/Angstrom, object array, shape: n_atoms x 3)
+    
+    # Fixed-size vector graph properties
+    vector_graph_properties: []  # rMD17 does not have dipole or other vector properties
+    
+    # Variable-length graph properties
+    variable_len_graph_properties: []  # Forces are in node_features
+    
+    # Metadata fields (1 key)
+    metadata_fields:
+      - _metadata       # Preprocessing metadata as string array (object)
+    
+    # Optional: Original MD17 data for comparison (if include_old_data=true during preprocessing)
+    # old_energies     # Original MD17 energies (kcal/mol, float64)
+    # old_forces       # Original MD17 forces (kcal/mol/Angstrom, object array)
+    # old_indices      # Original MD17 conformer indices (int64)
+    
+    # rMD17 is DFT-based - no uncertainty fields
+    uncertainty_fields: []

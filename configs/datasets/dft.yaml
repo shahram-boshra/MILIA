@@ -1,0 +1,106 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# DFT Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL DFT-specific configuration in one place:
+#   1. dft_config - Dataset paths and settings
+#   2. data_config.property_selection.DFT - Property selection for PyG Data
+#   3. property_availability.DFT - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────
+# DFT Dataset Configuration
+# ─────────────────────────
+dft_config:
+  raw_npz_filename: DFT_all_sliced.npz
+  raw_data_download_url: https://zenodo.org/records/15442257/files/DFT_all.npz?download=1
+
+
+
+# ────────────────────────────────────────────────────
+# DFT Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    DFT:
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        - Etot
+        - U0
+        - zpves
+        - gap
+        - Eee
+        - Exc
+        - Edisp
+      # Node-level features to be added to pyg_data.x
+      node_features_to_add:
+        - Qmulliken     # Essential for mulliken_charge structural feature
+        - Vesp
+      # Fixed-size vector graph properties to be added as separate attributes
+      vector_graph_properties_to_include:
+        - dipole
+        - quadrupole
+        - octupole
+        - hexadecapole
+        - rots
+      # Variable-length graph properties to be added as separate attributes
+      variable_len_graph_properties_to_include:
+        - freqs
+        - vibmodes
+      
+      # DFT-specific settings
+      # The key from which to calculate atomization energy
+      calculate_atomization_energy_from: Etot
+      # The name of the key for the calculated atomization energy
+      atomization_energy_key_name: Etot_ATOM
+      # Vibrational refinement settings
+      vibration_refinement:
+        comparison_tolerance: 1.0e-4 # Tolerance for numerical comparisons when refining freqs and vibmodes
+
+
+# ────────────────────────────────────────────────────
+# DFT Property Availability Matrix
+# ────────────────────────────────────────────────────
+property_availability:
+  DFT:
+    molecular_identifiers:
+    - compounds
+    - inchi
+    - graphs
+    - frags
+    atomic_structure:
+    - atoms
+    - coordinates
+    scalar_graph_targets:
+    - Etot
+    - U0
+    - U298
+    - zpves
+    - gap
+    - Eatomization
+    - Eee
+    - Exc
+    - Edisp
+    - H
+    - S
+    - G
+    - Cv
+    - Cp
+    node_features:
+    - Qmulliken
+    - Vesp
+    vector_graph_properties:
+    - dipole
+    - quadrupole
+    - octupole
+    - hexadecapole
+    - rots
+    variable_len_graph_properties:
+    - freqs
+    - vibmodes
+    uncertainty_fields: []
+
+
+

@@ -1,0 +1,161 @@
+# wavefunction_preprocess.yaml - Wavefunction Dataset Preprocessing Configuration
+# VQM24 Pipeline - Preprocessing Subsystem
+
+# This configuration defines how to preprocess the VQM24 wavefunction dataset
+# from raw .tar.gz archive (106 GB, 937,000+ .molden files) into the .npz
+# format expected by VQM24Dataset.
+
+# ============================================================
+# PREPROCESSING CONFIGURATION
+# ============================================================
+
+preprocessing:
+  # Dataset type to preprocess
+  # Options: "Wavefunction", "DFT", "DMC"
+  dataset_type: "Wavefunction"
+  
+  # Input/Output Paths
+  # ------------------
+  
+  # Path to raw tar.gz archive containing .molden files
+  # This is the 106 GB wavefunctions.tar.gz file from Zenodo
+  input_path: "raw/wavefunctions.tar.gz"
+  
+  # Path for output .npz file
+  # This will be the preprocessed dataset file
+  output_path: "processed/wavefunctions.npz"
+  
+  # Processing Control
+  # ------------------
+  
+  # Number of molecules to process
+  # Set to null or omit for all molecules (937,000+)
+  # Use smaller numbers for testing (e.g., 100, 1000, 10000)
+  num_molecules: null  # Process all molecules
+  
+  # Feature extraction tier
+  # Options: "basic", "standard", "full"
+  # - basic: atomic numbers, coordinates, charge (fastest)
+  # - standard: basic + MO coefficients, energies (recommended)
+  # - full: standard + density matrices, multipoles (most complete)
+  feature_tier: "standard"
+  
+  # Operational Flags
+  # -----------------
+  
+  # Force overwrite of existing output file
+  force_overwrite: false
+  
+  # Clean up temporary extraction directory after processing
+  cleanup_temp: true
+  
+  # Show detailed progress during preprocessing
+  show_progress: true
+  
+  # Validation Settings
+  # -------------------
+  
+  # Validate .molden files before processing
+  validate_inputs: true
+  
+  # Skip molecules with parsing errors
+  skip_errors: true
+  
+  # Maximum number of errors before aborting
+  max_errors: 100
+  
+  # Performance Tuning
+  # ------------------
+  
+  # Batch size for processing molecules
+  # Larger batches = more memory, faster processing
+  batch_size: 100
+  
+  # Number of parallel workers (null = auto-detect)
+  num_workers: null
+  
+  # Memory limit for extraction (in GB)
+  # Prevents running out of disk space
+  memory_limit_gb: 50
+
+# ============================================================
+# WAVEFUNCTION-SPECIFIC CONFIGURATION
+# ============================================================
+
+wavefunction_config:
+  # File pattern for extraction from tar.gz
+  # Default: "*.molden" (all .molden files)
+  file_pattern: "*.molden"
+  
+  # Extraction method
+  # Options: "streaming" (memory-efficient), "bulk" (faster but needs space)
+  extraction_method: "streaming"
+  
+  # Temporary extraction directory
+  # null = auto-generate in system temp
+  temp_dir: null
+  
+  # Feature Extraction Details
+  # --------------------------
+  
+  # Basic tier features
+  basic_features:
+    - atomic_numbers      # Z for each atom
+    - coordinates         # x, y, z Cartesian coordinates
+    - charge              # Molecular charge
+    - multiplicity        # Spin multiplicity
+  
+  # Standard tier features (includes basic)
+  standard_features:
+    - mo_coefficients     # Molecular orbital coefficients
+    - mo_energies         # Molecular orbital energies
+    - mo_occupations      # Molecular orbital occupation numbers
+    - total_energy        # Total electronic energy
+    - homo_lumo_gap       # HOMO-LUMO energy gap
+  
+  # Full tier features (includes standard)
+  full_features:
+    - density_matrix      # Electronic density matrix
+    - dipole_moment       # Electric dipole moment
+    - quadrupole_moment   # Electric quadrupole moment
+    - orbital_symmetries  # Symmetry labels for MOs
+    - vibrational_freqs   # Vibrational frequencies (if available)
+
+# ============================================================
+# LOGGING CONFIGURATION
+# ============================================================
+
+logging:
+  # Log level for preprocessing
+  # Options: DEBUG, INFO, WARNING, ERROR
+  log_level: "INFO"
+  
+  # Log file path (null = console only)
+  log_file: "logs/preprocessing_wavefunction.log"
+  
+  # Log format
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# ============================================================
+# NOTES
+# ============================================================
+
+# Performance Estimates (based on testing):
+# - Basic tier: ~0.01 sec/molecule (~2.6 hours for full dataset)
+# - Standard tier: ~0.05 sec/molecule (~13 hours for full dataset)
+# - Full tier: ~0.1 sec/molecule (~26 hours for full dataset)
+
+# Memory Requirements:
+# - Extraction: ~2x tar.gz size (~212 GB temporary space)
+# - Processing: ~4-8 GB RAM (depending on tier)
+# - Output: ~50-100 GB (depending on tier and compression)
+
+# Recommended Workflow:
+# 1. Test with small dataset first (num_molecules: 100)
+# 2. Validate output structure
+# 3. Run full preprocessing overnight (num_molecules: null)
+# 4. Use cleanup_temp: true to save disk space
+
+# ============================================================
+# END OF CONFIGURATION
+# ============================================================

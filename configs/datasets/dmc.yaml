@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# DMC Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL DMC-specific configuration in one place:
+#   1. dmc_config - Dataset paths and settings
+#   2. data_config.property_selection.DMC - Property selection for PyG Data
+#   3. property_availability.DMC - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────
+# DMC Dataset Configuration
+# ─────────────────────────
+dmc_config:
+  # DMC dataset filename and URL
+  raw_npz_filename: DMC.npz
+  # URL to download the raw dataset file (can be .npz, .tar.gz, .zip, etc.)
+  raw_data_download_url: https://zenodo.org/records/15442257/files/DMC.npz?download=1
+  
+  # DMC uncertainty handling
+  uncertainty_handling:
+    # Field name containing uncertainties (typically 'std')
+    uncertainty_field_name: std
+    # Use uncertainties for loss weighting during training
+    use_for_loss_weighting: true
+    # Filter molecules with uncertainty above threshold
+    max_uncertainty_threshold: null # null or e.g., 0.1 to filter high-uncertainty molecules
+    # Uncertainty weighting strategy
+    uncertainty_weighting: "inverse_variance"  # Options: "inverse_variance", "uniform"
+
+
+
+
+# ────────────────────────────────────────────────────
+# DMC Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    DMC:
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        - Etot  # Only Etot is a target; std is uncertainty metadata
+      # Node-level features (DMC typically doesn't have these)
+      node_features_to_add: []
+      # Vector properties (DMC typically doesn't have these)
+      vector_graph_properties_to_include: []
+      # Variable-length properties (DMC typically doesn't have these)
+      variable_len_graph_properties_to_include: []
+
+
+# ────────────────────────────────────────────────────
+# DMC Property Availability Matrix
+# ────────────────────────────────────────────────────  
+property_availability:
+  DMC:
+    # Fundamental molecular identifiers and structure (subset available in DMC)
+    molecular_identifiers:
+      - compounds     # Compound identifiers
+      - inchi         # InChI string representation
+      - graphs        # Graph representations
+    
+    # Atomic structure properties (inherited from DFT optimization)
+    atomic_structure:
+      - atoms         # Atomic numbers/symbols
+      - coordinates   # Cartesian coordinates from DFT optimization (for 3D features)
+    
+    # DMC focuses primarily on high-accuracy energies
+    scalar_graph_targets:
+      - Etot          # DMC total energy (primary target)
+    
+    # DMC doesn't provide detailed electronic structure
+    node_features: []  # No Mulliken charges available in DMC
+    vector_graph_properties: []
+    variable_len_graph_properties: []
+    
+    # DMC-specific uncertainty information
+    uncertainty_fields:
+      - std           # DMC statistical uncertainty (metadata, not target)

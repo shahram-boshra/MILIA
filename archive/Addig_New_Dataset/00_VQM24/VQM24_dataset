@@ -1,0 +1,86 @@
+
+
+
+
+
+
+
+
+The VQM24 dataset can be downloaded from its official source on Zenodo:
+
+https://zenodo.org/records/15442257 
+
+This page provides various .npz files for different parts of the dataset, including:
+
+    DFT_all.npz             (https://zenodo.org/records/15442257/files/DFT_all.npz?download=1)          1.1     GB
+    DFT_saddles.npz         (https://zenodo.org/records/15442257/files/DFT_saddles.npz?download=1)      111.8   MB
+    DFT_uniques.npz         (https://zenodo.org/records/15442257/files/DFT_uniques.npz?download=1)      337.6   MB
+    DMC.npz                 (https://zenodo.org/records/15442257/files/DMC.npz?download=1)              2.9     MB
+    wavefunctions.tar.gz    (https://zenodo.org/records/15442257/files/wavefunctions.tar.gz?download=1) 106.7   GB
+__________
+
+*Note (mE)
+__________  
+ 
+All keys are the same in DFT_all.npz, DFT_saddles.npz, and DFT_uniques.npz but 'graphs' key (which presents the SMILES of the molecule) which is not available in DFT_saddles.npz.
+
+                                        "graphs" --- > Present in (DFT_all and DFT_uniques) but not DFT_saddles.
+                                        ________________________________________________________________________
+
+___                             ___
+___VQM24 Datasets key comparison___
+
+Keys in DFT_all.npz  compounds, atoms, freqs, vibmodes, zpves, U0, U298, H, S, G, Cv, Cp, coordinates, Vesp, Qmulliken, dipole, quadrupole, octupole, hexadecapole, rots, gap, Eee, Exc, Edisp, Etot, Eatomization, frags, graphs, inchi
+
+Keys in DFT_uniques  compounds, atoms, freqs, vibmodes, zpves, U0, U298, H, S, G, Cv, Cp, coordinates, Vesp, Qmulliken, dipole, quadrupole, octupole, hexadecapole, rots, gap, Eee, Exc, Edisp, Etot, Eatomization, frags, graphs, inchi
+
+Keys in DFT_saddles  compounds, atoms, freqs, vibmodes, zpves, U0, U298, H, S, G, Cv, Cp, coordinates, Vesp, Qmulliken, dipole, quadrupole, octupole, hexadecapole, rots, gap, Eee, Exc, Edisp, Etot, Eatomization, frags, inchi
+
+Keys in DMC.npz     compounds, graphs, inchi, atoms, coordinates, Etot, std
+
+
+
+________________________________________________________________________
+
+You can also find additional information and usage examples in the associated GitHub repository:
+
+https://github.com/dkhan42/VQM24
+
+Additionally, the dataset is integrated into the OpenQDC library, which provides a convenient Python API for accessing quantum chemistry datasets:
+
+https://docs.openqdc.io/stable/API/datasets/vqm24.html
+
+When considering the VQM24 dataset for ML deployment, based on the .npz files, you effectively have 4 distinct datasets that represent different aspects or subsets of the overall VQM24 data.
+Here's a breakdown:
+____________
+
+DFT_all.npz
+____________
+This is the largest and most comprehensive DFT (Density Functional Theory) dataset, containing properties for all 784,875 conformers in local minima. This would be your primary dataset for training models on a wide range of molecular structures and their DFT-calculated properties.
+
+____________
+
+DFT_uniques.npz
+____________
+This file focuses on 258,242 constitutional isomers (most stable conformers). This subset is valuable if you're interested in models that predict properties for unique molecular graphs, rather than their various conformational states.
+
+____________
+
+DFT_saddles.npz
+____________
+This contains data for 51,072 saddle point structures. These are transition states, and this dataset is crucial if your ML model needs to learn about reaction pathways or energy barriers, which are distinct from stable minima.
+
+____________
+
+DMC.npz
+____________
+This is a smaller, high-accuracy dataset with Diffusion Monte Carlo (DMC) data for 10,793 constitutional isomers. DMC calculations are very computationally expensive but provide highly accurate energies. This dataset could be used for benchmarking or fine-tuning models where extreme accuracy is paramount, or for transfer learning scenarios.
+
+____________
+
+.molden WF files
+____________
+
+While wavefunctions.tar.gz is also provided, it contains .molden files of the wavefunctions. These are raw quantum mechanical outputs and typically require specialized quantum chemistry software to process before they can be directly used as numerical features for ML models in the same way as the .npz files. Therefore, for direct "dataset" deployment in the common ML sense (ready-to-use numerical arrays), the four .npz files are the primary ones.
+So, the answer is 4 datasets based on the .npz files for direct ML deployment.
+

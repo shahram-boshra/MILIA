@@ -1,0 +1,24 @@
+Metadata-Version: 2.4
+Name: milia-pipeline
+Version: 1.0.0
+Summary: Milia molecular graph dataset processing pipeline for quantum chemistry ML
+Home-page: https://github.com/yourusername/milia-pipeline
+Author: Asadollah (Shahram) Boshra, Ilia Boshra
+Author-email: a.boshra@gmail.com, ilia.boshra@gmail.com
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: provides-extra
+Dynamic: requires-python
+Dynamic: summary

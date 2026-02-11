@@ -1,0 +1,94 @@
+# =============================================================================
+# Example Plugin - Complete /myplugins/plugin.yaml
+# =============================================================================
+# Production-ready example with all supported fields active and future fields
+# commented out for when PluginMetadata is extended.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CURRENTLY SUPPORTED FIELDS (Active)
+# -----------------------------------------------------------------------------
+
+plugin_name: "quantum_augmentations"
+version: "1.0.0"
+author: "milia Team"
+plugin_type: "user_experimental" 
+email: "milia@example.com"
+description: "Advanced quantum property augmentation and normalization transforms for milia molecular graphs"
+license: "MIT"
+homepage: "https://github.com/milia/quantum-augmentations"
+
+# Version compatibility
+milia_version: ">=1.0.0"
+pyg_version: ">=2.0.0"
+python_version: ">=3.10"
+
+# Dependencies (currently empty for example)
+dependencies: []
+
+# Transforms (empty - example modules not implemented)
+transforms: []
+
+# Validation metadata
+is_validated: false
+validation_date: null
+checksum: null
+trusted: false
+
+# -----------------------------------------------------------------------------
+# FUTURE FIELDS (Not yet supported by PluginMetadata - commented out)
+# -----------------------------------------------------------------------------
+
+# repository: "https://github.com/milia/quantum-augmentations"
+# documentation: "https://quantum-augmentations.readthedocs.io"
+# bug_tracker: "https://github.com/milia/quantum-augmentations/issues"
+
+# experimental: false
+# deprecated: false
+# deprecated_message: ""
+
+# validated_datasets:
+#   - "milia_DFT"
+#   - "milia_DMC"
+
+# tags:
+#   - "quantum"
+#   - "augmentation"
+#   - "normalization"
+
+# maintainers:
+#   - name: "Jane Researcher"
+#     email: "jane@example.com"
+
+# created_date: "2025-10-15"
+# updated_date: "2025-10-15"
+
+# development_status: "stable"
+
+# tested_environments:
+#   - "Ubuntu 24.04"
+#   - "macOS 14"
+
+# performance_notes: |
+#   Performance information here
+
+# known_limitations:
+#   - "Limitation 1"
+#   - "Limitation 2"
+
+# citation: |
+#   @software{quantum_augmentations,
+#     author = {milia Team},
+#     title = {Quantum Augmentations},
+#     year = {2025},
+#     version = {1.0.0}
+#   }
+
+# release_notes: |
+#   Version 1.0.0 (2025-10-15):
+#   - Initial stable release
+
+# support:
+#   email: "support@milia.example.com"
+#   documentation: "https://quantum-augmentations.readthedocs.io"
+

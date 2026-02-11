@@ -1,0 +1,72 @@
+# Structural Features Configuration
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Part of MILIA YAML Splitting Architecture
+
+
+# ──────────────────────────────────────────
+# ENHANCED STRUCTURAL FEATURES CONFIGURATION
+# ──────────────────────────────────────────
+structural_features:
+  # Atom-level structural features
+  atom:
+    # Basic connectivity features
+    - degree              # Number of directly bonded neighbors
+    - total_degree        # Total degree including implicit hydrogens
+    - hybridization       # One-hot encoded hybridization (sp, sp2, sp3, etc.)
+    - total_valence       # Total valence of the atom
+    - is_aromatic         # Boolean: atom is aromatic
+    - is_in_ring          # Boolean: atom is in any ring
+    
+    # NEW: Advanced atom features
+    #- partial_charge      # Gasteiger partial charges (fallback)
+    - mulliken_charge     # VQM24 precomputed Mulliken charges (preferred)
+    - num_aromatic_bonds  # Count of aromatic bonds connected to atom
+    - chirality           # One-hot encoded chirality (R/S configuration)
+  
+  # Bond-level structural features  
+  bond:
+    # Basic bond features
+    - bond_type           # One-hot encoded bond type (single, double, triple, aromatic)
+    - is_conjugated       # Boolean: bond is conjugated
+    - is_aromatic         # Boolean: bond is aromatic
+    - is_in_any_ring      # Boolean: bond is in any ring
+    
+    # NEW: Advanced bond features
+    - stereo              # One-hot encoded stereochemistry (E/Z)
+    - bond_length         # 3D geometric bond length from QM-optimized coordinates
+    - bond_length_binned  # Discretized bond lengths for categorical learning
+  
+  # Feature preprocessing settings
+  preprocessing:
+    # For partial_charge and mulliken_charge features
+    charge_handling:
+      # Prefer Mulliken charges from VQM24 over computed Gasteiger charges
+      prefer_mulliken: true
+      # Fallback to Gasteiger if Mulliken not available
+      compute_gasteiger_fallback: true
+      # Handle missing charges
+      missing_charge_default: 0.0
+    
+    # For 3D geometric features (bond_length, bond_length_binned)
+    geometric_features:
+      # Enable 3D features (requires conformer data)
+      enable_3d_features: true
+      # Conformer ID to use for 3D calculations
+      conformer_id: 0
+      # Default bond length for missing conformer data
+      missing_length_default: 0.0
+      
+      # Bond length binning configuration (for bond_length_binned feature)
+      bond_length_bins:
+        # Bin edges in Angstroms - designed for common organic bond lengths
+        bin_edges: [0.0, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 999.0]
+        # Bin labels for interpretability (optional)
+        bin_labels: ["very_short", "short", "C-C_single", "C=C_double", "medium", "long", "very_long", "extreme", "missing"]
+    
+    # Stereochemistry handling
+    stereochemistry:
+      # Ensure stereochemistry is assigned before feature extraction
+      assign_stereochemistry: true
+      # Clean up stereochemistry for better consistency
+      cleanup_stereochemistry: true
+

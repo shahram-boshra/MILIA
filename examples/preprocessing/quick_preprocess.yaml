@@ -1,0 +1,66 @@
+# quick_preprocess.yaml - Quick Testing Configuration
+# VQM24 Pipeline - Preprocessing Subsystem
+
+# This is a minimal configuration for quick testing of the preprocessing system.
+# It processes only 100 molecules with basic features for rapid validation.
+
+# ============================================================
+# QUICK TEST CONFIGURATION
+# ============================================================
+
+preprocessing:
+  # Dataset type
+  dataset_type: "Wavefunction"
+  
+  # Input/Output - Update these paths for your environment
+  input_path: "raw/wavefunctions.tar.gz"
+  output_path: "processed/test_wavefunctions_100.npz"
+  
+  # TESTING: Process only 100 molecules
+  num_molecules: 100
+  
+  # TESTING: Use basic features for speed
+  feature_tier: "basic"
+  
+  # TESTING: Always overwrite for iterative testing
+  force_overwrite: true
+  
+  # TESTING: Keep temp files for debugging
+  cleanup_temp: false
+  
+  # Show progress
+  show_progress: true
+
+# ============================================================
+# MINIMAL WAVEFUNCTION CONFIG
+# ============================================================
+
+wavefunction_config:
+  file_pattern: "*.molden"
+  extraction_method: "streaming"
+  temp_dir: "temp/quick_test"
+
+# ============================================================
+# LOGGING
+# ============================================================
+
+logging:
+  log_level: "DEBUG"  # Verbose for testing
+  log_file: "logs/quick_test.log"
+
+# ============================================================
+# USAGE
+# ============================================================
+
+# Run this configuration with:
+#   python main.py --preprocess --preprocess-config examples/preprocessing/quick_preprocess.yaml
+
+# Expected output:
+#   - processed/test_wavefunctions_100.npz (1-5 MB)
+#   - temp/quick_test/ directory (kept for inspection)
+#   - logs/quick_test.log
+#   - Processing time: 1-5 seconds
+
+# ============================================================
+# END OF CONFIGURATION
+# ============================================================

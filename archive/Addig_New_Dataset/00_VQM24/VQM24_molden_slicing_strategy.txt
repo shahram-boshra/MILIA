@@ -1,0 +1,56 @@
+
+_________________
+
+.molden WF files (106 GB)
+
+I have 106 GB size of a wavefunctions.tar.gz that contains .molden files of the wavefunctions. Obviously I cannot directly and completely unzip it on my local machine (with 400 GB free hard space)... How can I have a slice of 500-1000 molecules of it for my Python Software Project
+
+There is a critical point about .molden files of molecules: These are raw quantum mechanical outputs and typically require specialized quantum chemistry  process before they can be directly used as numerical features for ML models. What do you suggest for that challenge?
+_________________
+
+The gross size of the unzipped 500 to 1,000 molecule slice is approximately **210 Megabytes (MB) to 430 Megabytes (MB)**. This size is negligible compared to your 500 GB free space.
+
+Your plan to extract a small sample first is **rational** for debugging and software development. However, your long-term strategy must rely on **on-the-fly, chunked processing** to avoid exceeding your 500 GB space (since the full file unzips to 212 GB – 430 GB, leaving no space for the existing 106 GB archive).
+
+-----
+
+## Final Straight Practice: Extracting a Sample Slice
+
+The best practice is to use the **`tar`** command to extract only the required number of `.molden` files from the archive without decompressing the entire 106 GB file.
+
+
+### Step 1: List File Contents (Initial Scan)
+_______________________________________________
+
+First, you must look inside the compressed archive to see the naming convention of the molecule files. The files are likely numbered consecutively (e.g., `mol_000001.molden`).
+
+Run this command on **Laptop 2** to view the first 20 file names:
+
+```bash
+tar -tzf ~/wavefunctions.tar.gz | head -n 20
+```
+
+*This command is very fast and does not extract any data.*
+
+
+### Step 2: Extract the Sample (500 Molecules)
+_______________________________________________
+
+Once you know the naming pattern (e.g., files run from `mol_000001.molden` to `mol_000500.molden`), run the following command to extract only the sample slice to a new directory named **`vqm24_sample/`**.
+
+```bash
+mkdir ~/vqm24_sample
+tar -xzf ~/wavefunctions.tar.gz -C ~/vqm24_sample --wildcards 'mol_00000[1-9].molden' 'mol_0000[1-9][0-9].molden' 'mol_000[1-4][0-9][0-9].molden' 'mol_000500.molden'
+```
+
+*This command extracts approximately 500 files (1-500) into the new directory.*
+
+-----
+
+## Software Development Strategy (Long-Term)
+
+Since your project structure references a **VQM24 Pipeline** with features like **Chunked processing** and a **VQM24Dataset** implementation, the ideal and safest long-term practice is to fully utilize this architecture:
+
+1.  **Do Not Fully Unzip:** Keep the 106 GB file compressed.
+2.  **Use Handlers:** Configure your Python software to use the **handler-only architecture** to read molecules directly from the archive **on-the-fly** (molecule-by-molecule or in small batches/chunks).
+3.  **Implement On-the-Fly Processing:** This ensures you never need more than a few hundred megabytes of working space, safely managing the 430 GB unzipped volume within your 500 GB limit.

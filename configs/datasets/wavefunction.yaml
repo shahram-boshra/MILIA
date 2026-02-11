@@ -1,0 +1,173 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVEFUNCTION Dataset Configuration (COLOCATED)
+# Auto-generated from config.yaml on 2026-01-31 02:42:55
+# Updated for Colocation Architecture on 2026-02-01
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL Wavefunction-specific configuration in one place:
+#   1. wavefunction_config - Dataset paths and settings
+#   2. data_config.property_selection.Wavefunction - Property selection for PyG Data
+#   3. property_availability.Wavefunction - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ──────────────────────────────────
+# Wavefunction Dataset Configuration
+# ──────────────────────────────────
+wavefunction_config:
+  # Filename for the preprocessed .npz wavefunction dataset file
+  raw_npz_filename: wavefunctions.npz
+  # URL to download raw wavefunction data (optional - typically preprocessed locally)
+  raw_data_download_url: https://zenodo.org/records/15442257/files/wavefunctions.tar.gz?download=1
+  # Root directory where the processed PyTorch Geometric dataset will be stored
+  
+  # Wavefunction processing configuration
+  processing_config:
+    # Feature extraction tier: "basic", "standard", or "complete"
+    # - basic: Essential features (atoms, coordinates, HOMO/LUMO)
+    # - standard: Basic + orbital energies, occupations  
+    # - complete: Standard + full coefficient matrices, all MO data
+    feature_tier: basic
+
+    # Preprocessing parameters (for automatic tar.gz → npz conversion)
+    preprocessing:
+      # Number of molecules to preprocess (null = all molecules in archive)
+      # Use integer for testing/limiting dataset size (e.g., 10, 100, 1000) (applies for preprocessing step)
+      num_molecules: 25
+      
+      # Clean up temporary .molden files after preprocessing
+      cleanup_temp: true
+  
+  # Uncertainty handling (placeholder for future implementation)
+  uncertainty_handling:
+    # Currently not supported for wavefunction datasets
+    enabled: false
+
+
+
+# ────────────────────────────────────────────────────
+# Wavefunction Property Selection for PyG Data Objects
+# ──────────────────────────────────────────────────── 
+data_config:
+  property_selection:
+    Wavefunction:
+      # Scalar graph-level targets for wavefunction datasets
+      scalar_graph_targets_to_include:
+        # Primary energy targets
+        # - total_energy_Hartree         # NOT AVAILABLE - causes NaN errors
+        # - total_energy_eV              # NOT AVAILABLE - causes NaN errors
+        - homo_energy_eV                 # HOMO orbital energy (eV)
+        - lumo_energy_eV                 # LUMO orbital energy (eV)
+        - homo_lumo_gap_eV               # HOMO-LUMO gap (eV)
+        
+        # Orbital indices
+        - homo_index                     # Index of HOMO orbital
+        - lumo_index                     # Index of LUMO orbital
+        
+        # Orbital energy statistics
+        - mo_energy_mean_eV              # Mean MO energy (eV)
+        - mo_energy_std_eV               # Std dev of MO energies (eV)
+        - mo_energy_min_eV               # Minimum MO energy (eV)
+        - mo_energy_max_eV               # Maximum MO energy (eV)
+        
+        # Chemical descriptors (all in eV)
+        - ionization_potential_eV        # Ionization potential approx (eV)
+        - electron_affinity_eV           # Electron affinity approx (eV)
+        - chemical_hardness_eV           # Chemical hardness (eV)
+        - chemical_potential_eV          # Chemical potential (eV)
+        - electrophilicity_eV            # Electrophilicity index (eV)
+        
+        # Electronic structure properties
+        - n_electrons                    # Total number of electrons
+        - n_basis_functions              # Number of basis functions
+        - n_occupied_orbitals            # Number of occupied MOs
+        - n_virtual_orbitals             # Number of virtual MOs
+        - n_shells                       # Number of atomic shells
+        
+        # Molecular properties
+        - molecular_weight               # Molecular weight (amu)
+      
+      # Node-level features - currently none from .molden files
+      node_features_to_add: []
+      
+      # Vector graph properties - currently none from .molden files
+      vector_graph_properties_to_include: []
+      
+      # Variable-length properties - MO data
+      variable_len_graph_properties_to_include:
+        - mo_energies                    # All molecular orbital energies
+        - mo_occupations                 # All molecular orbital occupations
+        # Note: mo_coefficients are available but extremely large
+        # Uncomment below only if needed:
+        # - mo_coefficients
+
+
+# ────────────────────────────────────────────────────
+# Wavefunction Property Availability Matrix
+# ────────────────────────────────────────────────────
+property_availability:
+  Wavefunction:
+    # VQM24 Wavefunction Dataset Property Availability
+    # Source: .molden files parsed via IOData → wavefunctions.npz
+    # Reference: VQM24 dataset (Zenodo record 15442257)
+    # Coordinate units: Bohr | Energy units: Hartree
+    
+    # Molecular identifiers
+    molecular_identifiers:
+      - compounds           # Compound identifiers (e.g., NxO2PxSiH6_103)
+      - molecular_formula   # Molecular formula string (e.g., PSiO2NH6)
+    
+    # Atomic structure properties
+    atomic_structure:
+      - atoms               # Atomic numbers (int64 array)
+      - coordinates         # Cartesian coordinates in Bohr (float64, shape: n_atoms x 3)
+      - n_atoms             # Number of atoms per molecule (int32)
+    
+    # Scalar graph-level properties
+    scalar_graph_targets:
+      # Frontier orbital energies (Hartree)
+      - homo_energy                 # HOMO orbital energy
+      - lumo_energy                 # LUMO orbital energy
+      - homo_lumo_gap               # HOMO-LUMO gap (Hartree)
+      - homo_lumo_gap_eV            # HOMO-LUMO gap (eV)
+      # Occupied orbital energy statistics (Hartree)
+      - occupied_energy_mean        # Mean occupied orbital energy
+      - occupied_energy_std         # Std dev of occupied orbital energies
+      - occupied_energy_min         # Minimum occupied orbital energy
+      - occupied_energy_max         # Maximum occupied orbital energy
+      # Virtual orbital energy statistics (Hartree)
+      - virtual_energy_mean         # Mean virtual orbital energy
+      - virtual_energy_std          # Std dev of virtual orbital energies
+      - virtual_energy_min          # Minimum virtual orbital energy
+      - virtual_energy_max          # Maximum virtual orbital energy
+      # Chemical descriptors (Hartree, Koopmans' theorem approximations)
+      - ionization_potential_approx # Ionization potential approximation
+      - electron_affinity_approx    # Electron affinity approximation
+      - chemical_hardness           # Chemical hardness
+      - chemical_potential          # Chemical potential
+      # Electronic structure counts
+      - n_electrons                 # Total number of electrons (float64)
+      - n_basis                     # Number of basis functions (int32)
+      - n_occupied_orbitals         # Number of occupied MOs (int32)
+      - n_virtual_orbitals          # Number of virtual MOs (int32)
+      # Molecular properties
+      - molecular_weight            # Molecular weight in amu (float64)
+    
+    # Node-level (atomic) properties
+    node_features: []  # No per-atom features in current .molden extraction
+    
+    # Fixed-size vector graph properties
+    vector_graph_properties: []  # No fixed-size vector properties
+    
+    # Variable-length graph properties (MO data)
+    variable_len_graph_properties:
+      - mo_energies         # All molecular orbital energies (float64, shape: n_basis)
+      - mo_occupations      # All molecular orbital occupations (float64, shape: n_basis)
+      - mo_coefficients     # MO coefficient matrix (float64, shape: n_basis x n_basis)
+    
+    # Metadata fields (non-target)
+    metadata_fields:
+      - mo_kind             # MO type: 'restricted' or 'unrestricted' (object/string)
+    
+    # Wavefunction data is deterministic - no uncertainty fields
+    uncertainty_fields: []
