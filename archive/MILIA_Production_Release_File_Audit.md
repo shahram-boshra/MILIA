@@ -10,6 +10,8 @@
 
 ## 1. Current State of the Repository Root
 
+**Implementation methodology**: Start from the root, directory by directory, file by file. For each item, determine with evidence: should this directory/file and its contents be uploaded to GitHub as part of the MILIA software, or should it be relocated/excluded because it is irrelevant to the production release?
+
 Based on line-by-line verification of `find .` output. Each directory's **actual contents** were examined.
 
 | Status | File / Directory | Verified Contents |
