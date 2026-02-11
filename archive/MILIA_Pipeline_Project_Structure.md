@@ -11,7 +11,7 @@ MILIA (Machine Intellegent Learning Interface Assistant) Pipeline is a comprehen
 ```
 milia/
 ├── main.py                          # Main entry point
-├── config.yaml                      # Main configuration file (single-file mode, backward compatible)
+├── config.yaml.DEPRECATED           # Former monolithic config (superseded by configs/ — YAML Splitting v2.2)
 ├── configs/                         # Split configuration directory (YAML Splitting Architecture)
 │   ├── main.yaml                    # Global settings, dataset_type, paths, data_config.common_settings
 │   ├── descriptors.yaml             # Molecular descriptors configuration
@@ -31,7 +31,7 @@ milia/
 │       ├── ani2x.yaml               # ani2x_config + data_config.property_selection.ANI2X + property_availability.ANI2X
 │       ├── xxmd.yaml                # xxmd_config + data_config.property_selection.XXMD + property_availability.XXMD
 │       └── qdpi.yaml                # qdpi_config + data_config.property_selection.QDPi + property_availability.QDPi
-├── migrate_config.py                # YAML splitting migration utility
+├── migrate_config.py.DEPRECATED     # One-time YAML splitting migration utility (completed, no longer needed)
 ├── research_experiments.yaml        # Research experiment configurations
 ├── setup.py                         # Package setup and installation
 ├── .gitignore                       # Git ignore rules
