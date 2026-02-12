@@ -32,9 +32,10 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ⚠️ Internal | `archive/` | Development blueprints, VQM24 notes, testing guides — **exclude from GitHub via `.gitignore`** (§4.4) |
 | ⚠️ Build artifact | `milia_pipeline.egg-info/` | Setuptools cache — needed locally, exclude from GitHub via `.gitignore` (§4.1) |
 
-**Also found in source tree** (should not be there):
-- 2 log files: `milia_pipeline/transformations/plugin_system.log`, `milia_pipeline/logging_config.log`
-- 2 deprecated files: `handlers/dataset_handlers.py.DEPRECATED`, `handlers/dataset_handler_integration.py.backup`
+**Also found in source tree** (all removed):
+- ~~2 log files: `milia_pipeline/transformations/plugin_system.log`, `milia_pipeline/logging_config.log`~~ — **DELETED**
+- ~~2 deprecated files: `handlers/dataset_handlers.py.DEPRECATED`, `handlers/dataset_handler_integration.py.backup`~~ — **DELETED**
+- ~~2 deprecated root files: `config.yaml.DEPRECATED`, `migrate_config.py.DEPRECATED`~~ — **DELETED**
 
 ### 1.1 GitHub Upload Decision Tracker
 
@@ -53,9 +54,9 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `test_data/` | ❌ Exclude from GitHub (`.gitignore`) | Tests use `/tmp/test_data/` with mocks, not this directory. Dev-only fixture files. Delete `checkpoint_prediction_tracker.md`. |
 | `tests/` | ✅ Upload to GitHub as-is | 127+ test files + `conftest.py` + `fixtures/` + `data/`. Essential for CI/CD and contributor validation. |
 | `utils/` | ❌ Deleted entirely | Only deprecated tests + old conftest. No active usage. Directory removed. |
-| `main.py` | ⏳ Pending review | |
-| `setup.py` | ⏳ Pending review | |
-| `research_experiments.yaml` | ⏳ Pending review | |
+| `main.py` | ✅ Upload to GitHub as-is | Entry point orchestration script for MILIA pipeline. |
+| `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
+| `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
 ---
 
