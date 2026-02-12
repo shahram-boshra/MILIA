@@ -42,7 +42,6 @@ milia/
 ├── docs/                            # Documentation
 ├── examples/                        # Usage examples
 ├── experiments/                     # Experimental code/configs
-├── utils/                           # Utility modules
 └── archive/                         # Archived documentation
 ```
 
