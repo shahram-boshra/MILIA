@@ -47,7 +47,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `docs/` | ❌ Exclude from GitHub (`.gitignore`) for now | 21 files, 13+ still reference old VQM24 name. Contains internal dev docs (blueprints, bug analyses) and deferred Phase 8 draft code. No current user-facing value. Revise VQM24→MILIA and curate before uploading. |
 | `examples/` | ✅ Upload to GitHub as empty placeholder (`.gitkeep`) | All 3 existing files reference VQM24 — outdated, delete. Keep directory with `.gitkeep` for future MILIA examples. |
 | `experiments/` | ✅ Upload to GitHub as empty placeholder (`.gitkeep`) | Functional target for end-user experimental extensions (transformations, descriptors, etc.). Currently empty. |
-| `milia_pipeline/` | ⏳ Pending review | |
+| `milia_pipeline/` | ✅ Upload to GitHub as-is | Core installable package (11 submodules, ~100+ .py files). Two runtime `.log` files deleted — `.gitignore` will prevent future tracking. |
 | `milia_pipeline.egg-info/` | ⏳ Pending review | |
 | `scripts/` | ⏳ Pending review | |
 | `test_data/` | ⏳ Pending review | |
