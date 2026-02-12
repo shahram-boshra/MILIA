@@ -1,5 +1,5 @@
 # =============================================================================
-# MILIA Pipeline — pyproject.toml
+# MILIA — pyproject.toml
 # =============================================================================
 # Canonical project metadata per PEP 517/518/621/639.
 # Migrated from setup.py (100% static metadata — no dynamic build logic).
@@ -22,9 +22,9 @@ build-backend = "setuptools.build_meta"
 
 # ---- Project Metadata (PEP 621/639) ----
 [project]
-name = "milia-pipeline"
+name = "milia"
 dynamic = ["version"]
-description = "MILIA molecular graph dataset processing pipeline for quantum chemistry ML"
+description = "Molecular graph processing and machine learning framework for quantum chemistry"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -77,11 +77,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/shahram-boshra/milia-pipeline"
-Repository = "https://github.com/shahram-boshra/milia-pipeline"
-Documentation = "https://github.com/shahram-boshra/milia-pipeline#readme"
-"Bug Tracker" = "https://github.com/shahram-boshra/milia-pipeline/issues"
-Changelog = "https://github.com/shahram-boshra/milia-pipeline/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/shahram-boshra/MILIA"
+Repository = "https://github.com/shahram-boshra/MILIA"
+Documentation = "https://github.com/shahram-boshra/MILIA#readme"
+"Bug Tracker" = "https://github.com/shahram-boshra/MILIA/issues"
+Changelog = "https://github.com/shahram-boshra/MILIA/blob/main/CHANGELOG.md"
 
 # CLI entry point: `milia` command invokes main.main()
 # main.py resides at project root (outside milia_pipeline package).
