@@ -23,7 +23,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ✅ | `configs/` | 7 root YAMLs + `datasets/` with 10 dataset-specific YAMLs |
 | ✅ | `milia_pipeline/` | 11 submodules, ~100+ `.py` files |
 | ✅ | `tests/` | 127 test files + `conftest.py` + `fixtures/` + `data/` |
-| ✅ | `test_data/` | 12 test fixture files (`.pt`, `.csv`, `.tar.gz`, `.xyz`, `.md`) |
+| ⚠️ Dev-only | `test_data/` | 13 test fixture files (`.pt`, `.csv`, `.tar.gz`, `.xyz`, `.md`). No test references root `test_data/` — all use `/tmp/test_data/` with mocks. **Exclude from GitHub via `.gitignore`** |
 | ⚠️ Dev-only | `scripts/` | 9 utility scripts (NPZ checking, doc generation, import analysis). Developer tools only, 2 still named VQM24. **Exclude from GitHub via `.gitignore`** |
 | ⚠️ Outdated | `docs/` | 21 files (18 .md + 2 .py + 1 subdir). 13+ files still reference old VQM24 name. Needs revision before GitHub — **exclude via `.gitignore` for now** |
 | ⚠️ Outdated | `examples/` | 3 files in `preprocessing/` — all reference VQM24. Delete contents, keep directory as placeholder with `.gitkeep` |
@@ -50,7 +50,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `milia_pipeline/` | ✅ Upload to GitHub as-is | Core installable package (11 submodules, ~100+ .py files). Two runtime `.log` files deleted — `.gitignore` will prevent future tracking. |
 | `milia_pipeline.egg-info/` | ❌ Exclude from GitHub (`.gitignore`) | Setuptools cache artifact. Generated locally by `pip install -e .`. Each clone generates its own. |
 | `scripts/` | ❌ Exclude from GitHub (`.gitignore`) | 9 developer-only utility scripts. No end-user value. 2 still reference VQM24. Kept locally for developer reference. |
-| `test_data/` | ⏳ Pending review | |
+| `test_data/` | ❌ Exclude from GitHub (`.gitignore`) | Tests use `/tmp/test_data/` with mocks, not this directory. Dev-only fixture files. Delete `checkpoint_prediction_tracker.md`. |
 | `tests/` | ⏳ Pending review | |
 | `utils/` | ⏳ Pending review | |
 | `main.py` | ⏳ Pending review | |
@@ -330,7 +330,7 @@ milia/
 ├── configs/                             # ✅ EXISTS
 ├── milia_pipeline/                      # ✅ EXISTS
 ├── tests/                               # ✅ EXISTS
-├── test_data/                           # ✅ EXISTS
+├── test_data/                           # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub
 ├── scripts/                             # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub
 ├── docs/                                # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub until revised (VQM24→MILIA)
 ├── examples/                            # ✅ PLACEHOLDER — `.gitkeep`, populate with MILIA examples later
