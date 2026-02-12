@@ -51,7 +51,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `milia_pipeline.egg-info/` | ❌ Exclude from GitHub (`.gitignore`) | Setuptools cache artifact. Generated locally by `pip install -e .`. Each clone generates its own. |
 | `scripts/` | ❌ Exclude from GitHub (`.gitignore`) | 9 developer-only utility scripts. No end-user value. 2 still reference VQM24. Kept locally for developer reference. |
 | `test_data/` | ❌ Exclude from GitHub (`.gitignore`) | Tests use `/tmp/test_data/` with mocks, not this directory. Dev-only fixture files. Delete `checkpoint_prediction_tracker.md`. |
-| `tests/` | ⏳ Pending review | |
+| `tests/` | ✅ Upload to GitHub as-is | 127+ test files + `conftest.py` + `fixtures/` + `data/`. Essential for CI/CD and contributor validation. |
 | `utils/` | ⏳ Pending review | |
 | `main.py` | ⏳ Pending review | |
 | `setup.py` | ⏳ Pending review | |
