@@ -18,7 +18,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 |--------|-----------------|-------------------|
 | ✅ | `main.py` | Entry point (~5,280 lines) |
 | ✅ | `setup.py` | Legacy packaging file (see §5) |
-| ❌ Removed | `.gitignore` | Stale file deleted by maintainer. A fresh `.gitignore` must be created from GitHub's Python template before `git init` (§2.4) |
+| ✅ Created | `.gitignore` | Fresh file created from GitHub's Python template + MILIA-specific exclusions (§2.4) |
 | ✅ | `research_experiments.yaml` | Research experiment configuration |
 | ✅ | `configs/` | 7 root YAMLs + `datasets/` with 10 dataset-specific YAMLs |
 | ✅ | `milia_pipeline/` | 11 submodules, ~100+ `.py` files |
@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). **Next: §2.4 (`.gitignore` — Replace with fresh Python template).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). **Next: §2.5 (`CHANGELOG.md`).**
 
 ---
 
@@ -117,20 +117,11 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 ---
 
-### 2.4 `.gitignore` — REPLACE WITH FRESH VERSION
+### 2.4 `.gitignore` — ✅ IMPLEMENTED
 
 Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, etc. (§4.1). Current contents are stale. Per GitHub Docs, start from maintained templates. **Must be in place before the initial commit** — `.gitignore` is a repository gatekeeper that determines what enters Git history (Git best practices: "Commit a .gitignore file as early as possible in your project's lifecycle — ideally, as part of your initial commit").
 
-**Action**:
-```bash
-curl -o .gitignore https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
-```
-Append MILIA-specific patterns:
-```
-# ===== MILIA-specific =====
-*.log
-# experiments/  # Uncomment if experiments/ generates large output files
-```
+**✅ DONE**: Created fresh `.gitignore` from GitHub's official Python template (`github/gitignore/main/Python.gitignore`, retrieved 2026-02-12). Appended MILIA-specific exclusion patterns per §1.1 Decision Tracker: `archive/` (§4.4 — internal dev docs), `docs/` (§1.1 — VQM24 references, exclude until revised), `scripts/` (§1.1 — developer-only utilities), `test_data/` (§1.1 — dev-only fixtures). `*.egg-info/` and `*.log` already covered by GitHub template. Commented `experiments/` placeholder included.
 
 ---
 
@@ -339,7 +330,7 @@ milia/
 │   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── dependabot.yml
-├── .gitignore                           # ⚠️ REPLACE with fresh Python template
+├── .gitignore                           # ✅ CREATED — GitHub Python template + MILIA-specific exclusions
 ├── .pre-commit-config.yaml              # ⬜ CREATE *(requires Git)*
 ├── CHANGELOG.md                         # ⬜ CREATE
 ├── CITATION.cff                         # ⬜ CREATE
@@ -383,7 +374,7 @@ milia/
 | **P0** ✅ | `pyproject.toml` | Blocks proper installation |
 | **P0** ✅ | `LICENSE` | Legal requirement |
 | **P0** ✅ | Root `README.md` | PyPI long description / project front page |
-| **P0** | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
+| **P0** ✅ | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
 | **P0** | Create `_legacy/`, relocate deprecated files | Preserve without Git |
 | **P0** | Delete `utils/` (after relocation) | Repository hygiene |
 | **P0** | Delete `*.log` files from source tree | Runtime artifacts |
