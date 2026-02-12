@@ -25,7 +25,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ✅ | `tests/` | 127 test files + `conftest.py` + `fixtures/` + `data/` |
 | ✅ | `test_data/` | 12 test fixture files (`.pt`, `.csv`, `.tar.gz`, `.xyz`, `.md`) |
 | ✅ | `scripts/` | 7 utility scripts (NPZ checking, doc generation, import analysis) |
-| ✅ | `docs/` | 16 markdown files — **no build system** (no `conf.py`, no `mkdocs.yml`) |
+| ⚠️ Outdated | `docs/` | 21 files (18 .md + 2 .py + 1 subdir). 13+ files still reference old VQM24 name. Needs revision before GitHub — **exclude via `.gitignore` for now** |
 | ⚠️ Minimal | `examples/` | Only `preprocessing/` with 3 files — very limited for 11-module project |
 | ✅ Functional | `experiments/` | Empty but **functional target** for Research API (§4.2) |
 | ⚠️ Legacy only | `utils/` | Only deprecated content: 7 old test files + `conftest_original.py` |
@@ -44,7 +44,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 |------|----------|--------|
 | `archive/` | ❌ Exclude from GitHub (`.gitignore`) | Internal dev docs (blueprints, VQM24 notes). No value to end users. Git docs: `.gitignore` for files all cloners should not receive. |
 | `configs/` | ✅ Upload to GitHub as-is | Functional runtime configuration (7 root YAMLs + 10 dataset YAMLs). Software depends on these. |
-| `docs/` | ⏳ Pending review | |
+| `docs/` | ❌ Exclude from GitHub (`.gitignore`) for now | 21 files, 13+ still reference old VQM24 name. Contains internal dev docs (blueprints, bug analyses) and deferred Phase 8 draft code. No current user-facing value. Revise VQM24→MILIA and curate before uploading. |
 | `examples/` | ⏳ Pending review | |
 | `experiments/` | ⏳ Pending review | |
 | `milia_pipeline/` | ⏳ Pending review | |
@@ -332,7 +332,7 @@ milia/
 ├── tests/                               # ✅ EXISTS
 ├── test_data/                           # ✅ EXISTS
 ├── scripts/                             # ✅ EXISTS
-├── docs/                                # ✅ EXISTS — add build system
+├── docs/                                # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub until revised (VQM24→MILIA)
 ├── examples/                            # ✅ EXISTS — expand
 ├── experiments/                         # ✅ FUNCTIONAL — add README
 ├── archive/                             # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub
