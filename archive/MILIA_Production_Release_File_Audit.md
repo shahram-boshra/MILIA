@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). **Next: §2.5 (`CHANGELOG.md`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. **Next: §2.6 (`CONTRIBUTING.md`).**
 
 ---
 
@@ -125,11 +125,13 @@ Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, 
 
 ---
 
-### 2.5 `CHANGELOG.md`
+### 2.5 `CHANGELOG.md` — ✅ IMPLEMENTED
 
 **Source**: pyOpenSci, Keep a Changelog (`keepachangelog.com`), Semantic Versioning.
 
 **Format**: `## [Version] - Date` sections with `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` subsections. `[Unreleased]` section at top.
+
+**✅ DONE**: Created `CHANGELOG.md` in Keep a Changelog 1.1.0 format with SemVer 2.0.0 adherence. Contains `[Unreleased]` section at top, `[1.1.0] - 2026-02-12` initial release entry with `### Added` listing all shipped features (from `__init__.py` module docstring). Footer links use `releases/tag/v1.1.0` for first version (no prior tag for comparison) per keepachangelog.com canonical format. ISO 8601 date format (`YYYY-MM-DD`). `pyproject.toml` already declares Changelog URL pointing to `CHANGELOG.md` on `main` branch.
 
 ---
 
@@ -332,7 +334,7 @@ milia/
 │   └── dependabot.yml
 ├── .gitignore                           # ✅ CREATED — GitHub Python template + MILIA-specific exclusions
 ├── .pre-commit-config.yaml              # ⬜ CREATE *(requires Git)*
-├── CHANGELOG.md                         # ⬜ CREATE
+├── CHANGELOG.md                         # ✅ CREATED
 ├── CITATION.cff                         # ⬜ CREATE
 ├── CODE_OF_CONDUCT.md                   # ⬜ CREATE
 ├── CONTRIBUTING.md                      # ⬜ CREATE
@@ -379,7 +381,7 @@ milia/
 | **P0** | Delete `utils/` (after relocation) | Repository hygiene |
 | **P0** | Delete `*.log` files from source tree | Runtime artifacts |
 | **P0** | Add `experiments/README.md` | Prevents mistaken removal |
-| **P1** | `CHANGELOG.md` | Release communication |
+| **P1** | `CHANGELOG.md` | Release communication | ✅ |
 | **P1** | `CITATION.cff` | Scientific citation standard |
 | **P1** | `CONTRIBUTING.md` | Contributor onboarding |
 | **P1** | `CODE_OF_CONDUCT.md` | Community standards |
