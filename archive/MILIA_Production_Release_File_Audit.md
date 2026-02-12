@@ -20,7 +20,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ✅ | `setup.py` | Legacy packaging file (see §5) |
 | ❌ Removed | `.gitignore` | Stale file deleted by maintainer. A fresh `.gitignore` must be created from GitHub's Python template before `git init` (§4.8) |
 | ✅ | `research_experiments.yaml` | Research experiment configuration |
-| ✅ | `configs/` | 8 root YAMLs + `datasets/` with 10 dataset-specific YAMLs |
+| ✅ | `configs/` | 7 root YAMLs + `datasets/` with 10 dataset-specific YAMLs |
 | ✅ | `milia_pipeline/` | 11 submodules, ~100+ `.py` files |
 | ✅ | `tests/` | 127 test files + `conftest.py` + `fixtures/` + `data/` |
 | ✅ | `test_data/` | 12 test fixture files (`.pt`, `.csv`, `.tar.gz`, `.xyz`, `.md`) |
@@ -35,6 +35,27 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 **Also found in source tree** (should not be there):
 - 2 log files: `milia_pipeline/transformations/plugin_system.log`, `milia_pipeline/logging_config.log`
 - 2 deprecated files: `handlers/dataset_handlers.py.DEPRECATED`, `handlers/dataset_handler_integration.py.backup`
+
+### 1.1 GitHub Upload Decision Tracker
+
+Each root-level item reviewed directory-by-directory. Decision and evidence recorded here.
+
+| Item | Decision | Reason |
+|------|----------|--------|
+| `archive/` | ❌ Exclude from GitHub (`.gitignore`) | Internal dev docs (blueprints, VQM24 notes). No value to end users. Git docs: `.gitignore` for files all cloners should not receive. |
+| `configs/` | ✅ Upload to GitHub as-is | Functional runtime configuration (7 root YAMLs + 10 dataset YAMLs). Software depends on these. |
+| `docs/` | ⏳ Pending review | |
+| `examples/` | ⏳ Pending review | |
+| `experiments/` | ⏳ Pending review | |
+| `milia_pipeline/` | ⏳ Pending review | |
+| `milia_pipeline.egg-info/` | ⏳ Pending review | |
+| `scripts/` | ⏳ Pending review | |
+| `test_data/` | ⏳ Pending review | |
+| `tests/` | ⏳ Pending review | |
+| `utils/` | ⏳ Pending review | |
+| `main.py` | ⏳ Pending review | |
+| `setup.py` | ⏳ Pending review | |
+| `research_experiments.yaml` | ⏳ Pending review | |
 
 ---
 
