@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE — created, `setup.py` reduced to shim, `__init__.py` fixed. **Next: §2.2 (LICENSE).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE. §2.2 (`LICENSE`) DONE. **Next: §2.3 (Root README.md).**
 
 ---
 
@@ -76,11 +76,13 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 ---
 
-### 2.2 `LICENSE` — CRITICAL
+### 2.2 `LICENSE` — ✅ IMPLEMENTED
 
 **Source**: PyPA: *"Every package should include a license file... packages without an explicit license can not be legally used or distributed."* pyOpenSci: *"Your LICENSE file should be stored at root."*
 
 **Action**: Create with full license text (BSD-3-Clause, MIT, or Apache-2.0). Declare SPDX identifier in `pyproject.toml` (PEP 639).
+
+**✅ DONE**: Created `LICENSE` with canonical MIT text (choosealicense.com). Copyright `2026-present Asadollah Boshra`. SPDX already declared in `pyproject.toml` (`license = "MIT"`, `license-files = ["LICENSE"]`).
 
 ---
 
@@ -322,7 +324,7 @@ milia/
 ├── CITATION.cff                         # ⬜ CREATE
 ├── CODE_OF_CONDUCT.md                   # ⬜ CREATE
 ├── CONTRIBUTING.md                      # ⬜ CREATE
-├── LICENSE                              # ⬜ CREATE
+├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
 ├── Makefile                             # ⬜ CREATE
 ├── MANIFEST.in                          # ⬜ CREATE (if using setuptools)
 ├── README.md                            # ⬜ CREATE (root-level)
@@ -358,7 +360,7 @@ milia/
 | Priority | Action | Reason |
 |----------|--------|--------|
 | **P0** ✅ | `pyproject.toml` | Blocks proper installation |
-| **P0** | `LICENSE` | Legal requirement |
+| **P0** ✅ | `LICENSE` | Legal requirement |
 | **P0** | Root `README.md` | PyPI long description / project front page |
 | **P0** | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
 | **P0** | Create `_legacy/`, relocate deprecated files | Preserve without Git |
