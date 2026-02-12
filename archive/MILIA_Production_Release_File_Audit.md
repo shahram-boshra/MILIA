@@ -121,7 +121,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, etc. (§4.1). Current contents are stale. Per GitHub Docs, start from maintained templates. **Must be in place before the initial commit** — `.gitignore` is a repository gatekeeper that determines what enters Git history (Git best practices: "Commit a .gitignore file as early as possible in your project's lifecycle — ideally, as part of your initial commit").
 
-**✅ DONE**: Created fresh `.gitignore` from GitHub's official Python template (`github/gitignore/main/Python.gitignore`, retrieved 2026-02-12). Appended MILIA-specific exclusion patterns per §1.1 Decision Tracker: `archive/` (§4.4 — internal dev docs), `docs/` (§1.1 — VQM24 references, exclude until revised), `scripts/` (§1.1 — developer-only utilities), `test_data/` (§1.1 — dev-only fixtures). `*.egg-info/` and `*.log` already covered by GitHub template. Commented `experiments/` placeholder included.
+**✅ DONE**: Created fresh `.gitignore` from GitHub's official Python template (`github/gitignore/main/Python.gitignore`, retrieved 2026-02-12). Appended MILIA-specific exclusion patterns per §1.1 Decision Tracker: `archive/*` (§4.4 — internal dev docs), `docs/` (§1.1 — VQM24 references, exclude until revised), `scripts/` (§1.1 — developer-only utilities), `test_data/` (§1.1 — dev-only fixtures). `*.egg-info/` and `*.log` already covered by GitHub template. Commented `experiments/` placeholder included. Used `archive/*` (not `archive/`) with `!archive/MILIA_Production_Release_File_Audit.md` negation so the active audit file is Git-tracked per `git-scm.com/docs/gitignore` directory-vs-contents pattern.
 
 ---
 
