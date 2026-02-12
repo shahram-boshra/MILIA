@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE. Next: §3 (P1–P3 files) — §3.2 (`Makefile`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. **Next: §3.2 (`Makefile`).**
 
 ---
 
@@ -186,9 +186,28 @@ Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, 
 
 ## 3. Files That SHOULD Be Created (P1–P3)
 
-### 3.1 `.pre-commit-config.yaml` *(requires Git)*
+### 3.1 `.pre-commit-config.yaml` — ✅ IMPLEMENTED *(activates when Git is initialized)*
 
-**Source**: pre-commit.com, Scientific Python Development Guide. Hooks for `ruff`, `check-yaml`, `check-toml`, `end-of-file-fixer`, `trailing-whitespace-fixer`, `detect-secrets`.
+**Source**: pre-commit.com, Scientific Python Development Guide (`learn.scientific-python.org/development/guides/style/`). Configuration file created at repository root — becomes active after `git init` + `pre-commit install`.
+
+**Evidence for creating now (before Git)**: The `.pre-commit-config.yaml` is a static YAML configuration file independent of Git. Per pre-commit.com: "If a repository doesn't have a `.pre-commit-config.yaml` file, pre-commit will simply do nothing." The file defines hooks; `pre-commit install` activates them inside `.git/hooks/`. File creation and hook installation are separate steps (pre-commit.com setup guide: "create a configuration file" → "install the hooks"). Creating now ensures the config is ready the moment `git init` is run.
+
+**✅ DONE**: Created `.pre-commit-config.yaml` at repository root. Validated with `pre-commit validate-config` (exit code 0, no errors) and Python `yaml.safe_load()` (valid YAML).
+
+**Hook repos and versions** (all latest releases verified via web search):
+- `pre-commit/pre-commit-hooks` `v6.0.0` (PyPI: Aug 9, 2025) — 7 hooks: `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `debug-statements`
+- `astral-sh/ruff-pre-commit` `v0.15.0` (Ruff 0.15.0 released 2026-02-03; official README + PyPI + Ruff docs all reference `v0.15.0`) — 2 hooks: `ruff-check` (with `--fix --exit-non-zero-on-fix --show-fixes`), `ruff-format`. Lint before format per Ruff docs: "Ruff's fix behavior can output code changes that require reformatting"
+- `Yelp/detect-secrets` `v1.5.0` (official GitHub README) — 1 hook: `detect-secrets`
+
+**Configuration alignment**: Ruff hooks read from `pyproject.toml` `[tool.ruff]` (py310, line-length 100, select E/W/F/I/UP/B/SIM, ignore E501, isort known-first-party `milia_pipeline`) — no `args` needed in hook config. Per Ruff best practice: "move tool-specific arguments from `.pre-commit-config.yaml` to `pyproject.toml`... the tools will automatically discover and use the settings."
+
+**Activation steps** (documented in file header):
+```bash
+pip install pre-commit        # or: conda install pre-commit
+pre-commit install            # install hooks into .git/hooks/
+pre-commit run --all-files    # run all hooks on entire codebase
+pre-commit autoupdate         # update hook versions
+```
 
 ### 3.2 `Makefile`
 
@@ -342,7 +361,7 @@ milia/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── dependabot.yml
 ├── .gitignore                           # ✅ CREATED — GitHub Python template + MILIA-specific exclusions
-├── .pre-commit-config.yaml              # ⬜ CREATE *(requires Git)*
+├── .pre-commit-config.yaml              # ✅ CREATED — activates after git init + pre-commit install
 ├── CHANGELOG.md                         # ✅ CREATED
 ├── CITATION.cff                         # ✅ CREATED — CFF 1.2.0, validated with cffconvert
 ├── CODE_OF_CONDUCT.md                   # ✅ CREATED — Contributor Covenant 3.0 (CC BY-SA 4.0)
@@ -397,7 +416,7 @@ milia/
 | **P2** | `Makefile` | Developer experience |
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
 | **P2** | `SECURITY.md` | Vulnerability reporting |
-| **P2** | `.pre-commit-config.yaml` | Code quality *(requires Git)* |
+| **P2** | `.pre-commit-config.yaml` | Code quality *(activates after Git init)* | ✅ |
 | **P2** | `.github/workflows/ci.yml` | Automated testing *(requires Git + GitHub)* |
 | **P3** | `RELEASE_CHECKLIST.md` | Release process docs |
 | **P3** | `.github/` templates | Issue/PR quality *(requires Git + GitHub)* |
