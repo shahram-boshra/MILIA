@@ -58,17 +58,21 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE — created, `setup.py` reduced to shim, `__init__.py` fixed. **Next: §2.2 (LICENSE).**
+
 ---
 
 ## 2. Files That MUST Be Created (P0)
 
-### 2.1 `pyproject.toml` — CRITICAL
+### 2.1 `pyproject.toml` — ✅ IMPLEMENTED
 
 **Source**: PyPA, PEP 517/518/621. PyPA: *"The `[build-system]` table should always be present"*; *"For new projects, use the `[project]` table"*.
 
 **Required contents**: `[build-system]` (setuptools backend), `[project]` (name, version, description, readme, license, requires-python, authors, keywords, classifiers, dependencies, urls), `[project.optional-dependencies]`, `[project.scripts]` (CLI entry points from `cli_manager.py`), tool configs (`pytest`, `ruff`).
 
 **Re: existing `setup.py`**: If it contains only static metadata → migrate to `pyproject.toml`, remove `setup.py`. If it has dynamic logic (version computation, C extensions) → retain alongside `pyproject.toml` with those fields marked `dynamic`.
+
+**✅ DONE**: `setup.py` contained 100% static metadata — fully migrated to `pyproject.toml`. `setup.py` reduced to backward-compatibility shim. Version resolved via `dynamic = ["version"]` with `{attr = "milia_pipeline.__version__"}` (single source of truth: `__init__.py`). PEP 639 SPDX license (`license = "MIT"`, `setuptools>=77`). Fixed stale `python_requires` in `__init__.py` `get_package_info()` (`">=3.8"` → `">=3.10"`).
 
 ---
 
@@ -295,7 +299,7 @@ Append MILIA-specific patterns:
 
 | File | Action |
 |------|--------|
-| `setup.py` | After creating `pyproject.toml`: migrate static metadata, reduce or remove |
+| `setup.py` | ✅ DONE — migrated to `pyproject.toml`, reduced to shim |
 | `docs/README.md` | Keep — internal documentation navigation (distinct from root README) |
 | `docs/INDEX.md` | Adapt as entry point if Sphinx/MkDocs adopted |
 | `examples/` | Expand: add training, HPO, prediction, plugin development examples |
@@ -324,8 +328,8 @@ milia/
 ├── README.md                            # ⬜ CREATE (root-level)
 ├── RELEASE_CHECKLIST.md                 # ⬜ CREATE
 ├── SECURITY.md                          # ⬜ CREATE
-├── pyproject.toml                       # ⬜ CREATE — CRITICAL
-├── setup.py                             # ✅ EXISTS — review/reduce
+├── pyproject.toml                       # ✅ CREATED — canonical metadata (PEP 621/639)
+├── setup.py                             # ✅ REDUCED — backward-compatibility shim
 ├── main.py                              # ✅ EXISTS
 ├── research_experiments.yaml            # ✅ EXISTS
 ├── configs/                             # ✅ EXISTS
@@ -353,7 +357,7 @@ milia/
 
 | Priority | Action | Reason |
 |----------|--------|--------|
-| **P0** | `pyproject.toml` | Blocks proper installation |
+| **P0** ✅ | `pyproject.toml` | Blocks proper installation |
 | **P0** | `LICENSE` | Legal requirement |
 | **P0** | Root `README.md` | PyPI long description / project front page |
 | **P0** | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
