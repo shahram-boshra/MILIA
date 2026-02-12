@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. **Next: §2.8 (`CITATION.cff`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE. Next: §3 (P1–P3 files) — §3.2 (`Makefile`).**
 
 ---
 
@@ -153,29 +153,34 @@ Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, 
 
 ---
 
-### 2.8 `CITATION.cff`
+### 2.8 `CITATION.cff` — ✅ IMPLEMENTED
 
-**Source**: Citation File Format standard. GitHub natively renders it; Zenodo uses it for DOI publication.
+**Source**: Citation File Format standard (`citation-file-format.github.io`). GitHub natively renders it as a "Cite this repository" sidebar widget; Zenodo uses it for DOI publication via GitHub–Zenodo integration; Zotero imports references directly.
 
-**Contents**:
-```yaml
-cff-version: 1.2.0
-message: "If you use this software, please cite it using the metadata from this file."
-title: "MILIA"
-type: software
-authors:
-  - family-names: <Last Name>
-    given-names: <First Name>
-    orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"
-version: <current version>
-date-released: <YYYY-MM-DD>
-license: <SPDX identifier>
-repository-code: <GitHub URL>
-keywords:
-  - molecular machine learning
-  - quantum chemistry
-  - graph neural networks
-```
+**Spec version**: CFF 1.2.0 (current latest as of February 2026; confirmed via `citation-file-format.github.io` and GitHub `citation-file-format/citation-file-format` repository). Schema guide: `github.com/citation-file-format/citation-file-format/blob/1.2.0/schema-guide.md`.
+
+**✅ DONE**: Created `CITATION.cff` at repository root per CFF 1.2.0 schema. Validated with `cffconvert --validate` → "Citation metadata are valid according to schema version 1.2.0." APA and BibTeX outputs verified correct.
+
+**Metadata sourcing** (all evidence-based from actual project files):
+- `title`: `"MILIA"` — from `pyproject.toml` `name = "milia"`, project brand name is uppercase MILIA
+- `type`: `software` — CFF spec default for software projects
+- `authors[0]`: `family-names: "Boshra"`, `given-names: "Asadollah"`, `alias: "Shahram"` — from `pyproject.toml` `authors` field (`"Asadollah (Shahram) Boshra"`); parenthetical name mapped to CFF `alias` field per CFF person schema (`cff_schema_definitions_person()`: `alias` is a valid person key)
+- `authors[0].email`: `a.boshra@gmail.com` — from `pyproject.toml` `authors`
+- `authors[0].orcid`: `https://orcid.org/0009-0004-8925-2868` — maintainer-provided; format verified per ORCID structure spec (`support.orcid.org/hc/en-us/articles/360006897674`: `0009-xxxx` range is valid, stored as full `https://orcid.org/` URI)
+- `authors[1]`: `family-names: "Boshra"`, `given-names: "Ilia"` — from `pyproject.toml` `authors`
+- `authors[1].email`: `ilia.boshra@gmail.com` — from `pyproject.toml` `authors`
+- `authors[1].orcid`: `https://orcid.org/0009-0003-8540-1662` — maintainer-provided
+- `version`: `"1.1.0"` — from `milia_pipeline/__init__.py` line 252 (`__version__ = "1.1.0"`)
+- `date-released`: `"2026-02-12"` — from `CHANGELOG.md` initial release `[1.1.0] - 2026-02-12` (ISO 8601)
+- `license`: `"MIT"` — from `pyproject.toml` `license = "MIT"` (SPDX identifier)
+- `repository-code`: `"https://github.com/shahram-boshra/MILIA"` — from `pyproject.toml` `[project.urls].Repository`
+- `url`: `"https://github.com/shahram-boshra/MILIA"` — from `pyproject.toml` `[project.urls].Homepage`
+- `abstract`: exact `description` string from `pyproject.toml`
+- `keywords`: exact 7-item list from `pyproject.toml` `keywords`
+
+**Rendered citations** (verified via `cffconvert`):
+- APA: `Boshra A., Boshra I. (2026). MILIA (version 1.1.0). URL: https://github.com/shahram-boshra/MILIA`
+- BibTeX: `@misc{..., author = {Boshra, Asadollah and Boshra, Ilia}, title = {MILIA}, year = {2026}}`
 
 ---
 
@@ -339,7 +344,7 @@ milia/
 ├── .gitignore                           # ✅ CREATED — GitHub Python template + MILIA-specific exclusions
 ├── .pre-commit-config.yaml              # ⬜ CREATE *(requires Git)*
 ├── CHANGELOG.md                         # ✅ CREATED
-├── CITATION.cff                         # ⬜ CREATE
+├── CITATION.cff                         # ✅ CREATED — CFF 1.2.0, validated with cffconvert
 ├── CODE_OF_CONDUCT.md                   # ✅ CREATED — Contributor Covenant 3.0 (CC BY-SA 4.0)
 ├── CONTRIBUTING.md                      # ✅ CREATED — pyOpenSci/GitHub Community Standards compliant
 ├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
@@ -386,7 +391,7 @@ milia/
 | **P0** | Delete `*.log` files from source tree | Runtime artifacts |
 | **P0** | Add `experiments/README.md` | Prevents mistaken removal |
 | **P1** | `CHANGELOG.md` | Release communication | ✅ |
-| **P1** | `CITATION.cff` | Scientific citation standard |
+| **P1** | `CITATION.cff` | Scientific citation standard | ✅ |
 | **P1** | `CONTRIBUTING.md` | Contributor onboarding | ✅ |
 | **P1** | `CODE_OF_CONDUCT.md` | Community standards | ✅ |
 | **P2** | `Makefile` | Developer experience |
