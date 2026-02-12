@@ -1,4 +1,4 @@
-# MILIA Pipeline — Production Release File Audit
+# MILIA — Production Release File Audit
 
 **Purpose**: Evidence-based audit of production-ready files at the repository root, based on PyPA, pyOpenSci, Scientific Python Development Guide, Citation File Format, and GitHub community standards.
 
@@ -126,7 +126,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 ```yaml
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file."
-title: "MILIA Pipeline"
+title: "MILIA"
 type: software
 authors:
   - family-names: <Last Name>
