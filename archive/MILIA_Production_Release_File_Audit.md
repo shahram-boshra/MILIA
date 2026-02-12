@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. **Next: §2.7 (`CODE_OF_CONDUCT.md`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. **Next: §2.8 (`CITATION.cff`).**
 
 ---
 
@@ -145,9 +145,11 @@ Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, 
 
 ---
 
-### 2.7 `CODE_OF_CONDUCT.md`
+### 2.7 `CODE_OF_CONDUCT.md` — ✅ IMPLEMENTED
 
 **Source**: pyOpenSci, GitHub Community Standards. Use Contributor Covenant (`contributor-covenant.org`) with project-specific contact info.
+
+**✅ DONE**: Created `CODE_OF_CONDUCT.md` at repository root using **Contributor Covenant 3.0** (latest version, released 2025-07-28 by Organization for Ethical Source). Canonical Markdown text sourced verbatim from `https://www.contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. Two `[NOTE]` placeholders customized: (1) Reporting contact filled with maintainer email `a.boshra@gmail.com` (from `pyproject.toml` `[[project.authors]]`); (2) Enforcement advisory note removed — default enforcement ladder retained as guidelines per Contributor Covenant FAQ ("Communities are encouraged to customize the 'Addressing and Repairing Harm' section"). Contributor Covenant 3.0 licensed CC BY-SA 4.0; attribution section preserved verbatim. Version 3.0 chosen over 2.1 per evidence: official `/adopt` page lists English (3.0) as primary, and OES announcement (2025-07-28) states it is the current recommended version.
 
 ---
 
@@ -338,7 +340,7 @@ milia/
 ├── .pre-commit-config.yaml              # ⬜ CREATE *(requires Git)*
 ├── CHANGELOG.md                         # ✅ CREATED
 ├── CITATION.cff                         # ⬜ CREATE
-├── CODE_OF_CONDUCT.md                   # ⬜ CREATE
+├── CODE_OF_CONDUCT.md                   # ✅ CREATED — Contributor Covenant 3.0 (CC BY-SA 4.0)
 ├── CONTRIBUTING.md                      # ✅ CREATED — pyOpenSci/GitHub Community Standards compliant
 ├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
 ├── Makefile                             # ⬜ CREATE
@@ -386,7 +388,7 @@ milia/
 | **P1** | `CHANGELOG.md` | Release communication | ✅ |
 | **P1** | `CITATION.cff` | Scientific citation standard |
 | **P1** | `CONTRIBUTING.md` | Contributor onboarding | ✅ |
-| **P1** | `CODE_OF_CONDUCT.md` | Community standards |
+| **P1** | `CODE_OF_CONDUCT.md` | Community standards | ✅ |
 | **P2** | `Makefile` | Developer experience |
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
 | **P2** | `SECURITY.md` | Vulnerability reporting |
