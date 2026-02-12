@@ -1,0 +1,47 @@
+# =============================================================================
+# CITATION.cff — MILIA
+# =============================================================================
+# Citation File Format (CFF) version 1.2.0
+# Spec: https://citation-file-format.github.io/
+# Schema: https://github.com/citation-file-format/citation-file-format/blob/1.2.0/schema-guide.md
+#
+# GitHub renders this file as a "Cite this repository" sidebar widget.
+# Zenodo uses it for DOI publication via the GitHub–Zenodo integration.
+# Zotero can import references directly from this file.
+#
+# Metadata sourced from pyproject.toml and milia_pipeline/__init__.py.
+# =============================================================================
+
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: "MILIA"
+type: software
+
+authors:
+  - family-names: "Boshra"
+    given-names: "Asadollah"
+    alias: "Shahram"
+    email: "a.boshra@gmail.com"
+    orcid: "https://orcid.org/0009-0004-8925-2868"
+  - family-names: "Boshra"
+    given-names: "Ilia"
+    email: "ilia.boshra@gmail.com"
+    orcid: "https://orcid.org/0009-0003-8540-1662"
+
+version: "1.1.0"
+date-released: "2026-02-12"
+license: "MIT"
+
+repository-code: "https://github.com/shahram-boshra/MILIA"
+url: "https://github.com/shahram-boshra/MILIA"
+
+abstract: "Molecular graph processing and machine learning framework for molecular sciences"
+
+keywords:
+  - "molecular machine learning"
+  - "quantum chemistry"
+  - "graph neural networks"
+  - "molecular descriptors"
+  - "pytorch geometric"
+  - "dataset pipeline"
+  - "drug discovery"
