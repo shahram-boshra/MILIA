@@ -18,7 +18,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 |--------|-----------------|-------------------|
 | ✅ | `main.py` | Entry point (~5,280 lines) |
 | ✅ | `setup.py` | Legacy packaging file (see §5) |
-| ❌ Removed | `.gitignore` | Stale file deleted by maintainer. A fresh `.gitignore` must be created from GitHub's Python template before `git init` (§4.8) |
+| ❌ Removed | `.gitignore` | Stale file deleted by maintainer. A fresh `.gitignore` must be created from GitHub's Python template before `git init` (§2.4) |
 | ✅ | `research_experiments.yaml` | Research experiment configuration |
 | ✅ | `configs/` | 7 root YAMLs + `datasets/` with 10 dataset-specific YAMLs |
 | ✅ | `milia_pipeline/` | 11 submodules, ~100+ `.py` files |
@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE. §2.2 (`LICENSE`) DONE. **Next: §2.3 (Root README.md).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). **Next: §2.4 (`.gitignore` — Replace with fresh Python template).**
 
 ---
 
@@ -74,6 +74,11 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 **✅ DONE**: `setup.py` contained 100% static metadata — fully migrated to `pyproject.toml`. `setup.py` reduced to backward-compatibility shim. Version resolved via `dynamic = ["version"]` with `{attr = "milia_pipeline.__version__"}` (single source of truth: `__init__.py`). PEP 639 SPDX license (`license = "MIT"`, `setuptools>=77`). Fixed stale `python_requires` in `__init__.py` `get_package_info()` (`">=3.8"` → `">=3.10"`).
 
+**Revisions applied in review**:
+- Package name: `milia-pipeline` → `milia` (brand alignment, simpler `pip install milia`)
+- URLs: updated to `github.com/shahram-boshra/MILIA`
+- Description: "pipeline" → "framework"; scope broadened from "quantum chemistry" → "molecular sciences" (covers computational physical chemistry, chemical physics, materials science, computational medicinal chemistry, and beyond)
+
 ---
 
 ### 2.2 `LICENSE` — ✅ IMPLEMENTED
@@ -86,7 +91,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 ---
 
-### 2.3 Root `README.md` — CRITICAL
+### 2.3 Root `README.md` — ✅ IMPLEMENTED
 
 **Source**: PyPA (`readme` field in `pyproject.toml` must point to a file), pyOpenSci, GitHub Community Standards.
 
@@ -94,9 +99,42 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 **Note**: Distinct from existing `docs/README.md` (internal documentation navigation).
 
+**✅ DONE**: Created root `README.md` per pyOpenSci checklist. Includes: name with acronym expansion (Machine Intelligent Learning Inference Assistant), badges (Python/License/Ruff), 2-paragraph description with ecosystem context, key features sections, conda+pip installation, CLI quick-start examples, 11-module architecture table, testing section (127 tests), contributing/citation/license pointers, project links.
+
+**Revisions applied in review**:
+- Scope: "quantum chemical datasets" → "molecular sciences" (covers computational physical chemistry, chemical physics, materials science, computational medicinal chemistry, and beyond)
+- No-code scope: "without writing model-level code" → full-stack no-code at every pipeline level (datasets, transformations, descriptors, models, training, deployment), extensible via plugins
+- Terminology: "molecular transformations" → "molecular graph transformations" (evidence: `graph_transforms.py`, `get_graph_transforms()`, PyG transform categories)
+- Terminology: "descriptor computation" → "molecular descriptor computation" (evidence: "Molecular descriptor system" L66, "Molecular descriptor calculation" L3383)
+- Model access: reframed from "dynamic introspection" (developer concept) to "simply by naming them in configuration — no model-level code" (end-user experience)
+- Architecture Builder / Model Composer: reframed from user-facing modules to configuration-driven experience ("Define custom architectures from 10 built-in templates... all through YAML configuration, no code required")
+- Removed "Zero-Modification Dataset Extension" section (developer concern, not end-user)
+- Removed `DeviceManager` reference (internal module); replaced with "automatic device detection or explicit selection through configuration"
+- Molecular Descriptors section: retitled from "Comprehensive Molecular Processing", added QSAR/QSPR/in-silico drug discovery significance, plugin extension "for advanced research needs"
+- HPO: removed Ray Tune (evidence: "complete, inactive" throughout codebase); Optuna is the only active backend
+- "Extensible Transformation System" → "Extensible Graph Transformation System"
+- Dataset handlers: "ships with" → "currently ships with" (signals extensibility)
+
 ---
 
-### 2.4 `CHANGELOG.md`
+### 2.4 `.gitignore` — REPLACE WITH FRESH VERSION
+
+Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, etc. (§4.1). Current contents are stale. Per GitHub Docs, start from maintained templates. **Must be in place before the initial commit** — `.gitignore` is a repository gatekeeper that determines what enters Git history (Git best practices: "Commit a .gitignore file as early as possible in your project's lifecycle — ideally, as part of your initial commit").
+
+**Action**:
+```bash
+curl -o .gitignore https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
+```
+Append MILIA-specific patterns:
+```
+# ===== MILIA-specific =====
+*.log
+# experiments/  # Uncomment if experiments/ generates large output files
+```
+
+---
+
+### 2.5 `CHANGELOG.md`
 
 **Source**: pyOpenSci, Keep a Changelog (`keepachangelog.com`), Semantic Versioning.
 
@@ -104,7 +142,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 ---
 
-### 2.5 `CONTRIBUTING.md`
+### 2.6 `CONTRIBUTING.md`
 
 **Source**: pyOpenSci, GitHub Community Standards. GitHub auto-links this from Community tab and PR/issue creation.
 
@@ -112,13 +150,13 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 
 ---
 
-### 2.6 `CODE_OF_CONDUCT.md`
+### 2.7 `CODE_OF_CONDUCT.md`
 
 **Source**: pyOpenSci, GitHub Community Standards. Use Contributor Covenant (`contributor-covenant.org`) with project-specific contact info.
 
 ---
 
-### 2.7 `CITATION.cff`
+### 2.8 `CITATION.cff`
 
 **Source**: Citation File Format standard. GitHub natively renders it; Zenodo uses it for DOI publication.
 
@@ -280,23 +318,6 @@ Two files inside the **installable source package**: `dataset_handlers.py.DEPREC
 
 ---
 
-### 4.8 `.gitignore` — REPLACE WITH FRESH VERSION
-
-Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, etc. (§4.1). Current contents are stale. Per GitHub Docs, start from maintained templates.
-
-**Action**:
-```bash
-curl -o .gitignore https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
-```
-Append MILIA-specific patterns:
-```
-# ===== MILIA-specific =====
-*.log
-# experiments/  # Uncomment if experiments/ generates large output files
-```
-
----
-
 ## 5. Existing Files to Review
 
 | File | Action |
@@ -327,7 +348,7 @@ milia/
 ├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
 ├── Makefile                             # ⬜ CREATE
 ├── MANIFEST.in                          # ⬜ CREATE (if using setuptools)
-├── README.md                            # ⬜ CREATE (root-level)
+├── README.md                            # ✅ CREATED — project front page (pyOpenSci compliant) (root-level)
 ├── RELEASE_CHECKLIST.md                 # ⬜ CREATE
 ├── SECURITY.md                          # ⬜ CREATE
 ├── pyproject.toml                       # ✅ CREATED — canonical metadata (PEP 621/639)
@@ -361,7 +382,7 @@ milia/
 |----------|--------|--------|
 | **P0** ✅ | `pyproject.toml` | Blocks proper installation |
 | **P0** ✅ | `LICENSE` | Legal requirement |
-| **P0** | Root `README.md` | PyPI long description / project front page |
+| **P0** ✅ | Root `README.md` | PyPI long description / project front page |
 | **P0** | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
 | **P0** | Create `_legacy/`, relocate deprecated files | Preserve without Git |
 | **P0** | Delete `utils/` (after relocation) | Repository hygiene |
