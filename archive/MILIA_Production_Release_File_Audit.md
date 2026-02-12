@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. **Next: §2.6 (`CONTRIBUTING.md`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. **Next: §2.7 (`CODE_OF_CONDUCT.md`).**
 
 ---
 
@@ -135,11 +135,13 @@ Essential for GitHub upload — excludes `.egg-info/`, `__pycache__/`, `*.log`, 
 
 ---
 
-### 2.6 `CONTRIBUTING.md`
+### 2.6 `CONTRIBUTING.md` — ✅ IMPLEMENTED
 
 **Source**: pyOpenSci, GitHub Community Standards. GitHub auto-links this from Community tab and PR/issue creation.
 
 **Contents**: Dev environment setup, running tests, code style, how to submit changes (adapted to actual workflow), review process.
+
+**✅ DONE**: Created `CONTRIBUTING.md` at repository root per pyOpenSci Contributing File guide and GitHub Community Standards. Welcoming tone with accessible language per pyOpenSci recommendation. Contains: bug reporting (with `get_package_info()`/`check_dependencies()` diagnostic instructions), enhancement suggestion process (YAML configuration examples encouraged), fork-and-pull-request workflow (6-step with branch naming), development setup (conda + `pip install -e ".[dev]"` matching `pyproject.toml` `[project.optional-dependencies].dev`), test suite section (127 tests, `pytest` commands, 8 registered markers from `conftest.py` `pytest_configure` + `pyproject.toml`, shared fixtures list, test writing conventions), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules, E501 ignored — all from `[tool.ruff]`), changelog contribution (Keep a Changelog 1.1.0 + SemVer 2.0.0, `[Unreleased]` section), PR guidelines (focused PRs, tests, checks, changelog, description), project structure overview, link to `CODE_OF_CONDUCT.md`, link to `LICENSE` (MIT). All content evidence-based from actual project files.
 
 ---
 
@@ -337,7 +339,7 @@ milia/
 ├── CHANGELOG.md                         # ✅ CREATED
 ├── CITATION.cff                         # ⬜ CREATE
 ├── CODE_OF_CONDUCT.md                   # ⬜ CREATE
-├── CONTRIBUTING.md                      # ⬜ CREATE
+├── CONTRIBUTING.md                      # ✅ CREATED — pyOpenSci/GitHub Community Standards compliant
 ├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
 ├── Makefile                             # ⬜ CREATE
 ├── MANIFEST.in                          # ⬜ CREATE (if using setuptools)
@@ -383,7 +385,7 @@ milia/
 | **P0** | Add `experiments/README.md` | Prevents mistaken removal |
 | **P1** | `CHANGELOG.md` | Release communication | ✅ |
 | **P1** | `CITATION.cff` | Scientific citation standard |
-| **P1** | `CONTRIBUTING.md` | Contributor onboarding |
+| **P1** | `CONTRIBUTING.md` | Contributor onboarding | ✅ |
 | **P1** | `CODE_OF_CONDUCT.md` | Community standards |
 | **P2** | `Makefile` | Developer experience |
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
