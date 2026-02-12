@@ -1,0 +1,54 @@
+# =============================================================================
+# .pre-commit-config.yaml — MILIA
+# =============================================================================
+# Pre-commit hook configuration per pre-commit.com and Scientific Python
+# Development Guide (learn.scientific-python.org/development/guides/style/).
+#
+# Hooks: pre-commit-hooks (general), ruff (lint + format), detect-secrets.
+# Ruff reads its configuration from pyproject.toml [tool.ruff] — no args needed.
+#
+# Setup (requires Git):
+#   pip install pre-commit        # or: conda install pre-commit
+#   pre-commit install            # install hooks into .git/hooks/
+#   pre-commit run --all-files    # run all hooks on entire codebase
+#
+# Update hook versions:
+#   pre-commit autoupdate
+# =============================================================================
+
+repos:
+  # ---- General file hygiene ----
+  # Source: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # ---- Ruff linter + formatter ----
+  # Source: https://github.com/astral-sh/ruff-pre-commit
+  # Configuration: pyproject.toml [tool.ruff] (py310, line-length 100,
+  #   select E/W/F/I/UP/B/SIM, ignore E501, isort known-first-party)
+  # Lint hook runs before format hook per Ruff docs:
+  #   "Ruff's fix behavior can output code changes that require reformatting"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.0
+    hooks:
+      # Run the linter (with --fix for auto-fixable violations)
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      # Run the formatter
+      - id: ruff-format
+
+  # ---- Secret detection ----
+  # Source: https://github.com/Yelp/detect-secrets
+  # Prevents accidental commit of API keys, tokens, passwords, etc.
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
