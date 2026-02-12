@@ -28,7 +28,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ⚠️ Outdated | `docs/` | 21 files (18 .md + 2 .py + 1 subdir). 13+ files still reference old VQM24 name. Needs revision before GitHub — **exclude via `.gitignore` for now** |
 | ⚠️ Outdated | `examples/` | 3 files in `preprocessing/` — all reference VQM24. Delete contents, keep directory as placeholder with `.gitkeep` |
 | ✅ Functional | `experiments/` | Empty but **functional target** for Research API (§4.2) |
-| ⚠️ Legacy only | `utils/` | Only deprecated content: 7 old test files + `conftest_original.py` |
+| ❌ Deleted | `utils/` | Contained only deprecated tests + old conftest. No active usage. Directory removed entirely. |
 | ⚠️ Internal | `archive/` | Development blueprints, VQM24 notes, testing guides — **exclude from GitHub via `.gitignore`** (§4.4) |
 | ⚠️ Build artifact | `milia_pipeline.egg-info/` | Setuptools cache — needed locally, exclude from GitHub via `.gitignore` (§4.1) |
 
@@ -52,7 +52,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `scripts/` | ❌ Exclude from GitHub (`.gitignore`) | 9 developer-only utility scripts. No end-user value. 2 still reference VQM24. Kept locally for developer reference. |
 | `test_data/` | ❌ Exclude from GitHub (`.gitignore`) | Tests use `/tmp/test_data/` with mocks, not this directory. Dev-only fixture files. Delete `checkpoint_prediction_tracker.md`. |
 | `tests/` | ✅ Upload to GitHub as-is | 127+ test files + `conftest.py` + `fixtures/` + `data/`. Essential for CI/CD and contributor validation. |
-| `utils/` | ⏳ Pending review | |
+| `utils/` | ❌ Deleted entirely | Only deprecated tests + old conftest. No active usage. Directory removed. |
 | `main.py` | ⏳ Pending review | |
 | `setup.py` | ⏳ Pending review | |
 | `research_experiments.yaml` | ⏳ Pending review | |
