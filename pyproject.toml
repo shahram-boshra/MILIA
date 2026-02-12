@@ -24,7 +24,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "milia"
 dynamic = ["version"]
-description = "Molecular graph processing and machine learning framework for quantum chemistry"
+description = "Molecular graph processing and machine learning framework for molecular sciences"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
