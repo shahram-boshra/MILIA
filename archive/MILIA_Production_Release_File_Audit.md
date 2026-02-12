@@ -29,7 +29,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ⚠️ Minimal | `examples/` | Only `preprocessing/` with 3 files — very limited for 11-module project |
 | ✅ Functional | `experiments/` | Empty but **functional target** for Research API (§4.2) |
 | ⚠️ Legacy only | `utils/` | Only deprecated content: 7 old test files + `conftest_original.py` |
-| ⚠️ Internal | `archive/` | Development blueprints, VQM24 notes, testing guides |
+| ⚠️ Internal | `archive/` | Development blueprints, VQM24 notes, testing guides — **exclude from GitHub via `.gitignore`** (§4.4) |
 | ⚠️ Build artifact | `milia_pipeline.egg-info/` | Setuptools cache — needed locally, exclude from GitHub via `.gitignore` (§4.1) |
 
 **Also found in source tree** (should not be there):
@@ -151,7 +151,6 @@ recursive-include configs *.yaml
 recursive-include milia_pipeline *.py *.yaml
 recursive-exclude tests *
 recursive-exclude test_data *
-prune archive
 prune _legacy
 prune experiments
 prune milia_pipeline.egg-info
@@ -229,11 +228,13 @@ Contains **only** deprecated content: `DEPRECATED_TESTs/` (7 test files) + `conf
 
 ---
 
-### 4.4 `archive/` — KEEP, EXCLUDE FROM DISTRIBUTION
+### 4.4 `archive/` — KEEP LOCALLY, EXCLUDE FROM GITHUB VIA `.gitignore`
 
-Development documentation (blueprints, decision records) — distinct from `_legacy/` (deprecated code).
+Internal development documentation (blueprints, VQM24 investigation notes, testing guides, decision records). Contains 16 files across 2 subdirectories. No value to end users or external contributors — purely maintainer reference.
 
-**Action**: Add `archive/README.md`. Add `prune archive` to `MANIFEST.in`.
+**Decision**: Exclude from GitHub entirely. Per Git official docs (git-scm.com/docs/gitignore): patterns for files that all developers/cloners should not receive go into `.gitignore`.
+
+**Action**: Add `archive/` to `.gitignore`. No `MANIFEST.in` entry needed (`.gitignore` already prevents it from reaching Git, so it will never be in an sdist).
 
 ---
 
@@ -313,7 +314,7 @@ milia/
 ├── docs/                                # ✅ EXISTS — add build system
 ├── examples/                            # ✅ EXISTS — expand
 ├── experiments/                         # ✅ FUNCTIONAL — add README
-├── archive/                             # ✅ EXISTS — add README, exclude from sdist
+├── archive/                             # ⚠️ LOCAL ONLY — .gitignore excludes from GitHub
 ├── _legacy/                             # ⬜ CREATE — deprecated code archive
 │   ├── README.md
 │   ├── deprecated_tests/                #   from utils/DEPRECATED_TESTs/
