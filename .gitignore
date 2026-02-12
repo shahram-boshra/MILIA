@@ -228,7 +228,13 @@ __marimo__/
 
 # Internal development documentation — blueprints, VQM24 investigation notes,
 # testing guides, decision records. No end-user value. (§4.4)
-archive/
+# Pattern: archive/* (not archive/) so Git can negate specific files below.
+# Per git-scm.com/docs/gitignore: "It is not possible to re-include a file
+# if a parent directory of that file is excluded."
+archive/*
+# Production Release File Audit — active project governance document,
+# its change history must be tracked in Git.
+!archive/MILIA_Production_Release_File_Audit.md
 
 # Documentation — 13+ files still reference old VQM24 name. Exclude until
 # revised VQM24→MILIA and curated for end-user value. (§1.1)
