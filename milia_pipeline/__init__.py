@@ -645,7 +645,7 @@ def get_package_info() -> dict:
         "license": __license__,
         "maintainer": __maintainer__,
         "status": __status__,
-        "python_requires": ">=3.8",
+        "python_requires": ">=3.10",
     }
 
 
