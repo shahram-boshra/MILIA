@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. **Next: §3.2 (`Makefile`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. §3.2 (`Makefile`) DONE — 20 phony targets in 7 sections (help, install, test, code quality, pre-commit, build, cleanup, info). Self-documenting `help` default. Bash strict mode. All targets validated with `make --dry-run`. Every target evidence-sourced from `pyproject.toml`, `CONTRIBUTING.md`, `.pre-commit-config.yaml`, `.gitignore`, `__init__.py`. **Next: §3.3 (`SECURITY.md`).**
 
 ---
 
@@ -209,9 +209,20 @@ pre-commit run --all-files    # run all hooks on entire codebase
 pre-commit autoupdate         # update hook versions
 ```
 
-### 3.2 `Makefile`
+### 3.2 `Makefile` — ✅ IMPLEMENTED
 
-**Source**: Common in scientific Python (NumPy, SciPy, scikit-learn). Targets: `install`, `install-dev`, `test`, `lint`, `format`, `docs`, `clean`, `build`, `help`.
+**Source**: Common in scientific Python (NumPy, SciPy, scikit-learn). pyOpenSci Python Package Guide — Task Runners: Make is "widely known and available on most systems, making it a familiar choice for many developers." Scientific Python Development Guide — Task Runners: task runners "make specialized developer tasks easy" and "help new contributors get productive quickly." scikit-learn uses a root `Makefile` with `dev`, `clean`, `help` targets. KDnuggets (2025): "Think of a Makefile as a single place where you define shortcuts for all the things you do repeatedly."
+
+**✅ DONE**: Created `Makefile` at repository root with 20 phony targets organized into 7 sections. Self-documenting `help` as default target (parses `## ` comments via `grep`/`awk`). Validated with `make --dry-run` for all targets (0 syntax errors). Bash with strict error handling (`-eu -o pipefail`). All variables overridable from command line (`PYTHON ?= python3`, `PIP ?= pip`).
+
+**Targets and evidence sources** (all evidence-based from actual project files):
+- **Installation** (2 targets): `install` (`pip install -e .`), `install-dev` (`pip install -e ".[dev]"`) — from `pyproject.toml` `[project.optional-dependencies].dev` (`pytest>=8.0`, `pytest-mock>=3.14`, `ruff`) and CONTRIBUTING.md "Development Setup"
+- **Testing** (4 targets): `test` (full suite), `test-smoke` (`-m smoke`), `test-integration` (`-m integration`), `test-fast` (`-m "not slow"`) — from `pyproject.toml` `[tool.pytest.ini_options]` (`testpaths = ["tests"]`, `addopts = ["-v", "--tb=short", "--strict-markers"]`, markers: `slow`, `integration`, `gpu`, `smoke`, `contract`, `e2e`, `regression`, `thread_safety`) and CONTRIBUTING.md "Running Tests"
+- **Code Quality** (5 targets): `lint` (`ruff check .`), `lint-fix` (`ruff check --fix --show-fixes .`), `format` (`ruff format .`), `format-check` (`ruff format --check .`), `check` (composite: lint + format-check + test) — from `pyproject.toml` `[tool.ruff]` (py310, line-length 100, select E/W/F/I/UP/B/SIM, ignore E501) and CONTRIBUTING.md "Running Ruff" and `.pre-commit-config.yaml` ruff-check args
+- **Pre-commit** (3 targets): `pre-commit` (`pre-commit run --all-files`), `pre-commit-install` (`pre-commit install`), `pre-commit-update` (`pre-commit autoupdate`) — from `.pre-commit-config.yaml` header (3 repos: pre-commit-hooks v6.0.0, ruff-pre-commit v0.15.0, detect-secrets v1.5.0)
+- **Build** (1 target): `build` (`python -m build`) — from `pyproject.toml` `[build-system]` (`setuptools>=77`, `setuptools.build_meta`)
+- **Cleanup** (2 targets): `clean` (safe — removes build/, dist/, `__pycache__`, `.pytest_cache`, `.ruff_cache`, htmlcov, coverage files, `*.py[codz]`, `MANIFEST`; does NOT delete `.egg-info` in project root per audit §4.1), `clean-all` (full reset — also removes `$(PACKAGE_NAME).egg-info/`) — patterns from `.gitignore` GitHub Python template
+- **Information** (2 targets): `version` (prints `__version__` from `milia_pipeline/__init__.py`), `info` (calls `get_package_info()` + `check_dependencies()` from `milia_pipeline/__init__.py`)
 
 ### 3.3 `SECURITY.md`
 
@@ -367,7 +378,7 @@ milia/
 ├── CODE_OF_CONDUCT.md                   # ✅ CREATED — Contributor Covenant 3.0 (CC BY-SA 4.0)
 ├── CONTRIBUTING.md                      # ✅ CREATED — pyOpenSci/GitHub Community Standards compliant
 ├── LICENSE                              # ✅ CREATED — MIT (SPDX: MIT)
-├── Makefile                             # ⬜ CREATE
+├── Makefile                             # ✅ CREATED — 20 targets, self-documenting help
 ├── MANIFEST.in                          # ⬜ CREATE (if using setuptools)
 ├── README.md                            # ✅ CREATED — project front page (pyOpenSci compliant) (root-level)
 ├── RELEASE_CHECKLIST.md                 # ⬜ CREATE
@@ -413,7 +424,7 @@ milia/
 | **P1** | `CITATION.cff` | Scientific citation standard | ✅ |
 | **P1** | `CONTRIBUTING.md` | Contributor onboarding | ✅ |
 | **P1** | `CODE_OF_CONDUCT.md` | Community standards | ✅ |
-| **P2** | `Makefile` | Developer experience |
+| **P2** | `Makefile` | Developer experience | ✅ |
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
 | **P2** | `SECURITY.md` | Vulnerability reporting |
 | **P2** | `.pre-commit-config.yaml` | Code quality *(activates after Git init)* | ✅ |
