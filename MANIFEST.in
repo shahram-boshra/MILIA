@@ -1,0 +1,76 @@
+# =============================================================================
+# MILIA — MANIFEST.in
+# =============================================================================
+# Controls which files are included in source distributions (sdist) when
+# building with setuptools (pyproject.toml [build-system] backend).
+#
+# Context: setuptools (>=77, per pyproject.toml) auto-includes files implied
+# by [project] metadata (readme, license-files), packages, and package-data.
+# This file explicitly declares additional inclusions for completeness and
+# ensures non-package root-level files critical to the distribution are present.
+#
+# Source: PyPA — Controlling files in the distribution
+#         (setuptools.pypa.io/en/latest/userguide/miscellaneous.html)
+#         PyPA — Including files in source distributions with MANIFEST.in
+#         (packaging.python.org/guides/using-manifest-in/)
+#
+# Order: include → recursive-include → recursive-exclude → prune → global-exclude
+# (per setuptools docs: commands execute in order; later commands override earlier)
+# =============================================================================
+
+# ---- Root-level metadata and documentation files ----------------------------
+# LICENSE and README.md are auto-included by setuptools >=66.1 via pyproject.toml
+# (readme = "README.md", license-files = ["LICENSE"]). Listed explicitly for
+# clarity and forward-compatibility.
+include LICENSE
+include README.md
+include CHANGELOG.md
+include CITATION.cff
+include pyproject.toml
+include setup.py
+
+# ---- Root-level entry point and configuration files -------------------------
+# main.py is the CLI entry point (pyproject.toml: milia = "main:main") but
+# resides at project root, outside the milia_pipeline package. It is NOT
+# discovered by [tool.setuptools.packages.find] (include = ["milia_pipeline*"]),
+# so it must be explicitly included for the sdist to be buildable.
+include main.py
+include research_experiments.yaml
+
+# ---- Configuration directory (outside installable package) ------------------
+# configs/ contains runtime YAML configurations (7 root + 10 dataset-specific).
+# Located at project root, outside milia_pipeline/, so not covered by packages
+# or package-data. Required for users building/running from source.
+recursive-include configs *.yaml
+
+# ---- Installable package source and data ------------------------------------
+# milia_pipeline/ *.py files are auto-included via [tool.setuptools.packages.find].
+# *.yaml and *.yml are auto-included via [tool.setuptools.package-data].
+# Listed explicitly for sdist completeness and clarity.
+recursive-include milia_pipeline *.py
+recursive-include milia_pipeline *.yaml *.yml
+
+# ---- Exclusions — directories not needed in source distribution -------------
+# tests/: 127 test files + fixtures — excluded from sdist per project policy.
+# Tests are available in the Git repository for contributors and CI/CD.
+recursive-exclude tests *
+
+# test_data/: Developer-only fixture files (also in .gitignore).
+# Tests use /tmp/test_data/ with mocks, not this directory.
+recursive-exclude test_data *
+
+# _legacy/: Deprecated code archive (if present). No distribution value.
+prune _legacy
+
+# experiments/: Empty functional placeholder for user experimental extensions.
+prune experiments
+
+# milia_pipeline.egg-info/: Setuptools build cache artifact. Each clone
+# generates its own via pip install -e . (pypa/setuptools #3348).
+prune milia_pipeline.egg-info
+
+# ---- Global exclusions — compiled/generated artifacts -----------------------
+# Standard safety net: compiled Python files, cache directories, runtime logs.
+global-exclude *.py[codz]
+global-exclude __pycache__
+global-exclude *.log
