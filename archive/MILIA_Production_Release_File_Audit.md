@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. §3.2 (`Makefile`) DONE — 20 phony targets in 7 sections (help, install, test, code quality, pre-commit, build, cleanup, info). Self-documenting `help` default. Bash strict mode. All targets validated with `make --dry-run`. Every target evidence-sourced from `pyproject.toml`, `CONTRIBUTING.md`, `.pre-commit-config.yaml`, `.gitignore`, `__init__.py`. **Next: §3.3 (`SECURITY.md`).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. §3.2 (`Makefile`) DONE — 20 phony targets in 7 sections (help, install, test, code quality, pre-commit, build, cleanup, info). Self-documenting `help` default. Bash strict mode. All targets validated with `make --dry-run`. Every target evidence-sourced from `pyproject.toml`, `CONTRIBUTING.md`, `.pre-commit-config.yaml`, `.gitignore`, `__init__.py`. §3.3 (`SECURITY.md`) DONE — GitHub Docs + OpenSSF OSPS Baseline. 7 sections: Supported Versions (1.1.x, Python 3.10–3.12), Reporting (GitHub Private Vulnerability Reporting + email `a.boshra@gmail.com`), Response Timeline (48h ack, 7d assessment), Coordinated Disclosure, Scope (6 in-scope categories: plugin abuse, YAML injection, dependency chain, path traversal, code execution, info exposure), Security-Related Configuration. All content evidence-based. **Next: §3.5 (`MANIFEST.in`).**
 
 ---
 
@@ -224,9 +224,13 @@ pre-commit autoupdate         # update hook versions
 - **Cleanup** (2 targets): `clean` (safe — removes build/, dist/, `__pycache__`, `.pytest_cache`, `.ruff_cache`, htmlcov, coverage files, `*.py[codz]`, `MANIFEST`; does NOT delete `.egg-info` in project root per audit §4.1), `clean-all` (full reset — also removes `$(PACKAGE_NAME).egg-info/`) — patterns from `.gitignore` GitHub Python template
 - **Information** (2 targets): `version` (prints `__version__` from `milia_pipeline/__init__.py`), `info` (calls `get_package_info()` + `check_dependencies()` from `milia_pipeline/__init__.py`)
 
-### 3.3 `SECURITY.md`
+### 3.3 `SECURITY.md` — ✅ IMPLEMENTED
 
-**Source**: GitHub Security Advisories, OpenSSF. Contents: supported versions, how to report vulnerabilities (email, not public issue), response timeline.
+**Source**: GitHub Docs ("Adding a security policy to your repository", "Securing your repository"), OpenSSF OSPS Baseline (Vulnerability Management), GitHub Docs ("Privately reporting a security vulnerability", "Configuring private vulnerability reporting for a repository").
+
+**Required contents** (per GitHub Docs "Securing your repository"): supported versions, how to report vulnerabilities, response timeline, responsible disclosure guidelines.
+
+**✅ DONE**: Created `SECURITY.md` at repository root per GitHub Docs and OpenSSF OSPS Baseline. Contains 7 sections: Supported Versions (1.1.x on Python 3.10/3.11/3.12 — from `pyproject.toml` classifiers + `__init__.py` `__version__`), Reporting a Vulnerability (two private channels: GitHub Private Vulnerability Reporting preferred + email `a.boshra@gmail.com` from `pyproject.toml` maintainers; explicit "do not use public issues" to distinguish from `CONTRIBUTING.md` bug reporting), What to Include (with `get_package_info()`/`check_dependencies()` diagnostics consistent with `CONTRIBUTING.md`), Response Timeline (48-hour acknowledgment, 7-day initial assessment — per community standards), Disclosure Policy (coordinated vulnerability disclosure per OpenSSF; GitHub Security Advisory publication; `Security` changelog entry per Keep a Changelog format), Scope (6 in-scope categories tailored to MILIA's attack surface: plugin system abuse, YAML config injection, dependency chain, path traversal, arbitrary code execution, sensitive info exposure; 3 out-of-scope exclusions), Security-Related Configuration (plugin trust, config validation, file path review). All content evidence-based from `pyproject.toml`, `__init__.py`, `CHANGELOG.md`, `CONTRIBUTING.md`. **Post-push action**: enable Private Vulnerability Reporting in GitHub repository settings (Settings → Security → Advanced Security → Enable).
 
 ### 3.4 `.github/` Directory *(requires Git + GitHub)*
 
@@ -382,7 +386,7 @@ milia/
 ├── MANIFEST.in                          # ⬜ CREATE (if using setuptools)
 ├── README.md                            # ✅ CREATED — project front page (pyOpenSci compliant) (root-level)
 ├── RELEASE_CHECKLIST.md                 # ⬜ CREATE
-├── SECURITY.md                          # ⬜ CREATE
+├── SECURITY.md                          # ✅ CREATED — GitHub Docs + OpenSSF compliant, coordinated disclosure
 ├── pyproject.toml                       # ✅ CREATED — canonical metadata (PEP 621/639)
 ├── setup.py                             # ✅ REDUCED — backward-compatibility shim
 ├── main.py                              # ✅ EXISTS
@@ -426,7 +430,7 @@ milia/
 | **P1** | `CODE_OF_CONDUCT.md` | Community standards | ✅ |
 | **P2** | `Makefile` | Developer experience | ✅ |
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
-| **P2** | `SECURITY.md` | Vulnerability reporting |
+| **P2** | `SECURITY.md` | Vulnerability reporting *(post-push: enable Private Vulnerability Reporting — §7C)* | ✅ |
 | **P2** | `.pre-commit-config.yaml` | Code quality *(activates after Git init)* | ✅ |
 | **P2** | `.github/workflows/ci.yml` | Automated testing *(requires Git + GitHub)* |
 | **P3** | `RELEASE_CHECKLIST.md` | Release process docs |
@@ -446,6 +450,22 @@ The structural document lists `config.yaml` and `migrate_config.py` at root — 
 ## 7B. Advisory: Adopt Git
 
 Every source cited here assumes VCS. Without it: no change tracking, no recovery, no CI/CD, no collaboration. Adopting Git eliminates `_legacy/`, unlocks P2/P3 items, and is the single highest-impact infrastructure improvement.
+
+---
+
+## 7C. Post-Push: Enable GitHub Private Vulnerability Reporting
+
+**Source**: GitHub Docs — [Configuring private vulnerability reporting for a repository](https://docs.github.com/en/code-security/security-advisories/working-with-repository-security-advisories/configuring-private-vulnerability-reporting-for-a-repository).
+
+`SECURITY.md` (§3.3) directs reporters to the GitHub Security Advisories page as the **preferred** channel. This requires **Private Vulnerability Reporting** to be enabled in the repository settings — otherwise the "Report a vulnerability" button will not appear and reporters will have only the email fallback.
+
+**Action** (one-time, after first push to GitHub):
+
+1. Navigate to `https://github.com/shahram-boshra/MILIA` → **Settings**.
+2. In the left sidebar under **Security**, click **Code security and analysis**.
+3. Under **Private vulnerability reporting**, click **Enable**.
+
+**Verification**: Visit `https://github.com/shahram-boshra/MILIA/security` — the **"Report a vulnerability"** button should be visible to any GitHub user.
 
 ---
 
