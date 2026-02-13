@@ -58,7 +58,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `setup.py` | ✅ Upload to GitHub (review after `pyproject.toml` created, §2.1) | Legacy packaging file. May be reduced/removed after migrating metadata to `pyproject.toml`. |
 | `research_experiments.yaml` | ✅ Upload to GitHub as-is | Research experiments configuration for MILIA pipeline. |
 
-**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. §3.2 (`Makefile`) DONE — 20 phony targets in 7 sections (help, install, test, code quality, pre-commit, build, cleanup, info). Self-documenting `help` default. Bash strict mode. All targets validated with `make --dry-run`. Every target evidence-sourced from `pyproject.toml`, `CONTRIBUTING.md`, `.pre-commit-config.yaml`, `.gitignore`, `__init__.py`. §3.3 (`SECURITY.md`) DONE — GitHub Docs + OpenSSF OSPS Baseline. 7 sections: Supported Versions (1.1.x, Python 3.10–3.12), Reporting (GitHub Private Vulnerability Reporting + email `a.boshra@gmail.com`), Response Timeline (48h ack, 7d assessment), Coordinated Disclosure, Scope (6 in-scope categories: plugin abuse, YAML injection, dependency chain, path traversal, code execution, info exposure), Security-Related Configuration. All content evidence-based. **Next: §3.4 (`.github/` directory).**
+**✅ IMPLEMENTATION PROGRESS**: §1 (Current State) and §1.1 (GitHub Upload Decision Tracker) fully completed — all root-level directories and files reviewed, decisions recorded, deletions done. §2.1 (`pyproject.toml`) DONE + reviewed. §2.2 (`LICENSE`) DONE. §2.3 (Root `README.md`) DONE + extensively reviewed (scope, terminology, end-user perspective corrections). §2.4 (`.gitignore`) DONE — fresh GitHub Python template + MILIA-specific exclusions (`archive/`, `docs/`, `scripts/`, `test_data/`). §2.5 (`CHANGELOG.md`) DONE — Keep a Changelog 1.1.0 format, initial release `[1.1.0] - 2026-02-12`. §2.6 (`CONTRIBUTING.md`) DONE — pyOpenSci/GitHub Community Standards compliant; covers bug reporting, fork-and-PR workflow, dev setup (conda + `pip install -e ".[dev]"`), test suite (127 tests, 8 markers, shared fixtures from `conftest.py`), Ruff code style (py310, line-length 100, E/W/F/I/UP/B/SIM rules), Keep a Changelog 1.1.0 format, PR guidelines, MIT license. All content evidence-based from `pyproject.toml`, `conftest.py`, `__init__.py`, `CHANGELOG.md`, `LICENSE`. §2.7 (`CODE_OF_CONDUCT.md`) DONE — Contributor Covenant 3.0 (latest version, released 2025-07-28). Canonical Markdown from `contributor-covenant.org/version/3/0/code_of_conduct/code_of_conduct.md`. `[NOTE]` reporting placeholder filled with maintainer email (`a.boshra@gmail.com` from `pyproject.toml` authors). `[NOTE]` enforcement advisory removed (default ladder kept as guidelines). Licensed CC BY-SA 4.0. §2.8 (`CITATION.cff`) DONE — CFF 1.2.0 (current latest). Validated with `cffconvert --validate`. Two authors with ORCIDs (`0009-0004-8925-2868`, `0009-0003-8540-1662`). Alias field for parenthetical name per CFF person schema. All metadata sourced from `pyproject.toml`, `__init__.py` `__version__`, `CHANGELOG.md`. APA/BibTeX outputs verified. **§2 (P0 files) FULLY COMPLETE.** §3.1 (`.pre-commit-config.yaml`) DONE — pre-commit.com + Scientific Python Dev Guide. 3 repos: `pre-commit-hooks` v6.0.0 (7 hooks), `ruff-pre-commit` v0.15.0 (lint+format, reads `pyproject.toml`), `detect-secrets` v1.5.0. Validated with `pre-commit validate-config`. File is a static YAML config — activates after `git init` + `pre-commit install`. §3.2 (`Makefile`) DONE — 20 phony targets in 7 sections (help, install, test, code quality, pre-commit, build, cleanup, info). Self-documenting `help` default. Bash strict mode. All targets validated with `make --dry-run`. Every target evidence-sourced from `pyproject.toml`, `CONTRIBUTING.md`, `.pre-commit-config.yaml`, `.gitignore`, `__init__.py`. §3.3 (`SECURITY.md`) DONE — GitHub Docs + OpenSSF OSPS Baseline. 7 sections: Supported Versions (1.1.x, Python 3.10–3.12), Reporting (GitHub Private Vulnerability Reporting + email `a.boshra@gmail.com`), Response Timeline (48h ack, 7d assessment), Coordinated Disclosure, Scope (6 in-scope categories: plugin abuse, YAML injection, dependency chain, path traversal, code execution, info exposure), Security-Related Configuration. All content evidence-based. §3.4 (`.github/` directory) DONE — 7 files created (ci.yml, release.yml, bug_report.yml, feature_request.yml, config.yml, PULL_REQUEST_TEMPLATE.md, dependabot.yml). YAML issue forms (modern GitHub standard) over legacy Markdown. Trusted Publishers for PyPI release. All YAML validated. **Next: §3.5 (`MANIFEST.in`).**
 
 ---
 
@@ -232,23 +232,28 @@ pre-commit autoupdate         # update hook versions
 
 **✅ DONE**: Created `SECURITY.md` at repository root per GitHub Docs and OpenSSF OSPS Baseline. Contains 7 sections: Supported Versions (1.1.x on Python 3.10/3.11/3.12 — from `pyproject.toml` classifiers + `__init__.py` `__version__`), Reporting a Vulnerability (two private channels: GitHub Private Vulnerability Reporting preferred + email `a.boshra@gmail.com` from `pyproject.toml` maintainers; explicit "do not use public issues" to distinguish from `CONTRIBUTING.md` bug reporting), What to Include (with `get_package_info()`/`check_dependencies()` diagnostics consistent with `CONTRIBUTING.md`), Response Timeline (48-hour acknowledgment, 7-day initial assessment — per community standards), Disclosure Policy (coordinated vulnerability disclosure per OpenSSF; GitHub Security Advisory publication; `Security` changelog entry per Keep a Changelog format), Scope (6 in-scope categories tailored to MILIA's attack surface: plugin system abuse, YAML config injection, dependency chain, path traversal, arbitrary code execution, sensitive info exposure; 3 out-of-scope exclusions), Security-Related Configuration (plugin trust, config validation, file path review). All content evidence-based from `pyproject.toml`, `__init__.py`, `CHANGELOG.md`, `CONTRIBUTING.md`. **Post-push action**: enable Private Vulnerability Reporting in GitHub repository settings (Settings → Security → Advanced Security → Enable).
 
-### 3.4 `.github/` Directory *(activates when pushed to GitHub)*
+### 3.4 `.github/` Directory — ✅ IMPLEMENTED *(activates when pushed to GitHub)*
 
 **Source**: GitHub Docs (Actions workflows, issue/PR templates, Dependabot). All files are static YAML/Markdown created at repository root under `.github/` — same creation-before-activation principle as §3.1 (`.pre-commit-config.yaml`): files are created now, become functional after first push to GitHub.
 
 **Evidence for creating now (before Git/GitHub)**: These are static configuration and template files with no runtime dependency on Git or GitHub for *creation*. Per §3.1 precedent: `.pre-commit-config.yaml` was created as a static YAML config that "activates after `git init` + `pre-commit install`." By the same logic, `.github/` files are static configs that activate after push to GitHub. Creating now ensures CI/CD, templates, and dependency management are ready the moment the repository is pushed.
 
-| File | Purpose |
-|------|---------|
-| `workflows/ci.yml` | Test on push/PR (multi-Python matrix) |
-| `workflows/release.yml` | Publish to PyPI on tag |
-| `ISSUE_TEMPLATE/bug_report.yml` | Structured bug report (YAML issue form) |
-| `ISSUE_TEMPLATE/feature_request.yml` | Feature request (YAML issue form) |
-| `ISSUE_TEMPLATE/config.yml` | Template chooser config (disable blank issues, security link) |
-| `PULL_REQUEST_TEMPLATE.md` | PR checklist |
-| `dependabot.yml` | Automated dependency updates |
+**✅ DONE**: Created `.github/` directory with 7 files. All YAML files validated with `yaml.safe_load()` (0 errors).
+
+- **`workflows/ci.yml`**: Lint job (Ruff check + format check on Python 3.12) → Test matrix (Python 3.10/3.11/3.12, smoke tests as first CI gate per `CONTRIBUTING.md`). Full conda-based test job commented as placeholder. Actions: `actions/checkout@v6`, `actions/setup-python@v6` (current latest Feb 2026). Concurrency group cancels in-progress runs. Evidence: `pyproject.toml` classifiers (3.10/3.11/3.12), `[tool.pytest]`, `[tool.ruff]`, `[project.optional-dependencies].dev`; `CONTRIBUTING.md` smoke marker.
+- **`workflows/release.yml`**: Tag-triggered (`v*.*.*`) build → publish via PyPI Trusted Publishers (OIDC). Two jobs: `build` (`python -m build`, stores artifacts via `actions/upload-artifact@v5`) → `publish-to-pypi` (`pypa/gh-action-pypi-publish@release/v1`, `id-token: write`, `environment: pypi`). Evidence: `pyproject.toml` `[build-system]` (setuptools>=77), `name = "milia"`; PyPA Publishing Guide; PyPI Trusted Publishers docs.
+- **`ISSUE_TEMPLATE/bug_report.yml`**: YAML issue form with: prerequisites checkboxes (existing issue search + security ≠ bug per `SECURITY.md`), description, steps to reproduce, expected/actual behavior, Python version dropdown (3.10/3.11/3.12), environment details with `get_package_info()`/`check_dependencies()` diagnostics, configuration (YAML render), additional context. Evidence: `CONTRIBUTING.md` bug reporting section, `SECURITY.md`, `pyproject.toml` classifiers.
+- **`ISSUE_TEMPLATE/feature_request.yml`**: YAML issue form with: prerequisite checkbox, problem description, proposed solution with YAML config example, affected area multi-select dropdown (11 modules + docs + other), alternatives, additional context. Evidence: `CONTRIBUTING.md` enhancement suggestions, project structure (11 submodules).
+- **`ISSUE_TEMPLATE/config.yml`**: Template chooser config. `blank_issues_enabled: false`. Security contact link directs to `SECURITY.md` per §3.3. Evidence: GitHub Docs ("Configuring issue templates").
+- **`PULL_REQUEST_TEMPLATE.md`**: Description, related issue, type-of-change checkboxes (bug fix/feature/breaking/docs/refactor/tests), checklist aligned with `CONTRIBUTING.md` PR Guidelines (focused PRs, tests, pytest, ruff check, ruff format, changelog, self-review). Evidence: `CONTRIBUTING.md` PR Guidelines section.
+- **`dependabot.yml`**: Version 2. Two ecosystems: `pip` (weekly, dev deps in `pyproject.toml`) + `github-actions` (weekly, Actions versions in `.github/workflows/`). Commit message prefixes (`build(deps)`, `ci(deps)`). Evidence: GitHub Docs (Dependabot config), `pyproject.toml` `[project.optional-dependencies].dev`.
 
 **Issue template format**: YAML issue forms (`.yml`) chosen over legacy Markdown templates (`.md`). Per GitHub Docs ("Syntax for issue forms"): YAML forms provide structured web form fields with input types, required-field validation, dropdowns, and checkboxes — ensuring contributors submit complete, consistently formatted reports. GitHub Docs ("About issue and pull request templates"): "Issue templates created with issue forms need a `.yml` extension." The Markdown format is now considered legacy. `config.yml` added per GitHub Docs ("Configuring issue templates for your repository"): controls the template chooser, disables blank issues, and adds a security reporting contact link (directing to `SECURITY.md` per §3.3).
+
+**Post-push setup required** (one-time, after first push to GitHub):
+1. **PyPI Trusted Publisher** (for `release.yml`): Configure at `pypi.org/manage/project/milia/settings/publishing/` — add GitHub Actions publisher (owner: `shahram-boshra`, repo: `MILIA`, workflow: `release.yml`, environment: `pypi`).
+2. **GitHub Environment** (for `release.yml`): Create `pypi` environment in repo Settings → Environments (optionally require manual approval).
+3. **Private Vulnerability Reporting** (per §7C): Enable in repo Settings → Security → Code security and analysis.
 
 ### 3.5 `MANIFEST.in`
 
@@ -376,7 +381,7 @@ Two files inside the **installable source package**: `dataset_handlers.py.DEPREC
 
 ```
 milia/
-├── .github/                             # ⬜ CREATE *(activates when pushed to GitHub)*
+├── .github/                             # ✅ CREATED — CI/CD, YAML issue forms, PR template, Dependabot *(activates when pushed to GitHub)*
 │   ├── workflows/ci.yml
 │   ├── workflows/release.yml
 │   ├── ISSUE_TEMPLATE/bug_report.yml
@@ -429,10 +434,10 @@ milia/
 | **P0** ✅ | `LICENSE` | Legal requirement |
 | **P0** ✅ | Root `README.md` | PyPI long description / project front page |
 | **P0** ✅ | Replace `.gitignore` with fresh Python template | Essential for GitHub upload |
-| **P0** | Create `_legacy/`, relocate deprecated files | Preserve without Git |
-| **P0** | Delete `utils/` (after relocation) | Repository hygiene |
-| **P0** | Delete `*.log` files from source tree | Runtime artifacts |
-| **P0** | Add `experiments/README.md` | Prevents mistaken removal |
+| **P0** ✅ | Create `_legacy/`, relocate deprecated files | Preserve without Git |
+| **P0** ✅ | Delete `utils/` (after relocation) | Repository hygiene |
+| **P0** ✅ | Delete `*.log` files from source tree | Runtime artifacts |
+| **P0** ✅ | Add `experiments/README.md` | Prevents mistaken removal |
 | **P1** | `CHANGELOG.md` | Release communication | ✅ |
 | **P1** | `CITATION.cff` | Scientific citation standard | ✅ |
 | **P1** | `CONTRIBUTING.md` | Contributor onboarding | ✅ |
@@ -441,9 +446,9 @@ milia/
 | **P2** | `MANIFEST.in` | Correct sdist packaging |
 | **P2** | `SECURITY.md` | Vulnerability reporting *(post-push: enable Private Vulnerability Reporting — §7C)* | ✅ |
 | **P2** | `.pre-commit-config.yaml` | Code quality *(activates after Git init)* | ✅ |
-| **P2** | `.github/workflows/ci.yml` | Automated testing *(activates when pushed to GitHub)* |
+| **P2** | `.github/workflows/ci.yml` | Automated testing *(activates when pushed to GitHub)* | ✅ |
 | **P3** | `RELEASE_CHECKLIST.md` | Release process docs |
-| **P3** | `.github/` templates | Issue/PR quality — YAML issue forms + config.yml + PR template *(activates when pushed to GitHub)* |
+| **P3** | `.github/` templates | Issue/PR quality — YAML issue forms + config.yml + PR template *(activates when pushed to GitHub)* | ✅ |
 | **P3** | `tox.ini` / `noxfile.py` | Multi-env testing |
 | **P3** | Documentation build system | Hosted docs |
 | **P3** | Expanded `examples/` | User onboarding |
