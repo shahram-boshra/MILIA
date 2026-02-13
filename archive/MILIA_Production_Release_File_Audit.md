@@ -242,10 +242,13 @@ pre-commit autoupdate         # update hook versions
 |------|---------|
 | `workflows/ci.yml` | Test on push/PR (multi-Python matrix) |
 | `workflows/release.yml` | Publish to PyPI on tag |
-| `ISSUE_TEMPLATE/bug_report.md` | Structured bug reports |
-| `ISSUE_TEMPLATE/feature_request.md` | Feature requests |
+| `ISSUE_TEMPLATE/bug_report.yml` | Structured bug report (YAML issue form) |
+| `ISSUE_TEMPLATE/feature_request.yml` | Feature request (YAML issue form) |
+| `ISSUE_TEMPLATE/config.yml` | Template chooser config (disable blank issues, security link) |
 | `PULL_REQUEST_TEMPLATE.md` | PR checklist |
 | `dependabot.yml` | Automated dependency updates |
+
+**Issue template format**: YAML issue forms (`.yml`) chosen over legacy Markdown templates (`.md`). Per GitHub Docs ("Syntax for issue forms"): YAML forms provide structured web form fields with input types, required-field validation, dropdowns, and checkboxes — ensuring contributors submit complete, consistently formatted reports. GitHub Docs ("About issue and pull request templates"): "Issue templates created with issue forms need a `.yml` extension." The Markdown format is now considered legacy. `config.yml` added per GitHub Docs ("Configuring issue templates for your repository"): controls the template chooser, disables blank issues, and adds a security reporting contact link (directing to `SECURITY.md` per §3.3).
 
 ### 3.5 `MANIFEST.in`
 
@@ -376,7 +379,9 @@ milia/
 ├── .github/                             # ⬜ CREATE *(activates when pushed to GitHub)*
 │   ├── workflows/ci.yml
 │   ├── workflows/release.yml
-│   ├── ISSUE_TEMPLATE/
+│   ├── ISSUE_TEMPLATE/bug_report.yml
+│   ├── ISSUE_TEMPLATE/feature_request.yml
+│   ├── ISSUE_TEMPLATE/config.yml
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── dependabot.yml
 ├── .gitignore                           # ✅ CREATED — GitHub Python template + MILIA-specific exclusions
@@ -438,7 +443,7 @@ milia/
 | **P2** | `.pre-commit-config.yaml` | Code quality *(activates after Git init)* | ✅ |
 | **P2** | `.github/workflows/ci.yml` | Automated testing *(activates when pushed to GitHub)* |
 | **P3** | `RELEASE_CHECKLIST.md` | Release process docs |
-| **P3** | `.github/` templates | Issue/PR quality *(activates when pushed to GitHub)* |
+| **P3** | `.github/` templates | Issue/PR quality — YAML issue forms + config.yml + PR template *(activates when pushed to GitHub)* |
 | **P3** | `tox.ini` / `noxfile.py` | Multi-env testing |
 | **P3** | Documentation build system | Hosted docs |
 | **P3** | Expanded `examples/` | User onboarding |

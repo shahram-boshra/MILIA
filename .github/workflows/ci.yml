@@ -1,0 +1,108 @@
+# =============================================================================
+# MILIA — Continuous Integration
+# =============================================================================
+# Runs on every push to main and on all pull requests.
+# Tests across the Python version matrix declared in pyproject.toml classifiers.
+#
+# Source evidence:
+#   - pyproject.toml: Python 3.10/3.11/3.12 classifiers, [tool.pytest], [tool.ruff]
+#   - pyproject.toml: [project.optional-dependencies].dev (pytest>=8.0, pytest-mock>=3.14, ruff)
+#   - CONTRIBUTING.md: conda install for heavy deps, pip install -e ".[dev]", smoke marker
+#   - GitHub Docs: actions/checkout@v6, actions/setup-python@v6 (current latest Feb 2026)
+#
+# Note: Heavy scientific dependencies (PyTorch, PyG, RDKit) are conda-managed.
+# CI installs only the dev extras (pytest, ruff) for linting and smoke tests.
+# Full integration tests requiring conda dependencies run in a separate
+# environment (see CONTRIBUTING.md "Development Setup").
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Recommended by actions/setup-python docs
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch/PR to save resources
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        # From pyproject.toml classifiers: Python 3.10, 3.11, 3.12
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]"
+
+      # Smoke tests are the "first gate in CI" (CONTRIBUTING.md).
+      # Full test suite requires conda-managed scientific packages
+      # (PyTorch, PyG, RDKit) which are not available via pip.
+      # Smoke-marked tests are designed to run without heavy dependencies.
+      - name: Run smoke tests
+        run: pytest -m smoke --tb=short -v
+
+  # Placeholder for future conda-based full test job.
+  # Uncomment and configure when CI conda environment is set up.
+  # test-full:
+  #   name: Full Test Suite (conda)
+  #   runs-on: ubuntu-latest
+  #   needs: lint
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: conda-incubator/setup-miniconda@v3
+  #       with:
+  #         python-version: "3.12"
+  #         activate-environment: milia
+  #     - name: Install conda dependencies
+  #       run: |
+  #         conda install -c conda-forge numpy scipy pyyaml h5py pandas rdkit \
+  #           matplotlib pydantic-settings ase torchmetrics hydra-core optuna \
+  #           plotly scikit-learn pytorch cpuonly -c pytorch
+  #         conda install -c pyg torch-geometric
+  #     - name: Install MILIA
+  #       run: pip install -e ".[dev]"
+  #     - name: Run full test suite
+  #       run: pytest -v --tb=short

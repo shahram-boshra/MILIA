@@ -1,0 +1,42 @@
+# =============================================================================
+# MILIA — Dependabot Configuration
+# =============================================================================
+# Keeps development dependencies and GitHub Actions up to date.
+#
+# Source: GitHub Docs — "Configuring Dependabot version updates"
+#
+# Two ecosystems monitored:
+#   1. pip — dev dependencies in pyproject.toml [project.optional-dependencies].dev
+#      (pytest, pytest-mock, ruff). Runtime deps are conda-managed and excluded.
+#   2. github-actions — Actions versions in .github/workflows/ (checkout, setup-python, etc.)
+#
+# Note: Dependabot reads pyproject.toml for pip ecosystem (GitHub Docs:
+#   "For package managers such as pipenv and poetry, you need to use the pip
+#    YAML value."). It will detect [project.optional-dependencies].dev entries.
+# =============================================================================
+
+version: 2
+
+updates:
+  # Python dev dependencies (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+
+  # GitHub Actions versions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"

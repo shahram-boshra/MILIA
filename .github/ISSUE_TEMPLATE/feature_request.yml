@@ -1,0 +1,80 @@
+name: Feature Request
+description: Suggest an enhancement or new feature for MILIA.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement! MILIA is configuration-driven — YAML examples showing how the feature would work are especially helpful.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm the following before submitting.
+      options:
+        - label: I have searched the [existing issues](https://github.com/shahram-boshra/MILIA/issues) and this feature has not been requested.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: What problem does this feature solve? Is this related to a frustration with the current behavior?
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see. If applicable, include a YAML configuration example showing how you'd expect to use it.
+      placeholder: |
+        Describe the feature...
+
+        Example YAML configuration:
+        ```yaml
+        # How the feature would be configured
+        ```
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected Area
+      description: Which part of MILIA does this feature relate to?
+      multiple: true
+      options:
+        - Configuration system
+        - Molecular processing
+        - Graph transformations
+        - Dataset handling
+        - Preprocessing
+        - Molecular descriptors
+        - Model training / evaluation
+        - Hyperparameter optimization
+        - Plugin system
+        - CLI interface
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, references, or screenshots about the feature request.
+    validations:
+      required: false

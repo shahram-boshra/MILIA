@@ -1,0 +1,14 @@
+# Issue template chooser configuration.
+# Source: GitHub Docs — "Configuring issue templates for your repository"
+#
+# - Blank issues disabled: contributors must use a structured template.
+# - Security link directs to SECURITY.md (per §3.3) — vulnerabilities must
+#   NOT be reported via public issues.
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/shahram-boshra/MILIA/blob/main/SECURITY.md
+    about: Please report security vulnerabilities privately — do NOT open a public issue. See SECURITY.md for instructions.
+  - name: Question or Discussion
+    url: https://github.com/shahram-boshra/MILIA/issues
+    about: For general questions, open an issue with a descriptive title.

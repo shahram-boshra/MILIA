@@ -1,0 +1,112 @@
+name: Bug Report
+description: Report a bug in MILIA. For security vulnerabilities, see SECURITY.md.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the sections below to help us identify and fix the issue.
+
+        **Important**: If this is a **security vulnerability**, please do **not** use this form. Instead, follow the [Security Policy](https://github.com/shahram-boshra/MILIA/blob/main/SECURITY.md) to report it privately.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm the following before submitting.
+      options:
+        - label: I have searched the [existing issues](https://github.com/shahram-boshra/MILIA/issues) and this bug has not been reported.
+          required: true
+        - label: This is a bug report, not a security vulnerability (see [SECURITY.md](https://github.com/shahram-boshra/MILIA/blob/main/SECURITY.md)).
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: Describe what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Provide minimal steps to reproduce the bug.
+      placeholder: |
+        1. Set configuration in `configs/...`
+        2. Run `milia ...`
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include the full error traceback if applicable.
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Which Python version are you using?
+      options:
+        - "3.10"
+        - "3.11"
+        - "3.12"
+        - Other (specify in environment details)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: |
+        Provide your environment details. You can retrieve MILIA diagnostics programmatically:
+        ```python
+        from milia_pipeline import get_package_info, check_dependencies
+        print(get_package_info())
+        print(check_dependencies())
+        ```
+      placeholder: |
+        - OS: e.g., Ubuntu 22.04 / macOS 14 / Windows 11
+        - MILIA version: e.g., 1.1.0
+        - PyTorch version: e.g., 2.x
+        - PyTorch Geometric version: e.g., 2.x
+        - RDKit version: e.g., 2024.x
+        - Installation method: conda + pip install -e .
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: If relevant, include the YAML configuration files or CLI arguments used.
+      render: yaml
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or log output about the bug.
+    validations:
+      required: false
