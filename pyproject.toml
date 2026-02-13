@@ -129,7 +129,12 @@ addopts = [
     "--strict-markers",
 ]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "smoke: Smoke tests — fast, first gate in CI/CD pipeline",
+    "contract: Interface contract validation tests",
+    "e2e: End-to-end workflow tests",
+    "regression: Regression protection tests",
+    "thread_safety: Concurrent access tests",
+    "slow: Tests taking > 30 seconds (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
     "gpu: marks tests requiring GPU",
 ]
