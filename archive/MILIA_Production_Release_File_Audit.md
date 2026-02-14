@@ -320,7 +320,7 @@ pre-commit autoupdate         # update hook versions
 
 **Source**: Sphinx, Read the Docs, pyOpenSci. Add `docs/conf.py` (Sphinx) or `mkdocs.yml`, `docs/requirements.txt`, API reference auto-generation.
 
-**Note**: `docs/` is now empty (all 21 former files relocated to `archive/legacy/`). When the documentation build system is adopted, `docs/` will be populated fresh with Sphinx/MkDocs structure. The `archive/legacy/` files may serve as reference material for content migration (VQM24→MILIA revision required). At that point, `docs/` should be removed from `.gitignore` (§2.4).
+**Note**: `docs/` is now empty (all 21 former files relocated to `archive/legacy/`). When the documentation build system is adopted, `docs/` will be populated with Sphinx/MkDocs structure. At that point, `docs/` should be removed from `.gitignore` (§2.4). The former files now reside in `archive/legacy/` (13+ still reference VQM24).
 
 ---
 
@@ -380,7 +380,7 @@ Contains **only** deprecated content: `DEPRECATED_TESTs/` (7 test files) + `conf
 
 ### 4.4 `archive/` — KEEP LOCALLY, EXCLUDE FROM GITHUB VIA `.gitignore`
 
-Internal development documentation (blueprints, VQM24 investigation notes, testing guides, decision records). Now also contains `legacy/` subdirectory (21 files relocated from `docs/` — 18 .md + 2 .py + 1 subdir, 13+ still reference VQM24). Contains 16+ original files across 2+ subdirectories. No value to end users or external contributors — purely maintainer reference.
+Internal development documentation (blueprints, VQM24 investigation notes, testing guides, decision records). Contains 16 files across 2 subdirectories (original `archive/` contents). Now also contains `legacy/` subdirectory with all 21 files relocated from `docs/` (18 .md + 2 .py + 1 subdir, 13+ still reference VQM24). No value to end users or external contributors — purely maintainer reference.
 
 **Decision**: Exclude from GitHub entirely. Per Git official docs (git-scm.com/docs/gitignore): patterns for files that all developers/cloners should not receive go into `.gitignore`.
 
@@ -407,8 +407,8 @@ Two files inside the **installable source package**: `dataset_handlers.py.DEPREC
 | File | Action |
 |------|--------|
 | `setup.py` | ✅ DONE — migrated to `pyproject.toml`, reduced to shim |
-| `archive/legacy/README.md` | Keep in `archive/legacy/` — former internal documentation navigation (relocated from `docs/`). Reference material for future documentation build system (§3.9) |
-| `archive/legacy/INDEX.md` | Keep in `archive/legacy/` — former entry point candidate (relocated from `docs/`). Adapt as entry point if Sphinx/MkDocs adopted (§3.9) |
+| `archive/legacy/README.md` | Keep in `archive/legacy/` — former internal documentation navigation (relocated from `docs/`, distinct from root README) |
+| `archive/legacy/INDEX.md` | Keep in `archive/legacy/` — former documentation entry point candidate (relocated from `docs/`). Adapt as entry point if Sphinx/MkDocs adopted (§3.9) |
 | `examples/` | Expand: add training, HPO, prediction, plugin development examples |
 
 ---
