@@ -611,10 +611,10 @@ Phase 1: Pre-CI/CD Foundation — ✅ ALL COMPLETE (Audit §2)
 └─────────────────────────────────────────────────────┘
          │
          ▼
-Phase 2: CI/CD Infrastructure — ✅ PARTIALLY COMPLETE
+Phase 2: CI/CD Infrastructure — ✅ ALL COMPLETE
 ┌─────────────────────────────────────────────────────┐
 │ Step 6: .github/workflows/docker-publish.yml [B1a]  │
-│         ❌ NOT YET CREATED — build & push to GHCR    │
+│         ✅ Spec complete — execute §5a to create     │
 │ Step 7: .github/workflows/ci.yml  [B1b]             │
 │         ✅ Audit §3.4 — lint + test matrix           │
 │ Step 8: .github/workflows/release.yml                │
@@ -656,7 +656,7 @@ Additional files created by Audit (not in original Guide):
     ├── Used locally by developer (docker build + docker run)
     └── Optionally used by ci.yml (Option B: Docker-based tests)
 
-❌ .github/workflows/docker-publish.yml ────────── NOT YET CREATED (depends on:)
+✅ .github/workflows/docker-publish.yml ────────── SPEC COMPLETE — execute §5a (depends on:)
     ├── Dockerfile          ← EXISTS
     ├── environment.yml     ← EXISTS
     ├── milia_pipeline/     ← EXISTS
@@ -677,7 +677,7 @@ Additional files created by Audit (not in original Guide):
 | 3 | `pyproject.toml` | Foundation | **Critical** | ✅ Complete — full PEP 621/639 (Audit §2.1) |
 | 4 | `README.md` | Foundation | **Critical** | ✅ Complete (Audit §2.3) |
 | 5 | `setup.py` | Foundation | **High** | ✅ Reduced to shim (Audit §2.1) |
-| 6 | `.github/workflows/docker-publish.yml` | CI/CD | **Critical** | ❌ Not yet created |
+| 6 | `.github/workflows/docker-publish.yml` | CI/CD | **Critical** | ✅ Spec complete (B1a) — creation instructions in §5a |
 | 7 | `.github/workflows/ci.yml` | CI/CD | **Critical** | ✅ Complete (Audit §3.4) |
 | 8 | `CHANGELOG.md` | Polish | Medium | ✅ Complete (Audit §2.5) |
 | 9 | `CONTRIBUTING.md` | Polish | Medium | ✅ Complete (Audit §2.6) |
@@ -697,7 +697,7 @@ Additional files created by Audit (not in original Guide):
 | 23 | `docs/` (Sphinx build system, 8 files) | Docs | Low | ✅ Complete (Audit §3.9) |
 | 24 | `examples/` | Polish | Low | ✅ Placeholder `.gitkeep` (Audit §1.1) |
 
-**Remaining**: Only item #6 (`docker-publish.yml`) is not yet created.
+**Remaining**: Item #6 (`docker-publish.yml`) spec is complete — execute creation instructions in step 5a of "What Actually Remains" section, then follow steps 5b–5f for GHCR configuration and reviewer access.
 
 ---
 
@@ -720,6 +720,13 @@ Additional files created by Audit (not in original Guide):
 | Keep a Changelog | Community standard | `keepachangelog.com` |
 | Contributor Covenant | Community standard | `contributor-covenant.org` |
 | Keng's Blog — GitHub Actions for Python | Real-world conda CI migration | `kengz.gitbook.io/blog/engineering/github-actions-for-python-project` |
+| GitHub Docs — Inviting collaborators to a personal repository | GitHub (official) | `docs.github.com/articles/inviting-collaborators-to-a-personal-repository` |
+| GitHub Docs — Permission levels for a personal account repository | GitHub (official) | `docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/permission-levels-for-a-personal-account-repository` |
+| GitHub Docs — Configuring a package's access control and visibility | GitHub (official) | `docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility` |
+| GitHub Docs — Connecting a repository to a package | GitHub (official) | `docs.github.com/en/packages/learn-github-packages/connecting-a-repository-to-a-package` |
+| GitHub Docs — About permissions for GitHub Packages | GitHub (official) | `docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages` |
+| `docker/metadata-action` README | Docker (official) | `github.com/docker/metadata-action` |
+| `docker/build-push-action` README | Docker (official) | `github.com/docker/build-push-action` |
 
 ---
 
@@ -790,10 +797,385 @@ Then three manual GitHub settings:
 
 After push, connect repository at `readthedocs.org/dashboard/import/`. RTD will auto-detect `.readthedocs.yaml` and build docs on each push to `main`.
 
+### 5. Create `docker-publish.yml`, Configure GHCR, and Grant Reviewer/Interviewer Access
+
+**Why this step exists**: Pushing source code to a private GitHub repository is **necessary but not sufficient** for journal reviewers and job interviewers to evaluate MILIA. Without a prebuilt Docker image on GHCR, an evaluator would need to clone the repo, install Docker, run `docker build` (20–35 minutes for MILIA's 12-layer Dockerfile with retry logic), and wait for all mamba installs to complete. This step eliminates that friction entirely — the evaluator runs two commands and has MILIA operational.
+
+**This is the single remaining blocker**: 23 of 24 release items are complete (see Summary Table). Only item #6 (`docker-publish.yml`) has not been created.
+
+**What this step covers (in order)**:
+
+1. Create the `docker-publish.yml` workflow file
+2. Trigger the first image build
+3. Configure GHCR package → repository linking and inherited permissions
+4. Invite the reviewer/interviewer as a collaborator
+5. Verify end-to-end reviewer access
+
 ---
 
-**Document Version**: 1.4.0
+#### 5a. Create `.github/workflows/docker-publish.yml`
+
+The workflow specification is defined in section B1a of this guide (lines 362–416). Create this file **exactly as specified** — it uses `docker/login-action@v3`, `docker/metadata-action@v5`, and `docker/build-push-action@v5`, which are the official Docker GitHub Actions maintained by Docker, Inc.
+
+**Critical technical detail — automatic repository linking**: The `docker/metadata-action@v5` automatically generates an `org.opencontainers.image.source` label pointing to `https://github.com/shahram-boshra/MILIA` (source: `docker/metadata-action` README — the action extracts this from the GitHub context). Combined with the fact that the workflow authenticates via `GITHUB_TOKEN`, this means the GHCR package is **automatically linked to the repository** on first push. Per GitHub Docs ("Working with the Container registry"): *"The easiest way to connect a repository to a container package is to publish the package from a workflow using `${{secrets.GITHUB_TOKEN}}`, as the repository that contains the workflow is linked automatically."*
+
+**Authoritative sources**:
+- GitHub Docs — "Working with the Container registry" (`docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry`): Automatic repository linking via `GITHUB_TOKEN`
+- `docker/metadata-action` README (`github.com/docker/metadata-action`): Automatically generates `org.opencontainers.image.source` label from GitHub context
+- GitHub Docs — "Connecting a repository to a package" (`docs.github.com/en/packages/learn-github-packages/connecting-a-repository-to-a-package`): Repository linking and permission inheritance
+
+**File creation command** (the YAML content is already specified in section B1a, lines 362–416):
+
+```bash
+mkdir -p .github/workflows
+
+cat > .github/workflows/docker-publish.yml << 'EOF'
+# .github/workflows/docker-publish.yml
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches: [main]
+    # Only rebuild when image-affecting files change
+    paths:
+      - 'Dockerfile'
+      - 'environment.yml'
+      - 'milia_pipeline/**'
+      - 'setup.py'
+      - 'pyproject.toml'
+  # Allow manual trigger for first-time build
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+EOF
+```
+
+**Commit the workflow file**:
+
+```bash
+git add .github/workflows/docker-publish.yml
+git commit -m "ci: add docker-publish.yml — build and push Docker image to GHCR
+
+Automated Docker image build and push to GitHub Container Registry (GHCR)
+on push to main when image-affecting files change (Dockerfile,
+environment.yml, milia_pipeline/, setup.py, pyproject.toml).
+
+Uses official Docker GitHub Actions:
+- docker/login-action@v3 (GHCR authentication via GITHUB_TOKEN)
+- docker/metadata-action@v5 (automatic OCI labels including
+  org.opencontainers.image.source for repository linking)
+- docker/build-push-action@v5 (build and push)
+
+Enables reviewers and evaluators to run MILIA via:
+  docker pull ghcr.io/shahram-boshra/milia:latest
+  docker run -it ghcr.io/shahram-boshra/milia:latest
+
+Completes item #6 in Release Guide Summary Table (B1a).
+Manual trigger (workflow_dispatch) available for first-time build.
+
+Sources: GitHub Docs (GHCR, Publishing packages with GitHub Actions),
+docker/metadata-action README, docker/build-push-action README"
+```
+
+**Push the commit**:
+
+```bash
+git push origin main
+```
+
+**NOTE on image name casing**: Docker requires image names to be **all lowercase**. `docker/metadata-action@v5` handles the lowercasing of `${{ github.repository }}` automatically. Since the MILIA repository is `shahram-boshra/MILIA` (uppercase `MILIA`), the resulting GHCR image name will be `ghcr.io/shahram-boshra/milia` (lowercase). No manual intervention required — this is handled by the action, not hardcoded.
+
+---
+
+#### 5b. Push the Pre-Built Local Docker Image to GHCR (Primary Path — Fast)
+
+You already have a fully built, tested Docker image on your local machine. Pushing this pre-built image directly to GHCR is **significantly faster** than triggering a fresh build via GitHub Actions (minutes of upload vs. 20–35 minutes of rebuild). This is the recommended primary path for the initial GHCR publication.
+
+The `docker-publish.yml` workflow created in step 5a remains in place for **automated future rebuilds** — whenever `Dockerfile`, `environment.yml`, `milia_pipeline/**`, `setup.py`, or `pyproject.toml` changes on `main`, the image is rebuilt and pushed automatically. But the first image should come from your local machine.
+
+**Authoritative sources**:
+- GitHub Docs — "Working with the Container registry" (`docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry`): Manual push procedure, PAT authentication, `LABEL` requirements for repository linking
+- GitHub Docs — "Managing your personal access tokens" (`docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens`): PAT creation with `write:packages` scope
+
+---
+
+**Prerequisite — Ensure Dockerfile Has the `org.opencontainers.image.source` Label**:
+
+**This is critical**: Per GitHub Docs ("Working with the Container registry"): *"When you push a container image from the command line, the image is not linked to a repository by default. This is the case even if you tag the image with a namespace that matches the name of the repository."* The automatic repository linking that `GITHUB_TOKEN` provides in workflows does **not** occur on command-line pushes.
+
+To ensure the image is linked to the MILIA repository on push, your `Dockerfile` **must** contain the following `LABEL` instructions (per GitHub Docs — "Labelling container images"):
+
+```dockerfile
+LABEL org.opencontainers.image.source=https://github.com/shahram-boshra/MILIA
+LABEL org.opencontainers.image.description="MILIA: Machine Intelligent Learning Interface Assistant — molecular data processing and ML pipeline"
+LABEL org.opencontainers.image.licenses=MIT
+```
+
+**Where to add these labels**: Place them near the top of the `Dockerfile`, after the first `FROM` instruction. Per Docker documentation ("LABEL"), `LABEL` instructions add metadata to the image and do not affect the build layers in any meaningful way.
+
+**Check if your Dockerfile already has these labels**:
+
+```bash
+grep -n "org.opencontainers" Dockerfile
+```
+
+If the labels are **not** present, add them and rebuild:
+
+```bash
+# Add the labels to Dockerfile (after the first FROM line)
+# Then rebuild the image to include the new labels
+docker build -t milia .
+
+git add Dockerfile
+git commit -m "build: add OCI metadata labels to Dockerfile for GHCR repository linking
+
+Add org.opencontainers.image.source, .description, and .licenses labels
+per GitHub Docs ('Working with the Container registry' — 'Labelling
+container images'). Required for automatic repository linking when
+pushing to GHCR from the command line.
+
+Sources: GitHub Docs (Working with the Container registry),
+OCI Image Spec (Pre-Defined Annotation Keys)"
+```
+
+If the labels are **already present**, no rebuild is needed — proceed directly to the push steps below.
+
+---
+
+**Step-by-step: Push the local image to GHCR**:
+
+```bash
+# 1. Create a GitHub Personal Access Token (classic) with write:packages scope
+#    → https://github.com/settings/tokens/new
+#    → Select scopes: write:packages (which auto-selects read:packages)
+#    → Generate token → copy the token value
+#
+#    NOTE: Store this token securely. You will also need it if you ever
+#    need to push updated images from your local machine in the future.
+
+# 2. Authenticate to GHCR from your local machine
+echo YOUR_PAT | docker login ghcr.io -u shahram-boshra --password-stdin
+# Expected output: Login Succeeded
+
+# 3. Tag the local image for GHCR
+#    Find your local MILIA image name/ID:
+docker images | grep -i milia
+#    Tag it for GHCR (image name MUST be lowercase):
+docker tag milia ghcr.io/shahram-boshra/milia:latest
+
+# 4. Push the tagged image to GHCR
+docker push ghcr.io/shahram-boshra/milia:latest
+# This uploads the image layers — time depends on image size and upload speed.
+# For a conda-based ML image (~2–5 GB), expect 5–20 minutes on a typical connection.
+
+# 5. Verify the image is on GHCR
+docker pull ghcr.io/shahram-boshra/milia:latest
+# Should complete almost instantly (image already cached locally)
+```
+
+**After push**: The image will be available at `ghcr.io/shahram-boshra/milia:latest`. Because the Dockerfile contains the `org.opencontainers.image.source` label, the package will be **automatically linked** to the `shahram-boshra/MILIA` repository and will appear in the repository's **Packages** sidebar.
+
+**If the package does not auto-link** (edge case — see GitHub community discussion #163656 confirming this can happen with command-line pushes even with the label), link it manually via the GitHub UI as described in step 5c below.
+
+---
+
+**Fallback — Trigger a Fresh Build via GitHub Actions (if needed)**:
+
+If you need to rebuild the image from scratch on GitHub's infrastructure (e.g., your local image is outdated, or you want a clean build from the current `main` branch), use the `workflow_dispatch` trigger:
+
+1. Navigate to `https://github.com/shahram-boshra/MILIA/actions/workflows/docker-publish.yml`
+2. Click **"Run workflow"** → select branch `main` → click **"Run workflow"**
+
+Or via GitHub CLI:
+
+```bash
+gh workflow run docker-publish.yml --ref main
+```
+
+This triggers a full `docker build` on GitHub Actions (20–35 minutes for MILIA's 12-layer Dockerfile).
+
+---
+
+#### 5c. Verify GHCR Package → Repository Linking and Configure Inherited Permissions
+
+**If you pushed from your local machine** (step 5b primary path): The `org.opencontainers.image.source` label in your Dockerfile tells GHCR which repository the image belongs to. However, per GitHub Docs ("Working with the Container registry"): command-line pushes do **not** always auto-link even with the label present. You must verify and, if necessary, link manually.
+
+**If you pushed via `workflow_dispatch`** (step 5b fallback path): The workflow uses `GITHUB_TOKEN` for authentication, which means the GHCR package is **automatically linked** to the `shahram-boshra/MILIA` repository (per GitHub Docs: *"The easiest way to connect a repository to a container package is to publish the package from a workflow using `${{secrets.GITHUB_TOKEN}}`, as the repository that contains the workflow is linked automatically."*)
+
+**Verify the automatic link**:
+
+1. Navigate to `https://github.com/shahram-boshra/MILIA` → right sidebar → **"Packages"** section → click the `milia` package
+2. The package page should display repository information (README excerpt, link back to the repository)
+3. If the package does **not** appear under the repository's Packages section, link it manually:
+   - Navigate to `https://github.com/shahram-boshra?tab=packages` → click `milia` → **"Package settings"** (right sidebar) → **"Connect repository"** → select `MILIA` → click **"Connect repository"**
+
+**Enable inherited permissions** (this is the critical step that grants collaborators access to the Docker image):
+
+1. Navigate to the package settings: `https://github.com/shahram-boshra?tab=packages` → click `milia` → **"Package settings"**
+2. Under **"Manage access"**, verify that **"Inherit access from source repository (recommended)"** is checked
+3. If it is not checked, enable it
+
+**What "Inherit access" does**: Per GitHub Docs ("Configuring a package's access control and visibility"): when a package is linked to a repository and inherits access, anyone who is a collaborator on the repository **automatically** gets the corresponding access to the GHCR package. This means adding someone as a repository collaborator (step 5d) grants them both code access **and** Docker image pull access in a single action.
+
+**Authoritative sources**:
+- GitHub Docs — "Configuring a package's access control and visibility" (`docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility`): Inherited permissions from linked repository
+- GitHub Docs — "Connecting a repository to a package" (`docs.github.com/en/packages/learn-github-packages/connecting-a-repository-to-a-package`): Automatic linking via `GITHUB_TOKEN` + manual fallback
+- GitHub Docs — "About permissions for GitHub Packages" (`docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages`): Granular permissions for container registry
+- GitHub Docs — "Allowing your codespace to access a private registry" (`docs.github.com/en/codespaces/reference/allowing-your-codespace-to-access-a-private-registry`): "Inherit access from repo is selected by default when publishing via GitHub Actions"
+
+**Keep the package visibility PRIVATE**: The MILIA repository is private. The GHCR package should also remain private. Do **not** change visibility to public — per GitHub Docs, once a package is made public, it **cannot** be made private again.
+
+---
+
+#### 5d. Invite the Reviewer/Interviewer as a Repository Collaborator
+
+Adding a collaborator to the private repository grants them access to **both** the source code **and** the GHCR Docker image (via inherited permissions configured in step 5c).
+
+**Authoritative sources**:
+- GitHub Docs — "Inviting collaborators to a personal repository" (`docs.github.com/articles/inviting-collaborators-to-a-personal-repository`): Official invitation procedure
+- GitHub Docs — "Permission levels for a personal account repository" (`docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/permission-levels-for-a-personal-account-repository`): "In a private repository, repository owners can only grant write access to collaborators. Collaborators can't have read-only access to repositories owned by a personal account."
+
+**Procedure**:
+
+1. Navigate to `https://github.com/shahram-boshra/MILIA/settings/access`
+2. Click **"Add people"**
+3. Search by the reviewer/interviewer's **GitHub username** or **email address**
+4. Click **"Add [NAME] to MILIA"**
+5. The invitee receives an email notification and a GitHub notification — they must **accept** the invitation before access is granted
+
+**Important constraint for personal accounts**: Per GitHub Docs ("Permission levels for a personal account repository"), collaborators on a private repository owned by a personal account receive **read/write** access. There is no read-only option for personal accounts. If read-only access is required, the repository would need to be transferred to a **GitHub Organization** (out of scope for this guide, but noted for awareness).
+
+**After the invitee accepts**, they have:
+- Full read/write access to the repository (code, issues, PRs, wiki)
+- Pull access to the GHCR Docker image (via inherited permissions)
+
+---
+
+#### 5e. What the Reviewer/Interviewer Needs to Do (Provide These Instructions)
+
+After the collaborator accepts the invitation, provide them with the following instructions. These can be included in the repository's `README.md` (already exists — section A4), in the invitation email, or as a separate document.
+
+**Prerequisites on the reviewer's machine**:
+- Docker Desktop (or Docker Engine) installed and running
+- A GitHub account (already required to accept the invitation)
+- A GitHub personal access token (classic) with `read:packages` scope — OR — authentication via `gh auth login`
+
+**Step-by-step for the reviewer**:
+
+```bash
+# 1. Authenticate to GHCR (one-time setup)
+#    Option A: Using GitHub CLI (recommended — no PAT needed)
+gh auth login
+echo $(gh auth token) | docker login ghcr.io -u USERNAME --password-stdin
+
+#    Option B: Using a Personal Access Token (classic) with read:packages scope
+echo YOUR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+# 2. Pull the MILIA Docker image
+docker pull ghcr.io/shahram-boshra/milia:latest
+
+# 3. Run the MILIA container
+docker run -it ghcr.io/shahram-boshra/milia:latest
+# → (shah_env) root@...:/app/milia#
+
+# 4. Verify MILIA works (inside the container)
+pytest -m smoke --tb=short          # Quick health checks
+pytest tests/ -v --tb=short         # Full test suite
+python main.py --help               # CLI interface
+```
+
+**Why GHCR authentication is required**: The GHCR package is private (matching the private repository). Per GitHub Docs ("Working with the Container registry"), pulling a private package requires authentication. The `GITHUB_TOKEN` used by GitHub Actions is not available to external users — they must authenticate using either GitHub CLI or a personal access token with `read:packages` scope.
+
+**Authoritative sources**:
+- GitHub Docs — "Working with the Container registry" (`docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry`): Authentication requirements for pulling private packages
+- GitHub Docs — "Managing your personal access tokens" (`docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens`): PAT creation with `read:packages` scope
+
+---
+
+#### 5f. Verification Checklist — Confirm Everything Works End-to-End
+
+Run through this checklist **before** sending the invitation to a reviewer/interviewer:
+
+```
+□ 1. docker-publish.yml exists at .github/workflows/docker-publish.yml
+□ 2. Image pushed to GHCR (either local push or workflow build):
+     → Local push: docker push ghcr.io/shahram-boshra/milia:latest completed
+     → OR workflow build: green checkmark at
+        https://github.com/shahram-boshra/MILIA/actions/workflows/docker-publish.yml
+□ 3. Dockerfile contains OCI labels (org.opencontainers.image.source):
+     → grep "org.opencontainers" Dockerfile  # must show the LABEL lines
+□ 4. GHCR package exists and is linked to the repository:
+     → https://github.com/shahram-boshra/MILIA → right sidebar → "Packages"
+     → Package page shows repository information
+□ 5. Inherited permissions enabled:
+     → Package settings → "Inherit access from source repository" is checked
+□ 6. Package visibility is PRIVATE (do NOT change to public)
+□ 7. Test pull from your own machine (outside the container):
+     docker pull ghcr.io/shahram-boshra/milia:latest
+     docker run -it ghcr.io/shahram-boshra/milia:latest
+     # Verify: (shah_env) prompt appears, pytest -m smoke passes
+□ 8. CI badge is green on the repository page:
+     → https://github.com/shahram-boshra/MILIA → README.md badges
+□ 9. Invitation sent and accepted (verify under Settings → Collaborators)
+```
+
+---
+
+#### 5g. Summary: What One Collaborator Invitation Provides
+
+| Access | Mechanism | Reviewer Gets |
+|--------|-----------|---------------|
+| Source code (11 modules, 146 tests, configs) | Repository collaborator | Read/write to all repository contents |
+| Docker image (`ghcr.io/shahram-boshra/milia:latest`) | GHCR inherited permissions from linked repository | Pull access — `docker pull` + `docker run` |
+| CI/CD pipeline results | GitHub Actions (public to collaborators) | View all workflow runs, test results, build logs |
+| Documentation (Sphinx) | Repository contents + Read the Docs (if connected) | Full docs access |
+| Issues, PRs, Wiki | Repository collaborator | Read/write |
+
+**For a journal reviewer**: They can verify the software produces the results claimed in the paper by pulling the Docker image and running the test suite.
+
+**For a job interviewer / postdoc committee**: They can evaluate code quality, architecture, engineering practices, documentation, and CI/CD maturity — and optionally run the software themselves.
+
+---
+
+**Document Version**: 1.5.0
 **Created**: February 2026
-**Updated**: February 2026 — v1.4.0: Added "What Actually Remains — Post-Creation Actions" section with the 4 post-creation steps (git init, pre-commit activation, GitHub push + post-push settings, RTD connection) sourced from Audit §7B, §3.1, §3.4, §7C, §3.9. v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide. Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a); restructured B1 into B1a + B1b; updated implementation order, dependency graph, and summary table
+**Updated**: February 2026 — v1.5.0: Added step 5 to "What Actually Remains" section — complete practical guide for `docker-publish.yml` creation, GHCR configuration, inherited permissions, collaborator invitation, reviewer instructions, and end-to-end verification checklist. Evidence-based on GitHub Docs (GHCR, Connecting packages, Configuring access, Inviting collaborators, Permission levels), `docker/metadata-action` README, and `docker/build-push-action` README. Addresses the final remaining item (#6 in Summary Table). v1.4.0: Added "What Actually Remains — Post-Creation Actions" section with the 4 post-creation steps (git init, pre-commit activation, GitHub push + post-push settings, RTD connection) sourced from Audit §7B, §3.1, §3.4, §7C, §3.9. v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide. Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a); restructured B1 into B1a + B1b; updated implementation order, dependency graph, and summary table
 **Based On**: MILIA Pipeline Project Structure v1.1.0, MILIA Production Release File Audit v1.1.0, MILIA Test Recommendations v1.2.0
-**Evidence Sources**: PyPA, pyOpenSci, Scientific Python Dev Guide, GitHub Docs (Actions, Container Jobs, GHCR, Packages Billing), Docker Docs, conda-incubator/setup-miniconda, pytest docs, Keng's Blog (see full list above)
+**Evidence Sources**: PyPA, pyOpenSci, Scientific Python Dev Guide, GitHub Docs (Actions, Container Jobs, GHCR, Packages Billing, Connecting a repository to a package, Configuring a package's access control and visibility, Inviting collaborators to a personal repository, Permission levels for a personal account repository, About permissions for GitHub Packages), Docker Docs, `docker/metadata-action` README, `docker/build-push-action` README, conda-incubator/setup-miniconda, pytest docs, Keng's Blog (see full list above)
