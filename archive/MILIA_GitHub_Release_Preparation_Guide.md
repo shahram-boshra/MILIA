@@ -735,8 +735,65 @@ All questions originally listed here have been resolved during the Production Re
 
 ---
 
-**Document Version**: 1.3.0
+## What Actually Remains — Post-Creation Actions
+
+All file creation work described in this guide and the Production Release File Audit has been completed. The audit identifies several items that cannot be completed until Git is initialized and the repository is pushed to GitHub. These are the true remaining action items:
+
+### 1. Initialize Git & Make the Initial Commit (Audit §7B)
+
+This is the foundational step. The audit explicitly states (line 538): *"Adopting Git eliminates `_legacy/`, unlocks P2/P3 items, and is the single highest-impact infrastructure improvement."*
+
+```bash
+cd /path/to/milia
+git init
+git add .
+git commit -m "feat: initial production release v1.1.0
+
+Complete MILIA pipeline with all P0/P1/P2/P3 production infrastructure:
+- pyproject.toml (PEP 621/639), LICENSE (MIT), README.md, CHANGELOG.md
+- CITATION.cff (CFF 1.2.0), CONTRIBUTING.md, CODE_OF_CONDUCT.md (CC 3.0)
+- SECURITY.md, RELEASE_CHECKLIST.md, Makefile (20 targets), noxfile.py
+- .pre-commit-config.yaml, .github/ (CI/CD, issue forms, Dependabot)
+- MANIFEST.in, .readthedocs.yaml, docs/ (Sphinx build system)
+- .gitignore (GitHub Python template + MILIA exclusions)
+- 11 core modules, 127 tests, configs/"
+
+git status
+git log --oneline
+```
+
+### 2. Activate Pre-commit Hooks (Audit §3.1 — "activates after git init")
+
+```bash
+pip install pre-commit        # or: conda install pre-commit
+pre-commit install            # install hooks into .git/hooks/
+pre-commit run --all-files    # run all hooks on entire codebase
+```
+
+### 3. Push to GitHub and Complete One-Time Post-Push Setup (Audit §3.4, §7C)
+
+```bash
+git remote add origin https://github.com/shahram-boshra/MILIA.git
+git branch -M main
+git push -u origin main
+```
+
+Then three manual GitHub settings:
+
+1. **Enable Private Vulnerability Reporting** (Audit §7C, lines 548–553): Navigate to `https://github.com/shahram-boshra/MILIA` → **Settings** → **Security** → **Code security and analysis** → **Private vulnerability reporting** → **Enable**. Required for `SECURITY.md` to function — without it the "Report a vulnerability" button will not appear. **Verification**: Visit `https://github.com/shahram-boshra/MILIA/security` — the button should be visible.
+
+2. **Configure PyPI Trusted Publisher** (Audit §3.4, line 254): At `pypi.org/manage/project/milia/settings/publishing/` — add GitHub Actions publisher (owner: `shahram-boshra`, repo: `MILIA`, workflow: `release.yml`, environment: `pypi`).
+
+3. **Create `pypi` GitHub Environment** (Audit §3.4, line 255): In repo **Settings** → **Environments** → create `pypi` environment (optionally require manual approval).
+
+### 4. Connect to Read the Docs (Audit §3.9, lines 345–347)
+
+After push, connect repository at `readthedocs.org/dashboard/import/`. RTD will auto-detect `.readthedocs.yaml` and build docs on each push to `main`.
+
+---
+
+**Document Version**: 1.4.0
 **Created**: February 2026
-**Updated**: February 2026 — v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide (CITATION.cff, SECURITY.md, RELEASE_CHECKLIST.md, Makefile, MANIFEST.in, noxfile.py, .pre-commit-config.yaml, .readthedocs.yaml, release.yml, dependabot.yml, YAML issue forms, PR template, docs/ Sphinx build system). Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a) for reviewer/user access; restructured B1 into B1a (Docker publish) + B1b (test suite); updated implementation order, dependency graph, and summary table
+**Updated**: February 2026 — v1.4.0: Added "What Actually Remains — Post-Creation Actions" section with the 4 post-creation steps (git init, pre-commit activation, GitHub push + post-push settings, RTD connection) sourced from Audit §7B, §3.1, §3.4, §7C, §3.9. v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide. Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a); restructured B1 into B1a + B1b; updated implementation order, dependency graph, and summary table
 **Based On**: MILIA Pipeline Project Structure v1.1.0, MILIA Production Release File Audit v1.1.0, MILIA Test Recommendations v1.2.0
 **Evidence Sources**: PyPA, pyOpenSci, Scientific Python Dev Guide, GitHub Docs (Actions, Container Jobs, GHCR, Packages Billing), Docker Docs, conda-incubator/setup-miniconda, pytest docs, Keng's Blog (see full list above)
