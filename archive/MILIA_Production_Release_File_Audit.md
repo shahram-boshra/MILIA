@@ -26,7 +26,7 @@ Based on line-by-line verification of `find .` output. Each directory's **actual
 | ⚠️ Dev-only | `test_data/` | 13 test fixture files (`.pt`, `.csv`, `.tar.gz`, `.xyz`, `.md`). No test references root `test_data/` — all use `/tmp/test_data/` with mocks. **Exclude from GitHub via `.gitignore`** |
 | ⚠️ Dev-only | `scripts/` | 9 utility scripts (NPZ checking, doc generation, import analysis). Developer tools only, 2 still named VQM24. **Exclude from GitHub via `.gitignore`** |
 | ⚠️ Empty | `docs/` | Now empty — all 21 former files (18 .md + 2 .py + 1 subdir) relocated to `archive/legacy/`. Directory retained as placeholder for future documentation build system (§3.9). **Exclude via `.gitignore` for now** |
-| ⚠️ Outdated | `examples/` | 3 files in `preprocessing/` — all reference VQM24. Delete contents, keep directory as placeholder with `.gitkeep` |
+| ✅ Placeholder | `examples/` | 3 former VQM24 files deleted. Empty directory retained with `.gitkeep` for future MILIA examples |
 | ✅ Functional | `experiments/` | Empty but **functional target** for Research API (§4.2) |
 | ❌ Deleted | `utils/` | Contained only deprecated tests + old conftest. No active usage. Directory removed entirely. |
 | ⚠️ Internal | `archive/` | Development blueprints, VQM24 notes, testing guides + `legacy/` subdirectory (21 files relocated from `docs/`, 13+ still reference VQM24) — **exclude from GitHub via `.gitignore`** (§4.4) |
@@ -46,7 +46,7 @@ Each root-level item reviewed directory-by-directory. Decision and evidence reco
 | `archive/` | ❌ Exclude from GitHub (`.gitignore`) | Internal dev docs (blueprints, VQM24 notes) + `legacy/` subdirectory (21 former `docs/` files relocated here, 13+ still reference VQM24). No value to end users. Git docs: `.gitignore` for files all cloners should not receive. |
 | `configs/` | ✅ Upload to GitHub as-is | Functional runtime configuration (7 root YAMLs + 10 dataset YAMLs). Software depends on these. |
 | `docs/` | ❌ Exclude from GitHub (`.gitignore`) for now | Now empty — all 21 former files relocated to `archive/legacy/` (13+ still reference old VQM24 name; included internal dev docs, blueprints, bug analyses, and deferred Phase 8 draft code). Directory retained as placeholder for future documentation build system (§3.9). No current content to upload. |
-| `examples/` | ✅ Upload to GitHub as empty placeholder (`.gitkeep`) | All 3 existing files reference VQM24 — outdated, delete. Keep directory with `.gitkeep` for future MILIA examples. |
+| `examples/` | ✅ Upload to GitHub as empty placeholder (`.gitkeep`) | All 3 former VQM24 files deleted. `.gitkeep` created — directory tracked by Git for future MILIA examples. |
 | `experiments/` | ✅ Upload to GitHub as empty placeholder (`.gitkeep`) | Functional target for end-user experimental extensions (transformations, descriptors, etc.). Currently empty. |
 | `milia_pipeline/` | ✅ Upload to GitHub as-is | Core installable package (11 submodules, ~100+ .py files). Two runtime `.log` files deleted — `.gitignore` will prevent future tracking. |
 | `milia_pipeline.egg-info/` | ❌ Exclude from GitHub (`.gitignore`) | Setuptools cache artifact. Generated locally by `pip install -e .`. Each clone generates its own. |
@@ -433,7 +433,7 @@ Two files inside the **installable source package**: `dataset_handlers.py.DEPREC
 | `setup.py` | ✅ DONE — migrated to `pyproject.toml`, reduced to shim |
 | `archive/legacy/README.md` | Keep in `archive/legacy/` — former internal documentation navigation (relocated from `docs/`, distinct from root README) |
 | `archive/legacy/INDEX.md` | Keep in `archive/legacy/` — former documentation entry point candidate (relocated from `docs/`). Adapt as entry point if Sphinx/MkDocs adopted (§3.9) |
-| `examples/` | Expand: add training, HPO, prediction, plugin development examples |
+| `examples/` | ✅ `.gitkeep` placeholder created. Expand later: add training, HPO, prediction, plugin development examples |
 
 ---
 
@@ -523,7 +523,7 @@ milia/
 | **P3** | `.github/` templates | Issue/PR quality — YAML issue forms + config.yml + PR template *(activates when pushed to GitHub)* | ✅ |
 | **P3** | `noxfile.py` | Multi-env testing (nox, Scientific Python Dev Guide) | ✅ |
 | **P3** | Documentation build system | Hosted docs *(activates when connected to Read the Docs)* | ✅ |
-| **P3** | Expanded `examples/` | User onboarding |
+| **P3** | Expanded `examples/` | User onboarding — `.gitkeep` placeholder created; populate with MILIA examples later | ✅ |
 
 ---
 
