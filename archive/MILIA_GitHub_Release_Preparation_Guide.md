@@ -16,17 +16,30 @@
 | Unit tests (127 files) | ✅ Complete | User-confirmed; file listing in `tests/` directory |
 | Beyond-unit tests (18 files) | ✅ Complete | Sections 1–7 of `MILIA_Test_Recommendations.md` v1.2.0 |
 | `conftest.py` | ✅ Complete | 573 lines; markers registered programmatically via `pytest_configure()` |
-| `setup.py` | ✅ Exists | `install_requires=[]`; `extras_require={'dev': []}` — no `[test]` extra |
+| `setup.py` | ✅ Reduced to shim | Static metadata fully migrated to `pyproject.toml`; backward-compatibility shim only (Audit §2.1) |
 | `environment.yml` | ✅ Exists | Conda-based; channels: `conda-forge`, `pytorch`, `pyg` |
 | `Dockerfile` | ✅ Exists | `miniconda3:latest` base; mamba installation; `shah_env` environment; **MUST be built and pushed to GHCR** for reviewer/user access |
-| `.gitignore` | ❌ Missing | Listed in project structure but not provided / confirmed present |
-| `pyproject.toml` | ❌ Missing | Does not exist; pytest config lives only in `conftest.py` |
-| `.github/workflows/ci.yml` | ❌ Missing | Does not exist |
-| `README.md` | ❌ Missing | Referenced by `setup.py` line 22 (guarded: `if os.path.exists`) |
-| `LICENSE` | ❌ Missing | Not in project structure listing |
-| `CHANGELOG.md` | ❌ Missing | Not in project structure listing |
-| `CONTRIBUTING.md` | ❌ Missing | Not in project structure listing |
-| `CODE_OF_CONDUCT.md` | ❌ Missing | Not in project structure listing |
+| `.gitignore` | ✅ Complete | Fresh GitHub Python template + MILIA-specific exclusions (Audit §2.4) |
+| `pyproject.toml` | ✅ Complete | Full PEP 621/639 metadata + tool configs; `setup.py` reduced to shim (Audit §2.1) |
+| `.github/workflows/ci.yml` | ✅ Complete | Lint + test matrix (Python 3.10/3.11/3.12); smoke gate (Audit §3.4) |
+| `README.md` | ✅ Complete | pyOpenSci-compliant project front page with badges, features, install, CLI examples (Audit §2.3) |
+| `LICENSE` | ✅ Complete | MIT, copyright 2026-present Asadollah Boshra (Audit §2.2) |
+| `CHANGELOG.md` | ✅ Complete | Keep a Changelog 1.1.0 format, initial release [1.1.0] - 2026-02-12 (Audit §2.5) |
+| `CONTRIBUTING.md` | ✅ Complete | pyOpenSci/GitHub Community Standards compliant (Audit §2.6) |
+| `CODE_OF_CONDUCT.md` | ✅ Complete | Contributor Covenant 3.0, CC BY-SA 4.0 (Audit §2.7) |
+| `CITATION.cff` | ✅ Complete | CFF 1.2.0, validated with `cffconvert --validate` (Audit §2.8) |
+| `SECURITY.md` | ✅ Complete | GitHub Docs + OpenSSF compliant, coordinated disclosure (Audit §3.3) |
+| `RELEASE_CHECKLIST.md` | ✅ Complete | 14-step release workflow (Audit §3.7) |
+| `Makefile` | ✅ Complete | 20 phony targets, self-documenting help (Audit §3.2) |
+| `MANIFEST.in` | ✅ Complete | 76-line sdist file control (Audit §3.5) |
+| `noxfile.py` | ✅ Complete | 5 nox sessions, multi-Python testing (Audit §3.8) |
+| `.pre-commit-config.yaml` | ✅ Complete | 3 repos, 10 hooks; activates after `git init` (Audit §3.1) |
+| `.readthedocs.yaml` | ✅ Complete | RTD v2 config (Audit §3.9) |
+| `.github/workflows/release.yml` | ✅ Complete | Tag-triggered PyPI Trusted Publishers (Audit §3.4) |
+| `.github/dependabot.yml` | ✅ Complete | pip + github-actions ecosystems, weekly (Audit §3.4) |
+| `.github/ISSUE_TEMPLATE/` | ✅ Complete | YAML issue forms: bug_report.yml, feature_request.yml, config.yml (Audit §3.4) |
+| `.github/PULL_REQUEST_TEMPLATE.md` | ✅ Complete | Checklist aligned with CONTRIBUTING.md (Audit §3.4) |
+| `docs/` (Sphinx build system) | ✅ Complete | conf.py, index.md, getting-started.md, api/index.md, changelog.md, contributing.md, requirements.txt, _static/.gitkeep (Audit §3.9) |
 
 ---
 
@@ -36,7 +49,7 @@ These files must exist before the CI/CD workflow is created, because some are te
 
 ---
 
-### A1. `.gitignore`
+### A1. `.gitignore` — ✅ COMPLETED (Audit §2.4)
 
 **What**: Tells Git which files and directories to exclude from version control.
 
@@ -105,7 +118,7 @@ Thumbs.db
 
 ---
 
-### A2. `pyproject.toml` (Minimal — Tool Configuration Only)
+### A2. `pyproject.toml` — ✅ COMPLETED (Audit §2.1) — Full PEP 621/639, Not Phased
 
 **What**: The modern standard configuration file for Python projects. Required by PEP 518 (build system) and PEP 621 (project metadata). Also used for tool configuration (pytest, coverage, ruff, etc.).
 
@@ -173,7 +186,7 @@ fail_under = 70
 
 ---
 
-### A3. `LICENSE`
+### A3. `LICENSE` — ✅ COMPLETED (Audit §2.2)
 
 **What**: Legal document specifying how others can use, modify, and distribute your code.
 
@@ -204,7 +217,7 @@ Your `setup.py` (line 33) already declares `"License :: OSI Approved :: MIT Lice
 
 ---
 
-### A4. `README.md`
+### A4. `README.md` — ✅ COMPLETED (Audit §2.3)
 
 **What**: The primary documentation file displayed on your GitHub repository landing page.
 
@@ -257,7 +270,7 @@ The README should contain:
 
 ---
 
-### A5. `CHANGELOG.md` (Recommended, Not Required)
+### A5. `CHANGELOG.md` — ✅ COMPLETED (Audit §2.5)
 
 **What**: Documents version history, notable changes, bug fixes.
 
@@ -273,7 +286,7 @@ The README should contain:
 
 ---
 
-### A6. `CONTRIBUTING.md` (Recommended, Not Required)
+### A6. `CONTRIBUTING.md` — ✅ COMPLETED (Audit §2.6)
 
 **What**: Guidelines for how others can contribute to the project.
 
@@ -288,7 +301,7 @@ The README should contain:
 
 ---
 
-### A7. `CODE_OF_CONDUCT.md` (Recommended, Not Required)
+### A7. `CODE_OF_CONDUCT.md` — ✅ COMPLETED (Audit §2.7)
 
 **What**: Behavioral guidelines for project interactions.
 
@@ -413,7 +426,7 @@ docker run -it ghcr.io/YOUR_USERNAME/milia-pipeline:latest
 
 ---
 
-#### B1b. `.github/workflows/ci.yml` — Test Suite Pipeline
+#### B1b. `.github/workflows/ci.yml` — ✅ COMPLETED (Audit §3.4)
 
 **What**: Runs the 146-test suite automatically on every push and pull request to validate code correctness.
 
@@ -532,7 +545,7 @@ jobs:
 
 ---
 
-### B2. `setup.py` Updates (Required Modifications)
+### B2. `setup.py` Updates — ✅ COMPLETED (Audit §2.1) — Reduced to Backward-Compatibility Shim
 
 **What**: The existing `setup.py` needs specific updates to work correctly with CI/CD.
 
@@ -561,7 +574,7 @@ These files add professional polish but have no technical impact on CI/CD.
 
 ---
 
-### C1. `docs/` Directory
+### C1. `docs/` Directory — ✅ COMPLETED (Audit §3.9) — Sphinx Build System with RTD Config
 
 **What**: Project documentation beyond the README.
 
@@ -571,7 +584,7 @@ These files add professional polish but have no technical impact on CI/CD.
 
 ---
 
-### C2. `examples/` Directory
+### C2. `examples/` Directory — ✅ PLACEHOLDER (Audit §1.1) — `.gitkeep` Created, Content TBD
 
 **What**: Working usage examples.
 
@@ -586,40 +599,45 @@ These files add professional polish but have no technical impact on CI/CD.
 The following order respects all technical dependencies and maximizes efficiency:
 
 ```
-Phase 1: Pre-CI/CD Foundation
+Phase 1: Pre-CI/CD Foundation — ✅ ALL COMPLETE (Audit §2)
 ┌─────────────────────────────────────────────────────┐
-│ Step 1: .gitignore          [A1] — No dependencies  │
-│ Step 2: LICENSE             [A3] — No dependencies  │
-│ Step 3: pyproject.toml      [A2] — Phase 1 only     │
-│         (tool config only, no [project] table)       │
-│ Step 4: README.md           [A4] — Minimal version  │
-│         (CI badge placeholder, basic content)        │
-│ Step 5: setup.py updates    [B2] — After repo URL   │
-│         (update url, add test extra key)             │
+│ Step 1: .gitignore          [A1] — ✅ Audit §2.4    │
+│ Step 2: LICENSE             [A3] — ✅ Audit §2.2    │
+│ Step 3: pyproject.toml      [A2] — ✅ Audit §2.1    │
+│         (FULL PEP 621/639, not phased)               │
+│ Step 4: README.md           [A4] — ✅ Audit §2.3    │
+│ Step 5: setup.py            [B2] — ✅ Audit §2.1    │
+│         (reduced to shim, metadata in pyproject.toml)│
 └─────────────────────────────────────────────────────┘
          │
          ▼
-Phase 2: CI/CD Infrastructure
+Phase 2: CI/CD Infrastructure — ✅ PARTIALLY COMPLETE
 ┌─────────────────────────────────────────────────────┐
 │ Step 6: .github/workflows/docker-publish.yml [B1a]  │
-│         (build & push Docker image to GHCR)          │
+│         ❌ NOT YET CREATED — build & push to GHCR    │
 │ Step 7: .github/workflows/ci.yml  [B1b]             │
-│         (test suite — conda-based or Docker-based)   │
-│ Step 8: Update README.md with CI badge + GHCR pull  │
-│         (badge URL now known from Step 7)            │
+│         ✅ Audit §3.4 — lint + test matrix           │
+│ Step 8: .github/workflows/release.yml                │
+│         ✅ Audit §3.4 — tag-triggered PyPI publish   │
 └─────────────────────────────────────────────────────┘
          │
          ▼
-Phase 3: Professional Polish (Optional)
+Phase 3: Professional Polish — ✅ ALL COMPLETE (Audit §2–§3)
 ┌─────────────────────────────────────────────────────┐
-│ Step 9:  CHANGELOG.md       [A5]                    │
-│ Step 10: CONTRIBUTING.md    [A6]                    │
-│ Step 11: CODE_OF_CONDUCT.md [A7]                    │
-│ Step 12: pyproject.toml Phase 2                     │
-│          (add [build-system] + [project] tables)     │
-│ Step 13: examples/ content  [C2]                    │
-│ Step 14: docs/ content      [C1]                    │
+│ Step 9:  CHANGELOG.md       [A5] — ✅ Audit §2.5   │
+│ Step 10: CONTRIBUTING.md    [A6] — ✅ Audit §2.6   │
+│ Step 11: CODE_OF_CONDUCT.md [A7] — ✅ Audit §2.7   │
+│ Step 12: pyproject.toml (full)   — ✅ Audit §2.1   │
+│ Step 13: examples/ (.gitkeep)    — ✅ Audit §1.1   │
+│ Step 14: docs/ (Sphinx)          — ✅ Audit §3.9   │
 └─────────────────────────────────────────────────────┘
+
+Additional files created by Audit (not in original Guide):
+  CITATION.cff (§2.8), SECURITY.md (§3.3), RELEASE_CHECKLIST.md (§3.7),
+  Makefile (§3.2), MANIFEST.in (§3.5), noxfile.py (§3.8),
+  .pre-commit-config.yaml (§3.1), .readthedocs.yaml (§3.9),
+  release.yml (§3.4), dependabot.yml (§3.4), YAML issue forms (§3.4),
+  PR template (§3.4)
 ```
 
 ---
@@ -627,65 +645,59 @@ Phase 3: Professional Polish (Optional)
 ## Dependency Graph
 
 ```
-.gitignore ─────────────────────────────────────── (standalone)
-LICENSE ────────────────────────────────────────── (standalone, but must match setup.py classifier)
-pyproject.toml Phase 1 ────────────────────────── (standalone, tool config only)
-README.md ─────────────────────────────────────── (setup.py line 22 reads it; CI badge needs workflow path)
-    │
-    ├── setup.py line 22: long_description reads README.md (guarded)
-    └── pyproject.toml Phase 2: readme = "README.md" (FUTURE — not yet)
+✅ .gitignore ──────────────────────────────────── COMPLETE (Audit §2.4)
+✅ LICENSE ─────────────────────────────────────── COMPLETE (Audit §2.2)
+✅ pyproject.toml (full PEP 621/639) ──────────── COMPLETE (Audit §2.1)
+✅ README.md ───────────────────────────────────── COMPLETE (Audit §2.3)
+✅ setup.py (reduced to shim) ─────────────────── COMPLETE (Audit §2.1)
 
-Dockerfile ────────────────────────────────────── (COMMITTED to repo)
+✅ Dockerfile ─────────────────────────────────── EXISTS
     ├── Used by docker-publish.yml to build & push to GHCR
     ├── Used locally by developer (docker build + docker run)
     └── Optionally used by ci.yml (Option B: Docker-based tests)
 
-.github/workflows/docker-publish.yml ──────────── (depends on:)
-    ├── Dockerfile          ← MUST exist (builds the image)
-    ├── environment.yml     ← Referenced by Dockerfile (same packages)
-    ├── milia_pipeline/     ← COPY'd into image
-    └── setup.py            ← COPY'd into image
+❌ .github/workflows/docker-publish.yml ────────── NOT YET CREATED (depends on:)
+    ├── Dockerfile          ← EXISTS
+    ├── environment.yml     ← EXISTS
+    ├── milia_pipeline/     ← EXISTS
+    └── setup.py            ← EXISTS (shim)
 
-.github/workflows/ci.yml ─────────────────────── (depends on:)
-    ├── environment.yml     ← MUST exist (conda env creation — Option A)
-    ├── Dockerfile          ← MUST exist (Option B only)
-    ├── setup.py            ← MUST exist (pip install -e .)
-    ├── pyproject.toml      ← SHOULD exist (pytest reads it)
-    ├── conftest.py         ← MUST exist (in tests/; markers + fixtures)
-    └── tests/test_*.py     ← MUST exist (what CI runs)
-
-README.md CI badge ────────────────────────────── (depends on:)
-    └── .github/workflows/ci.yml ← badge URL derives from workflow file path
-
-README.md GHCR pull instructions ──────────────── (depends on:)
-    └── docker-publish.yml ← image name/tag derives from workflow
-
-pyproject.toml Phase 2 ────────────────────────── (depends on:)
-    ├── README.md   ← readme = "README.md"
-    └── LICENSE     ← license = "MIT"
+✅ .github/workflows/ci.yml ───────────────────── COMPLETE (Audit §3.4)
+✅ .github/workflows/release.yml ──────────────── COMPLETE (Audit §3.4)
 ```
 
 ---
 
 ## Summary: Complete File Inventory for GitHub Release
 
-| # | File | Category | Priority | Technical Dep. on CI/CD? | Status |
-|---|------|----------|----------|--------------------------|--------|
-| 1 | `.gitignore` | Foundation | **Critical** | No | ❌ Create |
-| 2 | `LICENSE` | Foundation | **Critical** | No | ❌ Create |
-| 3 | `pyproject.toml` (Phase 1) | Foundation | **Critical** | Yes — pytest reads it | ❌ Create |
-| 4 | `README.md` | Foundation | **Critical** | Partial — `setup.py` reads it | ❌ Create |
-| 5 | `setup.py` updates | Foundation | **High** | Yes — CI runs `pip install -e .` | 🔧 Modify |
-| 6 | `.github/workflows/docker-publish.yml` | CI/CD | **Critical** | N/A — builds & pushes Docker image to GHCR | ❌ Create |
-| 7 | `.github/workflows/ci.yml` | CI/CD | **Critical** | N/A — runs test suite | ❌ Create |
-| 8 | `CHANGELOG.md` | Polish | Medium | No | ❌ Create |
-| 9 | `CONTRIBUTING.md` | Polish | Medium | No | ❌ Create |
-| 10 | `CODE_OF_CONDUCT.md` | Polish | Low | No | ❌ Create |
-| 11 | `pyproject.toml` (Phase 2) | Migration | Medium | No | 🔧 Modify |
-| 12 | `examples/` content | Polish | Low | No | 📝 Add content |
-| 13 | `docs/` content | Polish | Low | No | 📝 Add content |
+| # | File | Category | Priority | Status |
+|---|------|----------|----------|--------|
+| 1 | `.gitignore` | Foundation | **Critical** | ✅ Complete (Audit §2.4) |
+| 2 | `LICENSE` | Foundation | **Critical** | ✅ Complete (Audit §2.2) |
+| 3 | `pyproject.toml` | Foundation | **Critical** | ✅ Complete — full PEP 621/639 (Audit §2.1) |
+| 4 | `README.md` | Foundation | **Critical** | ✅ Complete (Audit §2.3) |
+| 5 | `setup.py` | Foundation | **High** | ✅ Reduced to shim (Audit §2.1) |
+| 6 | `.github/workflows/docker-publish.yml` | CI/CD | **Critical** | ❌ Not yet created |
+| 7 | `.github/workflows/ci.yml` | CI/CD | **Critical** | ✅ Complete (Audit §3.4) |
+| 8 | `CHANGELOG.md` | Polish | Medium | ✅ Complete (Audit §2.5) |
+| 9 | `CONTRIBUTING.md` | Polish | Medium | ✅ Complete (Audit §2.6) |
+| 10 | `CODE_OF_CONDUCT.md` | Polish | Low | ✅ Complete (Audit §2.7) |
+| 11 | `CITATION.cff` | Polish | Medium | ✅ Complete (Audit §2.8) |
+| 12 | `SECURITY.md` | Polish | Medium | ✅ Complete (Audit §3.3) |
+| 13 | `RELEASE_CHECKLIST.md` | Polish | Medium | ✅ Complete (Audit §3.7) |
+| 14 | `Makefile` | Developer | Medium | ✅ Complete (Audit §3.2) |
+| 15 | `MANIFEST.in` | Packaging | Medium | ✅ Complete (Audit §3.5) |
+| 16 | `noxfile.py` | Testing | Medium | ✅ Complete (Audit §3.8) |
+| 17 | `.pre-commit-config.yaml` | Quality | Medium | ✅ Complete (Audit §3.1) |
+| 18 | `.readthedocs.yaml` | Docs | Medium | ✅ Complete (Audit §3.9) |
+| 19 | `.github/workflows/release.yml` | CI/CD | Medium | ✅ Complete (Audit §3.4) |
+| 20 | `.github/dependabot.yml` | CI/CD | Low | ✅ Complete (Audit §3.4) |
+| 21 | `.github/ISSUE_TEMPLATE/` (3 files) | CI/CD | Low | ✅ Complete (Audit §3.4) |
+| 22 | `.github/PULL_REQUEST_TEMPLATE.md` | CI/CD | Low | ✅ Complete (Audit §3.4) |
+| 23 | `docs/` (Sphinx build system, 8 files) | Docs | Low | ✅ Complete (Audit §3.9) |
+| 24 | `examples/` | Polish | Low | ✅ Placeholder `.gitkeep` (Audit §1.1) |
 
-**Minimum viable release (items 1–7)**: 6 new files + 1 modification.
+**Remaining**: Only item #6 (`docker-publish.yml`) is not yet created.
 
 ---
 
@@ -711,24 +723,20 @@ pyproject.toml Phase 2 ───────────────────
 
 ---
 
-## Files Required From You Before Implementation
+## Files Required From You Before Implementation — ✅ ALL RESOLVED
 
-Before proceeding to implement the files in this guide, the following information is needed (cannot be assumed):
+All questions originally listed here have been resolved during the Production Release File Audit implementation:
 
-1. **GitHub repository URL** — Required for `setup.py` line 24 update and README badge URLs. What will the repository name be? (e.g., `github.com/yourusername/milia-pipeline`)
-
-2. **License confirmation** — `setup.py` declares MIT. Do you want to proceed with MIT, or choose a different license?
-
-3. **Author information for LICENSE** — The MIT license text requires a copyright year and holder name. Your `setup.py` lists "Asadollah (Shahram) Boshra, Ilia Boshra". Should the LICENSE use the same names?
-
-4. **Current `.gitignore`** — The project structure lists `.gitignore` as existing. If it does exist, please provide it so I can verify/extend rather than create from scratch. If it does not exist, confirm and I will create it.
-
-5. **Current `tests/` file listing** — Needed to verify the CI workflow's glob patterns (`tests/test_smoke_*.py`, `tests/test_*_unit.py`, etc.) match actual filenames. The output of `find tests/ -name "*.py" -type f | sort` would be ideal.
+1. **GitHub repository URL** — ✅ Resolved: `https://github.com/shahram-boshra/MILIA` (Audit §2.1, line 79)
+2. **License confirmation** — ✅ Resolved: MIT (Audit §2.2, line 90)
+3. **Author information for LICENSE** — ✅ Resolved: "2026-present Asadollah Boshra" (Audit §2.2, line 90)
+4. **Current `.gitignore`** — ✅ Resolved: Fresh GitHub Python template + MILIA-specific exclusions created (Audit §2.4)
+5. **Current `tests/` file listing** — ✅ Resolved: 127 test files verified; CI workflow glob patterns set (Audit §3.4)
 
 ---
 
-**Document Version**: 1.2.0
+**Document Version**: 1.3.0
 **Created**: February 2026
-**Updated**: February 2026 — v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a) for reviewer/user access; restructured B1 into B1a (Docker publish) + B1b (test suite); updated implementation order, dependency graph, and summary table
-**Based On**: MILIA Pipeline Project Structure v1.1.0, MILIA Test Recommendations v1.2.0, setup.py, environment.yml, conftest.py, Dockerfile (from transcript)
+**Updated**: February 2026 — v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide (CITATION.cff, SECURITY.md, RELEASE_CHECKLIST.md, Makefile, MANIFEST.in, noxfile.py, .pre-commit-config.yaml, .readthedocs.yaml, release.yml, dependabot.yml, YAML issue forms, PR template, docs/ Sphinx build system). Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a) for reviewer/user access; restructured B1 into B1a (Docker publish) + B1b (test suite); updated implementation order, dependency graph, and summary table
+**Based On**: MILIA Pipeline Project Structure v1.1.0, MILIA Production Release File Audit v1.1.0, MILIA Test Recommendations v1.2.0
 **Evidence Sources**: PyPA, pyOpenSci, Scientific Python Dev Guide, GitHub Docs (Actions, Container Jobs, GHCR, Packages Billing), Docker Docs, conda-incubator/setup-miniconda, pytest docs, Keng's Blog (see full list above)
