@@ -184,6 +184,34 @@ ruff format --check .
 
 Please ensure `ruff check .` and `ruff format --check .` pass before submitting a pull request.
 
+## Documentation
+
+MILIA uses [Sphinx](https://www.sphinx-doc.org/) with the [MyST Markdown](https://myst-parser.readthedocs.io/) parser and the [PyData Sphinx Theme](https://pydata-sphinx-theme.readthedocs.io/). Documentation source files live in the `docs/` directory.
+
+### Building Documentation Locally
+
+```bash
+# Install documentation dependencies
+pip install -r docs/requirements.txt
+# or: pip install -e ".[docs]"
+
+# Build HTML documentation
+make docs
+
+# Build and open in browser
+make docs-serve
+
+# Clean build output
+make docs-clean
+```
+
+### Writing Documentation
+
+- Documentation pages are written in Markdown (`.md`) using MyST syntax.
+- API documentation is auto-generated from docstrings via `sphinx.ext.autodoc` and `sphinx.ext.autosummary`.
+- Use [NumPy-style docstrings](https://numpydoc.readthedocs.io/en/latest/format.html) for all public functions, classes, and methods.
+- Cross-reference other modules using MyST syntax: `` {mod}`milia_pipeline.config` ``.
+
 ## Changelog
 
 MILIA follows the [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) format and adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).

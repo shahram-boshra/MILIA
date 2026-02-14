@@ -236,9 +236,9 @@ archive/*
 # its change history must be tracked in Git.
 !archive/MILIA_Production_Release_File_Audit.md
 
-# Documentation — 13+ files still reference old VQM24 name. Exclude until
-# revised VQM24→MILIA and curated for end-user value. (§1.1)
-docs/
+# Documentation — now populated with Sphinx build system (§3.9).
+# docs/ is tracked in Git. Build output (docs/_build/) is already excluded
+# by the GitHub Python template (line 78: docs/_build/).
 
 # Developer-only utility scripts — NPZ checking, doc generation, import
 # analysis. 2 still reference VQM24. No end-user value. (§1.1)

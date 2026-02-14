@@ -65,6 +65,10 @@ prune _legacy
 # experiments/: Empty functional placeholder for user experimental extensions.
 prune experiments
 
+# docs/: Documentation source files (Sphinx). Available via Git repository,
+# not needed in sdist. Per pyOpenSci: docs are hosted separately (Read the Docs).
+prune docs
+
 # milia_pipeline.egg-info/: Setuptools build cache artifact. Each clone
 # generates its own via pip install -e . (pypa/setuptools #3348).
 prune milia_pipeline.egg-info

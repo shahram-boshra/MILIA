@@ -158,6 +158,25 @@ build:  ## Build sdist and wheel distributions
 	$(PYTHON) -m build
 
 # =============================================================================
+# Documentation
+# =============================================================================
+# Source: docs/conf.py (Sphinx 8.1.x), docs/requirements.txt,
+#   Scientific Python Dev Guide — sphinx-build invocation.
+# Install doc dependencies first: pip install -r docs/requirements.txt
+
+.PHONY: docs
+docs:  ## Build HTML documentation (Sphinx)
+	sphinx-build -b html docs docs/_build
+
+.PHONY: docs-serve
+docs-serve: docs  ## Build docs and open in browser
+	$(PYTHON) -m webbrowser -t "docs/_build/index.html"
+
+.PHONY: docs-clean
+docs-clean:  ## Remove documentation build output
+	rm -rf docs/_build docs/api/generated
+
+# =============================================================================
 # Cleanup
 # =============================================================================
 # Patterns sourced from .gitignore (GitHub Python template + MILIA-specific):
@@ -186,6 +205,7 @@ clean:  ## Remove build artifacts, caches, and compiled files
 .PHONY: clean-all
 clean-all: clean  ## Remove all artifacts including .egg-info (full reset)
 	rm -rf $(PACKAGE_NAME).egg-info/
+	rm -rf docs/_build docs/api/generated
 
 # =============================================================================
 # Information

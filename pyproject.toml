@@ -75,11 +75,20 @@ dev = [
     "pytest-mock>=3.14",
     "ruff",
 ]
+# Documentation build dependencies (installed via: pip install -e ".[docs]")
+# Sphinx <8.2: 8.2+ drops Python 3.10 support (sphinx-doc/sphinx#13325).
+# Also available as: pip install -r docs/requirements.txt
+docs = [
+    "sphinx>=8.1,<8.2",
+    "pydata-sphinx-theme>=0.16",
+    "myst-parser>=4.0",
+    "sphinx-copybutton>=0.5",
+]
 
 [project.urls]
 Homepage = "https://github.com/shahram-boshra/MILIA"
 Repository = "https://github.com/shahram-boshra/MILIA"
-Documentation = "https://github.com/shahram-boshra/MILIA#readme"
+Documentation = "https://milia.readthedocs.io"
 "Bug Tracker" = "https://github.com/shahram-boshra/MILIA/issues"
 Changelog = "https://github.com/shahram-boshra/MILIA/blob/main/CHANGELOG.md"
 

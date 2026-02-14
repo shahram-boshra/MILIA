@@ -1,0 +1,27 @@
+# =============================================================================
+# MILIA — Documentation Build Dependencies
+# =============================================================================
+# Install with: pip install -r docs/requirements.txt
+#
+# Version constraints:
+#   - Sphinx <8.2: Sphinx 8.2+ drops Python 3.10 support (sphinx-doc/sphinx#13325).
+#     MILIA supports Python >=3.10 (pyproject.toml requires-python).
+#   - All other packages: latest releases compatible with Sphinx 8.1.x.
+#
+# Source: Sphinx install docs — "it is advisable to pin sphinx and
+#   third-party extension versions in a requirements.txt file"
+# Source: pyOpenSci — pydata-sphinx-theme is the standard scientific Python theme
+# Source: Scientific Python Dev Guide — MyST parser for Markdown documentation
+# =============================================================================
+
+# Sphinx documentation generator (8.1.x line; 8.2 drops Python 3.10)
+sphinx>=8.1,<8.2
+
+# PyData Sphinx theme (scientific Python ecosystem standard)
+pydata-sphinx-theme>=0.16
+
+# MyST Markdown parser for Sphinx
+myst-parser>=4.0
+
+# Sphinx extensions
+sphinx-copybutton>=0.5
