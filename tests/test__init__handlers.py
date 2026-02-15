@@ -66,9 +66,7 @@ import importlib
 import inspect
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -86,6 +84,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def handlers_pkg():
     """
@@ -96,6 +95,7 @@ def handlers_pkg():
     """
     try:
         import milia_pipeline.handlers as hdl
+
         return hdl
     except ImportError as exc:
         pytest.fail(
@@ -146,21 +146,27 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_exists(self, handlers_pkg, attr):
         """Each metadata dunder is defined on the handlers package."""
         assert hasattr(handlers_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, handlers_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(handlers_pkg, attr)
@@ -172,9 +178,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = handlers_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -182,9 +186,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeHandlerClassesFallback:
@@ -275,23 +277,24 @@ class TestSmokeIsHandlerClassFunction:
         assert callable(handlers_pkg._is_handler_class)
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "DatasetHandler",
-        "DFTDatasetHandler",
-        "DMCDatasetHandler",
-        "WavefunctionDatasetHandler",
-        "QM9DatasetHandler",
-        "ANI1xDatasetHandler",
-        "ANI1ccxDatasetHandler",
-        "ANI2xDatasetHandler",
-        "RMD17DatasetHandler",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "DatasetHandler",
+            "DFTDatasetHandler",
+            "DMCDatasetHandler",
+            "WavefunctionDatasetHandler",
+            "QM9DatasetHandler",
+            "ANI1xDatasetHandler",
+            "ANI1ccxDatasetHandler",
+            "ANI2xDatasetHandler",
+            "RMD17DatasetHandler",
+        ],
+    )
     def test_is_handler_class_returns_true_for_known(self, handlers_pkg, name):
         """``_is_handler_class()`` returns True for known handler names."""
         result = handlers_pkg._is_handler_class(name)
-        assert result is True, (
-            f"_is_handler_class('{name}') should return True"
-        )
+        assert result is True, f"_is_handler_class('{name}') should return True"
 
     @pytest.mark.smoke
     def test_is_handler_class_returns_false_for_non_handler(self, handlers_pkg):
@@ -319,18 +322,21 @@ class TestSmokeBaseHandlerAttrs:
         assert len(handlers_pkg._BASE_HANDLER_ATTRS) > 0
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr_name", [
-        "handle_transform_errors",
-        "create_dataset_handler",
-        "validate_dataset_handler_compatibility",
-        "filter_descriptors_by_handler_support",
-        "verify_handler_abstraction",
-        "get_handler_abstraction_summary",
-        "_init_registry",
-        "_get_available_handler_types",
-        "_is_handler_type_registered",
-        "get_registry_status",
-    ])
+    @pytest.mark.parametrize(
+        "attr_name",
+        [
+            "handle_transform_errors",
+            "create_dataset_handler",
+            "validate_dataset_handler_compatibility",
+            "filter_descriptors_by_handler_support",
+            "verify_handler_abstraction",
+            "get_handler_abstraction_summary",
+            "_init_registry",
+            "_get_available_handler_types",
+            "_is_handler_type_registered",
+            "get_registry_status",
+        ],
+    )
     def test_base_handler_attr_is_in_set(self, handlers_pkg, attr_name):
         """Each expected base handler attribute is in ``_BASE_HANDLER_ATTRS``."""
         assert attr_name in handlers_pkg._BASE_HANDLER_ATTRS, (
@@ -357,13 +363,16 @@ class TestSmokeHandlerRegistryAttrs:
         assert len(handlers_pkg._HANDLER_REGISTRY_ATTRS) > 0
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr_name", [
-        "HandlerRegistry",
-        "HandlerRegistrationError",
-        "HandlerNotFoundError",
-        "register_handler",
-        "get_default_registry",
-    ])
+    @pytest.mark.parametrize(
+        "attr_name",
+        [
+            "HandlerRegistry",
+            "HandlerRegistrationError",
+            "HandlerNotFoundError",
+            "register_handler",
+            "get_default_registry",
+        ],
+    )
     def test_handler_registry_attr_is_in_set(self, handlers_pkg, attr_name):
         """Each expected handler registry attribute is in ``_HANDLER_REGISTRY_ATTRS``."""
         assert attr_name in handlers_pkg._HANDLER_REGISTRY_ATTRS, (
@@ -375,17 +384,20 @@ class TestSmokeLazyLoadingHandlerClasses:
     """§1.2 — Handler classes are resolvable via ``__getattr__`` lazy loading."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "DatasetHandler",
-        "DFTDatasetHandler",
-        "DMCDatasetHandler",
-        "WavefunctionDatasetHandler",
-        "QM9DatasetHandler",
-        "ANI1xDatasetHandler",
-        "ANI1ccxDatasetHandler",
-        "ANI2xDatasetHandler",
-        "RMD17DatasetHandler",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "DatasetHandler",
+            "DFTDatasetHandler",
+            "DMCDatasetHandler",
+            "WavefunctionDatasetHandler",
+            "QM9DatasetHandler",
+            "ANI1xDatasetHandler",
+            "ANI1ccxDatasetHandler",
+            "ANI2xDatasetHandler",
+            "RMD17DatasetHandler",
+        ],
+    )
     def test_handler_class_is_resolvable(self, handlers_pkg, name):
         """Each handler class can be resolved via lazy loading."""
         obj = getattr(handlers_pkg, name, None)
@@ -396,24 +408,30 @@ class TestSmokeLazyLoadingFactoryFunctions:
     """§1.2 — Factory and utility functions are resolvable via lazy loading."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler",
-        "handle_transform_errors",
-        "verify_handler_abstraction",
-        "get_handler_abstraction_summary",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler",
+            "handle_transform_errors",
+            "verify_handler_abstraction",
+            "get_handler_abstraction_summary",
+        ],
+    )
     def test_factory_function_is_resolvable(self, handlers_pkg, name):
         """Each factory/utility function resolves via lazy loading."""
         obj = getattr(handlers_pkg, name, None)
         assert obj is not None, f"Factory function '{name}' could not be resolved"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler",
-        "handle_transform_errors",
-        "verify_handler_abstraction",
-        "get_handler_abstraction_summary",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler",
+            "handle_transform_errors",
+            "verify_handler_abstraction",
+            "get_handler_abstraction_summary",
+        ],
+    )
     def test_factory_function_is_callable(self, handlers_pkg, name):
         """Each factory/utility function is callable."""
         obj = getattr(handlers_pkg, name)
@@ -424,11 +442,14 @@ class TestSmokeLazyLoadingRegistryExports:
     """§1.2 — Handler registry exports are resolvable via lazy loading."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "HandlerRegistry",
-        "register_handler",
-        "get_default_registry",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "HandlerRegistry",
+            "register_handler",
+            "get_default_registry",
+        ],
+    )
     def test_registry_export_is_resolvable(self, handlers_pkg, name):
         """Each registry export resolves via lazy loading."""
         obj = getattr(handlers_pkg, name, None)
@@ -454,17 +475,13 @@ class TestSmokeLazyLoadingIntegrationExports:
     @pytest.mark.parametrize("name", INTEGRATION_NAMES)
     def test_integration_export_declared_in_all(self, handlers_pkg, name):
         """Each integration export is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, (
-            f"'{name}' should be declared in __all__"
-        )
+        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", INTEGRATION_NAMES)
     def test_integration_export_declared_in_dir(self, handlers_pkg, name):
         """Each integration export is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), (
-            f"'{name}' should be declared in dir()"
-        )
+        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", INTEGRATION_NAMES)
@@ -479,8 +496,7 @@ class TestSmokeLazyLoadingIntegrationExports:
             assert obj is not None
         except (ImportError, AttributeError) as exc:
             pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration "
-                f"import chain: {exc}"
+                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
             )
 
 
@@ -506,17 +522,13 @@ class TestSmokeLazyLoadingDemonstrationFunctions:
     @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
     def test_demonstration_function_declared_in_all(self, handlers_pkg, name):
         """Each demonstration function is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, (
-            f"'{name}' should be declared in __all__"
-        )
+        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
     def test_demonstration_function_declared_in_dir(self, handlers_pkg, name):
         """Each demonstration function is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), (
-            f"'{name}' should be declared in dir()"
-        )
+        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
@@ -532,8 +544,7 @@ class TestSmokeLazyLoadingDemonstrationFunctions:
             assert callable(obj), f"'{name}' should be callable"
         except (ImportError, AttributeError) as exc:
             pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration "
-                f"import chain: {exc}"
+                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
             )
 
 
@@ -557,17 +568,13 @@ class TestSmokeLazyLoadingHelperFunctions:
     @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
     def test_helper_function_declared_in_all(self, handlers_pkg, name):
         """Each helper function is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, (
-            f"'{name}' should be declared in __all__"
-        )
+        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
     def test_helper_function_declared_in_dir(self, handlers_pkg, name):
         """Each helper function is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), (
-            f"'{name}' should be declared in dir()"
-        )
+        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
@@ -583,8 +590,7 @@ class TestSmokeLazyLoadingHelperFunctions:
             assert callable(obj), f"'{name}' should be callable"
         except (ImportError, AttributeError) as exc:
             pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration "
-                f"import chain: {exc}"
+                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
             )
 
 
@@ -620,10 +626,19 @@ class TestSmokeModuleLevelHelperFunctions:
         assert callable(handlers_pkg.get_handler_info)
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_executes_for_known_types(self, handlers_pkg, handler_type):
         """``get_handler_info()`` executes for each known handler type."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -649,9 +664,7 @@ class TestSmokeDirFunction:
     def test_dir_contains_strings(self, handlers_pkg):
         """Every entry in ``dir(handlers_pkg)`` is a string."""
         for item in dir(handlers_pkg):
-            assert isinstance(item, str), (
-                f"Entry in dir() should be str, got {type(item).__name__}"
-            )
+            assert isinstance(item, str), f"Entry in dir() should be str, got {type(item).__name__}"
 
 
 class TestSmokeAllAttribute:
@@ -743,9 +756,7 @@ class TestContractAllCompleteness:
             if name in seen:
                 duplicates.append(name)
             seen.add(name)
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     # Names routed through dataset_handler_integration which may fail to import
     # due to its dependency chain (TransformRegistry, DynamicTransformDiscovery, etc.)
@@ -803,13 +814,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -865,23 +871,24 @@ class TestContractHandlerClassesAreClasses:
     """§2 — Handler classes resolved via lazy loading are actual classes."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "DatasetHandler",
-        "DFTDatasetHandler",
-        "DMCDatasetHandler",
-        "WavefunctionDatasetHandler",
-        "QM9DatasetHandler",
-        "ANI1xDatasetHandler",
-        "ANI1ccxDatasetHandler",
-        "ANI2xDatasetHandler",
-        "RMD17DatasetHandler",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "DatasetHandler",
+            "DFTDatasetHandler",
+            "DMCDatasetHandler",
+            "WavefunctionDatasetHandler",
+            "QM9DatasetHandler",
+            "ANI1xDatasetHandler",
+            "ANI1ccxDatasetHandler",
+            "ANI2xDatasetHandler",
+            "RMD17DatasetHandler",
+        ],
+    )
     def test_handler_is_a_class(self, handlers_pkg, name):
         """Each handler export is a class (not an instance or function)."""
         obj = getattr(handlers_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractHandlerRegistryExportTypes:
@@ -965,28 +972,34 @@ class TestContractBaseHandlerUtilityExports:
     """§2 — Base handler utility attributes are resolvable and callable."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler",
-        "validate_dataset_handler_compatibility",
-        "filter_descriptors_by_handler_support",
-        "verify_handler_abstraction",
-        "get_handler_abstraction_summary",
-        "handle_transform_errors",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler",
+            "validate_dataset_handler_compatibility",
+            "filter_descriptors_by_handler_support",
+            "verify_handler_abstraction",
+            "get_handler_abstraction_summary",
+            "handle_transform_errors",
+        ],
+    )
     def test_base_handler_utility_is_resolvable(self, handlers_pkg, name):
         """Each base handler utility attribute is resolvable."""
         obj = getattr(handlers_pkg, name, None)
         assert obj is not None, f"Base handler utility '{name}' is None or missing"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler",
-        "validate_dataset_handler_compatibility",
-        "filter_descriptors_by_handler_support",
-        "verify_handler_abstraction",
-        "get_handler_abstraction_summary",
-        "handle_transform_errors",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler",
+            "validate_dataset_handler_compatibility",
+            "filter_descriptors_by_handler_support",
+            "verify_handler_abstraction",
+            "get_handler_abstraction_summary",
+            "handle_transform_errors",
+        ],
+    )
     def test_base_handler_utility_is_callable(self, handlers_pkg, name):
         """Each base handler utility attribute is callable."""
         obj = getattr(handlers_pkg, name)
@@ -1020,16 +1033,24 @@ class TestContractGetAvailableHandlersReturnType:
         assert len(result) > 0, "get_available_handlers() returned empty list"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("expected_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "expected_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_available_handlers_contains_known_types(self, handlers_pkg, expected_type):
         """``get_available_handlers()`` includes all 8 known handler types."""
         result = handlers_pkg.get_available_handlers()
         assert expected_type in result, (
-            f"get_available_handlers() should contain '{expected_type}', "
-            f"got: {result}"
+            f"get_available_handlers() should contain '{expected_type}', got: {result}"
         )
 
 
@@ -1037,35 +1058,59 @@ class TestContractGetHandlerInfoReturnType:
     """§2 — ``get_handler_info()`` returns a dict with expected keys."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_returns_dict(self, handlers_pkg, handler_type):
         """``get_handler_info()`` returns a dict for each known type."""
         result = handlers_pkg.get_handler_info(handler_type)
         assert isinstance(result, dict), (
-            f"get_handler_info('{handler_type}') should return dict, "
-            f"got {type(result).__name__}"
+            f"get_handler_info('{handler_type}') should return dict, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_has_class_key(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes a ``class`` key."""
         result = handlers_pkg.get_handler_info(handler_type)
-        assert "class" in result, (
-            f"get_handler_info('{handler_type}') missing 'class' key"
-        )
+        assert "class" in result, f"get_handler_info('{handler_type}') missing 'class' key"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_has_description_key(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes a ``description`` key."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1074,22 +1119,38 @@ class TestContractGetHandlerInfoReturnType:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_has_module_key(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes a ``module`` key."""
         result = handlers_pkg.get_handler_info(handler_type)
-        assert "module" in result, (
-            f"get_handler_info('{handler_type}') missing 'module' key"
-        )
+        assert "module" in result, f"get_handler_info('{handler_type}') missing 'module' key"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_has_molecule_creation_strategy(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes ``molecule_creation_strategy``."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1098,10 +1159,19 @@ class TestContractGetHandlerInfoReturnType:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_get_handler_info_class_value_ends_with_handler(self, handlers_pkg, handler_type):
         """``get_handler_info()['class']`` ends with 'DatasetHandler'."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1112,16 +1182,19 @@ class TestContractGetHandlerInfoReturnType:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type,expected_strategy", [
-        ("DFT", "identifier_coordinate_based"),
-        ("DMC", "identifier_coordinate_based"),
-        ("Wavefunction", "coordinate_based"),
-        ("QM9", "identifier_coordinate_based"),
-        ("ANI1x", "coordinate_based"),
-        ("ANI1ccx", "coordinate_based"),
-        ("ANI2x", "coordinate_based"),
-        ("RMD17", "coordinate_based"),
-    ])
+    @pytest.mark.parametrize(
+        "handler_type,expected_strategy",
+        [
+            ("DFT", "identifier_coordinate_based"),
+            ("DMC", "identifier_coordinate_based"),
+            ("Wavefunction", "coordinate_based"),
+            ("QM9", "identifier_coordinate_based"),
+            ("ANI1x", "coordinate_based"),
+            ("ANI1ccx", "coordinate_based"),
+            ("ANI2x", "coordinate_based"),
+            ("RMD17", "coordinate_based"),
+        ],
+    )
     def test_get_handler_info_molecule_creation_strategy_value(
         self, handlers_pkg, handler_type, expected_strategy
     ):
@@ -1182,9 +1255,7 @@ class TestContractGetHandlerClassesContract:
     def test_get_handler_classes_includes_dataset_handler(self, handlers_pkg):
         """``_get_handler_classes()`` result includes 'DatasetHandler'."""
         result = handlers_pkg._get_handler_classes()
-        assert "DatasetHandler" in result, (
-            "_get_handler_classes() should include 'DatasetHandler'"
-        )
+        assert "DatasetHandler" in result, "_get_handler_classes() should include 'DatasetHandler'"
 
     @pytest.mark.contract
     def test_get_handler_classes_contains_strings_only(self, handlers_pkg):
@@ -1216,25 +1287,26 @@ class TestContractHandlerClassesFallbackContent:
         """``_HANDLER_CLASSES_FALLBACK`` contains all expected handler class names."""
         fallback = handlers_pkg._HANDLER_CLASSES_FALLBACK
         missing = self.EXPECTED_FALLBACK_NAMES - fallback
-        assert not missing, (
-            f"_HANDLER_CLASSES_FALLBACK missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"_HANDLER_CLASSES_FALLBACK missing entries: {sorted(missing)}"
 
 
 class TestContractLazyImportRoutingHandlerClasses:
     """§2 — Handler classes are routed through implementations/ module."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "DFTDatasetHandler",
-        "DMCDatasetHandler",
-        "WavefunctionDatasetHandler",
-        "QM9DatasetHandler",
-        "ANI1xDatasetHandler",
-        "ANI1ccxDatasetHandler",
-        "ANI2xDatasetHandler",
-        "RMD17DatasetHandler",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "DFTDatasetHandler",
+            "DMCDatasetHandler",
+            "WavefunctionDatasetHandler",
+            "QM9DatasetHandler",
+            "ANI1xDatasetHandler",
+            "ANI1ccxDatasetHandler",
+            "ANI2xDatasetHandler",
+            "RMD17DatasetHandler",
+        ],
+    )
     def test_handler_class_from_implementations(self, handlers_pkg, name):
         """
         Each handler class (except DatasetHandler) is resolvable and comes
@@ -1257,8 +1329,7 @@ class TestContractLazyImportRoutingHandlerClasses:
         assert inspect.isclass(obj)
         class_module = getattr(obj, "__module__", "")
         assert "base_handler" in class_module or "handlers" in class_module, (
-            f"DatasetHandler should originate from base_handler, "
-            f"got module: {class_module}"
+            f"DatasetHandler should originate from base_handler, got module: {class_module}"
         )
 
 
@@ -1286,10 +1357,9 @@ class TestContractLazyImportRoutingRegistry:
     @pytest.mark.contract
     def test_handler_registry_has_register_method(self, handlers_pkg):
         """``HandlerRegistry`` class has a ``register`` method."""
-        assert hasattr(handlers_pkg.HandlerRegistry, "register") or \
-               hasattr(handlers_pkg.HandlerRegistry, "get"), (
-            "HandlerRegistry should have register or get method"
-        )
+        assert hasattr(handlers_pkg.HandlerRegistry, "register") or hasattr(
+            handlers_pkg.HandlerRegistry, "get"
+        ), "HandlerRegistry should have register or get method"
 
     @pytest.mark.contract
     def test_handler_registry_module_path(self, handlers_pkg):
@@ -1297,8 +1367,7 @@ class TestContractLazyImportRoutingRegistry:
         obj = handlers_pkg.HandlerRegistry
         class_module = getattr(obj, "__module__", "")
         assert "handler_registry" in class_module or "handlers" in class_module, (
-            f"HandlerRegistry should originate from handler_registry, "
-            f"got module: {class_module}"
+            f"HandlerRegistry should originate from handler_registry, got module: {class_module}"
         )
 
 
@@ -1361,9 +1430,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1386,23 +1453,24 @@ class TestContractHandlerClassSubclassing:
     """§2 — All concrete handler classes are subclasses of DatasetHandler."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "DFTDatasetHandler",
-        "DMCDatasetHandler",
-        "WavefunctionDatasetHandler",
-        "QM9DatasetHandler",
-        "ANI1xDatasetHandler",
-        "ANI1ccxDatasetHandler",
-        "ANI2xDatasetHandler",
-        "RMD17DatasetHandler",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "DFTDatasetHandler",
+            "DMCDatasetHandler",
+            "WavefunctionDatasetHandler",
+            "QM9DatasetHandler",
+            "ANI1xDatasetHandler",
+            "ANI1ccxDatasetHandler",
+            "ANI2xDatasetHandler",
+            "RMD17DatasetHandler",
+        ],
+    )
     def test_handler_is_subclass_of_dataset_handler(self, handlers_pkg, name):
         """Each concrete handler is a subclass of ``DatasetHandler``."""
         handler_cls = getattr(handlers_pkg, name)
         base_cls = handlers_pkg.DatasetHandler
-        assert issubclass(handler_cls, base_cls), (
-            f"'{name}' should be a subclass of DatasetHandler"
-        )
+        assert issubclass(handler_cls, base_cls), f"'{name}' should be a subclass of DatasetHandler"
 
 
 class TestContractHandlerClassAbstractMethods:
@@ -1427,6 +1495,7 @@ class TestContractHandlerClassAbstractMethods:
     def test_dataset_handler_is_abstract(self, handlers_pkg):
         """``DatasetHandler`` is an abstract base class."""
         import abc
+
         base_cls = handlers_pkg.DatasetHandler
         assert issubclass(base_cls, abc.ABC) or hasattr(base_cls, "__abstractmethods__"), (
             "DatasetHandler should be an ABC or have __abstractmethods__"
@@ -1437,9 +1506,7 @@ class TestContractHandlerClassAbstractMethods:
     def test_dataset_handler_has_abstract_method(self, handlers_pkg, method_name):
         """``DatasetHandler`` defines each expected abstract method."""
         base_cls = handlers_pkg.DatasetHandler
-        assert hasattr(base_cls, method_name), (
-            f"DatasetHandler should define '{method_name}'"
-        )
+        assert hasattr(base_cls, method_name), f"DatasetHandler should define '{method_name}'"
 
 
 class TestContractHandleTransformErrorsDecorator:
@@ -1470,10 +1537,19 @@ class TestContractGetHandlerInfoTypicalProperties:
     """§2 — ``get_handler_info()`` contains ``typical_properties`` for static handlers."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_handler_info_has_typical_properties(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes ``typical_properties``."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1482,10 +1558,19 @@ class TestContractGetHandlerInfoTypicalProperties:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_handler_info_typical_properties_is_list(self, handlers_pkg, handler_type):
         """``get_handler_info()['typical_properties']`` is a list."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1494,10 +1579,19 @@ class TestContractGetHandlerInfoTypicalProperties:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_handler_info_typical_properties_non_empty(self, handlers_pkg, handler_type):
         """``get_handler_info()['typical_properties']`` is non-empty."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1510,10 +1604,19 @@ class TestContractGetHandlerInfoSupportsAllFeatures:
     """§2 — ``get_handler_info()`` contains ``supports_all_features`` boolean."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_handler_info_has_supports_all_features(self, handlers_pkg, handler_type):
         """``get_handler_info()`` result includes ``supports_all_features``."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1522,10 +1625,19 @@ class TestContractGetHandlerInfoSupportsAllFeatures:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "DMC", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "DMC",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_handler_info_supports_all_features_is_bool(self, handlers_pkg, handler_type):
         """``get_handler_info()['supports_all_features']`` is a boolean."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1542,10 +1654,18 @@ class TestContractGetHandlerInfoSupportsAllFeatures:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("handler_type", [
-        "DFT", "Wavefunction", "QM9",
-        "ANI1x", "ANI1ccx", "ANI2x", "RMD17",
-    ])
+    @pytest.mark.parametrize(
+        "handler_type",
+        [
+            "DFT",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "ANI2x",
+            "RMD17",
+        ],
+    )
     def test_other_handlers_support_all_features(self, handlers_pkg, handler_type):
         """Non-DMC handlers have ``supports_all_features: True``."""
         result = handlers_pkg.get_handler_info(handler_type)
@@ -1562,33 +1682,37 @@ class TestContractDirConsistencyWithAll:
         """Every name in ``__all__`` appears in ``dir()``."""
         dir_names = set(dir(handlers_pkg))
         missing = [name for name in all_names if name not in dir_names]
-        assert not missing, (
-            f"Names in __all__ but not in dir(): {sorted(missing)}"
-        )
+        assert not missing, f"Names in __all__ but not in dir(): {sorted(missing)}"
 
 
 class TestContractRegistryInternalAttrs:
     """§2 — Internal registry initialization attributes are resolvable."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "_init_registry",
-        "_get_available_handler_types",
-        "_is_handler_type_registered",
-        "get_registry_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "_init_registry",
+            "_get_available_handler_types",
+            "_is_handler_type_registered",
+            "get_registry_status",
+        ],
+    )
     def test_registry_internal_attr_is_resolvable(self, handlers_pkg, name):
         """Each registry internal attribute is resolvable via lazy loading."""
         obj = getattr(handlers_pkg, name, None)
         assert obj is not None, f"Registry internal attr '{name}' is None or missing"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "_init_registry",
-        "_get_available_handler_types",
-        "_is_handler_type_registered",
-        "get_registry_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "_init_registry",
+            "_get_available_handler_types",
+            "_is_handler_type_registered",
+            "get_registry_status",
+        ],
+    )
     def test_registry_internal_attr_is_callable(self, handlers_pkg, name):
         """Each registry internal attribute is callable."""
         obj = getattr(handlers_pkg, name)

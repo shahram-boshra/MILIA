@@ -28,10 +28,10 @@ Run from project root:
 Author: MILIA Team
 """
 
+import logging
 import os
 import sys
-import inspect
-import logging
+
 import pytest
 
 # ---------------------------------------------------------------------------
@@ -49,15 +49,22 @@ import torch.nn as nn
 # Module imports under test
 # ---------------------------------------------------------------------------
 from milia_pipeline.models.training.loss_functions import (
-    LossRegistry,
     FocalLoss,
-    WeightedMSELoss,
-    RMSELoss,
+    LossRegistry,
+    get_default_loss_for_task,
     get_loss,
     get_loss_for_task,
-    list_losses,
-    get_default_loss_for_task,
     is_loss_compatible_with_task,
+    list_losses,
+)
+from milia_pipeline.models.training.metrics import (
+    TORCHMETRICS_AVAILABLE,
+    MetricsRegistry,
+    get_default_metrics_for_task,
+    get_metric,
+    get_metrics_for_task,
+    is_metric_compatible_with_task,
+    list_metrics,
 )
 from milia_pipeline.models.training.optimizers import (
     OptimizerRegistry,
@@ -66,19 +73,9 @@ from milia_pipeline.models.training.optimizers import (
 )
 from milia_pipeline.models.training.schedulers import (
     SchedulerRegistry,
+    create_warmup_scheduler,
     get_scheduler,
     list_schedulers,
-    create_warmup_scheduler,
-)
-from milia_pipeline.models.training.metrics import (
-    MetricsRegistry,
-    RMSEMetric,
-    TORCHMETRICS_AVAILABLE,
-    get_metric,
-    get_metrics_for_task,
-    list_metrics,
-    get_default_metrics_for_task,
-    is_metric_compatible_with_task,
 )
 
 logger = logging.getLogger(__name__)
@@ -92,6 +89,7 @@ pytestmark = pytest.mark.contract
 # ===========================================================================
 # Shared fixtures
 # ===========================================================================
+
 
 @pytest.fixture
 def dummy_model():
@@ -109,6 +107,7 @@ def dummy_optimizer(dummy_model):
 # ===========================================================================
 # 1. LOSS REGISTRY CONTRACTS
 # ===========================================================================
+
 
 class TestLossRegistryContract:
     """Contract: LossRegistry exposes consistent API and all entries instantiate."""
@@ -133,8 +132,14 @@ class TestLossRegistryContract:
         for name in ("cross_entropy", "ce", "nll", "bce", "bce_with_logits", "focal"):
             assert name in available, f"Missing classification loss: {name}"
         # Other losses
-        for name in ("multilabel_soft_margin", "margin_ranking", "triplet_margin",
-                      "kl_div", "poisson_nll", "cosine_embedding"):
+        for name in (
+            "multilabel_soft_margin",
+            "margin_ranking",
+            "triplet_margin",
+            "kl_div",
+            "poisson_nll",
+            "cosine_embedding",
+        ):
             assert name in available, f"Missing other loss: {name}"
 
     # ----- 1b. Instantiation contract -----
@@ -149,9 +154,7 @@ class TestLossRegistryContract:
 
     def test_focal_loss_instantiates_with_params(self):
         """FocalLoss accepts alpha, gamma, reduction."""
-        loss_fn = LossRegistry.get_loss("focal", {
-            "alpha": 0.5, "gamma": 3.0, "reduction": "sum"
-        })
+        loss_fn = LossRegistry.get_loss("focal", {"alpha": 0.5, "gamma": 3.0, "reduction": "sum"})
         assert isinstance(loss_fn, FocalLoss)
         assert loss_fn.alpha == 0.5
         assert loss_fn.gamma == 3.0
@@ -195,9 +198,7 @@ class TestLossRegistryContract:
         """get_valid_params returns a dict for every registered loss."""
         for name in LossRegistry.list_available():
             params = LossRegistry.get_valid_params(name)
-            assert isinstance(params, dict), (
-                f"get_valid_params('{name}') did not return dict"
-            )
+            assert isinstance(params, dict), f"get_valid_params('{name}') did not return dict"
 
     def test_get_loss_info_unknown_raises_valueerror(self):
         """get_loss_info raises ValueError for unknown loss."""
@@ -210,17 +211,13 @@ class TestLossRegistryContract:
         """Auto-selected loss for regression task is an nn.Module."""
         for task in ("graph_regression", "node_regression", "edge_regression"):
             loss_fn = LossRegistry.get_loss_for_task(task)
-            assert isinstance(loss_fn, nn.Module), (
-                f"get_loss_for_task('{task}') failed"
-            )
+            assert isinstance(loss_fn, nn.Module), f"get_loss_for_task('{task}') failed"
 
     def test_get_loss_for_task_classification(self):
         """Auto-selected loss for classification task is an nn.Module."""
         for task in ("graph_classification", "node_classification", "edge_classification"):
             loss_fn = LossRegistry.get_loss_for_task(task)
-            assert isinstance(loss_fn, nn.Module), (
-                f"get_loss_for_task('{task}') failed"
-            )
+            assert isinstance(loss_fn, nn.Module), f"get_loss_for_task('{task}') failed"
 
     def test_get_loss_for_task_link_prediction(self):
         """Auto-selected loss for link_prediction is an nn.Module."""
@@ -259,13 +256,19 @@ class TestLossRegistryContract:
         """is_loss_compatible_with_task reflects correct categories."""
         assert LossRegistry.is_loss_compatible_with_task("mse", "graph_regression") is True
         assert LossRegistry.is_loss_compatible_with_task("mse", "graph_classification") is False
-        assert LossRegistry.is_loss_compatible_with_task("cross_entropy", "graph_classification") is True
-        assert LossRegistry.is_loss_compatible_with_task("cross_entropy", "graph_regression") is False
+        assert (
+            LossRegistry.is_loss_compatible_with_task("cross_entropy", "graph_classification")
+            is True
+        )
+        assert (
+            LossRegistry.is_loss_compatible_with_task("cross_entropy", "graph_regression") is False
+        )
 
     # ----- 1h. Custom registration contract -----
 
     def test_register_custom_loss(self):
         """Custom nn.Module subclass can be registered and retrieved."""
+
         class _TestLoss(nn.Module):
             def forward(self, inp, tgt):
                 return ((inp - tgt) ** 2).mean()
@@ -281,6 +284,7 @@ class TestLossRegistryContract:
 
     def test_register_custom_loss_duplicate_raises(self):
         """Re-registering without overwrite=True raises ValueError."""
+
         class _TestLoss2(nn.Module):
             def forward(self, inp, tgt):
                 return torch.tensor(0.0)
@@ -330,6 +334,7 @@ class TestLossRegistryContract:
 # 2. OPTIMIZER REGISTRY CONTRACTS
 # ===========================================================================
 
+
 class TestOptimizerRegistryContract:
     """Contract: OptimizerRegistry exposes consistent API and all entries instantiate."""
 
@@ -346,8 +351,18 @@ class TestOptimizerRegistryContract:
         """Registry must contain the documented 12 optimizer entries."""
         available = set(OptimizerRegistry.list_available())
         expected = {
-            "adam", "adamw", "adamax", "adadelta", "adagrad", "rmsprop",
-            "sgd", "asgd", "lbfgs", "rprop", "nadam", "radam",
+            "adam",
+            "adamw",
+            "adamax",
+            "adadelta",
+            "adagrad",
+            "rmsprop",
+            "sgd",
+            "asgd",
+            "lbfgs",
+            "rprop",
+            "nadam",
+            "radam",
         }
         for name in expected:
             assert name in available, f"Missing optimizer: {name}"
@@ -357,9 +372,7 @@ class TestOptimizerRegistryContract:
     def test_all_optimizers_instantiate_with_defaults(self, dummy_model):
         """Every registered optimizer can be instantiated with model parameters."""
         for name in OptimizerRegistry.list_available():
-            optimizer = OptimizerRegistry.get_optimizer(
-                name, dummy_model.parameters()
-            )
+            optimizer = OptimizerRegistry.get_optimizer(name, dummy_model.parameters())
             assert isinstance(optimizer, torch.optim.Optimizer), (
                 f"Optimizer '{name}' did not return a torch.optim.Optimizer"
             )
@@ -384,8 +397,7 @@ class TestOptimizerRegistryContract:
     def test_invalid_params_filtered_silently(self, dummy_model):
         """Invalid parameters are filtered out — no crash."""
         optimizer = OptimizerRegistry.get_optimizer(
-            "adam", dummy_model.parameters(),
-            {"lr": 0.001, "completely_invalid_param": 999}
+            "adam", dummy_model.parameters(), {"lr": 0.001, "completely_invalid_param": 999}
         )
         assert isinstance(optimizer, torch.optim.Optimizer)
 
@@ -405,18 +417,14 @@ class TestOptimizerRegistryContract:
         """get_valid_params returns a dict for every registered optimizer."""
         for name in OptimizerRegistry.list_available():
             params = OptimizerRegistry.get_valid_params(name)
-            assert isinstance(params, dict), (
-                f"get_valid_params('{name}') did not return dict"
-            )
+            assert isinstance(params, dict), f"get_valid_params('{name}') did not return dict"
 
     def test_get_default_params_returns_dict(self):
         """get_default_params returns a dict (may be empty for some optimizers)."""
         for name in ("adam", "adamw", "sgd", "rmsprop", "adagrad"):
             defaults = OptimizerRegistry.get_default_params(name)
             assert isinstance(defaults, dict)
-            assert len(defaults) > 0, (
-                f"Expected non-empty defaults for '{name}'"
-            )
+            assert len(defaults) > 0, f"Expected non-empty defaults for '{name}'"
 
     def test_get_optimizer_info_unknown_raises_valueerror(self):
         """get_optimizer_info raises ValueError for unknown optimizer."""
@@ -427,6 +435,7 @@ class TestOptimizerRegistryContract:
 
     def test_register_custom_optimizer(self, dummy_model):
         """Custom Optimizer subclass can be registered and retrieved."""
+
         class _TestOptimizer(torch.optim.Optimizer):
             def __init__(self, params, lr=0.01):
                 defaults = dict(lr=lr)
@@ -446,6 +455,7 @@ class TestOptimizerRegistryContract:
 
     def test_register_custom_optimizer_duplicate_raises(self, dummy_model):
         """Re-registering without overwrite=True raises ValueError."""
+
         class _TestOptimizer2(torch.optim.Optimizer):
             def __init__(self, params, lr=0.01):
                 defaults = dict(lr=lr)
@@ -458,9 +468,7 @@ class TestOptimizerRegistryContract:
         try:
             OptimizerRegistry.register_custom_optimizer(name, _TestOptimizer2)
             with pytest.raises(ValueError, match="already registered"):
-                OptimizerRegistry.register_custom_optimizer(
-                    name, _TestOptimizer2, overwrite=False
-                )
+                OptimizerRegistry.register_custom_optimizer(name, _TestOptimizer2, overwrite=False)
         finally:
             OptimizerRegistry._optimizers.pop(name, None)
             OptimizerRegistry._defaults.pop(name, None)
@@ -487,6 +495,7 @@ class TestOptimizerRegistryContract:
 # 3. SCHEDULER REGISTRY CONTRACTS
 # ===========================================================================
 
+
 class TestSchedulerRegistryContract:
     """Contract: SchedulerRegistry exposes consistent API and all entries instantiate."""
 
@@ -507,10 +516,19 @@ class TestSchedulerRegistryContract:
         """Registry must contain the documented 13 scheduler entries."""
         available = set(SchedulerRegistry.list_available())
         expected = {
-            "reduce_on_plateau", "step_lr", "multistep_lr", "exponential_lr",
-            "cosine_annealing", "cosine_annealing_warm_restarts",
-            "cyclic_lr", "one_cycle", "polynomial_lr", "linear_lr",
-            "chained", "sequential", "constant_lr",
+            "reduce_on_plateau",
+            "step_lr",
+            "multistep_lr",
+            "exponential_lr",
+            "cosine_annealing",
+            "cosine_annealing_warm_restarts",
+            "cyclic_lr",
+            "one_cycle",
+            "polynomial_lr",
+            "linear_lr",
+            "chained",
+            "sequential",
+            "constant_lr",
         }
         for name in expected:
             assert name in available, f"Missing scheduler: {name}"
@@ -534,11 +552,9 @@ class TestSchedulerRegistryContract:
             if name in self._SKIP_INSTANTIATION:
                 continue
 
-            params = required_params.get(name, None)
+            params = required_params.get(name)
             scheduler = SchedulerRegistry.get_scheduler(name, dummy_optimizer, params)
-            assert scheduler is not None, (
-                f"Scheduler '{name}' returned None"
-            )
+            assert scheduler is not None, f"Scheduler '{name}' returned None"
 
     def test_chained_scheduler_requires_special_args(self):
         """'chained' scheduler requires schedulers list — verify it's registered."""
@@ -571,8 +587,7 @@ class TestSchedulerRegistryContract:
     def test_invalid_params_filtered_silently(self, dummy_optimizer):
         """Invalid parameters are filtered out — no crash."""
         scheduler = SchedulerRegistry.get_scheduler(
-            "step_lr", dummy_optimizer,
-            {"step_size": 10, "completely_invalid_param": 999}
+            "step_lr", dummy_optimizer, {"step_size": 10, "completely_invalid_param": 999}
         )
         assert scheduler is not None
 
@@ -600,9 +615,7 @@ class TestSchedulerRegistryContract:
         """get_valid_params returns a dict for every registered scheduler."""
         for name in SchedulerRegistry.list_available():
             params = SchedulerRegistry.get_valid_params(name)
-            assert isinstance(params, dict), (
-                f"get_valid_params('{name}') did not return dict"
-            )
+            assert isinstance(params, dict), f"get_valid_params('{name}') did not return dict"
 
     def test_get_default_params_returns_dict(self):
         """get_default_params returns a dict (may be empty for some schedulers)."""
@@ -620,6 +633,7 @@ class TestSchedulerRegistryContract:
 
     def test_register_custom_scheduler(self, dummy_optimizer):
         """Custom scheduler class can be registered and retrieved."""
+
         class _TestScheduler(torch.optim.lr_scheduler.LRScheduler):
             def __init__(self, optimizer, my_param=0.5, last_epoch=-1):
                 self.my_param = my_param
@@ -630,9 +644,7 @@ class TestSchedulerRegistryContract:
 
         name = "_contract_test_custom_sched"
         try:
-            SchedulerRegistry.register_custom_scheduler(
-                name, _TestScheduler, {"my_param": 0.5}
-            )
+            SchedulerRegistry.register_custom_scheduler(name, _TestScheduler, {"my_param": 0.5})
             scheduler = SchedulerRegistry.get_scheduler(name, dummy_optimizer)
             assert scheduler is not None
         finally:
@@ -642,6 +654,7 @@ class TestSchedulerRegistryContract:
 
     def test_register_custom_scheduler_duplicate_raises(self, dummy_optimizer):
         """Re-registering without overwrite=True raises ValueError."""
+
         class _TestScheduler2(torch.optim.lr_scheduler.LRScheduler):
             def __init__(self, optimizer, last_epoch=-1):
                 super().__init__(optimizer, last_epoch)
@@ -653,9 +666,7 @@ class TestSchedulerRegistryContract:
         try:
             SchedulerRegistry.register_custom_scheduler(name, _TestScheduler2)
             with pytest.raises(ValueError, match="already registered"):
-                SchedulerRegistry.register_custom_scheduler(
-                    name, _TestScheduler2, overwrite=False
-                )
+                SchedulerRegistry.register_custom_scheduler(name, _TestScheduler2, overwrite=False)
         finally:
             SchedulerRegistry._schedulers.pop(name, None)
             SchedulerRegistry._defaults.pop(name, None)
@@ -688,6 +699,7 @@ class TestSchedulerRegistryContract:
 # 4. METRICS REGISTRY CONTRACTS
 # ===========================================================================
 
+
 class TestMetricsRegistryContract:
     """Contract: MetricsRegistry exposes consistent API and all entries instantiate."""
 
@@ -704,18 +716,25 @@ class TestMetricsRegistryContract:
         """Registry must contain the documented 12 metric entries."""
         available = set(MetricsRegistry.list_available())
         expected = {
-            "mse", "mae", "rmse", "r2", "mape", "explained_variance",
-            "accuracy", "precision", "recall", "f1", "auroc", "auprc",
+            "mse",
+            "mae",
+            "rmse",
+            "r2",
+            "mape",
+            "explained_variance",
+            "accuracy",
+            "precision",
+            "recall",
+            "f1",
+            "auroc",
+            "auprc",
         }
         for name in expected:
             assert name in available, f"Missing metric: {name}"
 
     # ----- 4b. Instantiation contract -----
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_regression_metrics_instantiate(self):
         """Every regression metric can be instantiated with no params."""
         regression = ["mse", "mae", "rmse", "r2", "mape", "explained_variance"]
@@ -725,10 +744,7 @@ class TestMetricsRegistryContract:
                 f"Metric '{name}' did not return an nn.Module instance"
             )
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_classification_metrics_instantiate_with_task_param(self):
         """Classification metrics instantiate when given the 'task' parameter."""
         classification = ["accuracy", "precision", "recall", "f1", "auroc", "auprc"]
@@ -738,10 +754,7 @@ class TestMetricsRegistryContract:
                 f"Metric '{name}' with task='binary' did not return an nn.Module"
             )
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_rmse_metric_callable(self):
         """RMSE metric produces a scalar tensor on dummy data."""
         metric = MetricsRegistry.get_metric("rmse")
@@ -759,8 +772,7 @@ class TestMetricsRegistryContract:
             MetricsRegistry.get_metric("nonexistent_metric_xyz")
 
     @pytest.mark.skipif(
-        TORCHMETRICS_AVAILABLE,
-        reason="Test only applies when TorchMetrics is missing"
+        TORCHMETRICS_AVAILABLE, reason="Test only applies when TorchMetrics is missing"
     )
     def test_metric_without_torchmetrics_raises_runtime_error(self):
         """When TorchMetrics is unavailable, metrics that depend on it raise RuntimeError."""
@@ -771,10 +783,7 @@ class TestMetricsRegistryContract:
 
     # ----- 4d. Parameter filtering contract -----
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_invalid_params_filtered_silently(self):
         """Invalid parameters are filtered out — no crash."""
         metric = MetricsRegistry.get_metric("mse", {"completely_invalid_param": 999})
@@ -793,9 +802,7 @@ class TestMetricsRegistryContract:
         """get_valid_params returns a dict for every registered metric."""
         for name in MetricsRegistry.list_available():
             params = MetricsRegistry.get_valid_params(name)
-            assert isinstance(params, dict), (
-                f"get_valid_params('{name}') did not return dict"
-            )
+            assert isinstance(params, dict), f"get_valid_params('{name}') did not return dict"
 
     def test_get_metric_info_unknown_raises_valueerror(self):
         """get_metric_info raises ValueError for unknown metric."""
@@ -804,10 +811,7 @@ class TestMetricsRegistryContract:
 
     # ----- 4f. Task-aware selection contract -----
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_get_metrics_for_task_regression(self):
         """Auto-selected metrics for regression tasks are dict of nn.Modules."""
         for task in ("graph_regression", "node_regression", "edge_regression"):
@@ -819,23 +823,15 @@ class TestMetricsRegistryContract:
                     f"Metric '{metric_name}' for task '{task}' is not nn.Module"
                 )
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_get_metrics_for_task_classification(self):
         """Auto-selected metrics for classification tasks are dict of nn.Modules."""
         for task in ("graph_classification", "node_classification"):
-            metrics = MetricsRegistry.get_metrics_for_task(
-                task, num_classes=2
-            )
+            metrics = MetricsRegistry.get_metrics_for_task(task, num_classes=2)
             assert isinstance(metrics, dict)
             assert len(metrics) > 0
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_get_metrics_for_task_link_prediction(self):
         """Auto-selected metrics for link_prediction are dict of nn.Modules."""
         metrics = MetricsRegistry.get_metrics_for_task("link_prediction")
@@ -855,14 +851,22 @@ class TestMetricsRegistryContract:
     def test_is_metric_compatible_with_task(self):
         """is_metric_compatible_with_task reflects correct categories."""
         assert MetricsRegistry.is_metric_compatible_with_task("mse", "graph_regression") is True
-        assert MetricsRegistry.is_metric_compatible_with_task("mse", "graph_classification") is False
-        assert MetricsRegistry.is_metric_compatible_with_task("accuracy", "graph_classification") is True
-        assert MetricsRegistry.is_metric_compatible_with_task("accuracy", "graph_regression") is False
+        assert (
+            MetricsRegistry.is_metric_compatible_with_task("mse", "graph_classification") is False
+        )
+        assert (
+            MetricsRegistry.is_metric_compatible_with_task("accuracy", "graph_classification")
+            is True
+        )
+        assert (
+            MetricsRegistry.is_metric_compatible_with_task("accuracy", "graph_regression") is False
+        )
 
     # ----- 4h. Custom registration contract -----
 
     def test_register_custom_metric(self):
         """Custom nn.Module metric can be registered and retrieved."""
+
         class _TestMetric(nn.Module):
             def forward(self, preds, target):
                 return torch.mean(torch.abs(preds - target))
@@ -881,6 +885,7 @@ class TestMetricsRegistryContract:
 
     def test_register_custom_metric_duplicate_raises(self):
         """Re-registering without overwrite=True raises ValueError."""
+
         class _TestMetric2(nn.Module):
             def forward(self, preds, target):
                 return torch.tensor(0.0)
@@ -889,9 +894,7 @@ class TestMetricsRegistryContract:
         try:
             MetricsRegistry.register_custom_metric(name, _TestMetric2)
             with pytest.raises(ValueError, match="already registered"):
-                MetricsRegistry.register_custom_metric(
-                    name, _TestMetric2, overwrite=False
-                )
+                MetricsRegistry.register_custom_metric(name, _TestMetric2, overwrite=False)
         finally:
             MetricsRegistry._metrics.pop(name, None)
             MetricsRegistry._regression_metrics.discard(name)
@@ -904,10 +907,7 @@ class TestMetricsRegistryContract:
 
     # ----- 4i. MetricCollection contract -----
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_create_metric_collection(self):
         """create_metric_collection returns a MetricCollection for regression.
 
@@ -916,6 +916,7 @@ class TestMetricsRegistryContract:
         pure TorchMetrics-backed entries to test the collection path.
         """
         from torchmetrics import MetricCollection as MC
+
         # Use only metrics that are torchmetrics.Metric subclasses
         collection = MetricsRegistry.create_metric_collection(
             "graph_regression",
@@ -923,10 +924,7 @@ class TestMetricsRegistryContract:
         )
         assert isinstance(collection, MC)
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_create_metric_collection_with_prefix(self):
         """create_metric_collection applies prefix to metric names.
 
@@ -935,6 +933,7 @@ class TestMetricsRegistryContract:
         all values to be torchmetrics.Metric instances.
         """
         from torchmetrics import MetricCollection as MC
+
         collection = MetricsRegistry.create_metric_collection(
             "graph_regression",
             metric_names=["mse", "mae", "r2"],
@@ -943,14 +942,9 @@ class TestMetricsRegistryContract:
         assert isinstance(collection, MC)
         # All keys should start with "val_"
         for key in collection.keys():
-            assert key.startswith("val_"), (
-                f"Metric key '{key}' does not have prefix 'val_'"
-            )
+            assert key.startswith("val_"), f"Metric key '{key}' does not have prefix 'val_'"
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_create_metric_collection_rejects_non_torchmetric(self):
         """MetricCollection raises ValueError when given RMSEMetric (nn.Module, not Metric).
 
@@ -959,25 +953,18 @@ class TestMetricsRegistryContract:
         cannot participate in MetricCollection. The default regression metric
         set includes 'rmse', triggering this error.
         """
-        from torchmetrics import MetricCollection as MC
         with pytest.raises(ValueError, match="is not an instance of"):
             MetricsRegistry.create_metric_collection("graph_regression")
 
     # ----- 4j. Convenience functions contract -----
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_convenience_get_metric(self):
         """Module-level get_metric delegates to MetricsRegistry."""
         metric = get_metric("mse")
         assert isinstance(metric, nn.Module)
 
-    @pytest.mark.skipif(
-        not TORCHMETRICS_AVAILABLE,
-        reason="TorchMetrics not installed"
-    )
+    @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")
     def test_convenience_get_metrics_for_task(self):
         """Module-level get_metrics_for_task delegates to MetricsRegistry."""
         metrics = get_metrics_for_task("graph_regression")
@@ -1003,6 +990,7 @@ class TestMetricsRegistryContract:
 # ===========================================================================
 # 5. CROSS-REGISTRY CONSISTENCY CONTRACTS
 # ===========================================================================
+
 
 class TestCrossRegistryConsistency:
     """Cross-cutting contract: All four registries share consistent patterns."""
@@ -1033,9 +1021,7 @@ class TestCrossRegistryConsistency:
             assert isinstance(info, dict), (
                 f"{registry_name}.get_*_info('{sample_entry}') didn't return dict"
             )
-            assert "name" in info, (
-                f"{registry_name}.get_*_info missing 'name' key"
-            )
+            assert "name" in info, f"{registry_name}.get_*_info missing 'name' key"
 
     def test_all_registries_have_valid_params_method(self):
         """Every registry exposes get_valid_params that returns a dict."""
@@ -1067,15 +1053,11 @@ class TestCrossRegistryConsistency:
             LossRegistry.get_loss(bad_name)
 
         with pytest.raises(ValueError):
-            OptimizerRegistry.get_optimizer(
-                bad_name,
-                nn.Linear(1, 1).parameters()
-            )
+            OptimizerRegistry.get_optimizer(bad_name, nn.Linear(1, 1).parameters())
 
         with pytest.raises(ValueError):
             SchedulerRegistry.get_scheduler(
-                bad_name,
-                torch.optim.SGD(nn.Linear(1, 1).parameters(), lr=0.01)
+                bad_name, torch.optim.SGD(nn.Linear(1, 1).parameters(), lr=0.01)
             )
 
         with pytest.raises(ValueError):

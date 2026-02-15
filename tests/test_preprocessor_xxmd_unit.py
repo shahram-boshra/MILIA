@@ -38,40 +38,40 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import tempfile
+import os
 import shutil
+import sys
+import tempfile
+import unittest
 import zipfile
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import numpy as np
-from typing import Dict, Any, List
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.xxmd import (
+    EV_TO_HARTREE,
+    XXMD_MOLECULE_FULL_NAMES,
+    XXMD_MOLECULES,
+    XXMD_SPLITS,
     XXMDPreprocessor,
     _build_object_array,
     _parse_extended_xyz_with_ase,
-    EV_TO_HARTREE,
-    XXMD_MOLECULES,
-    XXMD_MOLECULE_FULL_NAMES,
-    XXMD_SPLITS,
 )
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
-from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
-
 
 # ============================================================================
 # HELPERS: Build realistic config and mock objects
 # ============================================================================
+
 
 def _make_config(**overrides):
     """
@@ -83,17 +83,19 @@ def _make_config(**overrides):
                 'include_splits', 'cleanup_temp'
     """
     config = {
-        'raw_archive_path': overrides.get(
-            'raw_archive_path', '/tmp/test_data/raw/xxMD-main.zip'),
-        'output_npz_path': overrides.get(
-            'output_npz_path', '/tmp/test_data/processed/xxmd.npz'),
+        "raw_archive_path": overrides.get("raw_archive_path", "/tmp/test_data/raw/xxMD-main.zip"),
+        "output_npz_path": overrides.get("output_npz_path", "/tmp/test_data/processed/xxmd.npz"),
     }
-    for key in ['molecules_to_include', 'max_conformers_per_molecule',
-                'include_splits', 'cleanup_temp']:
+    for key in [
+        "molecules_to_include",
+        "max_conformers_per_molecule",
+        "include_splits",
+        "cleanup_temp",
+    ]:
         if key in overrides:
             config[key] = overrides[key]
     for key in list(config.keys()):
-        if overrides.get(f'_remove_{key}', False):
+        if overrides.get(f"_remove_{key}", False):
             del config[key]
     return config
 
@@ -146,10 +148,12 @@ def _make_mock_features_and_metadata():
         Tuple of (features_dict, metadata_dict)
     """
     atoms_arr = np.empty(3, dtype=object)
-    atoms_arr[0] = np.array([6, 6, 7, 7, 1, 1, 1, 1, 1, 1, 1, 1,
-                              6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 1], dtype=np.uint8)
-    atoms_arr[1] = np.array([6, 6, 7, 7, 1, 1, 1, 1, 1, 1, 1, 1,
-                              6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 1], dtype=np.uint8)
+    atoms_arr[0] = np.array(
+        [6, 6, 7, 7, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 1], dtype=np.uint8
+    )
+    atoms_arr[1] = np.array(
+        [6, 6, 7, 7, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 1, 1], dtype=np.uint8
+    )
     atoms_arr[2] = np.array([6, 6, 6, 8, 8, 1, 1, 1, 1], dtype=np.uint8)
 
     coords_arr = np.empty(3, dtype=object)
@@ -163,55 +167,62 @@ def _make_mock_features_and_metadata():
     forces_arr[2] = np.random.randn(9, 3).astype(np.float32)
 
     mol_name_arr = np.empty(3, dtype=object)
-    mol_name_arr[0] = 'azobenzene'
-    mol_name_arr[1] = 'azobenzene'
-    mol_name_arr[2] = 'malonaldehyde'
+    mol_name_arr[0] = "azobenzene"
+    mol_name_arr[1] = "azobenzene"
+    mol_name_arr[2] = "malonaldehyde"
 
     split_arr = np.empty(3, dtype=object)
-    split_arr[0] = 'train'
-    split_arr[1] = 'train'
-    split_arr[2] = 'val'
+    split_arr[0] = "train"
+    split_arr[1] = "train"
+    split_arr[2] = "val"
 
     features = {
-        'atoms': atoms_arr,
-        'coordinates': coords_arr,
-        'energy': np.array([-0.385, -0.384, -0.595], dtype=np.float64),
-        'forces': forces_arr,
-        'molecule_name': mol_name_arr,
-        'split': split_arr,
+        "atoms": atoms_arr,
+        "coordinates": coords_arr,
+        "energy": np.array([-0.385, -0.384, -0.595], dtype=np.float64),
+        "forces": forces_arr,
+        "molecule_name": mol_name_arr,
+        "split": split_arr,
     }
 
     metadata = {
-        'version': '1.0',
-        'dataset_name': 'XXMD',
-        'subset': 'xxMD-DFT',
-        'total_conformers': 3,
-        'molecules_included': ['azo', 'mal'],
-        'molecule_counts': {'azo': 2, 'mal': 1},
-        'split_counts': {'train': 2, 'val': 1, 'test': 0},
-        'skipped_no_energy': 0,
-        'mean_atoms': 19.0,
-        'max_atoms': 24,
-        'min_atoms': 9,
-        'properties_extracted': ['atoms', 'coordinates', 'energy', 'forces',
-                                  'molecule_name', 'split'],
-        'energy_units': 'hartree',
-        'force_units': 'hartree/angstrom',
-        'original_energy_units': 'eV',
-        'original_force_units': 'eV/angstrom',
-        'conversion_factor': EV_TO_HARTREE,
-        'level_of_theory': 'M06 (spin-polarized KS-DFT)',
-        'coordinate_units': 'angstrom',
-        'source': 'xxMD (Pengmei, Liu, Shu. Sci Data 2024)',
-        'doi': '10.1038/s41597-024-03019-3',
-        'zenodo_doi': '10.5281/zenodo.10393859',
+        "version": "1.0",
+        "dataset_name": "XXMD",
+        "subset": "xxMD-DFT",
+        "total_conformers": 3,
+        "molecules_included": ["azo", "mal"],
+        "molecule_counts": {"azo": 2, "mal": 1},
+        "split_counts": {"train": 2, "val": 1, "test": 0},
+        "skipped_no_energy": 0,
+        "mean_atoms": 19.0,
+        "max_atoms": 24,
+        "min_atoms": 9,
+        "properties_extracted": [
+            "atoms",
+            "coordinates",
+            "energy",
+            "forces",
+            "molecule_name",
+            "split",
+        ],
+        "energy_units": "hartree",
+        "force_units": "hartree/angstrom",
+        "original_energy_units": "eV",
+        "original_force_units": "eV/angstrom",
+        "conversion_factor": EV_TO_HARTREE,
+        "level_of_theory": "M06 (spin-polarized KS-DFT)",
+        "coordinate_units": "angstrom",
+        "source": "xxMD (Pengmei, Liu, Shu. Sci Data 2024)",
+        "doi": "10.1038/s41597-024-03019-3",
+        "zenodo_doi": "10.5281/zenodo.10393859",
     }
 
     return features, metadata
 
 
-def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
-                              parse_return=None, extracted_dir=None):
+def _create_and_run_pipeline(
+    config, mock_extract, mock_parse, mock_build, parse_return=None, extracted_dir=None
+):
     """
     Helper: create preprocessor with proper Path.exists handling and run preprocess.
     """
@@ -220,12 +231,11 @@ def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
         extracted_dir = Path("/tmp/xxmd_extract_fake")
     mock_extract.return_value = extracted_dir
 
-    exists_fn = _path_exists_factory(
-        config['raw_archive_path'], config['output_npz_path'])
+    exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
 
     with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
         preprocessor = _make_preprocessor(config=config)
-        with patch.object(Path, 'exists', return_value=False):
+        with patch.object(Path, "exists", return_value=False):
             result = preprocessor.preprocess()
 
     return preprocessor, result
@@ -234,24 +244,24 @@ def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
 def _simple_frame_data(n_atoms=3, energy=-100.0):
     """Build a single simple frame data dict as returned by _parse_extended_xyz_with_ase."""
     return {
-        'atomic_numbers': np.arange(1, n_atoms + 1, dtype=np.uint8),
-        'positions': np.random.randn(n_atoms, 3).astype(np.float32),
-        'energy': energy,
-        'forces': np.random.randn(n_atoms, 3).astype(np.float32),
+        "atomic_numbers": np.arange(1, n_atoms + 1, dtype=np.uint8),
+        "positions": np.random.randn(n_atoms, 3).astype(np.float32),
+        "energy": energy,
+        "forces": np.random.randn(n_atoms, 3).astype(np.float32),
     }
 
 
 def _simple_frames(n_atoms=3, n_conf=2, base_energy=-100.0):
     """Build a list of simple frame dicts."""
     return [
-        _simple_frame_data(n_atoms=n_atoms, energy=base_energy + i * 0.1)
-        for i in range(n_conf)
+        _simple_frame_data(n_atoms=n_atoms, energy=base_energy + i * 0.1) for i in range(n_conf)
     ]
 
 
 # ============================================================================
 # GROUP 1: XXMDPreprocessor — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestXXMDPreprocessorIdentity(unittest.TestCase):
     """Test XXMDPreprocessor identity, registration, and basic attributes."""
@@ -293,6 +303,7 @@ class TestXXMDPreprocessorIdentity(unittest.TestCase):
 # GROUP 2: Module-Level Constants (10 tests)
 # ============================================================================
 
+
 class TestModuleLevelConstants(unittest.TestCase):
     """Test module-level constants: EV_TO_HARTREE, XXMD_MOLECULES, XXMD_MOLECULE_FULL_NAMES, XXMD_SPLITS."""
 
@@ -322,16 +333,16 @@ class TestModuleLevelConstants(unittest.TestCase):
 
     def test_xxmd_molecules_expected_names(self):
         """XXMD_MOLECULES contains all 4 expected abbreviated molecule names."""
-        expected = {'azo', 'dia', 'mal', 'sti'}
+        expected = {"azo", "dia", "mal", "sti"}
         self.assertEqual(set(XXMD_MOLECULES), expected)
 
     def test_xxmd_molecule_full_names_mapping(self):
         """XXMD_MOLECULE_FULL_NAMES maps abbreviated to full names correctly."""
         expected = {
-            'azo': 'azobenzene',
-            'dia': 'dithiophene',
-            'mal': 'malonaldehyde',
-            'sti': 'stilbene',
+            "azo": "azobenzene",
+            "dia": "dithiophene",
+            "mal": "malonaldehyde",
+            "sti": "stilbene",
         }
         self.assertEqual(XXMD_MOLECULE_FULL_NAMES, expected)
 
@@ -345,12 +356,13 @@ class TestModuleLevelConstants(unittest.TestCase):
 
     def test_xxmd_splits_expected_values(self):
         """XXMD_SPLITS contains train, val, test."""
-        self.assertEqual(XXMD_SPLITS, ['train', 'val', 'test'])
+        self.assertEqual(XXMD_SPLITS, ["train", "val", "test"])
 
 
 # ============================================================================
 # GROUP 3: _build_object_array — Module-Level Helper (5 tests)
 # ============================================================================
+
 
 class TestBuildObjectArray(unittest.TestCase):
     """Test _build_object_array() preserves inner array dtypes."""
@@ -380,14 +392,15 @@ class TestBuildObjectArray(unittest.TestCase):
 
     def test_preserves_string_items(self):
         """_build_object_array preserves string items."""
-        result = _build_object_array(['azobenzene', 'dithiophene', 'malonaldehyde'])
-        self.assertEqual(result[0], 'azobenzene')
-        self.assertEqual(result[2], 'malonaldehyde')
+        result = _build_object_array(["azobenzene", "dithiophene", "malonaldehyde"])
+        self.assertEqual(result[0], "azobenzene")
+        self.assertEqual(result[2], "malonaldehyde")
 
 
 # ============================================================================
 # GROUP 4: _parse_extended_xyz_with_ase — Module-Level Parser (5 tests)
 # ============================================================================
+
 
 class TestParseExtendedXyzWithAse(unittest.TestCase):
     """Test _parse_extended_xyz_with_ase() module-level function.
@@ -401,25 +414,28 @@ class TestParseExtendedXyzWithAse(unittest.TestCase):
 
         Evidence: xxmd.py lines 160-167 — ImportError wrapped in DataProcessingError.
         """
-        with patch.dict('sys.modules', {'ase': None, 'ase.io': None}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"ase": None, "ase.io": None}),
+            patch(
                 "milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase"
-            ) as mock_parse:
-                mock_parse.side_effect = DataProcessingError(
-                    "ASE (Atomic Simulation Environment) is required",
-                    operation="ase_import"
-                )
-                with self.assertRaises(DataProcessingError) as ctx:
-                    mock_parse(Path("/tmp/fake.xyz"))
-                self.assertIn("ASE", str(ctx.exception))
+            ) as mock_parse,
+        ):
+            mock_parse.side_effect = DataProcessingError(
+                "ASE (Atomic Simulation Environment) is required", operation="ase_import"
+            )
+            with self.assertRaises(DataProcessingError) as ctx:
+                mock_parse(Path("/tmp/fake.xyz"))
+            self.assertIn("ASE", str(ctx.exception))
 
     def _make_mock_atoms(self, atomic_numbers, positions, energy=None, forces=None):
         """Build a mock ASE Atoms object."""
         mock_atoms = MagicMock()
         mock_atoms.get_atomic_numbers.return_value = np.array(atomic_numbers, dtype=np.int64)
         mock_atoms.get_positions.return_value = np.array(positions, dtype=np.float64)
-        mock_atoms.info = {'energy': energy} if energy is not None else {}
-        mock_atoms.arrays = {'forces': np.array(forces, dtype=np.float64)} if forces is not None else {}
+        mock_atoms.info = {"energy": energy} if energy is not None else {}
+        mock_atoms.arrays = (
+            {"forces": np.array(forces, dtype=np.float64)} if forces is not None else {}
+        )
         mock_atoms.calc = None
         return mock_atoms
 
@@ -427,8 +443,8 @@ class TestParseExtendedXyzWithAse(unittest.TestCase):
         """_parse_extended_xyz_with_ase returns a list of frame dicts."""
         mock_atoms = self._make_mock_atoms([6, 1], [[0, 0, 0], [1, 0, 0]], energy=-100.5)
 
-        with patch.dict('sys.modules', {'ase': MagicMock(), 'ase.io': MagicMock()}):
-            sys.modules['ase.io'].read.return_value = [mock_atoms]
+        with patch.dict("sys.modules", {"ase": MagicMock(), "ase.io": MagicMock()}):
+            sys.modules["ase.io"].read.return_value = [mock_atoms]
             result = _parse_extended_xyz_with_ase(Path("/tmp/fake.xyz"))
             self.assertIsInstance(result, list)
             self.assertEqual(len(result), 1)
@@ -437,21 +453,22 @@ class TestParseExtendedXyzWithAse(unittest.TestCase):
         """_parse_extended_xyz_with_ase extracts energy from atoms.info dict."""
         mock_atoms = self._make_mock_atoms([6], [[0, 0, 0]], energy=-42.5)
 
-        with patch.dict('sys.modules', {'ase': MagicMock(), 'ase.io': MagicMock()}):
-            sys.modules['ase.io'].read.return_value = [mock_atoms]
+        with patch.dict("sys.modules", {"ase": MagicMock(), "ase.io": MagicMock()}):
+            sys.modules["ase.io"].read.return_value = [mock_atoms]
             result = _parse_extended_xyz_with_ase(Path("/tmp/fake.xyz"))
-            self.assertEqual(result[0]['energy'], -42.5)
+            self.assertEqual(result[0]["energy"], -42.5)
 
     def test_parse_extracts_forces_from_arrays(self):
         """_parse_extended_xyz_with_ase extracts forces from atoms.arrays dict."""
         forces_data = [[0.1, 0.2, 0.3]]
         mock_atoms = self._make_mock_atoms([6], [[0, 0, 0]], energy=-50.0, forces=forces_data)
 
-        with patch.dict('sys.modules', {'ase': MagicMock(), 'ase.io': MagicMock()}):
-            sys.modules['ase.io'].read.return_value = [mock_atoms]
+        with patch.dict("sys.modules", {"ase": MagicMock(), "ase.io": MagicMock()}):
+            sys.modules["ase.io"].read.return_value = [mock_atoms]
             result = _parse_extended_xyz_with_ase(Path("/tmp/fake.xyz"))
             np.testing.assert_array_almost_equal(
-                result[0]['forces'], np.array(forces_data, dtype=np.float32), decimal=5)
+                result[0]["forces"], np.array(forces_data, dtype=np.float32), decimal=5
+            )
 
     def test_parse_handles_single_frame_not_list(self):
         """_parse_extended_xyz_with_ase wraps single Atoms object into list.
@@ -460,9 +477,9 @@ class TestParseExtendedXyzWithAse(unittest.TestCase):
         """
         mock_atoms = self._make_mock_atoms([1], [[0, 0, 0]], energy=-10.0)
 
-        with patch.dict('sys.modules', {'ase': MagicMock(), 'ase.io': MagicMock()}):
+        with patch.dict("sys.modules", {"ase": MagicMock(), "ase.io": MagicMock()}):
             # Return single object, not a list
-            sys.modules['ase.io'].read.return_value = mock_atoms
+            sys.modules["ase.io"].read.return_value = mock_atoms
             result = _parse_extended_xyz_with_ase(Path("/tmp/single.xyz"))
             self.assertIsInstance(result, list)
             self.assertEqual(len(result), 1)
@@ -471,6 +488,7 @@ class TestParseExtendedXyzWithAse(unittest.TestCase):
 # ============================================================================
 # GROUP 5: _validate_config — Success Paths (5 tests)
 # ============================================================================
+
 
 class TestValidateConfigSuccess(unittest.TestCase):
     """Test _validate_config success paths for valid configuration."""
@@ -483,7 +501,7 @@ class TestValidateConfigSuccess(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_molecules_to_include(self, mock_exists):
         """Config with valid molecules_to_include passes validation."""
-        _make_preprocessor(config=_make_config(molecules_to_include=['azo', 'mal']))
+        _make_preprocessor(config=_make_config(molecules_to_include=["azo", "mal"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_max_conformers(self, mock_exists):
@@ -493,11 +511,14 @@ class TestValidateConfigSuccess(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_all_optional_keys(self, mock_exists):
         """Config with all optional keys passes validation."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=['azo', 'dia'],
-            max_conformers_per_molecule=500,
-            include_splits=True,
-            cleanup_temp=False))
+        _make_preprocessor(
+            config=_make_config(
+                molecules_to_include=["azo", "dia"],
+                max_conformers_per_molecule=500,
+                include_splits=True,
+                cleanup_temp=False,
+            )
+        )
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_none_molecules(self, mock_exists):
@@ -508,6 +529,7 @@ class TestValidateConfigSuccess(unittest.TestCase):
 # ============================================================================
 # GROUP 6: _validate_config — Missing Required Keys (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMissingKeys(unittest.TestCase):
     """Test _validate_config error paths for missing required configuration keys."""
@@ -539,6 +561,7 @@ class TestValidateConfigMissingKeys(unittest.TestCase):
 # GROUP 7: _validate_config — Path Validation (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigPathValidation(unittest.TestCase):
     """Test _validate_config error paths for invalid file paths."""
 
@@ -567,6 +590,7 @@ class TestValidateConfigPathValidation(unittest.TestCase):
 # GROUP 8: _validate_config — Archive Extension Warning (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigArchiveExtension(unittest.TestCase):
     """Test _validate_config behavior for archive file extensions.
 
@@ -577,10 +601,10 @@ class TestValidateConfigArchiveExtension(unittest.TestCase):
     def test_zip_extension_accepted_silently(self, mock_exists):
         """Archive with .zip extension passes without warning."""
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/xxMD-main.zip'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/xxMD-main.zip"), logger=logger
+            )
             for c in mock_warn.call_args_list:
                 self.assertNotIn(".zip", str(c))
 
@@ -588,23 +612,23 @@ class TestValidateConfigArchiveExtension(unittest.TestCase):
     def test_non_zip_extension_logs_warning(self, mock_exists):
         """Non-.zip extension logs warning but does not raise."""
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/xxMD-main.tar.gz'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/xxMD-main.tar.gz"), logger=logger
+            )
             mock_warn.assert_called_once()
             self.assertIn(".zip", mock_warn.call_args[0][0])
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_non_zip_does_not_raise(self, mock_exists):
         """Non-.zip extension does not raise any exception."""
-        _make_preprocessor(
-            config=_make_config(raw_archive_path='/tmp/data/xxMD-main.dat'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/xxMD-main.dat"))
 
 
 # ============================================================================
 # GROUP 9: _validate_config — molecules_to_include Validation (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMolecules(unittest.TestCase):
     """Test _validate_config for molecules_to_include validation."""
@@ -613,27 +637,24 @@ class TestValidateConfigMolecules(unittest.TestCase):
     def test_invalid_molecule_name_raises(self, mock_exists):
         """Unknown molecule name raises ConfigurationError."""
         with self.assertRaises(ConfigurationError) as ctx:
-            _make_preprocessor(config=_make_config(
-                molecules_to_include=['azo', 'fake_molecule']))
+            _make_preprocessor(config=_make_config(molecules_to_include=["azo", "fake_molecule"]))
         self.assertIn("fake_molecule", str(ctx.exception))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_all_valid_molecules_accepted(self, mock_exists):
         """All 4 valid molecule names accepted."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=XXMD_MOLECULES.copy()))
+        _make_preprocessor(config=_make_config(molecules_to_include=XXMD_MOLECULES.copy()))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_single_valid_molecule_accepted(self, mock_exists):
         """Single valid molecule name accepted."""
-        _make_preprocessor(config=_make_config(molecules_to_include=['sti']))
+        _make_preprocessor(config=_make_config(molecules_to_include=["sti"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_error_message_lists_valid_molecules(self, mock_exists):
         """Error for invalid molecule name lists valid molecules."""
         with self.assertRaises(ConfigurationError) as ctx:
-            _make_preprocessor(config=_make_config(
-                molecules_to_include=['invalid_mol']))
+            _make_preprocessor(config=_make_config(molecules_to_include=["invalid_mol"]))
         error_msg = str(ctx.exception)
         self.assertIn("azo", error_msg)
 
@@ -642,64 +663,68 @@ class TestValidateConfigMolecules(unittest.TestCase):
 # GROUP 10: preprocess — Full Pipeline Success (5 tests)
 # ============================================================================
 
+
 class TestPreprocessFullPipeline(unittest.TestCase):
     """Test preprocess() full pipeline execution with mocked dependencies."""
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_full_pipeline_returns_output_path(self, mock_extract, mock_parse, mock_build):
         """Full pipeline returns the configured output_npz_path."""
         config = _make_config()
         _, result = _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_extract_called_with_archive_path(self, mock_extract, mock_parse, mock_build):
         """Step 1: _extract_archive called with correct archive path."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        mock_extract.assert_called_once_with(Path(config['raw_archive_path']))
+        mock_extract.assert_called_once_with(Path(config["raw_archive_path"]))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_parse_called_with_extracted_dir(self, mock_extract, mock_parse, mock_build):
         """Step 2: _parse_xxmd_xyz_files called with extracted directory."""
         extracted = Path("/tmp/xxmd_extract_test")
         config = _make_config()
-        _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build, extracted_dir=extracted)
+        _create_and_run_pipeline(
+            config, mock_extract, mock_parse, mock_build, extracted_dir=extracted
+        )
         mock_parse.assert_called_once()
-        self.assertEqual(mock_parse.call_args.kwargs.get('extracted_dir'), extracted)
+        self.assertEqual(mock_parse.call_args.kwargs.get("extracted_dir"), extracted)
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_build_npz_called_with_features(self, mock_extract, mock_parse, mock_build):
         """Step 3: _build_npz called with features from parse step."""
         features, metadata = _make_mock_features_and_metadata()
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build,
-            parse_return=(features, metadata))
+            _make_config(), mock_extract, mock_parse, mock_build, parse_return=(features, metadata)
+        )
         mock_build.assert_called_once()
         self.assertIs(mock_build.call_args[0][0], features)
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_build_npz_called_with_output_path(self, mock_extract, mock_parse, mock_build):
         """Step 3: _build_npz called with correct output path."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
         mock_build.assert_called_once()
-        self.assertEqual(mock_build.call_args[0][2], Path(config['output_npz_path']))
+        self.assertEqual(mock_build.call_args[0][2], Path(config["output_npz_path"]))
 
 
 # ============================================================================
 # GROUP 11: preprocess — Early Return When Output Exists (3 tests)
 # ============================================================================
+
 
 class TestPreprocessEarlyReturn(unittest.TestCase):
     """Test preprocess() early return when output NPZ already exists.
@@ -708,7 +733,7 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
     CRITICAL: Unlike RMD17, xxMD HAS early return when output exists.
     """
 
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_early_return_when_output_exists(self, mock_extract):
         """preprocess() returns early without extraction when output exists."""
         config = _make_config()
@@ -719,7 +744,7 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
                 result = preprocessor.preprocess()
         mock_extract.assert_not_called()
 
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_early_return_returns_output_path(self, mock_extract):
         """Early return provides the output_npz_path."""
         config = _make_config()
@@ -728,11 +753,11 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
                 mock_stat.return_value = MagicMock(st_size=1024 * 1024)
                 preprocessor = _make_preprocessor(config=config)
                 result = preprocessor.preprocess()
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_no_early_return_when_output_missing(self, mock_extract, mock_parse, mock_build):
         """preprocess() runs full pipeline when output doesn't exist."""
         config = _make_config()
@@ -744,49 +769,54 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
 # GROUP 12: preprocess — Pipeline Step Ordering (2 tests)
 # ============================================================================
 
+
 class TestPreprocessStepOrdering(unittest.TestCase):
     """Test preprocess() executes pipeline steps in correct order."""
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_steps_execute_in_order(self, mock_extract, mock_parse, mock_build):
         """Steps execute in order: extract -> parse -> build."""
         config = _make_config()
         call_order = []
 
         def track_extract(path):
-            call_order.append('extract')
+            call_order.append("extract")
             return Path("/tmp/xxmd_extract_fake")
 
         def track_parse(**kw):
-            call_order.append('parse')
+            call_order.append("parse")
             return _make_mock_features_and_metadata()
 
         def track_build(*args, **kw):
-            call_order.append('build')
+            call_order.append("build")
 
         mock_extract.side_effect = track_extract
         mock_parse.side_effect = track_parse
         mock_build.side_effect = track_build
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 preprocessor.preprocess()
 
-        self.assertEqual(call_order, ['extract', 'parse', 'build'])
+        self.assertEqual(call_order, ["extract", "parse", "build"])
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_build_receives_parse_output(self, mock_extract, mock_parse, mock_build):
         """Step 3 receives features and metadata from Step 2."""
         expected_features, expected_meta = _make_mock_features_and_metadata()
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build,
-            parse_return=(expected_features, expected_meta))
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            parse_return=(expected_features, expected_meta),
+        )
         self.assertIs(mock_build.call_args[0][0], expected_features)
         self.assertIs(mock_build.call_args[0][1], expected_meta)
 
@@ -795,70 +825,71 @@ class TestPreprocessStepOrdering(unittest.TestCase):
 # GROUP 13: preprocess — Error Wrapping (5 tests)
 # ============================================================================
 
+
 class TestPreprocessErrorWrapping(unittest.TestCase):
     """Test preprocess() wraps all exceptions in DataProcessingError."""
 
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_extract_error_wrapped(self, mock_extract):
         """Extraction RuntimeError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.side_effect = RuntimeError("Archive corrupt")
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIn("xxMD preprocessing failed", str(ctx.exception))
 
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_parse_error_wrapped(self, mock_extract, mock_parse):
         """Parse RuntimeError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.return_value = Path("/tmp/fake_extract")
         mock_parse.side_effect = RuntimeError("XYZ corrupt")
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 with self.assertRaises(DataProcessingError):
                     preprocessor.preprocess()
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_build_error_wrapped(self, mock_extract, mock_parse, mock_build):
         """_build_npz IOError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.return_value = Path("/tmp/fake_extract")
         mock_parse.return_value = _make_mock_features_and_metadata()
-        mock_build.side_effect = IOError("Disk full")
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        mock_build.side_effect = OSError("Disk full")
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 with self.assertRaises(DataProcessingError):
                     preprocessor.preprocess()
 
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_wrapped_error_preserves_cause(self, mock_extract):
         """DataProcessingError preserves original exception as __cause__."""
         config = _make_config()
         original_error = RuntimeError("Original error")
         mock_extract.side_effect = original_error
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIs(ctx.exception.__cause__, original_error)
 
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_wrapped_error_has_xxmd_context(self, mock_extract):
         """DataProcessingError message mentions xxMD."""
         config = _make_config()
         mock_extract.side_effect = RuntimeError("fail")
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -870,63 +901,65 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
 # GROUP 14: preprocess — Default Values (5 tests)
 # ============================================================================
 
+
 class TestPreprocessDefaults(unittest.TestCase):
     """Test preprocess() uses correct defaults for optional config keys."""
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_default_molecules_to_include_is_none(self, mock_extract, mock_parse, mock_build):
         """Default molecules_to_include is None (all molecules)."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertIsNone(mock_parse.call_args.kwargs.get('molecules_to_include'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("molecules_to_include"))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_default_max_conformers_is_none(self, mock_extract, mock_parse, mock_build):
         """Default max_conformers_per_molecule is None (all conformers)."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertIsNone(mock_parse.call_args.kwargs.get('max_conformers'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("max_conformers"))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_default_include_splits_is_true(self, mock_extract, mock_parse, mock_build):
         """Default include_splits is True."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertTrue(mock_parse.call_args.kwargs.get('include_splits'))
+        self.assertTrue(mock_parse.call_args.kwargs.get("include_splits"))
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_explicit_molecules_passed_to_parser(self, mock_extract, mock_parse, mock_build):
         """Explicit molecules_to_include config passed to _parse_xxmd_xyz_files."""
-        config = _make_config(molecules_to_include=['azo', 'mal'])
+        config = _make_config(molecules_to_include=["azo", "mal"])
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(mock_parse.call_args.kwargs.get('molecules_to_include'), ['azo', 'mal'])
+        self.assertEqual(mock_parse.call_args.kwargs.get("molecules_to_include"), ["azo", "mal"])
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_explicit_max_conformers_passed_to_parser(self, mock_extract, mock_parse, mock_build):
         """Explicit max_conformers_per_molecule passed to _parse_xxmd_xyz_files."""
         config = _make_config(max_conformers_per_molecule=500)
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(mock_parse.call_args.kwargs.get('max_conformers'), 500)
+        self.assertEqual(mock_parse.call_args.kwargs.get("max_conformers"), 500)
 
 
 # ============================================================================
 # GROUP 15: preprocess — Cleanup Behavior (4 tests)
 # ============================================================================
 
+
 class TestPreprocessCleanup(unittest.TestCase):
     """Test preprocess() cleanup behavior (Step 4)."""
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd.shutil.rmtree")
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_cleanup_called_when_enabled(self, mock_extract, mock_parse, mock_build, mock_rmtree):
         """Cleanup removes temp directory when cleanup_temp=True (default).
 
@@ -939,8 +972,8 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_parse.return_value = _make_mock_features_and_metadata()
         extracted = Path("/tmp/xxmd_extract_test")
         mock_extract.return_value = extracted
-        archive_p = Path(config['raw_archive_path'])
-        output_p = Path(config['output_npz_path'])
+        archive_p = Path(config["raw_archive_path"])
+        output_p = Path(config["output_npz_path"])
 
         def cleanup_exists(self_path):
             if self_path == archive_p:
@@ -957,17 +990,17 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_rmtree.assert_called_once_with(extracted)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd.shutil.rmtree")
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_cleanup_skipped_when_disabled(self, mock_extract, mock_parse, mock_build, mock_rmtree):
         """Cleanup skipped when cleanup_temp=False."""
         config = _make_config(cleanup_temp=False)
         mock_parse.return_value = _make_mock_features_and_metadata()
         extracted = Path("/tmp/xxmd_extract_test")
         mock_extract.return_value = extracted
-        archive_p = Path(config['raw_archive_path'])
-        output_p = Path(config['output_npz_path'])
+        archive_p = Path(config["raw_archive_path"])
+        output_p = Path(config["output_npz_path"])
 
         def cleanup_exists(self_path):
             if self_path == archive_p:
@@ -984,17 +1017,19 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_rmtree.assert_not_called()
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd.shutil.rmtree")
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
-    def test_cleanup_runs_even_on_parse_failure(self, mock_extract, mock_parse, mock_build, mock_rmtree):
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
+    def test_cleanup_runs_even_on_parse_failure(
+        self, mock_extract, mock_parse, mock_build, mock_rmtree
+    ):
         """Cleanup runs even when parse raises (finally block)."""
         config = _make_config()
         extracted = Path("/tmp/xxmd_extract_test")
         mock_extract.return_value = extracted
         mock_parse.side_effect = RuntimeError("Parse failed")
-        archive_p = Path(config['raw_archive_path'])
-        output_p = Path(config['output_npz_path'])
+        archive_p = Path(config["raw_archive_path"])
+        output_p = Path(config["output_npz_path"])
 
         def cleanup_exists(self_path):
             if self_path == archive_p:
@@ -1012,18 +1047,20 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_rmtree.assert_called_once()
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd.shutil.rmtree")
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
-    def test_cleanup_skipped_when_dir_not_exists(self, mock_extract, mock_parse, mock_build, mock_rmtree):
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
+    def test_cleanup_skipped_when_dir_not_exists(
+        self, mock_extract, mock_parse, mock_build, mock_rmtree
+    ):
         """Cleanup skipped when extracted_dir no longer exists."""
         config = _make_config()
         mock_parse.return_value = _make_mock_features_and_metadata()
         mock_extract.return_value = Path("/tmp/xxmd_extract_test")
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 preprocessor.preprocess()
         mock_rmtree.assert_not_called()
 
@@ -1031,6 +1068,7 @@ class TestPreprocessCleanup(unittest.TestCase):
 # ============================================================================
 # GROUP 16: _extract_archive — Archive Extraction (4 tests)
 # ============================================================================
+
 
 class TestExtractArchive(unittest.TestCase):
     """Test _extract_archive() for ZIP extraction logic.
@@ -1049,14 +1087,14 @@ class TestExtractArchive(unittest.TestCase):
             preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            xxmd_dft_dir = Path(tmpdir) / 'xxMD-main' / 'xxMD-DFT'
-            for mol in ['azo']:
+            xxmd_dft_dir = Path(tmpdir) / "xxMD-main" / "xxMD-DFT"
+            for mol in ["azo"]:
                 mol_dir = xxmd_dft_dir / mol
                 mol_dir.mkdir(parents=True)
-                (mol_dir / 'train.xyz').write_text('placeholder')
-            archive_path = Path(tmpdir) / 'xxMD-main.zip'
-            with zipfile.ZipFile(archive_path, 'w') as zf:
-                for root, dirs, files in os.walk(Path(tmpdir) / 'xxMD-main'):
+                (mol_dir / "train.xyz").write_text("placeholder")
+            archive_path = Path(tmpdir) / "xxMD-main.zip"
+            with zipfile.ZipFile(archive_path, "w") as zf:
+                for root, dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
                     for f in files:
                         file_path = Path(root) / f
                         arcname = str(file_path.relative_to(tmpdir))
@@ -1064,12 +1102,12 @@ class TestExtractArchive(unittest.TestCase):
             result = preprocessor._extract_archive(archive_path)
             try:
                 self.assertTrue(result.exists())
-                self.assertIn('xxMD-DFT', str(result))
+                self.assertIn("xxMD-DFT", str(result))
             finally:
                 parent = result
-                while parent.name and 'xxmd_extract_' not in parent.name:
+                while parent.name and "xxmd_extract_" not in parent.name:
                     parent = parent.parent
-                if parent.exists() and 'xxmd_extract_' in parent.name:
+                if parent.exists() and "xxmd_extract_" in parent.name:
                     shutil.rmtree(parent)
 
     def test_extract_raises_on_no_xxmd_dft_dir(self):
@@ -1081,12 +1119,12 @@ class TestExtractArchive(unittest.TestCase):
             preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            empty_dir = Path(tmpdir) / 'empty_content'
+            empty_dir = Path(tmpdir) / "empty_content"
             empty_dir.mkdir()
-            (empty_dir / 'readme.txt').write_text('no molecule data here')
-            archive_path = Path(tmpdir) / 'bad.zip'
-            with zipfile.ZipFile(archive_path, 'w') as zf:
-                zf.write(empty_dir / 'readme.txt', 'empty_content/readme.txt')
+            (empty_dir / "readme.txt").write_text("no molecule data here")
+            archive_path = Path(tmpdir) / "bad.zip"
+            with zipfile.ZipFile(archive_path, "w") as zf:
+                zf.write(empty_dir / "readme.txt", "empty_content/readme.txt")
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor._extract_archive(archive_path)
             self.assertIn("xxMD-DFT", str(ctx.exception))
@@ -1099,8 +1137,8 @@ class TestExtractArchive(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            corrupt_path = Path(tmpdir) / 'corrupt.zip'
-            corrupt_path.write_bytes(b'not a zip file')
+            corrupt_path = Path(tmpdir) / "corrupt.zip"
+            corrupt_path.write_bytes(b"not a zip file")
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor._extract_archive(corrupt_path)
             self.assertIn("Failed to extract", str(ctx.exception))
@@ -1114,12 +1152,12 @@ class TestExtractArchive(unittest.TestCase):
             preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            xxmd_dft_dir = Path(tmpdir) / 'xxMD-main' / 'xxMD-DFT'
+            xxmd_dft_dir = Path(tmpdir) / "xxMD-main" / "xxMD-DFT"
             xxmd_dft_dir.mkdir(parents=True)
-            (xxmd_dft_dir / 'readme.txt').write_text('empty')
-            archive_path = Path(tmpdir) / 'xxMD-main.zip'
-            with zipfile.ZipFile(archive_path, 'w') as zf:
-                for root, dirs, files in os.walk(Path(tmpdir) / 'xxMD-main'):
+            (xxmd_dft_dir / "readme.txt").write_text("empty")
+            archive_path = Path(tmpdir) / "xxMD-main.zip"
+            with zipfile.ZipFile(archive_path, "w") as zf:
+                for root, dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
                     for f in files:
                         file_path = Path(root) / f
                         arcname = str(file_path.relative_to(tmpdir))
@@ -1132,6 +1170,7 @@ class TestExtractArchive(unittest.TestCase):
 # ============================================================================
 # GROUP 17: _parse_xxmd_xyz_files — Core Parsing Logic (8 tests)
 # ============================================================================
+
 
 class TestParseXxmdXyzFiles(unittest.TestCase):
     """Test _parse_xxmd_xyz_files internal method for XYZ parsing and unit conversion.
@@ -1146,12 +1185,15 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=9, n_conf=3)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'mal'
+            mol_dir = Path(tmpdir) / "mal"
             mol_dir.mkdir()
-            (mol_dir / 'mal_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "mal_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['mal'],
-                max_conformers=None, include_splits=True)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["mal"],
+                max_conformers=None,
+                include_splits=True,
+            )
             self.assertIsInstance(features, dict)
             self.assertIsInstance(metadata, dict)
 
@@ -1163,14 +1205,17 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
         energy_ev = 100.0
         mock_ase_parse.return_value = [_simple_frame_data(n_atoms=2, energy=energy_ev)]
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
             expected_hartree = energy_ev * EV_TO_HARTREE
-            self.assertAlmostEqual(features['energy'][0], expected_hartree, places=12)
+            self.assertAlmostEqual(features["energy"][0], expected_hartree, places=12)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1179,17 +1224,20 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
         preprocessor = _make_preprocessor()
         force_ev = np.array([[10.0, 20.0, 30.0]], dtype=np.float32)
         frame = _simple_frame_data(n_atoms=1, energy=-50.0)
-        frame['forces'] = force_ev
+        frame["forces"] = force_ev
         mock_ase_parse.return_value = [frame]
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
             expected = force_ev * EV_TO_HARTREE
-            np.testing.assert_allclose(features['forces'][0], expected, rtol=1e-6)
+            np.testing.assert_allclose(features["forces"][0], expected, rtol=1e-6)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1198,13 +1246,16 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=4, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(features['atoms'][0].dtype, np.uint8)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(features["atoms"][0].dtype, np.uint8)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1213,14 +1264,17 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=3, n_conf=10)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=3, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 3)
-            self.assertEqual(len(features['energy']), 3)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=3,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 3)
+            self.assertEqual(len(features["energy"]), 3)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     def test_parse_multiple_molecules(self, mock_ase_parse):
@@ -1235,16 +1289,19 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
             preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=3, n_conf=2)
         with tempfile.TemporaryDirectory() as tmpdir:
-            for mol in ['azo', 'mal']:
+            for mol in ["azo", "mal"]:
                 mol_dir = Path(tmpdir) / mol
                 mol_dir.mkdir()
-                (mol_dir / f'{mol}_train_uks.xyz').write_text('placeholder')
+                (mol_dir / f"{mol}_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo', 'mal'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 4)
-            self.assertIn('azo', metadata['molecule_counts'])
-            self.assertIn('mal', metadata['molecule_counts'])
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo", "mal"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 4)
+            self.assertIn("azo", metadata["molecule_counts"])
+            self.assertIn("mal", metadata["molecule_counts"])
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     def test_parse_skips_missing_molecule_dir(self, mock_ase_parse):
@@ -1253,15 +1310,18 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
             preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo', 'mal'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 1)
-            self.assertIn('azo', metadata['molecule_counts'])
-            self.assertNotIn('mal', metadata['molecule_counts'])
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo", "mal"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
+            self.assertIn("azo", metadata["molecule_counts"])
+            self.assertNotIn("mal", metadata["molecule_counts"])
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     def test_parse_skips_frames_without_energy(self, mock_ase_parse):
@@ -1276,22 +1336,26 @@ class TestParseXxmdXyzFiles(unittest.TestCase):
             preprocessor = _make_preprocessor()
         frame_with_energy = _simple_frame_data(n_atoms=2, energy=-50.0)
         frame_no_energy = _simple_frame_data(n_atoms=2, energy=-50.0)
-        frame_no_energy['energy'] = None
+        frame_no_energy["energy"] = None
         mock_ase_parse.return_value = [frame_with_energy, frame_no_energy]
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 1)
-            self.assertEqual(metadata['skipped_no_energy'], 1)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
+            self.assertEqual(metadata["skipped_no_energy"], 1)
 
 
 # ============================================================================
 # GROUP 18: _parse_xxmd_xyz_files — Metadata Construction (8 tests)
 # ============================================================================
+
 
 class TestParseMetadata(unittest.TestCase):
     """Test _parse_xxmd_xyz_files metadata construction."""
@@ -1300,85 +1364,95 @@ class TestParseMetadata(unittest.TestCase):
         """Helper: run _parse_xxmd_xyz_files with mocked ASE parse."""
         with patch("pathlib.Path.exists", return_value=True):
             preprocessor = _make_preprocessor()
-        with patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase") as mock_ase:
+        with patch(
+            "milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase"
+        ) as mock_ase:
             mock_ase.return_value = _simple_frames(n_atoms=n_atoms, n_conf=n_conf)
             with tempfile.TemporaryDirectory() as tmpdir:
                 for mol in molecules:
                     mol_dir = Path(tmpdir) / mol
                     mol_dir.mkdir()
-                    (mol_dir / f'{mol}_train_uks.xyz').write_text('placeholder')
+                    (mol_dir / f"{mol}_train_uks.xyz").write_text("placeholder")
                 kwargs = {
-                    'extracted_dir': Path(tmpdir),
-                    'molecules_to_include': molecules,
-                    'max_conformers': None,
-                    'include_splits': True,
+                    "extracted_dir": Path(tmpdir),
+                    "molecules_to_include": molecules,
+                    "max_conformers": None,
+                    "include_splits": True,
                 }
                 kwargs.update(parse_kwargs)
                 return preprocessor._parse_xxmd_xyz_files(**kwargs)
 
     def test_metadata_energy_units_hartree(self):
         """Metadata energy_units is 'hartree'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['energy_units'], 'hartree')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["energy_units"], "hartree")
 
     def test_metadata_force_units(self):
         """Metadata force_units is 'hartree/angstrom'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['force_units'], 'hartree/angstrom')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["force_units"], "hartree/angstrom")
 
     def test_metadata_original_energy_units(self):
         """Metadata original_energy_units is 'eV'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['original_energy_units'], 'eV')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["original_energy_units"], "eV")
 
     def test_metadata_original_force_units(self):
         """Metadata original_force_units is 'eV/angstrom'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['original_force_units'], 'eV/angstrom')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["original_force_units"], "eV/angstrom")
 
     def test_metadata_conversion_factor(self):
         """Metadata conversion_factor matches EV_TO_HARTREE constant."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['conversion_factor'], EV_TO_HARTREE)
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["conversion_factor"], EV_TO_HARTREE)
 
     def test_metadata_level_of_theory(self):
         """Metadata level_of_theory is 'M06 (spin-polarized KS-DFT)'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['level_of_theory'], 'M06 (spin-polarized KS-DFT)')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["level_of_theory"], "M06 (spin-polarized KS-DFT)")
 
     def test_metadata_dataset_name(self):
         """Metadata dataset_name is 'XXMD'."""
-        _, metadata = self._run_parse_with_data(['azo'])
-        self.assertEqual(metadata['dataset_name'], 'XXMD')
+        _, metadata = self._run_parse_with_data(["azo"])
+        self.assertEqual(metadata["dataset_name"], "XXMD")
 
     def test_metadata_atom_statistics(self):
         """Metadata includes correct atom count statistics."""
         with patch("pathlib.Path.exists", return_value=True):
             preprocessor = _make_preprocessor()
-        with patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase") as mock_ase:
+        with patch(
+            "milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase"
+        ) as mock_ase:
+
             def side_effect_parse(path):
                 mol_name = path.parent.name
-                if mol_name == 'azo':
+                if mol_name == "azo":
                     return _simple_frames(n_atoms=9, n_conf=1)
                 else:
                     return _simple_frames(n_atoms=3, n_conf=1)
+
             mock_ase.side_effect = side_effect_parse
             with tempfile.TemporaryDirectory() as tmpdir:
-                for mol in ['azo', 'mal']:
+                for mol in ["azo", "mal"]:
                     mol_dir = Path(tmpdir) / mol
                     mol_dir.mkdir()
-                    (mol_dir / f'{mol}_train_uks.xyz').write_text('placeholder')
+                    (mol_dir / f"{mol}_train_uks.xyz").write_text("placeholder")
                 _, metadata = preprocessor._parse_xxmd_xyz_files(
-                    extracted_dir=Path(tmpdir), molecules_to_include=['azo', 'mal'],
-                    max_conformers=None, include_splits=True)
-                self.assertEqual(metadata['min_atoms'], 3)
-                self.assertEqual(metadata['max_atoms'], 9)
-                self.assertAlmostEqual(metadata['mean_atoms'], 6.0)
+                    extracted_dir=Path(tmpdir),
+                    molecules_to_include=["azo", "mal"],
+                    max_conformers=None,
+                    include_splits=True,
+                )
+                self.assertEqual(metadata["min_atoms"], 3)
+                self.assertEqual(metadata["max_atoms"], 9)
+                self.assertAlmostEqual(metadata["mean_atoms"], 6.0)
 
 
 # ============================================================================
 # GROUP 19: _parse_xxmd_xyz_files — Split and Molecule Name Handling (5 tests)
 # ============================================================================
+
 
 class TestParseSplitAndNameHandling(unittest.TestCase):
     """Test _parse_xxmd_xyz_files split info and molecule name handling."""
@@ -1390,14 +1464,17 @@ class TestParseSplitAndNameHandling(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertIn('split', features)
-            self.assertEqual(features['split'][0], 'train')
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertIn("split", features)
+            self.assertEqual(features["split"][0], "train")
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1406,13 +1483,16 @@ class TestParseSplitAndNameHandling(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=False)
-            self.assertNotIn('split', features)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=False,
+            )
+            self.assertNotIn("split", features)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1421,13 +1501,16 @@ class TestParseSplitAndNameHandling(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(features['molecule_name'][0], 'azobenzene')
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(features["molecule_name"][0], "azobenzene")
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     def test_parse_tries_fallback_filename_pattern(self, mock_ase_parse):
@@ -1442,14 +1525,17 @@ class TestParseSplitAndNameHandling(unittest.TestCase):
             preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
             # Use fallback pattern: train.xyz instead of azo_train_uks.xyz
-            (mol_dir / 'train.xyz').write_text('placeholder')
+            (mol_dir / "train.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 1)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1457,21 +1543,25 @@ class TestParseSplitAndNameHandling(unittest.TestCase):
         """_parse_xxmd_xyz_files omits forces key when all frames have None forces."""
         preprocessor = _make_preprocessor()
         frame = _simple_frame_data(n_atoms=2, energy=-50.0)
-        frame['forces'] = None
+        frame["forces"] = None
         mock_ase_parse.return_value = [frame]
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertNotIn('forces', features)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertNotIn("forces", features)
 
 
 # ============================================================================
 # GROUP 20: _build_npz — Internal Method Logic (4 tests)
 # ============================================================================
+
 
 class TestBuildNpz(unittest.TestCase):
     """Test _build_npz internal method for NPZ file construction."""
@@ -1495,7 +1585,7 @@ class TestBuildNpz(unittest.TestCase):
             output_path = Path(tmpdir) / "test_output.npz"
             preprocessor._build_npz(features, metadata, output_path)
             loaded = np.load(str(output_path), allow_pickle=True)
-            self.assertIn('_metadata', loaded.files)
+            self.assertIn("_metadata", loaded.files)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_build_npz_creates_parent_directory(self, mock_exists):
@@ -1524,6 +1614,7 @@ class TestBuildNpz(unittest.TestCase):
 # GROUP 21: BasePreprocessor Integration — run() Method (5 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorRunIntegration(unittest.TestCase):
     """Test XXMDPreprocessor works with BasePreprocessor.run() method."""
 
@@ -1532,15 +1623,18 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         """run() calls preprocess() then _validate_output() in sequence."""
         preprocessor = _make_preprocessor(config=_make_config())
         call_order = []
+
         def mock_preprocess():
-            call_order.append('preprocess')
+            call_order.append("preprocess")
             return Path("/tmp/test_output.npz")
+
         def mock_validate_output(path):
-            call_order.append('validate_output')
-        with patch.object(preprocessor, 'preprocess', side_effect=mock_preprocess):
-            with patch.object(preprocessor, '_validate_output', side_effect=mock_validate_output):
+            call_order.append("validate_output")
+
+        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
+            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
                 preprocessor.run()
-        self.assertEqual(call_order, ['preprocess', 'validate_output'])
+        self.assertEqual(call_order, ["preprocess", "validate_output"])
 
     def test_run_raises_on_invalid_config(self):
         """Construction raises ConfigurationError when config is invalid."""
@@ -1551,7 +1645,7 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
     def test_run_calls_preprocess(self, mock_exists):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(preprocessor, 'preprocess', wraps=preprocessor.preprocess) as mock_pp:
+        with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
             try:
                 preprocessor.run()
             except Exception:
@@ -1560,16 +1654,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
 
     def test_has_run_method_from_base(self):
         """XXMDPreprocessor inherits run() from BasePreprocessor."""
-        self.assertTrue(hasattr(XXMDPreprocessor, 'run'))
+        self.assertTrue(hasattr(XXMDPreprocessor, "run"))
 
     def test_has_validate_output_from_base(self):
         """XXMDPreprocessor inherits _validate_output() from BasePreprocessor."""
-        self.assertTrue(hasattr(XXMDPreprocessor, '_validate_output'))
+        self.assertTrue(hasattr(XXMDPreprocessor, "_validate_output"))
 
 
 # ============================================================================
 # GROUP 22: Edge Cases and Robustness (8 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndRobustness(unittest.TestCase):
     """Test edge cases and robustness scenarios."""
@@ -1578,21 +1673,22 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
     def test_config_with_extra_unknown_keys_still_valid(self, mock_exists):
         """Config with extra unknown keys does not cause validation errors."""
         config = _make_config()
-        config['extra_key'] = 'extra_value'
+        config["extra_key"] = "extra_value"
         _make_preprocessor(config=config)
 
-    @patch.object(XXMDPreprocessor, '_build_npz')
-    @patch.object(XXMDPreprocessor, '_parse_xxmd_xyz_files')
-    @patch.object(XXMDPreprocessor, '_extract_archive')
+    @patch.object(XXMDPreprocessor, "_build_npz")
+    @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
+    @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_preprocess_with_all_config_options(self, mock_extract, mock_parse, mock_build):
         """Pipeline works with all optional config options specified."""
         config = _make_config(
-            molecules_to_include=['azo', 'mal'],
+            molecules_to_include=["azo", "mal"],
             max_conformers_per_molecule=100,
             include_splits=True,
-            cleanup_temp=False)
+            cleanup_temp=False,
+        )
         _, result = _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     def test_parse_defaults_to_all_molecules_when_none(self, mock_ase_parse):
@@ -1601,14 +1697,17 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
             preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=None,
-                max_conformers=None, include_splits=True)
-            self.assertEqual(metadata['total_conformers'], 1)
-            self.assertEqual(metadata['molecules_included'], XXMD_MOLECULES)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=None,
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
+            self.assertEqual(metadata["molecules_included"], XXMD_MOLECULES)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1617,13 +1716,16 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(features['coordinates'][0].dtype, np.float32)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(features["coordinates"][0].dtype, np.float32)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1632,13 +1734,16 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(features['forces'][0].dtype, np.float32)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(features["forces"][0].dtype, np.float32)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1647,13 +1752,16 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertEqual(features['energy'].dtype, np.float64)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertEqual(features["energy"].dtype, np.float64)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
     @patch("pathlib.Path.exists", return_value=True)
@@ -1662,13 +1770,16 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=3, n_conf=1)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             features, _ = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            expected_keys = {'atoms', 'coordinates', 'energy', 'forces', 'molecule_name', 'split'}
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            expected_keys = {"atoms", "coordinates", "energy", "forces", "molecule_name", "split"}
             self.assertEqual(set(features.keys()), expected_keys)
 
     @patch("milia_pipeline.preprocessing.preprocessors.xxmd._parse_extended_xyz_with_ase")
@@ -1678,19 +1789,23 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         preprocessor = _make_preprocessor()
         mock_ase_parse.return_value = _simple_frames(n_atoms=2, n_conf=2)
         with tempfile.TemporaryDirectory() as tmpdir:
-            mol_dir = Path(tmpdir) / 'azo'
+            mol_dir = Path(tmpdir) / "azo"
             mol_dir.mkdir()
-            (mol_dir / 'azo_train_uks.xyz').write_text('placeholder')
+            (mol_dir / "azo_train_uks.xyz").write_text("placeholder")
             _, metadata = preprocessor._parse_xxmd_xyz_files(
-                extracted_dir=Path(tmpdir), molecules_to_include=['azo'],
-                max_conformers=None, include_splits=True)
-            self.assertIn('split_counts', metadata)
-            self.assertEqual(metadata['split_counts']['train'], 2)
+                extracted_dir=Path(tmpdir),
+                molecules_to_include=["azo"],
+                max_conformers=None,
+                include_splits=True,
+            )
+            self.assertIn("split_counts", metadata)
+            self.assertEqual(metadata["split_counts"]["train"], 2)
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1698,28 +1813,28 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestXXMDPreprocessorIdentity,        # GROUP 1:   6 tests
-        TestModuleLevelConstants,              # GROUP 2:  10 tests
-        TestBuildObjectArray,                  # GROUP 3:   5 tests
-        TestParseExtendedXyzWithAse,          # GROUP 4:   5 tests
-        TestValidateConfigSuccess,             # GROUP 5:   5 tests
-        TestValidateConfigMissingKeys,         # GROUP 6:   4 tests
-        TestValidateConfigPathValidation,      # GROUP 7:   3 tests
-        TestValidateConfigArchiveExtension,    # GROUP 8:   3 tests
-        TestValidateConfigMolecules,           # GROUP 9:   4 tests
-        TestPreprocessFullPipeline,            # GROUP 10:  5 tests
-        TestPreprocessEarlyReturn,             # GROUP 11:  3 tests
-        TestPreprocessStepOrdering,            # GROUP 12:  2 tests
-        TestPreprocessErrorWrapping,           # GROUP 13:  5 tests
-        TestPreprocessDefaults,                # GROUP 14:  5 tests
-        TestPreprocessCleanup,                 # GROUP 15:  4 tests
-        TestExtractArchive,                    # GROUP 16:  4 tests
-        TestParseXxmdXyzFiles,                 # GROUP 17:  8 tests
-        TestParseMetadata,                     # GROUP 18:  8 tests
-        TestParseSplitAndNameHandling,         # GROUP 19:  5 tests
-        TestBuildNpz,                          # GROUP 20:  4 tests
-        TestBasePreprocessorRunIntegration,    # GROUP 21:  5 tests
-        TestEdgeCasesAndRobustness,            # GROUP 22:  8 tests
+        TestXXMDPreprocessorIdentity,  # GROUP 1:   6 tests
+        TestModuleLevelConstants,  # GROUP 2:  10 tests
+        TestBuildObjectArray,  # GROUP 3:   5 tests
+        TestParseExtendedXyzWithAse,  # GROUP 4:   5 tests
+        TestValidateConfigSuccess,  # GROUP 5:   5 tests
+        TestValidateConfigMissingKeys,  # GROUP 6:   4 tests
+        TestValidateConfigPathValidation,  # GROUP 7:   3 tests
+        TestValidateConfigArchiveExtension,  # GROUP 8:   3 tests
+        TestValidateConfigMolecules,  # GROUP 9:   4 tests
+        TestPreprocessFullPipeline,  # GROUP 10:  5 tests
+        TestPreprocessEarlyReturn,  # GROUP 11:  3 tests
+        TestPreprocessStepOrdering,  # GROUP 12:  2 tests
+        TestPreprocessErrorWrapping,  # GROUP 13:  5 tests
+        TestPreprocessDefaults,  # GROUP 14:  5 tests
+        TestPreprocessCleanup,  # GROUP 15:  4 tests
+        TestExtractArchive,  # GROUP 16:  4 tests
+        TestParseXxmdXyzFiles,  # GROUP 17:  8 tests
+        TestParseMetadata,  # GROUP 18:  8 tests
+        TestParseSplitAndNameHandling,  # GROUP 19:  5 tests
+        TestBuildNpz,  # GROUP 20:  4 tests
+        TestBasePreprocessorRunIntegration,  # GROUP 21:  5 tests
+        TestEdgeCasesAndRobustness,  # GROUP 22:  8 tests
     ]
 
     for test_class in test_classes:

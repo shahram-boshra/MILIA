@@ -51,18 +51,18 @@ Usage Patterns:
 
 Plugin Structure:
     Each plugin must contain a plugin.yaml file with metadata:
-    
+
     plugin_name: my_custom_model
     version: "1.0.0"
     author: "Your Name"
     description: "Custom GNN model for molecular property prediction"
     plugin_type: "model"
-    
+
     requirements:
       milia_version: ">=1.0.0"
       pyg_version: ">=2.0.0"
       python_version: ">=3.8"
-    
+
     models:
       - name: "CustomGNN"
         class_name: "CustomGNNModel"
@@ -109,35 +109,30 @@ Author: milia Team
 # IMPORTS
 # =============================================================================
 
-from typing import Dict, List, Optional, Any
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Import all public components from the plugin system implementation
 from milia_pipeline.models.plugins.model_plugin_system import (
+    ModelDeclaration,
     # Core Classes
     ModelPluginLoader,
     ModelPluginMetadata,
-    ModelDeclaration,
-    
-    # Singleton Access
-    get_plugin_loader,
-    
-    # Plugin Discovery and Loading
-    discover_plugins,
-    load_plugin,
-    
-    # Plugin Management
-    list_plugins,
-    get_plugin_info,
-    validate_plugin,
-    
+    PluginDependencyError,
     # Exceptions (re-exported for convenience)
     PluginError,
-    PluginValidationError,
     PluginSecurityError,
-    PluginDependencyError,
+    PluginValidationError,
+    # Plugin Discovery and Loading
+    discover_plugins,
+    get_plugin_info,
+    # Singleton Access
+    get_plugin_loader,
+    # Plugin Management
+    list_plugins,
+    load_plugin,
+    validate_plugin,
 )
-
 
 # =============================================================================
 # VERSION AND METADATA
@@ -150,25 +145,20 @@ __all__ = [
     "ModelPluginLoader",
     "ModelPluginMetadata",
     "ModelDeclaration",
-    
     # Singleton Access
     "get_plugin_loader",
-    
     # Plugin Discovery and Loading
     "discover_plugins",
     "load_plugin",
-    
     # Plugin Management
     "list_plugins",
     "get_plugin_info",
     "validate_plugin",
-    
     # Exceptions
     "PluginError",
     "PluginValidationError",
     "PluginSecurityError",
     "PluginDependencyError",
-    
     # Module-level convenience functions
     "get_plugin_loader_instance",
     "discover_and_load_plugins",
@@ -178,7 +168,6 @@ __all__ = [
     "get_plugin_summary",
     "safe_load_plugin",
     "safe_discover_plugins",
-    
     # Metadata
     "__version__",
     "__author__",
@@ -189,16 +178,17 @@ __all__ = [
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # =============================================================================
 
+
 def get_plugin_loader_instance() -> ModelPluginLoader:
     """
     Get the singleton plugin loader instance.
-    
+
     This is an alias for get_plugin_loader() provided for clarity
     in contexts where the singleton pattern needs to be explicit.
-    
+
     Returns:
         ModelPluginLoader: The singleton plugin loader instance
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import get_plugin_loader_instance
         >>> loader = get_plugin_loader_instance()
@@ -208,27 +198,27 @@ def get_plugin_loader_instance() -> ModelPluginLoader:
 
 
 def discover_and_load_plugins(
-    paths: Optional[List[Path]] = None,
+    paths: list[Path] | None = None,
     auto_validate: bool = True,
     validation_level: str = "standard",
-    register_models: bool = True
-) -> Dict[str, bool]:
+    register_models: bool = True,
+) -> dict[str, bool]:
     """
     Discover and load plugins in one operation.
-    
+
     This is a convenience function that combines discovery and loading,
     useful for initialization scenarios where you want to discover and
     immediately load all available plugins.
-    
+
     Args:
         paths: List of paths to search for plugins (default: from config)
         auto_validate: Whether to validate plugins automatically during discovery
         validation_level: Validation strictness ('permissive', 'standard', 'strict')
         register_models: Whether to register models in ModelRegistry
-        
+
     Returns:
         Dictionary mapping plugin names to load success status
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import discover_and_load_plugins
         >>> from pathlib import Path
@@ -239,37 +229,35 @@ def discover_and_load_plugins(
         >>> print(f"Loaded {sum(results.values())} of {len(results)} plugins")
     """
     loader = get_plugin_loader()
-    
+
     # Discover plugins
     plugin_names = loader.discover_plugins(
-        paths=paths,
-        auto_validate=auto_validate,
-        validation_level=validation_level
+        paths=paths, auto_validate=auto_validate, validation_level=validation_level
     )
-    
+
     # Load all discovered plugins
     results = {}
     for plugin_name in plugin_names:
         try:
             success = loader.load_plugin(plugin_name, register_models=register_models)
             results[plugin_name] = success
-        except Exception as e:
+        except Exception:
             results[plugin_name] = False
-    
+
     return results
 
 
-def get_all_plugin_models() -> Dict[str, List[str]]:
+def get_all_plugin_models() -> dict[str, list[str]]:
     """
     Get all models provided by all plugins.
-    
+
     Returns a mapping of plugin names to the list of model names
     they provide. Useful for getting a complete inventory of
     available plugin models.
-    
+
     Returns:
         Dictionary mapping plugin names to lists of model names
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import get_all_plugin_models
         >>> models = get_all_plugin_models()
@@ -278,7 +266,7 @@ def get_all_plugin_models() -> Dict[str, List[str]]:
     """
     loader = get_plugin_loader()
     all_plugins = loader.list_plugins()
-    
+
     result = {}
     for plugin_name in all_plugins:
         try:
@@ -286,20 +274,20 @@ def get_all_plugin_models() -> Dict[str, List[str]]:
             result[plugin_name] = models
         except Exception:
             result[plugin_name] = []
-    
+
     return result
 
 
 def is_plugin_loaded(plugin_name: str) -> bool:
     """
     Check if a plugin is loaded.
-    
+
     Args:
         plugin_name: Name of the plugin to check
-        
+
     Returns:
         True if plugin is loaded, False otherwise
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import is_plugin_loaded
         >>> if is_plugin_loaded("my_custom_model"):
@@ -313,13 +301,13 @@ def is_plugin_loaded(plugin_name: str) -> bool:
 def is_plugin_enabled(plugin_name: str) -> bool:
     """
     Check if a plugin is enabled.
-    
+
     Args:
         plugin_name: Name of the plugin to check
-        
+
     Returns:
         True if plugin is enabled, False otherwise
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import is_plugin_enabled
         >>> if is_plugin_enabled("my_custom_model"):
@@ -330,17 +318,17 @@ def is_plugin_enabled(plugin_name: str) -> bool:
     return plugin_name in enabled_plugins
 
 
-def get_plugin_summary() -> Dict[str, Any]:
+def get_plugin_summary() -> dict[str, Any]:
     """
     Get a summary of all plugins and their status.
-    
+
     Returns:
         Dictionary with comprehensive plugin information including:
         - Total number of plugins
         - Number of loaded plugins
         - Number of enabled plugins
         - List of plugin names by status
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import get_plugin_summary
         >>> summary = get_plugin_summary()
@@ -348,11 +336,11 @@ def get_plugin_summary() -> Dict[str, Any]:
         >>> print(f"Loaded: {summary['loaded_count']}")
     """
     loader = get_plugin_loader()
-    
+
     all_plugins = loader.list_plugins()
     loaded_plugins = loader.list_plugins(loaded_only=True)
     enabled_plugins = loader.list_plugins(enabled_only=True)
-    
+
     return {
         "total": len(all_plugins),
         "loaded_count": len(loaded_plugins),
@@ -369,21 +357,22 @@ def get_plugin_summary() -> Dict[str, Any]:
 # ENHANCED EXCEPTION HANDLING
 # =============================================================================
 
-def safe_load_plugin(plugin_name: str, register_models: bool = True) -> tuple[bool, Optional[str]]:
+
+def safe_load_plugin(plugin_name: str, register_models: bool = True) -> tuple[bool, str | None]:
     """
     Safely load a plugin with enhanced error handling.
-    
+
     This function wraps the load_plugin function with additional
     error handling and returns both success status and error message
     if loading fails.
-    
+
     Args:
         plugin_name: Name of plugin to load
         register_models: Whether to register models in ModelRegistry
-        
+
     Returns:
         Tuple of (success: bool, error_message: Optional[str])
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import safe_load_plugin
         >>> success, error = safe_load_plugin("my_custom_model")
@@ -406,24 +395,22 @@ def safe_load_plugin(plugin_name: str, register_models: bool = True) -> tuple[bo
 
 
 def safe_discover_plugins(
-    paths: Optional[List[Path]] = None,
-    auto_validate: bool = True,
-    validation_level: str = "standard"
-) -> tuple[List[str], List[tuple[str, str]]]:
+    paths: list[Path] | None = None, auto_validate: bool = True, validation_level: str = "standard"
+) -> tuple[list[str], list[tuple[str, str]]]:
     """
     Safely discover plugins with enhanced error handling.
-    
+
     Returns both successfully discovered plugins and any errors
     encountered during discovery.
-    
+
     Args:
         paths: List of paths to search for plugins
         auto_validate: Whether to validate plugins automatically
         validation_level: Validation strictness
-        
+
     Returns:
         Tuple of (discovered_plugins: List[str], errors: List[Tuple[path, error]])
-        
+
     Example:
         >>> from milia_pipeline.models.plugins import safe_discover_plugins
         >>> from pathlib import Path
@@ -433,16 +420,14 @@ def safe_discover_plugins(
     """
     errors = []
     discovered = []
-    
+
     try:
         discovered = discover_plugins(
-            paths=paths,
-            auto_validate=auto_validate,
-            validation_level=validation_level
+            paths=paths, auto_validate=auto_validate, validation_level=validation_level
         )
     except Exception as e:
         errors.append(("discovery", str(e)))
-    
+
     return (discovered, errors)
 
 

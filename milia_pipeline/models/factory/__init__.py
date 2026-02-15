@@ -16,7 +16,7 @@ Public API:
         - ModelValidator: Validator for hyperparameters and data compatibility
         - GraphLevelModelWrapper: Wrapper for graph-level task handling
         - EdgeLevelModelWrapper: Wrapper for edge-level task handling
-    
+
     Functions:
         - create_model: Convenience function to create a model
         - get_model_info: Get information about a registered model
@@ -31,10 +31,10 @@ Usage:
         ...     task_type="graph_regression",
         ...     sample_data=sample_data
         ... )
-    
+
     Custom architecture creation (Phase 7):
         >>> from milia_pipeline.models.factory import create_model
-        >>> 
+        >>>
         >>> architecture_config = {
         ...     'layers': [
         ...         {'type': 'GCNConv', 'params': {'out_channels': 64}},
@@ -45,17 +45,17 @@ Usage:
         ...         {'type': 'Linear', 'params': {'out_features': 1}}
         ...     ]
         ... }
-        >>> 
+        >>>
         >>> model = create_model(
         ...     name="custom",
         ...     hyperparameters={"architecture_config": architecture_config},
         ...     task_type="graph_regression",
         ...     sample_data=sample_data
         ... )
-    
+
     Ensemble model creation (Phase 7):
         >>> from milia_pipeline.models.factory import create_model
-        >>> 
+        >>>
         >>> ensemble_config = {
         ...     'models': [
         ...         {
@@ -74,14 +74,14 @@ Usage:
         ...         'fusion': 'weighted'
         ...     }
         ... }
-        >>> 
+        >>>
         >>> model = create_model(
         ...     name="ensemble",
         ...     hyperparameters={"ensemble_config": ensemble_config},
         ...     task_type="graph_regression",
         ...     sample_data=sample_data
         ... )
-    
+
     Using ModelFactory directly:
         >>> from milia_pipeline.models.factory import ModelFactory
         >>> factory = ModelFactory()
@@ -92,13 +92,13 @@ Usage:
         ...     sample_data=sample_data,
         ...     device=torch.device("cuda")
         ... )
-    
+
     Getting model information:
         >>> from milia_pipeline.models.factory import get_model_info
         >>> info = get_model_info("GCN")
         >>> print(info['description'])
         >>> print(info['supported_tasks'])
-    
+
     Validation:
         >>> from milia_pipeline.models.factory import ModelValidator
         >>> validator = ModelValidator()
@@ -155,33 +155,30 @@ Author: milia Team
 Version: 1.1.0 (Phase 7 Extended)
 """
 
-from typing import Dict, Any, Optional, Type, List
 import logging
+from typing import Any, Dict, List, Optional, Type
 
 # =============================================================================
 # IMPORTS FROM MODEL_FACTORY MODULE
 # =============================================================================
-
 from .model_factory import (
+    EdgeLevelModelWrapper,
+    # Wrapper Classes
+    GraphLevelModelWrapper,
     # Main Classes
     ModelFactory,
     ModelValidator,
-    
-    # Wrapper Classes
-    GraphLevelModelWrapper,
-    EdgeLevelModelWrapper,
-    
     # Convenience Functions (Public API)
     create_model,
-    get_model_info,
     get_factory,
+    get_model_info,
 )
 
 # Target Selection Configuration
 from .target_selection_config import (
-    TargetSelectionConfig,
     SelectionMode,
-)   
+    TargetSelectionConfig,
+)
 
 # =============================================================================
 # MODULE METADATA
@@ -193,20 +190,16 @@ __all__ = [
     # Main Classes
     "ModelFactory",
     "ModelValidator",
-    
     # Wrapper Classes
     "GraphLevelModelWrapper",
     "EdgeLevelModelWrapper",
-    
     # Public API Functions
     "create_model",
     "get_model_info",
     "get_factory",
-    
     # Target Selection
     "TargetSelectionConfig",
     "SelectionMode",
-    
     # Module Metadata
     "__version__",
 ]
@@ -223,13 +216,14 @@ logger.debug(f"models.factory module initialized (version {__version__}, Phase 7
 # PUBLIC API DOCUMENTATION
 # =============================================================================
 
-def _get_module_info() -> Dict[str, Any]:
+
+def _get_module_info() -> dict[str, Any]:
     """
     Get module information for introspection.
-    
+
     Returns:
         Dictionary with module metadata
-        
+
     Example:
         >>> from milia_pipeline.models import factory
         >>> info = factory._get_module_info()
@@ -239,40 +233,45 @@ def _get_module_info() -> Dict[str, Any]:
         ['custom_architectures', 'ensemble_models']
     """
     return {
-        'name': 'models.factory',
-        'version': __version__,
-        'author': __author__,
-        'description': 'Factory pattern for model creation with validation (Phase 7 extended)',
-        'public_api': __all__,
-        'classes': ['ModelFactory', 'ModelValidator', 'GraphLevelModelWrapper', 'EdgeLevelModelWrapper'],
-        'functions': ['create_model', 'get_model_info', 'get_factory'],
-        'capabilities': [
-            'Model instantiation with validation',
-            'Hyperparameter validation against schemas',
-            'Data compatibility checking',
-            'Automatic channel inference',
-            'Device placement and management',
-            'Default value application',
-            'Model introspection and information',
-            'Custom architecture creation (Phase 7)',
-            'Ensemble model creation (Phase 7)',
-            'Graceful degradation (Phase 7)',
+        "name": "models.factory",
+        "version": __version__,
+        "author": __author__,
+        "description": "Factory pattern for model creation with validation (Phase 7 extended)",
+        "public_api": __all__,
+        "classes": [
+            "ModelFactory",
+            "ModelValidator",
+            "GraphLevelModelWrapper",
+            "EdgeLevelModelWrapper",
         ],
-        'dependencies': [
-            'torch',
-            'torch_geometric',
-            'model_registry',
-            'model_categories',
-            'builders (optional, for Phase 7 features)',
+        "functions": ["create_model", "get_model_info", "get_factory"],
+        "capabilities": [
+            "Model instantiation with validation",
+            "Hyperparameter validation against schemas",
+            "Data compatibility checking",
+            "Automatic channel inference",
+            "Device placement and management",
+            "Default value application",
+            "Model introspection and information",
+            "Custom architecture creation (Phase 7)",
+            "Ensemble model creation (Phase 7)",
+            "Graceful degradation (Phase 7)",
         ],
-        'thread_safe': True,
-        'phase_7_features': [
-            'custom_architectures',
-            'ensemble_models',
-            'architecture_validation',
-            'conditional_builders_import',
+        "dependencies": [
+            "torch",
+            "torch_geometric",
+            "model_registry",
+            "model_categories",
+            "builders (optional, for Phase 7 features)",
         ],
-        'backward_compatible': True,
+        "thread_safe": True,
+        "phase_7_features": [
+            "custom_architectures",
+            "ensemble_models",
+            "architecture_validation",
+            "conditional_builders_import",
+        ],
+        "backward_compatible": True,
     }
 
 
@@ -290,7 +289,7 @@ def _get_module_info() -> Dict[str, Any]:
 # 3. from milia_pipeline.models.factory import get_factory, get_model_info
 
 # PHASE 7 USAGE EXAMPLES:
-# 
+#
 # Custom Architecture:
 #   from milia_pipeline.models.factory import create_model
 #   model = create_model("custom", {"architecture_config": {...}}, "graph_regression")

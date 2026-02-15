@@ -26,25 +26,25 @@ Version: 1.1.0
 
 Public API Usage:
     >>> from milia_pipeline.models.registry import get_model, list_models
-    >>> 
+    >>>
     >>> # Get a model class
     >>> GCN = get_model("GCN")
     >>> model = GCN(in_channels=10, out_channels=5, hidden_channels=64)
-    >>> 
+    >>>
     >>> # List available models
     >>> all_models = list_models()
     >>> basic_gnn = list_models(category=ModelCategory.BASIC_GNN)
     >>> regression_models = list_models(task_type="graph_regression")
-    >>> 
+    >>>
     >>> # Get model information
     >>> info = get_model_info("GAT")
     >>> print(info['description'])
     >>> print(info['supported_tasks'])
-    >>> 
+    >>>
     >>> # Check model availability
     >>> if has_model("GraphSAGE"):
     ...     model = get_model("GraphSAGE")
-    >>> 
+    >>>
     >>> # Register custom/plugin model
     >>> register_model(
     ...     name="CustomGNN",
@@ -55,20 +55,20 @@ Public API Usage:
 
 Advanced Usage:
     >>> from milia_pipeline.models.registry import ModelRegistry, ModelCategory
-    >>> 
+    >>>
     >>> # Access registry instance directly
     >>> registry = ModelRegistry.get_instance()
-    >>> 
+    >>>
     >>> # Get detailed registration info
     >>> registration = registry.get_registration("GCN")
     >>> print(registration.model_class)
     >>> print(registration.metadata.hyperparameters)
-    >>> 
+    >>>
     >>> # Get registry statistics
     >>> stats = registry.get_registry_statistics()
     >>> print(f"Total models: {stats['total_models']}")
     >>> print(f"By category: {stats['by_category']}")
-    >>> 
+    >>>
     >>> # Validate model compatibility
     >>> is_valid = registry.validate_model_compatibility(
     ...     model_name="GCN",
@@ -83,13 +83,13 @@ Category-Based Access:
     ...     get_models_by_task,
     ...     get_models_by_tag
     ... )
-    >>> 
+    >>>
     >>> # Get models by category
     >>> attention_models = get_models_by_category(ModelCategory.ATTENTION)
-    >>> 
+    >>>
     >>> # Get models by task type
     >>> node_classifiers = get_models_by_task("node_classification")
-    >>> 
+    >>>
     >>> # Get models by tag
     >>> temporal_models = get_models_by_tag("temporal")
 
@@ -99,29 +99,29 @@ Metadata Access:
     ...     get_all_model_names,
     ...     search_models
     ... )
-    >>> 
+    >>>
     >>> # Get metadata for a specific model
     >>> metadata = get_model_metadata("GCN")
     >>> print(metadata.paper_url)
     >>> print(metadata.hyperparameters)
-    >>> 
+    >>>
     >>> # Get all registered model names
     >>> all_names = get_all_model_names()
-    >>> 
+    >>>
     >>> # Search models by keyword
     >>> graph_models = search_models("graph", search_in=["name", "description"])
     >>> attention_models = search_models("attention", search_in=["tags"])
 
 Registry Management:
     >>> from milia_pipeline.models.registry import registry
-    >>> 
+    >>>
     >>> # Check if model exists
     >>> if "GCN" in registry:
     ...     print("GCN is available")
-    >>> 
+    >>>
     >>> # Get number of registered models
     >>> print(f"Total models: {len(registry)}")
-    >>> 
+    >>>
     >>> # Get availability report
     >>> report = registry.get_availability_report()
     >>> print(f"Success rate: {report['success_rate']:.1f}%")
@@ -163,7 +163,7 @@ Thread Safety:
     - Get model classes
     - Register new models
     - Access metadata
-    
+
     The singleton pattern ensures consistent state across the application.
 
 Performance:
@@ -196,27 +196,23 @@ Error Handling:
 # Core API functions and types now come from dynamic introspector
 # This replaces static model_categories.py with runtime introspection
 from .pyg_introspector import (
-    # Enums (with fallback if model_categories not available)
-    ModelCategory,
-    
-    # Dataclasses (DynamicModelMetadata aliased as ModelMetadata)
-    ModelMetadata,
-    
     # Dynamic ALL_MODELS dict (lazy-loading)
     ALL_MODELS,
-    
+    # Enums (with fallback if model_categories not available)
+    ModelCategory,
+    # Dataclasses (DynamicModelMetadata aliased as ModelMetadata)
+    ModelMetadata,
+    PyGModelIntrospector,
     # Core API Functions (backward-compatible drop-in replacements)
     get_all_model_names,
-    get_model_metadata,
-    get_models_by_category,
-    get_models_by_task,
-    get_models_by_tag,
     get_category_statistics,
-    search_models,
-    
     # New Dynamic Introspection API
     get_introspector,
-    PyGModelIntrospector,
+    get_model_metadata,
+    get_models_by_category,
+    get_models_by_tag,
+    get_models_by_task,
+    search_models,
 )
 
 # =============================================================================
@@ -228,21 +224,22 @@ from .pyg_introspector import (
 # NOTE: These are static dictionaries and will NOT include dynamically discovered models
 try:
     from .model_categories import (
+        AGGREGATION_MODELS,
+        ATTENTION_MODELS,
+        AUTOENCODER_MODELS,
         # Model Dictionaries (for advanced usage - LEGACY)
         BASIC_GNN_MODELS,
         CONVOLUTIONAL_MODELS,
-        ATTENTION_MODELS,
-        POOLING_MODELS,
-        AGGREGATION_MODELS,
         ENCODER_MODELS,
-        AUTOENCODER_MODELS,
-        TRANSFORMER_MODELS,
-        TEMPORAL_MODELS,
-        META_LEARNING_MODELS,
         EXPLAINABILITY_MODELS,
-        UTILITY_MODELS,
+        META_LEARNING_MODELS,
         MODELS_BY_CATEGORY,
+        POOLING_MODELS,
+        TEMPORAL_MODELS,
+        TRANSFORMER_MODELS,
+        UTILITY_MODELS,
     )
+
     _LEGACY_CATEGORIES_AVAILABLE = True
 except ImportError:
     # If model_categories.py is removed, provide empty fallbacks
@@ -266,24 +263,20 @@ except ImportError:
 # =============================================================================
 
 from .model_registry import (
-    # Dataclasses
-    ModelRegistration,
-    
-    # Main Registry Class
-    ModelRegistry,
-    
-    # Global Registry Instance
-    registry,
-    
-    # Convenience Functions (Primary Public API)
-    get_model,
-    has_model,
-    list_models,
-    get_model_info,
-    
     # Exceptions (re-exported for convenience)
     ModelError,
+    # Dataclasses
+    ModelRegistration,
+    # Main Registry Class
+    ModelRegistry,
     ModelValidationError,
+    # Convenience Functions (Primary Public API)
+    get_model,
+    get_model_info,
+    has_model,
+    list_models,
+    # Global Registry Instance
+    registry,
 )
 
 # =============================================================================
@@ -294,118 +287,102 @@ __all__ = [
     # -------------------------------------------------------------------------
     # PRIMARY PUBLIC API (Most Common Usage)
     # -------------------------------------------------------------------------
-    
     # Model Access Functions
-    'get_model',              # Get model class by name
-    'has_model',              # Check if model exists
-    'list_models',            # List available models (with filters)
-    'get_model_info',         # Get comprehensive model information
-    
+    "get_model",  # Get model class by name
+    "has_model",  # Check if model exists
+    "list_models",  # List available models (with filters)
+    "get_model_info",  # Get comprehensive model information
     # Model Registration (for plugins/custom models)
-    'register_model',         # Register custom model (via registry instance)
-    
+    "register_model",  # Register custom model (via registry instance)
     # -------------------------------------------------------------------------
     # METADATA ACCESS (Now powered by dynamic introspection)
     # -------------------------------------------------------------------------
-    
     # Metadata Functions
-    'get_model_metadata',     # Get ModelMetadata for a specific model
-    'get_all_model_names',    # Get list of all registered model names
-    'search_models',          # Search models by keyword
-    
+    "get_model_metadata",  # Get ModelMetadata for a specific model
+    "get_all_model_names",  # Get list of all registered model names
+    "search_models",  # Search models by keyword
     # Category-Based Access
-    'get_models_by_category', # Get models in a category
-    'get_models_by_task',     # Get models supporting a task
-    'get_models_by_tag',      # Get models with a tag
-    'get_category_statistics',# Get model count per category
-    
+    "get_models_by_category",  # Get models in a category
+    "get_models_by_task",  # Get models supporting a task
+    "get_models_by_tag",  # Get models with a tag
+    "get_category_statistics",  # Get model count per category
     # -------------------------------------------------------------------------
     # DYNAMIC INTROSPECTION API (New in Phase 2)
     # -------------------------------------------------------------------------
-    
-    'get_introspector',       # Get singleton PyGModelIntrospector instance
-    'PyGModelIntrospector',   # Main introspector class
-    
+    "get_introspector",  # Get singleton PyGModelIntrospector instance
+    "PyGModelIntrospector",  # Main introspector class
     # -------------------------------------------------------------------------
     # CORE CLASSES (Advanced Usage)
     # -------------------------------------------------------------------------
-    
     # Registry
-    'ModelRegistry',          # Main registry class (singleton)
-    'registry',               # Global registry instance
-    
+    "ModelRegistry",  # Main registry class (singleton)
+    "registry",  # Global registry instance
     # Data Classes
-    'ModelMetadata',          # Model metadata container (now DynamicModelMetadata)
-    'ModelRegistration',      # Model registration container
-    'ModelCategory',          # Model category enum
-    
+    "ModelMetadata",  # Model metadata container (now DynamicModelMetadata)
+    "ModelRegistration",  # Model registration container
+    "ModelCategory",  # Model category enum
     # -------------------------------------------------------------------------
     # MODEL DICTIONARIES (Legacy - will be deprecated in Phase 7)
     # -------------------------------------------------------------------------
-    
     # Category-specific model dictionaries (static, from model_categories.py)
-    'BASIC_GNN_MODELS',
-    'CONVOLUTIONAL_MODELS',
-    'ATTENTION_MODELS',
-    'POOLING_MODELS',
-    'AGGREGATION_MODELS',
-    'ENCODER_MODELS',
-    'AUTOENCODER_MODELS',
-    'TRANSFORMER_MODELS',
-    'TEMPORAL_MODELS',
-    'META_LEARNING_MODELS',
-    'EXPLAINABILITY_MODELS',
-    'UTILITY_MODELS',
-    
+    "BASIC_GNN_MODELS",
+    "CONVOLUTIONAL_MODELS",
+    "ATTENTION_MODELS",
+    "POOLING_MODELS",
+    "AGGREGATION_MODELS",
+    "ENCODER_MODELS",
+    "AUTOENCODER_MODELS",
+    "TRANSFORMER_MODELS",
+    "TEMPORAL_MODELS",
+    "META_LEARNING_MODELS",
+    "EXPLAINABILITY_MODELS",
+    "UTILITY_MODELS",
     # Aggregate dictionaries
-    'MODELS_BY_CATEGORY',     # Dict[ModelCategory, Dict[str, ModelMetadata]] (LEGACY)
-    'ALL_MODELS',             # Dict[str, ModelMetadata] - now dynamic via introspector
-    
+    "MODELS_BY_CATEGORY",  # Dict[ModelCategory, Dict[str, ModelMetadata]] (LEGACY)
+    "ALL_MODELS",  # Dict[str, ModelMetadata] - now dynamic via introspector
     # -------------------------------------------------------------------------
     # EXCEPTIONS
     # -------------------------------------------------------------------------
-    
-    'ModelError',             # Base model exception
-    'ModelValidationError',   # Model validation exception
-    
+    "ModelError",  # Base model exception
+    "ModelValidationError",  # Model validation exception
     # -------------------------------------------------------------------------
     # MODULE INFO
     # -------------------------------------------------------------------------
-    
-    'get_module_info',        # Get module information
+    "get_module_info",  # Get module information
 ]
 
 # =============================================================================
 # CONVENIENCE FUNCTION ALIASES
 # =============================================================================
 
+
 def register_model(
     name: str,
     model_class,
     metadata: ModelMetadata,
     is_builtin: bool = False,
-    plugin_name: str = None
+    plugin_name: str = None,
 ) -> None:
     """
     Register a custom or plugin model.
-    
+
     This is a convenience wrapper around registry.register_model() for easier
     access to the registration functionality.
-    
+
     Args:
         name: Model name (must be unique)
         model_class: PyTorch nn.Module class
         metadata: ModelMetadata with specifications
         is_builtin: True if PyG built-in model, False for custom/plugin
         plugin_name: Name of plugin (for plugin models)
-        
+
     Raises:
         ValueError: If model name already exists
         ModelValidationError: If model or metadata is invalid
-        
+
     Example:
         >>> from milia_pipeline.models.registry import register_model, ModelMetadata, ModelCategory
-        >>> 
+        >>>
         >>> # Create metadata
         >>> metadata = ModelMetadata(
         ...     name="MyCustomGNN",
@@ -418,7 +395,7 @@ def register_model(
         ...         "num_layers": {"type": "integer", "default": 3}
         ...     }
         ... )
-        >>> 
+        >>>
         >>> # Register the model
         >>> register_model(
         ...     name="MyCustomGNN",
@@ -426,7 +403,7 @@ def register_model(
         ...     metadata=metadata,
         ...     plugin_name="my_plugin"
         ... )
-        >>> 
+        >>>
         >>> # Now it's available via get_model
         >>> model_class = get_model("MyCustomGNN")
     """
@@ -435,7 +412,7 @@ def register_model(
         model_class=model_class,
         metadata=metadata,
         is_builtin=is_builtin,
-        plugin_name=plugin_name
+        plugin_name=plugin_name,
     )
 
 
@@ -471,14 +448,15 @@ _module_info = {
         "task-based-filtering",
         "tag-based-search",
         "comprehensive-validation",
-        "graceful-degradation"
-    ]
+        "graceful-degradation",
+    ],
 }
+
 
 def get_module_info():
     """
     Get information about the models.registry module.
-    
+
     Returns:
         Dictionary with module information including:
         - version: Module version
@@ -488,7 +466,7 @@ def get_module_info():
         - registry_pattern: Registry design pattern used
         - supported_features: List of module features
         - registry_stats: Current registry statistics
-        
+
     Example:
         >>> from milia_pipeline.models.registry import get_module_info
         >>> info = get_module_info()
@@ -496,7 +474,7 @@ def get_module_info():
         >>> print(f"Total models: {info['registry_stats']['total_models']}")
     """
     info = _module_info.copy()
-    info['registry_stats'] = registry.get_statistics()
+    info["registry_stats"] = registry.get_statistics()
     return info
 
 
@@ -510,6 +488,7 @@ def get_module_info():
 
 # Log initialization (if needed for debugging)
 import logging
+
 _logger = logging.getLogger(__name__)
 _logger.debug(
     f"Models registry module initialized (v{__version__}). "

@@ -57,11 +57,10 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -79,6 +78,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def post_training_pkg():
     """
@@ -90,6 +90,7 @@ def post_training_pkg():
     """
     try:
         import milia_pipeline.models.post_training as pt
+
         return pt
     except ImportError as exc:
         pytest.fail(
@@ -102,8 +103,7 @@ def post_training_pkg():
 def all_names(post_training_pkg):
     """Return the ``__all__`` list from the post_training package."""
     assert hasattr(post_training_pkg, "__all__"), (
-        "milia_pipeline.models.post_training.__all__ is missing — "
-        "contract violation"
+        "milia_pipeline.models.post_training.__all__ is missing — contract violation"
     )
     return list(post_training_pkg.__all__)
 
@@ -141,25 +141,29 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_exists(self, post_training_pkg, attr):
         """Each metadata dunder is defined on the post_training package."""
         assert hasattr(post_training_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, post_training_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(post_training_pkg, attr)
-        assert isinstance(value, str), (
-            f"{attr} should be str, got {type(value)}"
-        )
+        assert isinstance(value, str), f"{attr} should be str, got {type(value)}"
         assert len(value) > 0, f"{attr} should be non-empty"
 
     @pytest.mark.smoke
@@ -167,9 +171,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = post_training_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -177,71 +179,73 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeCheckpointExports:
     """§1.2 — Checkpoint management exports (Phase 1) are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "CheckpointManager",
-        "CHECKPOINT_FORMAT_VERSION",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "CheckpointManager",
+            "CHECKPOINT_FORMAT_VERSION",
+        ],
+    )
     def test_checkpoint_export_exists(self, post_training_pkg, name):
         """Each checkpoint export is present and non-None."""
         obj = getattr(post_training_pkg, name, None)
-        assert obj is not None, (
-            f"Checkpoint export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Checkpoint export '{name}' is None or missing"
 
 
 class TestSmokeInferenceExports:
     """§1.2 — Model loading and inference exports (Phase 2) are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "ModelLoader",
-        "load_model",
-        "load_model_only",
-        "Predictor",
-        "predict",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ModelLoader",
+            "load_model",
+            "load_model_only",
+            "Predictor",
+            "predict",
+        ],
+    )
     def test_inference_export_exists(self, post_training_pkg, name):
         """Each inference export is present and non-None."""
         obj = getattr(post_training_pkg, name, None)
-        assert obj is not None, (
-            f"Inference export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Inference export '{name}' is None or missing"
 
 
 class TestSmokeAvailabilityFlags:
     """§1.2 — Availability flags exist and are boolean."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_DATA_PREPARATION_AVAILABLE",
-        "_TRANSFER_LEARNING_AVAILABLE",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_DATA_PREPARATION_AVAILABLE",
+            "_TRANSFER_LEARNING_AVAILABLE",
+        ],
+    )
     def test_availability_flag_exists(self, post_training_pkg, flag):
         """Each availability flag is defined on the post_training package."""
-        assert hasattr(post_training_pkg, flag), (
-            f"Availability flag '{flag}' is missing"
-        )
+        assert hasattr(post_training_pkg, flag), f"Availability flag '{flag}' is missing"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_DATA_PREPARATION_AVAILABLE",
-        "_TRANSFER_LEARNING_AVAILABLE",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_DATA_PREPARATION_AVAILABLE",
+            "_TRANSFER_LEARNING_AVAILABLE",
+        ],
+    )
     def test_availability_flag_is_bool(self, post_training_pkg, flag):
         """Each availability flag is a boolean."""
         value = getattr(post_training_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
 
 class TestSmokeConditionalDataPreparationExports:
@@ -293,8 +297,7 @@ class TestSmokeConditionalDataPreparationExports:
             all_set = set(post_training_pkg.__all__)
             for name in self.DATA_PREPARATION_NAMES:
                 assert name not in all_set, (
-                    f"'{name}' found in __all__ but "
-                    f"_DATA_PREPARATION_AVAILABLE is False"
+                    f"'{name}' found in __all__ but _DATA_PREPARATION_AVAILABLE is False"
                 )
 
 
@@ -325,8 +328,7 @@ class TestSmokeConditionalTransferLearningExports:
             all_set = set(post_training_pkg.__all__)
             for name in self.TRANSFER_LEARNING_NAMES:
                 assert name not in all_set, (
-                    f"'{name}' found in __all__ but "
-                    f"_TRANSFER_LEARNING_AVAILABLE is False"
+                    f"'{name}' found in __all__ but _TRANSFER_LEARNING_AVAILABLE is False"
                 )
 
 
@@ -334,13 +336,16 @@ class TestSmokeSectionedAllSubLists:
     """§1.2 — Sectioned ``__all__`` sub-lists are defined and are lists."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("sublist_name", [
-        "__all_path_utils__",
-        "__all_checkpoint__",
-        "__all_inference__",
-        "__all_data_preparation__",
-        "__all_transfer_learning__",
-    ])
+    @pytest.mark.parametrize(
+        "sublist_name",
+        [
+            "__all_path_utils__",
+            "__all_checkpoint__",
+            "__all_inference__",
+            "__all_data_preparation__",
+            "__all_transfer_learning__",
+        ],
+    )
     def test_all_sublist_exists(self, post_training_pkg, sublist_name):
         """Each sectioned __all__ sub-list is defined."""
         assert hasattr(post_training_pkg, sublist_name), (
@@ -348,43 +353,48 @@ class TestSmokeSectionedAllSubLists:
         )
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("sublist_name", [
-        "__all_path_utils__",
-        "__all_checkpoint__",
-        "__all_inference__",
-        "__all_data_preparation__",
-        "__all_transfer_learning__",
-    ])
+    @pytest.mark.parametrize(
+        "sublist_name",
+        [
+            "__all_path_utils__",
+            "__all_checkpoint__",
+            "__all_inference__",
+            "__all_data_preparation__",
+            "__all_transfer_learning__",
+        ],
+    )
     def test_all_sublist_is_a_list(self, post_training_pkg, sublist_name):
         """Each sectioned __all__ sub-list is a list."""
         obj = getattr(post_training_pkg, sublist_name)
-        assert isinstance(obj, list), (
-            f"'{sublist_name}' should be a list, got {type(obj).__name__}"
-        )
+        assert isinstance(obj, list), f"'{sublist_name}' should be a list, got {type(obj).__name__}"
 
 
 class TestSmokeConvenienceFunctions:
     """§1.2 — Module-level convenience functions are accessible and callable."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "get_available_components",
-        "print_available_components",
-        "get_implementation_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "get_available_components",
+            "print_available_components",
+            "get_implementation_status",
+        ],
+    )
     def test_convenience_function_exists(self, post_training_pkg, name):
         """Each convenience function is present and non-None."""
         obj = getattr(post_training_pkg, name, None)
-        assert obj is not None, (
-            f"Convenience function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Convenience function '{name}' is None or missing"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "get_available_components",
-        "print_available_components",
-        "get_implementation_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "get_available_components",
+            "print_available_components",
+            "get_implementation_status",
+        ],
+    )
     def test_convenience_function_is_callable(self, post_training_pkg, name):
         """Each convenience function is callable."""
         obj = getattr(post_training_pkg, name)
@@ -405,8 +415,7 @@ class TestSmokeGetAvailableComponentsExecution:
         """``get_available_components()`` returns a dictionary."""
         result = post_training_pkg.get_available_components()
         assert isinstance(result, dict), (
-            f"get_available_components() should return dict, "
-            f"got {type(result).__name__}"
+            f"get_available_components() should return dict, got {type(result).__name__}"
         )
 
 
@@ -424,8 +433,7 @@ class TestSmokeGetImplementationStatusExecution:
         """``get_implementation_status()`` returns a dictionary."""
         result = post_training_pkg.get_implementation_status()
         assert isinstance(result, dict), (
-            f"get_implementation_status() should return dict, "
-            f"got {type(result).__name__}"
+            f"get_implementation_status() should return dict, got {type(result).__name__}"
         )
 
 
@@ -438,9 +446,7 @@ class TestSmokePrintAvailableComponentsExecution:
         produces output."""
         post_training_pkg.print_available_components()
         captured = capsys.readouterr()
-        assert len(captured.out) > 0, (
-            "print_available_components() should produce console output"
-        )
+        assert len(captured.out) > 0, "print_available_components() should produce console output"
 
 
 class TestSmokeModuleInitialization:
@@ -494,17 +500,14 @@ class TestSmokePathUtilsRemoved:
     def test_resolve_path_not_exported(self, post_training_pkg):
         """``resolve_path`` should NOT be available (removed in v2.0.0)."""
         assert not hasattr(post_training_pkg, "resolve_path"), (
-            "resolve_path should have been removed in v2.0.0 "
-            "(Dependency Injection refactoring)"
+            "resolve_path should have been removed in v2.0.0 (Dependency Injection refactoring)"
         )
 
     @pytest.mark.smoke
     def test_path_utils_sublist_is_empty(self, post_training_pkg):
         """``__all_path_utils__`` should be an empty list (v2.0.0)."""
         sublist = post_training_pkg.__all_path_utils__
-        assert sublist == [], (
-            f"__all_path_utils__ should be [] (v2.0.0), got {sublist}"
-        )
+        assert sublist == [], f"__all_path_utils__ should be [] (v2.0.0), got {sublist}"
 
 
 # ===================================================================
@@ -531,9 +534,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, post_training_pkg, all_names):
@@ -541,25 +542,16 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(post_training_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(post_training_pkg, name)]
         assert not unresolvable, (
-            f"Names in __all__ that are not defined on the module: "
-            f"{unresolvable}"
+            f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
 
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -629,13 +621,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in post_training/__init__.py but not "
@@ -683,12 +679,9 @@ class TestContractCheckpointClassTypes:
         """``CHECKPOINT_FORMAT_VERSION`` is a non-empty string."""
         v = post_training_pkg.CHECKPOINT_FORMAT_VERSION
         assert isinstance(v, str), (
-            f"CHECKPOINT_FORMAT_VERSION should be str, got "
-            f"{type(v).__name__}"
+            f"CHECKPOINT_FORMAT_VERSION should be str, got {type(v).__name__}"
         )
-        assert len(v) > 0, (
-            "CHECKPOINT_FORMAT_VERSION should be non-empty"
-        )
+        assert len(v) > 0, "CHECKPOINT_FORMAT_VERSION should be non-empty"
 
 
 class TestContractInferenceClassTypes:
@@ -698,38 +691,30 @@ class TestContractInferenceClassTypes:
     def test_model_loader_is_class(self, post_training_pkg):
         """``ModelLoader`` is a class."""
         assert inspect.isclass(post_training_pkg.ModelLoader), (
-            f"ModelLoader should be a class, got "
-            f"{type(post_training_pkg.ModelLoader).__name__}"
+            f"ModelLoader should be a class, got {type(post_training_pkg.ModelLoader).__name__}"
         )
 
     @pytest.mark.contract
     def test_predictor_is_class(self, post_training_pkg):
         """``Predictor`` is a class."""
         assert inspect.isclass(post_training_pkg.Predictor), (
-            f"Predictor should be a class, got "
-            f"{type(post_training_pkg.Predictor).__name__}"
+            f"Predictor should be a class, got {type(post_training_pkg.Predictor).__name__}"
         )
 
     @pytest.mark.contract
     def test_load_model_is_callable(self, post_training_pkg):
         """``load_model`` is callable."""
-        assert callable(post_training_pkg.load_model), (
-            "load_model should be callable"
-        )
+        assert callable(post_training_pkg.load_model), "load_model should be callable"
 
     @pytest.mark.contract
     def test_load_model_only_is_callable(self, post_training_pkg):
         """``load_model_only`` is callable."""
-        assert callable(post_training_pkg.load_model_only), (
-            "load_model_only should be callable"
-        )
+        assert callable(post_training_pkg.load_model_only), "load_model_only should be callable"
 
     @pytest.mark.contract
     def test_predict_is_callable(self, post_training_pkg):
         """``predict`` is callable."""
-        assert callable(post_training_pkg.predict), (
-            "predict should be callable"
-        )
+        assert callable(post_training_pkg.predict), "predict should be callable"
 
 
 class TestContractConditionalDataPreparationTypes:
@@ -757,36 +742,40 @@ class TestContractConditionalDataPreparationTypes:
         assert inspect.isclass(post_training_pkg.BaseDataConverter)
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "PyGDataConverter",
-        "DictConverter",
-        "SMILESConverter",
-        "InChIConverter",
-        "XYZConverter",
-        "ASEAtomsConverter",
-        "SDFConverter",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "PyGDataConverter",
+            "DictConverter",
+            "SMILESConverter",
+            "InChIConverter",
+            "XYZConverter",
+            "ASEAtomsConverter",
+            "SDFConverter",
+        ],
+    )
     def test_builtin_converter_is_class(self, post_training_pkg, name):
         """Each built-in converter is a class when data_preparation is
         available."""
         if not post_training_pkg._DATA_PREPARATION_AVAILABLE:
             pytest.skip("Data preparation not available")
         obj = getattr(post_training_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "get_registry",
-        "register_converter",
-        "convert_to_pyg",
-        "convert_batch_to_pyg",
-        "convert_sdf_to_pyg_list",
-        "list_available_formats",
-        "list_all_formats",
-        "smiles_to_data",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "get_registry",
+            "register_converter",
+            "convert_to_pyg",
+            "convert_batch_to_pyg",
+            "convert_sdf_to_pyg_list",
+            "list_available_formats",
+            "list_all_formats",
+            "smiles_to_data",
+        ],
+    )
     def test_data_prep_function_is_callable(self, post_training_pkg, name):
         """Each data preparation function is callable when available."""
         if not post_training_pkg._DATA_PREPARATION_AVAILABLE:
@@ -804,8 +793,7 @@ class TestContractConditionalTransferLearningTypes:
         if not post_training_pkg._TRANSFER_LEARNING_AVAILABLE:
             pytest.skip("Transfer learning not available")
         assert inspect.isclass(post_training_pkg.FineTuner), (
-            f"FineTuner should be a class, got "
-            f"{type(post_training_pkg.FineTuner).__name__}"
+            f"FineTuner should be a class, got {type(post_training_pkg.FineTuner).__name__}"
         )
 
     @pytest.mark.contract
@@ -848,30 +836,24 @@ class TestContractGetAvailableComponentsContract:
         result = post_training_pkg.get_available_components()
         for key, value in result.items():
             assert isinstance(value, list), (
-                f"Value for key '{key}' should be list, "
-                f"got {type(value).__name__}"
+                f"Value for key '{key}' should be list, got {type(value).__name__}"
             )
             for item in value:
                 assert isinstance(item, str), (
-                    f"Each item in '{key}' should be str, "
-                    f"got {type(item).__name__}"
+                    f"Each item in '{key}' should be str, got {type(item).__name__}"
                 )
 
     @pytest.mark.contract
     def test_checkpoint_components_nonempty(self, post_training_pkg):
         """Checkpoint components are always non-empty (always available)."""
         result = post_training_pkg.get_available_components()
-        assert len(result["checkpoint"]) > 0, (
-            "Checkpoint components should always be non-empty"
-        )
+        assert len(result["checkpoint"]) > 0, "Checkpoint components should always be non-empty"
 
     @pytest.mark.contract
     def test_inference_components_nonempty(self, post_training_pkg):
         """Inference components are always non-empty (always available)."""
         result = post_training_pkg.get_available_components()
-        assert len(result["inference"]) > 0, (
-            "Inference components should always be non-empty"
-        )
+        assert len(result["inference"]) > 0, "Inference components should always be non-empty"
 
     @pytest.mark.contract
     def test_data_prep_matches_flag(self, post_training_pkg):
@@ -916,8 +898,7 @@ class TestContractGetImplementationStatusContract:
         result = post_training_pkg.get_implementation_status()
         for key, value in result.items():
             assert isinstance(value, bool), (
-                f"Value for key '{key}' should be bool, "
-                f"got {type(value).__name__}"
+                f"Value for key '{key}' should be bool, got {type(value).__name__}"
             )
 
     @pytest.mark.contract
@@ -927,8 +908,7 @@ class TestContractGetImplementationStatusContract:
         # At minimum, Phases 1, 2, and 7 should always be True
         keys = list(result.keys())
         assert len(keys) >= 3, (
-            f"get_implementation_status() should have at least 3 phases, "
-            f"got {len(keys)}"
+            f"get_implementation_status() should have at least 3 phases, got {len(keys)}"
         )
 
     @pytest.mark.contract
@@ -941,9 +921,7 @@ class TestContractGetImplementationStatusContract:
         # Find phases by substring matching (keys are descriptive strings)
         for key, value in result.items():
             if "Checkpoint" in key or "Inference" in key or "Dependency" in key:
-                assert value is True, (
-                    f"Core phase '{key}' should always be True, got {value}"
-                )
+                assert value is True, f"Core phase '{key}' should always be True, got {value}"
 
     @pytest.mark.contract
     def test_data_prep_phase_matches_flag(self, post_training_pkg):
@@ -987,9 +965,7 @@ class TestContractCheckpointSublistContent:
         sublist = post_training_pkg.__all_checkpoint__
         expected = {"CheckpointManager", "CHECKPOINT_FORMAT_VERSION"}
         actual = set(sublist)
-        assert expected == actual, (
-            f"__all_checkpoint__ expected {expected}, got {actual}"
-        )
+        assert expected == actual, f"__all_checkpoint__ expected {expected}, got {actual}"
 
 
 class TestContractInferenceSublistContent:
@@ -1007,9 +983,7 @@ class TestContractInferenceSublistContent:
             "predict",
         }
         actual = set(sublist)
-        assert expected == actual, (
-            f"__all_inference__ expected {expected}, got {actual}"
-        )
+        assert expected == actual, f"__all_inference__ expected {expected}, got {actual}"
 
 
 class TestContractDataPrepSublistContent:
@@ -1046,7 +1020,7 @@ class TestContractDataPrepSublistContent:
             pytest.skip("Data preparation not available")
 
         sublist = set(post_training_pkg.__all_data_preparation__)
-        assert self.EXPECTED_DATA_PREP_NAMES == sublist, (
+        assert sublist == self.EXPECTED_DATA_PREP_NAMES, (
             f"Missing from __all_data_preparation__: "
             f"{self.EXPECTED_DATA_PREP_NAMES - sublist}. "
             f"Extra: {sublist - self.EXPECTED_DATA_PREP_NAMES}"
@@ -1063,8 +1037,7 @@ class TestContractDataPrepSublistContent:
 
         sublist = post_training_pkg.__all_data_preparation__
         assert sublist == [], (
-            f"__all_data_preparation__ should be empty when unavailable, "
-            f"got {sublist}"
+            f"__all_data_preparation__ should be empty when unavailable, got {sublist}"
         )
 
 
@@ -1083,9 +1056,8 @@ class TestContractTransferLearningSublistContent:
             pytest.skip("Transfer learning not available")
 
         sublist = set(post_training_pkg.__all_transfer_learning__)
-        assert self.EXPECTED_TRANSFER_NAMES == sublist, (
-            f"__all_transfer_learning__ expected "
-            f"{self.EXPECTED_TRANSFER_NAMES}, got {sublist}"
+        assert sublist == self.EXPECTED_TRANSFER_NAMES, (
+            f"__all_transfer_learning__ expected {self.EXPECTED_TRANSFER_NAMES}, got {sublist}"
         )
 
     @pytest.mark.contract
@@ -1099,8 +1071,7 @@ class TestContractTransferLearningSublistContent:
 
         sublist = post_training_pkg.__all_transfer_learning__
         assert sublist == [], (
-            f"__all_transfer_learning__ should be empty when unavailable, "
-            f"got {sublist}"
+            f"__all_transfer_learning__ should be empty when unavailable, got {sublist}"
         )
 
 
@@ -1131,9 +1102,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_minimum_length(self, all_names):
@@ -1163,10 +1132,7 @@ class TestContractDependencyInjectionPattern:
         removed_names = {"resolve_path", "get_working_root", "PathResolver"}
         all_set = set(all_names)
         found = removed_names & all_set
-        assert not found, (
-            f"Path utility names still in __all__ after v2.0.0 removal: "
-            f"{found}"
-        )
+        assert not found, f"Path utility names still in __all__ after v2.0.0 removal: {found}"
 
     @pytest.mark.contract
     def test_version_is_2_or_later(self, post_training_pkg):
@@ -1176,8 +1142,7 @@ class TestContractDependencyInjectionPattern:
         version = post_training_pkg.__version__
         major = int(version.split(".")[0])
         assert major >= 2, (
-            f"Post-training module version should be >= 2.0.0 (DI pattern), "
-            f"got {version}"
+            f"Post-training module version should be >= 2.0.0 (DI pattern), got {version}"
         )
 
 
@@ -1188,25 +1153,19 @@ class TestContractInferenceFunctionSignatures:
     def test_load_model_has_parameters(self, post_training_pkg):
         """``load_model`` accepts parameters."""
         sig = inspect.signature(post_training_pkg.load_model)
-        assert len(sig.parameters) >= 1, (
-            "load_model should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "load_model should accept at least one parameter"
 
     @pytest.mark.contract
     def test_load_model_only_has_parameters(self, post_training_pkg):
         """``load_model_only`` accepts parameters."""
         sig = inspect.signature(post_training_pkg.load_model_only)
-        assert len(sig.parameters) >= 1, (
-            "load_model_only should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "load_model_only should accept at least one parameter"
 
     @pytest.mark.contract
     def test_predict_has_parameters(self, post_training_pkg):
         """``predict`` accepts parameters."""
         sig = inspect.signature(post_training_pkg.predict)
-        assert len(sig.parameters) >= 1, (
-            "predict should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "predict should accept at least one parameter"
 
 
 class TestContractConvenienceFunctionSignatures:
@@ -1215,81 +1174,67 @@ class TestContractConvenienceFunctionSignatures:
     @pytest.mark.contract
     def test_get_available_components_takes_no_args(self, post_training_pkg):
         """``get_available_components`` takes no required arguments."""
-        sig = inspect.signature(
-            post_training_pkg.get_available_components
-        )
+        sig = inspect.signature(post_training_pkg.get_available_components)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
-        assert len(required) == 0, (
-            "get_available_components should take no required arguments"
-        )
+        assert len(required) == 0, "get_available_components should take no required arguments"
 
     @pytest.mark.contract
     def test_get_implementation_status_takes_no_args(self, post_training_pkg):
         """``get_implementation_status`` takes no required arguments."""
-        sig = inspect.signature(
-            post_training_pkg.get_implementation_status
-        )
+        sig = inspect.signature(post_training_pkg.get_implementation_status)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
-        assert len(required) == 0, (
-            "get_implementation_status should take no required arguments"
-        )
+        assert len(required) == 0, "get_implementation_status should take no required arguments"
 
     @pytest.mark.contract
     def test_print_available_components_takes_no_args(self, post_training_pkg):
         """``print_available_components`` takes no required arguments."""
-        sig = inspect.signature(
-            post_training_pkg.print_available_components
-        )
+        sig = inspect.signature(post_training_pkg.print_available_components)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
-        assert len(required) == 0, (
-            "print_available_components should take no required arguments"
-        )
+        assert len(required) == 0, "print_available_components should take no required arguments"
 
 
 class TestContractConvenienceFunctionReturnTypeAnnotations:
     """§2 — Convenience functions have return type annotations."""
 
     @pytest.mark.contract
-    def test_get_available_components_has_return_annotation(
-        self, post_training_pkg
-    ):
+    def test_get_available_components_has_return_annotation(self, post_training_pkg):
         """``get_available_components`` has a return type annotation."""
-        sig = inspect.signature(
-            post_training_pkg.get_available_components
-        )
+        sig = inspect.signature(post_training_pkg.get_available_components)
         assert sig.return_annotation is not inspect.Signature.empty, (
             "get_available_components should have a return type annotation"
         )
 
     @pytest.mark.contract
-    def test_get_implementation_status_has_return_annotation(
-        self, post_training_pkg
-    ):
+    def test_get_implementation_status_has_return_annotation(self, post_training_pkg):
         """``get_implementation_status`` has a return type annotation."""
-        sig = inspect.signature(
-            post_training_pkg.get_implementation_status
-        )
+        sig = inspect.signature(post_training_pkg.get_implementation_status)
         assert sig.return_annotation is not inspect.Signature.empty, (
             "get_implementation_status should have a return type annotation"
         )
@@ -1315,20 +1260,14 @@ class TestContractComponentsMatchSubLists:
     def test_data_prep_components_match_sublist(self, post_training_pkg):
         """Data preparation components match ``__all_data_preparation__``."""
         result = post_training_pkg.get_available_components()
-        assert (
-            result["data_preparation"]
-            == post_training_pkg.__all_data_preparation__
-        )
+        assert result["data_preparation"] == post_training_pkg.__all_data_preparation__
 
     @pytest.mark.contract
     def test_transfer_components_match_sublist(self, post_training_pkg):
         """Transfer learning components match
         ``__all_transfer_learning__``."""
         result = post_training_pkg.get_available_components()
-        assert (
-            result["transfer_learning"]
-            == post_training_pkg.__all_transfer_learning__
-        )
+        assert result["transfer_learning"] == post_training_pkg.__all_transfer_learning__
 
 
 class TestContractVersionConsistency:
@@ -1340,8 +1279,7 @@ class TestContractVersionConsistency:
         version = post_training_pkg.__version__
         parts = version.split(".")
         assert len(parts) == 3, (
-            f"Version '{version}' should have exactly 3 parts "
-            f"(MAJOR.MINOR.PATCH), got {len(parts)}"
+            f"Version '{version}' should have exactly 3 parts (MAJOR.MINOR.PATCH), got {len(parts)}"
         )
 
     @pytest.mark.contract
@@ -1349,14 +1287,11 @@ class TestContractVersionConsistency:
         """Each version part is numeric."""
         version = post_training_pkg.__version__
         for part in version.split("."):
-            assert part.isdigit(), (
-                f"Version part '{part}' should be numeric"
-            )
+            assert part.isdigit(), f"Version part '{part}' should be numeric"
 
     @pytest.mark.contract
     def test_author_is_milia_team(self, post_training_pkg):
         """``__author__`` is 'MILIA Team'."""
         assert post_training_pkg.__author__ == "MILIA Team", (
-            f"__author__ should be 'MILIA Team', "
-            f"got '{post_training_pkg.__author__}'"
+            f"__author__ should be 'MILIA Team', got '{post_training_pkg.__author__}'"
         )

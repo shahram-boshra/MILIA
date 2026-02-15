@@ -95,10 +95,10 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # -- MyST parser configuration ------------------------------------------------
 # Source: myst-parser docs (myst-parser.readthedocs.io)
 myst_enable_extensions = [
-    "colon_fence",       # ::: directive syntax (cleaner than ``` for nesting)
-    "deflist",           # definition lists
-    "fieldlist",         # field lists
-    "substitution",      # Jinja-like substitutions
+    "colon_fence",  # ::: directive syntax (cleaner than ``` for nesting)
+    "deflist",  # definition lists
+    "fieldlist",  # field lists
+    "substitution",  # Jinja-like substitutions
 ]
 myst_heading_anchors = 3  # auto-generate anchors for h1–h3
 

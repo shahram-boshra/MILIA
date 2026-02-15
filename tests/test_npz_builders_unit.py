@@ -21,15 +21,13 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, MagicMock, PropertyMock, call
 import logging
-import tempfile
 import shutil
-from typing import Dict, Any
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
@@ -38,16 +36,16 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import DataProcessingError
 from milia_pipeline.preprocessing.utils.npz_builders import (
     build_npz,
     validate_npz_structure,
 )
-from milia_pipeline.exceptions import DataProcessingError
-
 
 # ============================================================================
 # HELPERS: Mock data builders for molecular features
 # ============================================================================
+
 
 def _make_logger():
     """Create a logger instance for testing."""
@@ -63,9 +61,7 @@ def _build_minimal_features(num_molecules=3):
     Returns:
         Dictionary with 'compounds', 'atoms', 'coordinates' numpy arrays.
     """
-    compounds = np.array(
-        [f"mol_{i}" for i in range(num_molecules)], dtype=object
-    )
+    compounds = np.array([f"mol_{i}" for i in range(num_molecules)], dtype=object)
     atoms = np.array(
         [np.array([6, 1, 1, 1, 1], dtype=np.int64) for _ in range(num_molecules)],
         dtype=object,
@@ -73,8 +69,13 @@ def _build_minimal_features(num_molecules=3):
     coordinates = np.array(
         [
             np.array(
-                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
-                 [0.0, 0.0, 1.0], [-1.0, 0.0, 0.0]],
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                    [-1.0, 0.0, 0.0],
+                ],
                 dtype=np.float64,
             )
             for _ in range(num_molecules)
@@ -119,6 +120,7 @@ def _build_sample_metadata():
 # ============================================================================
 # GROUP 1: build_npz — Input Validation (10 tests)
 # ============================================================================
+
 
 class TestBuildNpzInputValidation(unittest.TestCase):
     """Test build_npz input validation: empty features, missing keys, shape mismatches."""
@@ -189,9 +191,7 @@ class TestBuildNpzInputValidation(unittest.TestCase):
         """Mismatched 'atoms' length relative to 'compounds' raises DataProcessingError."""
         features = _build_minimal_features(num_molecules=3)
         # Overwrite atoms with wrong length
-        features["atoms"] = np.array(
-            [np.array([1, 1]) for _ in range(5)], dtype=object
-        )
+        features["atoms"] = np.array([np.array([1, 1]) for _ in range(5)], dtype=object)
         with self.assertRaises(DataProcessingError) as ctx:
             build_npz(features, _build_sample_metadata(), self._output_path, logger=self._logger)
         self.assertIn("Shape mismatch", str(ctx.exception))
@@ -209,9 +209,7 @@ class TestBuildNpzInputValidation(unittest.TestCase):
     def test_shape_mismatch_error_includes_counts(self):
         """Shape mismatch error message includes both actual and expected counts."""
         features = _build_minimal_features(num_molecules=3)
-        features["atoms"] = np.array(
-            [np.array([1]) for _ in range(5)], dtype=object
-        )
+        features["atoms"] = np.array([np.array([1]) for _ in range(5)], dtype=object)
         with self.assertRaises(DataProcessingError) as ctx:
             build_npz(features, _build_sample_metadata(), self._output_path, logger=self._logger)
         error_msg = str(ctx.exception)
@@ -222,6 +220,7 @@ class TestBuildNpzInputValidation(unittest.TestCase):
 # ============================================================================
 # GROUP 2: build_npz — Happy Path / File Creation (12 tests)
 # ============================================================================
+
 
 class TestBuildNpzHappyPath(unittest.TestCase):
     """Test build_npz successful creation of .npz files."""
@@ -292,9 +291,7 @@ class TestBuildNpzHappyPath(unittest.TestCase):
         data = np.load(self._output_path, allow_pickle=True)
         loaded_coords = data["coordinates"]
         for i in range(len(self._features["coordinates"])):
-            np.testing.assert_array_almost_equal(
-                loaded_coords[i], self._features["coordinates"][i]
-            )
+            np.testing.assert_array_almost_equal(loaded_coords[i], self._features["coordinates"][i])
 
     def test_extra_features_preserved(self):
         """Extra feature arrays beyond the required three are preserved."""
@@ -312,15 +309,14 @@ class TestBuildNpzHappyPath(unittest.TestCase):
 
     def test_returns_none(self):
         """build_npz returns None on success (void function)."""
-        result = build_npz(
-            self._features, self._metadata, self._output_path, logger=self._logger
-        )
+        result = build_npz(self._features, self._metadata, self._output_path, logger=self._logger)
         self.assertIsNone(result)
 
 
 # ============================================================================
 # GROUP 3: build_npz — Metadata Handling (10 tests)
 # ============================================================================
+
 
 class TestBuildNpzMetadata(unittest.TestCase):
     """Test build_npz metadata embedding and enhancement."""
@@ -414,6 +410,7 @@ class TestBuildNpzMetadata(unittest.TestCase):
 # GROUP 4: build_npz — Logger Behavior (8 tests)
 # ============================================================================
 
+
 class TestBuildNpzLogging(unittest.TestCase):
     """Test build_npz logging behavior with custom and fallback loggers."""
 
@@ -495,6 +492,7 @@ class TestBuildNpzLogging(unittest.TestCase):
 # ============================================================================
 # GROUP 5: build_npz — Error Paths / Exception Wrapping (8 tests)
 # ============================================================================
+
 
 class TestBuildNpzErrorPaths(unittest.TestCase):
     """Test build_npz exception wrapping when np.savez_compressed fails."""
@@ -579,6 +577,7 @@ class TestBuildNpzErrorPaths(unittest.TestCase):
 # ============================================================================
 # GROUP 6: build_npz — Edge Cases (8 tests)
 # ============================================================================
+
 
 class TestBuildNpzEdgeCases(unittest.TestCase):
     """Test build_npz with edge case inputs: single molecule, large data, etc."""
@@ -675,6 +674,7 @@ class TestBuildNpzEdgeCases(unittest.TestCase):
 # GROUP 7: validate_npz_structure — Happy Path (10 tests)
 # ============================================================================
 
+
 class TestValidateNpzHappyPath(unittest.TestCase):
     """Test validate_npz_structure with valid .npz files."""
 
@@ -753,6 +753,7 @@ class TestValidateNpzHappyPath(unittest.TestCase):
 # ============================================================================
 # GROUP 8: validate_npz_structure — Error Paths (10 tests)
 # ============================================================================
+
 
 class TestValidateNpzErrorPaths(unittest.TestCase):
     """Test validate_npz_structure error handling."""
@@ -856,6 +857,7 @@ class TestValidateNpzErrorPaths(unittest.TestCase):
 # GROUP 9: validate_npz_structure — Logging (6 tests)
 # ============================================================================
 
+
 class TestValidateNpzLogging(unittest.TestCase):
     """Test validate_npz_structure logging behavior."""
 
@@ -921,6 +923,7 @@ class TestValidateNpzLogging(unittest.TestCase):
 # ============================================================================
 # GROUP 10: Integration — build_npz + validate_npz_structure (8 tests)
 # ============================================================================
+
 
 class TestNpzBuildersIntegration(unittest.TestCase):
     """Integration tests: build_npz followed by validate_npz_structure."""
@@ -1028,16 +1031,16 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestBuildNpzInputValidation,        # GROUP  1: 10 tests
-        TestBuildNpzHappyPath,              # GROUP  2: 12 tests
-        TestBuildNpzMetadata,               # GROUP  3: 10 tests
-        TestBuildNpzLogging,                # GROUP  4:  8 tests
-        TestBuildNpzErrorPaths,             # GROUP  5:  8 tests
-        TestBuildNpzEdgeCases,              # GROUP  6:  8 tests
-        TestValidateNpzHappyPath,           # GROUP  7: 10 tests
-        TestValidateNpzErrorPaths,          # GROUP  8: 10 tests
-        TestValidateNpzLogging,             # GROUP  9:  6 tests
-        TestNpzBuildersIntegration,         # GROUP 10:  8 tests
+        TestBuildNpzInputValidation,  # GROUP  1: 10 tests
+        TestBuildNpzHappyPath,  # GROUP  2: 12 tests
+        TestBuildNpzMetadata,  # GROUP  3: 10 tests
+        TestBuildNpzLogging,  # GROUP  4:  8 tests
+        TestBuildNpzErrorPaths,  # GROUP  5:  8 tests
+        TestBuildNpzEdgeCases,  # GROUP  6:  8 tests
+        TestValidateNpzHappyPath,  # GROUP  7: 10 tests
+        TestValidateNpzErrorPaths,  # GROUP  8: 10 tests
+        TestValidateNpzLogging,  # GROUP  9:  6 tests
+        TestNpzBuildersIntegration,  # GROUP 10:  8 tests
     ]
 
     for test_class in test_classes:

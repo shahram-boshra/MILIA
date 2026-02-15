@@ -11,7 +11,7 @@ This plugin demonstrates best practices for creating custom descriptor plugins f
 - **Use Case**: Measuring aromaticity
 
 ### HeteroatomRatio
-- **Category**: Constitutional  
+- **Category**: Constitutional
 - **Description**: Ratio of heteroatoms (non-C, non-H) to total atoms
 - **Range**: 0.0 to 1.0
 - **Use Case**: Assessing functional group content
@@ -48,11 +48,11 @@ def test_aromatic_ratio():
     from vqm24_pipeline.plugins.descriptors.example_descriptors.descriptors import (
         calculate_aromatic_ratio
     )
-    
+
     # Benzene - all aromatic
     mol = Chem.MolFromSmiles("c1ccccc1")
     assert calculate_aromatic_ratio(mol) == 1.0
-    
+
     # Ethanol - no aromatic
     mol = Chem.MolFromSmiles("CCO")
     assert calculate_aromatic_ratio(mol) == 0.0

@@ -21,16 +21,13 @@ Test Module Version: 1.1.0
 Target Module: milia_pipeline/models/deployment/deployment_strategies.py
 """
 
-import sys
-import os
 import json
 import logging
-import tempfile
 import shutil
+import sys
+import tempfile
 from pathlib import Path
-from unittest import mock
-from unittest.mock import Mock, MagicMock, patch, PropertyMock
-from typing import Dict, Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -51,35 +48,35 @@ import torch.nn as nn
 
 # Import the module under test
 from milia_pipeline.models.deployment.deployment_strategies import (
-    # Enums
-    DeploymentTarget,
-    ServingMode,
-    # Dataclasses
-    DeploymentConfig,
-    # ABC
-    DeploymentStrategy,
     # Concrete Strategies
     AWSDeploymentStrategy,
-    GCPDeploymentStrategy,
     AzureDeploymentStrategy,
-    EdgeDeploymentStrategy,
+    ConfigurationError,
     ContainerDeploymentStrategy,
-    LocalDeploymentStrategy,
+    # Dataclasses
+    DeploymentConfig,
+    DeploymentError,
     # Manager
     DeploymentManager,
+    # ABC
+    DeploymentStrategy,
+    # Enums
+    DeploymentTarget,
+    EdgeDeploymentStrategy,
+    GCPDeploymentStrategy,
+    LocalDeploymentStrategy,
+    # Exceptions
+    ModelError,
+    ServingMode,
     # Convenience functions
     deploy_locally,
     list_deployment_targets,
-    # Exceptions
-    ModelError,
-    DeploymentError,
-    ConfigurationError,
 )
-
 
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def temp_dir():
@@ -115,7 +112,7 @@ def aws_config():
         num_instances=2,
         auto_scaling=True,
         min_instances=1,
-        max_instances=5
+        max_instances=5,
     )
 
 
@@ -123,36 +120,26 @@ def aws_config():
 def local_config():
     """Create a local deployment config."""
     return DeploymentConfig(
-        target="local",
-        serving_mode="online",
-        enable_monitoring=True,
-        enable_logging=True
+        target="local", serving_mode="online", enable_monitoring=True, enable_logging=True
     )
 
 
 @pytest.fixture
 def edge_config():
     """Create an edge deployment config."""
-    return DeploymentConfig(
-        target="mobile",
-        serving_mode="online",
-        enable_caching=True
-    )
+    return DeploymentConfig(target="mobile", serving_mode="online", enable_caching=True)
 
 
 @pytest.fixture
 def container_config():
     """Create a container deployment config."""
-    return DeploymentConfig(
-        target="container",
-        serving_mode="batch",
-        max_batch_size=64
-    )
+    return DeploymentConfig(target="container", serving_mode="batch", max_batch_size=64)
 
 
 # =============================================================================
 # TESTS: DeploymentTarget Enum
 # =============================================================================
+
 
 class TestDeploymentTargetEnum:
     """Tests for DeploymentTarget enum."""
@@ -214,6 +201,7 @@ class TestDeploymentTargetEnum:
 # TESTS: ServingMode Enum
 # =============================================================================
 
+
 class TestServingModeEnum:
     """Tests for ServingMode enum."""
 
@@ -250,6 +238,7 @@ class TestServingModeEnum:
 # =============================================================================
 # TESTS: DeploymentConfig Pydantic BaseModel
 # =============================================================================
+
 
 class TestDeploymentConfig:
     """Tests for DeploymentConfig Pydantic BaseModel (Pydantic V2 Migration Phase 20)."""
@@ -288,21 +277,14 @@ class TestDeploymentConfig:
 
     def test_auto_scaling_configuration(self):
         """Test auto-scaling configuration."""
-        config = DeploymentConfig(
-            auto_scaling=True,
-            min_instances=2,
-            max_instances=20
-        )
+        config = DeploymentConfig(auto_scaling=True, min_instances=2, max_instances=20)
         assert config.auto_scaling is True
         assert config.min_instances == 2
         assert config.max_instances == 20
 
     def test_monitoring_and_logging_disabled(self):
         """Test disabling monitoring and logging."""
-        config = DeploymentConfig(
-            enable_monitoring=False,
-            enable_logging=False
-        )
+        config = DeploymentConfig(enable_monitoring=False, enable_logging=False)
         assert config.enable_monitoring is False
         assert config.enable_logging is False
 
@@ -323,39 +305,41 @@ class TestDeploymentConfig:
 
     def test_to_dict_method(self):
         """Test to_dict method returns correct dictionary."""
-        config = DeploymentConfig(
-            target="aws",
-            serving_mode="batch",
-            instance_type="ml.m5.large"
-        )
+        config = DeploymentConfig(target="aws", serving_mode="batch", instance_type="ml.m5.large")
         result = config.to_dict()
-        
+
         assert isinstance(result, dict)
-        assert result['target'] == "aws"
-        assert result['serving_mode'] == "batch"
-        assert result['instance_type'] == "ml.m5.large"
-        assert result['num_instances'] == 1
-        assert result['auto_scaling'] is False
+        assert result["target"] == "aws"
+        assert result["serving_mode"] == "batch"
+        assert result["instance_type"] == "ml.m5.large"
+        assert result["num_instances"] == 1
+        assert result["auto_scaling"] is False
 
     def test_to_dict_contains_all_fields(self):
         """Test to_dict contains all expected fields."""
         config = DeploymentConfig()
         result = config.to_dict()
-        
+
         expected_keys = {
-            'target', 'serving_mode', 'instance_type', 'num_instances',
-            'auto_scaling', 'min_instances', 'max_instances', 'api_type',
-            'enable_monitoring', 'enable_logging', 'enable_caching',
-            'timeout_seconds', 'max_batch_size'
+            "target",
+            "serving_mode",
+            "instance_type",
+            "num_instances",
+            "auto_scaling",
+            "min_instances",
+            "max_instances",
+            "api_type",
+            "enable_monitoring",
+            "enable_logging",
+            "enable_caching",
+            "timeout_seconds",
+            "max_batch_size",
         }
         assert set(result.keys()) == expected_keys
 
     def test_to_dict_is_json_serializable(self):
         """Test that to_dict output is JSON serializable."""
-        config = DeploymentConfig(
-            target="container",
-            instance_type="n1-standard-4"
-        )
+        config = DeploymentConfig(target="container", instance_type="n1-standard-4")
         result = config.to_dict()
         # Should not raise
         json_str = json.dumps(result)
@@ -374,22 +358,22 @@ class TestDeploymentConfig:
     def test_field_types_are_correct(self):
         """Test that field types match their definitions (Pydantic type enforcement)."""
         config = DeploymentConfig()
-        
+
         # String fields
         assert isinstance(config.target, str)
         assert isinstance(config.serving_mode, str)
         assert isinstance(config.api_type, str)
-        
+
         # Optional string field
         assert config.instance_type is None or isinstance(config.instance_type, str)
-        
+
         # Integer fields
         assert isinstance(config.num_instances, int)
         assert isinstance(config.min_instances, int)
         assert isinstance(config.max_instances, int)
         assert isinstance(config.timeout_seconds, int)
         assert isinstance(config.max_batch_size, int)
-        
+
         # Boolean fields
         assert isinstance(config.auto_scaling, bool)
         assert isinstance(config.enable_monitoring, bool)
@@ -399,34 +383,44 @@ class TestDeploymentConfig:
     def test_pydantic_model_fields_property(self):
         """Test that Pydantic V2's model_fields property is available."""
         # Pydantic V2 exposes model_fields as a class property
-        assert hasattr(DeploymentConfig, 'model_fields')
-        
+        assert hasattr(DeploymentConfig, "model_fields")
+
         fields = DeploymentConfig.model_fields
         assert isinstance(fields, dict)
-        
+
         # Verify expected fields exist
         expected_field_names = {
-            'target', 'serving_mode', 'instance_type', 'num_instances',
-            'auto_scaling', 'min_instances', 'max_instances', 'api_type',
-            'enable_monitoring', 'enable_logging', 'enable_caching',
-            'timeout_seconds', 'max_batch_size'
+            "target",
+            "serving_mode",
+            "instance_type",
+            "num_instances",
+            "auto_scaling",
+            "min_instances",
+            "max_instances",
+            "api_type",
+            "enable_monitoring",
+            "enable_logging",
+            "enable_caching",
+            "timeout_seconds",
+            "max_batch_size",
         }
         assert set(fields.keys()) == expected_field_names
 
     def test_pydantic_model_json_schema(self):
         """Test that Pydantic V2's model_json_schema() method is available."""
         # Pydantic V2 BaseModel provides model_json_schema class method
-        assert hasattr(DeploymentConfig, 'model_json_schema')
-        
+        assert hasattr(DeploymentConfig, "model_json_schema")
+
         schema = DeploymentConfig.model_json_schema()
         assert isinstance(schema, dict)
-        assert 'properties' in schema
-        assert 'target' in schema['properties']
+        assert "properties" in schema
+        assert "target" in schema["properties"]
 
 
 # =============================================================================
 # TESTS: DeploymentStrategy ABC
 # =============================================================================
+
 
 class TestDeploymentStrategyABC:
     """Tests for DeploymentStrategy abstract base class."""
@@ -438,9 +432,10 @@ class TestDeploymentStrategyABC:
 
     def test_concrete_subclass_requires_abstract_methods(self):
         """Test that concrete subclass must implement all abstract methods."""
+
         class IncompleteStrategy(DeploymentStrategy):
             pass  # Missing abstract methods
-        
+
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             IncompleteStrategy(DeploymentConfig())
 
@@ -448,13 +443,13 @@ class TestDeploymentStrategyABC:
         """Test get_deployment_info method on concrete strategy."""
         strategy = LocalDeploymentStrategy(local_config)
         info = strategy.get_deployment_info()
-        
-        assert 'target' in info
-        assert 'serving_mode' in info
-        assert 'is_deployed' in info
-        assert 'config' in info
-        assert info['target'] == "local"
-        assert info['is_deployed'] is False
+
+        assert "target" in info
+        assert "serving_mode" in info
+        assert "is_deployed" in info
+        assert "config" in info
+        assert info["target"] == "local"
+        assert info["is_deployed"] is False
 
     def test_is_deployed_default_false(self, local_config):
         """Test that is_deployed is False by default."""
@@ -465,7 +460,7 @@ class TestDeploymentStrategyABC:
         """Test verbose attribute is set correctly."""
         strategy_verbose = LocalDeploymentStrategy(local_config, verbose=True)
         strategy_quiet = LocalDeploymentStrategy(local_config, verbose=False)
-        
+
         assert strategy_verbose.verbose is True
         assert strategy_quiet.verbose is False
 
@@ -478,6 +473,7 @@ class TestDeploymentStrategyABC:
 # =============================================================================
 # TESTS: AWSDeploymentStrategy
 # =============================================================================
+
 
 class TestAWSDeploymentStrategy:
     """Tests for AWSDeploymentStrategy."""
@@ -492,10 +488,10 @@ class TestAWSDeploymentStrategy:
         """Test prepare_model creates save directory."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
         save_path = temp_dir / "aws_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -503,8 +499,8 @@ class TestAWSDeploymentStrategy:
         """Test prepare_model saves model.pth file."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
         save_path = temp_dir / "aws_model"
-        
-        with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch, "save") as mock_save:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
             # Check it saves to model.pth
@@ -515,10 +511,10 @@ class TestAWSDeploymentStrategy:
         """Test prepare_model creates inference.py script."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
         save_path = temp_dir / "aws_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         inference_script = save_path / "inference.py"
         assert inference_script.exists()
 
@@ -526,10 +522,10 @@ class TestAWSDeploymentStrategy:
         """Test prepare_model creates requirements.txt."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
         save_path = temp_dir / "aws_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         requirements = save_path / "requirements.txt"
         assert requirements.exists()
         content = requirements.read_text()
@@ -538,44 +534,44 @@ class TestAWSDeploymentStrategy:
     def test_deploy_with_boto3_available(self, aws_config, temp_dir):
         """Test deploy when boto3 is available."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        
+
         mock_boto3 = MagicMock()
         mock_sagemaker = MagicMock()
-        
-        with patch.dict(sys.modules, {'boto3': mock_boto3, 'sagemaker': mock_sagemaker}):
+
+        with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
             result = strategy.deploy(temp_dir)
-        
-        assert result['target'] == 'aws'
-        assert result['status'] == 'prepared'
+
+        assert result["target"] == "aws"
+        assert result["status"] == "prepared"
         assert strategy.is_deployed is True
 
     def test_deploy_without_boto3_raises_error(self, aws_config, temp_dir):
         """Test deploy raises error when boto3 is not available."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        
+
         # Mock the import to fail
-        with patch.dict(sys.modules, {'boto3': None}):
-            with patch('builtins.__import__', side_effect=ImportError("No module named 'boto3'")):
+        with patch.dict(sys.modules, {"boto3": None}):
+            with patch("builtins.__import__", side_effect=ImportError("No module named 'boto3'")):
                 with pytest.raises(DeploymentError, match="AWS deployment requires"):
                     strategy.deploy(temp_dir)
 
     def test_predict_without_deployment_raises_error(self, aws_config):
         """Test predict raises error when not deployed."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, aws_config, temp_dir):
         """Test predict after deployment."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        
+
         mock_boto3 = MagicMock()
         mock_sagemaker = MagicMock()
-        
-        with patch.dict(sys.modules, {'boto3': mock_boto3, 'sagemaker': mock_sagemaker}):
+
+        with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
             strategy.deploy(temp_dir)
-        
+
         # Predict returns None (placeholder)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
@@ -583,13 +579,13 @@ class TestAWSDeploymentStrategy:
     def test_teardown(self, aws_config, temp_dir):
         """Test teardown cleans up deployment."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        
+
         mock_boto3 = MagicMock()
         mock_sagemaker = MagicMock()
-        
-        with patch.dict(sys.modules, {'boto3': mock_boto3, 'sagemaker': mock_sagemaker}):
+
+        with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
             strategy.deploy(temp_dir)
-        
+
         assert strategy.is_deployed is True
         strategy.teardown()
         assert strategy.is_deployed is False
@@ -598,13 +594,13 @@ class TestAWSDeploymentStrategy:
         """Test the content of the created SageMaker inference script."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
         save_path = temp_dir / "aws_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         inference_script = save_path / "inference.py"
         content = inference_script.read_text()
-        
+
         # Check required functions exist in the script
         assert "def model_fn" in content
         assert "def input_fn" in content
@@ -615,6 +611,7 @@ class TestAWSDeploymentStrategy:
 # =============================================================================
 # TESTS: GCPDeploymentStrategy
 # =============================================================================
+
 
 class TestGCPDeploymentStrategy:
     """Tests for GCPDeploymentStrategy."""
@@ -631,10 +628,10 @@ class TestGCPDeploymentStrategy:
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
         save_path = temp_dir / "gcp_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -643,8 +640,8 @@ class TestGCPDeploymentStrategy:
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
         save_path = temp_dir / "gcp_model"
-        
-        with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch, "save") as mock_save:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
 
@@ -652,19 +649,19 @@ class TestGCPDeploymentStrategy:
         """Test deploy returns correct deployment info."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         result = strategy.deploy(temp_dir)
-        
-        assert result['target'] == 'gcp'
-        assert result['status'] == 'prepared'
-        assert str(temp_dir) in result['model_path']
+
+        assert result["target"] == "gcp"
+        assert result["status"] == "prepared"
+        assert str(temp_dir) in result["model_path"]
         assert strategy.is_deployed is True
 
     def test_predict_without_deployment_raises_error(self):
         """Test predict raises error when not deployed."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
@@ -672,7 +669,7 @@ class TestGCPDeploymentStrategy:
         """Test predict after deployment returns None."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
@@ -681,10 +678,10 @@ class TestGCPDeploymentStrategy:
         """Test teardown cleans up deployment."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
-        
+
         strategy.teardown()
         assert strategy.is_deployed is False
 
@@ -692,7 +689,7 @@ class TestGCPDeploymentStrategy:
         """Test teardown when not deployed does nothing."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         # Should not raise
         strategy.teardown()
         assert strategy.is_deployed is False
@@ -701,6 +698,7 @@ class TestGCPDeploymentStrategy:
 # =============================================================================
 # TESTS: AzureDeploymentStrategy
 # =============================================================================
+
 
 class TestAzureDeploymentStrategy:
     """Tests for AzureDeploymentStrategy."""
@@ -717,10 +715,10 @@ class TestAzureDeploymentStrategy:
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
         save_path = temp_dir / "azure_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -729,8 +727,8 @@ class TestAzureDeploymentStrategy:
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
         save_path = temp_dir / "azure_model"
-        
-        with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch, "save") as mock_save:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
 
@@ -738,18 +736,18 @@ class TestAzureDeploymentStrategy:
         """Test deploy returns correct deployment info."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
-        
+
         result = strategy.deploy(temp_dir)
-        
-        assert result['target'] == 'azure'
-        assert result['status'] == 'prepared'
+
+        assert result["target"] == "azure"
+        assert result["status"] == "prepared"
         assert strategy.is_deployed is True
 
     def test_predict_without_deployment_raises_error(self):
         """Test predict raises error when not deployed."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
@@ -757,7 +755,7 @@ class TestAzureDeploymentStrategy:
         """Test predict after deployment returns None."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
@@ -766,10 +764,10 @@ class TestAzureDeploymentStrategy:
         """Test teardown cleans up deployment."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
-        
+
         strategy.teardown()
         assert strategy.is_deployed is False
 
@@ -777,6 +775,7 @@ class TestAzureDeploymentStrategy:
 # =============================================================================
 # TESTS: EdgeDeploymentStrategy
 # =============================================================================
+
 
 class TestEdgeDeploymentStrategy:
     """Tests for EdgeDeploymentStrategy."""
@@ -797,11 +796,11 @@ class TestEdgeDeploymentStrategy:
         """Test prepare_model creates save directory."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
         save_path = temp_dir / "edge_model"
-        
-        with patch.object(torch, 'save'):
-            with patch.object(torch.jit, 'trace', side_effect=Exception("Trace failed")):
+
+        with patch.object(torch, "save"):
+            with patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")):
                 result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -809,9 +808,9 @@ class TestEdgeDeploymentStrategy:
         """Test prepare_model falls back to standard save on trace failure."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
         save_path = temp_dir / "edge_model"
-        
-        with patch.object(torch.jit, 'trace', side_effect=Exception("Trace failed")):
-            with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")):
+            with patch.object(torch, "save") as mock_save:
                 strategy.prepare_model(mock_model, save_path)
                 mock_save.assert_called_once()
 
@@ -819,36 +818,38 @@ class TestEdgeDeploymentStrategy:
         """Test prepare_model with mobile optimization."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
         save_path = temp_dir / "edge_model"
-        
+
         mock_traced = MagicMock()
         mock_optimized = MagicMock()
-        
-        with patch.object(torch.jit, 'trace', return_value=mock_traced):
-            with patch('torch.utils.mobile_optimizer.optimize_for_mobile', return_value=mock_optimized):
-                strategy.prepare_model(mock_model, save_path)
-                mock_optimized._save_for_lite_interpreter.assert_called_once()
+
+        with (
+            patch.object(torch.jit, "trace", return_value=mock_traced),
+            patch("torch.utils.mobile_optimizer.optimize_for_mobile", return_value=mock_optimized),
+        ):
+            strategy.prepare_model(mock_model, save_path)
+            mock_optimized._save_for_lite_interpreter.assert_called_once()
 
     def test_deploy_returns_correct_info(self, edge_config, temp_dir):
         """Test deploy returns correct deployment info."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        
+
         result = strategy.deploy(temp_dir)
-        
-        assert result['target'] == 'edge'
-        assert result['status'] == 'ready_for_edge'
+
+        assert result["target"] == "edge"
+        assert result["status"] == "ready_for_edge"
         assert strategy.is_deployed is True
 
     def test_predict_without_deployment_raises_error(self, edge_config):
         """Test predict raises error when not deployed."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, edge_config, temp_dir):
         """Test predict after deployment returns None."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
@@ -856,10 +857,10 @@ class TestEdgeDeploymentStrategy:
     def test_teardown(self, edge_config, temp_dir):
         """Test teardown cleans up deployment."""
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
-        
+
         strategy.teardown()
         assert strategy.is_deployed is False
 
@@ -867,6 +868,7 @@ class TestEdgeDeploymentStrategy:
 # =============================================================================
 # TESTS: ContainerDeploymentStrategy
 # =============================================================================
+
 
 class TestContainerDeploymentStrategy:
     """Tests for ContainerDeploymentStrategy."""
@@ -881,10 +883,10 @@ class TestContainerDeploymentStrategy:
         """Test prepare_model creates save directory."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -892,8 +894,8 @@ class TestContainerDeploymentStrategy:
         """Test prepare_model saves model file."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch, "save") as mock_save:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
 
@@ -901,10 +903,10 @@ class TestContainerDeploymentStrategy:
         """Test prepare_model creates Dockerfile."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         dockerfile = save_path / "Dockerfile"
         assert dockerfile.exists()
 
@@ -912,13 +914,13 @@ class TestContainerDeploymentStrategy:
         """Test Dockerfile has correct content."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         dockerfile = save_path / "Dockerfile"
         content = dockerfile.read_text()
-        
+
         assert "FROM python" in content
         assert "EXPOSE 8080" in content
         assert "CMD" in content
@@ -927,10 +929,10 @@ class TestContainerDeploymentStrategy:
         """Test prepare_model creates serve.py script."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         serve_script = save_path / "serve.py"
         assert serve_script.exists()
 
@@ -938,13 +940,13 @@ class TestContainerDeploymentStrategy:
         """Test serve.py has correct content."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         serve_script = save_path / "serve.py"
         content = serve_script.read_text()
-        
+
         assert "Flask" in content
         assert "@app.route('/predict'" in content
         assert "@app.route('/health'" in content
@@ -953,10 +955,10 @@ class TestContainerDeploymentStrategy:
         """Test prepare_model creates requirements.txt."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
         save_path = temp_dir / "container_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             strategy.prepare_model(mock_model, save_path)
-        
+
         requirements = save_path / "requirements.txt"
         assert requirements.exists()
         content = requirements.read_text()
@@ -966,26 +968,26 @@ class TestContainerDeploymentStrategy:
     def test_deploy_returns_correct_info(self, container_config, temp_dir):
         """Test deploy returns correct deployment info."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        
+
         result = strategy.deploy(temp_dir)
-        
-        assert result['target'] == 'container'
-        assert result['status'] == 'ready_for_docker'
-        assert 'docker build' in result['message']
-        assert 'docker run' in result['run_command']
+
+        assert result["target"] == "container"
+        assert result["status"] == "ready_for_docker"
+        assert "docker build" in result["message"]
+        assert "docker run" in result["run_command"]
         assert strategy.is_deployed is True
 
     def test_predict_without_deployment_raises_error(self, container_config):
         """Test predict raises error when not deployed."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, container_config, temp_dir):
         """Test predict after deployment returns None."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
@@ -993,10 +995,10 @@ class TestContainerDeploymentStrategy:
     def test_teardown(self, container_config, temp_dir):
         """Test teardown cleans up deployment."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
-        
+
         strategy.teardown()
         assert strategy.is_deployed is False
 
@@ -1004,6 +1006,7 @@ class TestContainerDeploymentStrategy:
 # =============================================================================
 # TESTS: LocalDeploymentStrategy
 # =============================================================================
+
 
 class TestLocalDeploymentStrategy:
     """Tests for LocalDeploymentStrategy."""
@@ -1019,10 +1022,10 @@ class TestLocalDeploymentStrategy:
         """Test prepare_model creates save directory."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
         save_path = temp_dir / "local_model"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert save_path.exists()
         assert result == save_path
 
@@ -1030,8 +1033,8 @@ class TestLocalDeploymentStrategy:
         """Test prepare_model saves model file."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
         save_path = temp_dir / "local_model"
-        
-        with patch.object(torch, 'save') as mock_save:
+
+        with patch.object(torch, "save") as mock_save:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
 
@@ -1041,18 +1044,18 @@ class TestLocalDeploymentStrategy:
         save_path = temp_dir / "local_model"
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
-        
+
         # Create a mock model for loading
         loaded_model = MagicMock()
         loaded_model.eval = MagicMock(return_value=loaded_model)
-        
-        with patch.object(torch, 'load', return_value=loaded_model):
+
+        with patch.object(torch, "load", return_value=loaded_model):
             # Touch the file so it exists
             model_file.touch()
             result = strategy.deploy(save_path)
-        
-        assert result['target'] == 'local'
-        assert result['status'] == 'deployed'
+
+        assert result["target"] == "local"
+        assert result["status"] == "deployed"
         assert strategy.is_deployed is True
         assert strategy.model is loaded_model
 
@@ -1061,14 +1064,14 @@ class TestLocalDeploymentStrategy:
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
         save_path = temp_dir / "nonexistent"
         save_path.mkdir(parents=True)
-        
+
         with pytest.raises(DeploymentError, match="Model file not found"):
             strategy.deploy(save_path)
 
     def test_predict_without_deployment_raises_error(self, local_config):
         """Test predict raises error when not deployed."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
@@ -1077,7 +1080,7 @@ class TestLocalDeploymentStrategy:
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
         strategy.is_deployed = True
         strategy.model = None
-        
+
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
@@ -1088,18 +1091,18 @@ class TestLocalDeploymentStrategy:
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         # Create a mock model that can handle input
         mock_loaded_model = MagicMock()
         mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
         mock_loaded_model.return_value = torch.tensor([1.0, 2.0])
-        
-        with patch.object(torch, 'load', return_value=mock_loaded_model):
+
+        with patch.object(torch, "load", return_value=mock_loaded_model):
             strategy.deploy(save_path)
-        
+
         input_data = torch.randn(1, 10)
         result = strategy.predict(input_data)
-        
+
         mock_loaded_model.assert_called_once_with(input_data)
 
     def test_teardown(self, local_config, temp_dir):
@@ -1109,25 +1112,25 @@ class TestLocalDeploymentStrategy:
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         mock_loaded_model = MagicMock()
         mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-        
-        with patch.object(torch, 'load', return_value=mock_loaded_model):
+
+        with patch.object(torch, "load", return_value=mock_loaded_model):
             strategy.deploy(save_path)
-        
+
         assert strategy.is_deployed is True
         assert strategy.model is not None
-        
+
         strategy.teardown()
-        
+
         assert strategy.is_deployed is False
         assert strategy.model is None
 
     def test_teardown_when_not_deployed(self, local_config):
         """Test teardown when not deployed does nothing."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        
+
         # Should not raise
         strategy.teardown()
         assert strategy.is_deployed is False
@@ -1137,6 +1140,7 @@ class TestLocalDeploymentStrategy:
 # =============================================================================
 # TESTS: DeploymentManager
 # =============================================================================
+
 
 class TestDeploymentManager:
     """Tests for DeploymentManager class."""
@@ -1204,91 +1208,91 @@ class TestDeploymentManager:
     def test_prepare_model(self, mock_model, temp_dir):
         """Test prepare_model delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = manager.prepare_model(mock_model, temp_dir)
-        
+
         assert result == Path(temp_dir)
 
     def test_prepare_model_with_string_path(self, mock_model, temp_dir):
         """Test prepare_model accepts string path."""
         manager = DeploymentManager(target="local", verbose=False)
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = manager.prepare_model(mock_model, str(temp_dir))
-        
+
         assert isinstance(result, Path)
 
     def test_deploy(self, temp_dir):
         """Test deploy delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-        
+
         save_path = temp_dir / "model"
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         mock_model = MagicMock()
         mock_model.eval = MagicMock(return_value=mock_model)
-        
-        with patch.object(torch, 'load', return_value=mock_model):
+
+        with patch.object(torch, "load", return_value=mock_model):
             result = manager.deploy(save_path)
-        
-        assert result['status'] == 'deployed'
+
+        assert result["status"] == "deployed"
 
     def test_deploy_with_string_path(self, temp_dir):
         """Test deploy accepts string path."""
         manager = DeploymentManager(target="local", verbose=False)
-        
+
         save_path = temp_dir / "model"
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         mock_model = MagicMock()
         mock_model.eval = MagicMock(return_value=mock_model)
-        
-        with patch.object(torch, 'load', return_value=mock_model):
+
+        with patch.object(torch, "load", return_value=mock_model):
             result = manager.deploy(str(save_path))
-        
-        assert result['status'] == 'deployed'
+
+        assert result["status"] == "deployed"
 
     def test_predict(self, temp_dir):
         """Test predict delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-        
+
         save_path = temp_dir / "model"
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         mock_model = MagicMock()
         mock_model.eval = MagicMock(return_value=mock_model)
         mock_model.return_value = torch.tensor([1.0])
-        
-        with patch.object(torch, 'load', return_value=mock_model):
+
+        with patch.object(torch, "load", return_value=mock_model):
             manager.deploy(save_path)
-        
+
         input_data = torch.randn(1, 10)
         manager.predict(input_data)
-        
+
         mock_model.assert_called_once_with(input_data)
 
     def test_teardown(self, temp_dir):
         """Test teardown delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-        
+
         save_path = temp_dir / "model"
         save_path.mkdir(parents=True)
         model_file = save_path / "model.pth"
         model_file.touch()
-        
+
         mock_model = MagicMock()
         mock_model.eval = MagicMock(return_value=mock_model)
-        
-        with patch.object(torch, 'load', return_value=mock_model):
+
+        with patch.object(torch, "load", return_value=mock_model):
             manager.deploy(save_path)
-        
+
         assert manager.strategy.is_deployed is True
         manager.teardown()
         assert manager.strategy.is_deployed is False
@@ -1296,30 +1300,30 @@ class TestDeploymentManager:
     def test_get_deployment_info(self):
         """Test get_deployment_info delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-        
+
         info = manager.get_deployment_info()
-        
-        assert 'target' in info
-        assert 'serving_mode' in info
-        assert 'is_deployed' in info
-        assert info['target'] == 'local'
+
+        assert "target" in info
+        assert "serving_mode" in info
+        assert "is_deployed" in info
+        assert info["target"] == "local"
 
     def test_list_available_targets_class_method(self):
         """Test list_available_targets class method."""
         targets = DeploymentManager.list_available_targets()
-        
+
         assert isinstance(targets, list)
-        assert 'aws' in targets
-        assert 'gcp' in targets
-        assert 'azure' in targets
-        assert 'mobile' in targets
-        assert 'iot' in targets
-        assert 'container' in targets
-        assert 'local' in targets
+        assert "aws" in targets
+        assert "gcp" in targets
+        assert "azure" in targets
+        assert "mobile" in targets
+        assert "iot" in targets
+        assert "container" in targets
+        assert "local" in targets
 
     def test_strategies_dict(self):
         """Test _strategies dictionary contains all expected strategies."""
-        expected = {'aws', 'gcp', 'azure', 'mobile', 'iot', 'container', 'local'}
+        expected = {"aws", "gcp", "azure", "mobile", "iot", "container", "local"}
         actual = set(DeploymentManager._strategies.keys())
         assert expected == actual
 
@@ -1327,7 +1331,7 @@ class TestDeploymentManager:
         """Test verbose attribute is set correctly."""
         manager_verbose = DeploymentManager(verbose=True)
         manager_quiet = DeploymentManager(verbose=False)
-        
+
         assert manager_verbose.verbose is True
         assert manager_quiet.verbose is False
 
@@ -1336,83 +1340,85 @@ class TestDeploymentManager:
 # TESTS: Convenience Functions
 # =============================================================================
 
+
 class TestConvenienceFunctions:
     """Tests for convenience functions."""
 
     def test_list_deployment_targets(self):
         """Test list_deployment_targets function."""
         targets = list_deployment_targets()
-        
+
         assert isinstance(targets, list)
-        assert 'aws' in targets
-        assert 'local' in targets
+        assert "aws" in targets
+        assert "local" in targets
         assert len(targets) == 7  # 7 targets in _strategies
 
     def test_deploy_locally_creates_manager(self, mock_model, temp_dir):
         """Test deploy_locally creates and returns DeploymentManager."""
         save_path = temp_dir / "deploy_local"
-        
+
         mock_loaded_model = MagicMock()
         mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-        
+
         def create_model_file(*args, **kwargs):
             """Side effect to create the model file when torch.save is called."""
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
-        
-        with patch.object(torch, 'save', side_effect=create_model_file):
-            with patch.object(torch, 'load', return_value=mock_loaded_model):
+
+        with patch.object(torch, "save", side_effect=create_model_file):
+            with patch.object(torch, "load", return_value=mock_loaded_model):
                 manager = deploy_locally(mock_model, save_path)
-        
+
         assert isinstance(manager, DeploymentManager)
         assert manager.strategy.is_deployed is True
 
     def test_deploy_locally_prepares_and_deploys(self, mock_model, temp_dir):
         """Test deploy_locally both prepares and deploys the model."""
         save_path = temp_dir / "deploy_local"
-        
+
         mock_loaded_model = MagicMock()
         mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-        
+
         def create_model_file(*args, **kwargs):
             """Side effect to create the model file when torch.save is called."""
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
-        
-        with patch.object(torch, 'save', side_effect=create_model_file) as mock_save:
-            with patch.object(torch, 'load', return_value=mock_loaded_model) as mock_load:
+
+        with patch.object(torch, "save", side_effect=create_model_file) as mock_save:
+            with patch.object(torch, "load", return_value=mock_loaded_model) as mock_load:
                 manager = deploy_locally(mock_model, save_path)
-        
+
         # Should have saved the model
         mock_save.assert_called_once()
         # Should have loaded the model
         mock_load.assert_called_once()
-        
+
         assert manager.strategy.is_deployed is True
 
     def test_deploy_locally_with_string_path(self, mock_model, temp_dir):
         """Test deploy_locally accepts string path."""
         save_path = temp_dir / "deploy_local"
         save_path_str = str(save_path)
-        
+
         mock_loaded_model = MagicMock()
         mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-        
+
         def create_model_file(*args, **kwargs):
             """Side effect to create the model file when torch.save is called."""
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
-        
-        with patch.object(torch, 'save', side_effect=create_model_file):
-            with patch.object(torch, 'load', return_value=mock_loaded_model):
+
+        with patch.object(torch, "save", side_effect=create_model_file):
+            with patch.object(torch, "load", return_value=mock_loaded_model):
                 manager = deploy_locally(mock_model, save_path_str)
-        
+
         assert isinstance(manager, DeploymentManager)
 
 
 # =============================================================================
 # TESTS: Exception Handling
 # =============================================================================
+
 
 class TestExceptionHandling:
     """Tests for exception handling and exception hierarchy."""
@@ -1466,7 +1472,7 @@ class TestExceptionHandling:
             raise DeploymentError("deployment failed")
         except ModelError as e:
             assert str(e) == "deployment failed"
-        
+
         # ConfigurationError should be catchable as ModelError
         try:
             raise ConfigurationError("config invalid")
@@ -1479,7 +1485,7 @@ class TestExceptionHandling:
         model_err = ModelError()
         deploy_err = DeploymentError()
         config_err = ConfigurationError()
-        
+
         assert isinstance(model_err, ModelError)
         assert isinstance(deploy_err, DeploymentError)
         assert isinstance(config_err, ConfigurationError)
@@ -1489,20 +1495,21 @@ class TestExceptionHandling:
 # TESTS: Edge Cases and Integration
 # =============================================================================
 
+
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
     def test_empty_save_path(self, mock_model, temp_dir):
         """Test handling of path edge case."""
         strategy = LocalDeploymentStrategy(DeploymentConfig(), verbose=False)
-        
+
         # Path with empty directory name should still work
         save_path = temp_dir / ""
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             # This should handle the path correctly
             result = strategy.prepare_model(mock_model, save_path)
-        
+
         assert result is not None
 
     def test_config_with_all_params(self):
@@ -1520,9 +1527,9 @@ class TestEdgeCases:
             enable_logging=True,
             enable_caching=True,
             timeout_seconds=120,
-            max_batch_size=256
+            max_batch_size=256,
         )
-        
+
         assert config.target == "aws"
         assert config.serving_mode == "batch"
         assert config.instance_type == "ml.p3.2xlarge"
@@ -1540,27 +1547,27 @@ class TestEdgeCases:
     def test_strategy_get_deployment_info_structure(self, local_config, temp_dir):
         """Test deployment info has consistent structure."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        
+
         info = strategy.get_deployment_info()
-        
+
         # Check structure
-        assert 'target' in info
-        assert 'serving_mode' in info
-        assert 'is_deployed' in info
-        assert 'config' in info
-        
+        assert "target" in info
+        assert "serving_mode" in info
+        assert "is_deployed" in info
+        assert "config" in info
+
         # Check config is a dict
-        assert isinstance(info['config'], dict)
+        assert isinstance(info["config"], dict)
 
     def test_multiple_deploys(self, temp_dir):
         """Test deploying multiple times."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         # First deploy
         result1 = strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
-        
+
         # Second deploy (should still work)
         result2 = strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
@@ -1569,14 +1576,14 @@ class TestEdgeCases:
         """Test calling teardown multiple times."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
-        
+
         strategy.deploy(temp_dir)
-        
+
         # Multiple teardowns should not raise
         strategy.teardown()
         strategy.teardown()
         strategy.teardown()
-        
+
         assert strategy.is_deployed is False
 
 
@@ -1584,28 +1591,27 @@ class TestEdgeCases:
 # TESTS: Logging Integration
 # =============================================================================
 
+
 class TestLoggingIntegration:
     """Tests for logging behavior."""
 
     def test_verbose_true_logs_messages(self, local_config, mock_model, temp_dir, caplog):
         """Test that verbose=True produces log messages."""
         strategy = LocalDeploymentStrategy(local_config, verbose=True)
-        
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch, 'save'):
-                strategy.prepare_model(mock_model, temp_dir)
-        
+
+        with caplog.at_level(logging.INFO), patch.object(torch, "save"):
+            strategy.prepare_model(mock_model, temp_dir)
+
         # Should have logged something
         # Note: Depends on actual logging configuration
 
     def test_verbose_false_reduces_logging(self, local_config, mock_model, temp_dir, caplog):
         """Test that verbose=False reduces log messages."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch, 'save'):
-                strategy.prepare_model(mock_model, temp_dir)
-        
+
+        with caplog.at_level(logging.INFO), patch.object(torch, "save"):
+            strategy.prepare_model(mock_model, temp_dir)
+
         # Should have fewer logs (implementation dependent)
 
 
@@ -1613,36 +1619,37 @@ class TestLoggingIntegration:
 # TESTS: Path Handling
 # =============================================================================
 
+
 class TestPathHandling:
     """Tests for path handling across strategies."""
 
     def test_path_object_handling(self, mock_model, temp_dir):
         """Test strategies handle Path objects correctly."""
         strategy = LocalDeploymentStrategy(DeploymentConfig(), verbose=False)
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, Path(temp_dir))
-        
+
         assert isinstance(result, Path)
 
     def test_string_path_handling(self, mock_model, temp_dir):
         """Test strategies handle string paths correctly."""
         manager = DeploymentManager(target="local", verbose=False)
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = manager.prepare_model(mock_model, str(temp_dir))
-        
+
         assert isinstance(result, Path)
 
     def test_nested_directory_creation(self, mock_model, temp_dir):
         """Test strategies create nested directories."""
         strategy = LocalDeploymentStrategy(DeploymentConfig(), verbose=False)
-        
+
         nested_path = temp_dir / "level1" / "level2" / "level3"
-        
-        with patch.object(torch, 'save'):
+
+        with patch.object(torch, "save"):
             result = strategy.prepare_model(mock_model, nested_path)
-        
+
         assert nested_path.exists()
 
 
@@ -1650,34 +1657,36 @@ class TestPathHandling:
 # TESTS: Strategy Factory Pattern
 # =============================================================================
 
+
 class TestStrategyFactoryPattern:
     """Tests for the strategy factory pattern in DeploymentManager."""
 
     def test_all_strategies_in_registry(self):
         """Test all expected strategies are in the registry."""
-        expected_targets = {'aws', 'gcp', 'azure', 'mobile', 'iot', 'container', 'local'}
+        expected_targets = {"aws", "gcp", "azure", "mobile", "iot", "container", "local"}
         actual_targets = set(DeploymentManager._strategies.keys())
-        
+
         assert expected_targets == actual_targets
 
     def test_strategy_classes_are_correct(self):
         """Test each target maps to correct strategy class."""
-        assert DeploymentManager._strategies['aws'] == AWSDeploymentStrategy
-        assert DeploymentManager._strategies['gcp'] == GCPDeploymentStrategy
-        assert DeploymentManager._strategies['azure'] == AzureDeploymentStrategy
-        assert DeploymentManager._strategies['mobile'] == EdgeDeploymentStrategy
-        assert DeploymentManager._strategies['iot'] == EdgeDeploymentStrategy
-        assert DeploymentManager._strategies['container'] == ContainerDeploymentStrategy
-        assert DeploymentManager._strategies['local'] == LocalDeploymentStrategy
+        assert DeploymentManager._strategies["aws"] == AWSDeploymentStrategy
+        assert DeploymentManager._strategies["gcp"] == GCPDeploymentStrategy
+        assert DeploymentManager._strategies["azure"] == AzureDeploymentStrategy
+        assert DeploymentManager._strategies["mobile"] == EdgeDeploymentStrategy
+        assert DeploymentManager._strategies["iot"] == EdgeDeploymentStrategy
+        assert DeploymentManager._strategies["container"] == ContainerDeploymentStrategy
+        assert DeploymentManager._strategies["local"] == LocalDeploymentStrategy
 
     def test_mobile_and_iot_share_strategy(self):
         """Test mobile and IoT both use EdgeDeploymentStrategy."""
-        assert DeploymentManager._strategies['mobile'] is DeploymentManager._strategies['iot']
+        assert DeploymentManager._strategies["mobile"] is DeploymentManager._strategies["iot"]
 
 
 # =============================================================================
 # TESTS: Pydantic BaseModel Behavior
 # =============================================================================
+
 
 class TestPydanticModelBehavior:
     """Tests for Pydantic BaseModel-specific behavior (Pydantic V2 Migration Phase 20)."""
@@ -1687,7 +1696,7 @@ class TestPydanticModelBehavior:
         config1 = DeploymentConfig(target="aws")
         config2 = DeploymentConfig(target="aws")
         config3 = DeploymentConfig(target="gcp")
-        
+
         assert config1 == config2
         assert config1 != config3
 
@@ -1695,7 +1704,7 @@ class TestPydanticModelBehavior:
         """Test DeploymentConfig has useful repr."""
         config = DeploymentConfig(target="aws")
         repr_str = repr(config)
-        
+
         assert "DeploymentConfig" in repr_str
         assert "aws" in repr_str
 
@@ -1703,17 +1712,17 @@ class TestPydanticModelBehavior:
         """Test DeploymentConfig fields can be modified (Pydantic BaseModel is mutable by default)."""
         config = DeploymentConfig()
         config.target = "aws"
-        
+
         assert config.target == "aws"
 
     def test_to_dict_wraps_model_dump(self):
         """Test to_dict() properly wraps Pydantic V2's model_dump() method."""
         config = DeploymentConfig(target="azure", serving_mode="batch")
-        
+
         # Both methods should return equivalent dictionaries
         to_dict_result = config.to_dict()
         model_dump_result = config.model_dump()
-        
+
         assert to_dict_result == model_dump_result
         assert isinstance(to_dict_result, dict)
         assert isinstance(model_dump_result, dict)
@@ -1721,41 +1730,41 @@ class TestPydanticModelBehavior:
     def test_model_dump_available(self):
         """Test that Pydantic V2's model_dump() method is available."""
         config = DeploymentConfig()
-        
+
         # Pydantic V2 BaseModel should have model_dump method
-        assert hasattr(config, 'model_dump')
+        assert hasattr(config, "model_dump")
         assert callable(config.model_dump)
-        
+
         result = config.model_dump()
         assert isinstance(result, dict)
 
     def test_model_validate_from_dict(self):
         """Test that DeploymentConfig can be created from dict using Pydantic V2's model_validate."""
         config_dict = {
-            'target': 'container',
-            'serving_mode': 'batch',
-            'num_instances': 5,
-            'auto_scaling': True
+            "target": "container",
+            "serving_mode": "batch",
+            "num_instances": 5,
+            "auto_scaling": True,
         }
-        
+
         # Pydantic V2 uses model_validate for dict-to-model conversion
         config = DeploymentConfig.model_validate(config_dict)
-        
-        assert config.target == 'container'
-        assert config.serving_mode == 'batch'
+
+        assert config.target == "container"
+        assert config.serving_mode == "batch"
         assert config.num_instances == 5
         assert config.auto_scaling is True
 
     def test_model_copy_method(self):
         """Test that Pydantic V2's model_copy() method works correctly."""
         original = DeploymentConfig(target="aws", num_instances=2)
-        
+
         # Pydantic V2 uses model_copy (not copy)
         copied = original.model_copy()
-        
+
         assert copied == original
         assert copied is not original
-        
+
         # Modifications to copy don't affect original
         copied.target = "gcp"
         assert original.target == "aws"
@@ -1763,11 +1772,11 @@ class TestPydanticModelBehavior:
     def test_model_copy_with_update(self):
         """Test model_copy with update parameter for creating modified copies."""
         original = DeploymentConfig(target="aws", num_instances=2)
-        
+
         # Create copy with some fields updated
-        modified = original.model_copy(update={'target': 'gcp', 'num_instances': 5})
-        
-        assert modified.target == 'gcp'
+        modified = original.model_copy(update={"target": "gcp", "num_instances": 5})
+
+        assert modified.target == "gcp"
         assert modified.num_instances == 5
         # Other fields should be preserved
         assert modified.serving_mode == original.serving_mode
@@ -1775,7 +1784,7 @@ class TestPydanticModelBehavior:
     def test_pydantic_basemodel_inheritance(self):
         """Test that DeploymentConfig inherits from Pydantic BaseModel."""
         from pydantic import BaseModel
-        
+
         config = DeploymentConfig()
         assert isinstance(config, BaseModel)
 
@@ -1784,34 +1793,35 @@ class TestPydanticModelBehavior:
 # MODULE LEVEL TESTS
 # =============================================================================
 
+
 class TestModuleLevel:
     """Tests for module-level behavior."""
 
     def test_all_public_classes_exported(self):
         """Test all expected public classes are available."""
         from milia_pipeline.models.deployment import deployment_strategies
-        
-        assert hasattr(deployment_strategies, 'DeploymentTarget')
-        assert hasattr(deployment_strategies, 'ServingMode')
-        assert hasattr(deployment_strategies, 'DeploymentConfig')
-        assert hasattr(deployment_strategies, 'DeploymentStrategy')
-        assert hasattr(deployment_strategies, 'AWSDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'GCPDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'AzureDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'EdgeDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'ContainerDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'LocalDeploymentStrategy')
-        assert hasattr(deployment_strategies, 'DeploymentManager')
-        assert hasattr(deployment_strategies, 'deploy_locally')
-        assert hasattr(deployment_strategies, 'list_deployment_targets')
+
+        assert hasattr(deployment_strategies, "DeploymentTarget")
+        assert hasattr(deployment_strategies, "ServingMode")
+        assert hasattr(deployment_strategies, "DeploymentConfig")
+        assert hasattr(deployment_strategies, "DeploymentStrategy")
+        assert hasattr(deployment_strategies, "AWSDeploymentStrategy")
+        assert hasattr(deployment_strategies, "GCPDeploymentStrategy")
+        assert hasattr(deployment_strategies, "AzureDeploymentStrategy")
+        assert hasattr(deployment_strategies, "EdgeDeploymentStrategy")
+        assert hasattr(deployment_strategies, "ContainerDeploymentStrategy")
+        assert hasattr(deployment_strategies, "LocalDeploymentStrategy")
+        assert hasattr(deployment_strategies, "DeploymentManager")
+        assert hasattr(deployment_strategies, "deploy_locally")
+        assert hasattr(deployment_strategies, "list_deployment_targets")
 
     def test_exceptions_exported(self):
         """Test exception classes are available."""
         from milia_pipeline.models.deployment import deployment_strategies
-        
-        assert hasattr(deployment_strategies, 'ModelError')
-        assert hasattr(deployment_strategies, 'DeploymentError')
-        assert hasattr(deployment_strategies, 'ConfigurationError')
+
+        assert hasattr(deployment_strategies, "ModelError")
+        assert hasattr(deployment_strategies, "DeploymentError")
+        assert hasattr(deployment_strategies, "ConfigurationError")
 
 
 # =============================================================================

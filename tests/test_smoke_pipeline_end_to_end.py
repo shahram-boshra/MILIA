@@ -40,17 +40,16 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import os
-import sys
 import logging
-import tempfile
 import shutil
+import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 
+import numpy as np
 import pytest
 import torch
-import numpy as np
 
 # ===========================================================================
 # PATH SETUP: Add project root to Python path FIRST
@@ -100,10 +99,11 @@ logger = logging.getLogger(__name__)
 # FIXTURES
 # ===========================================================================
 
+
 @pytest.fixture(scope="module")
 def tmp_work_dir():
     """Provide a temporary working directory for the test module.
-    
+
     Cleaned up after all tests in this module complete.
     """
     tmp_dir = tempfile.mkdtemp(prefix="milia_smoke_e2e_")
@@ -112,13 +112,13 @@ def tmp_work_dir():
 
 
 @pytest.fixture(scope="module")
-def minimal_config_dict() -> Dict[str, Any]:
+def minimal_config_dict() -> dict[str, Any]:
     """Provide a minimal valid configuration dictionary.
-    
+
     This mirrors the structure of config.yaml with only the fields
     required for smoke testing. It avoids touching the filesystem
     for config loading so the test is self-contained.
-    
+
     Evidence: config_loader.py load_config() expects a dict with
     'dataset_type' (line ~700+), and config_containers.py
     create_dataset_config_from_global() reads 'dataset_type',
@@ -133,9 +133,7 @@ def minimal_config_dict() -> Dict[str, Any]:
                 "max_atoms": 50,
                 "min_atoms": 1,
             },
-            "property_selection": {
-                "DFT": ["energy"]
-            }
+            "property_selection": {"DFT": ["energy"]},
         },
         "filter_config": {
             "max_atoms": 50,
@@ -183,16 +181,16 @@ def minimal_config_dict() -> Dict[str, Any]:
 
 
 @pytest.fixture(scope="module")
-def synthetic_pyg_data_list() -> List:
+def synthetic_pyg_data_list() -> list:
     """Create a minimal list of synthetic PyG Data objects.
-    
+
     Generates 10 small molecular graphs with:
     - x:          Node features (num_atoms, 11) — 11 is MILIA's default feature dim
     - edge_index: COO sparse edge connectivity
     - y:          Graph-level regression target shape (1,)
     - pos:        3D coordinates (num_atoms, 3) — optional, for 3D-aware models
     - z:          Atomic numbers (num_atoms,) — optional, for equivariant models
-    
+
     Evidence: trainer.py Trainer expects DataLoader yielding Batch objects
     with at minimum x, edge_index, y (lines 94-150). model_factory.py
     ModelFactory.create_model() uses sample_data for channel inference.
@@ -232,7 +230,7 @@ def synthetic_pyg_data_list() -> List:
 @pytest.fixture(scope="module")
 def synthetic_pyg_dataset(synthetic_pyg_data_list):
     """Wrap synthetic data list into a list-like container usable as a dataset.
-    
+
     The Trainer and DataSplitter accept any indexable sequence. Using a plain
     list avoids the need for a full InMemoryDataset with filesystem I/O.
     """
@@ -243,9 +241,10 @@ def synthetic_pyg_dataset(synthetic_pyg_data_list):
 # SECTION 1: CONFIGURATION SYSTEM SMOKE TESTS
 # ===========================================================================
 
+
 class TestConfigurationSystemSmoke:
     """Smoke tests for the configuration loading and access subsystem.
-    
+
     Verifies that config_loader, config_containers, and config_accessors
     can be imported and their core functions invoked without exceptions.
     """
@@ -253,6 +252,7 @@ class TestConfigurationSystemSmoke:
     def test_config_loader_importable(self):
         """config_loader module can be imported without errors."""
         from milia_pipeline.config import config_loader
+
         assert hasattr(config_loader, "load_config")
         assert hasattr(config_loader, "clear_config_cache")
 
@@ -263,6 +263,7 @@ class TestConfigurationSystemSmoke:
             FilterConfig,
             ProcessingConfig,
         )
+
         assert DatasetConfig is not None
         assert FilterConfig is not None
         assert ProcessingConfig is not None
@@ -270,11 +271,12 @@ class TestConfigurationSystemSmoke:
     def test_config_accessors_importable(self):
         """config_accessors module can be imported without errors."""
         from milia_pipeline.config import config_accessors
+
         assert hasattr(config_accessors, "get_dataset_type")
 
     def test_config_container_creation_from_dict(self, minimal_config_dict):
         """Config containers can be created from a configuration dictionary.
-        
+
         Evidence: config_containers.py provides create_dataset_config_from_global(),
         create_filter_config_from_global(), create_processing_config_from_global()
         factory functions that accept a global config dict.
@@ -297,15 +299,16 @@ class TestConfigurationSystemSmoke:
 
     def test_load_config_with_temp_yaml(self, tmp_work_dir, minimal_config_dict):
         """load_config can load a YAML file and return a dict.
-        
+
         Creates a temporary config.yaml, loads it, and verifies the result
         is a dictionary with expected keys.
-        
+
         Evidence: config_loader.py load_config() (line ~666) accepts config_path,
         returns dict.
         """
         import yaml
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         # Clear any cached config from previous test runs
         clear_config_cache()
@@ -333,12 +336,13 @@ class TestConfigurationSystemSmoke:
 # SECTION 2: DATASET REGISTRY SMOKE TESTS
 # ===========================================================================
 
+
 class TestDatasetRegistrySmoke:
     """Smoke tests for the dataset registry subsystem.
-    
+
     Verifies that DatasetRegistry can be imported, instantiated (non-singleton
     for isolation), and that the default registry has registered datasets.
-    
+
     Evidence: registry.py DatasetRegistry is NOT a singleton (line 3 docstring),
     supports register(), get(), list_all(), is_registered(), clear().
     """
@@ -347,15 +351,13 @@ class TestDatasetRegistrySmoke:
         """datasets.registry module can be imported."""
         from milia_pipeline.datasets.registry import (
             DatasetRegistry,
-            get_default_registry,
-            list_all,
-            is_registered,
         )
+
         assert DatasetRegistry is not None
 
     def test_isolated_registry_creation(self):
         """A fresh DatasetRegistry instance can be created for testing.
-        
+
         Evidence: registry.py docstring "NOT a singleton: Can create isolated
         instances for testing" (line 4).
         """
@@ -367,29 +369,26 @@ class TestDatasetRegistrySmoke:
 
     def test_default_registry_has_datasets(self):
         """The default global registry should have at least one dataset registered.
-        
+
         Evidence: datasets/implementations/__init__.py uses dynamic discovery
         with @register decorator. DFT is always available as the base dataset.
         """
-        from milia_pipeline.datasets.registry import get_default_registry
-
         # Trigger implementations import to ensure registration happens
         # This is a core project module — import MUST succeed.
         import milia_pipeline.datasets.implementations  # noqa: F401
+        from milia_pipeline.datasets.registry import get_default_registry
 
         registry = get_default_registry()
         registered = registry.list_all()
         assert len(registered) > 0, (
-            "Default registry should have at least one dataset registered. "
-            f"Got: {registered}"
+            f"Default registry should have at least one dataset registered. Got: {registered}"
         )
 
     def test_registry_get_returns_class(self):
         """Registry.get() returns a class (not an instance) for known datasets."""
-        from milia_pipeline.datasets.registry import get_default_registry
-
         # Core project module — import MUST succeed.
         import milia_pipeline.datasets.implementations  # noqa: F401
+        from milia_pipeline.datasets.registry import get_default_registry
 
         registry = get_default_registry()
         registered = registry.list_all()
@@ -406,12 +405,13 @@ class TestDatasetRegistrySmoke:
 # SECTION 3: HANDLER SYSTEM SMOKE TESTS
 # ===========================================================================
 
+
 class TestHandlerSystemSmoke:
     """Smoke tests for the handler subsystem.
-    
+
     Verifies that handler imports, handler registry, and handler factory
     function (create_dataset_handler) work without exceptions.
-    
+
     Evidence: base_handler.py contains DatasetHandler ABC (line 1),
     create_dataset_handler() factory (line 239), handler_registry.py
     contains HandlerRegistry (line 75).
@@ -423,6 +423,7 @@ class TestHandlerSystemSmoke:
             DatasetHandler,
             create_dataset_handler,
         )
+
         assert DatasetHandler is not None
         assert callable(create_dataset_handler)
 
@@ -430,14 +431,13 @@ class TestHandlerSystemSmoke:
         """handler_registry module can be imported."""
         from milia_pipeline.handlers.handler_registry import (
             HandlerRegistry,
-            get_default_registry,
-            list_all,
         )
+
         assert HandlerRegistry is not None
 
     def test_isolated_handler_registry(self):
         """A fresh HandlerRegistry can be created.
-        
+
         Evidence: handler_registry.py docstring "NOT a singleton: Can create
         isolated instances for testing" (line 8).
         """
@@ -448,7 +448,7 @@ class TestHandlerSystemSmoke:
 
     def test_create_dataset_handler_with_valid_type(self, minimal_config_dict):
         """create_dataset_handler succeeds for a registered dataset type.
-        
+
         Evidence: base_handler.py create_dataset_handler() (line 239) accepts
         DatasetConfig, FilterConfig, ProcessingConfig, logger, experimental_setup.
         """
@@ -478,13 +478,17 @@ class TestHandlerSystemSmoke:
         except Exception as e:
             # If DFT handler is not available, skip gracefully
             error_msg = str(e).lower()
-            if "not registered" in error_msg or "not found" in error_msg or "not available" in error_msg:
+            if (
+                "not registered" in error_msg
+                or "not found" in error_msg
+                or "not available" in error_msg
+            ):
                 pytest.skip(f"DFT handler not available in this environment: {e}")
             raise
 
     def test_handler_has_required_protocol_methods(self, minimal_config_dict):
         """Created handler has the 11 protocol methods.
-        
+
         Evidence: protocols.py DatasetHandlerProtocol defines 11 methods
         (MILIA_Pipeline_Project_Structure.md line 357-365).
         """
@@ -508,7 +512,11 @@ class TestHandlerSystemSmoke:
             )
         except Exception as e:
             error_msg = str(e).lower()
-            if "not registered" in error_msg or "not found" in error_msg or "not available" in error_msg:
+            if (
+                "not registered" in error_msg
+                or "not found" in error_msg
+                or "not available" in error_msg
+            ):
                 pytest.skip(f"DFT handler not available in this environment: {e}")
             raise
 
@@ -537,9 +545,10 @@ class TestHandlerSystemSmoke:
 # SECTION 4: MODEL SUBSYSTEM SMOKE TESTS
 # ===========================================================================
 
+
 class TestModelSubsystemSmoke:
     """Smoke tests for the model registry, factory, and trainer.
-    
+
     Evidence:
     - model_registry.py ModelRegistry is a thread-safe singleton (line 111)
     - model_factory.py ModelFactory.create_model() (line ~4142)
@@ -550,15 +559,13 @@ class TestModelSubsystemSmoke:
         """model_registry module can be imported."""
         from milia_pipeline.models.registry.model_registry import (
             ModelRegistry,
-            get_model,
-            has_model,
-            list_models,
         )
+
         assert ModelRegistry is not None
 
     def test_model_registry_has_models(self):
         """ModelRegistry auto-discovers PyG models on initialization.
-        
+
         Evidence: model_registry.py __init__() calls auto_discover_pyg_models()
         (line 185).
         """
@@ -566,13 +573,11 @@ class TestModelSubsystemSmoke:
 
         registry = ModelRegistry.get_instance()
         model_count = len(registry)
-        assert model_count > 0, (
-            f"ModelRegistry should have discovered models, got {model_count}"
-        )
+        assert model_count > 0, f"ModelRegistry should have discovered models, got {model_count}"
 
     def test_model_registry_has_gcn(self):
         """GCN should be available as a basic GNN model.
-        
+
         Evidence: model_registry.py auto-discovers GCN from
         torch_geometric.nn.models (line 224).
         """
@@ -585,14 +590,14 @@ class TestModelSubsystemSmoke:
         from milia_pipeline.models.factory.model_factory import (
             ModelFactory,
             create_model,
-            get_factory,
         )
+
         assert ModelFactory is not None
         assert callable(create_model)
 
     def test_model_factory_creates_gcn(self, synthetic_pyg_data_list):
         """ModelFactory can create a GCN model instance.
-        
+
         Evidence: model_factory.py create_model() (line ~4142) accepts
         name, hyperparameters, task_type, sample_data, device.
         """
@@ -622,17 +627,19 @@ class TestModelSubsystemSmoke:
     def test_trainer_importable(self):
         """trainer module can be imported."""
         from milia_pipeline.models.training.trainer import Trainer
+
         assert Trainer is not None
 
     def test_trainer_instantiation(self, synthetic_pyg_data_list):
         """Trainer can be instantiated with a model and data loaders.
-        
+
         Evidence: trainer.py Trainer.__init__() (line 94) requires model,
         train_loader; optional val_loader, loss_fn, optimizer, device, etc.
         """
-        from milia_pipeline.models.training.trainer import Trainer
-        from milia_pipeline.models.factory.model_factory import create_model
         from torch_geometric.loader import DataLoader
+
+        from milia_pipeline.models.factory.model_factory import create_model
+        from milia_pipeline.models.training.trainer import Trainer
 
         sample_data = synthetic_pyg_data_list[0]
         try:
@@ -650,7 +657,10 @@ class TestModelSubsystemSmoke:
         except Exception as e:
             # Only skip for genuinely optional external PyG dependencies
             error_str = str(e)
-            if any(dep in error_str for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]):
+            if any(
+                dep in error_str
+                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
+            ):
                 pytest.skip(f"PyG optional dependency missing: {e}")
             raise
 
@@ -677,27 +687,29 @@ class TestModelSubsystemSmoke:
 # SECTION 5: MINI TRAINING LOOP SMOKE TEST
 # ===========================================================================
 
+
 class TestMiniTrainingLoopSmoke:
     """Smoke test for a complete mini training loop.
-    
+
     Exercises the full stack from model creation through training to
     output production, with 1–2 epochs on synthetic data.
-    
+
     This is the most critical smoke test — it proves the pipeline
     can execute without crashing.
     """
 
     def test_mini_training_loop_completes(self, synthetic_pyg_data_list, tmp_work_dir):
         """Full training loop: create model → train 2 epochs → produce output.
-        
+
         Evidence:
         - model_factory.py create_model() for model instantiation
         - trainer.py Trainer.fit() for training loop (line ~55 class)
         - trainer.py saves results if checkpoint_dir provided
         """
+        from torch_geometric.loader import DataLoader
+
         from milia_pipeline.models.factory.model_factory import create_model
         from milia_pipeline.models.training.trainer import Trainer
-        from torch_geometric.loader import DataLoader
 
         sample_data = synthetic_pyg_data_list[0]
 
@@ -716,7 +728,10 @@ class TestMiniTrainingLoopSmoke:
             )
         except Exception as e:
             error_str = str(e)
-            if any(dep in error_str for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]):
+            if any(
+                dep in error_str
+                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
+            ):
                 pytest.skip(f"PyG optional dependency missing: {e}")
             raise
 
@@ -772,6 +787,7 @@ class TestMiniTrainingLoopSmoke:
                     # (above), not that a manual forward pass with a guessed
                     # signature succeeds. Log for diagnostics, do not fail.
                     import warnings
+
                     warnings.warn(
                         f"Post-training forward pass with (x, edge_index, batch=batch) "
                         f"raised {type(forward_err).__name__}: {forward_err}. "
@@ -781,13 +797,14 @@ class TestMiniTrainingLoopSmoke:
 
     def test_mini_training_produces_loss_history(self, synthetic_pyg_data_list, tmp_work_dir):
         """Training produces a loss history with decreasing or stable loss.
-        
+
         This is a weak assertion — we only check that loss values exist,
         not that they decrease (smoke test, not correctness test).
         """
+        from torch_geometric.loader import DataLoader
+
         from milia_pipeline.models.factory.model_factory import create_model
         from milia_pipeline.models.training.trainer import Trainer
-        from torch_geometric.loader import DataLoader
 
         sample_data = synthetic_pyg_data_list[0]
 
@@ -805,7 +822,10 @@ class TestMiniTrainingLoopSmoke:
             )
         except Exception as e:
             error_str = str(e)
-            if any(dep in error_str for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]):
+            if any(
+                dep in error_str
+                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
+            ):
                 pytest.skip(f"PyG optional dependency missing: {e}")
             raise
 
@@ -837,9 +857,10 @@ class TestMiniTrainingLoopSmoke:
 # SECTION 6: TRANSFORM SYSTEM SMOKE TESTS
 # ===========================================================================
 
+
 class TestTransformSystemSmoke:
     """Smoke tests for the graph transformation subsystem.
-    
+
     Evidence: graph_transforms.py provides TransformRegistry,
     TransformValidator, TransformComposer, list_available_transforms(),
     get_transform_info(), validate_comprehensive() (line 1-100 docstring).
@@ -849,13 +870,13 @@ class TestTransformSystemSmoke:
         """graph_transforms module can be imported."""
         from milia_pipeline.transformations.graph_transforms import (
             list_available_transforms,
-            get_transform_info,
         )
+
         assert callable(list_available_transforms)
 
     def test_list_available_transforms_returns_list(self):
         """list_available_transforms() returns a non-empty list.
-        
+
         Evidence: graph_transforms.py registers 30+ pre-built transforms
         (docstring line 54).
         """
@@ -865,9 +886,7 @@ class TestTransformSystemSmoke:
 
         transforms = list_available_transforms()
         assert isinstance(transforms, (list, tuple))
-        assert len(transforms) > 0, (
-            "At least one transform should be available"
-        )
+        assert len(transforms) > 0, "At least one transform should be available"
 
     def test_transform_registry_instantiation(self):
         """TransformRegistry can be instantiated."""
@@ -881,16 +900,17 @@ class TestTransformSystemSmoke:
 # SECTION 7: MOLECULE CONVERTER SMOKE TESTS
 # ===========================================================================
 
+
 class TestMoleculeConverterSmoke:
     """Smoke tests for the molecule conversion subsystem.
-    
+
     Evidence: molecule_converter_core.py MoleculeDataConverter class
     (line ~200+) orchestrates the conversion pipeline.
     """
 
     def test_molecule_converter_importable(self):
         """molecule_converter_core module can be imported.
-        
+
         Evidence: molecule_converter_core.py (line 29-36) performs a
         guarded import of rdkit with RDKIT_AVAILABLE flag. The module
         itself is always importable; RDKit is the optional dependency.
@@ -898,17 +918,19 @@ class TestMoleculeConverterSmoke:
         from milia_pipeline.molecules.molecule_converter_core import (
             MoleculeDataConverter,
         )
+
         assert MoleculeDataConverter is not None
 
     def test_rdkit_availability_check(self):
         """Check whether RDKit is available (informational, not a hard failure).
-        
+
         Evidence: molecule_converter_core.py checks RDKIT_AVAILABLE flag
         (line 29-36). RDKit is a genuine third-party optional dependency.
         The module imports fine without it, but conversion functionality
         is limited.
         """
         from milia_pipeline.molecules.molecule_converter_core import RDKIT_AVAILABLE
+
         if not RDKIT_AVAILABLE:
             pytest.skip(
                 "rdkit package not installed — "
@@ -920,9 +942,10 @@ class TestMoleculeConverterSmoke:
 # SECTION 8: MAIN ENTRY POINT SMOKE TESTS
 # ===========================================================================
 
+
 class TestMainEntryPointSmoke:
     """Smoke tests for main.py orchestration.
-    
+
     Evidence: main.py imports CLIManager, configuration modules,
     handler modules, transformation modules (lines 160-200+).
     These tests verify the imports succeed — they do NOT execute
@@ -932,7 +955,7 @@ class TestMainEntryPointSmoke:
 
     def test_main_module_importable(self):
         """main.py module can be imported without crashing.
-        
+
         This catches circular import issues and missing dependencies
         at the orchestration layer.
         """
@@ -940,9 +963,8 @@ class TestMainEntryPointSmoke:
             # main.py is at project root, not inside milia_pipeline
             # It's imported by adding project root to sys.path
             import importlib
-            spec = importlib.util.spec_from_file_location(
-                "main", str(_PROJECT_ROOT / "main.py")
-            )
+
+            spec = importlib.util.spec_from_file_location("main", str(_PROJECT_ROOT / "main.py"))
             if spec is None:
                 pytest.skip("main.py not found at project root")
                 return
@@ -961,11 +983,12 @@ class TestMainEntryPointSmoke:
 
     def test_cli_manager_importable(self):
         """CLIManager can be imported.
-        
+
         Evidence: main.py line 172-177 imports CLIManager, parse_cli_args.
         cli_manager.py is a core project module (~3745 lines).
         """
         from milia_pipeline.cli_manager import CLIManager, parse_cli_args
+
         assert CLIManager is not None
         assert callable(parse_cli_args)
 
@@ -974,9 +997,10 @@ class TestMainEntryPointSmoke:
 # SECTION 9: CROSS-SYSTEM INTEGRATION SMOKE TEST
 # ===========================================================================
 
+
 class TestCrossSystemIntegrationSmoke:
     """Smoke tests that verify multiple subsystems work together.
-    
+
     These are the highest-value smoke tests: they exercise the real
     integration paths between config, registry, handlers, models,
     and training.
@@ -984,7 +1008,7 @@ class TestCrossSystemIntegrationSmoke:
 
     def test_config_to_handler_pipeline(self, minimal_config_dict):
         """Config loading → container creation → handler creation path works.
-        
+
         This tests the critical path from configuration to handler instantiation
         that every real pipeline execution must traverse.
         """
@@ -1004,6 +1028,7 @@ class TestCrossSystemIntegrationSmoke:
         # Step 2: Attempt handler creation
         try:
             from milia_pipeline.handlers.base_handler import create_dataset_handler
+
             handler = create_dataset_handler(
                 dataset_config=dataset_config,
                 filter_config=filter_config,
@@ -1019,14 +1044,14 @@ class TestCrossSystemIntegrationSmoke:
 
     def test_registry_to_model_pipeline(self, synthetic_pyg_data_list):
         """Registry discovery → model factory → model instantiation path works.
-        
+
         This tests the critical path from model discovery to instantiation.
         """
-        from milia_pipeline.models.registry.model_registry import (
-            list_models,
-            has_model,
-        )
         from milia_pipeline.models.factory.model_factory import create_model
+        from milia_pipeline.models.registry.model_registry import (
+            has_model,
+            list_models,
+        )
 
         # Step 1: Verify registry has models
         all_models = list_models()
@@ -1057,13 +1082,14 @@ class TestCrossSystemIntegrationSmoke:
 
     def test_full_pipeline_config_to_training(self, synthetic_pyg_data_list, tmp_work_dir):
         """Full pipeline: config → model → data loaders → trainer → fit.
-        
+
         This is the ultimate smoke test. If this passes, the pipeline
         is fundamentally functional.
         """
+        from torch_geometric.loader import DataLoader
+
         from milia_pipeline.models.factory.model_factory import create_model
         from milia_pipeline.models.training.trainer import Trainer
-        from torch_geometric.loader import DataLoader
 
         sample_data = synthetic_pyg_data_list[0]
 
@@ -1082,7 +1108,10 @@ class TestCrossSystemIntegrationSmoke:
             )
         except Exception as e:
             error_str = str(e)
-            if any(dep in error_str for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]):
+            if any(
+                dep in error_str
+                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
+            ):
                 pytest.skip(f"PyG optional dependency missing: {e}")
             raise
 
@@ -1110,15 +1139,16 @@ class TestCrossSystemIntegrationSmoke:
 # SECTION 10: LOSS, OPTIMIZER, SCHEDULER REGISTRY SMOKE TESTS
 # ===========================================================================
 
+
 class TestTrainingComponentRegistriesSmoke:
     """Smoke tests for training component registries.
-    
+
     Evidence:
     - loss_functions.py LossRegistry with 18 losses (project structure line 843-865)
     - optimizers.py OptimizerRegistry with 12 optimizers (line 866-879)
     - schedulers.py SchedulerRegistry with 13 schedulers (line 880-899)
     - metrics.py MetricsRegistry with 12 metrics (line 900-920)
-    
+
     Design decision: These are all core project modules. Imports MUST succeed;
     blanket ``except ImportError: skip`` would mask real breakage. The only
     legitimate skip is when the module depends on a genuinely optional
@@ -1151,19 +1181,19 @@ class TestTrainingComponentRegistriesSmoke:
 
     def test_metrics_registry_importable_and_lists(self):
         """MetricsRegistry can list available metrics.
-        
+
         Evidence: metrics.py depends on ``torchmetrics`` (project structure
         line 900: "TorchMetrics-based evaluation metrics"). ``torchmetrics``
         is a third-party optional dependency. If it is not installed, the
         module-level import inside metrics.py will raise ImportError.
-        
+
         Note: The project structure doc (line 920) documents a module-level
         convenience function ``list_available()``, but runtime evidence shows
         the actual module does NOT export that name (ImportError on import).
         The sibling modules use the pattern ``list_<plural>()`` (e.g.
         ``list_losses``, ``list_optimizers``, ``list_schedulers``), but we
         cannot assume metrics.py follows the same convention without evidence.
-        
+
         This test therefore uses runtime introspection to:
         1. Verify the MetricsRegistry class exists (always documented)
         2. Discover the actual module-level listing function by probing
@@ -1194,9 +1224,9 @@ class TestTrainingComponentRegistriesSmoke:
         # Candidates based on documentation (list_available) and sibling
         # module naming convention (list_metrics, list_all)
         list_fn_candidates = [
-            "list_available",       # documented in project structure line 920
-            "list_metrics",         # follows sibling pattern: list_losses, list_optimizers
-            "list_all",             # generic registry pattern
+            "list_available",  # documented in project structure line 920
+            "list_metrics",  # follows sibling pattern: list_losses, list_optimizers
+            "list_all",  # generic registry pattern
             "list_available_metrics",  # expanded variant
         ]
 
@@ -1214,8 +1244,12 @@ class TestTrainingComponentRegistriesSmoke:
             registry_cls = metrics_mod.MetricsRegistry
             # Check for class-level or instance-level listing methods
             registry_list_candidates = [
-                "list_available", "list_metrics", "list_all",
-                "list_registered", "available_metrics", "get_all_metrics",
+                "list_available",
+                "list_metrics",
+                "list_all",
+                "list_registered",
+                "available_metrics",
+                "get_all_metrics",
             ]
             for candidate in registry_list_candidates:
                 if hasattr(registry_cls, candidate) and callable(getattr(registry_cls, candidate)):
@@ -1249,9 +1283,7 @@ class TestTrainingComponentRegistriesSmoke:
         assert isinstance(metrics, (list, tuple)), (
             f"{list_fn_name}() should return a list/tuple, got {type(metrics)}"
         )
-        assert len(metrics) > 0, (
-            f"{list_fn_name}() should return non-empty list of metrics"
-        )
+        assert len(metrics) > 0, f"{list_fn_name}() should return non-empty list of metrics"
 
     def test_get_loss_mse(self):
         """MSE loss can be retrieved from LossRegistry."""

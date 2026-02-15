@@ -27,17 +27,17 @@
 qdpi_config:
   # Filename for the preprocessed .npz QDπ dataset file (OUTPUT after preprocessing)
   raw_npz_filename: qdpi.npz
-  
+
   # Filename for the raw archive file (INPUT before preprocessing)
   # QDπ is distributed as a tar.gz archive containing DeePMD-kit HDF5 files
   raw_source_filename: QDpiDataset-main.tar.gz
-  
+
   # URL to download the raw QDπ archive
   # Source: Zenodo (DOI: 10.5281/zenodo.14970869)
   # Reference: Zeng et al., Scientific Data 12, 693 (2025)
   # DOI: 10.1038/s41597-025-04972-3
   raw_data_download_url: https://zenodo.org/api/records/14970869/files/QDpiDataset-main.tar.gz/content
-  
+
   # QDπ processing configuration
   processing_config:
     # Preprocessing parameters (for automatic tar.gz → npz conversion)
@@ -59,16 +59,16 @@ qdpi_config:
       # Maximum conformers to extract (null = all ~1.6 million)
       # Use integer for testing/limiting dataset size (e.g., 10000)
       num_molecules: 50
-      
+
       # Properties to extract from HDF5
       # Available: energy, force
       property_keys:
         - energy
         - force
-      
+
       # Whether to clean up temporary extraction directory after preprocessing
       cleanup_temp: true
-  
+
   # QDπ does not have uncertainty handling (DFT calculations are deterministic)
   uncertainty_handling:
     enabled: false
@@ -78,7 +78,7 @@ qdpi_config:
 
 # ────────────────────────────────────────────────────
 # QDPi Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     QDPi:
@@ -88,21 +88,21 @@ data_config:
       # Contains ~1.6 million structures for drug discovery ML potentials
       # Elements: H, Li, C, N, O, F, Na, P, S, Cl, K, Br, I (13 elements)
       # CRITICAL: Energies/forces converted from eV to Hartree during preprocessing
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         - energy          # ωB97M-D3(BJ)/def2-TZVPPD total energy (Hartree, converted from eV)
-      
+
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
         - forces          # Atomic forces (Hartree/Angstrom) - for force-field training
-      
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include: []
-      
+
       # Variable-length graph properties
       variable_len_graph_properties_to_include: []
-      
+
       # QDPi-specific settings
       # Calculate atomization energy from total energy
       calculate_atomization_energy_from: energy
@@ -112,7 +112,7 @@ data_config:
 
 # ────────────────────────────────────────────────────
 # QDPi Property Availability Matrix
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 property_availability:
   QDPi:
     # QDπ (Quantum Deep Potential Interaction) Dataset Property Availability
@@ -126,33 +126,33 @@ property_availability:
     # Coordinate units: Angstrom | Energy units: Hartree (converted from eV)
     # Force units: Hartree/Angstrom (converted from eV/Angstrom)
     # CRITICAL: Designed for drug-like molecules and biopolymer fragments
-    
+
     # Molecular identifiers (1 key)
     molecular_identifiers:
       - formula         # Chemical formula group identifier from HDF5 (object/string)
-    
+
     # Atomic structure properties (2 keys)
     atomic_structure:
       - atoms           # Atomic numbers (uint8 array)
       - coordinates     # Cartesian coordinates in Angstrom (object array, shape: n_atoms x 3)
-    
+
     # Scalar graph-level properties (1 key)
     scalar_graph_targets:
       - energy          # ωB97M-D3(BJ)/def2-TZVPPD total energy (Hartree, converted from eV, float64)
-    
+
     # Node-level (atomic) properties (1 key)
     node_features:
       - forces          # Atomic forces (Hartree/Angstrom, converted from eV/Angstrom, object array)
-    
+
     # Fixed-size vector graph properties
     vector_graph_properties: []  # QDπ does not have dipole or other vector properties
-    
+
     # Variable-length graph properties
     variable_len_graph_properties: []  # Forces are in node_features
-    
+
     # Metadata fields (1 key)
     metadata_fields:
       - _metadata       # Preprocessing metadata as string array (object)
-    
+
     # QDπ is DFT-based - no uncertainty fields
     uncertainty_fields: []

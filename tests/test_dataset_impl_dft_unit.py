@@ -34,32 +34,27 @@ Evidence sources:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.dft import DFTDataset
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
 )
+from milia_pipeline.datasets.implementations.dft import DFTDataset
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from dft.py source
@@ -68,36 +63,35 @@ from milia_pipeline.datasets.registry import (
 EXPECTED_METADATA_NAME = "DFT"
 EXPECTED_METADATA_VERSION = "1.0.0"
 EXPECTED_METADATA_DESCRIPTION = (
-    "DFT quantum chemistry dataset with vibrational analysis "
-    "and thermodynamic properties"
+    "DFT quantum chemistry dataset with vibrational analysis and thermodynamic properties"
 )
 EXPECTED_METADATA_AUTHOR = "MILIA Pipeline Team"
 
-EXPECTED_REQUIRED_PROPERTIES = ('Etot', 'atoms', 'coordinates')
-EXPECTED_OPTIONAL_PROPERTIES = ('freqs', 'vibmodes', 'rots', 'dipoles')
-EXPECTED_IDENTIFIER_KEYS = (('inchi', 'inchi'), ('graphs', 'smiles'))
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_REQUIRED_PROPERTIES = ("Etot", "atoms", "coordinates")
+EXPECTED_OPTIONAL_PROPERTIES = ("freqs", "vibmodes", "rots", "dipoles")
+EXPECTED_IDENTIFIER_KEYS = (("inchi", "inchi"), ("graphs", "smiles"))
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': True,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': True,
-    'frequency_analysis': True,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": True,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": True,
+    "frequency_analysis": True,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "dft_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'identifier_coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "identifier_coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -107,6 +101,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: DFTDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestDFTDatasetClassIdentity(unittest.TestCase):
     """Verify DFTDataset is a proper BaseDataset subclass with correct identity."""
@@ -153,6 +148,7 @@ class TestDFTDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: DFTDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestDFTDatasetRegistration(unittest.TestCase):
     """Verify DFTDataset is registered via @register decorator."""
 
@@ -173,6 +169,7 @@ class TestDFTDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class (project structure line 372).
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("DFT")
         self.assertIs(retrieved, DFTDataset)
 
@@ -182,6 +179,7 @@ class TestDFTDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names (project structure line 372).
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("DFT", all_names)
 
@@ -190,9 +188,7 @@ class TestDFTDatasetRegistration(unittest.TestCase):
 
         Evidence: dft.py line 22 imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[DFTDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[DFTDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -208,6 +204,7 @@ class TestDFTDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: DFTDataset.metadata — DatasetMetadata (6 tests)
 # ============================================================================
+
 
 class TestDFTDatasetMetadata(unittest.TestCase):
     """Verify DFTDataset.metadata is a correctly configured DatasetMetadata.
@@ -252,6 +249,7 @@ class TestDFTDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: DFTDataset.schema — DatasetSchema (8 tests)
 # ============================================================================
+
 
 class TestDFTDatasetSchema(unittest.TestCase):
     """Verify DFTDataset.schema is a correctly configured DatasetSchema.
@@ -309,7 +307,7 @@ class TestDFTDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            DFTDataset.schema.required_properties = ('modified',)
+            DFTDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -320,6 +318,7 @@ class TestDFTDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: DFTDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestDFTDatasetFeatures(unittest.TestCase):
     """Verify DFTDataset.features is a correctly configured DatasetFeatures.
@@ -378,6 +377,7 @@ class TestDFTDatasetFeatures(unittest.TestCase):
 # GROUP 6: DFTDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestDFTDatasetConfigKey(unittest.TestCase):
     """Verify DFTDataset.config_key is correctly set.
 
@@ -397,6 +397,7 @@ class TestDFTDatasetConfigKey(unittest.TestCase):
 # GROUP 7: DFTDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestDFTDatasetGetRequiredProperties(unittest.TestCase):
     """Verify DFTDataset.get_required_properties() classmethod.
 
@@ -407,7 +408,7 @@ class TestDFTDatasetGetRequiredProperties(unittest.TestCase):
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
         # Access via __dict__ to get the descriptor directly
-        descriptor = DFTDataset.__dict__.get('get_required_properties')
+        descriptor = DFTDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -444,6 +445,7 @@ class TestDFTDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: DFTDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestDFTDatasetGetFeatureSupport(unittest.TestCase):
     """Verify DFTDataset.get_feature_support() classmethod.
 
@@ -453,7 +455,7 @@ class TestDFTDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = DFTDataset.__dict__.get('get_feature_support')
+        descriptor = DFTDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -499,6 +501,7 @@ class TestDFTDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: DFTDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestDFTDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify DFTDataset.get_molecule_creation_strategy() classmethod.
 
@@ -508,7 +511,7 @@ class TestDFTDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = DFTDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = DFTDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -528,7 +531,7 @@ class TestDFTDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(DFTDataset, 'get_molecule_creation_strategy')
+        method = DFTDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -536,6 +539,7 @@ class TestDFTDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: DFTDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestDFTDatasetCreateHandler(unittest.TestCase):
     """Verify DFTDataset.create_handler() factory method with lazy import.
@@ -547,7 +551,7 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = DFTDataset.__dict__.get('create_handler')
+        descriptor = DFTDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -562,13 +566,19 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = DFTDataset.__dict__['create_handler'].__func__
+        unbound_func = DFTDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -577,7 +587,7 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
         Evidence: dft.py line 96: experimental_setup=None.
         """
         sig = inspect.signature(DFTDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -597,11 +607,11 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockDFTDatasetHandler')
+            mock_handler_cls = Mock(name="MockDFTDatasetHandler")
             mock_module = MagicMock()
             mock_module.DFTDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.dft'
+            handler_mod_key = "milia_pipeline.handlers.implementations.dft"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -636,11 +646,11 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 
         Evidence: dft.py lines 113-118.
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -664,7 +674,7 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 
         Evidence: dft.py line 113: return DFTDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = DFTDataset.create_handler(
@@ -677,7 +687,7 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring."""
-        method = getattr(DFTDataset, 'create_handler')
+        method = DFTDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -685,6 +695,7 @@ class TestDFTDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: DFTDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestDFTDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify DFTDataset.handler_class is None (default from BaseDataset).
@@ -722,6 +733,7 @@ class TestDFTDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: DFTDataset — Method Signatures and Return Annotations (6 tests)
 # ============================================================================
 
+
 class TestDFTDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -732,35 +744,35 @@ class TestDFTDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -768,6 +780,7 @@ class TestDFTDatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 13: DFTDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestDFTDatasetMethodDocstrings(unittest.TestCase):
     """Verify each DFTDataset method has a non-empty docstring."""
@@ -778,27 +791,26 @@ class TestDFTDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(DFTDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
     def test_get_required_properties_docstring_mentions_evidence(self):
         """get_required_properties docstring references config_constants.py."""
-        method = getattr(DFTDataset, 'get_required_properties')
+        method = DFTDataset.get_required_properties
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_feature_support_docstring_mentions_evidence(self):
         """get_feature_support docstring references config_constants.py."""
-        method = getattr(DFTDataset, 'get_feature_support')
+        method = DFTDataset.get_feature_support
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_molecule_creation_strategy_docstring_mentions_evidence(self):
         """get_molecule_creation_strategy docstring references dataset_handlers.py."""
-        method = getattr(DFTDataset, 'get_molecule_creation_strategy')
+        method = DFTDataset.get_molecule_creation_strategy
         self.assertIn("dataset_handlers", method.__doc__)
 
 
@@ -806,18 +818,21 @@ class TestDFTDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: DFTDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the dft implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The dft.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.dft as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_dft_dataset(self):
         """DFTDataset is importable from the implementations.dft module."""
         import milia_pipeline.datasets.implementations.dft as mod
+
         self.assertTrue(hasattr(mod, "DFTDataset"))
         self.assertIs(mod.DFTDataset, DFTDataset)
 
@@ -826,9 +841,7 @@ class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: dft.py lines 17-22.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dft']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dft"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -840,9 +853,7 @@ class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: dft.py line 22.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dft']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dft"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -856,9 +867,7 @@ class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dft']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dft"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -869,10 +878,12 @@ class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -896,6 +907,7 @@ class TestDFTDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: DFTDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestDFTDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with DFT.
 
@@ -910,11 +922,11 @@ class TestDFTDatasetFeaturesIntegration(unittest.TestCase):
 
     def test_supports_vibrational_analysis(self):
         """features.supports('vibrational_analysis') returns True."""
-        self.assertTrue(DFTDataset.features.supports('vibrational_analysis'))
+        self.assertTrue(DFTDataset.features.supports("vibrational_analysis"))
 
     def test_supports_uncertainty_handling_false(self):
         """features.supports('uncertainty_handling') returns False."""
-        self.assertFalse(DFTDataset.features.supports('uncertainty_handling'))
+        self.assertFalse(DFTDataset.features.supports("uncertainty_handling"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -925,6 +937,7 @@ class TestDFTDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: DFTDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestDFTDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -956,6 +969,7 @@ class TestDFTDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: DFTDataset — Edge Cases and Robustness (5 tests)
 # ============================================================================
+
 
 class TestDFTDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of DFTDataset."""
@@ -999,10 +1013,10 @@ class TestDFTDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockDFTDatasetHandler')
+            mock_handler_cls = Mock(name="MockDFTDatasetHandler")
             mock_module = MagicMock()
             mock_module.DFTDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.dft'
+            handler_mod_key = "milia_pipeline.handlers.implementations.dft"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1030,15 +1044,16 @@ class TestDFTDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. DFTDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', DFTDataset.__dict__)
-        self.assertIn('schema', DFTDataset.__dict__)
-        self.assertIn('features', DFTDataset.__dict__)
-        self.assertIn('config_key', DFTDataset.__dict__)
+        self.assertIn("metadata", DFTDataset.__dict__)
+        self.assertIn("schema", DFTDataset.__dict__)
+        self.assertIn("features", DFTDataset.__dict__)
+        self.assertIn("config_key", DFTDataset.__dict__)
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1046,23 +1061,23 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDFTDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestDFTDatasetRegistration,                  # GROUP 2:  5 tests
-        TestDFTDatasetMetadata,                      # GROUP 3:  6 tests
-        TestDFTDatasetSchema,                        # GROUP 4:  8 tests
-        TestDFTDatasetFeatures,                      # GROUP 5: 10 tests
-        TestDFTDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestDFTDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestDFTDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestDFTDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestDFTDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestDFTDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestDFTDatasetMethodSignatures,              # GROUP 12: 6 tests
-        TestDFTDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestDFTDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestDFTDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestDFTDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestDFTDatasetEdgeCases,                     # GROUP 17: 5 tests
+        TestDFTDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestDFTDatasetRegistration,  # GROUP 2:  5 tests
+        TestDFTDatasetMetadata,  # GROUP 3:  6 tests
+        TestDFTDatasetSchema,  # GROUP 4:  8 tests
+        TestDFTDatasetFeatures,  # GROUP 5: 10 tests
+        TestDFTDatasetConfigKey,  # GROUP 6:  2 tests
+        TestDFTDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestDFTDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestDFTDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestDFTDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestDFTDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestDFTDatasetMethodSignatures,  # GROUP 12: 6 tests
+        TestDFTDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestDFTDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestDFTDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestDFTDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestDFTDatasetEdgeCases,  # GROUP 17: 5 tests
     ]
 
     for test_class in test_classes:

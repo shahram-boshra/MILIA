@@ -12,7 +12,7 @@
 plugin_name: "quantum_augmentations"
 version: "1.0.0"
 author: "milia Team"
-plugin_type: "user_experimental" 
+plugin_type: "user_experimental"
 email: "milia@example.com"
 description: "Advanced quantum property augmentation and normalization transforms for milia molecular graphs"
 license: "MIT"
@@ -91,4 +91,3 @@ trusted: false
 # support:
 #   email: "support@milia.example.com"
 #   documentation: "https://quantum-augmentations.readthedocs.io"
-

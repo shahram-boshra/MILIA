@@ -25,15 +25,10 @@ Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
 import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, call
-import logging
 import threading
-import time
-from typing import Dict, List, Type, Optional, Any
-from abc import ABC, abstractmethod
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
@@ -41,27 +36,33 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from milia_pipeline.handlers.handler_registry import (
-    HandlerRegistry,
-    HandlerRegistrationError,
     HandlerNotFoundError,
-    get_default_registry,
-    register_handler,
+    HandlerRegistrationError,
+    HandlerRegistry,
     get,
-    list_all,
-    is_registered,
+    get_default_registry,
     get_registry_info,
+    is_registered,
+    list_all,
+    register_handler,
 )
-
 
 # ============================================================================
 # HELPERS: Build mock handler classes for testing
 # ============================================================================
 
-def _make_handler_class(name="TestHandler", dataset_type="TEST", has_get_dataset_type=True,
-                        abstract_methods=None, module_name=None, qualname=None):
+
+def _make_handler_class(
+    name="TestHandler",
+    dataset_type="TEST",
+    has_get_dataset_type=True,
+    abstract_methods=None,
+    module_name=None,
+    qualname=None,
+):
     """
     Dynamically build a mock handler class with configurable attributes.
-    
+
     Args:
         name: Class __name__
         dataset_type: Value returned by get_dataset_type() if present
@@ -72,9 +73,11 @@ def _make_handler_class(name="TestHandler", dataset_type="TEST", has_get_dataset
     """
     ns = {}
     if has_get_dataset_type:
+
         def get_dataset_type(self, _dt=dataset_type):
             return _dt
-        ns['get_dataset_type'] = get_dataset_type
+
+        ns["get_dataset_type"] = get_dataset_type
 
     cls = type(name, (), ns)
 
@@ -93,18 +96,18 @@ def _make_handler_class(name="TestHandler", dataset_type="TEST", has_get_dataset
 def _derive_registry_name(class_name):
     """
     Predict the handler name the registry will derive from a class name.
-    
+
     This mirrors the actual logic in HandlerRegistry.register() lines 146-148:
         name = handler_class.__name__.replace('DatasetHandler', '').replace('Handler', '')
         if not name:
             name = handler_class.__name__
-    
+
     NOTE: In CPython, isinstance(cls.get_dataset_type, classmethod) is False when
     accessed as a class attribute (it becomes a bound method), so the name derivation
     from class name is ALWAYS used — the get_dataset_type() method is never called
     by register() for name extraction.
     """
-    name = class_name.replace('DatasetHandler', '').replace('Handler', '')
+    name = class_name.replace("DatasetHandler", "").replace("Handler", "")
     if not name:
         name = class_name
     return name
@@ -118,7 +121,7 @@ def _make_classmethod_handler(name="ClassMethodHandler", dataset_type="CLASSMETH
     def get_dataset_type(cls, _dt=dataset_type):
         return _dt
 
-    ns['get_dataset_type'] = get_dataset_type
+    ns["get_dataset_type"] = get_dataset_type
     cls = type(name, (), ns)
     return cls
 
@@ -126,6 +129,7 @@ def _make_classmethod_handler(name="ClassMethodHandler", dataset_type="CLASSMETH
 # ============================================================================
 # GROUP 1: HandlerRegistrationError Exception (7 tests)
 # ============================================================================
+
 
 class TestHandlerRegistrationError(unittest.TestCase):
     """Test HandlerRegistrationError exception attributes and behavior."""
@@ -149,9 +153,7 @@ class TestHandlerRegistrationError(unittest.TestCase):
 
     def test_details_attribute(self):
         """Stores details when provided."""
-        err = HandlerRegistrationError(
-            message="fail", handler_name="H1", details="some details"
-        )
+        err = HandlerRegistrationError(message="fail", handler_name="H1", details="some details")
         self.assertEqual(err.details, "some details")
 
     def test_conflicting_class_defaults_none(self):
@@ -174,6 +176,7 @@ class TestHandlerRegistrationError(unittest.TestCase):
 # GROUP 2: HandlerNotFoundError Exception (6 tests)
 # ============================================================================
 
+
 class TestHandlerNotFoundError(unittest.TestCase):
     """Test HandlerNotFoundError exception attributes and behavior."""
 
@@ -189,9 +192,7 @@ class TestHandlerNotFoundError(unittest.TestCase):
 
     def test_available_handlers_attribute(self):
         """Stores available_handlers when provided."""
-        err = HandlerNotFoundError(
-            message="nope", handler_name="X", available_handlers=["A", "B"]
-        )
+        err = HandlerNotFoundError(message="nope", handler_name="X", available_handlers=["A", "B"])
         self.assertEqual(err.available_handlers, ["A", "B"])
 
     def test_available_handlers_defaults_empty(self):
@@ -215,6 +216,7 @@ class TestHandlerNotFoundError(unittest.TestCase):
 # ============================================================================
 # GROUP 3: HandlerRegistry — Initialization (5 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryInit(unittest.TestCase):
     """Test HandlerRegistry construction and initial state."""
@@ -249,6 +251,7 @@ class TestHandlerRegistryInit(unittest.TestCase):
 # GROUP 4: HandlerRegistry.register — Success Paths (10 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryRegisterSuccess(unittest.TestCase):
     """Test successful registration scenarios."""
 
@@ -273,7 +276,7 @@ class TestHandlerRegistryRegisterSuccess(unittest.TestCase):
         cls_a = _make_handler_class(name="AlphaHandler")
         cls_b = _make_handler_class(name="BetaHandler")
         name_a = _derive_registry_name("AlphaHandler")  # "Alpha"
-        name_b = _derive_registry_name("BetaHandler")   # "Beta"
+        name_b = _derive_registry_name("BetaHandler")  # "Beta"
         self.registry.register(cls_a)
         self.registry.register(cls_b)
         self.assertEqual(len(self.registry), 2)
@@ -304,16 +307,18 @@ class TestHandlerRegistryRegisterSuccess(unittest.TestCase):
 
     def test_register_handler_name_strips_handler_suffix(self):
         """Class name 'AbcHandler' falls back to name 'Abc' if get_dataset_type fails."""
+
         class AbcHandler:
             def get_dataset_type(self):
                 raise RuntimeError("not callable as classmethod")
+
         # The register method calls it in a try/except and falls back
         self.registry.register(AbcHandler)
         self.assertIn("Abc", self.registry)
 
     def test_register_classmethod_handler(self):
         """Can register handler where get_dataset_type is a classmethod.
-        
+
         NOTE: In CPython, isinstance(cls.get_dataset_type, classmethod) is False
         when accessed as a class attribute (descriptor protocol yields bound method),
         so the name is derived from the class name, not from get_dataset_type().
@@ -328,12 +333,12 @@ class TestHandlerRegistryRegisterSuccess(unittest.TestCase):
         cls_a = _make_handler_class(
             name="DFTHandler",
             module_name="milia_pipeline.handlers.implementations.dft",
-            qualname="DFTHandler"
+            qualname="DFTHandler",
         )
         cls_b = _make_handler_class(
             name="DFTHandler",
             module_name="milia_pipeline.handlers.implementations.dft",
-            qualname="DFTHandler"
+            qualname="DFTHandler",
         )
         self.registry.register(cls_a)
         # cls_b is a different object but same qualname+module
@@ -352,6 +357,7 @@ class TestHandlerRegistryRegisterSuccess(unittest.TestCase):
 # ============================================================================
 # GROUP 5: HandlerRegistry.register — Error Paths (8 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryRegisterErrors(unittest.TestCase):
     """Test registration failure scenarios."""
@@ -381,10 +387,7 @@ class TestHandlerRegistryRegisterErrors(unittest.TestCase):
 
     def test_register_abstract_class_raises_registration_error(self):
         """Abstract class (with __abstractmethods__) raises HandlerRegistrationError."""
-        cls = _make_handler_class(
-            name="AbstractHandler",
-            abstract_methods={'process', 'validate'}
-        )
+        cls = _make_handler_class(name="AbstractHandler", abstract_methods={"process", "validate"})
         with self.assertRaises(HandlerRegistrationError) as ctx:
             self.registry.register(cls)
         self.assertIn("abstract", str(ctx.exception).lower())
@@ -392,10 +395,7 @@ class TestHandlerRegistryRegisterErrors(unittest.TestCase):
 
     def test_register_abstract_class_error_has_details(self):
         """Abstract class error includes missing method details."""
-        cls = _make_handler_class(
-            name="PartialHandler",
-            abstract_methods={'missing_method'}
-        )
+        cls = _make_handler_class(name="PartialHandler", abstract_methods={"missing_method"})
         with self.assertRaises(HandlerRegistrationError) as ctx:
             self.registry.register(cls)
         self.assertIn("missing_method", str(ctx.exception.details))
@@ -436,6 +436,7 @@ class TestHandlerRegistryRegisterErrors(unittest.TestCase):
 # GROUP 6: HandlerRegistry.get / get_or_none (7 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryGet(unittest.TestCase):
     """Test handler retrieval methods."""
 
@@ -474,7 +475,11 @@ class TestHandlerRegistryGet(unittest.TestCase):
 
     def test_get_case_sensitive(self):
         """Handler name lookup is case-sensitive."""
-        wrong_case = self.derived_name.lower() if self.derived_name[0].isupper() else self.derived_name.upper()
+        wrong_case = (
+            self.derived_name.lower()
+            if self.derived_name[0].isupper()
+            else self.derived_name.upper()
+        )
         if wrong_case != self.derived_name:
             with self.assertRaises(HandlerNotFoundError):
                 self.registry.get(wrong_case)
@@ -489,6 +494,7 @@ class TestHandlerRegistryGet(unittest.TestCase):
 # GROUP 7: HandlerRegistry — Collection Methods (10 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryCollectionMethods(unittest.TestCase):
     """Test list_all, list_all_classes, is_registered, __contains__, __iter__, __len__."""
 
@@ -497,7 +503,7 @@ class TestHandlerRegistryCollectionMethods(unittest.TestCase):
         self.cls_a = _make_handler_class(name="AlphaHandler")
         self.cls_b = _make_handler_class(name="BetaHandler")
         self.name_a = _derive_registry_name("AlphaHandler")  # "Alpha"
-        self.name_b = _derive_registry_name("BetaHandler")   # "Beta"
+        self.name_b = _derive_registry_name("BetaHandler")  # "Beta"
         self.registry.register(self.cls_a)
         self.registry.register(self.cls_b)
 
@@ -556,6 +562,7 @@ class TestHandlerRegistryCollectionMethods(unittest.TestCase):
 # GROUP 8: HandlerRegistry.unregister (6 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryUnregister(unittest.TestCase):
     """Test handler unregistration."""
 
@@ -606,6 +613,7 @@ class TestHandlerRegistryUnregister(unittest.TestCase):
 # GROUP 9: HandlerRegistry.clear (4 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryClear(unittest.TestCase):
     """Test registry clearing."""
 
@@ -646,6 +654,7 @@ class TestHandlerRegistryClear(unittest.TestCase):
 # ============================================================================
 # GROUP 10: HandlerRegistry — Change Callbacks (8 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryCallbacks(unittest.TestCase):
     """Test on_change callback registration, removal, and notification."""
@@ -710,8 +719,10 @@ class TestHandlerRegistryCallbacks(unittest.TestCase):
 
     def test_failing_callback_does_not_prevent_others(self):
         """A failing callback does not prevent subsequent callbacks from running."""
+
         def bad_callback():
             raise ValueError("callback error")
+
         good_cb = Mock()
         self.registry.add_on_change_callback(bad_callback)
         self.registry.add_on_change_callback(good_cb)
@@ -724,6 +735,7 @@ class TestHandlerRegistryCallbacks(unittest.TestCase):
 # GROUP 11: HandlerRegistry.get_registry_info (5 tests)
 # ============================================================================
 
+
 class TestHandlerRegistryInfo(unittest.TestCase):
     """Test get_registry_info diagnostic method."""
 
@@ -733,10 +745,10 @@ class TestHandlerRegistryInfo(unittest.TestCase):
     def test_empty_registry_info(self):
         """get_registry_info() on empty registry returns correct structure."""
         info = self.registry.get_registry_info()
-        self.assertEqual(info['total_handlers'], 0)
-        self.assertEqual(info['registered_handlers'], [])
-        self.assertEqual(info['handler_classes'], {})
-        self.assertEqual(info['callback_count'], 0)
+        self.assertEqual(info["total_handlers"], 0)
+        self.assertEqual(info["registered_handlers"], [])
+        self.assertEqual(info["handler_classes"], {})
+        self.assertEqual(info["callback_count"], 0)
 
     def test_populated_registry_info(self):
         """get_registry_info() reflects registered handlers."""
@@ -744,16 +756,16 @@ class TestHandlerRegistryInfo(unittest.TestCase):
         expected_name = _derive_registry_name("InfoHandler")  # "Info"
         self.registry.register(cls)
         info = self.registry.get_registry_info()
-        self.assertEqual(info['total_handlers'], 1)
-        self.assertIn(expected_name, info['registered_handlers'])
-        self.assertEqual(info['handler_classes'][expected_name], 'InfoHandler')
+        self.assertEqual(info["total_handlers"], 1)
+        self.assertIn(expected_name, info["registered_handlers"])
+        self.assertEqual(info["handler_classes"][expected_name], "InfoHandler")
 
     def test_callback_count_reflected(self):
         """get_registry_info() reflects callback count."""
         self.registry.add_on_change_callback(Mock())
         self.registry.add_on_change_callback(Mock())
         info = self.registry.get_registry_info()
-        self.assertEqual(info['callback_count'], 2)
+        self.assertEqual(info["callback_count"], 2)
 
     def test_info_returns_dict(self):
         """get_registry_info() returns a dictionary."""
@@ -762,13 +774,14 @@ class TestHandlerRegistryInfo(unittest.TestCase):
     def test_info_has_all_expected_keys(self):
         """get_registry_info() has all expected keys."""
         info = self.registry.get_registry_info()
-        for key in ['total_handlers', 'registered_handlers', 'handler_classes', 'callback_count']:
+        for key in ["total_handlers", "registered_handlers", "handler_classes", "callback_count"]:
             self.assertIn(key, info)
 
 
 # ============================================================================
 # GROUP 12: Thread Safety (6 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryThreadSafety(unittest.TestCase):
     """Test thread-safe behavior of HandlerRegistry."""
@@ -787,8 +800,7 @@ class TestHandlerRegistryThreadSafety(unittest.TestCase):
             except Exception as e:
                 errors.append(e)
 
-        threads = [threading.Thread(target=register_handler_thread, args=(i,))
-                   for i in range(20)]
+        threads = [threading.Thread(target=register_handler_thread, args=(i,)) for i in range(20)]
         for t in threads:
             t.start()
         for t in threads:
@@ -849,8 +861,7 @@ class TestHandlerRegistryThreadSafety(unittest.TestCase):
             except Exception as e:
                 errors.append(e)
 
-        threads = [threading.Thread(target=unregister_thread, args=(n,))
-                   for n in names]
+        threads = [threading.Thread(target=unregister_thread, args=(n,)) for n in names]
         for t in threads:
             t.start()
         for t in threads:
@@ -861,6 +872,7 @@ class TestHandlerRegistryThreadSafety(unittest.TestCase):
 
     def test_rlock_allows_reentrant_locking(self):
         """RLock allows reentrant (nested) lock acquisition."""
+
         # Simulate a callback that accesses registry during notification
         def reentrant_callback():
             # This accesses registry which acquires lock again
@@ -920,6 +932,7 @@ class TestHandlerRegistryThreadSafety(unittest.TestCase):
 # ============================================================================
 # GROUP 13: Module-Level Default Registry Functions (12 tests)
 # ============================================================================
+
 
 class TestModuleLevelFunctions(unittest.TestCase):
     """Test module-level convenience functions that operate on _default_registry."""
@@ -987,14 +1000,16 @@ class TestModuleLevelFunctions(unittest.TestCase):
         """Module-level get_registry_info() queries default registry."""
         info = get_registry_info()
         self.assertIsInstance(info, dict)
-        self.assertIn('total_handlers', info)
+        self.assertIn("total_handlers", info)
 
     def test_register_handler_as_decorator_syntax(self):
         """register_handler can be used with @ decorator syntax."""
+
         @register_handler
         class MyTestDecoratedHandler:
             def get_dataset_type(self):
                 return "MY_DECORATED"
+
         # Name derived from class name: "MyTestDecorated"
         derived = _derive_registry_name("MyTestDecoratedHandler")
         self.assertTrue(is_registered(derived))
@@ -1012,6 +1027,7 @@ class TestModuleLevelFunctions(unittest.TestCase):
 # ============================================================================
 # GROUP 14: Non-Singleton Behavior (4 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryNonSingleton(unittest.TestCase):
     """Test that HandlerRegistry is NOT a singleton (can create isolated instances)."""
@@ -1056,6 +1072,7 @@ class TestHandlerRegistryNonSingleton(unittest.TestCase):
 # GROUP 15: Name Derivation Logic (7 tests)
 # ============================================================================
 
+
 class TestHandlerNameDerivation(unittest.TestCase):
     """Test the name derivation fallback logic in register()."""
 
@@ -1064,7 +1081,7 @@ class TestHandlerNameDerivation(unittest.TestCase):
 
     def test_name_from_classmethod_get_dataset_type(self):
         """Name is derived from class name even for classmethod handlers.
-        
+
         NOTE: In CPython, isinstance(cls.get_dataset_type, classmethod) returns
         False when accessed as a class attribute, so the classmethod is never
         actually called for name extraction. Name comes from class name.
@@ -1076,54 +1093,65 @@ class TestHandlerNameDerivation(unittest.TestCase):
 
     def test_fallback_strips_datasethandler_suffix(self):
         """Fallback strips 'DatasetHandler' from class name."""
+
         class QDPiDatasetHandler:
             def get_dataset_type(self):
                 raise RuntimeError
+
         self.registry.register(QDPiDatasetHandler)
         self.assertIn("QDPi", self.registry)
 
     def test_fallback_strips_handler_suffix(self):
         """Fallback strips 'Handler' from class name."""
+
         class ANI1XHandler:
             def get_dataset_type(self):
                 raise RuntimeError
+
         self.registry.register(ANI1XHandler)
         self.assertIn("ANI1X", self.registry)
 
     def test_fallback_uses_full_name_if_stripping_leaves_empty(self):
         """If stripping suffixes yields empty, full class name is used."""
+
         class Handler:
             def get_dataset_type(self):
                 raise RuntimeError
+
         self.registry.register(Handler)
         self.assertIn("Handler", self.registry)
 
     def test_fallback_datasethandler_only_class(self):
         """Class named exactly 'DatasetHandler' uses full name as fallback."""
+
         class DatasetHandler:
             def get_dataset_type(self):
                 raise RuntimeError
+
         self.registry.register(DatasetHandler)
         self.assertIn("DatasetHandler", self.registry)
 
     def test_regular_method_falls_back_to_class_name(self):
         """Regular (non-classmethod) get_dataset_type that can't be called statically falls back."""
+
         class RMD17Handler:
             def get_dataset_type(self):
                 return "RMD17"
+
         self.registry.register(RMD17Handler)
         # The register method tries to call it, may fall back to class name derivation
         self.assertTrue(
-            self.registry.is_registered("RMD17") or
-            self.registry.is_registered("RMD17Handler")
+            self.registry.is_registered("RMD17") or self.registry.is_registered("RMD17Handler")
         )
 
     def test_name_empty_string_never_registered(self):
         """An empty-string name from stripping should use class name instead."""
+
         # 'Handler' -> strip 'Handler' -> '' -> use class name
         class Handler:
             def get_dataset_type(self):
                 raise RuntimeError
+
         self.registry.register(Handler)
         # Should not have empty string key
         self.assertNotIn("", self.registry)
@@ -1132,6 +1160,7 @@ class TestHandlerNameDerivation(unittest.TestCase):
 # ============================================================================
 # GROUP 16: Re-import Detection Logic (5 tests)
 # ============================================================================
+
 
 class TestReImportDetection(unittest.TestCase):
     """Test the qualname/module comparison for re-import detection."""
@@ -1150,14 +1179,10 @@ class TestReImportDetection(unittest.TestCase):
         """Different class objects from unrelated modules raise error."""
         # Both named "Conflict" (no Handler suffix) so both derive "Conflict"
         cls_a = _make_handler_class(
-            name="Conflict",
-            module_name="module_a.handlers",
-            qualname="module_a.Conflict"
+            name="Conflict", module_name="module_a.handlers", qualname="module_a.Conflict"
         )
         cls_b = _make_handler_class(
-            name="Conflict",
-            module_name="module_b.handlers",
-            qualname="module_b.Conflict"
+            name="Conflict", module_name="module_b.handlers", qualname="module_b.Conflict"
         )
         self.registry.register(cls_a)
         with self.assertRaises(HandlerRegistrationError):
@@ -1168,12 +1193,12 @@ class TestReImportDetection(unittest.TestCase):
         cls_a = _make_handler_class(
             name="DFTHandler",
             module_name="milia_pipeline.handlers.implementations.dft",
-            qualname="DFTHandler"
+            qualname="DFTHandler",
         )
         cls_b = _make_handler_class(
             name="DFTHandler",
             module_name="some.other.handlers.implementations.dft",
-            qualname="DFTHandler"
+            qualname="DFTHandler",
         )
         self.registry.register(cls_a)
         # Should not raise due to qualname + module matching logic
@@ -1182,16 +1207,8 @@ class TestReImportDetection(unittest.TestCase):
 
     def test_same_qualname_different_non_implementation_module_raises(self):
         """Same qualname but NOT from handlers.implementations raises error."""
-        cls_a = _make_handler_class(
-            name="FooH",
-            module_name="package_a.unrelated",
-            qualname="FooH"
-        )
-        cls_b = _make_handler_class(
-            name="FooH",
-            module_name="package_b.unrelated",
-            qualname="FooH"
-        )
+        cls_a = _make_handler_class(name="FooH", module_name="package_a.unrelated", qualname="FooH")
+        cls_b = _make_handler_class(name="FooH", module_name="package_b.unrelated", qualname="FooH")
         self.registry.register(cls_a)
         with self.assertRaises(HandlerRegistrationError):
             self.registry.register(cls_b)
@@ -1200,7 +1217,7 @@ class TestReImportDetection(unittest.TestCase):
         """Re-registering same class logs a debug message."""
         cls = _make_handler_class(name="DebugHandler")
         self.registry.register(cls)
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             self.registry.register(cls)
             mock_logger.debug.assert_called()
 
@@ -1208,6 +1225,7 @@ class TestReImportDetection(unittest.TestCase):
 # ============================================================================
 # GROUP 17: Logging Behavior (5 tests)
 # ============================================================================
+
 
 class TestHandlerRegistryLogging(unittest.TestCase):
     """Test that registry operations produce appropriate log messages."""
@@ -1217,7 +1235,7 @@ class TestHandlerRegistryLogging(unittest.TestCase):
 
     def test_register_logs_info(self):
         """Successful registration logs an info message."""
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             cls = _make_handler_class(name="LogHandler")
             self.registry.register(cls)
             mock_logger.info.assert_called()
@@ -1230,22 +1248,24 @@ class TestHandlerRegistryLogging(unittest.TestCase):
         cls = _make_handler_class(name="UnlogHandler")
         derived = _derive_registry_name("UnlogHandler")
         self.registry.register(cls)
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             self.registry.unregister(derived)
             mock_logger.info.assert_called()
 
     def test_clear_logs_warning(self):
         """Clearing registry logs a warning."""
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             self.registry.clear()
             mock_logger.warning.assert_called()
 
     def test_failing_callback_logs_warning(self):
         """A failing callback logs a warning."""
+
         def bad_cb():
             raise ValueError("bad")
+
         self.registry.add_on_change_callback(bad_cb)
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             self.registry.register(_make_handler_class(name="BadCBHandler"))
             mock_logger.warning.assert_called()
 
@@ -1253,7 +1273,7 @@ class TestHandlerRegistryLogging(unittest.TestCase):
         """Re-registering same class object logs debug."""
         cls = _make_handler_class(name="ReLogHandler")
         self.registry.register(cls)
-        with patch('milia_pipeline.handlers.handler_registry.logger') as mock_logger:
+        with patch("milia_pipeline.handlers.handler_registry.logger") as mock_logger:
             self.registry.register(cls)
             mock_logger.debug.assert_called()
 
@@ -1261,6 +1281,7 @@ class TestHandlerRegistryLogging(unittest.TestCase):
 # ============================================================================
 # GROUP 18: Edge Cases and Boundary Conditions (8 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndBoundary(unittest.TestCase):
     """Test edge cases and unusual inputs."""
@@ -1299,13 +1320,15 @@ class TestEdgeCasesAndBoundary(unittest.TestCase):
         reg.register(cls)
         reg.unregister(derived)
         info = reg.get_registry_info()
-        self.assertEqual(info['total_handlers'], 0)
+        self.assertEqual(info["total_handlers"], 0)
 
     def test_register_handler_with_no_name_strippable(self):
         """Handler class name that doesn't end in Handler/DatasetHandler uses derived name."""
+
         class MyDataProcessor:
             def get_dataset_type(self):
                 raise RuntimeError
+
         reg = HandlerRegistry()
         reg.register(MyDataProcessor)
         # Falls back to class name since no Handler suffix to strip
@@ -1336,34 +1359,45 @@ class TestEdgeCasesAndBoundary(unittest.TestCase):
 # GROUP 19: Module __all__ Exports (3 tests)
 # ============================================================================
 
+
 class TestModuleExports(unittest.TestCase):
     """Verify module exports are properly defined."""
 
     def test_handler_registry_importable(self):
         """HandlerRegistry is importable from the module."""
         from milia_pipeline.handlers.handler_registry import HandlerRegistry
+
         self.assertTrue(callable(HandlerRegistry))
 
     def test_exceptions_importable(self):
         """Exception classes are importable."""
         from milia_pipeline.handlers.handler_registry import (
-            HandlerRegistrationError, HandlerNotFoundError
+            HandlerNotFoundError,
+            HandlerRegistrationError,
         )
+
         self.assertTrue(issubclass(HandlerRegistrationError, Exception))
         self.assertTrue(issubclass(HandlerNotFoundError, Exception))
 
     def test_all_public_functions_importable(self):
         """All documented public functions are importable."""
         from milia_pipeline.handlers.handler_registry import (
+            get,
+            get_default_registry,
+            get_registry_info,
+            is_registered,
+            list_all,
+            register_handler,
+        )
+
+        for fn in [
             get_default_registry,
             register_handler,
             get,
             list_all,
             is_registered,
             get_registry_info,
-        )
-        for fn in [get_default_registry, register_handler, get, list_all,
-                    is_registered, get_registry_info]:
+        ]:
             self.assertTrue(callable(fn))
 
 
@@ -1371,31 +1405,32 @@ class TestModuleExports(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestHandlerRegistrationError,           # GROUP 1:   7 tests
-        TestHandlerNotFoundError,                # GROUP 2:   6 tests
-        TestHandlerRegistryInit,                 # GROUP 3:   5 tests
-        TestHandlerRegistryRegisterSuccess,      # GROUP 4:  10 tests
-        TestHandlerRegistryRegisterErrors,       # GROUP 5:   8 tests
-        TestHandlerRegistryGet,                  # GROUP 6:   7 tests
-        TestHandlerRegistryCollectionMethods,    # GROUP 7:  10 tests
-        TestHandlerRegistryUnregister,           # GROUP 8:   6 tests
-        TestHandlerRegistryClear,                # GROUP 9:   4 tests
-        TestHandlerRegistryCallbacks,            # GROUP 10:  8 tests
-        TestHandlerRegistryInfo,                 # GROUP 11:  5 tests
-        TestHandlerRegistryThreadSafety,         # GROUP 12:  6 tests
-        TestModuleLevelFunctions,                # GROUP 13: 12 tests
-        TestHandlerRegistryNonSingleton,         # GROUP 14:  4 tests
-        TestHandlerNameDerivation,               # GROUP 15:  7 tests
-        TestReImportDetection,                   # GROUP 16:  5 tests
-        TestHandlerRegistryLogging,              # GROUP 17:  5 tests
-        TestEdgeCasesAndBoundary,                # GROUP 18:  8 tests
-        TestModuleExports,                       # GROUP 19:  3 tests
+        TestHandlerRegistrationError,  # GROUP 1:   7 tests
+        TestHandlerNotFoundError,  # GROUP 2:   6 tests
+        TestHandlerRegistryInit,  # GROUP 3:   5 tests
+        TestHandlerRegistryRegisterSuccess,  # GROUP 4:  10 tests
+        TestHandlerRegistryRegisterErrors,  # GROUP 5:   8 tests
+        TestHandlerRegistryGet,  # GROUP 6:   7 tests
+        TestHandlerRegistryCollectionMethods,  # GROUP 7:  10 tests
+        TestHandlerRegistryUnregister,  # GROUP 8:   6 tests
+        TestHandlerRegistryClear,  # GROUP 9:   4 tests
+        TestHandlerRegistryCallbacks,  # GROUP 10:  8 tests
+        TestHandlerRegistryInfo,  # GROUP 11:  5 tests
+        TestHandlerRegistryThreadSafety,  # GROUP 12:  6 tests
+        TestModuleLevelFunctions,  # GROUP 13: 12 tests
+        TestHandlerRegistryNonSingleton,  # GROUP 14:  4 tests
+        TestHandlerNameDerivation,  # GROUP 15:  7 tests
+        TestReImportDetection,  # GROUP 16:  5 tests
+        TestHandlerRegistryLogging,  # GROUP 17:  5 tests
+        TestEdgeCasesAndBoundary,  # GROUP 18:  8 tests
+        TestModuleExports,  # GROUP 19:  3 tests
     ]
 
     for test_class in test_classes:

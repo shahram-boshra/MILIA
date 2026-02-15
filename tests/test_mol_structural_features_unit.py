@@ -33,25 +33,25 @@ Tests are designed to run in a Docker environment with mocked external dependenc
 """
 
 import sys
-import os
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, PropertyMock, call
+from unittest.mock import patch
 
 # Add the project root to Python path FIRST
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import real exceptions - no mocking needed
-from milia_pipeline import exceptions as vqm_exceptions
-
-import unittest
 import logging
 import math
+import unittest
+
 import numpy as np
 import torch
-from torch_geometric.data import Data
 from rdkit import Chem
-from rdkit.Chem import HybridizationType, BondType, rdPartialCharges
+from rdkit.Chem import BondType, HybridizationType, rdPartialCharges
+from torch_geometric.data import Data
+
+from milia_pipeline import exceptions as vqm_exceptions
 
 # Now import the module under test normally
 from milia_pipeline.molecules import mol_structural_features
@@ -63,6 +63,7 @@ logging.basicConfig(level=logging.DEBUG)
 # ============================================================================
 # Helper utilities for building test molecules
 # ============================================================================
+
 
 def _make_water_mol(with_conformer=False, with_gasteiger=False, with_mulliken=False):
     """Create a water (H2O) RDKit molecule for testing.
@@ -84,7 +85,7 @@ def _make_water_mol(with_conformer=False, with_gasteiger=False, with_mulliken=Fa
     if with_mulliken:
         charges = [-0.82, 0.41, 0.41]
         for i, c in enumerate(charges):
-            mol.GetAtomWithIdx(i).SetDoubleProp('_MullikenCharge', c)
+            mol.GetAtomWithIdx(i).SetDoubleProp("_MullikenCharge", c)
     return mol
 
 
@@ -94,6 +95,7 @@ def _make_benzene_mol(with_conformer=False):
     mol = Chem.AddHs(mol)
     if with_conformer:
         from rdkit.Chem import AllChem
+
         AllChem.EmbedMolecule(mol, randomSeed=42)
     return mol
 
@@ -106,10 +108,13 @@ def _make_ethane_mol(with_conformer=False):
         conf = Chem.Conformer(mol.GetNumAtoms())
         # Simple positions for C-C bond of ~1.54 Angstrom
         positions = [
-            (0.0, 0.0, 0.0), (1.54, 0.0, 0.0),  # C, C
-            (-0.36, 1.03, 0.0), (-0.36, -0.51, 0.89),  # H, H (on C0)
+            (0.0, 0.0, 0.0),
+            (1.54, 0.0, 0.0),  # C, C
+            (-0.36, 1.03, 0.0),
+            (-0.36, -0.51, 0.89),  # H, H (on C0)
             (-0.36, -0.51, -0.89),  # H (on C0)
-            (1.90, 1.03, 0.0), (1.90, -0.51, 0.89),  # H, H (on C1)
+            (1.90, 1.03, 0.0),
+            (1.90, -0.51, 0.89),  # H, H (on C1)
             (1.90, -0.51, -0.89),  # H (on C1)
         ]
         for i, pos in enumerate(positions):
@@ -139,6 +144,7 @@ def _make_pyg_data_with_edges(mol):
 # ============================================================================
 # Test: _one_hot_encoding
 # ============================================================================
+
 
 class TestOneHotEncoding(unittest.TestCase):
     """Test suite for _one_hot_encoding helper function."""
@@ -189,6 +195,7 @@ class TestOneHotEncoding(unittest.TestCase):
 # Test: _ensure_conformer_and_charges
 # ============================================================================
 
+
 class TestEnsureConformerAndCharges(unittest.TestCase):
     """Test suite for _ensure_conformer_and_charges preprocessing function."""
 
@@ -219,8 +226,8 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
 
         for i, expected_charge in enumerate(charges):
             atom = mol.GetAtomWithIdx(i)
-            self.assertTrue(atom.HasProp('_MullikenCharge'))
-            self.assertAlmostEqual(atom.GetDoubleProp('_MullikenCharge'), expected_charge)
+            self.assertTrue(atom.HasProp("_MullikenCharge"))
+            self.assertAlmostEqual(atom.GetDoubleProp("_MullikenCharge"), expected_charge)
 
     def test_falls_back_to_gasteiger_when_no_mulliken(self):
         """Test that Gasteiger charges are computed as fallback."""
@@ -231,7 +238,7 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
 
         # Gasteiger charges should have been computed
         atom = mol.GetAtomWithIdx(0)
-        self.assertTrue(atom.HasProp('_GasteigerCharge'))
+        self.assertTrue(atom.HasProp("_GasteigerCharge"))
 
     def test_coordinate_shape_mismatch_skips_conformer(self):
         """Test that mismatched coordinate length skips conformer addition."""
@@ -252,8 +259,8 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
 
         atom = mol.GetAtomWithIdx(0)
         # Should have fallen back to Gasteiger
-        self.assertTrue(atom.HasProp('_GasteigerCharge'))
-        self.assertFalse(atom.HasProp('_MullikenCharge'))
+        self.assertTrue(atom.HasProp("_GasteigerCharge"))
+        self.assertFalse(atom.HasProp("_MullikenCharge"))
 
     def test_none_coordinates_and_none_charges(self):
         """Test with both coordinates and charges as None (defaults)."""
@@ -264,12 +271,13 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
         self.assertEqual(mol.GetNumConformers(), 0)
         # Should fallback to Gasteiger
         atom = mol.GetAtomWithIdx(0)
-        self.assertTrue(atom.HasProp('_GasteigerCharge'))
+        self.assertTrue(atom.HasProp("_GasteigerCharge"))
 
 
 # ============================================================================
 # Test: Atom Feature Calculation Functions
 # ============================================================================
+
 
 class TestAtomFeatureFunctions(unittest.TestCase):
     """Test suite for individual atom feature extraction functions."""
@@ -360,7 +368,7 @@ class TestAtomFeatureFunctions(unittest.TestCase):
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         atom = mol.GetAtomWithIdx(0)
-        atom.SetDoubleProp('_GasteigerCharge', float('nan'))
+        atom.SetDoubleProp("_GasteigerCharge", float("nan"))
         with self.assertRaises(ValueError):
             mol_structural_features._get_atom_partial_charge(atom)
 
@@ -369,7 +377,7 @@ class TestAtomFeatureFunctions(unittest.TestCase):
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         atom = mol.GetAtomWithIdx(0)
-        atom.SetDoubleProp('_GasteigerCharge', float('inf'))
+        atom.SetDoubleProp("_GasteigerCharge", float("inf"))
         with self.assertRaises(ValueError):
             mol_structural_features._get_atom_partial_charge(atom)
 
@@ -415,6 +423,7 @@ class TestAtomFeatureFunctions(unittest.TestCase):
 # ============================================================================
 # Test: Bond Feature Calculation Functions
 # ============================================================================
+
 
 class TestBondFeatureFunctions(unittest.TestCase):
     """Test suite for individual bond feature extraction functions."""
@@ -518,7 +527,7 @@ class TestBondFeatureFunctions(unittest.TestCase):
 
     def test_get_bond_length_binned_custom_bins(self):
         """Test binned bond length with custom bin edges."""
-        custom_bins = [0.0, 1.5, 2.0, float('inf')]
+        custom_bins = [0.0, 1.5, 2.0, float("inf")]
         encoding = mol_structural_features._get_bond_length_binned(
             self.single_bond, bin_edges=custom_bins
         )
@@ -530,15 +539,14 @@ class TestBondFeatureFunctions(unittest.TestCase):
 # Test: _calculate_atom_features_tensor
 # ============================================================================
 
+
 class TestCalculateAtomFeaturesTensor(unittest.TestCase):
     """Test suite for _calculate_atom_features_tensor aggregation function."""
 
     def test_single_scalar_feature(self):
         """Test tensor generation with a single scalar feature (degree)."""
         mol = _make_water_mol()
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, ["degree"]
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, ["degree"])
         self.assertEqual(tensor.shape[0], 3)  # 3 atoms in water with H
         self.assertEqual(tensor.shape[1], 1)  # 1 feature
         self.assertEqual(tensor.dtype, torch.float)
@@ -546,9 +554,7 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
     def test_single_vector_feature(self):
         """Test tensor generation with a vector feature (hybridization)."""
         mol = _make_water_mol()
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, ["hybridization"]
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, ["hybridization"])
         self.assertEqual(tensor.shape[0], 3)
         self.assertEqual(tensor.shape[1], 7)  # 7 hybridization types
 
@@ -556,9 +562,7 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
         """Test that multiple features are properly concatenated."""
         mol = _make_water_mol()
         features = ["degree", "hybridization", "is_aromatic"]
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, features
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, features)
         self.assertEqual(tensor.shape[0], 3)
         # degree(1) + hybridization(7) + is_aromatic(1) = 9
         self.assertEqual(tensor.shape[1], 9)
@@ -567,13 +571,18 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
         """Test tensor generation with all available atom features."""
         mol = _make_water_mol(with_gasteiger=True, with_mulliken=True)
         all_features = [
-            "degree", "total_degree", "hybridization", "total_valence",
-            "is_aromatic", "is_in_ring", "partial_charge", "mulliken_charge",
-            "num_aromatic_bonds", "chirality"
+            "degree",
+            "total_degree",
+            "hybridization",
+            "total_valence",
+            "is_aromatic",
+            "is_in_ring",
+            "partial_charge",
+            "mulliken_charge",
+            "num_aromatic_bonds",
+            "chirality",
         ]
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, all_features
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, all_features)
         self.assertEqual(tensor.shape[0], 3)
         # degree(1) + total_degree(1) + hybridization(7) + total_valence(1) +
         # is_aromatic(1) + is_in_ring(1) + partial_charge(1) + mulliken_charge(1) +
@@ -602,9 +611,7 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
     def test_empty_feature_list_returns_empty_tensor(self):
         """Test that empty feature list results in correct tensor shape."""
         mol = _make_water_mol()
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, []
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, [])
         # No features selected → empty for all atoms, loop produces 3 empty vectors
         # but they'd be length-0; padded to max_len. With empty features, features_list
         # will be [[],[],[]] → max_len 0 → tensor shape (3, 0)
@@ -616,11 +623,9 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         # No charges computed yet
-        self.assertFalse(mol.GetAtomWithIdx(0).HasProp('_GasteigerCharge'))
+        self.assertFalse(mol.GetAtomWithIdx(0).HasProp("_GasteigerCharge"))
 
-        tensor = mol_structural_features._calculate_atom_features_tensor(
-            mol, ["partial_charge"]
-        )
+        tensor = mol_structural_features._calculate_atom_features_tensor(mol, ["partial_charge"])
         self.assertEqual(tensor.shape[0], 3)
         self.assertEqual(tensor.shape[1], 1)
 
@@ -638,6 +643,7 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
 # ============================================================================
 # Test: _calculate_bond_features_tensor
 # ============================================================================
+
 
 class TestCalculateBondFeaturesTensor(unittest.TestCase):
     """Test suite for _calculate_bond_features_tensor aggregation function."""
@@ -659,8 +665,7 @@ class TestCalculateBondFeaturesTensor(unittest.TestCase):
     def test_multiple_bond_features(self):
         """Test bond feature tensor with multiple features."""
         tensor = mol_structural_features._calculate_bond_features_tensor(
-            self.ethane, self.ethane_pyg.edge_index,
-            ["bond_type", "is_conjugated", "is_aromatic"]
+            self.ethane, self.ethane_pyg.edge_index, ["bond_type", "is_conjugated", "is_aromatic"]
         )
         num_edges = self.ethane_pyg.edge_index.size(1)
         self.assertEqual(tensor.shape[0], num_edges)
@@ -670,8 +675,7 @@ class TestCalculateBondFeaturesTensor(unittest.TestCase):
     def test_3d_bond_features_with_conformer(self):
         """Test bond_length and bond_length_binned features with conformer present."""
         tensor = mol_structural_features._calculate_bond_features_tensor(
-            self.ethane, self.ethane_pyg.edge_index,
-            ["bond_length", "bond_length_binned"]
+            self.ethane, self.ethane_pyg.edge_index, ["bond_length", "bond_length_binned"]
         )
         num_edges = self.ethane_pyg.edge_index.size(1)
         self.assertEqual(tensor.shape[0], num_edges)
@@ -692,8 +696,7 @@ class TestCalculateBondFeaturesTensor(unittest.TestCase):
         """Test that requesting unsupported bond feature raises StructuralFeatureError."""
         with self.assertRaises(vqm_exceptions.StructuralFeatureError) as context:
             mol_structural_features._calculate_bond_features_tensor(
-                self.ethane, self.ethane_pyg.edge_index,
-                ["invalid_bond_feature"], molecule_index=10
+                self.ethane, self.ethane_pyg.edge_index, ["invalid_bond_feature"], molecule_index=10
             )
         self.assertIn("Unsupported bond feature", str(context.exception))
 
@@ -753,10 +756,9 @@ class TestCalculateBondFeaturesTensor(unittest.TestCase):
         dst.extend([0, 0])
         edge_index = torch.tensor([src, dst], dtype=torch.long)
 
-        logger_mock = logging.getLogger('test_missing_bond')
+        logger_mock = logging.getLogger("test_missing_bond")
         tensor = mol_structural_features._calculate_bond_features_tensor(
-            mol, edge_index, ["bond_type"],
-            logger_instance=logger_mock
+            mol, edge_index, ["bond_type"], logger_instance=logger_mock
         )
         # The self-loop edges should have zero features
         # Last 2 edges are the self-loops
@@ -767,6 +769,7 @@ class TestCalculateBondFeaturesTensor(unittest.TestCase):
 # ============================================================================
 # Test: get_available_features
 # ============================================================================
+
 
 class TestGetAvailableFeatures(unittest.TestCase):
     """Test suite for get_available_features catalog function."""
@@ -781,9 +784,16 @@ class TestGetAvailableFeatures(unittest.TestCase):
         """Test that all documented atom features are present."""
         features = mol_structural_features.get_available_features()
         expected_atom = [
-            "degree", "total_degree", "hybridization", "total_valence",
-            "is_aromatic", "is_in_ring", "partial_charge", "mulliken_charge",
-            "num_aromatic_bonds", "chirality"
+            "degree",
+            "total_degree",
+            "hybridization",
+            "total_valence",
+            "is_aromatic",
+            "is_in_ring",
+            "partial_charge",
+            "mulliken_charge",
+            "num_aromatic_bonds",
+            "chirality",
         ]
         self.assertEqual(sorted(features["atom"]), sorted(expected_atom))
 
@@ -791,8 +801,13 @@ class TestGetAvailableFeatures(unittest.TestCase):
         """Test that all documented bond features are present."""
         features = mol_structural_features.get_available_features()
         expected_bond = [
-            "bond_type", "is_conjugated", "is_aromatic", "is_in_any_ring",
-            "stereo", "bond_length", "bond_length_binned"
+            "bond_type",
+            "is_conjugated",
+            "is_aromatic",
+            "is_in_any_ring",
+            "stereo",
+            "bond_length",
+            "bond_length_binned",
         ]
         self.assertEqual(sorted(features["bond"]), sorted(expected_bond))
 
@@ -809,20 +824,24 @@ class TestGetAvailableFeatures(unittest.TestCase):
 # Test: add_structural_features (Main Entry Point)
 # ============================================================================
 
+
 class TestAddStructuralFeatures(unittest.TestCase):
     """Test suite for add_structural_features main entry point."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_structural')
+        self.logger = logging.getLogger("test_structural")
 
     def test_none_feature_config_returns_unchanged_data(self):
         """Test that None feature_config returns data unchanged."""
         mol = _make_water_mol()
         pyg_data = Data()
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=None,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=None,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIs(result, pyg_data)
 
@@ -831,9 +850,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()
         with self.assertRaises(vqm_exceptions.MoleculeProcessingError):
             mol_structural_features.add_structural_features(
-                rdkit_mol=None, pyg_data=pyg_data,
+                rdkit_mol=None,
+                pyg_data=pyg_data,
                 feature_config={"atom": ["degree"]},
-                logger=self.logger, molecule_index=0
+                logger=self.logger,
+                molecule_index=0,
             )
 
     def test_none_pyg_data_raises_pyg_data_creation_error(self):
@@ -849,9 +870,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         mol = _make_water_mol()
         with self.assertRaises((vqm_exceptions.PyGDataCreationError, TypeError)):
             mol_structural_features.add_structural_features(
-                rdkit_mol=mol, pyg_data=None,
+                rdkit_mol=mol,
+                pyg_data=None,
                 feature_config={"atom": ["degree"]},
-                logger=self.logger, molecule_index=0
+                logger=self.logger,
+                molecule_index=0,
             )
 
     def test_atom_features_only(self):
@@ -860,8 +883,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["degree", "is_aromatic"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNotNone(result.x)
         self.assertEqual(result.x.shape[0], 3)  # 3 atoms
@@ -874,8 +900,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = _make_pyg_data_with_edges(mol)
         config = {"bond": ["bond_type", "is_conjugated"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNone(result.x)
         self.assertIsNotNone(result.edge_attr)
@@ -885,13 +914,13 @@ class TestAddStructuralFeatures(unittest.TestCase):
         """Test adding both atom and bond features simultaneously."""
         mol = _make_ethane_mol(with_conformer=True)
         pyg_data = _make_pyg_data_with_edges(mol)
-        config = {
-            "atom": ["degree", "hybridization"],
-            "bond": ["bond_type"]
-        }
+        config = {"atom": ["degree", "hybridization"], "bond": ["bond_type"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNotNone(result.x)
         self.assertIsNotNone(result.edge_attr)
@@ -905,8 +934,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": [], "bond": []}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNone(result.x)
         self.assertIsNone(result.edge_attr)
@@ -921,9 +953,13 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["mulliken_charge"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0,
-            coordinates=coords, mulliken_charges=mulliken
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
+            coordinates=coords,
+            mulliken_charges=mulliken,
         )
         self.assertIsNotNone(result.x)
         self.assertEqual(result.x.shape[0], 3)
@@ -942,9 +978,12 @@ class TestAddStructuralFeatures(unittest.TestCase):
 
         # Need to add conformer first (via _ensure_conformer_and_charges)
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0,
-            coordinates=coords
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
+            coordinates=coords,
         )
         self.assertIsNotNone(result.edge_attr)
         # Bond lengths should be positive
@@ -957,8 +996,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()  # No edge_index
         config = {"bond": ["bond_type"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNone(result.edge_attr)
 
@@ -968,8 +1010,11 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data(edge_index=torch.empty(2, 0, dtype=torch.long))
         config = {"bond": ["bond_type"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNone(result.edge_attr)
 
@@ -979,8 +1024,7 @@ class TestAddStructuralFeatures(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["degree"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIs(result, pyg_data)
 
@@ -991,9 +1035,12 @@ class TestAddStructuralFeatures(unittest.TestCase):
         config = {"atom": ["nonexistent_feature"]}
         with self.assertRaises(vqm_exceptions.StructuralFeatureError):
             mol_structural_features.add_structural_features(
-                rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                logger=self.logger, molecule_index=99,
-                inchi="InChI=1S/H2O/h1H2"
+                rdkit_mol=mol,
+                pyg_data=pyg_data,
+                feature_config=config,
+                logger=self.logger,
+                molecule_index=99,
+                inchi="InChI=1S/H2O/h1H2",
             )
 
     def test_structural_feature_error_reraise(self):
@@ -1003,8 +1050,7 @@ class TestAddStructuralFeatures(unittest.TestCase):
         config = {"atom": ["bad_feature_name"]}
         with self.assertRaises(vqm_exceptions.StructuralFeatureError):
             mol_structural_features.add_structural_features(
-                rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                logger=self.logger
+                rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
             )
 
 
@@ -1012,12 +1058,13 @@ class TestAddStructuralFeatures(unittest.TestCase):
 # Test: Empty / Zero-Atom Molecule Edge Cases
 # ============================================================================
 
+
 class TestEmptyMoleculeEdgeCases(unittest.TestCase):
     """Test edge cases with empty/zero-atom molecules."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_empty')
+        self.logger = logging.getLogger("test_empty")
 
     def test_zero_atom_molecule_atom_features(self):
         """Test that zero-atom molecule produces empty tensor with correct dimensions."""
@@ -1027,8 +1074,11 @@ class TestEmptyMoleculeEdgeCases(unittest.TestCase):
         config = {"atom": ["degree", "hybridization"]}
 
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=0
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=0,
         )
         self.assertIsNotNone(result.x)
         self.assertEqual(result.x.shape[0], 0)  # No atoms
@@ -1040,12 +1090,13 @@ class TestEmptyMoleculeEdgeCases(unittest.TestCase):
 # Test: Aromatic Molecule Features (Benzene Integration)
 # ============================================================================
 
+
 class TestAromaticMoleculeFeatures(unittest.TestCase):
     """Test feature extraction on aromatic molecules."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_aromatic')
+        self.logger = logging.getLogger("test_aromatic")
         self.benzene = _make_benzene_mol(with_conformer=True)
 
     def test_benzene_atom_aromatic_features(self):
@@ -1053,8 +1104,7 @@ class TestAromaticMoleculeFeatures(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["is_aromatic", "is_in_ring", "num_aromatic_bonds"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=self.benzene, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=self.benzene, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         # First 6 atoms are ring carbons (aromatic), rest are H
         for i in range(6):  # Ring carbons
@@ -1067,8 +1117,7 @@ class TestAromaticMoleculeFeatures(unittest.TestCase):
         pyg_data = _make_pyg_data_with_edges(self.benzene)
         config = {"bond": ["is_aromatic", "is_in_any_ring"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=self.benzene, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=self.benzene, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIsNotNone(result.edge_attr)
 
@@ -1077,12 +1126,13 @@ class TestAromaticMoleculeFeatures(unittest.TestCase):
 # Test: Feature Config Variations
 # ============================================================================
 
+
 class TestFeatureConfigVariations(unittest.TestCase):
     """Test various feature configuration patterns."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_config')
+        self.logger = logging.getLogger("test_config")
 
     def test_config_with_only_atom_key(self):
         """Test config that specifies only atom features (no bond key)."""
@@ -1090,8 +1140,7 @@ class TestFeatureConfigVariations(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["degree"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIsNotNone(result.x)
         self.assertIsNone(result.edge_attr)
@@ -1102,8 +1151,7 @@ class TestFeatureConfigVariations(unittest.TestCase):
         pyg_data = _make_pyg_data_with_edges(mol)
         config = {"bond": ["bond_type"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIsNone(result.x)
         self.assertIsNotNone(result.edge_attr)
@@ -1114,8 +1162,7 @@ class TestFeatureConfigVariations(unittest.TestCase):
         pyg_data = Data()
         config = {}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIsNone(result.x)
         self.assertIsNone(result.edge_attr)
@@ -1126,8 +1173,7 @@ class TestFeatureConfigVariations(unittest.TestCase):
         pyg_data = Data()
         config = {"atom": ["degree", "is_aromatic"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger
+            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
         )
         self.assertIsNotNone(result.x)
         self.assertEqual(result.x.shape[0], 1)
@@ -1139,12 +1185,13 @@ class TestFeatureConfigVariations(unittest.TestCase):
 # Test: Conformer and Charge Integration with add_structural_features
 # ============================================================================
 
+
 class TestConformerChargeIntegration(unittest.TestCase):
     """Test conformer/charge preprocessing integration via add_structural_features."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_conformer_integration')
+        self.logger = logging.getLogger("test_conformer_integration")
 
     def test_ensure_conformer_failure_is_logged_not_raised(self):
         """Test that _ensure_conformer_and_charges failure is logged, not raised."""
@@ -1155,12 +1202,16 @@ class TestConformerChargeIntegration(unittest.TestCase):
         # Pass invalid coordinates that would cause issues if not handled gracefully
         # (wrong shape but valid length — an ndarray of the wrong internal shape)
         with patch.object(
-            mol_structural_features, '_ensure_conformer_and_charges',
-            side_effect=RuntimeError("Conformer setup failed")
+            mol_structural_features,
+            "_ensure_conformer_and_charges",
+            side_effect=RuntimeError("Conformer setup failed"),
         ):
             result = mol_structural_features.add_structural_features(
-                rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                logger=self.logger, molecule_index=0
+                rdkit_mol=mol,
+                pyg_data=pyg_data,
+                feature_config=config,
+                logger=self.logger,
+                molecule_index=0,
             )
         # Should still produce results (the error is just logged)
         self.assertIsNotNone(result.x)
@@ -1174,8 +1225,11 @@ class TestConformerChargeIntegration(unittest.TestCase):
         pyg_data = _make_pyg_data_with_edges(mol)
         config = {"bond": ["bond_length"]}
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, coordinates=coords
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            coordinates=coords,
         )
         self.assertIsNotNone(result.edge_attr)
         # All bond lengths should be positive with actual coordinates
@@ -1187,12 +1241,13 @@ class TestConformerChargeIntegration(unittest.TestCase):
 # Test: Error Handling and Recovery
 # ============================================================================
 
+
 class TestErrorHandlingAndRecovery(unittest.TestCase):
     """Test error handling, wrapping, and recovery mechanisms."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_errors')
+        self.logger = logging.getLogger("test_errors")
 
     def test_unexpected_exception_wrapped_in_structural_feature_error(self):
         """Test that unexpected exceptions are wrapped in StructuralFeatureError."""
@@ -1202,13 +1257,17 @@ class TestErrorHandlingAndRecovery(unittest.TestCase):
 
         # Patch _calculate_atom_features_tensor to throw unexpected exception
         with patch.object(
-            mol_structural_features, '_calculate_atom_features_tensor',
-            side_effect=RuntimeError("Unexpected internal error")
+            mol_structural_features,
+            "_calculate_atom_features_tensor",
+            side_effect=RuntimeError("Unexpected internal error"),
         ):
             with self.assertRaises(vqm_exceptions.StructuralFeatureError) as context:
                 mol_structural_features.add_structural_features(
-                    rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                    logger=self.logger, molecule_index=7
+                    rdkit_mol=mol,
+                    pyg_data=pyg_data,
+                    feature_config=config,
+                    logger=self.logger,
+                    molecule_index=7,
                 )
             self.assertIn("unexpected", str(context.exception).lower())
 
@@ -1219,18 +1278,15 @@ class TestErrorHandlingAndRecovery(unittest.TestCase):
         config = {"atom": ["degree"]}
 
         original_error = vqm_exceptions.StructuralFeatureError(
-            message="Original error",
-            feature_type="atom"
+            message="Original error", feature_type="atom"
         )
 
         with patch.object(
-            mol_structural_features, '_calculate_atom_features_tensor',
-            side_effect=original_error
+            mol_structural_features, "_calculate_atom_features_tensor", side_effect=original_error
         ):
             with self.assertRaises(vqm_exceptions.StructuralFeatureError) as context:
                 mol_structural_features.add_structural_features(
-                    rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                    logger=self.logger
+                    rdkit_mol=mol, pyg_data=pyg_data, feature_config=config, logger=self.logger
                 )
             self.assertIs(context.exception, original_error)
 
@@ -1241,13 +1297,17 @@ class TestErrorHandlingAndRecovery(unittest.TestCase):
         config = {"atom": ["partial_charge"]}
 
         with patch.object(
-            rdPartialCharges, 'ComputeGasteigerCharges',
-            side_effect=RuntimeError("Gasteiger failed")
+            rdPartialCharges,
+            "ComputeGasteigerCharges",
+            side_effect=RuntimeError("Gasteiger failed"),
         ):
             with self.assertRaises(vqm_exceptions.StructuralFeatureError) as context:
                 mol_structural_features.add_structural_features(
-                    rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-                    logger=self.logger, molecule_index=0
+                    rdkit_mol=mol,
+                    pyg_data=pyg_data,
+                    feature_config=config,
+                    logger=self.logger,
+                    molecule_index=0,
                 )
             self.assertIn("Gasteiger", str(context.exception))
 
@@ -1255,6 +1315,7 @@ class TestErrorHandlingAndRecovery(unittest.TestCase):
 # ============================================================================
 # Test: Bond Length Geometry Correctness
 # ============================================================================
+
 
 class TestBondLengthGeometryCorrectness(unittest.TestCase):
     """Test correctness of 3D bond length calculations."""
@@ -1297,12 +1358,13 @@ class TestBondLengthGeometryCorrectness(unittest.TestCase):
 # Test: Large Molecule Integration
 # ============================================================================
 
+
 class TestLargeMoleculeIntegration(unittest.TestCase):
     """Test feature extraction on larger molecules."""
 
     def setUp(self):
         """Set up common test fixtures."""
-        self.logger = logging.getLogger('test_large')
+        self.logger = logging.getLogger("test_large")
 
     def test_caffeine_all_features(self):
         """Test all atom features on caffeine (C8H10N4O2) — multi-ring, multi-element."""
@@ -1313,15 +1375,24 @@ class TestLargeMoleculeIntegration(unittest.TestCase):
         pyg_data = _make_pyg_data_with_edges(mol)
         config = {
             "atom": [
-                "degree", "total_degree", "hybridization", "total_valence",
-                "is_aromatic", "is_in_ring", "partial_charge",
-                "num_aromatic_bonds", "chirality"
+                "degree",
+                "total_degree",
+                "hybridization",
+                "total_valence",
+                "is_aromatic",
+                "is_in_ring",
+                "partial_charge",
+                "num_aromatic_bonds",
+                "chirality",
             ],
-            "bond": ["bond_type", "is_conjugated", "is_aromatic", "is_in_any_ring", "stereo"]
+            "bond": ["bond_type", "is_conjugated", "is_aromatic", "is_in_any_ring", "stereo"],
         }
         result = mol_structural_features.add_structural_features(
-            rdkit_mol=mol, pyg_data=pyg_data, feature_config=config,
-            logger=self.logger, molecule_index=100
+            rdkit_mol=mol,
+            pyg_data=pyg_data,
+            feature_config=config,
+            logger=self.logger,
+            molecule_index=100,
         )
         self.assertIsNotNone(result.x)
         self.assertIsNotNone(result.edge_attr)
@@ -1335,6 +1406,7 @@ class TestLargeMoleculeIntegration(unittest.TestCase):
 # Test Suite Builder
 # ============================================================================
 
+
 def suite():
     """Create test suite."""
     test_suite = unittest.TestSuite()
@@ -1343,8 +1415,12 @@ def suite():
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEnsureConformerAndCharges))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestAtomFeatureFunctions))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestBondFeatureFunctions))
-    test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestCalculateAtomFeaturesTensor))
-    test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestCalculateBondFeaturesTensor))
+    test_suite.addTests(
+        unittest.TestLoader().loadTestsFromTestCase(TestCalculateAtomFeaturesTensor)
+    )
+    test_suite.addTests(
+        unittest.TestLoader().loadTestsFromTestCase(TestCalculateBondFeaturesTensor)
+    )
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestGetAvailableFeatures))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestAddStructuralFeatures))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEmptyMoleculeEdgeCases))
@@ -1352,13 +1428,15 @@ def suite():
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestFeatureConfigVariations))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestConformerChargeIntegration))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestErrorHandlingAndRecovery))
-    test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestBondLengthGeometryCorrectness))
+    test_suite.addTests(
+        unittest.TestLoader().loadTestsFromTestCase(TestBondLengthGeometryCorrectness)
+    )
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestLargeMoleculeIntegration))
 
     return test_suite
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run tests with verbose output
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())

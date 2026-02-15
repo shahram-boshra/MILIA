@@ -61,7 +61,7 @@ import copy
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -87,6 +87,7 @@ logger = logging.getLogger("conftest")
 # Scope: function (each test gets a fresh copy — mutations are safe).
 # Used by: smoke tests (§1.1, §1.4), E2E tests (§3.1, §3.3, §3.4),
 #          regression tests (§4.2, §4.3).
+
 
 @pytest.fixture()
 def synthetic_pyg_dataset():
@@ -114,7 +115,7 @@ def synthetic_pyg_dataset():
     import torch
     from torch_geometric.data import Data
 
-    dataset: List[Data] = []
+    dataset: list[Data] = []
     generator = torch.Generator().manual_seed(42)
 
     for i in range(30):
@@ -125,7 +126,10 @@ def synthetic_pyg_dataset():
 
         # --- Edges: random sparse graph (at least num_nodes edges) ---
         num_edges = torch.randint(
-            num_nodes, num_nodes * 3 + 1, (1,), generator=generator,
+            num_nodes,
+            num_nodes * 3 + 1,
+            (1,),
+            generator=generator,
         ).item()
         src = torch.randint(0, num_nodes, (num_edges,), generator=generator)
         dst = torch.randint(0, num_nodes, (num_edges,), generator=generator)
@@ -167,8 +171,9 @@ def synthetic_pyg_dataset():
 # Used by: smoke tests (§1.1), config tests (§5.1, §5.2),
 #          E2E tests (§3.1, §3.2), contract tests (§2.3).
 
+
 @pytest.fixture(scope="session")
-def minimal_config() -> Dict[str, Any]:
+def minimal_config() -> dict[str, Any]:
     """
     Return a minimal but structurally valid ``config.yaml``-equivalent dict
     that satisfies the MILIA configuration loader.
@@ -253,6 +258,7 @@ def minimal_config() -> Dict[str, Any]:
 # Used by: smoke tests (§1.4), E2E tests (§3.1, §3.4),
 #          regression tests (§4.2, §4.3).
 
+
 @pytest.fixture()
 def mock_checkpoint(tmp_path):
     """
@@ -288,8 +294,7 @@ def mock_checkpoint(tmp_path):
     class _TinyModel(nn.Module):
         """Two-layer MLP standing in for a GCN in checkpoint tests."""
 
-        def __init__(self, in_channels: int = 9, hidden_channels: int = 32,
-                     out_channels: int = 1):
+        def __init__(self, in_channels: int = 9, hidden_channels: int = 32, out_channels: int = 1):
             super().__init__()
             self.lin1 = nn.Linear(in_channels, hidden_channels)
             self.lin2 = nn.Linear(hidden_channels, out_channels)
@@ -320,9 +325,7 @@ def mock_checkpoint(tmp_path):
         "version_info": {
             "format_version": "2.0",
             "python_version": (
-                f"{sys.version_info.major}."
-                f"{sys.version_info.minor}."
-                f"{sys.version_info.micro}"
+                f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
             ),
             "torch_version": torch.__version__,
             "checkpoint_type": "best",
@@ -348,6 +351,7 @@ def mock_checkpoint(tmp_path):
 # ============================================================================
 # Scope: function (each test gets a pristine, empty registry).
 # Used by: contract tests (§2.1, §2.2, §2.3), thread safety tests (§6.1).
+
 
 @pytest.fixture()
 def isolated_dataset_registry():
@@ -376,6 +380,7 @@ def isolated_dataset_registry():
 # ============================================================================
 # Scope: function (fresh directory per test).
 # Used by: regression tests (§4.2, §4.3), E2E tests (§3.1, §3.4).
+
 
 @pytest.fixture()
 def tmp_working_dir(tmp_path):
@@ -412,8 +417,9 @@ def tmp_working_dir(tmp_path):
 # Scope: function (mutable dicts — tests may alter them).
 # Used by: E2E tests (§3.2), contract tests (§2.1).
 
+
 @pytest.fixture()
-def sample_mol_data() -> List[Dict[str, Any]]:
+def sample_mol_data() -> list[dict[str, Any]]:
     """
     Provide a list of 5 synthetic molecular data dictionaries that mimic
     the raw property dicts passed through the MILIA preprocessing pipeline.
@@ -436,7 +442,7 @@ def sample_mol_data() -> List[Dict[str, Any]]:
     """
     import numpy as np
 
-    molecules: List[Dict[str, Any]] = []
+    molecules: list[dict[str, Any]] = []
 
     # Molecule templates: (name, atoms, smiles, inchi)
     _templates = [
@@ -460,15 +466,17 @@ def sample_mol_data() -> List[Dict[str, Any]]:
         forces = (rng.standard_normal((n_atoms, 3)) * 0.01).tolist()
         energy = float(rng.standard_normal() * 10.0 - 76.0)
 
-        molecules.append({
-            "atoms": atoms,
-            "coordinates": coords,
-            "energy": energy,
-            "forces": forces,
-            "identifier": f"mol_{idx:04d}_{name}",
-            "smiles": smiles,
-            "inchi": inchi,
-        })
+        molecules.append(
+            {
+                "atoms": atoms,
+                "coordinates": coords,
+                "energy": energy,
+                "forces": forces,
+                "identifier": f"mol_{idx:04d}_{name}",
+                "smiles": smiles,
+                "inchi": inchi,
+            }
+        )
 
     logger.debug("sample_mol_data: created %d synthetic molecules", len(molecules))
     return molecules
@@ -480,8 +488,9 @@ def sample_mol_data() -> List[Dict[str, Any]]:
 # Thin wrapper that deep-copies the session-scoped ``minimal_config`` so that
 # tests can freely mutate their copy.
 
+
 @pytest.fixture()
-def mutable_config(minimal_config) -> Dict[str, Any]:
+def mutable_config(minimal_config) -> dict[str, Any]:
     """
     Return a deep copy of ``minimal_config`` that tests can safely mutate.
 
@@ -499,6 +508,7 @@ def mutable_config(minimal_config) -> Dict[str, Any]:
 # ============================================================================
 # pytest_configure — Markers + Warning Filters
 # ============================================================================
+
 
 def pytest_configure(config):
     """Register custom markers and third-party warning filters.

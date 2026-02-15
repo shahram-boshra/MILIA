@@ -16,6 +16,11 @@
 #   pre-commit autoupdate
 # =============================================================================
 
+# Global exclude: archive/ is untracked (in .gitignore) and contains local-only
+# reference documents. Pre-commit scans all files on disk by default when using
+# --all-files; this exclude prevents PermissionError and false-positive hits.
+exclude: ^archive/
+
 repos:
   # ---- General file hygiene ----
   # Source: https://github.com/pre-commit/pre-commit-hooks

@@ -27,15 +27,11 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
-import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -46,20 +42,19 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.dmc import DMCDatasetHandler
 from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
+    DatasetSpecificHandlerError,
     HandlerConfigurationError,
     HandlerValidationError,
-    DatasetSpecificHandlerError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
 )
-
+from milia_pipeline.handlers.implementations.dmc import DMCDatasetHandler
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for DMCDatasetHandler
 # ============================================================================
+
 
 def _make_dataset_config(**overrides):
     """
@@ -73,7 +68,7 @@ def _make_dataset_config(**overrides):
     cfg.root_dir = overrides.get("root_dir", "/tmp/test_data")
     cfg.raw_dir = overrides.get("raw_dir", "/tmp/test_data/raw")
     cfg.is_uncertainty_enabled = overrides.get("is_uncertainty_enabled", False)
-    cfg.uncertainty_config = overrides.get("uncertainty_config", None)
+    cfg.uncertainty_config = overrides.get("uncertainty_config")
     return cfg
 
 
@@ -86,7 +81,7 @@ def _make_filter_config(**overrides):
     cfg = Mock(name="FilterConfig")
     cfg.max_atoms = overrides.get("max_atoms", 100)
     cfg.min_atoms = overrides.get("min_atoms", 1)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     return cfg
 
 
@@ -105,7 +100,9 @@ def _make_processing_config(**overrides):
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["Etot"])
     cfg.node_features = overrides.get("node_features", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
-    cfg.common_required_properties = overrides.get("common_required_properties", ["atoms", "coordinates"])
+    cfg.common_required_properties = overrides.get(
+        "common_required_properties", ["atoms", "coordinates"]
+    )
     return cfg
 
 
@@ -120,7 +117,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.dmc"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = DMCDatasetHandler(
         dataset_config=dataset_config,
@@ -175,7 +172,9 @@ def _make_raw_properties(**overrides):
     props = {
         "Etot": overrides.get("Etot", -76.4),
         "atoms": overrides.get("atoms", np.array([6, 1, 1])[:num_atoms]),
-        "coordinates": overrides.get("coordinates", np.random.randn(num_atoms, 3).astype(np.float32)),
+        "coordinates": overrides.get(
+            "coordinates", np.random.randn(num_atoms, 3).astype(np.float32)
+        ),
         "inchi": overrides.get("inchi", "InChI=1S/CH2/c1-2/h1-2H"),
     }
     # Optionally add extra properties
@@ -196,7 +195,7 @@ def _make_uncertainty_config(**overrides):
     """
     config = {
         "uncertainty_field_name": overrides.get("uncertainty_field_name", "std"),
-        "max_uncertainty_threshold": overrides.get("max_uncertainty_threshold", None),
+        "max_uncertainty_threshold": overrides.get("max_uncertainty_threshold"),
         "uncertainty_weighting": overrides.get("uncertainty_weighting", "inverse_variance"),
     }
     # Allow removing keys
@@ -210,6 +209,7 @@ def _make_uncertainty_config(**overrides):
 # ============================================================================
 # GROUP 1: DMCDatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestDMCDatasetHandlerIdentity(unittest.TestCase):
     """Test DMCDatasetHandler identity, registration, and basic attributes."""
@@ -236,6 +236,7 @@ class TestDMCDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """DMCDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(DMCDatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -244,8 +245,10 @@ class TestDMCDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = DMCDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -260,6 +263,7 @@ class TestDMCDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_required_properties (7 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test DMC-specific required property determination."""
@@ -321,6 +325,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # GROUP 3: get_molecular_charge (6 tests)
 # ============================================================================
 
+
 class TestGetMolecularCharge(unittest.TestCase):
     """Test DMC-specific molecular charge extraction from InChI."""
 
@@ -370,6 +375,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # ============================================================================
 # GROUP 4: validate_molecule_data — Success Paths (5 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeDataSuccess(unittest.TestCase):
     """Test DMC molecule validation success paths."""
@@ -427,6 +433,7 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
 # GROUP 5: validate_molecule_data — Error Paths (7 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataErrors(unittest.TestCase):
     """Test DMC molecule validation error paths."""
 
@@ -464,8 +471,10 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
         self.assertIn("atoms", str(ctx.exception))
         self.assertIn("coordinates", str(ctx.exception))
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_molecular_structure",
-           side_effect=ValueError("Atom count mismatch"))
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_molecular_structure",
+        side_effect=ValueError("Atom count mismatch"),
+    )
     def test_structure_validation_failure_raises_dmc_handler_error(self, mock_validate):
         """Structure validation failure wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -494,6 +503,7 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
 # GROUP 6: process_property_value (8 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValue(unittest.TestCase):
     """Test DMC-specific property value processing."""
 
@@ -521,8 +531,9 @@ class TestProcessPropertyValue(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler.process_property_value("Etot", "not_a_number", 0)
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_uncertainty_field_validated(self, mock_validate):
         """Uncertainty field is validated and returned."""
         uc = _make_uncertainty_config(uncertainty_field_name="std")
@@ -532,8 +543,10 @@ class TestProcessPropertyValue(unittest.TestCase):
         self.assertAlmostEqual(result, 0.001, places=6)
         mock_validate.assert_called_once()
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           side_effect=ValueError("Negative uncertainty"))
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
+        side_effect=ValueError("Negative uncertainty"),
+    )
     def test_uncertainty_validation_failure_raises_dmc_handler_error(self, mock_validate):
         """Uncertainty validation failure raises DatasetSpecificHandlerError."""
         uc = _make_uncertainty_config(uncertainty_field_name="std")
@@ -566,6 +579,7 @@ class TestProcessPropertyValue(unittest.TestCase):
 # ============================================================================
 # GROUP 7: get_transform_recommendations (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendations(unittest.TestCase):
     """Test DMC-specific transform recommendations."""
@@ -616,6 +630,7 @@ class TestGetTransformRecommendations(unittest.TestCase):
 # GROUP 8: get_supported_descriptors (4 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test DMC-specific descriptor support reporting."""
 
@@ -650,6 +665,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # GROUP 9: get_supported_structural_features (5 tests)
 # ============================================================================
 
+
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test DMC-specific structural feature support (LIMITED features)."""
 
@@ -683,13 +699,20 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
         """Bond features include bond_type, bond_length, and topology features."""
         handler = _make_handler()
         features = handler.get_supported_structural_features()
-        for feat in ["bond_type", "is_conjugated", "is_aromatic", "bond_length", "bond_length_binned"]:
+        for feat in [
+            "bond_type",
+            "is_conjugated",
+            "is_aromatic",
+            "bond_length",
+            "bond_length_binned",
+        ]:
             self.assertIn(feat, features["bond"])
 
 
 # ============================================================================
 # GROUP 10: _is_valid_property (7 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test DMC-specific property validation."""
@@ -743,6 +766,7 @@ class TestIsValidProperty(unittest.TestCase):
 # ============================================================================
 # GROUP 11: _add_scalar_targets_internal (9 tests)
 # ============================================================================
+
 
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test DMC scalar target addition to PyG data."""
@@ -834,6 +858,7 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
 # GROUP 12: enrich_pyg_data (8 tests)
 # ============================================================================
 
+
 class TestEnrichPygData(unittest.TestCase):
     """Test DMC PyG data enrichment orchestration."""
 
@@ -892,12 +917,15 @@ class TestEnrichPygData(unittest.TestCase):
         """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
         data = _make_pyg_data()
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=RuntimeError("unexpected"),
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
     def test_sets_num_nodes_from_z(self):
         """Enrichment sets num_nodes from z tensor when not already set."""
@@ -914,11 +942,13 @@ class TestEnrichPygData(unittest.TestCase):
 # GROUP 13: _add_uncertainty_metadata_internal (8 tests)
 # ============================================================================
 
+
 class TestAddUncertaintyMetadataInternal(unittest.TestCase):
     """Test DMC uncertainty metadata addition to PyG data."""
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_adds_uncertainty_tensor(self, mock_validate):
         """Valid uncertainty is added as tensor on PyG data."""
         uc = _make_uncertainty_config()
@@ -930,8 +960,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         self.assertTrue(hasattr(data, "uncertainty"))
         self.assertAlmostEqual(data.uncertainty[0].item(), 0.001, places=6)
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_adds_inverse_variance_weight(self, mock_validate):
         """Inverse variance weight is calculated correctly."""
         uc = _make_uncertainty_config(uncertainty_weighting="inverse_variance")
@@ -945,8 +976,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         expected_weight = 1.0 / (0.001**2 + 1e-8)
         self.assertAlmostEqual(data.uncertainty_weight[0].item(), expected_weight, places=0)
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_non_inverse_variance_weight_is_one(self, mock_validate):
         """Non-inverse_variance weighting uses weight 1.0."""
         uc = _make_uncertainty_config(uncertainty_weighting="uniform")
@@ -957,8 +989,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler._add_uncertainty_metadata_internal(data, props, 0, "test")
         self.assertAlmostEqual(data.uncertainty_weight[0].item(), 1.0, places=4)
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=10.0)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=10.0
+    )
     def test_relative_uncertainty_calculated(self, mock_validate):
         """Relative uncertainty calculated when energy is available."""
         uc = _make_uncertainty_config()
@@ -972,8 +1005,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         expected = abs(10.0 / -76.4)
         self.assertAlmostEqual(data.relative_uncertainty[0].item(), expected, places=4)
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=10.0)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=10.0
+    )
     def test_high_uncertainty_flag_set(self, mock_validate):
         """High uncertainty flag is set when relative uncertainty > 0.1."""
         uc = _make_uncertainty_config()
@@ -987,8 +1021,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         self.assertTrue(hasattr(data, "high_uncertainty"))
         self.assertTrue(data.high_uncertainty[0].item())
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_low_uncertainty_flag_not_set(self, mock_validate):
         """High uncertainty flag is False when relative uncertainty < 0.1."""
         uc = _make_uncertainty_config()
@@ -1013,8 +1048,10 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler._add_uncertainty_metadata_internal(data, props, 0, "test")
         self.assertFalse(hasattr(data, "uncertainty"))
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           side_effect=ValueError("Bad uncertainty"))
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
+        side_effect=ValueError("Bad uncertainty"),
+    )
     def test_validation_failure_logs_warning(self, mock_validate):
         """Uncertainty validation failure logs warning, does not raise."""
         uc = _make_uncertainty_config()
@@ -1031,6 +1068,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
 # GROUP 14: _validate_uncertainty_data (6 tests)
 # ============================================================================
 
+
 class TestValidateUncertaintyData(unittest.TestCase):
     """Test DMC uncertainty data validation."""
 
@@ -1041,8 +1079,9 @@ class TestValidateUncertaintyData(unittest.TestCase):
         # Should not raise
         handler._validate_uncertainty_data({}, 0, "test")
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.001)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.001
+    )
     def test_valid_uncertainty_passes(self, mock_validate):
         """Valid uncertainty data passes validation."""
         uc = _make_uncertainty_config()
@@ -1060,8 +1099,9 @@ class TestValidateUncertaintyData(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler._validate_uncertainty_data(props, 0, "test")
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=None)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=None
+    )
     def test_validation_returns_none_raises_dmc_handler_error(self, mock_validate):
         """Uncertainty validation returning None raises DatasetSpecificHandlerError."""
         uc = _make_uncertainty_config()
@@ -1071,8 +1111,9 @@ class TestValidateUncertaintyData(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler._validate_uncertainty_data(props, 0, "test")
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           return_value=0.5)
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data", return_value=0.5
+    )
     def test_exceeds_threshold_raises_dmc_handler_error(self, mock_validate):
         """Uncertainty exceeding threshold raises DatasetSpecificHandlerError."""
         uc = _make_uncertainty_config(max_uncertainty_threshold=0.1)
@@ -1082,8 +1123,10 @@ class TestValidateUncertaintyData(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler._validate_uncertainty_data(props, 0, "test")
 
-    @patch("milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
-           side_effect=ValueError("Negative uncertainty"))
+    @patch(
+        "milia_pipeline.handlers.implementations.dmc.validate_uncertainty_data",
+        side_effect=ValueError("Negative uncertainty"),
+    )
     def test_value_error_wrapped_in_dmc_handler_error(self, mock_validate):
         """ValueError from validate_uncertainty_data wrapped in DatasetSpecificHandlerError."""
         uc = _make_uncertainty_config()
@@ -1097,6 +1140,7 @@ class TestValidateUncertaintyData(unittest.TestCase):
 # ============================================================================
 # GROUP 15: validate_configuration (5 tests)
 # ============================================================================
+
 
 class TestValidateConfiguration(unittest.TestCase):
     """Test DMC-specific configuration validation."""
@@ -1132,17 +1176,21 @@ class TestValidateConfiguration(unittest.TestCase):
     def test_unexpected_config_error_wrapped(self):
         """Unexpected configuration error is wrapped in HandlerConfigurationError."""
         handler = _make_handler()
-        with patch.object(
-            type(handler).__bases__[0], "validate_configuration",
-            side_effect=RuntimeError("config_boom"),
+        with (
+            patch.object(
+                type(handler).__bases__[0],
+                "validate_configuration",
+                side_effect=RuntimeError("config_boom"),
+            ),
+            self.assertRaises(HandlerConfigurationError),
         ):
-            with self.assertRaises(HandlerConfigurationError):
-                handler.validate_configuration()
+            handler.validate_configuration()
 
 
 # ============================================================================
 # GROUP 16: Transform Validation Helpers (8 tests)
 # ============================================================================
+
 
 class TestTransformValidationHelpers(unittest.TestCase):
     """Test DMC-specific transform validation methods."""
@@ -1202,8 +1250,12 @@ class TestTransformValidationHelpers(unittest.TestCase):
         """_get_dataset_suitable_transforms returns only minimal structural transforms."""
         handler = _make_handler()
         available = {
-            "AddSelfLoops": None, "ToUndirected": None, "NormalizeFeatures": None,
-            "RandomRotate": None, "DropEdge": None, "VirtualNode": None,
+            "AddSelfLoops": None,
+            "ToUndirected": None,
+            "NormalizeFeatures": None,
+            "RandomRotate": None,
+            "DropEdge": None,
+            "VirtualNode": None,
         }
         suitable = handler._get_dataset_suitable_transforms(available)
         self.assertIn("AddSelfLoops", suitable)
@@ -1218,6 +1270,7 @@ class TestTransformValidationHelpers(unittest.TestCase):
 # ============================================================================
 # GROUP 17: get_processing_statistics (5 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test DMC processing statistics generation."""
@@ -1266,6 +1319,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # GROUP 18: _get_transform_recommendations (6 tests)
 # ============================================================================
 
+
 class TestGetTransformRecommendationsInternal(unittest.TestCase):
     """Test DMC internal transform recommendation logic."""
 
@@ -1310,6 +1364,7 @@ class TestGetTransformRecommendationsInternal(unittest.TestCase):
 # GROUP 19: Edge Cases and Integration (6 tests)
 # ============================================================================
 
+
 class TestEdgeCasesAndIntegration(unittest.TestCase):
     """Test edge cases and integration scenarios."""
 
@@ -1351,31 +1406,38 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
         """MoleculeProcessingError in validate_molecule_data wraps to DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=MoleculeProcessingError(
-                message="Processing failed",
-                molecule_index=0,
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=MoleculeProcessingError(
+                    message="Processing failed",
+                    molecule_index=0,
+                ),
             ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, molecule_index=0, identifier="test")
+            handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
     def test_unexpected_error_in_validation_wraps_to_dmc_handler_error(self):
         """Unexpected errors in validate_molecule_data wrap to DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=TypeError("unexpected type error"),
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=TypeError("unexpected type error"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, molecule_index=0, identifier="test")
+            handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1383,25 +1445,25 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDMCDatasetHandlerIdentity,              # GROUP 1:    6 tests
-        TestGetRequiredProperties,                   # GROUP 2:    7 tests
-        TestGetMolecularCharge,                      # GROUP 3:    6 tests
-        TestValidateMoleculeDataSuccess,             # GROUP 4:    5 tests
-        TestValidateMoleculeDataErrors,              # GROUP 5:    7 tests
-        TestProcessPropertyValue,                    # GROUP 6:    8 tests
-        TestGetTransformRecommendations,             # GROUP 7:    5 tests
-        TestGetSupportedDescriptors,                 # GROUP 8:    4 tests
-        TestGetSupportedStructuralFeatures,          # GROUP 9:    5 tests
-        TestIsValidProperty,                         # GROUP 10:   9 tests
-        TestAddScalarTargetsInternal,                # GROUP 11:   9 tests
-        TestEnrichPygData,                           # GROUP 12:   8 tests
-        TestAddUncertaintyMetadataInternal,          # GROUP 13:   8 tests
-        TestValidateUncertaintyData,                 # GROUP 14:   6 tests
-        TestValidateConfiguration,                   # GROUP 15:   5 tests
-        TestTransformValidationHelpers,              # GROUP 16:   8 tests
-        TestGetProcessingStatistics,                 # GROUP 17:   5 tests
-        TestGetTransformRecommendationsInternal,     # GROUP 18:   6 tests
-        TestEdgeCasesAndIntegration,                 # GROUP 19:   6 tests
+        TestDMCDatasetHandlerIdentity,  # GROUP 1:    6 tests
+        TestGetRequiredProperties,  # GROUP 2:    7 tests
+        TestGetMolecularCharge,  # GROUP 3:    6 tests
+        TestValidateMoleculeDataSuccess,  # GROUP 4:    5 tests
+        TestValidateMoleculeDataErrors,  # GROUP 5:    7 tests
+        TestProcessPropertyValue,  # GROUP 6:    8 tests
+        TestGetTransformRecommendations,  # GROUP 7:    5 tests
+        TestGetSupportedDescriptors,  # GROUP 8:    4 tests
+        TestGetSupportedStructuralFeatures,  # GROUP 9:    5 tests
+        TestIsValidProperty,  # GROUP 10:   9 tests
+        TestAddScalarTargetsInternal,  # GROUP 11:   9 tests
+        TestEnrichPygData,  # GROUP 12:   8 tests
+        TestAddUncertaintyMetadataInternal,  # GROUP 13:   8 tests
+        TestValidateUncertaintyData,  # GROUP 14:   6 tests
+        TestValidateConfiguration,  # GROUP 15:   5 tests
+        TestTransformValidationHelpers,  # GROUP 16:   8 tests
+        TestGetProcessingStatistics,  # GROUP 17:   5 tests
+        TestGetTransformRecommendationsInternal,  # GROUP 18:   6 tests
+        TestEdgeCasesAndIntegration,  # GROUP 19:   6 tests
     ]
 
     for test_class in test_classes:

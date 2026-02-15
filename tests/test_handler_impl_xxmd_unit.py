@@ -54,15 +54,12 @@ Verified against exception signatures (from exceptions.py):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
 import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, PropertyMock, patch
 
 import numpy as np
 import torch
@@ -73,15 +70,12 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
 from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
     DatasetSpecificHandlerError,
+    HandlerValidationError,
+    PropertyEnrichmentError,
 )
+from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
 
 # Import constants from the same location xxmd.py uses (milia_pipeline.constants)
 # with same fallback pattern as the module under test
@@ -89,11 +83,11 @@ try:
     from milia_pipeline.constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
 except ImportError:
     ATOMIC_ENERGIES_HARTREE = {
-        1: -0.500273,    # H
-        6: -37.846772,   # C
-        7: -54.583861,   # N
-        8: -75.064579,   # O
-        16: -398.100442, # S
+        1: -0.500273,  # H
+        6: -37.846772,  # C
+        7: -54.583861,  # N
+        8: -75.064579,  # O
+        16: -398.100442,  # S
     }
     HAR2EV = 27.211386245988
 
@@ -101,6 +95,7 @@ except ImportError:
 # ============================================================================
 # HELPERS: Build realistic config mocks for XXMDDatasetHandler
 # ============================================================================
+
 
 def _make_dataset_config(**overrides):
     """
@@ -112,9 +107,7 @@ def _make_dataset_config(**overrides):
     """
     cfg = Mock(spec_set=["dataset_type", "npz_file_path", "dataset_name"])
     cfg.dataset_type = overrides.get("dataset_type", "XXMD")
-    cfg.npz_file_path = overrides.get(
-        "npz_file_path", "~/Chem_Data/MILIA_PyG_Dataset/raw/xxmd.npz"
-    )
+    cfg.npz_file_path = overrides.get("npz_file_path", "~/Chem_Data/MILIA_PyG_Dataset/raw/xxmd.npz")
     cfg.dataset_name = overrides.get("dataset_name", "xxMD")
     return cfg
 
@@ -127,7 +120,7 @@ def _make_filter_config(**overrides):
     """
     cfg = Mock(spec_set=["max_atoms", "allowed_elements", "min_atoms"])
     cfg.max_atoms = overrides.get("max_atoms", 63)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     cfg.min_atoms = overrides.get("min_atoms", 1)
     return cfg
 
@@ -148,14 +141,16 @@ def _make_processing_config(**overrides):
     - calculate_atomization_energy_from: 'energy' (Hartree basis)
     - atomization_energy_key_name: 'atomization_energy'
     """
-    cfg = Mock(spec_set=[
-        "scalar_graph_targets",
-        "node_features",
-        "vector_graph_properties",
-        "variable_len_graph_properties",
-        "calculate_atomization_energy_from",
-        "atomization_energy_key_name",
-    ])
+    cfg = Mock(
+        spec_set=[
+            "scalar_graph_targets",
+            "node_features",
+            "vector_graph_properties",
+            "variable_len_graph_properties",
+            "calculate_atomization_energy_from",
+            "atomization_energy_key_name",
+        ]
+    )
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["energy"])
     cfg.node_features = overrides.get("node_features", ["atoms"])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
@@ -180,7 +175,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.xxmd"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = XXMDDatasetHandler(
         dataset_config=dataset_config,
@@ -253,6 +248,7 @@ def _make_raw_properties(**overrides):
 # GROUP 1: XXMDDatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetHandlerIdentity(unittest.TestCase):
     """Test XXMDDatasetHandler identity, registration, and basic attributes."""
 
@@ -276,6 +272,7 @@ class TestXXMDDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """XXMDDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(XXMDDatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -284,8 +281,10 @@ class TestXXMDDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = XXMDDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -300,6 +299,7 @@ class TestXXMDDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_molecular_charge (4 tests)
 # ============================================================================
+
 
 class TestGetMolecularCharge(unittest.TestCase):
     """Test xxMD molecular charge — always 0 (neutral molecules)."""
@@ -336,6 +336,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # ============================================================================
 # GROUP 3: get_required_properties (5 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test xxMD required properties assembly."""
@@ -383,6 +384,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # ============================================================================
 # GROUP 4: validate_molecule_data (10 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeData(unittest.TestCase):
     """Test xxMD molecule validation with exception handling."""
@@ -468,17 +470,21 @@ class TestValidateMoleculeData(unittest.TestCase):
         """Unexpected exceptions wrap into DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=RuntimeError("unexpected boom"),
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=RuntimeError("unexpected boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, 0, "test")
+            handler.validate_molecule_data(props, 0, "test")
 
 
 # ============================================================================
 # GROUP 5: process_property_value — atoms (6 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueAtoms(unittest.TestCase):
     """Test xxMD atoms dtype normalization."""
@@ -534,6 +540,7 @@ class TestProcessPropertyValueAtoms(unittest.TestCase):
 # GROUP 6: process_property_value — coordinates (5 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueCoordinates(unittest.TestCase):
     """Test xxMD coordinates dtype normalization."""
 
@@ -578,6 +585,7 @@ class TestProcessPropertyValueCoordinates(unittest.TestCase):
 # ============================================================================
 # GROUP 7: process_property_value — forces (6 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueForces(unittest.TestCase):
     """Test xxMD forces dtype normalization and validation."""
@@ -635,6 +643,7 @@ class TestProcessPropertyValueForces(unittest.TestCase):
 # GROUP 8: process_property_value — energy (6 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueEnergy(unittest.TestCase):
     """Test xxMD energy handling."""
 
@@ -688,6 +697,7 @@ class TestProcessPropertyValueEnergy(unittest.TestCase):
 # GROUP 9: process_property_value — other/edge cases (5 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueOther(unittest.TestCase):
     """Test xxMD property processing for unrecognized keys and edge cases."""
 
@@ -735,6 +745,7 @@ class TestProcessPropertyValueOther(unittest.TestCase):
 # GROUP 10: _is_valid_property (5 tests)
 # ============================================================================
 
+
 class TestIsValidProperty(unittest.TestCase):
     """Test xxMD property validity checker."""
 
@@ -767,6 +778,7 @@ class TestIsValidProperty(unittest.TestCase):
 # ============================================================================
 # GROUP 11: _ensure_tensor (8 tests)
 # ============================================================================
+
 
 class TestEnsureTensor(unittest.TestCase):
     """Test xxMD tensor conversion utility."""
@@ -831,6 +843,7 @@ class TestEnsureTensor(unittest.TestCase):
 # GROUP 12: enrich_pyg_data — orchestration (8 tests)
 # ============================================================================
 
+
 class TestEnrichPygData(unittest.TestCase):
     """Test xxMD PyG data enrichment orchestration."""
 
@@ -877,9 +890,7 @@ class TestEnrichPygData(unittest.TestCase):
             atomization_energy_key_name="atomization_energy",
         )
         handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(
-            num_atoms=1, z=torch.tensor([1], dtype=torch.long)
-        )
+        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
         if ATOMIC_ENERGIES_HARTREE.get(1) is not None and HAR2EV is not None:
             result = handler.enrich_pyg_data(data, props, 0, "test")
@@ -912,17 +923,21 @@ class TestEnrichPygData(unittest.TestCase):
         handler = _make_handler()
         data = _make_pyg_data()
         props = _make_raw_properties(energy=-76.3)
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=RuntimeError("unexpected boom"),
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=RuntimeError("unexpected boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, props, 0, "test")
+            handler.enrich_pyg_data(data, props, 0, "test")
 
 
 # ============================================================================
 # GROUP 13: _add_scalar_targets_internal (8 tests)
 # ============================================================================
+
 
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test xxMD scalar target addition."""
@@ -1006,17 +1021,21 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         props = _make_raw_properties(energy=-76.3)
-        with patch.object(
-            handler, "_ensure_tensor",
-            side_effect=RuntimeError("tensor boom"),
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=RuntimeError("tensor boom"),
+            ),
+            self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)),
         ):
-            with self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)):
-                handler._add_scalar_targets_internal(data, props, 0, "test")
+            handler._add_scalar_targets_internal(data, props, 0, "test")
 
 
 # ============================================================================
 # GROUP 14: _add_vector_properties_internal (6 tests)
 # ============================================================================
+
 
 class TestAddVectorPropertiesInternal(unittest.TestCase):
     """Test xxMD vector property addition."""
@@ -1069,12 +1088,15 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         data = _make_pyg_data()
         props = _make_raw_properties()
         props["dipole"] = np.array([0.1, 0.2, 0.3], dtype=np.float32)
-        with patch.object(
-            handler, "_ensure_tensor",
-            side_effect=RuntimeError("tensor boom"),
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=RuntimeError("tensor boom"),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
         ):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_vector_properties_internal(data, props, 0, "test")
+            handler._add_vector_properties_internal(data, props, 0, "test")
 
     def test_empty_vector_properties_noop(self):
         """Empty vector_graph_properties list is a no-op."""
@@ -1089,6 +1111,7 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 15: _add_variable_length_properties_internal (6 tests)
 # ============================================================================
+
 
 class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
     """Test xxMD variable-length property addition (forces)."""
@@ -1128,12 +1151,15 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         data = _make_pyg_data()
         forces = np.array([[0.1, -0.2, 0.3]], dtype=np.float32)
         props = _make_raw_properties(forces=forces)
-        with patch.object(
-            handler, "_ensure_tensor",
-            side_effect=RuntimeError("tensor conversion boom"),
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=RuntimeError("tensor conversion boom"),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
         ):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_variable_length_properties_internal(data, props, 0, "test")
+            handler._add_variable_length_properties_internal(data, props, 0, "test")
 
     def test_property_enrichment_error_reraised(self):
         """PropertyEnrichmentError from within the loop is re-raised."""
@@ -1143,8 +1169,11 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         forces = np.array([[0.1, -0.2, 0.3]], dtype=np.float32)
         props = _make_raw_properties(forces=forces)
         err = PropertyEnrichmentError(
-            molecule_index=0, inchi="test", property_name="forces",
-            reason="test error", detail="test detail"
+            molecule_index=0,
+            inchi="test",
+            property_name="forces",
+            reason="test error",
+            detail="test detail",
         )
         with patch.object(handler, "_ensure_tensor", side_effect=err):
             with self.assertRaises(PropertyEnrichmentError):
@@ -1157,18 +1186,22 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         data = _make_pyg_data()
         props = _make_raw_properties(forces=np.array([[0.1, -0.2, 0.3]], dtype=np.float32))
         # Patch the config to trigger outer try/except
-        with patch.object(
-            handler.processing_config, "variable_len_graph_properties",
-            new_callable=PropertyMock,
-            side_effect=RuntimeError("outer boom"),
+        with (
+            patch.object(
+                handler.processing_config,
+                "variable_len_graph_properties",
+                new_callable=PropertyMock,
+                side_effect=RuntimeError("outer boom"),
+            ),
+            self.assertRaises((DatasetSpecificHandlerError, RuntimeError)),
         ):
-            with self.assertRaises((DatasetSpecificHandlerError, RuntimeError)):
-                handler._add_variable_length_properties_internal(data, props, 0, "test")
+            handler._add_variable_length_properties_internal(data, props, 0, "test")
 
 
 # ============================================================================
 # GROUP 16: _calculate_atomization_energy_internal (10 tests)
 # ============================================================================
+
 
 class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
     """Test xxMD atomization energy calculation (Hartree → eV)."""
@@ -1215,7 +1248,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         base_energy = -0.5  # Hartree
         props = _make_raw_properties(energy=base_energy, num_atoms=1, atoms=np.array([1]))
 
-        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_energy_h is not None and HAR2EV is not None:
             expected_eV = (base_energy - atomic_energy_h) * HAR2EV
             result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
@@ -1236,8 +1269,8 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         base_energy = -76.3  # Hartree
         props = _make_raw_properties(energy=base_energy)
 
-        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8, None)
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8)
+        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_O is not None and atomic_H is not None and HAR2EV is not None:
             sum_atomic = atomic_O + 2 * atomic_H
             expected_eV = (base_energy - sum_atomic) * HAR2EV
@@ -1301,9 +1334,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         """When HAR2EV constant is None, returns None."""
         pc = _make_processing_config(calculate_atomization_energy_from="energy")
         handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(
-            num_atoms=1, z=torch.tensor([1], dtype=torch.long)
-        )
+        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
         result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
         self.assertIsNone(result)
@@ -1312,6 +1343,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 17: get_processing_statistics (6 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test xxMD processing statistics generation."""
@@ -1375,6 +1407,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # GROUP 18: get_supported_structural_features (3 tests)
 # ============================================================================
 
+
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test xxMD supported structural features."""
 
@@ -1402,6 +1435,7 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # ============================================================================
 # GROUP 19: get_supported_descriptors (4 tests)
 # ============================================================================
+
 
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test xxMD supported descriptors."""
@@ -1434,6 +1468,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # ============================================================================
 # GROUP 20: Transform recommendations and validation (10 tests)
 # ============================================================================
+
 
 class TestTransformRecommendationsAndValidation(unittest.TestCase):
     """Test xxMD transform system: recommendations, suitable, validation."""
@@ -1470,7 +1505,9 @@ class TestTransformRecommendationsAndValidation(unittest.TestCase):
         """Warns when no geometric transforms are in the pipeline."""
         handler = _make_handler()
         warnings = handler._validate_dataset_specific_transforms(["GCNNorm"])
-        self.assertTrue(any("geometric augmentation" in w.lower() or "RandomRotate" in w for w in warnings))
+        self.assertTrue(
+            any("geometric augmentation" in w.lower() or "RandomRotate" in w for w in warnings)
+        )
 
     def test_validate_dataset_specific_with_geometric_no_warn(self):
         """No geometry warning when RandomRotate is present."""
@@ -1508,6 +1545,7 @@ class TestTransformRecommendationsAndValidation(unittest.TestCase):
 # ============================================================================
 # GROUP 21: Integration — full pipeline flow (4 tests)
 # ============================================================================
+
 
 class TestXXMDIntegrationFlow(unittest.TestCase):
     """Integration-level tests for the full xxMD handler flow."""
@@ -1573,6 +1611,7 @@ class TestXXMDIntegrationFlow(unittest.TestCase):
 # GROUP 22: Edge cases and error boundary tests (5 tests)
 # ============================================================================
 
+
 class TestXXMDEdgeCases(unittest.TestCase):
     """Edge cases and boundary condition tests."""
 
@@ -1627,6 +1666,7 @@ class TestXXMDEdgeCases(unittest.TestCase):
 # GROUP 23: xxMD-specific molecule coverage (4 tests)
 # ============================================================================
 
+
 class TestXXMDMoleculeSpecific(unittest.TestCase):
     """Test xxMD-specific molecule characteristics (4 photochemically active molecules)."""
 
@@ -1651,7 +1691,7 @@ class TestXXMDMoleculeSpecific(unittest.TestCase):
         )
         props = _make_raw_properties(energy=-398.0, num_atoms=1, atoms=np.array([16]))
 
-        atomic_S = ATOMIC_ENERGIES_HARTREE.get(16, None)
+        atomic_S = ATOMIC_ENERGIES_HARTREE.get(16)
         if atomic_S is not None and HAR2EV is not None:
             result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
             self.assertIsNotNone(result)
@@ -1676,6 +1716,7 @@ class TestXXMDMoleculeSpecific(unittest.TestCase):
 # ============================================================================
 # GROUP 24: Suitable transforms detail coverage (4 tests)
 # ============================================================================
+
 
 class TestSuitableTransformsDetail(unittest.TestCase):
     """Test _get_dataset_suitable_transforms with different available transforms."""
@@ -1716,6 +1757,7 @@ class TestSuitableTransformsDetail(unittest.TestCase):
 # ============================================================================
 # GROUP 25: _get_transform_recommendations detail (4 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendationsDetail(unittest.TestCase):
     """Test _get_transform_recommendations with various transform combinations."""

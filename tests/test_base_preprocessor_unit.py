@@ -25,16 +25,13 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
+import sys
 import tempfile
-import time
-from typing import Dict, Any, Optional
+import unittest
 from abc import ABC
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
@@ -43,16 +40,16 @@ if str(project_root) not in sys.path:
 
 import numpy as np
 
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.exceptions import (
-    DataProcessingError,
     ConfigurationError,
+    DataProcessingError,
 )
-
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 
 # ============================================================================
 # HELPER: Concrete subclass builder for testing the abstract base class
 # ============================================================================
+
 
 def _make_concrete_preprocessor_class(
     class_name="ConcretePreprocessor",
@@ -65,6 +62,7 @@ def _make_concrete_preprocessor_class(
     By default, _validate_config is a no-op and preprocess returns a
     dummy Path.  Callers can override either via callables.
     """
+
     def _default_validate_config(self):
         pass
 
@@ -110,6 +108,7 @@ def _create_valid_npz(path, compounds=None, metadata=None):
 # GROUP 1: BasePreprocessor Abstract Nature and Class Structure (8 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorAbstractStructure(unittest.TestCase):
     """Test that BasePreprocessor is properly abstract and has correct structure."""
 
@@ -154,6 +153,7 @@ class TestBasePreprocessorAbstractStructure(unittest.TestCase):
 # GROUP 2: __init__ — Config/Logger Storage and _validate_config Call (10 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorInit(unittest.TestCase):
     """Test __init__ stores config/logger and calls _validate_config."""
 
@@ -178,9 +178,7 @@ class TestBasePreprocessorInit(unittest.TestCase):
         def tracked_validate(self):
             call_tracker()
 
-        ConcreteCls = _make_concrete_preprocessor_class(
-            validate_config_impl=tracked_validate
-        )
+        ConcreteCls = _make_concrete_preprocessor_class(validate_config_impl=tracked_validate)
         ConcreteCls(config=_make_config(), logger=_make_logger())
         call_tracker.assert_called_once()
 
@@ -192,9 +190,7 @@ class TestBasePreprocessorInit(unittest.TestCase):
             accessed["config"] = self.config
             accessed["logger"] = self.logger
 
-        ConcreteCls = _make_concrete_preprocessor_class(
-            validate_config_impl=validating_config
-        )
+        ConcreteCls = _make_concrete_preprocessor_class(validate_config_impl=validating_config)
         config = _make_config()
         logger = _make_logger()
         ConcreteCls(config=config, logger=logger)
@@ -203,23 +199,21 @@ class TestBasePreprocessorInit(unittest.TestCase):
 
     def test_validate_config_raises_propagates(self):
         """If _validate_config raises ConfigurationError, it propagates from __init__."""
+
         def failing_validate(self):
             raise ConfigurationError("Bad config")
 
-        ConcreteCls = _make_concrete_preprocessor_class(
-            validate_config_impl=failing_validate
-        )
+        ConcreteCls = _make_concrete_preprocessor_class(validate_config_impl=failing_validate)
         with self.assertRaises(ConfigurationError):
             ConcreteCls(config=_make_config(), logger=_make_logger())
 
     def test_validate_config_raises_generic_exception_propagates(self):
         """If _validate_config raises a generic Exception, it propagates."""
+
         def failing_validate(self):
             raise ValueError("unexpected")
 
-        ConcreteCls = _make_concrete_preprocessor_class(
-            validate_config_impl=failing_validate
-        )
+        ConcreteCls = _make_concrete_preprocessor_class(validate_config_impl=failing_validate)
         with self.assertRaises(ValueError):
             ConcreteCls(config=_make_config(), logger=_make_logger())
 
@@ -252,6 +246,7 @@ class TestBasePreprocessorInit(unittest.TestCase):
 # ============================================================================
 # GROUP 3: run() — Orchestration Pipeline (14 tests)
 # ============================================================================
+
 
 class TestBasePreprocessorRun(unittest.TestCase):
     """Test run() orchestrates preprocess → _validate_output → return path."""
@@ -305,14 +300,18 @@ class TestBasePreprocessorRun(unittest.TestCase):
         preprocessor = ConcreteCls(config=_make_config(), logger=_make_logger())
 
         original_preprocess = preprocessor.preprocess
+
         def tracked_preprocess():
             call_order.append("preprocess")
             return Path("/tmp/out.npz")
 
         preprocessor.preprocess = tracked_preprocess
 
-        with patch.object(preprocessor, "_validate_output",
-                          side_effect=lambda p: call_order.append("validate_output")):
+        with patch.object(
+            preprocessor,
+            "_validate_output",
+            side_effect=lambda p: call_order.append("validate_output"),
+        ):
             preprocessor.run()
 
         self.assertEqual(call_order, ["preprocess", "validate_output"])
@@ -361,6 +360,7 @@ class TestBasePreprocessorRun(unittest.TestCase):
 
     def test_run_preprocess_exception_raises_data_processing_error(self):
         """run() wraps preprocess() exceptions in DataProcessingError."""
+
         def failing_preprocess(self):
             raise RuntimeError("disk full")
 
@@ -393,17 +393,21 @@ class TestBasePreprocessorRun(unittest.TestCase):
         preprocessor = ConcreteCls(config=_make_config(), logger=_make_logger())
         preprocessor.preprocess = Mock(return_value=Path("/tmp/out.npz"))
 
-        with patch.object(
-            preprocessor, "_validate_output",
-            side_effect=DataProcessingError("validation failed")
+        with (
+            patch.object(
+                preprocessor,
+                "_validate_output",
+                side_effect=DataProcessingError("validation failed"),
+            ),
+            self.assertRaises(DataProcessingError) as ctx,
         ):
-            with self.assertRaises(DataProcessingError) as ctx:
-                preprocessor.run()
+            preprocessor.run()
 
         self.assertIn("Preprocessing error", str(ctx.exception))
 
     def test_run_logs_error_on_failure(self):
         """run() logs an error message when an exception occurs."""
+
         def failing_preprocess(self):
             raise ValueError("bad data")
 
@@ -420,8 +424,9 @@ class TestBasePreprocessorRun(unittest.TestCase):
 
     def test_run_does_not_return_on_failure(self):
         """run() does not return a value when an exception is raised."""
+
         def failing_preprocess(self):
-            raise IOError("cannot read")
+            raise OSError("cannot read")
 
         ConcreteCls = _make_concrete_preprocessor_class(preprocess_impl=failing_preprocess)
         preprocessor = ConcreteCls(config=_make_config(), logger=_make_logger())
@@ -432,6 +437,7 @@ class TestBasePreprocessorRun(unittest.TestCase):
 
     def test_run_wraps_data_processing_error_from_preprocess(self):
         """If preprocess() raises DataProcessingError, run() re-wraps it."""
+
         def raising_preprocess(self):
             raise DataProcessingError("inner error")
 
@@ -460,6 +466,7 @@ class TestBasePreprocessorRun(unittest.TestCase):
 # GROUP 4: _validate_output — NPZ File Validation (14 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorValidateOutput(unittest.TestCase):
     """Test _validate_output validates .npz file existence and structure."""
 
@@ -472,6 +479,7 @@ class TestBasePreprocessorValidateOutput(unittest.TestCase):
     def tearDown(self):
         """Clean up temporary files."""
         import shutil
+
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def _npz_path(self, name="test.npz"):
@@ -604,6 +612,7 @@ class TestBasePreprocessorValidateOutput(unittest.TestCase):
 # GROUP 5: Subclass Patterns and Inheritance (10 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorSubclassing(unittest.TestCase):
     """Test subclass patterns, inheritance, and multiple subclass isolation."""
 
@@ -615,6 +624,7 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 
     def test_subclass_missing_preprocess_is_still_abstract(self):
         """Subclass implementing only _validate_config remains abstract."""
+
         class PartialPreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
@@ -624,6 +634,7 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 
     def test_subclass_missing_validate_config_is_still_abstract(self):
         """Subclass implementing only preprocess remains abstract."""
+
         class PartialPreprocessor(BasePreprocessor):
             def preprocess(self):
                 return Path("/tmp/out.npz")
@@ -633,6 +644,7 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 
     def test_subclass_missing_both_is_still_abstract(self):
         """Subclass implementing neither abstract method remains abstract."""
+
         class EmptyPreprocessor(BasePreprocessor):
             pass
 
@@ -667,9 +679,11 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 
     def test_intermediate_abstract_subclass_allowed(self):
         """An abstract intermediate subclass that doesn't implement all methods is valid as a class."""
+
         class IntermediatePreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             # preprocess still abstract
 
         # Should not raise — class itself is fine, instantiation fails
@@ -682,8 +696,10 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
         class CustomValidation(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/out.npz")
+
             def _validate_output(self, output_path):
                 custom_validate_called(output_path)
 
@@ -693,11 +709,14 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 
     def test_subclass_can_override_run(self):
         """Subclass can override run() for custom pipeline orchestration."""
+
         class CustomRun(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/out.npz")
+
             def run(self):
                 return Path("/custom/path.npz")
 
@@ -710,6 +729,7 @@ class TestBasePreprocessorSubclassing(unittest.TestCase):
 # GROUP 6: Integration Scenarios — End-to-End run() with Real NPZ (8 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorIntegrationScenarios(unittest.TestCase):
     """Test end-to-end run() with real temporary .npz files."""
 
@@ -718,6 +738,7 @@ class TestBasePreprocessorIntegrationScenarios(unittest.TestCase):
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_run_end_to_end_with_valid_npz(self):
@@ -749,12 +770,14 @@ class TestBasePreprocessorIntegrationScenarios(unittest.TestCase):
 
     def test_run_end_to_end_fails_for_nonexistent_output(self):
         """Full run() fails when preprocess() returns a path that doesn't exist."""
+
         def preprocess_impl(self):
             return Path(self._tmpdir) / "never_created.npz"
 
         ConcreteCls = _make_concrete_preprocessor_class(preprocess_impl=preprocess_impl)
         # Bind self._tmpdir into the preprocess function scope
         tmpdir = self._tmpdir
+
         def preprocess_with_closure(self_inner):
             return Path(tmpdir) / "never_created.npz"
 
@@ -857,6 +880,7 @@ class TestBasePreprocessorIntegrationScenarios(unittest.TestCase):
 # GROUP 7: Edge Cases and Boundary Conditions (8 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorEdgeCases(unittest.TestCase):
     """Test edge cases and boundary conditions."""
 
@@ -947,6 +971,7 @@ class TestBasePreprocessorEdgeCases(unittest.TestCase):
             preprocessor._validate_output(path)
         finally:
             import shutil
+
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
@@ -954,11 +979,13 @@ class TestBasePreprocessorEdgeCases(unittest.TestCase):
 # GROUP 8: Realistic Preprocessor Patterns (6 tests)
 # ============================================================================
 
+
 class TestRealisticPreprocessorPatterns(unittest.TestCase):
     """Test patterns that mirror real-world preprocessor usage."""
 
     def test_wavefunction_like_preprocessor(self):
         """Simulates a Wavefunction-style preprocessor with config validation."""
+
         def validate_wf(self):
             if "molden_dir" not in self.config:
                 raise ConfigurationError("Missing 'molden_dir' in config")
@@ -971,13 +998,12 @@ class TestRealisticPreprocessorPatterns(unittest.TestCase):
             ConcreteCls(config={}, logger=_make_logger())
 
         # With valid config
-        preprocessor = ConcreteCls(
-            config={"molden_dir": "/data/molden"}, logger=_make_logger()
-        )
+        preprocessor = ConcreteCls(config={"molden_dir": "/data/molden"}, logger=_make_logger())
         self.assertEqual(preprocessor.config["molden_dir"], "/data/molden")
 
     def test_qm9_like_preprocessor(self):
         """Simulates a QM9-style preprocessor with input format check."""
+
         def validate_qm9(self):
             fmt = self.config.get("input_format")
             if fmt not in ("xyz", "sdf"):
@@ -990,9 +1016,7 @@ class TestRealisticPreprocessorPatterns(unittest.TestCase):
         with self.assertRaises(ConfigurationError):
             ConcreteCls(config={"input_format": "csv"}, logger=_make_logger())
 
-        preprocessor = ConcreteCls(
-            config={"input_format": "xyz"}, logger=_make_logger()
-        )
+        preprocessor = ConcreteCls(config={"input_format": "xyz"}, logger=_make_logger())
         self.assertIsNotNone(preprocessor)
 
     def test_preprocessor_with_output_dir_creation(self):
@@ -1012,6 +1036,7 @@ class TestRealisticPreprocessorPatterns(unittest.TestCase):
             self.assertTrue(result.exists())
         finally:
             import shutil
+
             shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_preprocessor_with_multiple_config_keys(self):
@@ -1031,19 +1056,16 @@ class TestRealisticPreprocessorPatterns(unittest.TestCase):
 
     def test_preprocessor_config_error_message_quality(self):
         """ConfigurationError from _validate_config includes helpful message."""
+
         def strict_validate(self):
             missing = []
             for key in ("input_path", "output_path", "dataset_type"):
                 if key not in self.config:
                     missing.append(key)
             if missing:
-                raise ConfigurationError(
-                    f"Missing required keys: {missing}"
-                )
+                raise ConfigurationError(f"Missing required keys: {missing}")
 
-        ConcreteCls = _make_concrete_preprocessor_class(
-            validate_config_impl=strict_validate
-        )
+        ConcreteCls = _make_concrete_preprocessor_class(validate_config_impl=strict_validate)
         with self.assertRaises(ConfigurationError) as ctx:
             ConcreteCls(config={"input_path": "/data"}, logger=_make_logger())
 
@@ -1053,8 +1075,10 @@ class TestRealisticPreprocessorPatterns(unittest.TestCase):
 
     def test_preprocessor_subclass_hierarchy(self):
         """Intermediate abstract subclass with concrete leaf works correctly."""
+
         class ArchivePreprocessor(BasePreprocessor):
             """Intermediate — adds extract but keeps preprocess abstract."""
+
             def _validate_config(self):
                 pass
 
@@ -1087,14 +1111,14 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestBasePreprocessorAbstractStructure,       # GROUP 1:  8 tests
-        TestBasePreprocessorInit,                     # GROUP 2: 10 tests
-        TestBasePreprocessorRun,                      # GROUP 3: 14 tests
-        TestBasePreprocessorValidateOutput,           # GROUP 4: 14 tests
-        TestBasePreprocessorSubclassing,              # GROUP 5: 10 tests
-        TestBasePreprocessorIntegrationScenarios,     # GROUP 6:  8 tests
-        TestBasePreprocessorEdgeCases,                # GROUP 7:  8 tests
-        TestRealisticPreprocessorPatterns,            # GROUP 8:  6 tests
+        TestBasePreprocessorAbstractStructure,  # GROUP 1:  8 tests
+        TestBasePreprocessorInit,  # GROUP 2: 10 tests
+        TestBasePreprocessorRun,  # GROUP 3: 14 tests
+        TestBasePreprocessorValidateOutput,  # GROUP 4: 14 tests
+        TestBasePreprocessorSubclassing,  # GROUP 5: 10 tests
+        TestBasePreprocessorIntegrationScenarios,  # GROUP 6:  8 tests
+        TestBasePreprocessorEdgeCases,  # GROUP 7:  8 tests
+        TestRealisticPreprocessorPatterns,  # GROUP 8:  6 tests
     ]
 
     for test_class in test_classes:

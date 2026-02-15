@@ -41,7 +41,6 @@ Validates that:
 """
 
 import sys
-import os
 from pathlib import Path
 
 # ─── Add project root to Python path FIRST ───────────────────────────────────
@@ -50,21 +49,19 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 # ──────────────────────────────────────────────────────────────────────────────
 
-import pytest
-import tempfile
-import shutil
 import logging
 from datetime import datetime
-from unittest.mock import patch, MagicMock
-from typing import Dict, Any
+from typing import Any
+from unittest.mock import MagicMock, patch
 
+import pytest
 import torch
 import torch.nn as nn
 
 # ─── Module imports (under test) ─────────────────────────────────────────────
 from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
-    CheckpointManager,
     CHECKPOINT_FORMAT_VERSION,
+    CheckpointManager,
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -84,6 +81,7 @@ pytestmark = [
 # HELPER: MINIMAL DETERMINISTIC MODEL
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class _MinimalGNNModel(nn.Module):
     """
     Minimal deterministic model for checkpoint round-trip testing.
@@ -94,8 +92,7 @@ class _MinimalGNNModel(nn.Module):
     unambiguous and does not depend on external model registration.
     """
 
-    def __init__(self, in_channels: int = 11, hidden_channels: int = 32,
-                 out_channels: int = 1):
+    def __init__(self, in_channels: int = 11, hidden_channels: int = 32, out_channels: int = 1):
         super().__init__()
         self.lin1 = nn.Linear(in_channels, hidden_channels)
         self.relu = nn.ReLU()
@@ -105,7 +102,7 @@ class _MinimalGNNModel(nn.Module):
         return self.lin2(self.relu(self.lin1(x)))
 
 
-def _build_reference_hyper_parameters() -> Dict[str, Any]:
+def _build_reference_hyper_parameters() -> dict[str, Any]:
     """
     Build a representative hyper_parameters dict matching the production
     schema documented in CheckpointManager.save() and ModelLoader._load().
@@ -144,7 +141,7 @@ def _build_reference_hyper_parameters() -> Dict[str, Any]:
     }
 
 
-def _build_reference_data_info() -> Dict[str, Any]:
+def _build_reference_data_info() -> dict[str, Any]:
     """
     Build a representative data_info dict including structural_features_config.
 
@@ -166,6 +163,7 @@ def _build_reference_data_info() -> Dict[str, Any]:
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @pytest.fixture
 def tmp_working_dir(tmp_path):
@@ -213,8 +211,12 @@ def reference_scheduler(reference_optimizer):
 
 @pytest.fixture
 def saved_v2_checkpoint_path(
-    checkpoint_manager, minimal_model, reference_optimizer,
-    reference_scheduler, reference_hyper_parameters, reference_data_info,
+    checkpoint_manager,
+    minimal_model,
+    reference_optimizer,
+    reference_scheduler,
+    reference_hyper_parameters,
+    reference_data_info,
     tmp_working_dir,
 ):
     """
@@ -249,6 +251,7 @@ def saved_v2_checkpoint_path(
 # TEST CLASS 1: v2.0 CHECKPOINT FORMAT INTEGRITY
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestV2CheckpointFormatIntegrity:
     """
     Verify that the v2.0 checkpoint format is correctly saved and loaded.
@@ -257,31 +260,28 @@ class TestV2CheckpointFormatIntegrity:
     asserting that every documented field survives a round-trip.
     """
 
-    def test_checkpoint_format_version_is_2_0(self, saved_v2_checkpoint_path,
-                                               checkpoint_manager):
+    def test_checkpoint_format_version_is_2_0(self, saved_v2_checkpoint_path, checkpoint_manager):
         """Checkpoint format version must be '2.0'."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         version_info = checkpoint.get("version_info", {})
         assert version_info.get("checkpoint_format_version") == "2.0", (
-            f"Expected format version '2.0', "
-            f"got '{version_info.get('checkpoint_format_version')}'"
+            f"Expected format version '2.0', got '{version_info.get('checkpoint_format_version')}'"
         )
 
     def test_checkpoint_format_version_constant_matches(self):
         """Module-level CHECKPOINT_FORMAT_VERSION must be '2.0'."""
         assert CHECKPOINT_FORMAT_VERSION == "2.0", (
-            f"CHECKPOINT_FORMAT_VERSION constant is '{CHECKPOINT_FORMAT_VERSION}', "
-            f"expected '2.0'"
+            f"CHECKPOINT_FORMAT_VERSION constant is '{CHECKPOINT_FORMAT_VERSION}', expected '2.0'"
         )
 
-    def test_is_v2_checkpoint_returns_true(self, saved_v2_checkpoint_path,
-                                            checkpoint_manager):
+    def test_is_v2_checkpoint_returns_true(self, saved_v2_checkpoint_path, checkpoint_manager):
         """is_v2_checkpoint() must return True for v2.0 checkpoints."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint_manager.is_v2_checkpoint(checkpoint) is True
 
-    def test_version_info_contains_required_keys(self, saved_v2_checkpoint_path,
-                                                   checkpoint_manager):
+    def test_version_info_contains_required_keys(
+        self, saved_v2_checkpoint_path, checkpoint_manager
+    ):
         """version_info must contain all required metadata keys."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         version_info = checkpoint["version_info"]
@@ -294,12 +294,12 @@ class TestV2CheckpointFormatIntegrity:
             "created_at",
         }
         assert required_keys.issubset(version_info.keys()), (
-            f"Missing version_info keys: "
-            f"{required_keys - set(version_info.keys())}"
+            f"Missing version_info keys: {required_keys - set(version_info.keys())}"
         )
 
-    def test_version_info_created_at_is_valid_iso(self, saved_v2_checkpoint_path,
-                                                     checkpoint_manager):
+    def test_version_info_created_at_is_valid_iso(
+        self, saved_v2_checkpoint_path, checkpoint_manager
+    ):
         """version_info.created_at must be a valid ISO 8601 datetime."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         created_at = checkpoint["version_info"]["created_at"]
@@ -326,6 +326,7 @@ class TestV2CheckpointFormatIntegrity:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 2: MODEL WEIGHTS BITWISE ROUND-TRIP
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestModelWeightsBitwiseRoundTrip:
     """
@@ -375,8 +376,7 @@ class TestModelWeightsBitwiseRoundTrip:
 
         # Create fresh model with same architecture
         torch.manual_seed(99)  # Different seed — weights will differ
-        fresh_model = _MinimalGNNModel(in_channels=11, hidden_channels=32,
-                                       out_channels=1)
+        fresh_model = _MinimalGNNModel(in_channels=11, hidden_channels=32, out_channels=1)
 
         # Before loading — models should differ
         test_input = torch.randn(4, 11)
@@ -386,8 +386,7 @@ class TestModelWeightsBitwiseRoundTrip:
 
         # Outputs should differ before loading (sanity check)
         assert not torch.equal(original_output, fresh_output_before), (
-            "Sanity check failed: fresh model already matches original "
-            "before loading checkpoint"
+            "Sanity check failed: fresh model already matches original before loading checkpoint"
         )
 
         # Load state dict
@@ -454,6 +453,7 @@ class TestModelWeightsBitwiseRoundTrip:
 # TEST CLASS 3: HYPER_PARAMETERS PRESERVATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestHyperParametersPreservation:
     """
     Verify that hyper_parameters are fully preserved in the checkpoint.
@@ -464,7 +464,9 @@ class TestHyperParametersPreservation:
     """
 
     def test_hyper_parameters_round_trip(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
         reference_hyper_parameters,
     ):
         """Complete hyper_parameters dict must survive round-trip."""
@@ -477,14 +479,18 @@ class TestHyperParametersPreservation:
         )
 
     def test_model_name_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """model_name must be preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint_manager.get_model_name(checkpoint) == "GCN"
 
     def test_get_hyper_parameters_method(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
         reference_hyper_parameters,
     ):
         """get_hyper_parameters() must return the full dict."""
@@ -493,7 +499,9 @@ class TestHyperParametersPreservation:
         assert hp == reference_hyper_parameters
 
     def test_hyperparameters_inner_dict_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """hyper_parameters['hyperparameters'] nested dict preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -505,7 +513,9 @@ class TestHyperParametersPreservation:
         assert inner_hp["dropout"] == 0.0
 
     def test_model_info_nested_dict_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """hyper_parameters['model_info'] nested dict preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -515,7 +525,9 @@ class TestHyperParametersPreservation:
         assert "hyperparameters_values" in model_info
 
     def test_wrapper_info_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """hyper_parameters['wrapper_info'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -524,7 +536,9 @@ class TestHyperParametersPreservation:
         assert wrapper_info["graph_level_pooling"] == "mean"
 
     def test_target_selection_config_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """hyper_parameters['target_selection_config'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -533,7 +547,9 @@ class TestHyperParametersPreservation:
         assert tsc["selected_properties"] == ["energy"]
 
     def test_task_type_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """hyper_parameters['task_type'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -543,6 +559,7 @@ class TestHyperParametersPreservation:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 4: DATA_INFO AND STRUCTURAL_FEATURES_CONFIG PRESERVATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestDataInfoPreservation:
     """
@@ -554,7 +571,9 @@ class TestDataInfoPreservation:
     """
 
     def test_data_info_round_trip(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
         reference_data_info,
     ):
         """Complete data_info dict must survive round-trip."""
@@ -567,7 +586,9 @@ class TestDataInfoPreservation:
         )
 
     def test_structural_features_config_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """structural_features_config must be preserved exactly."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -577,21 +598,27 @@ class TestDataInfoPreservation:
         assert sfc["molecule"] == []
 
     def test_dataset_type_in_data_info(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """data_info['dataset_type'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint["data_info"]["dataset_type"] == "DFT"
 
     def test_num_node_features_in_data_info(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """data_info['num_node_features'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint["data_info"]["num_node_features"] == 11
 
     def test_target_properties_in_data_info(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """data_info['target_properties'] preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -602,32 +629,29 @@ class TestDataInfoPreservation:
 # TEST CLASS 5: TRAINING STATE PRESERVATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestTrainingStatePreservation:
     """
     Verify that training state (epoch, step, optimizer, scheduler,
     metrics_history, best_val_loss) survives round-trip.
     """
 
-    def test_epoch_preserved(self, saved_v2_checkpoint_path,
-                              checkpoint_manager):
+    def test_epoch_preserved(self, saved_v2_checkpoint_path, checkpoint_manager):
         """epoch must be preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint["epoch"] == 10
 
-    def test_global_step_preserved(self, saved_v2_checkpoint_path,
-                                     checkpoint_manager):
+    def test_global_step_preserved(self, saved_v2_checkpoint_path, checkpoint_manager):
         """global_step must be preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint["global_step"] == 500
 
-    def test_best_val_loss_preserved(self, saved_v2_checkpoint_path,
-                                       checkpoint_manager):
+    def test_best_val_loss_preserved(self, saved_v2_checkpoint_path, checkpoint_manager):
         """best_val_loss must be preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         assert checkpoint["best_val_loss"] == pytest.approx(0.35)
 
-    def test_metrics_history_preserved(self, saved_v2_checkpoint_path,
-                                         checkpoint_manager):
+    def test_metrics_history_preserved(self, saved_v2_checkpoint_path, checkpoint_manager):
         """metrics_history must be preserved."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         mh = checkpoint["metrics_history"]
@@ -635,7 +659,9 @@ class TestTrainingStatePreservation:
         assert mh["val_loss"] == [0.6, 0.4, 0.35]
 
     def test_optimizer_state_dict_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """optimizer_state_dict must be present and non-empty."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -643,7 +669,9 @@ class TestTrainingStatePreservation:
         assert len(checkpoint["optimizer_state_dict"]) > 0
 
     def test_scheduler_state_dict_preserved(
-        self, saved_v2_checkpoint_path, checkpoint_manager,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
     ):
         """scheduler_state_dict must be present and non-empty."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -651,7 +679,10 @@ class TestTrainingStatePreservation:
         assert len(checkpoint["scheduler_state_dict"]) > 0
 
     def test_optimizer_state_can_be_loaded(
-        self, saved_v2_checkpoint_path, checkpoint_manager, minimal_model,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
+        minimal_model,
     ):
         """optimizer_state_dict must be loadable into a fresh optimizer."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
@@ -660,14 +691,15 @@ class TestTrainingStatePreservation:
         fresh_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     def test_scheduler_state_can_be_loaded(
-        self, saved_v2_checkpoint_path, checkpoint_manager, minimal_model,
+        self,
+        saved_v2_checkpoint_path,
+        checkpoint_manager,
+        minimal_model,
     ):
         """scheduler_state_dict must be loadable into a fresh scheduler."""
         checkpoint = checkpoint_manager.load(saved_v2_checkpoint_path)
         fresh_optimizer = torch.optim.Adam(minimal_model.parameters(), lr=0.001)
-        fresh_scheduler = torch.optim.lr_scheduler.StepLR(
-            fresh_optimizer, step_size=10
-        )
+        fresh_scheduler = torch.optim.lr_scheduler.StepLR(fresh_optimizer, step_size=10)
         # Must not raise
         fresh_scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
@@ -675,6 +707,7 @@ class TestTrainingStatePreservation:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 6: BACKWARD COMPATIBILITY — v1.0 FORMAT
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestV1BackwardCompatibility:
     """
@@ -701,14 +734,18 @@ class TestV1BackwardCompatibility:
         return filepath
 
     def test_v1_checkpoint_loads_without_error(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """v1.0 checkpoint must load without raising exceptions."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
         assert isinstance(checkpoint, dict)
 
     def test_v1_checkpoint_has_empty_hyper_parameters(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """v1.0 checkpoint must have empty hyper_parameters default."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
@@ -717,7 +754,9 @@ class TestV1BackwardCompatibility:
         assert hp == {}
 
     def test_v1_checkpoint_has_empty_data_info(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """v1.0 checkpoint must have empty data_info default."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
@@ -726,25 +765,30 @@ class TestV1BackwardCompatibility:
         assert data_info == {}
 
     def test_v1_checkpoint_has_version_info_fallback(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """v1.0 checkpoint must have version_info with '1.0' format."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
         version_info = checkpoint.get("version_info", {})
         fmt = version_info.get("checkpoint_format_version", None)
-        assert fmt == "1.0", (
-            f"Expected format version '1.0' for legacy checkpoint, got '{fmt}'"
-        )
+        assert fmt == "1.0", f"Expected format version '1.0' for legacy checkpoint, got '{fmt}'"
 
     def test_v1_is_v2_returns_false(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """is_v2_checkpoint() must return False for v1.0 checkpoints."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
         assert checkpoint_manager.is_v2_checkpoint(checkpoint) is False
 
     def test_v1_model_state_dict_still_works(
-        self, v1_checkpoint_path, checkpoint_manager, minimal_model,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
+        minimal_model,
     ):
         """v1.0 model_state_dict must still load into the model."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
@@ -753,14 +797,19 @@ class TestV1BackwardCompatibility:
         fresh_model.load_state_dict(checkpoint["model_state_dict"])
 
     def test_v1_get_model_name_returns_none(
-        self, v1_checkpoint_path, checkpoint_manager,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
     ):
         """get_model_name() must return None for v1.0 checkpoints."""
         checkpoint = checkpoint_manager.load(v1_checkpoint_path)
         assert checkpoint_manager.get_model_name(checkpoint) is None
 
     def test_v1_checkpoint_logs_warning(
-        self, v1_checkpoint_path, checkpoint_manager, caplog,
+        self,
+        v1_checkpoint_path,
+        checkpoint_manager,
+        caplog,
     ):
         """Loading a v1.0 checkpoint must emit a warning."""
         with caplog.at_level(logging.WARNING):
@@ -774,6 +823,7 @@ class TestV1BackwardCompatibility:
 # TEST CLASS 7: PATH RESOLUTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCheckpointPathResolution:
     """
     Verify that CheckpointManager resolves paths correctly following the
@@ -781,7 +831,10 @@ class TestCheckpointPathResolution:
     """
 
     def test_relative_path_resolves_to_working_root(
-        self, checkpoint_manager, minimal_model, tmp_working_dir,
+        self,
+        checkpoint_manager,
+        minimal_model,
+        tmp_working_dir,
     ):
         """Relative paths must resolve against working_root_dir."""
         filepath = "checkpoints/relative_test.pt"
@@ -793,7 +846,10 @@ class TestCheckpointPathResolution:
         assert resolved.parent == expected_dir
 
     def test_absolute_path_used_as_is(
-        self, checkpoint_manager, minimal_model, tmp_path,
+        self,
+        checkpoint_manager,
+        minimal_model,
+        tmp_path,
     ):
         """Absolute paths must be used as-is."""
         filepath = tmp_path / "absolute_test.pt"
@@ -804,7 +860,9 @@ class TestCheckpointPathResolution:
         assert resolved == filepath.resolve()
 
     def test_parent_directories_created_automatically(
-        self, checkpoint_manager, minimal_model,
+        self,
+        checkpoint_manager,
+        minimal_model,
     ):
         """Parent directories must be created automatically on save."""
         filepath = "deep/nested/dir/model.pt"
@@ -814,22 +872,22 @@ class TestCheckpointPathResolution:
         )
         assert resolved.parent.exists()
 
-    def test_get_checkpoint_dir_default(self, checkpoint_manager,
-                                         tmp_working_dir):
+    def test_get_checkpoint_dir_default(self, checkpoint_manager, tmp_working_dir):
         """get_checkpoint_dir() must return working_root/checkpoints."""
         checkpoint_dir = checkpoint_manager.get_checkpoint_dir()
         assert checkpoint_dir == tmp_working_dir / "checkpoints"
         assert checkpoint_dir.exists()
 
-    def test_get_checkpoint_dir_custom_subdir(self, checkpoint_manager,
-                                                tmp_working_dir):
+    def test_get_checkpoint_dir_custom_subdir(self, checkpoint_manager, tmp_working_dir):
         """get_checkpoint_dir(subdir) must return working_root/subdir."""
         checkpoint_dir = checkpoint_manager.get_checkpoint_dir("custom_dir")
         assert checkpoint_dir == tmp_working_dir / "custom_dir"
         assert checkpoint_dir.exists()
 
     def test_load_finds_checkpoint_in_default_dir(
-        self, checkpoint_manager, minimal_model,
+        self,
+        checkpoint_manager,
+        minimal_model,
     ):
         """load() must find checkpoints in the default checkpoint dir."""
         # Save to default dir
@@ -839,7 +897,8 @@ class TestCheckpointPathResolution:
 
         # Load using just the filename — should find in default dir
         loaded = checkpoint_manager.load(
-            "findme.pt", weights_only=False,
+            "findme.pt",
+            weights_only=False,
         )
         assert "model_state_dict" in loaded
 
@@ -847,6 +906,7 @@ class TestCheckpointPathResolution:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 8: ModelLoader.load_from_checkpoint() WITH MOCKED FACTORY
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestModelLoaderFromCheckpoint:
     """
@@ -861,7 +921,10 @@ class TestModelLoaderFromCheckpoint:
 
     @pytest.fixture
     def v2_checkpoint_for_loader(
-        self, tmp_working_dir, minimal_model, reference_hyper_parameters,
+        self,
+        tmp_working_dir,
+        minimal_model,
+        reference_hyper_parameters,
         reference_data_info,
     ):
         """Save a v2.0 checkpoint suitable for ModelLoader testing."""
@@ -876,11 +939,12 @@ class TestModelLoaderFromCheckpoint:
         )
         return filepath
 
-    @patch(
-        "milia_pipeline.models.post_training.inference.model_loader.get_factory"
-    )
+    @patch("milia_pipeline.models.post_training.inference.model_loader.get_factory")
     def test_load_from_checkpoint_calls_factory_with_correct_args(
-        self, mock_get_factory, v2_checkpoint_for_loader, tmp_working_dir,
+        self,
+        mock_get_factory,
+        v2_checkpoint_for_loader,
+        tmp_working_dir,
         minimal_model,
     ):
         """
@@ -907,13 +971,17 @@ class TestModelLoaderFromCheckpoint:
         # Verify factory was called with correct arguments
         mock_factory.create_model_with_info.assert_called_once()
         call_kwargs = mock_factory.create_model_with_info.call_args
-        assert call_kwargs.kwargs.get("name") or call_kwargs[1].get("name", call_kwargs[0][0] if call_kwargs[0] else None) == "GCN"
+        assert (
+            call_kwargs.kwargs.get("name")
+            or call_kwargs[1].get("name", call_kwargs[0][0] if call_kwargs[0] else None) == "GCN"
+        )
 
-    @patch(
-        "milia_pipeline.models.post_training.inference.model_loader.get_factory"
-    )
+    @patch("milia_pipeline.models.post_training.inference.model_loader.get_factory")
     def test_load_from_checkpoint_returns_model_in_eval_mode(
-        self, mock_get_factory, v2_checkpoint_for_loader, tmp_working_dir,
+        self,
+        mock_get_factory,
+        v2_checkpoint_for_loader,
+        tmp_working_dir,
         minimal_model,
     ):
         """Loaded model must be in eval mode."""
@@ -934,12 +1002,14 @@ class TestModelLoaderFromCheckpoint:
         )
         assert not model.training, "Model must be in eval mode after loading"
 
-    @patch(
-        "milia_pipeline.models.post_training.inference.model_loader.get_factory"
-    )
+    @patch("milia_pipeline.models.post_training.inference.model_loader.get_factory")
     def test_load_from_checkpoint_includes_data_info_in_model_info(
-        self, mock_get_factory, v2_checkpoint_for_loader, tmp_working_dir,
-        minimal_model, reference_data_info,
+        self,
+        mock_get_factory,
+        v2_checkpoint_for_loader,
+        tmp_working_dir,
+        minimal_model,
+        reference_data_info,
     ):
         """
         model_info returned by load_from_checkpoint() must include data_info
@@ -961,17 +1031,15 @@ class TestModelLoaderFromCheckpoint:
             working_root_dir=tmp_working_dir,
         )
 
-        assert "data_info" in model_info, (
-            "model_info must contain 'data_info' key (FIX 18)"
-        )
+        assert "data_info" in model_info, "model_info must contain 'data_info' key (FIX 18)"
         assert model_info["data_info"] == reference_data_info
         assert "structural_features_config" in model_info["data_info"]
 
-    @patch(
-        "milia_pipeline.models.post_training.inference.model_loader.get_factory"
-    )
+    @patch("milia_pipeline.models.post_training.inference.model_loader.get_factory")
     def test_load_from_checkpoint_file_not_found(
-        self, mock_get_factory, tmp_working_dir,
+        self,
+        mock_get_factory,
+        tmp_working_dir,
     ):
         """
         load_from_checkpoint() must raise FileNotFoundError for
@@ -990,11 +1058,12 @@ class TestModelLoaderFromCheckpoint:
                 working_root_dir=tmp_working_dir,
             )
 
-    @patch(
-        "milia_pipeline.models.post_training.inference.model_loader.get_factory"
-    )
+    @patch("milia_pipeline.models.post_training.inference.model_loader.get_factory")
     def test_load_from_checkpoint_v1_raises_without_overrides(
-        self, mock_get_factory, tmp_working_dir, minimal_model,
+        self,
+        mock_get_factory,
+        tmp_working_dir,
+        minimal_model,
     ):
         """
         Loading a v1.0 checkpoint without model_name/task_type overrides
@@ -1031,13 +1100,13 @@ class TestModelLoaderFromCheckpoint:
 # TEST CLASS 9: CHECKPOINT EXTRA DATA
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCheckpointExtraData:
     """
     Verify that extra data passed via **extra_data to save() is preserved.
     """
 
-    def test_extra_data_preserved(self, checkpoint_manager, minimal_model,
-                                    tmp_working_dir):
+    def test_extra_data_preserved(self, checkpoint_manager, minimal_model, tmp_working_dir):
         """Custom extra_data keys must survive round-trip."""
         filepath = checkpoint_manager.save(
             filepath="checkpoints/extra_data_test.pt",
@@ -1053,6 +1122,7 @@ class TestCheckpointExtraData:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 10: CHECKPOINT SAVE WITHOUT OPTIONAL FIELDS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCheckpointMinimalSave:
     """
@@ -1100,6 +1170,7 @@ class TestCheckpointMinimalSave:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CLASS 11: create_version_info() STATIC METHOD
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCreateVersionInfo:
     """

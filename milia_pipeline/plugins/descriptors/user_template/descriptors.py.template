@@ -19,17 +19,17 @@ logger = logging.getLogger(__name__)
 def calculate_your_descriptor(mol: Chem.Mol) -> float:
     """
     Calculate your custom descriptor.
-    
+
     Replace this with detailed description of what your descriptor calculates,
     its range, and what it's useful for.
-    
+
     Args:
         mol: RDKit Mol object
-    
+
     Returns:
         float: Descriptor value
                Returns NaN if calculation fails
-    
+
     Examples:
         >>> from rdkit import Chem
         >>> mol = Chem.MolFromSmiles("CCO")
@@ -41,14 +41,14 @@ def calculate_your_descriptor(mol: Chem.Mol) -> float:
         # Input validation
         if mol is None:
             return float('nan')
-        
+
         # Your calculation here
         # Example: count atoms
         num_atoms = mol.GetNumAtoms()
-        
+
         # Return the calculated value
         return float(num_atoms)
-        
+
     except Exception as e:
         # Always catch exceptions and return NaN
         logger.warning(f"Failed to calculate descriptor: {e}")
@@ -61,10 +61,10 @@ def calculate_another_descriptor(mol: Chem.Mol) -> float:
     try:
         if mol is None:
             return float('nan')
-        
+
         # Your implementation
         value = 0.0
-        
+
         return value
     except Exception as e:
         logger.warning(f"Failed to calculate descriptor: {e}")

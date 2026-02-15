@@ -306,7 +306,7 @@ milia_pipeline/datasets/
 ├── base.py                          # BaseDataset ABC, DatasetMetadata, DatasetSchema, DatasetFeatures ⭐ PYDANTIC V2
 ├── registry.py                      # DatasetRegistry (thread-safe, testable)
 ├── protocols.py                     # DatasetHandlerProtocol (11 methods), DatasetConverterProtocol, DatasetValidatorProtocol
-└── implementations/                 # Concrete dataset implementations 
+└── implementations/                 # Concrete dataset implementations
     ├── __init__.py                  # Dynamic discovery exports (7 datasets)
     ├── dft.py                       # DFTDataset (@register decorated)
     ├── dmc.py                       # DMCDataset (@register decorated)
@@ -314,7 +314,7 @@ milia_pipeline/datasets/
     ├── qm9.py                       # QM9Dataset (@register decorated)
     ├── ani1x.py                     # ANI1xDataset (@register decorated)
     ├── ani1ccx.py                   # ANI1ccxDataset (@register decorated)
-    └── rmd17.py                     # RMD17Dataset (@register decorated) 
+    └── rmd17.py                     # RMD17Dataset (@register decorated)
 ```
 
 #### Key API Functions
@@ -380,7 +380,7 @@ milia_pipeline/datasets/
 - **QM9Dataset**: QM9 quantum chemistry dataset (133,885 small organic molecules, B3LYP/6-31G(2df,p))
 - **ANI1xDataset**: ANI-1x quantum chemistry dataset (~5 million DFT conformations, ωB97x/6-31G*, CHNO)
 - **ANI1ccxDataset**: ANI-1ccx quantum chemistry dataset (~500k CCSD(T)/CBS conformations, subset of ANI-1x, CHNO)
-- **ANI2xDataset**: ANI-2x quantum chemistry dataset (~10 million DFT conformations, ωB97X/6-31G(d), H/C/N/O/S/F/Cl) 
+- **ANI2xDataset**: ANI-2x quantum chemistry dataset (~10 million DFT conformations, ωB97X/6-31G(d), H/C/N/O/S/F/Cl)
 - **RMD17Dataset**: rMD17 quantum chemistry dataset (~1M conformations, PBE/def2-SVP, 10 molecules)
 
 #### Key Features
@@ -442,7 +442,7 @@ The milia_dataset.py now supports registry-based feature queries:
 - Registry: `DatasetRegistry`, `get_default_registry`, `register`, `get`, `list_all`, `is_registered`
 - Protocols: `DatasetHandlerProtocol`, `DatasetConverterProtocol`, `DatasetValidatorProtocol`
 - Exceptions: `DatasetRegistrationError`, `DatasetNotFoundError`
-- Implementations: `DFTDataset`, `DMCDataset`, `WavefunctionDataset`, `QM9Dataset`, `ANI1xDataset`, `ANI1ccxDataset`, `ANI2xDataset`, `RMD17Dataset` 
+- Implementations: `DFTDataset`, `DMCDataset`, `WavefunctionDataset`, `QM9Dataset`, `ANI1xDataset`, `ANI1ccxDataset`, `ANI2xDataset`, `RMD17Dataset`
 - Utilities: `initialize_plugins`, `get_supported_dataset_types`, `SUPPORTED_DATASET_TYPES`
 
 **NOTE - Dynamic Dataset Discovery**: The `datasets/implementations/__init__.py` now uses **dynamic discovery** - all dataset modules are automatically imported and registered. No manual import updates are required when adding new datasets - just create the file with `@register` decorator.
@@ -494,67 +494,67 @@ milia_pipeline/models/
 ├── __init__.py                      # Module initialization and public API
 ├── registry/                        # Model discovery and management
 │   ├── __init__.py                  # Registry exports
-│   ├── model_registry.py            # ModelRegistry  singleton, dynamic discovery 
-│   └── pyg_introspector.py          # PyGModelIntrospector  1661 lines 
+│   ├── model_registry.py            # ModelRegistry  singleton, dynamic discovery
+│   └── pyg_introspector.py          # PyGModelIntrospector  1661 lines
 ├── factory/                         # Model creation and validation
 │   ├── __init__.py                  # Factory exports
-│   ├── model_factory.py             # ModelFactory  Wrappers, ModelValidator 
-│   └── target_selection_config.py   # TargetSelectionConfig, 3 enums (713 lines) 
+│   ├── model_factory.py             # ModelFactory  Wrappers, ModelValidator
+│   └── target_selection_config.py   # TargetSelectionConfig, 3 enums (713 lines)
 ├── training/                        # Training infrastructure
 │   ├── __init__.py                  # Training exports
 │   ├── trainer.py                   # Trainer class with checkpoint support
-│   ├── callbacks.py                 # Callbacks  6 types + CallbackFactory + structural_features_config 
-│   ├── data_preparation.py          # TaskDataPreparer, task-specific data transforms 
-│   ├── data_splitting.py            # DataSplitter  5 strategies incl. k-fold 
-│   ├── loss_functions.py            # LossRegistry  18 losses, task-aware selection 
-│   ├── optimizers.py                # OptimizerRegistry  12 optimizers, dynamic param filtering 
-│   ├── schedulers.py                # SchedulerRegistry  13 schedulers, dynamic param filtering 
-│   ├── metrics.py                   # MetricsRegistry  12 metrics, task-aware selection 
-│   └── visualization.py             # TrainingVisualizer  4 plot types, config-driven 
+│   ├── callbacks.py                 # Callbacks  6 types + CallbackFactory + structural_features_config
+│   ├── data_preparation.py          # TaskDataPreparer, task-specific data transforms
+│   ├── data_splitting.py            # DataSplitter  5 strategies incl. k-fold
+│   ├── loss_functions.py            # LossRegistry  18 losses, task-aware selection
+│   ├── optimizers.py                # OptimizerRegistry  12 optimizers, dynamic param filtering
+│   ├── schedulers.py                # SchedulerRegistry  13 schedulers, dynamic param filtering
+│   ├── metrics.py                   # MetricsRegistry  12 metrics, task-aware selection
+│   └── visualization.py             # TrainingVisualizer  4 plot types, config-driven
 ├── post_training/                   # Post-Training Inference & Transfer Learning
-│   ├── __init__.py                  # Public API exports (~350 lines) 
+│   ├── __init__.py                  # Public API exports (~350 lines)
 │   ├── checkpoint/                  # Checkpoint management
 │   │   ├── __init__.py              # Checkpoint exports
-│   │   └── checkpoint_manager.py    # CheckpointManager  DI pattern 
+│   │   └── checkpoint_manager.py    # CheckpointManager  DI pattern
 │   ├── inference/                   # Model loading & prediction
 │   │   ├── __init__.py              # Inference exports (180 lines)
-│   │   ├── model_loader.py          # ModelLoader  DI pattern, data_info extraction 
-│   │   └── predictor.py             # Predictor  DI pattern, structural_features_config property 
+│   │   ├── model_loader.py          # ModelLoader  DI pattern, data_info extraction
+│   │   └── predictor.py             # Predictor  DI pattern, structural_features_config property
 │   ├── data_preparation/            # Data conversion for inference
 │   │   ├── __init__.py              # Data preparation exports (259 lines, 17 exports)
-│   │   └── data_converter.py        # DataConverterRegistry  DI pattern, structural_features_config post-processing 
+│   │   └── data_converter.py        # DataConverterRegistry  DI pattern, structural_features_config post-processing
 │   └── transfer_learning/           # Fine-tuning infrastructure
 │       ├── __init__.py              # Transfer learning exports (168 lines)
-│       └── fine_tuner.py            # FineTuner  DI pattern 
-├── hpo/                             # Hyperparameter Optimization (HPO) 
+│       └── fine_tuner.py            # FineTuner  DI pattern
+├── hpo/                             # Hyperparameter Optimization (HPO)
 │   ├── __init__.py                  # HPO public API exports
-│   ├── hpo_config.py                # HPOConfig  7 pruners, 7 samplers 
-│   ├── hpo_manager.py               # HPOManager  task-aware data prep 
+│   ├── hpo_config.py                # HPOConfig  7 pruners, 7 samplers
+│   ├── hpo_manager.py               # HPOManager  task-aware data prep
 │   ├── backends/                    # HPO backend implementations
 │   │   ├── __init__.py              # Backend exports
-│   │   ├── base.py                  # HPOBackendProtocol, get_backend() 
-│   │   ├── optuna_backend.py        # OptunaBackend, 7 pruners, 7 samplers 
+│   │   ├── base.py                  # HPOBackendProtocol, get_backend()
+│   │   ├── optuna_backend.py        # OptunaBackend, 7 pruners, 7 samplers
 │   │   └── ray_tune_backend.py      # RayTuneBackend (complete, inactive)
 │   ├── callbacks/                   # HPO training callbacks
 │   │   ├── __init__.py              # Callback exports
-│   │   ├── optuna_callback.py       # OptunaPruningCallback, create_hpo_callback 
+│   │   ├── optuna_callback.py       # OptunaPruningCallback, create_hpo_callback
 │   │   └── ray_tune_callback.py     # RayTuneReportCallback (complete, inactive)
 │   ├── search_spaces/               # Search space definition and building
 │   │   ├── __init__.py              # Search space exports
-│   │   ├── param_types.py           # ParamType (7 types), SearchSpaceParamConfig 
-│   │   └── search_space_builder.py  # SearchSpaceBuilder, dynamic spaces 
+│   │   ├── param_types.py           # ParamType (7 types), SearchSpaceParamConfig
+│   │   └── search_space_builder.py  # SearchSpaceBuilder, dynamic spaces
 │   ├── transfer/                    # HPO transfer learning
 │   │   ├── __init__.py              # Transfer learning exports
-│   │   ├── transfer_manager.py      # HPOTransferManager  4 adaptation methods 
-│   │   ├── meta_features.py         # MetaFeatureExtractor  6 categories 
-│   │   └── warm_start.py            # WarmStartStrategy  4 methods 
+│   │   ├── transfer_manager.py      # HPOTransferManager  4 adaptation methods
+│   │   ├── meta_features.py         # MetaFeatureExtractor  6 categories
+│   │   └── warm_start.py            # WarmStartStrategy  4 methods
 │   ├── nas/                         # Neural Architecture Search
 │   │   ├── __init__.py              # NAS exports
-│   │   ├── search_space.py          # GNNArchitectureSpace  4 enums, LayerConfig 
-│   │   └── nas_manager.py           # NASManager  NASConfig, HeterogeneousGNN 
+│   │   ├── search_space.py          # GNNArchitectureSpace  4 enums, LayerConfig
+│   │   └── nas_manager.py           # NASManager  NASConfig, HeterogeneousGNN
 │   └── analysis/                    # Study analysis and visualization
 │       ├── __init__.py              # Analysis exports
-│       └── study_analyzer.py        # StudyAnalyzer  AnalysisConfig, 2 enums 
+│       └── study_analyzer.py        # StudyAnalyzer  AnalysisConfig, 2 enums
 ├── builders/                        # Custom architecture building
 │   ├── __init__.py                  # Builders exports
 │   ├── layer_registry.py            # LayerCategory, FunctionalLayerWrapper, LayerMetadata, LayerRegistry (63+ layers), 3 convenience functions
@@ -577,7 +577,7 @@ milia_pipeline/models/
 ├── utils/                           # Utilities
 │   ├── __init__.py                  # Utils exports
 │   ├── config_bridge.py             # ConfigBridge v1.1.0 → Pydantic  13 enums, 31 BaseModel classes ⭐ PYDANTIC
-│   └── pyg_integration.py           # PyG utilities  validation, inference, stats 
+│   └── pyg_integration.py           # PyG utilities  validation, inference, stats
 └── plugins/                         # Model plugin system
     ├── __init__.py                  # Plugin exports
     └── model_plugin_system.py       # ModelPluginLoader, plugin discovery
@@ -654,7 +654,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
 #### Submodule Details
 
 **Registry Submodule** (`models/registry/`):
-- **ModelRegistry**: Central registry for model discovery and management 
+- **ModelRegistry**: Central registry for model discovery and management
   - **Thread-safe singleton pattern** with RLock for reentrant locking
   - **Dynamic auto-discovery** via `auto_discover_pyg_models()`:
     - Uses `PyGModelIntrospector` for runtime model discovery
@@ -681,14 +681,14 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `get_custom_models()`: Custom/plugin models only
   - **Convenience functions**: `get_model()`, `has_model()`, `list_models()`, `get_model_info()`
   - **Global instance**: `registry = ModelRegistry()` (singleton)
-- **PyGModelIntrospector**: Dynamic discovery of ALL PyG models 
+- **PyGModelIntrospector**: Dynamic discovery of ALL PyG models
   - **Dynamic model discovery** via `discover_pyg_models()`:
     - Scans `torch_geometric.nn.models` and submodules at runtime
     - Discovers 120+ models across all PyG versions
   - **Signature introspection**:
     - `ParameterInfo` dataclass: name, type, required, default, min/max, choices
     - `introspect_model_signature()`: __init__ parameter discovery
-    - `introspect_forward_signature()`: forward() parameter discovery 
+    - `introspect_forward_signature()`: forward() parameter discovery
     - `get_required_data_attributes()`: Data compatibility detection (z, pos, x, edge_index)
   - **Conv layer kwargs handling**:
     - `model_accepts_kwargs()`: Detects **kwargs support for Conv passthrough
@@ -706,7 +706,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - **Lazy loading**: `ALL_MODELS` dict for backward compatibility
 
 **Factory Submodule** (`models/factory/`) :
-- **ModelFactory**: Factory pattern for model creation 
+- **ModelFactory**: Factory pattern for model creation
   - Automatic hyperparameter validation
   - Channel inference from sample data
   - Device placement
@@ -732,7 +732,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - `validate_model_dependencies()`: Check PyG optional packages
   - `_detect_model_dependencies()`: Inspect model source code
   - PyG packages: torch_cluster, torch_sparse, torch_scatter, torch_spline_conv
-- **TargetSelectionConfig** (713 lines): Dynamic target/property selection 
+- **TargetSelectionConfig** (713 lines): Dynamic target/property selection
   - **SelectionMode enum** (4 types): PROPERTIES, INDICES, RANGE, ALL
   - **TargetLevel enum** (3 types): GRAPH, NODE, EDGE (task-level inference)
   - **TargetSource enum** (6 types): Y, X, EDGE_ATTR, EDGE_LABEL, EDGE_Y, CUSTOM
@@ -765,28 +765,28 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - Learning rate scheduling with ReduceLROnPlateau support
   - Device management (auto-detect CUDA/CPU)
   - Gradient clipping and accumulation
-  - **Dynamic forward signature introspection** 
+  - **Dynamic forward signature introspection**
     - `_get_forward_signature_params()`: Introspects model.forward() at runtime
     - `_model_accepts_3d_params()`: Detects 3D model support (SchNet, DimeNet)
     - `_forward_with_dynamic_signature()`: Signature-based forward dispatch
     - Supports ANY PyG model regardless of forward signature
-  - **Task-aware target handling** 
+  - **Task-aware target handling**
     - `_is_edge_level_task()`: Detects link_prediction, edge_regression
     - `_is_graph_level_task()`: Detects graph_regression, graph_classification
     - `_get_target()`: Intelligent target extraction per task type
     - `_apply_target_selection()`: Column selection for multi-target tasks
     - Automatic reshape for flattened graph-level multi-targets
-  - **model_info integration** 
+  - **model_info integration**
     - `uses_edge_features`: Whether to pass edge_attr
     - `task_type`: For intelligent target handling
     - `is_classification`: Skip reshape for classification
     - `out_channels`: For multi-target reshape
     - `target_selection`: For column selection
-  - **HPO callback integration** 
+  - **HPO callback integration**
     - `hpo_callback` parameter for OptunaPruningCallback
     - Auto-appends to callbacks list
     - Proper TrialPruned exception handling
-- **Callbacks** (6 types + factory): 
+- **Callbacks** (6 types + factory):
   - **Base class**: `Callback` (ABC) with hooks:
     - `set_trainer()`: Attach to trainer
     - `on_train_begin()`: Called at training start
@@ -794,7 +794,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `on_train_end()`: Called at training end
   - **6 callback implementations**:
     - `EarlyStopping`: Stop training on plateau (monitor, patience, mode, min_delta)
-    - `ModelCheckpoint`: Save best/periodic models 
+    - `ModelCheckpoint`: Save best/periodic models
       - **Parameters**: dirpath (required), monitor, mode, save_top_k, save_last, save_best, filename_pattern, verbose
       - `save_best: bool = True`: Save dedicated `best.pt` file for easy post-training access
       - **Properties** (PyTorch Lightning compatible API):
@@ -826,19 +826,19 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - Consistent discretization: fits on train, applies to all splits
   - Convenience function: `prepare_data_for_task()`
   - Task listing: `list_supported_tasks()`
-- **DataSplitter**: Multiple splitting strategies 
+- **DataSplitter**: Multiple splitting strategies
   - **5 splitting strategies**:
     - `random_split()`: Simple random shuffling with seed control
     - `stratified_split()`: Maintains class distribution (requires scikit-learn)
     - `temporal_split()`: Chronological ordering for time-series data
     - `scaffold_split()`: Murcko scaffold-based for molecular data (requires rdkit)
-    - `k_fold_split()`: K-fold cross-validation 
+    - `k_fold_split()`: K-fold cross-validation
   - Configurable train/val/test ratios with validation
   - Custom label/time/mol getter functions for flexible data access
   - Reproducible splits via random_seed parameter
   - Returns `torch.utils.data.Subset` objects
   - **Convenience functions**: `random_split()`, `stratified_split()`, `temporal_split()`, `scaffold_split()`, `k_fold_split()`
-- **LossRegistry**: Loss functions 
+- **LossRegistry**: Loss functions
   - **18 loss functions organized by category**:
     - Regression: `mse`, `mae`/`l1`, `huber`, `smooth_l1`, `rmse`, `weighted_mse`
     - Classification: `cross_entropy`/`ce`, `nll`, `bce`, `bce_with_logits`, `focal`
@@ -862,7 +862,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `get_default_loss_for_task()`: Task-to-loss mapping
   - **Custom loss registration** via `register_custom_loss()`
   - **Convenience functions**: `get_loss()`, `list_losses()`, `get_loss_for_task()`
-- **OptimizerRegistry**: PyTorch optimizers 
+- **OptimizerRegistry**: PyTorch optimizers
   - **12 PyTorch optimizers organized by category**:
     - Adaptive: `adam`, `adamw`, `adamax`, `adadelta`, `adagrad`, `rmsprop`
     - SGD variants: `sgd`, `asgd`
@@ -876,7 +876,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `get_default_params()`: Registry-defined defaults
   - **Custom optimizer registration** via `register_custom_optimizer()`
   - **Convenience functions**: `get_optimizer()`, `list_optimizers()`
-- **SchedulerRegistry**: Learning rate schedulers 
+- **SchedulerRegistry**: Learning rate schedulers
   - **13 PyTorch schedulers organized by category**:
     - Adaptive: `reduce_on_plateau` (metric-based)
     - Step-based: `step_lr`, `multistep_lr`, `exponential_lr`
@@ -896,7 +896,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - **Custom scheduler registration** via `register_custom_scheduler()`
   - **Warmup support** via `create_warmup_scheduler()` helper function
   - **Convenience functions**: `get_scheduler()`, `list_schedulers()`
-- **MetricsRegistry**: TorchMetrics-based evaluation metrics 
+- **MetricsRegistry**: TorchMetrics-based evaluation metrics
   - **12 metrics organized by category**:
     - Regression: `mse`, `mae`, `rmse`, `r2`, `mape`, `explained_variance`
     - Classification: `accuracy`, `precision`, `recall`, `f1`, `auroc`, `auprc`
@@ -917,7 +917,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `is_metric_compatible_with_task()`: Task-metric compatibility check
   - **Custom metric registration** via `register_custom_metric()`
   - **Convenience functions**: `get_metric()`, `get_metrics_for_task()`, `list_available()`
-- **TrainingVisualizer**: Training visualization utilities 
+- **TrainingVisualizer**: Training visualization utilities
   - **4 plot types**:
     - `plot_loss_curves()`: Train/Val loss over epochs (matplotlib)
     - `plot_metrics()`: All metrics in subplots (matplotlib)
@@ -1481,7 +1481,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `model_dump()`, `model_dump_json()`: Pydantic serialization
     - `is_phase_enabled()`: Phase status checking
   - **Accessor Functions**: `get_models_config()`, `get_training_config()`, `get_acceleration_config()`, `get_deployment_config()`, `get_plugins_config()`, `get_hpo_config()`, `is_hpo_enabled()`, `validate_models_config()`
-- **PyGIntegration**: PyTorch Geometric utilities 
+- **PyGIntegration**: PyTorch Geometric utilities
   - **Data Validation**:
     - `validate_pyg_data()`: Comprehensive validation with strict mode
     - `check_data_compatibility()`: Model requirement checking
@@ -1514,7 +1514,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - Thread-safe registry
 
 **HPO Submodule** (`models/hpo/`) :
-- **HPOManager**: Main orchestrator for hyperparameter optimization 
+- **HPOManager**: Main orchestrator for hyperparameter optimization
   - **Backend support**: Optuna (primary), Ray Tune (optional)
   - **Factory methods**: `from_config()`, `from_yaml()`
   - **Core method**: `optimize()` - runs full HPO pipeline
@@ -1533,7 +1533,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - **Cross-validation**: `_run_cross_validation()` with k-fold support
   - **Convenience functions**: `is_hpo_enabled()`, `get_best_params()`, `create_hpo_manager()`
   - Uses DynamicModelMetadata from pyg_introspector
-- **HPOConfig**: Configuration dataclasses (frozen, validated) 
+- **HPOConfig**: Configuration dataclasses (frozen, validated)
   - **HPOConfig**: Master switch and complete settings
     - `enabled`: MASTER SWITCH for HPO
     - `backend`: "optuna" or "ray_tune"
@@ -1562,7 +1562,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `create_study()`, `optimize()`, `get_best_params()`, `get_best_value()`
     - `get_all_trials()`, `create_pruner()`, `create_sampler()`
   - **Factory function**: `get_backend()` returns backend by name (optuna, ray_tune)
-  - **OptunaBackend** (497 lines): Primary implementation 
+  - **OptunaBackend** (497 lines): Primary implementation
     - **7 Pruner types**: median, percentile, hyperband, successive_halving, threshold, patient, none
     - **7 Sampler types**: tpe, random, cmaes, grid, nsgaii, motpe, qmc
     - **Methods**: `suggest_params()` maps search space to Optuna suggest calls
@@ -1584,7 +1584,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - `choices`: List for categorical type
     - `log`: Whether to use log scale
     - `__post_init__` validation: Validates required fields based on type
-  - **SearchSpaceBuilder** (1140 lines): Fluent builder with dynamic model spaces 
+  - **SearchSpaceBuilder** (1140 lines): Fluent builder with dynamic model spaces
     - **VALID_CATEGORIES** (7): hyperparameters, model, optimizer, scheduler, loss, training, architecture
     - **Fluent builder methods**: `add_int()`, `add_float()`, `add_loguniform()`, `add_categorical()`, `add_uniform()`, `add_discrete_uniform()`, `add_param()`, `add_category()`, `remove_param()`, `build()`, `to_dict()`
     - **Dynamic introspection**: `for_model()` uses pyg_introspector for ANY PyG model
@@ -1624,7 +1624,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
     - **API**: `extract()` static, `extract_features()` instance, `compute_similarity()` cosine
     - **Utilities**: `get_feature_names()`, `get_category_for_feature()`, normalization
     - **Lazy imports**: RDKit, torch, torch_geometric
-  - **WarmStartStrategy** (820 lines): Trial transfer mechanisms 
+  - **WarmStartStrategy** (820 lines): Trial transfer mechanisms
     - **WarmStartMethod enum** (4 types): WEIGHTED, FILTERED, FULL, ADAPTIVE
     - **WarmStartConfig** (frozen dataclass):
       - `method`, `n_trials`, `min_similarity` (0-1)
@@ -1644,14 +1644,14 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - **AggregationType enum** (5 types): MEAN, MAX, SUM, LSTM, MULTI
   - **ActivationType enum** (7 types): RELU, GELU, ELU, LEAKY_RELU, SILU, TANH, PRELU
   - **LayerConfig** (frozen dataclass): type, hidden_channels, heads, dropout, activation, batch_norm, residual
-  - **GNNArchitectureSpace** (1018 lines): Searchable GNN components 
+  - **GNNArchitectureSpace** (1018 lines): Searchable GNN components
     - **Search space fields**: min_layers, max_layers, layer_types, hidden_channels, heads, dropout_range
     - **Architecture options**: allow_skip_connections, allow_dense_connections, allow_mixed_layers
     - **Component options**: pooling_types, aggregation_types, activation_types, batch_norm_options
     - **Methods**: `to_optuna_search_space()`, `to_dict()`, `from_dict()`, `get_attention_layer_types()`, `has_attention_layers()`, `get_search_dimensions()`, `estimate_search_space_size()`, `create_default_layer_config()`
   - **Factory functions**: `create_gnn_search_space()` with presets (gcn, gat, sage, gin, transformer, pna, mixed)
   - **NASConfig dataclass**: n_trials, timeout, metric, direction, cv_folds, study_name, storage
-  - **NASManager** (1138 lines): Architecture search orchestrator 
+  - **NASManager** (1138 lines): Architecture search orchestrator
     - **Core methods**: `search()`, `build_model()`, `get_best_architecture()`, `get_best_params()`
     - **Model building**: Homogeneous (single layer type) or heterogeneous (mixed types)
     - **Internal methods**: `_convert_arch_space_to_hpo_format()`, `_create_hpo_config_from_nas_config()`, `_merge_search_spaces()`, `_extract_architecture()`
@@ -1665,7 +1665,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - **ImportanceMethod enum** (2 types): FANOVA, MDI
   - **ExportFormat enum** (4 types): JSON, CSV, DATAFRAME, DICT
   - **AnalysisConfig** (frozen dataclass): importance_method, n_importance_trials, convergence_window, include_pruned, include_failed, percentile_thresholds
-  - **StudyAnalyzer** (1704 lines): Comprehensive study analysis 
+  - **StudyAnalyzer** (1704 lines): Comprehensive study analysis
     - **Factory methods**: `from_manager()`, `from_storage()`
     - **Trial data**: `get_trials()`, `get_completed_trials()`, `get_trial_count()`
     - **Parameter analysis**: `get_parameter_importance()`, `get_parameter_importance_ranking()`, `get_parameter_statistics()`, `get_parameter_correlations()`
@@ -1689,7 +1689,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
 - Backward compatibility (100%)
 
 **Core Capabilities**:
-- ALL PyTorch Geometric models via dynamic introspection 
+- ALL PyTorch Geometric models via dynamic introspection
 - Automatic hyperparameter validation
 - Channel inference from sample data
 - Multiple data splitting strategies
@@ -1734,7 +1734,7 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
 - TPE, CMA-ES, Random samplers for hyperparameter suggestion
 - Median, Hyperband, Percentile pruners for early trial termination
 - Cross-validation integration (k-fold via DataSplitter)
-- Search space builder with dynamic model spaces (ANY PyG model) 
+- Search space builder with dynamic model spaces (ANY PyG model)
 - HPO transfer learning across studies/datasets
 - Meta-feature extraction for dataset similarity
 - Warm-start strategies for faster convergence
@@ -1751,14 +1751,14 @@ The models module dynamically discovers ALL PyTorch Geometric models via runtime
   - ModelFactory: Thread-safe instantiation
   - LayerRegistry: Thread-safe layer access
   - Plugin system: Thread-safe loading/registration
-  - HPOManager: Thread-safe study creation and access 
-  - SearchSpaceBuilder: Immutable frozen configs 
+  - HPOManager: Thread-safe study creation and access
+  - SearchSpaceBuilder: Immutable frozen configs
 
 - **Thread-Unsafe Components** (require external synchronization):
   - Model training state modifications
   - Callback state updates during training
   - Plugin loading/unloading operations
-  - HPO trial execution (each trial runs single-threaded) 
+  - HPO trial execution (each trial runs single-threaded)
 
 #### Integration
 
@@ -1769,8 +1769,8 @@ The models module integrates with:
 - **Handlers module**: For dataset-specific processing
 - **Descriptors module**: For molecular feature enrichment
 - **Transformations module**: For data augmentation
-- **Optuna**: For hyperparameter optimization backend 
-- **Ray Tune**: For distributed scale-out (optional) 
+- **Optuna**: For hyperparameter optimization backend
+- **Ray Tune**: For distributed scale-out (optional)
 
 #### Error Handling
 
@@ -1784,17 +1784,17 @@ Custom exceptions for comprehensive error management:
 - TrainingError: Training failures
 - CheckpointError: Checkpoint loading/saving failures
 - PluginModelError: Plugin-related errors
-- HPOError: Base exception for HPO-related errors 
-- HPOConfigurationError: HPO configuration validation failures 
-- TrialFailedError: HPO trial execution failures 
-- StudyNotFoundError: Study not found in storage 
-- SearchSpaceError: Invalid search space configuration 
-- PruningError: Pruning-related failures 
-- BackendError: HPO backend initialization/operation failures 
+- HPOError: Base exception for HPO-related errors
+- HPOConfigurationError: HPO configuration validation failures
+- TrialFailedError: HPO trial execution failures
+- StudyNotFoundError: Study not found in storage
+- SearchSpaceError: Invalid search space configuration
+- PruningError: Pruning-related failures
+- BackendError: HPO backend initialization/operation failures
 
 ---
 
-### HPO Module API 
+### HPO Module API
 
 **Version**: 1.0.0 | **Backend**: Optuna (primary), Ray Tune (optional) | **Thread-Safe**: Yes
 
@@ -1806,32 +1806,32 @@ The HPO module provides comprehensive hyperparameter optimization capabilities i
 milia_pipeline/models/hpo/
 ├── __init__.py                      # Public API exports
 ├── hpo_config.py                    # HPOConfig (7 pruners, 7 samplers) ⭐ PYDANTIC V2
-├── hpo_manager.py                   # HPOManager v1.1.0 (2593 lines) 
+├── hpo_manager.py                   # HPOManager v1.1.0 (2593 lines)
 ├── backends/                        # HPO backend implementations
 │   ├── __init__.py                  # Backend exports
-│   ├── base.py                      # HPOBackendProtocol 
-│   ├── optuna_backend.py            # OptunaBackend 
+│   ├── base.py                      # HPOBackendProtocol
+│   ├── optuna_backend.py            # OptunaBackend
 │   └── ray_tune_backend.py          # RayTuneBackend (inactive)
 ├── callbacks/                       # Training callbacks for HPO
 │   ├── __init__.py                  # Callback exports
-│   ├── optuna_callback.py           # OptunaPruningCallback 
+│   ├── optuna_callback.py           # OptunaPruningCallback
 │   └── ray_tune_callback.py         # RayTuneReportCallback (inactive)
 ├── search_spaces/                   # Search space definition
 │   ├── __init__.py                  # Search space exports
 │   ├── param_types.py               # ParamType (7), SearchSpaceParamConfig ⭐ PYDANTIC V2
-│   └── search_space_builder.py      # SearchSpaceBuilder v2.0.0 
+│   └── search_space_builder.py      # SearchSpaceBuilder v2.0.0
 ├── transfer/                        # HPO transfer learning
 │   ├── __init__.py                  # Transfer exports
-│   ├── transfer_manager.py          # HPOTransferManager v1.0.0 
-│   ├── meta_features.py             # MetaFeatureExtractor v1.0.0 
-│   └── warm_start.py                # WarmStartStrategy v1.0.0 
+│   ├── transfer_manager.py          # HPOTransferManager v1.0.0
+│   ├── meta_features.py             # MetaFeatureExtractor v1.0.0
+│   └── warm_start.py                # WarmStartStrategy v1.0.0
 ├── nas/                             # Neural Architecture Search
 │   ├── __init__.py                  # NAS exports
-│   ├── search_space.py              # GNNArchitectureSpace v1.0.0 
-│   └── nas_manager.py               # NASManager v1.0.0 
+│   ├── search_space.py              # GNNArchitectureSpace v1.0.0
+│   └── nas_manager.py               # NASManager v1.0.0
 └── analysis/                        # Study analysis
     ├── __init__.py                  # Analysis exports
-    └── study_analyzer.py            # StudyAnalyzer v1.0.0 
+    └── study_analyzer.py            # StudyAnalyzer v1.0.0
 ```
 
 #### Key API Functions
@@ -1855,15 +1855,15 @@ models:
   hpo:
     # MASTER SWITCH - enables HPO when true
     enabled: false
-    
+
     # Backend selection
     backend: "optuna"           # optuna or ray_tune
-    
+
     # Trial settings
     n_trials: 100               # Number of optimization trials
     timeout: null               # Max time in seconds (null = no limit)
     n_jobs: 1                   # Parallel jobs (1 = sequential)
-    
+
     # Search space (per-category)
     search_space:
       model:
@@ -1889,26 +1889,26 @@ models:
           type: "loguniform"
           low: 1e-6
           high: 1e-3
-    
+
     # Pruner configuration
     pruner:
       type: "median"            # median, hyperband, percentile, none
       n_startup_trials: 5
       n_warmup_steps: 10
-    
+
     # Sampler configuration
     sampler:
       type: "tpe"               # tpe, random, cmaes, grid
       n_startup_trials: 10
       multivariate: true
-    
+
     # Study configuration
     study:
       direction: "minimize"     # minimize or maximize
       metric: "val_loss"
       study_name: "milia_hpo"
       storage: null             # null = in-memory, or "sqlite:///hpo.db"
-    
+
     # Cross-validation
     cv_folds: 0                 # 0 = no CV, >0 = k-fold CV
     cv_metric_aggregation: "mean"
@@ -2842,7 +2842,7 @@ datasets/
     ├── dmc.py                       # DMCDataset (@register decorated)
     ├── wavefunction.py              # WavefunctionDataset (@register decorated)
     ├── xxmd.py                      # XXMDDataset (@register decorated)
-    └── qdpi.py                      # QDPiDataset (@register decorated) 
+    └── qdpi.py                      # QDPiDataset (@register decorated)
 ```
 
 **Key Classes**:
@@ -2868,7 +2868,7 @@ datasets/
 ```
 handlers/
 ├── __init__.py                          # Package exports (~680 lines, lazy loading + recursion guard)
-├── base_handler.py                      # DatasetHandler ABC + factory functions (~1,527 lines) 
+├── base_handler.py                      # DatasetHandler ABC + factory functions (~1,527 lines)
 ├── handler_registry.py                  # HandlerRegistry + @register_handler (~326 lines)
 ├── dataset_handler_integration.py       # Transform-aware integration (~3014 lines)
 └── implementations/                     # Individual handler implementations
@@ -2882,7 +2882,7 @@ handlers/
     ├── ani2x.py                         # ANI2xDatasetHandler (~922 lines)
     ├── rmd17.py                         # RMD17DatasetHandler (~947 lines)
     ├── xxmd.py                          # XXMDDatasetHandler (~950 lines)
-    └── qdpi.py                          # QDPiDatasetHandler (~950 lines) 
+    └── qdpi.py                          # QDPiDatasetHandler (~950 lines)
 ```
 
 **Handler Module Refactoring**:
@@ -3206,7 +3206,7 @@ handlers/
 - `ANI2xDatasetHandler`: ANI-2x dataset processing (in `implementations/ani2x.py`)
 - `RMD17DatasetHandler`: rMD17 dataset processing (in `implementations/rmd17.py`)
 - `XXMDDatasetHandler`: xxMD dataset processing (in `implementations/xxmd.py`)
-- `QDPiDatasetHandler`: QDπ dataset processing (in `implementations/qdpi.py`) 
+- `QDPiDatasetHandler`: QDπ dataset processing (in `implementations/qdpi.py`)
 - `TransformAwareHandlerIntegrator`: Transform integration (in `dataset_handler_integration.py`)
 
 ---
@@ -3232,7 +3232,7 @@ preprocessing/
 │   ├── ani1ccx.py                   # ANI1ccxPreprocessor (@register("ANI1ccx"))
 │   ├── rmd17.py                     # RMD17Preprocessor (@register("RMD17"))
 │   ├── xxmd.py                      # XXMDPreprocessor (@register("XXMD"))
-│   └── qdpi.py                      # QDPiPreprocessor (@register("QDPi")) 
+│   └── qdpi.py                      # QDPiPreprocessor (@register("QDPi"))
 └── utils/                           # Shared utility functions
     ├── __init__.py                  # Utility exports (10 functions)
     ├── archive_handlers.py          # Archive extraction (multi-format)
@@ -3414,35 +3414,35 @@ models/
 ├── __init__.py                      # Module exports
 ├── registry/
 │   ├── __init__.py
-│   ├── model_registry.py            # ModelRegistry v1.1.0 (singleton) 
-│   └── pyg_introspector.py          # PyGModelIntrospector v2.0.0 
+│   ├── model_registry.py            # ModelRegistry v1.1.0 (singleton)
+│   └── pyg_introspector.py          # PyGModelIntrospector v2.0.0
 ├── factory/
 │   ├── __init__.py
-│   ├── model_factory.py             # ModelFactory v1.2.0 
-│   └── target_selection_config.py   # TargetSelectionConfig 
+│   ├── model_factory.py             # ModelFactory v1.2.0
+│   └── target_selection_config.py   # TargetSelectionConfig
 ├── training/
 │   ├── __init__.py                  # Training exports
-│   ├── trainer.py                   # Trainer class with checkpoint support 
+│   ├── trainer.py                   # Trainer class with checkpoint support
 │   ├── callbacks.py                 # 6 callback types
 │   ├── data_splitting.py            # 5 splitting strategies
 │   ├── loss_functions.py            # Custom losses
 │   ├── optimizers.py                # Optimizer registry
 │   └── schedulers.py                # Scheduler registry
 ├── post_training/                   # Post-Training Inference
-│   ├── __init__.py                  # Public API (~350 lines) 
+│   ├── __init__.py                  # Public API (~350 lines)
 │   ├── checkpoint/
 │   │   ├── __init__.py
-│   │   └── checkpoint_manager.py    # CheckpointManager v2.0.0 
+│   │   └── checkpoint_manager.py    # CheckpointManager v2.0.0
 │   ├── inference/
 │   │   ├── __init__.py              # Inference exports (180 lines)
-│   │   ├── model_loader.py          # ModelLoader v2.1.0 
-│   │   └── predictor.py             # Predictor v2.1.0 
+│   │   ├── model_loader.py          # ModelLoader v2.1.0
+│   │   └── predictor.py             # Predictor v2.1.0
 │   ├── data_preparation/
 │   │   ├── __init__.py              # Data prep exports (259 lines)
-│   │   └── data_converter.py        # DataConverterRegistry v2.1.0 
+│   │   └── data_converter.py        # DataConverterRegistry v2.1.0
 │   └── transfer_learning/
 │       ├── __init__.py              # Transfer exports (168 lines)
-│       └── fine_tuner.py            # FineTuner v2.0.0 
+│       └── fine_tuner.py            # FineTuner v2.0.0
 ├── builders/                        # Custom architecture building
 │   ├── __init__.py
 │   ├── layer_registry.py            # LayerRegistry
@@ -3465,14 +3465,14 @@ models/
 ├── utils/
 │   ├── __init__.py
 │   ├── config_bridge.py             # ConfigBridge v1.2.0 (Pydantic) ⭐ PYDANTIC
-│   └── pyg_integration.py           # PyG utilities v1.0.0 
+│   └── pyg_integration.py           # PyG utilities v1.0.0
 └── plugins/
     ├── __init__.py
     └── model_plugin_system.py       # ModelPluginLoader
 ```
 
 **Key Classes**:
-- **Registry**: ModelRegistry  ModelCategory, ModelMetadata, PyGModelIntrospector 
+- **Registry**: ModelRegistry  ModelCategory, ModelMetadata, PyGModelIntrospector
 - **Factory**: ModelFactory, ModelValidator, create_model
 - **Training**: Trainer with checkpoint support, DataSplitter, callbacks (6 types)
 - **Post-Training**: CheckpointManager, ModelLoader, Predictor, DataConverterRegistry, FineTuner
@@ -3668,7 +3668,7 @@ docs/
 3. **API Reference**:
    - Descriptor catalog (400+ descriptors)
    - Custom transforms guide
-   - Model catalog (dynamic discovery of ALL PyG models) 
+   - Model catalog (dynamic discovery of ALL PyG models)
    - Module-specific references
 
 4. **Examples**:
@@ -3726,7 +3726,7 @@ examples/
 - Descriptor operations
 
 **Post-Training Integration**:
-- `handle_predict_mode()`: Complete prediction workflow (~180 lines) 
+- `handle_predict_mode()`: Complete prediction workflow (~180 lines)
 - Retrieves `structural_features_config` from `predictor.structural_features_config`
 - Passes `structural_features_config` to `convert_to_pyg()` for dimension-compatible featurization
 - Logs featurization config for debugging: `atom=[...], bond=[...]`
@@ -3874,8 +3874,8 @@ configs/
 
 **Deep Merge Strategy**: Nested dicts are recursively merged; lists and scalars are overridden.
 
-> **NOTE**: The `data_config` key appears in both `main.yaml` (with `common_settings`) and `datasets/*.yaml` 
-> (with `property_selection.{DATASET}`). The deep merge combines these into a single `data_config` dictionary 
+> **NOTE**: The `data_config` key appears in both `main.yaml` (with `common_settings`) and `datasets/*.yaml`
+> (with `property_selection.{DATASET}`). The deep merge combines these into a single `data_config` dictionary
 > containing both `common_settings` and `property_selection` sub-keys.
 
 **Research Configuration** (`research_experiments.yaml`):
@@ -3962,20 +3962,20 @@ transformations:
 # Models configuration
 models:
   enabled: true
-  
+
   selection:
     model_name: "GCN"
     task_type: "graph_regression"
     hyperparameters:
       hidden_channels: 64
       num_layers: 3
-  
+
   training:
     epochs: 100
     batch_size: 32
     learning_rate: 0.001
     # ... training settings
-  
+
   # Prediction configuration
   prediction:
     batch_size: 32
@@ -3989,12 +3989,12 @@ models:
     uncertainty: false
     uncertainty_method: "dropout"
     inverse_transform: true
-  
+
   acceleration:
     device: "cuda"
     mixed_precision: true
     # ... acceleration settings
-  
+
   deployment:
     strategy: "edge"
     quantization: true
@@ -4047,7 +4047,7 @@ The Milia Pipeline employs several key architectural patterns:
 - Multi-device support
 - Edge and cloud deployment
 
-### 7. Extensibility (Datasets Module) 
+### 7. Extensibility (Datasets Module)
 - Zero-modification architecture for new dataset types
 - Protocol-based contracts
 - Explicit registry pattern
@@ -4104,8 +4104,8 @@ The Milia Pipeline employs several key architectural patterns:
 - Plugin loading/unloading operations
 - Model training state modifications
 - Callback state updates
-- HPO trial execution (each trial runs single-threaded) 
-- HPO transfer manager meta-database modifications 
+- HPO trial execution (each trial runs single-threaded)
+- HPO transfer manager meta-database modifications
 
 ### Performance Optimizations
 
@@ -4237,7 +4237,7 @@ The Milia Pipeline employs several key architectural patterns:
 - Graceful error recovery
 - Training error handling and recovery
 - Deployment error handling
-- **Dataset registration error handling** 
+- **Dataset registration error handling**
   - `DatasetRegistrationError`: Registration failures
   - `DatasetNotFoundError`: Dataset lookup failures
 
@@ -4304,17 +4304,17 @@ The Milia Pipeline is a production-ready, research-oriented molecular data proce
 - **Advanced architectural patterns**
   - Lazy loading for circular dependency resolution (handlers module)
   - Thread-safe singleton registry pattern (descriptors, models)
-  - **Thread-safe non-singleton registry pattern (datasets)** 
+  - **Thread-safe non-singleton registry pattern (datasets)**
   - Factory pattern for handler and model creation
   - Auto-discovery mechanisms (descriptors, preprocessors, models)
   - Plugin discovery and validation systems
   - Configuration bridge pattern (models)
-  - **Protocol + ABC + Explicit Registry pattern (datasets)** 
+  - **Protocol + ABC + Explicit Registry pattern (datasets)**
   - **Builder pattern for custom architectures**
   - **Composer pattern for ensembles**
-  - **`__init_subclass__` for compile-time validation** 
-  - **Backend Protocol pattern for HPO** (HPO module) 
-  - **Fluent builder pattern for search spaces** (HPO module) 
+  - **`__init_subclass__` for compile-time validation**
+  - **Backend Protocol pattern for HPO** (HPO module)
+  - **Fluent builder pattern for search spaces** (HPO module)
 
 - **Comprehensive APIs**
   - Minimal public interfaces for end users
@@ -4323,8 +4323,8 @@ The Milia Pipeline is a production-ready, research-oriented molecular data proce
   - PyTorch Geometric integration utilities
   - **Complete training API**
   - **Deployment API**
-  - **Registry-based dataset discovery API** 
-  - **HPO configuration and management API** 
+  - **Registry-based dataset discovery API**
+  - **HPO configuration and management API**
 
 - **Multiple entry points** for diverse use cases
   - CLI interface (cli_manager.py)
@@ -4332,7 +4332,7 @@ The Milia Pipeline is a production-ready, research-oriented molecular data proce
   - Programmatic access via package imports
   - **Training scripts**
   - **Deployment scripts**
-  - **HPO optimization scripts** 
+  - **HPO optimization scripts**
 
 **Key Capabilities**:
 - 400+ RDKit molecular descriptors with caching
@@ -4342,17 +4342,17 @@ The Milia Pipeline is a production-ready, research-oriented molecular data proce
 - Structural feature filtering per dataset type
 - Comprehensive validation at multiple levels
 - Plugin-based extensibility without core modifications
-- **Zero-modification dataset extension architecture** 
-- **Protocol-based contracts with 11-method handler interface** 
-- **Compile-time validation for dataset implementations** 
-- **ALL PyTorch Geometric models via dynamic introspection** 
+- **Zero-modification dataset extension architecture**
+- **Protocol-based contracts with 11-method handler interface**
+- **Compile-time validation for dataset implementations**
+- **ALL PyTorch Geometric models via dynamic introspection**
 - **Custom architecture building**
 - **Multi-model ensembles**
 - **Factory-based model creation and management**
-- **Dynamic target selection with multiple modes (properties/indices/range)** 
-- **Task-specific data preparation with 7 task types (graph/node/edge/link)** 
+- **Dynamic target selection with multiple modes (properties/indices/range)**
+- **Task-specific data preparation with 7 task types (graph/node/edge/link)**
 - **Multiple data splitting strategies (4 types)**
-- **Comprehensive callback system (7 types including HPO callback)** 
+- **Comprehensive callback system (7 types including HPO callback)**
 - **Multi-device training (CPU/GPU/MPS/TPU)**
 - **Distributed training strategies (DP/DDP/Model Parallel)**
 - **Memory and computation optimization**
@@ -4361,23 +4361,23 @@ The Milia Pipeline is a production-ready, research-oriented molecular data proce
 - **Training callbacks and schedulers**
 - **Loss function customization**
 - **Model quantization and pruning**
-- **Hyperparameter optimization with Optuna backend** 
-- **Neural Architecture Search for GNNs** 
-- **HPO transfer learning and warm-starting** 
-- **Search space builder with dynamic model spaces** 
-- **Study analysis and visualization** 
-- **Complete main.py training integration with registry** 
-- **Dynamic forward signature introspection in Trainer (supports ANY PyG model)** 
-- **Task-aware target handling for all 7 task types** 
-- **MetricsRegistry with 12 TorchMetrics-based evaluation metrics** 
-- **TrainingVisualizer with 4 config-driven plot types (loss, metrics, LR, interactive)** 
-- **Config-driven visualization settings in evaluation.visualization** 
+- **Hyperparameter optimization with Optuna backend**
+- **Neural Architecture Search for GNNs**
+- **HPO transfer learning and warm-starting**
+- **Search space builder with dynamic model spaces**
+- **Study analysis and visualization**
+- **Complete main.py training integration with registry**
+- **Dynamic forward signature introspection in Trainer (supports ANY PyG model)**
+- **Task-aware target handling for all 7 task types**
+- **MetricsRegistry with 12 TorchMetrics-based evaluation metrics**
+- **TrainingVisualizer with 4 config-driven plot types (loss, metrics, LR, interactive)**
+- **Config-driven visualization settings in evaluation.visualization**
 
 The architecture emphasizes modularity, extensibility, thread safety, performance optimization, and scientific rigor, making it suitable for both research and production molecular machine learning workflows with comprehensive model training, deployment, and hyperparameter optimization capabilities.
 
 ---
 
 
-**Document Version**: 1.1.0 
-**Last Updated**: February 2026 
+**Document Version**: 1.1.0
+**Last Updated**: February 2026
 **Maintained By**: MILIA Team

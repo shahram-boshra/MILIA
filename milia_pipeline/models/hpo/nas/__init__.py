@@ -51,14 +51,14 @@ Basic architecture search:
     ...     NASManager,
     ...     GNNArchitectureSpace,
     ... )
-    >>> 
+    >>>
     >>> # Create search space
     >>> arch_space = GNNArchitectureSpace()
-    >>> 
+    >>>
     >>> # Create NAS manager and run search
     >>> nas = NASManager(arch_space)
     >>> best_arch = nas.search(dataset=train_dataset)
-    >>> 
+    >>>
     >>> # Build model from best architecture
     >>> model = nas.build_model(best_arch, in_channels=10, out_channels=1)
 
@@ -71,7 +71,7 @@ Custom search space for attention models:
     ...     NASManager,
     ...     NASConfig,
     ... )
-    >>> 
+    >>>
     >>> # Create attention-focused search space
     >>> arch_space = GNNArchitectureSpace(
     ...     min_layers=2,
@@ -81,11 +81,11 @@ Custom search space for attention models:
     ...     pooling_types=[PoolingType.ATTENTION, PoolingType.MEAN],
     ...     allow_mixed_layers=True,
     ... )
-    >>> 
+    >>>
     >>> # Configure NAS
     >>> nas_config = NASConfig(n_trials=100, cv_folds=5)
     >>> nas = NASManager(arch_space, nas_config=nas_config)
-    >>> 
+    >>>
     >>> # Run search
     >>> best_arch = nas.search(dataset=dataset)
 
@@ -95,10 +95,10 @@ Using factory functions:
     ...     create_gnn_search_space,
     ...     create_nas_manager,
     ... )
-    >>> 
+    >>>
     >>> # Create GAT-specific search space
     >>> arch_space = create_gnn_search_space('gat')
-    >>> 
+    >>>
     >>> # Quick NAS setup
     >>> nas = create_nas_manager(arch_space, n_trials=50)
     >>> best_arch = nas.search(dataset=dataset)
@@ -124,32 +124,30 @@ Version: 1.0.0
 # SEARCH SPACE IMPORTS
 # =============================================================================
 
-from .search_space import (
-    # Enums
-    LayerType,
-    PoolingType,
-    AggregationType,
-    ActivationType,
-    # Dataclasses
-    LayerConfig,
-    GNNArchitectureSpace,
-    # Factory functions
-    create_gnn_search_space,
-    get_default_gnn_search_space,
-)
-
 # =============================================================================
 # NAS MANAGER IMPORTS
 # =============================================================================
-
 from .nas_manager import (
+    HeterogeneousGNN,
     # Configuration
     NASConfig,
     # Main classes
     NASManager,
-    HeterogeneousGNN,
     # Convenience functions
     create_nas_manager,
+)
+from .search_space import (
+    ActivationType,
+    AggregationType,
+    GNNArchitectureSpace,
+    # Dataclasses
+    LayerConfig,
+    # Enums
+    LayerType,
+    PoolingType,
+    # Factory functions
+    create_gnn_search_space,
+    get_default_gnn_search_space,
 )
 
 # =============================================================================
@@ -158,44 +156,45 @@ from .nas_manager import (
 
 __all__ = [
     # Enums (search_space.py)
-    'LayerType',
-    'PoolingType',
-    'AggregationType',
-    'ActivationType',
+    "LayerType",
+    "PoolingType",
+    "AggregationType",
+    "ActivationType",
     # Dataclasses (search_space.py)
-    'LayerConfig',
-    'GNNArchitectureSpace',
+    "LayerConfig",
+    "GNNArchitectureSpace",
     # Factory functions (search_space.py)
-    'create_gnn_search_space',
-    'get_default_gnn_search_space',
+    "create_gnn_search_space",
+    "get_default_gnn_search_space",
     # Configuration (nas_manager.py)
-    'NASConfig',
+    "NASConfig",
     # Main classes (nas_manager.py)
-    'NASManager',
-    'HeterogeneousGNN',
+    "NASManager",
+    "HeterogeneousGNN",
     # Convenience functions (nas_manager.py)
-    'create_nas_manager',
+    "create_nas_manager",
 ]
 
 # =============================================================================
 # MODULE METADATA
 # =============================================================================
 
-__version__ = '1.0.0'
-__author__ = 'Milia Team'
+__version__ = "1.0.0"
+__author__ = "Milia Team"
 
 
 # =============================================================================
 # MODULE INFORMATION FUNCTIONS
 # =============================================================================
 
+
 def get_nas_module_info() -> dict:
     """
     Get information about the NAS module.
-    
+
     Returns a dictionary containing version, available components,
     and capability information.
-    
+
     Returns
     -------
     dict
@@ -206,7 +205,7 @@ def get_nas_module_info() -> dict:
         - aggregation_types: Available aggregation types
         - activation_types: Available activation functions
         - components: List of main exported components
-        
+
     Examples
     --------
     >>> from milia_pipeline.models.hpo.nas import get_nas_module_info
@@ -215,23 +214,23 @@ def get_nas_module_info() -> dict:
     >>> print(f"Layer types: {info['layer_types']}")
     """
     return {
-        'version': __version__,
-        'author': __author__,
-        'layer_types': [lt.value for lt in LayerType],
-        'pooling_types': [pt.value for pt in PoolingType],
-        'aggregation_types': [at.value for at in AggregationType],
-        'activation_types': [at.value for at in ActivationType],
-        'components': __all__,
+        "version": __version__,
+        "author": __author__,
+        "layer_types": [lt.value for lt in LayerType],
+        "pooling_types": [pt.value for pt in PoolingType],
+        "aggregation_types": [at.value for at in AggregationType],
+        "activation_types": [at.value for at in ActivationType],
+        "components": __all__,
     }
 
 
 def check_nas_dependencies() -> dict:
     """
     Check availability of NAS module dependencies.
-    
+
     Verifies that required dependencies (PyTorch, PyTorch Geometric, Optuna)
     are available for NAS functionality.
-    
+
     Returns
     -------
     dict
@@ -240,7 +239,7 @@ def check_nas_dependencies() -> dict:
         - torch_geometric: PyTorch Geometric availability
         - optuna: Optuna availability
         - all_available: True if all dependencies available
-        
+
     Examples
     --------
     >>> from milia_pipeline.models.hpo.nas import check_nas_dependencies
@@ -251,35 +250,40 @@ def check_nas_dependencies() -> dict:
     ...     print(f"Missing: {[k for k, v in deps.items() if not v]}")
     """
     deps = {}
-    
+
     try:
         import torch
-        deps['torch'] = True
-        deps['torch_version'] = torch.__version__
+
+        deps["torch"] = True
+        deps["torch_version"] = torch.__version__
     except ImportError:
-        deps['torch'] = False
-        deps['torch_version'] = None
-    
+        deps["torch"] = False
+        deps["torch_version"] = None
+
     try:
         import torch_geometric
-        deps['torch_geometric'] = True
-        deps['torch_geometric_version'] = torch_geometric.__version__
+
+        deps["torch_geometric"] = True
+        deps["torch_geometric_version"] = torch_geometric.__version__
     except ImportError:
-        deps['torch_geometric'] = False
-        deps['torch_geometric_version'] = None
-    
+        deps["torch_geometric"] = False
+        deps["torch_geometric_version"] = None
+
     try:
         import optuna
-        deps['optuna'] = True
-        deps['optuna_version'] = optuna.__version__
+
+        deps["optuna"] = True
+        deps["optuna_version"] = optuna.__version__
     except ImportError:
-        deps['optuna'] = False
-        deps['optuna_version'] = None
-    
-    deps['all_available'] = all([
-        deps['torch'],
-        deps['torch_geometric'],
-        deps['optuna'],
-    ])
-    
+        deps["optuna"] = False
+        deps["optuna_version"] = None
+
+    deps["all_available"] = all(
+        [
+            deps["torch"],
+            deps["torch_geometric"],
+            deps["optuna"],
+        ]
+    )
+
     return deps

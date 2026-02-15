@@ -29,14 +29,10 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import sys
-import os
 import logging
-import math
-import tempfile
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
-from typing import Dict, Any, List, Optional, Tuple
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -54,8 +50,9 @@ import torch
 import torch.nn as nn
 
 try:
-    from torch_geometric.data import Data, InMemoryDataset, Batch
+    from torch_geometric.data import Batch, Data, InMemoryDataset
     from torch_geometric.loader import DataLoader as PyGDataLoader
+
     TORCH_GEOMETRIC_AVAILABLE = True
 except ImportError:
     TORCH_GEOMETRIC_AVAILABLE = False
@@ -63,6 +60,7 @@ except ImportError:
 try:
     import optuna
     from optuna.trial import TrialState
+
     OPTUNA_AVAILABLE = True
 except ImportError:
     OPTUNA_AVAILABLE = False
@@ -73,13 +71,14 @@ except ImportError:
 try:
     from milia_pipeline.models.hpo.hpo_config import (
         HPOConfig,
-        PrunerType,
-        PrunerConfig,
-        SamplerType,
-        SamplerConfig,
         OptimizationDirection,
+        PrunerConfig,
+        PrunerType,
+        SamplerConfig,
+        SamplerType,
         StudyConfig,
     )
+
     HPO_CONFIG_AVAILABLE = True
 except ImportError:
     HPO_CONFIG_AVAILABLE = False
@@ -89,6 +88,7 @@ try:
         ParamType,
         SearchSpaceParamConfig,
     )
+
     PARAM_TYPES_AVAILABLE = True
 except ImportError:
     PARAM_TYPES_AVAILABLE = False
@@ -99,12 +99,14 @@ try:
         build_search_space,
         validate_search_space,
     )
+
     SEARCH_SPACE_BUILDER_AVAILABLE = True
 except ImportError:
     SEARCH_SPACE_BUILDER_AVAILABLE = False
 
 try:
     from milia_pipeline.models.hpo.backends.optuna_backend import OptunaBackend
+
     OPTUNA_BACKEND_AVAILABLE = True
 except ImportError:
     OPTUNA_BACKEND_AVAILABLE = False
@@ -114,17 +116,19 @@ try:
         OptunaPruningCallback,
         create_hpo_callback,
     )
+
     CALLBACK_AVAILABLE = True
 except ImportError:
     CALLBACK_AVAILABLE = False
 
 try:
     from milia_pipeline.models.hpo.analysis.study_analyzer import (
-        StudyAnalyzer,
         AnalysisConfig,
-        ImportanceMethod,
         ExportFormat,
+        ImportanceMethod,
+        StudyAnalyzer,
     )
+
     STUDY_ANALYZER_AVAILABLE = True
 except ImportError:
     STUDY_ANALYZER_AVAILABLE = False
@@ -132,37 +136,41 @@ except ImportError:
 try:
     from milia_pipeline.models.hpo.hpo_manager import (
         HPOManager,
-        is_hpo_enabled,
-        get_best_params,
-        create_hpo_manager,
-        _flatten_params,
         _extract_param_categories,
+        _flatten_params,
+        create_hpo_manager,
+        get_best_params,
         infer_task_type,
+        is_hpo_enabled,
     )
+
     HPO_MANAGER_AVAILABLE = True
 except ImportError:
     HPO_MANAGER_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.trainer import Trainer
+
     TRAINER_AVAILABLE = True
 except ImportError:
     TRAINER_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.data_splitting import DataSplitter
+
     DATA_SPLITTER_AVAILABLE = True
 except ImportError:
     DATA_SPLITTER_AVAILABLE = False
 
 try:
     from milia_pipeline.exceptions import (
-        HPOError,
         HPOConfigurationError,
-        TrialFailedError,
-        SearchSpaceError,
+        HPOError,
         PruningError,
+        SearchSpaceError,
+        TrialFailedError,
     )
+
     EXCEPTIONS_AVAILABLE = True
 except ImportError:
     EXCEPTIONS_AVAILABLE = False
@@ -193,6 +201,7 @@ pytestmark = [
 # FIXTURES — Synthetic Data & Minimal Config
 # =============================================================================
 
+
 class _SyntheticGraphDataset(torch.utils.data.Dataset):
     """
     Minimal synthetic PyG-like graph dataset for HPO E2E tests.
@@ -203,11 +212,12 @@ class _SyntheticGraphDataset(torch.utils.data.Dataset):
         - y:          [1] scalar regression target
     """
 
-    def __init__(self, n_graphs: int = 30, in_channels: int = 8,
-                 num_nodes: int = 5, seed: int = 42):
+    def __init__(
+        self, n_graphs: int = 30, in_channels: int = 8, num_nodes: int = 5, seed: int = 42
+    ):
         super().__init__()
         torch.manual_seed(seed)
-        self._data_list: List[Data] = []
+        self._data_list: list[Data] = []
         for i in range(n_graphs):
             x = torch.randn(num_nodes, in_channels)
             # Simple fully-connected graph
@@ -239,8 +249,9 @@ class _TinyGNN(nn.Module):
         Linear(hidden_channels → out_channels) + global mean pooling
     """
 
-    def __init__(self, in_channels: int = 8, hidden_channels: int = 16,
-                 out_channels: int = 1, **kwargs):
+    def __init__(
+        self, in_channels: int = 8, hidden_channels: int = 16, out_channels: int = 1, **kwargs
+    ):
         super().__init__()
         self.lin1 = nn.Linear(in_channels, hidden_channels)
         self.lin2 = nn.Linear(hidden_channels, out_channels)
@@ -252,6 +263,7 @@ class _TinyGNN(nn.Module):
         # Global mean pooling
         if batch is not None:
             from torch_geometric.nn import global_mean_pool
+
             h = global_mean_pool(h, batch)
         else:
             h = h.mean(dim=0, keepdim=True)
@@ -279,9 +291,15 @@ def tiny_model_factory():
     Signature: factory(name, hyperparameters, task_type, sample_data,
                        num_classes_override, **kw)  →  (model, model_info)
     """
-    def _factory(name: str = "TinyGNN", hyperparameters: Optional[Dict] = None,
-                 task_type: str = "graph_regression", sample_data=None,
-                 num_classes_override=None, **kwargs):
+
+    def _factory(
+        name: str = "TinyGNN",
+        hyperparameters: dict | None = None,
+        task_type: str = "graph_regression",
+        sample_data=None,
+        num_classes_override=None,
+        **kwargs,
+    ):
         hp = hyperparameters or {}
         hidden = hp.get("hidden_channels", 16)
         model = _TinyGNN(in_channels=8, hidden_channels=hidden, out_channels=1)
@@ -308,14 +326,10 @@ def minimal_search_space():
 
     return {
         "hyperparameters": {
-            "hidden_channels": SearchSpaceParamConfig(
-                type=ParamType.INT, low=8, high=32, step=8
-            ),
+            "hidden_channels": SearchSpaceParamConfig(type=ParamType.INT, low=8, high=32, step=8),
         },
         "optimizer": {
-            "lr": SearchSpaceParamConfig(
-                type=ParamType.LOGUNIFORM, low=1e-4, high=1e-2
-            ),
+            "lr": SearchSpaceParamConfig(type=ParamType.LOGUNIFORM, low=1e-4, high=1e-2),
         },
     }
 
@@ -380,6 +394,7 @@ def hpo_config_3_trials(minimal_search_space):
 # SECTION 1 — HPOConfig Construction & Validation
 # =============================================================================
 
+
 class TestHPOConfigConstruction:
     """Verify HPOConfig, SearchSpaceParamConfig, enums, and from_dict()."""
 
@@ -411,9 +426,7 @@ class TestHPOConfigConstruction:
             "n_jobs": 1,
             "search_space": {
                 "hyperparameters": {
-                    "hidden_channels": {
-                        "type": "int", "low": 8, "high": 32, "step": 8
-                    },
+                    "hidden_channels": {"type": "int", "low": 8, "high": 32, "step": 8},
                 },
                 "optimizer": {
                     "lr": {"type": "loguniform", "low": 1e-4, "high": 1e-2},
@@ -453,8 +466,15 @@ class TestHPOConfigConstruction:
     @pytest.mark.skipif(not PARAM_TYPES_AVAILABLE, reason="param_types not importable")
     def test_param_type_enum_values(self):
         """ParamType enum has all 7 expected members."""
-        expected = {"int", "float", "categorical", "loguniform",
-                    "uniform", "int_uniform", "discrete_uniform"}
+        expected = {
+            "int",
+            "float",
+            "categorical",
+            "loguniform",
+            "uniform",
+            "int_uniform",
+            "discrete_uniform",
+        }
         actual = {pt.value for pt in ParamType}
         assert expected == actual
 
@@ -475,11 +495,13 @@ class TestHPOConfigConstruction:
 # SECTION 2 — SearchSpaceBuilder Fluent API
 # =============================================================================
 
+
 class TestSearchSpaceBuilder:
     """Verify fluent builder, validation, and utility methods."""
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_fluent_builder_chain(self):
         """Builder supports method chaining and produces valid space."""
         space = (
@@ -495,8 +517,9 @@ class TestSearchSpaceBuilder:
         assert "lr" in space["optimizer"]
         assert "activation" in space["hyperparameters"]
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_builder_frozen_after_build(self):
         """Builder cannot be modified after build() is called."""
         builder = SearchSpaceBuilder()
@@ -505,38 +528,43 @@ class TestSearchSpaceBuilder:
         with pytest.raises(Exception):
             builder.add_int("y", 1, 10, category="hyperparameters")
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_validate_search_space_accepts_valid(self, minimal_search_space):
         """validate_search_space() returns True for a valid space."""
         is_valid, errors = validate_search_space(minimal_search_space)
         assert is_valid is True, f"Unexpected errors: {errors}"
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_validate_search_space_rejects_empty(self):
         """validate_search_space() rejects an empty dict."""
         is_valid, errors = validate_search_space({})
         assert is_valid is False
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_get_param_count(self, minimal_search_space):
         """get_param_count() returns correct counts per category."""
         counts = SearchSpaceBuilder.get_param_count(minimal_search_space)
         assert counts["hyperparameters"] == 1
         assert counts["optimizer"] == 1
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_estimate_search_space_size(self, minimal_search_space):
         """estimate_search_space_size() produces a positive integer."""
         size = SearchSpaceBuilder.estimate_search_space_size(minimal_search_space)
         assert isinstance(size, int)
         assert size > 0
 
-    @pytest.mark.skipif(not SEARCH_SPACE_BUILDER_AVAILABLE,
-                        reason="search_space_builder not importable")
+    @pytest.mark.skipif(
+        not SEARCH_SPACE_BUILDER_AVAILABLE, reason="search_space_builder not importable"
+    )
     def test_list_available_models(self):
         """list_available_models() returns a non-empty list of strings."""
         models = SearchSpaceBuilder.list_available_models()
@@ -549,11 +577,11 @@ class TestSearchSpaceBuilder:
 # SECTION 3 — OptunaBackend Primitives
 # =============================================================================
 
+
 class TestOptunaBackend:
     """Test OptunaBackend independently (create_study, suggest_params, etc.)."""
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
     def test_create_study(self):
         """OptunaBackend.create_study() returns a valid Optuna Study."""
         backend = OptunaBackend()
@@ -566,27 +594,25 @@ class TestOptunaBackend:
         assert isinstance(study, optuna.Study)
         assert study.study_name == "backend_unit_test"
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
-    @pytest.mark.filterwarnings(
-        "ignore:.*multivariate.*:optuna.exceptions.ExperimentalWarning"
-    )
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
+    @pytest.mark.filterwarnings("ignore:.*multivariate.*:optuna.exceptions.ExperimentalWarning")
     def test_create_sampler_tpe(self):
         """OptunaBackend creates TPE sampler without error."""
         backend = OptunaBackend()
         sampler = backend.create_sampler("tpe", seed=42)
         assert isinstance(sampler, optuna.samplers.TPESampler)
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
     def test_create_sampler_random(self):
         """OptunaBackend creates Random sampler without error."""
         backend = OptunaBackend()
         sampler = backend.create_sampler("random", seed=0)
         assert isinstance(sampler, optuna.samplers.RandomSampler)
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE or not PARAM_TYPES_AVAILABLE,
-                        reason="optuna_backend or param_types not importable")
+    @pytest.mark.skipif(
+        not OPTUNA_BACKEND_AVAILABLE or not PARAM_TYPES_AVAILABLE,
+        reason="optuna_backend or param_types not importable",
+    )
     def test_suggest_params(self, minimal_search_space):
         """OptunaBackend.suggest_params() returns a dict of suggested values."""
         backend = OptunaBackend()
@@ -609,25 +635,21 @@ class TestOptunaBackend:
         assert 8 <= hc <= 32
         assert 1e-4 <= lr <= 1e-2
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
     def test_create_pruner_median(self):
         """OptunaBackend.create_pruner('median') returns MedianPruner."""
         backend = OptunaBackend()
-        pruner = backend.create_pruner("median", n_startup_trials=3,
-                                       n_warmup_steps=2)
+        pruner = backend.create_pruner("median", n_startup_trials=3, n_warmup_steps=2)
         assert isinstance(pruner, optuna.pruners.MedianPruner)
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
     def test_create_pruner_none(self):
         """OptunaBackend.create_pruner('none') returns NopPruner."""
         backend = OptunaBackend()
         pruner = backend.create_pruner("none")
         assert isinstance(pruner, optuna.pruners.NopPruner)
 
-    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE,
-                        reason="optuna_backend not importable")
+    @pytest.mark.skipif(not OPTUNA_BACKEND_AVAILABLE, reason="optuna_backend not importable")
     def test_get_best_params_no_trials_raises(self):
         """get_best_params on empty study raises HPOError."""
         backend = OptunaBackend()
@@ -640,11 +662,11 @@ class TestOptunaBackend:
 # SECTION 4 — OptunaPruningCallback
 # =============================================================================
 
+
 class TestOptunaPruningCallback:
     """Test the pruning callback in isolation (no Trainer dependency)."""
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_creation(self):
         """OptunaPruningCallback can be instantiated with a mock trial."""
         mock_trial = MagicMock(spec=optuna.Trial)
@@ -654,8 +676,7 @@ class TestOptunaPruningCallback:
         assert cb.monitor == "val_loss"
         assert cb.report_every == 1
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_reports_metric(self):
         """on_epoch_end reports metric value to the trial."""
         mock_trial = MagicMock(spec=optuna.Trial)
@@ -668,8 +689,7 @@ class TestOptunaPruningCallback:
 
         mock_trial.report.assert_called_once_with(0.42, 0)
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_prunes_when_signalled(self):
         """on_epoch_end raises TrialPruned when trial.should_prune() is True."""
         mock_trial = MagicMock(spec=optuna.Trial)
@@ -678,11 +698,9 @@ class TestOptunaPruningCallback:
         cb = OptunaPruningCallback(trial=mock_trial, monitor="val_loss")
 
         with pytest.raises(optuna.TrialPruned):
-            cb.on_epoch_end(trainer=None, epoch=5,
-                            metrics={"val_loss": 1.23})
+            cb.on_epoch_end(trainer=None, epoch=5, metrics={"val_loss": 1.23})
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_skips_missing_metric(self):
         """on_epoch_end does not crash when monitored metric is absent."""
         mock_trial = MagicMock(spec=optuna.Trial)
@@ -691,47 +709,39 @@ class TestOptunaPruningCallback:
         cb = OptunaPruningCallback(trial=mock_trial, monitor="val_loss")
 
         # Pass metrics without val_loss
-        cb.on_epoch_end(trainer=None, epoch=0,
-                        metrics={"train_loss": 0.5})
+        cb.on_epoch_end(trainer=None, epoch=0, metrics={"train_loss": 0.5})
         # trial.report should NOT have been called
         mock_trial.report.assert_not_called()
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_create_hpo_callback_factory(self):
         """create_hpo_callback() returns an OptunaPruningCallback."""
         mock_trial = MagicMock(spec=optuna.Trial)
-        cb = create_hpo_callback(trial=mock_trial, monitor="val_loss",
-                                  backend="optuna")
+        cb = create_hpo_callback(trial=mock_trial, monitor="val_loss", backend="optuna")
         assert isinstance(cb, OptunaPruningCallback)
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_create_hpo_callback_unknown_backend(self):
         """create_hpo_callback() raises ValueError for unknown backend."""
         mock_trial = MagicMock(spec=optuna.Trial)
         with pytest.raises(ValueError):
             create_hpo_callback(trial=mock_trial, backend="unknown")
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_report_every_skips_epochs(self):
         """Callback with report_every=3 only reports every 3rd epoch."""
         mock_trial = MagicMock(spec=optuna.Trial)
         mock_trial.number = 0
         mock_trial.should_prune.return_value = False
-        cb = OptunaPruningCallback(trial=mock_trial, monitor="val_loss",
-                                   report_every=3)
+        cb = OptunaPruningCallback(trial=mock_trial, monitor="val_loss", report_every=3)
 
         for epoch in range(6):
-            cb.on_epoch_end(trainer=None, epoch=epoch,
-                            metrics={"val_loss": 0.5 - epoch * 0.01})
+            cb.on_epoch_end(trainer=None, epoch=epoch, metrics={"val_loss": 0.5 - epoch * 0.01})
 
         # report_every=3 → reports at epochs 0, 3  (epoch % 3 == 0)
         assert mock_trial.report.call_count == 2
 
-    @pytest.mark.skipif(not CALLBACK_AVAILABLE,
-                        reason="optuna_callback not importable")
+    @pytest.mark.skipif(not CALLBACK_AVAILABLE, reason="optuna_callback not importable")
     def test_callback_no_duplicate_step_report(self):
         """Callback does not re-report the same step (duplicate guard)."""
         mock_trial = MagicMock(spec=optuna.Trial)
@@ -750,23 +760,24 @@ class TestOptunaPruningCallback:
 # SECTION 5 — HPOManager Convenience Functions
 # =============================================================================
 
+
 class TestHPOManagerHelpers:
     """Test module-level helpers: is_hpo_enabled, _flatten_params, etc."""
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE or not HPO_CONFIG_AVAILABLE,
-                        reason="hpo_manager or hpo_config not importable")
+    @pytest.mark.skipif(
+        not HPO_MANAGER_AVAILABLE or not HPO_CONFIG_AVAILABLE,
+        reason="hpo_manager or hpo_config not importable",
+    )
     def test_is_hpo_enabled_true(self):
         """is_hpo_enabled() returns True for enabled config."""
         assert is_hpo_enabled(HPOConfig(enabled=True)) is True
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_is_hpo_enabled_false_none(self):
         """is_hpo_enabled(None) returns False."""
         assert is_hpo_enabled(None) is False
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_flatten_params(self):
         """_flatten_params strips category prefixes."""
         params = {
@@ -777,8 +788,7 @@ class TestHPOManagerHelpers:
         flat = _flatten_params(params)
         assert flat == {"hidden_channels": 64, "lr": 0.001, "plain_key": 42}
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_extract_param_categories(self):
         """_extract_param_categories routes params to correct buckets."""
         params = {
@@ -799,8 +809,7 @@ class TestHPOManagerHelpers:
         assert "alpha" in loss
         assert "batch_size" in training
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_infer_task_type_from_metric(self):
         """infer_task_type uses metric heuristics when no dataset metadata."""
         dataset = MagicMock()
@@ -810,8 +819,7 @@ class TestHPOManagerHelpers:
         assert infer_task_type(dataset, metric="val_mae") == "graph_regression"
         assert infer_task_type(dataset, metric="accuracy") == "graph_classification"
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_infer_task_type_default_fallback(self):
         """infer_task_type defaults to 'graph_regression' when no signals."""
         dataset = MagicMock()
@@ -825,11 +833,11 @@ class TestHPOManagerHelpers:
 # SECTION 6 — Data Splitting Integration
 # =============================================================================
 
+
 class TestDataSplittingIntegration:
     """Verify DataSplitter works with synthetic dataset used by HPOManager."""
 
-    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE,
-                        reason="data_splitting not importable")
+    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE, reason="data_splitting not importable")
     def test_random_split_sizes(self, synthetic_dataset):
         """random_split produces subsets whose sizes sum to dataset length."""
         train, val, test = DataSplitter.random_split(
@@ -837,8 +845,7 @@ class TestDataSplittingIntegration:
         )
         assert len(train) + len(val) + len(test) == len(synthetic_dataset)
 
-    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE,
-                        reason="data_splitting not importable")
+    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE, reason="data_splitting not importable")
     def test_random_split_data_objects(self, synthetic_dataset):
         """Each element in split subsets is a valid PyG Data object."""
         train, val, _ = DataSplitter.random_split(
@@ -849,13 +856,10 @@ class TestDataSplittingIntegration:
         assert hasattr(sample, "edge_index")
         assert hasattr(sample, "y")
 
-    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE,
-                        reason="data_splitting not importable")
+    @pytest.mark.skipif(not DATA_SPLITTER_AVAILABLE, reason="data_splitting not importable")
     def test_k_fold_split(self, synthetic_dataset):
         """k_fold_split returns correct number of folds."""
-        folds = DataSplitter.k_fold_split(
-            synthetic_dataset, n_splits=3, random_seed=42
-        )
+        folds = DataSplitter.k_fold_split(synthetic_dataset, n_splits=3, random_seed=42)
         assert len(folds) == 3
         for train, val in folds:
             assert len(train) + len(val) == len(synthetic_dataset)
@@ -865,11 +869,11 @@ class TestDataSplittingIntegration:
 # SECTION 7 — HPOManager Initialization
 # =============================================================================
 
+
 class TestHPOManagerInit:
     """Verify HPOManager instantiation and from_config paths."""
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_hpo_manager_disabled(self):
         """HPOManager with disabled config does not initialise a backend."""
         cfg = HPOConfig(enabled=False)
@@ -877,15 +881,13 @@ class TestHPOManagerInit:
         assert mgr.backend is None
         assert mgr.config.enabled is False
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_hpo_manager_enabled_has_backend(self, hpo_config_2_trials):
         """HPOManager with enabled config initialises a backend."""
         mgr = HPOManager(hpo_config_2_trials)
         assert mgr.backend is not None
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_from_config_dict(self, minimal_search_space):
         """HPOManager.from_config() accepts a raw dict."""
         raw = {
@@ -895,7 +897,10 @@ class TestHPOManagerInit:
             "search_space": {
                 "hyperparameters": {
                     "hidden_channels": {
-                        "type": "int", "low": 8, "high": 32, "step": 8,
+                        "type": "int",
+                        "low": 8,
+                        "high": 32,
+                        "step": 8,
                     },
                 },
             },
@@ -909,19 +914,16 @@ class TestHPOManagerInit:
         assert mgr.config.enabled is True
         assert mgr.config.n_trials == 2
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_optimize_disabled_raises(self, synthetic_dataset):
         """optimize() on disabled HPOManager raises HPOError."""
         mgr = HPOManager(HPOConfig(enabled=False))
         with pytest.raises(Exception) as exc_info:
             mgr.optimize(model_name="TinyGNN", dataset=synthetic_dataset)
         # Should indicate HPO is disabled
-        assert "disabled" in str(exc_info.value).lower() or \
-               "enabled" in str(exc_info.value).lower()
+        assert "disabled" in str(exc_info.value).lower() or "enabled" in str(exc_info.value).lower()
 
-    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE,
-                        reason="hpo_manager not importable")
+    @pytest.mark.skipif(not HPO_MANAGER_AVAILABLE, reason="hpo_manager not importable")
     def test_create_hpo_manager_convenience(self):
         """create_hpo_manager() returns an HPOManager instance."""
         mgr = create_hpo_manager(enabled=True, n_trials=2)
@@ -932,6 +934,7 @@ class TestHPOManagerInit:
 # =============================================================================
 # SECTION 8 — Full E2E Optimization (CORE TEST)
 # =============================================================================
+
 
 class TestE2EOptimization:
     """
@@ -944,9 +947,16 @@ class TestE2EOptimization:
     """
 
     @pytest.mark.skipif(
-        not all([HPO_MANAGER_AVAILABLE, OPTUNA_BACKEND_AVAILABLE,
-                 TRAINER_AVAILABLE, DATA_SPLITTER_AVAILABLE,
-                 CALLBACK_AVAILABLE, HPO_CONFIG_AVAILABLE]),
+        not all(
+            [
+                HPO_MANAGER_AVAILABLE,
+                OPTUNA_BACKEND_AVAILABLE,
+                TRAINER_AVAILABLE,
+                DATA_SPLITTER_AVAILABLE,
+                CALLBACK_AVAILABLE,
+                HPO_CONFIG_AVAILABLE,
+            ]
+        ),
         reason="One or more HPO/Trainer modules not importable",
     )
     def test_e2e_optimize_2_trials(
@@ -991,18 +1001,20 @@ class TestE2EOptimization:
         assert manager.best_params is not None
 
         # Verify trial count
-        completed = [
-            t for t in manager.study.trials
-            if t.state == TrialState.COMPLETE
-        ]
-        assert len(completed) == 2, (
-            f"Expected 2 completed trials, got {len(completed)}"
-        )
+        completed = [t for t in manager.study.trials if t.state == TrialState.COMPLETE]
+        assert len(completed) == 2, f"Expected 2 completed trials, got {len(completed)}"
 
     @pytest.mark.skipif(
-        not all([HPO_MANAGER_AVAILABLE, OPTUNA_BACKEND_AVAILABLE,
-                 TRAINER_AVAILABLE, DATA_SPLITTER_AVAILABLE,
-                 CALLBACK_AVAILABLE, HPO_CONFIG_AVAILABLE]),
+        not all(
+            [
+                HPO_MANAGER_AVAILABLE,
+                OPTUNA_BACKEND_AVAILABLE,
+                TRAINER_AVAILABLE,
+                DATA_SPLITTER_AVAILABLE,
+                CALLBACK_AVAILABLE,
+                HPO_CONFIG_AVAILABLE,
+            ]
+        ),
         reason="One or more HPO/Trainer modules not importable",
     )
     def test_e2e_optimize_3_trials(
@@ -1014,37 +1026,41 @@ class TestE2EOptimization:
         mock_factory = MagicMock()
         mock_factory.create_model_with_info = tiny_model_factory
 
-        with patch.object(manager, "_model_factory", mock_factory):
-            with patch(
+        with (
+            patch.object(manager, "_model_factory", mock_factory),
+            patch(
                 "milia_pipeline.models.hpo.hpo_manager.get_factory",
                 return_value=mock_factory,
-            ):
-                with patch(
-                    "milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
-                    False,
-                ):
-                    best_params = manager.optimize(
-                        model_name="TinyGNN",
-                        dataset=synthetic_dataset,
-                        trainer_kwargs={"max_epochs": 2},
-                    )
+            ),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
+                False,
+            ),
+        ):
+            best_params = manager.optimize(
+                model_name="TinyGNN",
+                dataset=synthetic_dataset,
+                trainer_kwargs={"max_epochs": 2},
+            )
 
         assert best_params is not None
-        completed = [
-            t for t in manager.study.trials
-            if t.state == TrialState.COMPLETE
-        ]
+        completed = [t for t in manager.study.trials if t.state == TrialState.COMPLETE]
         assert len(completed) == 3
 
     @pytest.mark.skipif(
-        not all([HPO_MANAGER_AVAILABLE, OPTUNA_BACKEND_AVAILABLE,
-                 TRAINER_AVAILABLE, DATA_SPLITTER_AVAILABLE,
-                 CALLBACK_AVAILABLE, HPO_CONFIG_AVAILABLE]),
+        not all(
+            [
+                HPO_MANAGER_AVAILABLE,
+                OPTUNA_BACKEND_AVAILABLE,
+                TRAINER_AVAILABLE,
+                DATA_SPLITTER_AVAILABLE,
+                CALLBACK_AVAILABLE,
+                HPO_CONFIG_AVAILABLE,
+            ]
+        ),
         reason="One or more HPO/Trainer modules not importable",
     )
-    def test_e2e_best_params_keys(
-        self, hpo_config_2_trials, synthetic_dataset, tiny_model_factory
-    ):
+    def test_e2e_best_params_keys(self, hpo_config_2_trials, synthetic_dataset, tiny_model_factory):
         """
         Best params dict contains expected keys from the search space
         (stripped of category prefix).
@@ -1053,11 +1069,11 @@ class TestE2EOptimization:
         mock_factory = MagicMock()
         mock_factory.create_model_with_info = tiny_model_factory
 
-        with patch.object(manager, "_model_factory", mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager.get_factory",
-                   return_value=mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
-                   False):
+        with (
+            patch.object(manager, "_model_factory", mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", False),
+        ):
             best_params = manager.optimize(
                 model_name="TinyGNN",
                 dataset=synthetic_dataset,
@@ -1075,9 +1091,16 @@ class TestE2EOptimization:
         )
 
     @pytest.mark.skipif(
-        not all([HPO_MANAGER_AVAILABLE, OPTUNA_BACKEND_AVAILABLE,
-                 TRAINER_AVAILABLE, DATA_SPLITTER_AVAILABLE,
-                 CALLBACK_AVAILABLE, HPO_CONFIG_AVAILABLE]),
+        not all(
+            [
+                HPO_MANAGER_AVAILABLE,
+                OPTUNA_BACKEND_AVAILABLE,
+                TRAINER_AVAILABLE,
+                DATA_SPLITTER_AVAILABLE,
+                CALLBACK_AVAILABLE,
+                HPO_CONFIG_AVAILABLE,
+            ]
+        ),
         reason="One or more HPO/Trainer modules not importable",
     )
     def test_e2e_get_best_params_convenience(
@@ -1088,11 +1111,11 @@ class TestE2EOptimization:
         mock_factory = MagicMock()
         mock_factory.create_model_with_info = tiny_model_factory
 
-        with patch.object(manager, "_model_factory", mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager.get_factory",
-                   return_value=mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
-                   False):
+        with (
+            patch.object(manager, "_model_factory", mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", False),
+        ):
             manager.optimize(
                 model_name="TinyGNN",
                 dataset=synthetic_dataset,
@@ -1107,6 +1130,7 @@ class TestE2EOptimization:
 # =============================================================================
 # SECTION 9 — StudyAnalyzer Post-Optimization
 # =============================================================================
+
 
 class TestStudyAnalyzerE2E:
     """
@@ -1132,32 +1156,31 @@ class TestStudyAnalyzerE2E:
         study.optimize(_dummy_objective, n_trials=5)
         return study
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analyzer_creation(self, completed_study):
         """StudyAnalyzer can be created from a completed study."""
         analyzer = StudyAnalyzer(completed_study)
         assert analyzer.study is completed_study
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analyzer_from_manager(
         self, hpo_config_2_trials, synthetic_dataset, tiny_model_factory
     ):
         """StudyAnalyzer.from_manager() works after HPOManager.optimize()."""
-        if not all([HPO_MANAGER_AVAILABLE, TRAINER_AVAILABLE,
-                    DATA_SPLITTER_AVAILABLE, CALLBACK_AVAILABLE]):
+        if not all(
+            [HPO_MANAGER_AVAILABLE, TRAINER_AVAILABLE, DATA_SPLITTER_AVAILABLE, CALLBACK_AVAILABLE]
+        ):
             pytest.skip("HPOManager dependencies not available")
 
         manager = HPOManager(hpo_config_2_trials)
         mock_factory = MagicMock()
         mock_factory.create_model_with_info = tiny_model_factory
 
-        with patch.object(manager, "_model_factory", mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager.get_factory",
-                   return_value=mock_factory), \
-             patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
-                   False):
+        with (
+            patch.object(manager, "_model_factory", mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=mock_factory),
+            patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", False),
+        ):
             manager.optimize(
                 model_name="TinyGNN",
                 dataset=synthetic_dataset,
@@ -1167,8 +1190,7 @@ class TestStudyAnalyzerE2E:
         analyzer = StudyAnalyzer.from_manager(manager)
         assert analyzer.study is manager.study
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_get_trial_count(self, completed_study):
         """get_trial_count() returns a dict with state counts."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1177,8 +1199,7 @@ class TestStudyAnalyzerE2E:
         total = sum(counts.values())
         assert total >= 5
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_get_optimization_trajectory(self, completed_study):
         """get_optimization_trajectory() returns dict with best_value."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1187,24 +1208,21 @@ class TestStudyAnalyzerE2E:
         assert "best_value" in trajectory
         assert trajectory["best_value"] is not None
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_get_value_statistics(self, completed_study):
         """get_value_statistics() returns statistical summary."""
         analyzer = StudyAnalyzer(completed_study)
         stats = analyzer.get_value_statistics()
         assert isinstance(stats, dict)
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_get_convergence_data(self, completed_study):
         """get_convergence_data() returns convergence analysis dict."""
         analyzer = StudyAnalyzer(completed_study)
         convergence = analyzer.get_convergence_data()
         assert isinstance(convergence, dict)
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_get_parameter_importance(self, completed_study):
         """get_parameter_importance() returns importance dict."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1215,8 +1233,7 @@ class TestStudyAnalyzerE2E:
             # fANOVA may fail with very few trials; this is acceptable
             pytest.skip("Parameter importance computation failed (too few trials)")
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_export_results_dict(self, completed_study):
         """export_results(format=DICT) returns a dict without error."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1224,8 +1241,7 @@ class TestStudyAnalyzerE2E:
         assert isinstance(result, dict)
         assert "study_name" in result
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_export_results_json_to_file(self, completed_study, tmp_path):
         """export_results(format=JSON) writes a valid JSON file."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1236,12 +1252,12 @@ class TestStudyAnalyzerE2E:
         )
         assert json_path.exists()
         import json
+
         with open(json_path) as f:
             data = json.load(f)
         assert "study_name" in data
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analyzer_repr(self, completed_study):
         """StudyAnalyzer.__repr__ returns a descriptive string."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1249,8 +1265,7 @@ class TestStudyAnalyzerE2E:
         assert "StudyAnalyzer" in r
         assert "analyzer_test_study" in r
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_clear_cache(self, completed_study):
         """clear_cache() runs without error."""
         analyzer = StudyAnalyzer(completed_study)
@@ -1262,8 +1277,7 @@ class TestStudyAnalyzerE2E:
         counts = analyzer.get_trial_count()
         assert sum(counts.values()) >= 5
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_study_comparison(self):
         """compare_with() returns comparison dict between two studies."""
         study_a = optuna.create_study(study_name="cmp_a", direction="minimize")
@@ -1280,8 +1294,7 @@ class TestStudyAnalyzerE2E:
         assert "best_values" in cmp
         assert "trial_counts" in cmp
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analyzer_from_manager_no_study_raises(self):
         """from_manager() raises when manager has no study."""
         if not HPO_MANAGER_AVAILABLE:
@@ -1290,15 +1303,13 @@ class TestStudyAnalyzerE2E:
         with pytest.raises(Exception):
             StudyAnalyzer.from_manager(mgr)
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analysis_config_validation(self):
         """AnalysisConfig validates convergence_window >= 1."""
         with pytest.raises(Exception):
             AnalysisConfig(convergence_window=0)
 
-    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE,
-                        reason="study_analyzer not importable")
+    @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analysis_config_frozen(self):
         """AnalysisConfig is frozen (Pydantic V2 frozen=True)."""
         cfg = AnalysisConfig()
@@ -1310,6 +1321,7 @@ class TestStudyAnalyzerE2E:
 # SECTION 10 — Trainer + HPO Callback Integration
 # =============================================================================
 
+
 class TestTrainerHPOIntegration:
     """
     Verify Trainer correctly integrates HPO callback:
@@ -1317,8 +1329,9 @@ class TestTrainerHPOIntegration:
         - TrialPruned propagates through _on_epoch_end
     """
 
-    @pytest.mark.skipif(not TRAINER_AVAILABLE or not CALLBACK_AVAILABLE,
-                        reason="Trainer or callback not importable")
+    @pytest.mark.skipif(
+        not TRAINER_AVAILABLE or not CALLBACK_AVAILABLE, reason="Trainer or callback not importable"
+    )
     def test_trainer_appends_hpo_callback(self, synthetic_dataset):
         """Trainer adds hpo_callback to its callbacks list."""
         model = _TinyGNN()
@@ -1342,8 +1355,9 @@ class TestTrainerHPOIntegration:
         # hpo_callback should now be in the callbacks list
         assert cb in trainer.callbacks
 
-    @pytest.mark.skipif(not TRAINER_AVAILABLE or not CALLBACK_AVAILABLE,
-                        reason="Trainer or callback not importable")
+    @pytest.mark.skipif(
+        not TRAINER_AVAILABLE or not CALLBACK_AVAILABLE, reason="Trainer or callback not importable"
+    )
     def test_trainer_fit_with_hpo_callback(self, synthetic_dataset):
         """Trainer.fit() completes with an HPO callback reporting metrics."""
         model = _TinyGNN()
@@ -1377,39 +1391,35 @@ class TestTrainerHPOIntegration:
 # SECTION 11 — Exception Hierarchy Smoke Tests
 # =============================================================================
 
+
 class TestHPOExceptions:
     """Verify HPO-specific exceptions exist and have expected attributes."""
 
-    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE,
-                        reason="exceptions not importable")
+    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE, reason="exceptions not importable")
     def test_hpo_error_instantiation(self):
         """HPOError can be instantiated with message and study_name."""
         err = HPOError("test error", study_name="my_study")
         assert "test error" in str(err)
 
-    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE,
-                        reason="exceptions not importable")
+    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE, reason="exceptions not importable")
     def test_trial_failed_error(self):
         """TrialFailedError accepts trial_number."""
         err = TrialFailedError("trial failed", trial_number=5)
         assert "trial failed" in str(err)
 
-    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE,
-                        reason="exceptions not importable")
+    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE, reason="exceptions not importable")
     def test_hpo_configuration_error(self):
         """HPOConfigurationError can be raised."""
         with pytest.raises(HPOConfigurationError):
             raise HPOConfigurationError("bad config")
 
-    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE,
-                        reason="exceptions not importable")
+    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE, reason="exceptions not importable")
     def test_search_space_error(self):
         """SearchSpaceError can be raised."""
         with pytest.raises(SearchSpaceError):
             raise SearchSpaceError("bad space")
 
-    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE,
-                        reason="exceptions not importable")
+    @pytest.mark.skipif(not EXCEPTIONS_AVAILABLE, reason="exceptions not importable")
     def test_pruning_error(self):
         """PruningError can be raised."""
         with pytest.raises(PruningError):

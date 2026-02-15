@@ -97,14 +97,14 @@ Usage Examples
 Basic HPO via configuration:
 
     >>> from milia_pipeline.models.hpo import HPOManager, HPOConfig
-    >>> 
+    >>>
     >>> # Create configuration
     >>> config = HPOConfig(
     ...     enabled=True,
     ...     backend="optuna",
     ...     n_trials=100,
     ... )
-    >>> 
+    >>>
     >>> # Create manager and run optimization
     >>> manager = HPOManager(config)
     >>> best_params = manager.optimize(
@@ -119,10 +119,10 @@ Using convenience functions:
     ...     is_hpo_enabled,
     ...     get_best_params,
     ... )
-    >>> 
+    >>>
     >>> # Quick setup
     >>> manager = create_hpo_manager(enabled=True, n_trials=50)
-    >>> 
+    >>>
     >>> # Check if enabled
     >>> if is_hpo_enabled(manager.config):
     ...     best = manager.optimize(model_name="GAT", dataset=dataset)
@@ -130,7 +130,7 @@ Using convenience functions:
 From YAML configuration:
 
     >>> from milia_pipeline.models.hpo import HPOManager
-    >>> 
+    >>>
     >>> # Load from config file
     >>> manager = HPOManager.from_yaml("config.yaml", section="models.hpo")
     >>> best_params = manager.optimize(model_name="GCN", dataset=dataset)
@@ -147,7 +147,7 @@ Version: 1.0.0
 """
 
 import logging
-from typing import TYPE_CHECKING, Dict, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -156,95 +156,123 @@ logger = logging.getLogger(__name__)
 # CORE IMPORTS FROM HPO_CONFIG
 # =============================================================================
 
-from .hpo_config import (
-    # Main configuration
-    HPOConfig,
-    # Nested configurations
-    SearchSpaceParamConfig,
-    PrunerConfig,
-    SamplerConfig,
-    StudyConfig,
-    MultiObjectiveStudyConfig,
-    # Enums
-    ParamType,
-    PrunerType,
-    SamplerType,
-    OptimizationDirection,
-)
-
-
-# =============================================================================
-# CORE IMPORTS FROM HPO_MANAGER
-# =============================================================================
-
-from .hpo_manager import (
-    # Main class
-    HPOManager,
-    # Convenience functions
-    is_hpo_enabled,
-    get_best_params,
-    create_hpo_manager,
-    infer_task_type,
-    # Helper functions (for advanced use)
-    _flatten_params,
-    _extract_param_categories,
-    _run_cross_validation,
-)
-
-
 # =============================================================================
 # EXCEPTION IMPORTS FROM CENTRALIZED EXCEPTIONS
 # =============================================================================
-
 from milia_pipeline.exceptions import (
-    HPOError,
-    HPOConfigurationError,
-    TrialFailedError,
-    StudyNotFoundError,
     BackendError,
-    SearchSpaceError,
+    HPOConfigurationError,
+    HPOError,
     PruningError,
+    SearchSpaceError,
+    StudyNotFoundError,
+    TrialFailedError,
 )
 
+# =============================================================================
+# ANALYSIS SUBPACKAGE IMPORTS
+# =============================================================================
+from .analysis import (
+    # Configuration
+    AnalysisConfig,
+    ExportFormat,
+    # Enums
+    ImportanceMethod,
+    # Main analyzer
+    StudyAnalyzer,
+)
 
 # =============================================================================
 # BACKEND SUBPACKAGE IMPORTS
 # =============================================================================
-
 from .backends import (
-    # Protocol
-    HPOBackendProtocol,
-    # Factory function
-    get_backend,
-    # Backend implementations
-    OptunaBackend,
     # Availability flags
     OPTUNA_AVAILABLE,
+    # Protocol
+    HPOBackendProtocol,
+    # Backend implementations
+    OptunaBackend,
+    # Factory function
+    get_backend,
 )
-
+from .callbacks import (
+    # Availability flag (re-exported for convenience)
+    OPTUNA_AVAILABLE as CALLBACKS_OPTUNA_AVAILABLE,
+)
 
 # =============================================================================
 # CALLBACKS SUBPACKAGE IMPORTS
 # =============================================================================
-
 from .callbacks import (
     # Primary callback class
     OptunaPruningCallback,
     # Factory function
     create_hpo_callback,
-    # Availability flag (re-exported for convenience)
-    OPTUNA_AVAILABLE as CALLBACKS_OPTUNA_AVAILABLE,
+)
+from .hpo_config import (
+    # Main configuration
+    HPOConfig,
+    MultiObjectiveStudyConfig,
+    OptimizationDirection,
+    # Enums
+    ParamType,
+    PrunerConfig,
+    PrunerType,
+    SamplerConfig,
+    SamplerType,
+    # Nested configurations
+    SearchSpaceParamConfig,
+    StudyConfig,
 )
 
+# =============================================================================
+# CORE IMPORTS FROM HPO_MANAGER
+# =============================================================================
+from .hpo_manager import (
+    # Main class
+    HPOManager,
+    _extract_param_categories,
+    # Helper functions (for advanced use)
+    _flatten_params,
+    _run_cross_validation,
+    create_hpo_manager,
+    get_best_params,
+    infer_task_type,
+    # Convenience functions
+    is_hpo_enabled,
+)
+
+# =============================================================================
+# NAS (NEURAL ARCHITECTURE SEARCH) SUBPACKAGE IMPORTS
+# =============================================================================
+from .nas import (
+    ActivationType,
+    AggregationType,
+    GNNArchitectureSpace,
+    HeterogeneousGNN,
+    # Dataclasses
+    LayerConfig,
+    # Enums
+    LayerType,
+    # Configuration
+    NASConfig,
+    # Main classes
+    NASManager,
+    PoolingType,
+    # Factory functions
+    create_gnn_search_space,
+    create_nas_manager,
+    get_default_gnn_search_space,
+)
 
 # =============================================================================
 # SEARCH SPACES SUBPACKAGE IMPORTS
 # =============================================================================
-
 from .search_spaces import (
     # Parameter types
     ParamType as SearchSpaceParamType,
-    SearchSpaceParamConfig as SearchSpaceParam,
+)
+from .search_spaces import (
     # Builder class
     SearchSpaceBuilder,
     # Convenience functions
@@ -252,71 +280,31 @@ from .search_spaces import (
     get_model_search_space,
     validate_search_space,
 )
-
-
-# =============================================================================
-# ANALYSIS SUBPACKAGE IMPORTS
-# =============================================================================
-
-from .analysis import (
-    # Main analyzer
-    StudyAnalyzer,
-    # Configuration
-    AnalysisConfig,
-    # Enums
-    ImportanceMethod,
-    ExportFormat,
+from .search_spaces import (
+    SearchSpaceParamConfig as SearchSpaceParam,
 )
-
 
 # =============================================================================
 # TRANSFER LEARNING SUBPACKAGE IMPORTS
 # =============================================================================
-
 from .transfer import (
+    AdaptationMethod,
     # Primary classes
     HPOTransferManager,
-    MetaFeatureExtractor,
-    WarmStartStrategy,
-    # Configuration classes
-    TransferConfig,
+    MetaFeatureCategory,
     MetaFeatureConfig,
-    WarmStartConfig,
-    # Supporting data classes
-    RegisteredStudyInfo,
-    TransferredTrial,
+    MetaFeatureExtractor,
     # Enums
     MetaFeatureMethod,
-    AdaptationMethod,
-    MetaFeatureCategory,
+    # Supporting data classes
+    RegisteredStudyInfo,
+    # Configuration classes
+    TransferConfig,
+    TransferredTrial,
+    WarmStartConfig,
     WarmStartMethod,
+    WarmStartStrategy,
 )
-
-
-# =============================================================================
-# NAS (NEURAL ARCHITECTURE SEARCH) SUBPACKAGE IMPORTS
-# =============================================================================
-
-from .nas import (
-    # Enums
-    LayerType,
-    PoolingType,
-    AggregationType,
-    ActivationType,
-    # Dataclasses
-    LayerConfig,
-    GNNArchitectureSpace,
-    # Configuration
-    NASConfig,
-    # Main classes
-    NASManager,
-    HeterogeneousGNN,
-    # Factory functions
-    create_gnn_search_space,
-    get_default_gnn_search_space,
-    create_nas_manager,
-)
-
 
 # =============================================================================
 # PUBLIC API DEFINITION
@@ -326,116 +314,105 @@ __all__ = [
     # =========================================================================
     # CORE CLASSES
     # =========================================================================
-    'HPOManager',
-    'HPOConfig',
-    
+    "HPOManager",
+    "HPOConfig",
     # =========================================================================
     # CONFIGURATION CLASSES (from hpo_config.py)
     # =========================================================================
-    'SearchSpaceParamConfig',
-    'PrunerConfig',
-    'SamplerConfig',
-    'StudyConfig',
-    'MultiObjectiveStudyConfig',
-    
+    "SearchSpaceParamConfig",
+    "PrunerConfig",
+    "SamplerConfig",
+    "StudyConfig",
+    "MultiObjectiveStudyConfig",
     # =========================================================================
     # CONFIGURATION ENUMS (from hpo_config.py)
     # =========================================================================
-    'ParamType',
-    'PrunerType',
-    'SamplerType',
-    'OptimizationDirection',
-    
+    "ParamType",
+    "PrunerType",
+    "SamplerType",
+    "OptimizationDirection",
     # =========================================================================
     # CONVENIENCE FUNCTIONS (from hpo_manager.py)
     # =========================================================================
-    'is_hpo_enabled',
-    'get_best_params',
-    'create_hpo_manager',
-    'infer_task_type',
+    "is_hpo_enabled",
+    "get_best_params",
+    "create_hpo_manager",
+    "infer_task_type",
     # Helper functions (for advanced use)
-    '_flatten_params',
-    '_extract_param_categories',
-    '_run_cross_validation',
-    
+    "_flatten_params",
+    "_extract_param_categories",
+    "_run_cross_validation",
     # =========================================================================
     # EXCEPTIONS (from milia_pipeline.exceptions)
     # =========================================================================
-    'HPOError',
-    'HPOConfigurationError',
-    'TrialFailedError',
-    'StudyNotFoundError',
-    'BackendError',
-    'SearchSpaceError',
-    'PruningError',
-    
+    "HPOError",
+    "HPOConfigurationError",
+    "TrialFailedError",
+    "StudyNotFoundError",
+    "BackendError",
+    "SearchSpaceError",
+    "PruningError",
     # =========================================================================
     # BACKENDS (from backends subpackage)
     # =========================================================================
-    'HPOBackendProtocol',
-    'OptunaBackend',
-    'get_backend',
-    'OPTUNA_AVAILABLE',
-    
+    "HPOBackendProtocol",
+    "OptunaBackend",
+    "get_backend",
+    "OPTUNA_AVAILABLE",
     # =========================================================================
     # CALLBACKS (from callbacks subpackage)
     # =========================================================================
-    'OptunaPruningCallback',
-    'create_hpo_callback',
-    
+    "OptunaPruningCallback",
+    "create_hpo_callback",
     # =========================================================================
     # SEARCH SPACES (from search_spaces subpackage)
     # =========================================================================
-    'SearchSpaceBuilder',
-    'build_search_space',
-    'get_model_search_space',
-    'validate_search_space',
-    
+    "SearchSpaceBuilder",
+    "build_search_space",
+    "get_model_search_space",
+    "validate_search_space",
     # =========================================================================
     # ANALYSIS (from analysis subpackage)
     # =========================================================================
-    'StudyAnalyzer',
-    'AnalysisConfig',
-    'ImportanceMethod',
-    'ExportFormat',
-    
+    "StudyAnalyzer",
+    "AnalysisConfig",
+    "ImportanceMethod",
+    "ExportFormat",
     # =========================================================================
     # TRANSFER LEARNING (from transfer subpackage)
     # =========================================================================
-    'HPOTransferManager',
-    'MetaFeatureExtractor',
-    'WarmStartStrategy',
-    'TransferConfig',
-    'MetaFeatureConfig',
-    'WarmStartConfig',
-    'RegisteredStudyInfo',
-    'TransferredTrial',
-    'MetaFeatureMethod',
-    'AdaptationMethod',
-    'MetaFeatureCategory',
-    'WarmStartMethod',
-    
+    "HPOTransferManager",
+    "MetaFeatureExtractor",
+    "WarmStartStrategy",
+    "TransferConfig",
+    "MetaFeatureConfig",
+    "WarmStartConfig",
+    "RegisteredStudyInfo",
+    "TransferredTrial",
+    "MetaFeatureMethod",
+    "AdaptationMethod",
+    "MetaFeatureCategory",
+    "WarmStartMethod",
     # =========================================================================
     # NAS (from nas subpackage)
     # =========================================================================
-    'NASManager',
-    'NASConfig',
-    'GNNArchitectureSpace',
-    'LayerType',
-    'PoolingType',
-    'AggregationType',
-    'ActivationType',
-    'LayerConfig',
-    'HeterogeneousGNN',
-    'create_gnn_search_space',
-    'get_default_gnn_search_space',
-    'create_nas_manager',
-    
+    "NASManager",
+    "NASConfig",
+    "GNNArchitectureSpace",
+    "LayerType",
+    "PoolingType",
+    "AggregationType",
+    "ActivationType",
+    "LayerConfig",
+    "HeterogeneousGNN",
+    "create_gnn_search_space",
+    "get_default_gnn_search_space",
+    "create_nas_manager",
     # =========================================================================
     # MODULE UTILITIES
     # =========================================================================
-    'get_hpo_module_info',
-    'check_hpo_dependencies',
+    "get_hpo_module_info",
+    "check_hpo_dependencies",
 ]
 
 
@@ -443,21 +420,22 @@ __all__ = [
 # MODULE METADATA
 # =============================================================================
 
-__version__ = '1.0.0'
-__author__ = 'MILIA Team'
+__version__ = "1.0.0"
+__author__ = "MILIA Team"
 
 
 # =============================================================================
 # MODULE-LEVEL UTILITY FUNCTIONS
 # =============================================================================
 
-def get_hpo_module_info() -> Dict[str, Any]:
+
+def get_hpo_module_info() -> dict[str, Any]:
     """
     Get comprehensive information about the HPO module.
-    
+
     Returns a dictionary containing version, available components,
     backend availability, and subpackage information.
-    
+
     Returns
     -------
     dict
@@ -469,7 +447,7 @@ def get_hpo_module_info() -> Dict[str, Any]:
         - subpackages: List of available subpackages
         - exports: Number of public exports
         - components: Categorized list of components
-        
+
     Examples
     --------
     >>> from milia_pipeline.models.hpo import get_hpo_module_info
@@ -479,67 +457,67 @@ def get_hpo_module_info() -> Dict[str, Any]:
     >>> print(f"Backends: {info['backends']}")
     """
     return {
-        'version': __version__,
-        'author': __author__,
-        'module': 'milia_pipeline.models.hpo',
-        'backends': ['optuna', 'ray_tune'],
-        'primary_backend': 'optuna',
-        'optuna_available': OPTUNA_AVAILABLE,
-        'subpackages': [
-            'backends',
-            'callbacks',
-            'search_spaces',
-            'analysis',
-            'transfer',
-            'nas',
+        "version": __version__,
+        "author": __author__,
+        "module": "milia_pipeline.models.hpo",
+        "backends": ["optuna", "ray_tune"],
+        "primary_backend": "optuna",
+        "optuna_available": OPTUNA_AVAILABLE,
+        "subpackages": [
+            "backends",
+            "callbacks",
+            "search_spaces",
+            "analysis",
+            "transfer",
+            "nas",
         ],
-        'exports': len(__all__),
-        'components': {
-            'core': ['HPOManager', 'HPOConfig'],
-            'configurations': [
-                'SearchSpaceParamConfig',
-                'PrunerConfig',
-                'SamplerConfig',
-                'StudyConfig',
-                'MultiObjectiveStudyConfig',
+        "exports": len(__all__),
+        "components": {
+            "core": ["HPOManager", "HPOConfig"],
+            "configurations": [
+                "SearchSpaceParamConfig",
+                "PrunerConfig",
+                "SamplerConfig",
+                "StudyConfig",
+                "MultiObjectiveStudyConfig",
             ],
-            'convenience_functions': [
-                'is_hpo_enabled',
-                'get_best_params',
-                'create_hpo_manager',
-                'infer_task_type',
+            "convenience_functions": [
+                "is_hpo_enabled",
+                "get_best_params",
+                "create_hpo_manager",
+                "infer_task_type",
             ],
-            'exceptions': [
-                'HPOError',
-                'HPOConfigurationError',
-                'TrialFailedError',
-                'StudyNotFoundError',
-                'BackendError',
-                'SearchSpaceError',
-                'PruningError',
+            "exceptions": [
+                "HPOError",
+                "HPOConfigurationError",
+                "TrialFailedError",
+                "StudyNotFoundError",
+                "BackendError",
+                "SearchSpaceError",
+                "PruningError",
             ],
-            'backends': ['HPOBackendProtocol', 'OptunaBackend', 'get_backend'],
-            'callbacks': ['OptunaPruningCallback', 'create_hpo_callback'],
-            'search_spaces': ['SearchSpaceBuilder', 'ParamType'],
-            'analysis': ['StudyAnalyzer', 'AnalysisConfig'],
-            'transfer': ['HPOTransferManager', 'MetaFeatureExtractor', 'WarmStartStrategy'],
-            'nas': ['NASManager', 'GNNArchitectureSpace', 'LayerType', 'PoolingType'],
+            "backends": ["HPOBackendProtocol", "OptunaBackend", "get_backend"],
+            "callbacks": ["OptunaPruningCallback", "create_hpo_callback"],
+            "search_spaces": ["SearchSpaceBuilder", "ParamType"],
+            "analysis": ["StudyAnalyzer", "AnalysisConfig"],
+            "transfer": ["HPOTransferManager", "MetaFeatureExtractor", "WarmStartStrategy"],
+            "nas": ["NASManager", "GNNArchitectureSpace", "LayerType", "PoolingType"],
         },
-        'description': (
-            'Comprehensive hyperparameter optimization module with support for '
-            'automated tuning, neural architecture search, transfer learning, '
-            'and multi-objective optimization.'
+        "description": (
+            "Comprehensive hyperparameter optimization module with support for "
+            "automated tuning, neural architecture search, transfer learning, "
+            "and multi-objective optimization."
         ),
     }
 
 
-def check_hpo_dependencies() -> Dict[str, Any]:
+def check_hpo_dependencies() -> dict[str, Any]:
     """
     Check availability of HPO module dependencies.
-    
+
     Verifies that required and optional dependencies are available
     for full HPO functionality.
-    
+
     Returns
     -------
     dict
@@ -551,7 +529,7 @@ def check_hpo_dependencies() -> Dict[str, Any]:
         - numpy: NumPy availability and version
         - all_required_available: True if all required dependencies available
         - all_optional_available: True if all optional dependencies available
-        
+
     Examples
     --------
     >>> from milia_pipeline.models.hpo import check_hpo_dependencies
@@ -562,82 +540,94 @@ def check_hpo_dependencies() -> Dict[str, Any]:
     ...     print("Ray Tune not available (optional)")
     """
     deps = {
-        'optuna': {'available': False, 'version': None},
-        'ray_tune': {'available': False, 'version': None},
-        'torch': {'available': False, 'version': None},
-        'torch_geometric': {'available': False, 'version': None},
-        'numpy': {'available': False, 'version': None},
-        'scikit_learn': {'available': False, 'version': None},
+        "optuna": {"available": False, "version": None},
+        "ray_tune": {"available": False, "version": None},
+        "torch": {"available": False, "version": None},
+        "torch_geometric": {"available": False, "version": None},
+        "numpy": {"available": False, "version": None},
+        "scikit_learn": {"available": False, "version": None},
     }
-    
+
     # Check Optuna (required)
     try:
         import optuna
-        deps['optuna']['available'] = True
-        deps['optuna']['version'] = optuna.__version__
+
+        deps["optuna"]["available"] = True
+        deps["optuna"]["version"] = optuna.__version__
     except ImportError:
         pass
-    
+
     # Check Ray Tune (optional)
     try:
-        from ray import tune
         import ray
-        deps['ray_tune']['available'] = True
-        deps['ray_tune']['version'] = ray.__version__
+        from ray import tune
+
+        deps["ray_tune"]["available"] = True
+        deps["ray_tune"]["version"] = ray.__version__
     except ImportError:
         pass
-    
+
     # Check PyTorch (required)
     try:
         import torch
-        deps['torch']['available'] = True
-        deps['torch']['version'] = torch.__version__
+
+        deps["torch"]["available"] = True
+        deps["torch"]["version"] = torch.__version__
     except ImportError:
         pass
-    
+
     # Check PyTorch Geometric (required for NAS)
     try:
         import torch_geometric
-        deps['torch_geometric']['available'] = True
-        deps['torch_geometric']['version'] = torch_geometric.__version__
+
+        deps["torch_geometric"]["available"] = True
+        deps["torch_geometric"]["version"] = torch_geometric.__version__
     except ImportError:
         pass
-    
+
     # Check NumPy (required)
     try:
         import numpy
-        deps['numpy']['available'] = True
-        deps['numpy']['version'] = numpy.__version__
+
+        deps["numpy"]["available"] = True
+        deps["numpy"]["version"] = numpy.__version__
     except ImportError:
         pass
-    
+
     # Check scikit-learn (optional, for CV utilities)
     try:
         import sklearn
-        deps['scikit_learn']['available'] = True
-        deps['scikit_learn']['version'] = sklearn.__version__
+
+        deps["scikit_learn"]["available"] = True
+        deps["scikit_learn"]["version"] = sklearn.__version__
     except ImportError:
         pass
-    
+
     # Summary flags
-    deps['all_required_available'] = all([
-        deps['optuna']['available'],
-        deps['torch']['available'],
-        deps['numpy']['available'],
-    ])
-    
-    deps['all_optional_available'] = all([
-        deps['ray_tune']['available'],
-        deps['torch_geometric']['available'],
-        deps['scikit_learn']['available'],
-    ])
-    
-    deps['nas_available'] = all([
-        deps['torch']['available'],
-        deps['torch_geometric']['available'],
-        deps['optuna']['available'],
-    ])
-    
+    deps["all_required_available"] = all(
+        [
+            deps["optuna"]["available"],
+            deps["torch"]["available"],
+            deps["numpy"]["available"],
+        ]
+    )
+
+    deps["all_optional_available"] = all(
+        [
+            deps["ray_tune"]["available"],
+            deps["torch_geometric"]["available"],
+            deps["scikit_learn"]["available"],
+        ]
+    )
+
+    deps["nas_available"] = all(
+        [
+            deps["torch"]["available"],
+            deps["torch_geometric"]["available"],
+            deps["optuna"]["available"],
+        ]
+    )
+
     return deps
 
 

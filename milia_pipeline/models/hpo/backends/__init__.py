@@ -14,11 +14,11 @@ Exports:
 
 Usage:
     >>> from milia_pipeline.models.hpo.backends import get_backend, OptunaBackend
-    >>> 
+    >>>
     >>> # Factory usage (recommended)
     >>> backend = get_backend("optuna")
     >>> study = backend.create_study("my_study", "minimize")
-    >>> 
+    >>>
     >>> # Direct instantiation
     >>> backend = OptunaBackend()
     >>> sampler = backend.create_sampler("tpe", seed=42)
@@ -28,13 +28,11 @@ Pattern: Follows handlers/__init__.py export pattern
 """
 
 from .base import (
+    OPTUNA_AVAILABLE,
     HPOBackendProtocol,
     get_backend,
-    OPTUNA_AVAILABLE,
 )
-
 from .optuna_backend import OptunaBackend
-
 
 __all__ = [
     # Protocol

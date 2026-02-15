@@ -18,7 +18,7 @@ dmc_config:
   raw_npz_filename: DMC.npz
   # URL to download the raw dataset file (can be .npz, .tar.gz, .zip, etc.)
   raw_data_download_url: https://zenodo.org/records/15442257/files/DMC.npz?download=1
-  
+
   # DMC uncertainty handling
   uncertainty_handling:
     # Field name containing uncertainties (typically 'std')
@@ -35,7 +35,7 @@ dmc_config:
 
 # ────────────────────────────────────────────────────
 # DMC Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     DMC:
@@ -52,7 +52,7 @@ data_config:
 
 # ────────────────────────────────────────────────────
 # DMC Property Availability Matrix
-# ────────────────────────────────────────────────────  
+# ────────────────────────────────────────────────────
 property_availability:
   DMC:
     # Fundamental molecular identifiers and structure (subset available in DMC)
@@ -60,21 +60,21 @@ property_availability:
       - compounds     # Compound identifiers
       - inchi         # InChI string representation
       - graphs        # Graph representations
-    
+
     # Atomic structure properties (inherited from DFT optimization)
     atomic_structure:
       - atoms         # Atomic numbers/symbols
       - coordinates   # Cartesian coordinates from DFT optimization (for 3D features)
-    
+
     # DMC focuses primarily on high-accuracy energies
     scalar_graph_targets:
       - Etot          # DMC total energy (primary target)
-    
+
     # DMC doesn't provide detailed electronic structure
     node_features: []  # No Mulliken charges available in DMC
     vector_graph_properties: []
     variable_len_graph_properties: []
-    
+
     # DMC-specific uncertainty information
     uncertainty_fields:
       - std           # DMC statistical uncertainty (metadata, not target)

@@ -26,7 +26,7 @@ Example:
     ...     ParamType,
     ...     SearchSpaceParamConfig,
     ... )
-    >>> 
+    >>>
     >>> # Integer parameter with step
     >>> hidden_channels = SearchSpaceParamConfig(
     ...     type=ParamType.INT,
@@ -34,14 +34,14 @@ Example:
     ...     high=256,
     ...     step=32,
     ... )
-    >>> 
+    >>>
     >>> # Log-uniform parameter for learning rate
     >>> lr = SearchSpaceParamConfig(
     ...     type=ParamType.LOGUNIFORM,
     ...     low=1e-5,
     ...     high=1e-2,
     ... )
-    >>> 
+    >>>
     >>> # Categorical parameter
     >>> activation = SearchSpaceParamConfig(
     ...     type=ParamType.CATEGORICAL,
@@ -50,17 +50,18 @@ Example:
 """
 
 from enum import Enum
-from typing import Any, List, Optional
-from pydantic import BaseModel, field_validator, model_validator
+from typing import Any
+
+from pydantic import BaseModel, model_validator
 
 
 class ParamType(Enum):
     """
     Parameter types for search space definition.
-    
+
     Defines the supported hyperparameter types that can be used in
     search space configurations for HPO optimization.
-    
+
     Attributes:
         INT: Integer parameter with optional step size
         FLOAT: Floating-point parameter (linear scale)
@@ -69,12 +70,13 @@ class ParamType(Enum):
         UNIFORM: Uniformly distributed floating-point parameter
         INT_UNIFORM: Uniformly distributed integer parameter
         DISCRETE_UNIFORM: Discrete uniform distribution with step
-    
+
     Example:
         >>> param_type = ParamType.LOGUNIFORM
         >>> print(param_type.value)
         'loguniform'
     """
+
     INT = "int"
     FLOAT = "float"
     CATEGORICAL = "categorical"
@@ -87,13 +89,13 @@ class ParamType(Enum):
 class SearchSpaceParamConfig(BaseModel, frozen=True):
     """
     Configuration for a single hyperparameter in search space.
-    
+
     Pattern: Follows frozen BaseModel pattern from config_containers.py (Pydantic V2)
-    
+
     This frozen BaseModel defines the configuration for a single hyperparameter
     that will be optimized during HPO. It supports various parameter types
     including numeric ranges and categorical choices.
-    
+
     Attributes:
         type: Parameter type (int, float, categorical, loguniform, etc.)
         low: Lower bound for numeric types (required for numeric types)
@@ -101,10 +103,10 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
         step: Step size for int types (optional, default=1)
         choices: List of choices for categorical type (required for categorical)
         log: Whether to use log scale (for float type, default=False)
-    
+
     Raises:
         ValueError: If validation fails based on parameter type
-    
+
     Example:
         >>> # Valid integer parameter
         >>> config = SearchSpaceParamConfig(
@@ -113,13 +115,13 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
         ...     high=10,
         ...     step=2,
         ... )
-        >>> 
+        >>>
         >>> # Valid categorical parameter
         >>> config = SearchSpaceParamConfig(
         ...     type=ParamType.CATEGORICAL,
         ...     choices=['adam', 'sgd', 'adamw'],
         ... )
-        >>> 
+        >>>
         >>> # Invalid: missing bounds for numeric type
         >>> config = SearchSpaceParamConfig(
         ...     type=ParamType.FLOAT,
@@ -127,28 +129,29 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
         ...     # high is missing - raises ValueError
         ... )
     """
+
     type: ParamType
-    low: Optional[float] = None
-    high: Optional[float] = None
-    step: Optional[int] = None
-    choices: Optional[List[Any]] = None
+    low: float | None = None
+    high: float | None = None
+    step: int | None = None
+    choices: list[Any] | None = None
     log: bool = False
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     @classmethod
     def validate_type_requirements(cls, data: Any) -> Any:
         """
         Validate configuration requirements based on parameter type.
-        
+
         Uses mode='before' to validate before field assignment, following
         the established pattern from config_containers.py for frozen models.
-        
+
         Raises:
             ValueError: If required fields are missing or invalid for the type
         """
         if isinstance(data, dict):
-            param_type = data.get('type')
-            
+            param_type = data.get("type")
+
             # Convert string to enum if needed
             if isinstance(param_type, str):
                 try:
@@ -156,39 +159,38 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
                 except ValueError:
                     # Let Pydantic handle the enum validation error
                     return data
-            
+
             # Numeric types require low and high
             numeric_types = (
-                ParamType.INT, ParamType.FLOAT, ParamType.LOGUNIFORM,
-                ParamType.UNIFORM, ParamType.INT_UNIFORM, ParamType.DISCRETE_UNIFORM
+                ParamType.INT,
+                ParamType.FLOAT,
+                ParamType.LOGUNIFORM,
+                ParamType.UNIFORM,
+                ParamType.INT_UNIFORM,
+                ParamType.DISCRETE_UNIFORM,
             )
-            
+
             if param_type in numeric_types:
-                low = data.get('low')
-                high = data.get('high')
-                
+                low = data.get("low")
+                high = data.get("high")
+
                 if low is None or high is None:
                     raise ValueError(
                         f"Parameter type '{param_type.value}' requires 'low' and 'high'. "
                         f"Got low={low}, high={high}"
                     )
-                
+
                 if low >= high:
-                    raise ValueError(
-                        f"'low' must be less than 'high'. "
-                        f"Got low={low}, high={high}"
-                    )
-            
+                    raise ValueError(f"'low' must be less than 'high'. Got low={low}, high={high}")
+
             # Categorical requires non-empty choices
             if param_type == ParamType.CATEGORICAL:
-                choices = data.get('choices')
+                choices = data.get("choices")
                 if not choices or len(choices) == 0:
-                    raise ValueError(
-                        "Categorical parameter requires non-empty 'choices' list"
-                    )
-        
+                    raise ValueError("Categorical parameter requires non-empty 'choices' list")
+
         return data
-    
+
     def to_dict(self) -> dict:
         """Backward compatible dict conversion."""
         return self.model_dump()

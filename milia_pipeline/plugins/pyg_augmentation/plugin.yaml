@@ -16,19 +16,19 @@ transforms:
     module_path: "transforms"
     category: "augmentation"
     description: "Randomly drops edges from the graph"
-    
+
   - name: "DropNode"
     class_name: "DropNode"
     module_path: "transforms"
     category: "augmentation"
     description: "Randomly drops nodes and incident edges"
-    
+
   - name: "MaskFeatures"
     class_name: "MaskFeatures"
     module_path: "transforms"
     category: "augmentation"
     description: "Randomly masks node features"
-    
+
   - name: "RandomNodeSample"
     class_name: "RandomNodeSample"
     module_path: "transforms"

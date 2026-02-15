@@ -74,6 +74,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def builders_pkg():
     """
@@ -85,6 +86,7 @@ def builders_pkg():
     """
     try:
         import milia_pipeline.models.builders as bld
+
         return bld
     except ImportError as exc:
         pytest.fail(
@@ -135,19 +137,25 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_exists(self, builders_pkg, attr):
         """Each metadata dunder is defined on the builders package."""
         assert hasattr(builders_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, builders_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(builders_pkg, attr)
@@ -159,9 +167,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = builders_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -169,9 +175,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeLayerRegistryExports:
@@ -194,9 +198,7 @@ class TestSmokeLayerRegistryExports:
     def test_layer_registry_export_exists(self, builders_pkg, name):
         """Each layer registry export is present and non-None."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Layer registry export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Layer registry export '{name}' is None or missing"
 
 
 class TestSmokeArchitectureBuilderExports:
@@ -217,9 +219,7 @@ class TestSmokeArchitectureBuilderExports:
     def test_architecture_builder_export_exists(self, builders_pkg, name):
         """Each architecture builder export is present and non-None."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Architecture builder export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Architecture builder export '{name}' is None or missing"
 
 
 class TestSmokeModelComposerExports:
@@ -240,9 +240,7 @@ class TestSmokeModelComposerExports:
     def test_model_composer_export_exists(self, builders_pkg, name):
         """Each model composer export is present and non-None."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Model composer export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Model composer export '{name}' is None or missing"
 
 
 class TestSmokeTemplateExports:
@@ -271,9 +269,7 @@ class TestSmokeConfigParserExports:
     def test_config_parser_export_exists(self, builders_pkg, name):
         """Each config parser export is present and non-None."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Config parser export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Config parser export '{name}' is None or missing"
 
 
 class TestSmokeValidationExports:
@@ -290,9 +286,7 @@ class TestSmokeValidationExports:
     def test_validation_export_exists(self, builders_pkg, name):
         """Each validation export is present and non-None."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Validation export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Validation export '{name}' is None or missing"
 
 
 class TestSmokeConvenienceFunctionsCallable:
@@ -341,9 +335,7 @@ class TestSmokeExceptionClassesAccessible:
     def test_exception_class_is_a_class(self, builders_pkg, name):
         """Each exception export is a class."""
         obj = getattr(builders_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeModuleInitialization:
@@ -383,9 +375,7 @@ class TestSmokeLayerRegistryInstance:
     @pytest.mark.smoke
     def test_layer_registry_instance_exists(self, builders_pkg):
         """``layer_registry`` is present on the builders package."""
-        assert hasattr(builders_pkg, "layer_registry"), (
-            "layer_registry global instance is missing"
-        )
+        assert hasattr(builders_pkg, "layer_registry"), "layer_registry global instance is missing"
 
     @pytest.mark.smoke
     def test_layer_registry_instance_is_not_none(self, builders_pkg):
@@ -407,13 +397,8 @@ class TestSmokeAllExportsGenericSweep:
     @pytest.mark.smoke
     def test_every_all_entry_is_accessible(self, builders_pkg, all_names):
         """Every name in ``__all__`` is accessible on the module."""
-        missing = [
-            name for name in all_names
-            if not hasattr(builders_pkg, name)
-        ]
-        assert not missing, (
-            f"Names in __all__ that are not accessible: {missing}"
-        )
+        missing = [name for name in all_names if not hasattr(builders_pkg, name)]
+        assert not missing, f"Names in __all__ that are not accessible: {missing}"
 
 
 # ===================================================================
@@ -439,9 +424,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, builders_pkg, all_names):
@@ -449,10 +432,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(builders_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(builders_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -460,13 +440,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
     @pytest.mark.contract
     def test_all_minimum_expected_count(self, all_names):
@@ -528,13 +503,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in builders/__init__.py but not in __all__: "
@@ -581,9 +560,7 @@ class TestContractClassExports:
     def test_export_is_class(self, builders_pkg, name):
         """Each class-type export is a class."""
         obj = getattr(builders_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractExceptionClassInheritance:
@@ -602,8 +579,7 @@ class TestContractExceptionClassInheritance:
         """Each exception class is a subclass of Exception."""
         cls = getattr(builders_pkg, name)
         assert issubclass(cls, Exception), (
-            f"'{name}' should be a subclass of Exception, "
-            f"MRO: {[c.__name__ for c in cls.__mro__]}"
+            f"'{name}' should be a subclass of Exception, MRO: {[c.__name__ for c in cls.__mro__]}"
         )
 
     @pytest.mark.contract
@@ -612,10 +588,7 @@ class TestContractExceptionClassInheritance:
         ``ChannelMismatchError`` is a subclass of ``ArchitectureError``
         (specialized exception hierarchy).
         """
-        assert issubclass(
-            builders_pkg.ChannelMismatchError,
-            builders_pkg.ArchitectureError
-        ), (
+        assert issubclass(builders_pkg.ChannelMismatchError, builders_pkg.ArchitectureError), (
             "ChannelMismatchError should inherit from ArchitectureError"
         )
 
@@ -641,36 +614,39 @@ class TestContractDataclassExports:
         The project structure documents these as dataclasses.
         """
         import dataclasses
+
         cls = getattr(builders_pkg, name)
         is_stdlib_dc = dataclasses.is_dataclass(cls)
         is_pydantic = hasattr(cls, "__pydantic_fields__") or hasattr(cls, "model_fields")
 
-        assert is_stdlib_dc or is_pydantic, (
-            f"'{name}' should be a dataclass or Pydantic model"
-        )
+        assert is_stdlib_dc or is_pydantic, f"'{name}' should be a dataclass or Pydantic model"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "LayerConfig",
-        "ResidualConnection",
-        "ArchitectureConfig",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "LayerConfig",
+            "ResidualConnection",
+            "ArchitectureConfig",
+        ],
+    )
     def test_dataclass_has_to_dict(self, builders_pkg, name):
         """
         Architecture builder dataclasses expose a ``to_dict()`` method
         for serialization (per project structure documentation).
         """
         cls = getattr(builders_pkg, name)
-        assert hasattr(cls, "to_dict"), (
-            f"'{name}' should have a 'to_dict' method for serialization"
-        )
+        assert hasattr(cls, "to_dict"), f"'{name}' should have a 'to_dict' method for serialization"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "LayerConfig",
-        "ResidualConnection",
-        "ArchitectureConfig",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "LayerConfig",
+            "ResidualConnection",
+            "ArchitectureConfig",
+        ],
+    )
     def test_dataclass_has_from_dict(self, builders_pkg, name):
         """
         Architecture builder dataclasses expose a ``from_dict()`` classmethod
@@ -682,19 +658,20 @@ class TestContractDataclassExports:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "ModelSpec",
-        "EnsembleConfig",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ModelSpec",
+            "EnsembleConfig",
+        ],
+    )
     def test_composer_dataclass_has_to_dict(self, builders_pkg, name):
         """
         Model composer dataclasses expose a ``to_dict()`` method
         for serialization (per project structure documentation).
         """
         cls = getattr(builders_pkg, name)
-        assert hasattr(cls, "to_dict"), (
-            f"'{name}' should have a 'to_dict' method for serialization"
-        )
+        assert hasattr(cls, "to_dict"), f"'{name}' should have a 'to_dict' method for serialization"
 
 
 class TestContractEnumExports:
@@ -704,6 +681,7 @@ class TestContractEnumExports:
     def test_layer_category_is_enum(self, builders_pkg):
         """``LayerCategory`` is an Enum subclass."""
         import enum
+
         assert issubclass(builders_pkg.LayerCategory, enum.Enum), (
             "LayerCategory should be an Enum subclass"
         )
@@ -756,12 +734,11 @@ class TestContractLayerMetadataStructure:
     def test_layer_metadata_is_dataclass(self, builders_pkg):
         """``LayerMetadata`` is a dataclass."""
         import dataclasses
+
         cls = builders_pkg.LayerMetadata
         is_dc = dataclasses.is_dataclass(cls)
         is_pydantic = hasattr(cls, "__pydantic_fields__")
-        assert is_dc or is_pydantic, (
-            "LayerMetadata should be a dataclass or Pydantic model"
-        )
+        assert is_dc or is_pydantic, "LayerMetadata should be a dataclass or Pydantic model"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("field_name", EXPECTED_FIELDS)
@@ -771,6 +748,7 @@ class TestContractLayerMetadataStructure:
         as either a dataclass field or a class attribute.
         """
         import dataclasses
+
         cls = builders_pkg.LayerMetadata
 
         if dataclasses.is_dataclass(cls):
@@ -784,9 +762,7 @@ class TestContractLayerMetadataStructure:
                 f"LayerMetadata is missing Pydantic field '{field_name}'"
             )
         else:
-            assert hasattr(cls, field_name), (
-                f"LayerMetadata is missing attribute '{field_name}'"
-            )
+            assert hasattr(cls, field_name), f"LayerMetadata is missing attribute '{field_name}'"
 
     @pytest.mark.contract
     def test_layer_metadata_has_to_dict(self, builders_pkg):
@@ -837,9 +813,7 @@ class TestContractFunctionSignatures:
         """``get_layer()`` accepts a layer name parameter."""
         sig = inspect.signature(builders_pkg.get_layer)
         params = list(sig.parameters.keys())
-        assert len(params) >= 1, (
-            f"get_layer() should have at least 1 parameter, got {len(params)}"
-        )
+        assert len(params) >= 1, f"get_layer() should have at least 1 parameter, got {len(params)}"
 
     @pytest.mark.contract
     def test_list_layers_is_callable(self, builders_pkg):
@@ -866,41 +840,31 @@ class TestContractFunctionSignatures:
     def test_validate_data_compatibility_is_callable(self, builders_pkg):
         """``validate_data_compatibility()`` is callable and has a valid signature."""
         sig = inspect.signature(builders_pkg.validate_data_compatibility)
-        assert sig is not None, (
-            "validate_data_compatibility() should have a valid signature"
-        )
+        assert sig is not None, "validate_data_compatibility() should have a valid signature"
 
     @pytest.mark.contract
     def test_parse_custom_architecture_is_callable(self, builders_pkg):
         """``parse_custom_architecture()`` is callable with a valid signature."""
         sig = inspect.signature(builders_pkg.parse_custom_architecture)
-        assert sig is not None, (
-            "parse_custom_architecture() should have a valid signature"
-        )
+        assert sig is not None, "parse_custom_architecture() should have a valid signature"
 
     @pytest.mark.contract
     def test_parse_ensemble_is_callable(self, builders_pkg):
         """``parse_ensemble()`` is callable with a valid signature."""
         sig = inspect.signature(builders_pkg.parse_ensemble)
-        assert sig is not None, (
-            "parse_ensemble() should have a valid signature"
-        )
+        assert sig is not None, "parse_ensemble() should have a valid signature"
 
     @pytest.mark.contract
     def test_load_config_is_callable(self, builders_pkg):
         """``load_config()`` is callable with a valid signature."""
         sig = inspect.signature(builders_pkg.load_config)
-        assert sig is not None, (
-            "load_config() should have a valid signature"
-        )
+        assert sig is not None, "load_config() should have a valid signature"
 
     @pytest.mark.contract
     def test_validate_config_is_callable(self, builders_pkg):
         """``validate_config()`` is callable with a valid signature."""
         sig = inspect.signature(builders_pkg.validate_config)
-        assert sig is not None, (
-            "validate_config() should have a valid signature"
-        )
+        assert sig is not None, "validate_config() should have a valid signature"
 
 
 class TestContractArchitectureBuilderFluentAPI:
@@ -924,9 +888,7 @@ class TestContractArchitectureBuilderFluentAPI:
     def test_architecture_builder_has_method(self, builders_pkg, method_name):
         """``ArchitectureBuilder`` exposes each documented method."""
         cls = builders_pkg.ArchitectureBuilder
-        assert hasattr(cls, method_name), (
-            f"ArchitectureBuilder is missing method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ArchitectureBuilder is missing method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", FLUENT_METHODS)
@@ -934,9 +896,7 @@ class TestContractArchitectureBuilderFluentAPI:
         """Each ``ArchitectureBuilder`` method is callable."""
         cls = builders_pkg.ArchitectureBuilder
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ArchitectureBuilder.{method_name} should be callable"
-        )
+        assert callable(method), f"ArchitectureBuilder.{method_name} should be callable"
 
     @pytest.mark.contract
     def test_from_config_is_classmethod(self, builders_pkg):
@@ -973,9 +933,7 @@ class TestContractModelComposerFluentAPI:
     def test_model_composer_has_method(self, builders_pkg, method_name):
         """``ModelComposer`` exposes each documented method."""
         cls = builders_pkg.ModelComposer
-        assert hasattr(cls, method_name), (
-            f"ModelComposer is missing method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ModelComposer is missing method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", FLUENT_METHODS)
@@ -983,9 +941,7 @@ class TestContractModelComposerFluentAPI:
         """Each ``ModelComposer`` method is callable."""
         cls = builders_pkg.ModelComposer
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ModelComposer.{method_name} should be callable"
-        )
+        assert callable(method), f"ModelComposer.{method_name} should be callable"
 
 
 class TestContractArchitectureTemplatesAPI:
@@ -1011,9 +967,7 @@ class TestContractArchitectureTemplatesAPI:
     def test_architecture_templates_has_method(self, builders_pkg, method_name):
         """``ArchitectureTemplates`` exposes each documented method."""
         cls = builders_pkg.ArchitectureTemplates
-        assert hasattr(cls, method_name), (
-            f"ArchitectureTemplates is missing method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ArchitectureTemplates is missing method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", TEMPLATE_METHODS)
@@ -1021,9 +975,7 @@ class TestContractArchitectureTemplatesAPI:
         """Each ``ArchitectureTemplates`` method is callable."""
         cls = builders_pkg.ArchitectureTemplates
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ArchitectureTemplates.{method_name} should be callable"
-        )
+        assert callable(method), f"ArchitectureTemplates.{method_name} should be callable"
 
     @pytest.mark.contract
     def test_list_templates_returns_list(self, builders_pkg):
@@ -1040,9 +992,7 @@ class TestContractArchitectureTemplatesAPI:
         template names (per project structure documentation).
         """
         result = builders_pkg.ArchitectureTemplates.list_templates()
-        assert len(result) == 10, (
-            f"Expected 10 templates, got {len(result)}: {result}"
-        )
+        assert len(result) == 10, f"Expected 10 templates, got {len(result)}: {result}"
 
     @pytest.mark.contract
     def test_list_templates_entries_are_strings(self, builders_pkg):
@@ -1071,9 +1021,7 @@ class TestContractArchitectureValidatorAPI:
     def test_architecture_validator_has_method(self, builders_pkg, method_name):
         """``ArchitectureValidator`` exposes each documented method."""
         cls = builders_pkg.ArchitectureValidator
-        assert hasattr(cls, method_name), (
-            f"ArchitectureValidator is missing method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ArchitectureValidator is missing method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", VALIDATOR_METHODS)
@@ -1081,9 +1029,7 @@ class TestContractArchitectureValidatorAPI:
         """Each ``ArchitectureValidator`` method is callable."""
         cls = builders_pkg.ArchitectureValidator
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ArchitectureValidator.{method_name} should be callable"
-        )
+        assert callable(method), f"ArchitectureValidator.{method_name} should be callable"
 
 
 class TestContractArchitectureConfigParserAPI:
@@ -1110,9 +1056,7 @@ class TestContractArchitectureConfigParserAPI:
         """Each ``ArchitectureConfigParser`` method is callable."""
         cls = builders_pkg.ArchitectureConfigParser
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ArchitectureConfigParser.{method_name} should be callable"
-        )
+        assert callable(method), f"ArchitectureConfigParser.{method_name} should be callable"
 
 
 class TestContractLayerRegistryAPI:
@@ -1133,9 +1077,7 @@ class TestContractLayerRegistryAPI:
     def test_layer_registry_has_method(self, builders_pkg, method_name):
         """``LayerRegistry`` exposes each documented method."""
         cls = builders_pkg.LayerRegistry
-        assert hasattr(cls, method_name), (
-            f"LayerRegistry is missing method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"LayerRegistry is missing method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", REGISTRY_METHODS)
@@ -1143,9 +1085,7 @@ class TestContractLayerRegistryAPI:
         """Each ``LayerRegistry`` method is callable."""
         cls = builders_pkg.LayerRegistry
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"LayerRegistry.{method_name} should be callable"
-        )
+        assert callable(method), f"LayerRegistry.{method_name} should be callable"
 
 
 class TestContractLayerRegistryInstanceContract:
@@ -1159,18 +1099,14 @@ class TestContractLayerRegistryInstanceContract:
         """
         registry = builders_pkg.layer_registry
         layers = registry.list_layers()
-        assert len(layers) >= 50, (
-            f"Expected at least 50 registered layers, got {len(layers)}"
-        )
+        assert len(layers) >= 50, f"Expected at least 50 registered layers, got {len(layers)}"
 
     @pytest.mark.contract
     def test_layer_registry_has_categories(self, builders_pkg):
         """The global ``layer_registry`` has registered categories."""
         registry = builders_pkg.layer_registry
         categories = registry.list_categories()
-        assert len(categories) >= 6, (
-            f"Expected at least 6 categories, got {len(categories)}"
-        )
+        assert len(categories) >= 6, f"Expected at least 6 categories, got {len(categories)}"
 
     @pytest.mark.contract
     def test_layer_registry_get_statistics_returns_dict(self, builders_pkg):
@@ -1233,16 +1169,12 @@ class TestContractVersionMetadata:
             f"Version '{version}' should have exactly 3 components (MAJOR.MINOR.PATCH)"
         )
         for i, part in enumerate(parts):
-            assert part.isdigit(), (
-                f"Version component [{i}] = '{part}' should be numeric"
-            )
+            assert part.isdigit(), f"Version component [{i}] = '{part}' should be numeric"
 
     @pytest.mark.contract
     def test_version_in_all(self, all_names):
         """``__version__`` is listed in ``__all__``."""
-        assert "__version__" in all_names, (
-            "__version__ should be listed in __all__"
-        )
+        assert "__version__" in all_names, "__version__ should be listed in __all__"
 
 
 class TestContractPublicAPISurfaceStability:
@@ -1284,18 +1216,14 @@ class TestContractPublicAPISurfaceStability:
     @pytest.mark.parametrize("name", CORE_API_NAMES)
     def test_core_api_name_in_all(self, all_names, name):
         """Each core API name is present in ``__all__``."""
-        assert name in all_names, (
-            f"Core API name '{name}' should be in __all__"
-        )
+        assert name in all_names, f"Core API name '{name}' should be in __all__"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", CORE_API_NAMES)
     def test_core_api_name_is_accessible(self, builders_pkg, name):
         """Each core API name is accessible as an attribute."""
         obj = getattr(builders_pkg, name, None)
-        assert obj is not None, (
-            f"Core API name '{name}' should be accessible on the module"
-        )
+        assert obj is not None, f"Core API name '{name}' should be accessible on the module"
 
 
 class TestContractImportSourceVerification:
@@ -1307,8 +1235,7 @@ class TestContractImportSourceVerification:
         cls = builders_pkg.LayerRegistry
         module_name = cls.__module__
         assert "layer_registry" in module_name, (
-            f"LayerRegistry should come from layer_registry module, "
-            f"got module '{module_name}'"
+            f"LayerRegistry should come from layer_registry module, got module '{module_name}'"
         )
 
     @pytest.mark.contract
@@ -1327,8 +1254,7 @@ class TestContractImportSourceVerification:
         cls = builders_pkg.ModelComposer
         module_name = cls.__module__
         assert "model_composer" in module_name, (
-            f"ModelComposer should come from model_composer module, "
-            f"got module '{module_name}'"
+            f"ModelComposer should come from model_composer module, got module '{module_name}'"
         )
 
     @pytest.mark.contract
@@ -1337,8 +1263,7 @@ class TestContractImportSourceVerification:
         cls = builders_pkg.ArchitectureTemplates
         module_name = cls.__module__
         assert "templates" in module_name, (
-            f"ArchitectureTemplates should come from templates module, "
-            f"got module '{module_name}'"
+            f"ArchitectureTemplates should come from templates module, got module '{module_name}'"
         )
 
     @pytest.mark.contract
@@ -1357,8 +1282,7 @@ class TestContractImportSourceVerification:
         cls = builders_pkg.ArchitectureValidator
         module_name = cls.__module__
         assert "validation" in module_name, (
-            f"ArchitectureValidator should come from validation module, "
-            f"got module '{module_name}'"
+            f"ArchitectureValidator should come from validation module, got module '{module_name}'"
         )
 
 
@@ -1382,12 +1306,8 @@ class TestContractFunctionalLayerWrapperAPI:
     def test_functional_layer_wrapper_has_forward(self, builders_pkg):
         """``FunctionalLayerWrapper`` has a ``forward()`` method."""
         cls = builders_pkg.FunctionalLayerWrapper
-        assert hasattr(cls, "forward"), (
-            "FunctionalLayerWrapper should have a 'forward' method"
-        )
-        assert callable(getattr(cls, "forward")), (
-            "FunctionalLayerWrapper.forward should be callable"
-        )
+        assert hasattr(cls, "forward"), "FunctionalLayerWrapper should have a 'forward' method"
+        assert callable(cls.forward), "FunctionalLayerWrapper.forward should be callable"
 
 
 class TestContractCustomArchitectureAPI:
@@ -1397,9 +1317,7 @@ class TestContractCustomArchitectureAPI:
     def test_custom_architecture_has_forward(self, builders_pkg):
         """``CustomArchitecture`` has a ``forward()`` method."""
         cls = builders_pkg.CustomArchitecture
-        assert hasattr(cls, "forward"), (
-            "CustomArchitecture should have a 'forward' method"
-        )
+        assert hasattr(cls, "forward"), "CustomArchitecture should have a 'forward' method"
 
     @pytest.mark.contract
     def test_custom_architecture_is_class(self, builders_pkg):
@@ -1421,15 +1339,11 @@ class TestContractEnsembleModulesAPI:
     def test_ensemble_module_has_forward(self, builders_pkg, name):
         """Each ensemble module has a ``forward()`` method."""
         cls = getattr(builders_pkg, name)
-        assert hasattr(cls, "forward"), (
-            f"{name} should have a 'forward' method"
-        )
+        assert hasattr(cls, "forward"), f"{name} should have a 'forward' method"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", ENSEMBLE_MODULES)
     def test_ensemble_module_forward_is_callable(self, builders_pkg, name):
         """Each ensemble module's ``forward()`` is callable."""
         cls = getattr(builders_pkg, name)
-        assert callable(getattr(cls, "forward")), (
-            f"{name}.forward should be callable"
-        )
+        assert callable(cls.forward), f"{name}.forward should be callable"

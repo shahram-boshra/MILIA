@@ -82,7 +82,7 @@ License: MIT
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 # Module metadata
 __version__ = "1.0.0"
@@ -104,40 +104,42 @@ _INITIALIZED = False
 def _ensure_initialized():
     """
     Ensure all cross-module dependencies are resolved.
-    
+
     This function is called automatically when needed, but can be called
     explicitly to force initialization of cross-module dependencies.
-    
+
     The initialization process:
     1. Imports basic structures from all modules
     2. Resolves cross-dependencies between modules
     3. Sets up lazy imports for plugin system
-    
+
     Thread-safe and idempotent.
     """
     global _INITIALIZED, _INITIALIZING
-    
+
     if _INITIALIZED:
         return
-    
+
     if _INITIALIZING:
         # Prevent re-entry during initialization
         return
-    
+
     _INITIALIZING = True
-    
+
     try:
         # Import basic structures (already done at module level)
         # Resolve cross-dependencies
         if CUSTOM_TRANSFORMS_AVAILABLE:
             from .custom_transforms import _lazy_import_graph_transforms
+
             _lazy_import_graph_transforms()
-        
+
         if PLUGIN_SYSTEM_AVAILABLE:
             from .plugin_system import _import_custom_transforms, _import_graph_transforms
+
             _import_custom_transforms()
             _import_graph_transforms()
-        
+
         _INITIALIZED = True
         logger.debug("Transformations module initialized successfully")
     except Exception as e:
@@ -153,46 +155,43 @@ def _ensure_initialized():
 
 try:
     from .graph_transforms import (
+        ConfigurationBridge,
+        DynamicTransformDiscovery,
+        # Main API
+        GraphTransforms,
+        TransformCompatibility,
+        TransformComposer,
+        TransformDependency,
+        TransformErrorRecovery,
+        # Enhanced metadata classes
+        TransformInfo,
         # Core classes
         TransformRegistry,
-        TransformComposer,
         TransformValidator,
-        DynamicTransformDiscovery,
-        ConfigurationBridge,
-        TransformErrorRecovery,
-        
         # Enums and types
         ValidationLevel,
         ValidationScope,
-        
-        # Enhanced metadata classes
-        TransformInfo,
-        TransformDependency,
-        TransformCompatibility,
-        
-        # Main API
-        GraphTransforms,
+        discover_custom_transforms,
+        export_metrics,
+        get_configuration_format_help,
         get_graph_transforms,
-        
+        get_milia_setups,
         # Convenience functions
         get_transform_info,
-        validate_v3_configuration,
-        validate_comprehensive,
-        get_configuration_format_help,
-        export_metrics,
-        optimize_performance,
-        get_milia_setups,
-        perform_system_health_check,
         get_validation_report_text,
-        discover_custom_transforms,
+        optimize_performance,
+        perform_system_health_check,
         register_all_custom_transforms,
+        validate_comprehensive,
+        validate_v3_configuration,
     )
+
     GRAPH_TRANSFORMS_AVAILABLE = True
     logger.debug("graph_transforms module loaded successfully")
 except ImportError as e:
     GRAPH_TRANSFORMS_AVAILABLE = False
     logger.warning(f"graph_transforms module not available: {e}")
-    
+
     # Minimal fallbacks for type hints
     TransformRegistry = None
     TransformComposer = None
@@ -228,28 +227,26 @@ try:
     from .custom_transforms import (
         # Core base classes
         CustomTransformBase,
+        FilterByDMCUncertainty,
         MolecularTransformBase,
-        QuantumTransformBase,
-        
-        # Metadata
-        TransformMetadata,
-        
         # Example transforms
         NormalizeVibrationalModes,
-        FilterByDMCUncertainty,
+        QuantumTransformBase,
         ScaleMullikenCharges,
-        
+        TransformConfigurationError,
+        TransformExecutionError,
+        # Metadata
+        TransformMetadata,
         # Exceptions
         TransformValidationError,
-        TransformExecutionError,
-        TransformConfigurationError,
     )
+
     CUSTOM_TRANSFORMS_AVAILABLE = True
     logger.debug("custom_transforms module loaded successfully")
 except ImportError as e:
     CUSTOM_TRANSFORMS_AVAILABLE = False
     logger.warning(f"custom_transforms module not available: {e}")
-    
+
     # Minimal fallbacks
     CustomTransformBase = None
     MolecularTransformBase = None
@@ -269,24 +266,24 @@ except ImportError as e:
 
 try:
     from .plugin_system import (
+        PluginDependencyError,
+        # Exceptions
+        PluginError,
         # Core classes
         PluginMetadata,
         PluginRegistry,
+        PluginSecurityError,
+        PluginValidationError,
         PluginValidator,
         TransformDeclaration,
-        
-        # Exceptions
-        PluginError,
-        PluginValidationError,
-        PluginSecurityError,
-        PluginDependencyError,
     )
+
     PLUGIN_SYSTEM_AVAILABLE = True
     logger.debug("plugin_system module loaded successfully")
 except ImportError as e:
     PLUGIN_SYSTEM_AVAILABLE = False
     logger.warning(f"plugin_system module not available: {e}")
-    
+
     # Minimal fallbacks
     PluginMetadata = None
     PluginRegistry = None
@@ -304,33 +301,30 @@ except ImportError as e:
 
 try:
     from .research_api import (
-        # Core configuration
-        ExperimentConfiguration,
-        
         # Fluent builders
         AblationStudyBuilder,
-        ParameterSweepBuilder,
         ComparativeStudyBuilder,
-        
+        # Core configuration
+        ExperimentConfiguration,
         # Experiment execution
         ExperimentRunner,
-        
+        ParameterSweepBuilder,
         # Convenience functions
         create_ablation_study,
-        create_parameter_sweep,
         create_comparative_study,
-        
-        # Configuration loaders
-        load_experiments_from_config,
+        create_parameter_sweep,
         get_experiment,
         list_available_experiments,
+        # Configuration loaders
+        load_experiments_from_config,
     )
+
     RESEARCH_API_AVAILABLE = True
     logger.debug("research_api module loaded successfully")
 except ImportError as e:
     RESEARCH_API_AVAILABLE = False
     logger.warning(f"research_api module not available: {e}")
-    
+
     # Minimal fallbacks
     ExperimentConfiguration = None
     AblationStudyBuilder = None
@@ -358,13 +352,14 @@ except ImportError as e:
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # =============================================================================
 
-def get_available_transforms() -> List[str]:
+
+def get_available_transforms() -> list[str]:
     """
     Get list of all available transform names.
-    
+
     Returns:
         List of transform names from the registry
-        
+
     Example:
         >>> transforms = get_available_transforms()
         >>> print(f"Available: {len(transforms)} transforms")
@@ -372,25 +367,24 @@ def get_available_transforms() -> List[str]:
     if not GRAPH_TRANSFORMS_AVAILABLE:
         logger.error("graph_transforms module not available")
         return []
-    
+
     gt = get_graph_transforms()
     return gt.list_available_transforms()
 
 
 def create_transform_sequence(
-    configs: List[Dict[str, Any]],
-    dataset_type: Optional[str] = None
+    configs: list[dict[str, Any]], dataset_type: str | None = None
 ) -> Any:
     """
     Create a transform sequence from configuration.
-    
+
     Args:
         configs: List of transform configurations
         dataset_type: Optional dataset type for optimization ('DFT', 'DMC', 'Wavefunction')
-        
+
     Returns:
         PyTorch Geometric Compose object
-        
+
     Example:
         >>> compose = create_transform_sequence([
         ...     {'name': 'AddSelfLoops'},
@@ -399,27 +393,27 @@ def create_transform_sequence(
     """
     if not GRAPH_TRANSFORMS_AVAILABLE:
         raise ImportError("graph_transforms module not available")
-    
+
     gt = get_graph_transforms()
     return gt.create_transform_sequence(configs, dataset_type=dataset_type)
 
 
 def validate_transform_config(
-    configs: List[Dict[str, Any]],
-    dataset_type: Optional[str] = None,
-    validation_level: Optional[Any] = None
-) -> Dict[str, Any]:
+    configs: list[dict[str, Any]],
+    dataset_type: str | None = None,
+    validation_level: Any | None = None,
+) -> dict[str, Any]:
     """
     Validate transform configuration.
-    
+
     Args:
         configs: List of transform configurations
         dataset_type: Optional dataset type
         validation_level: Validation strictness level
-        
+
     Returns:
         Validation result dictionary
-        
+
     Example:
         >>> result = validate_transform_config([
         ...     {'name': 'AddSelfLoops'},
@@ -430,24 +424,26 @@ def validate_transform_config(
     """
     if not GRAPH_TRANSFORMS_AVAILABLE:
         raise ImportError("graph_transforms module not available")
-    
+
     if validation_level is None and ValidationLevel is not None:
         validation_level = ValidationLevel.STANDARD
-    
-    return validate_comprehensive(configs, dataset_type=dataset_type, validation_level=validation_level)
+
+    return validate_comprehensive(
+        configs, dataset_type=dataset_type, validation_level=validation_level
+    )
 
 
-def register_custom_transform(transform_class: Type, force: bool = False) -> bool:
+def register_custom_transform(transform_class: type, force: bool = False) -> bool:
     """
     Register a custom transform with the registry.
-    
+
     Args:
         transform_class: Transform class to register
         force: Force registration even if already exists
-        
+
     Returns:
         True if registration successful
-        
+
     Example:
         >>> class MyTransform(QuantumTransformBase):
         ...     pass
@@ -455,111 +451,107 @@ def register_custom_transform(transform_class: Type, force: bool = False) -> boo
     """
     if not GRAPH_TRANSFORMS_AVAILABLE:
         raise ImportError("graph_transforms module not available")
-    
+
     gt = get_graph_transforms()
     return gt.register_custom_transform(transform_class, force=force)
 
 
-def discover_and_register_plugins(plugin_paths: List[str]) -> Dict[str, Any]:
+def discover_and_register_plugins(plugin_paths: list[str]) -> dict[str, Any]:
     """
     Discover and register plugins from specified paths.
-    
+
     Args:
         plugin_paths: List of paths to search for plugins
-        
+
     Returns:
         Discovery results dictionary
-        
+
     Example:
         >>> results = discover_and_register_plugins(['/path/to/plugins'])
         >>> print(f"Registered {results['registered_count']} plugins")
     """
     if not PLUGIN_SYSTEM_AVAILABLE:
         raise ImportError("plugin_system module not available")
-    
-    results = {
-        'registered_count': 0,
-        'failed_count': 0,
-        'plugins': []
-    }
-    
+
+    results = {"registered_count": 0, "failed_count": 0, "plugins": []}
+
     for path in plugin_paths:
         try:
             discovered = PluginRegistry.discover_plugins(path)
-            results['plugins'].extend(discovered)
-            results['registered_count'] += len(discovered)
+            results["plugins"].extend(discovered)
+            results["registered_count"] += len(discovered)
         except Exception as e:
             logger.error(f"Failed to discover plugins from {path}: {e}")
-            results['failed_count'] += 1
-    
+            results["failed_count"] += 1
+
     return results
 
 
-def get_system_status() -> Dict[str, Any]:
+def get_system_status() -> dict[str, Any]:
     """
     Get comprehensive system status.
-    
+
     Returns:
         Dictionary with system status information
-        
+
     Example:
         >>> status = get_system_status()
         >>> print(f"Graph transforms: {status['graph_transforms_available']}")
         >>> print(f"Custom transforms: {status['custom_transforms_available']}")
     """
     status = {
-        'graph_transforms_available': GRAPH_TRANSFORMS_AVAILABLE,
-        'custom_transforms_available': CUSTOM_TRANSFORMS_AVAILABLE,
-        'plugin_system_available': PLUGIN_SYSTEM_AVAILABLE,
-        'research_api_available': RESEARCH_API_AVAILABLE,
-        'initialized': _INITIALIZED,
+        "graph_transforms_available": GRAPH_TRANSFORMS_AVAILABLE,
+        "custom_transforms_available": CUSTOM_TRANSFORMS_AVAILABLE,
+        "plugin_system_available": PLUGIN_SYSTEM_AVAILABLE,
+        "research_api_available": RESEARCH_API_AVAILABLE,
+        "initialized": _INITIALIZED,
     }
-    
+
     if GRAPH_TRANSFORMS_AVAILABLE:
         try:
             gt = get_graph_transforms()
-            status['registered_transforms'] = len(gt.list_available_transforms())
-            status['health_check'] = gt.perform_health_check()
+            status["registered_transforms"] = len(gt.list_available_transforms())
+            status["health_check"] = gt.perform_health_check()
         except Exception as e:
-            status['health_check_error'] = str(e)
-    
+            status["health_check_error"] = str(e)
+
     if PLUGIN_SYSTEM_AVAILABLE:
         try:
-            status['registered_plugins'] = len(PluginRegistry.list_plugins())
+            status["registered_plugins"] = len(PluginRegistry.list_plugins())
         except Exception as e:
-            status['plugin_registry_error'] = str(e)
-    
+            status["plugin_registry_error"] = str(e)
+
     return status
 
 
-def get_module_info() -> Dict[str, Any]:
+def get_module_info() -> dict[str, Any]:
     """
     Get module information and metadata.
-    
+
     Returns:
         Dictionary with module information
-        
+
     Example:
         >>> info = get_module_info()
         >>> print(f"Version: {info['version']}")
         >>> print(f"Features: {info['features']}")
     """
     return {
-        'version': __version__,
-        'author': __author__,
-        'license': __license__,
-        'features': {
-            'graph_transforms': GRAPH_TRANSFORMS_AVAILABLE,
-            'custom_transforms': CUSTOM_TRANSFORMS_AVAILABLE,
-            'plugin_system': PLUGIN_SYSTEM_AVAILABLE,
-            'research_api': RESEARCH_API_AVAILABLE,
+        "version": __version__,
+        "author": __author__,
+        "license": __license__,
+        "features": {
+            "graph_transforms": GRAPH_TRANSFORMS_AVAILABLE,
+            "custom_transforms": CUSTOM_TRANSFORMS_AVAILABLE,
+            "plugin_system": PLUGIN_SYSTEM_AVAILABLE,
+            "research_api": RESEARCH_API_AVAILABLE,
         },
-        'components': {
-            'transform_registry': TransformRegistry is not None,
-            'transform_composer': TransformComposer is not None,
-            'plugin_registry': PluginRegistry is not None,
-            'experiment_configuration': ExperimentConfiguration is not None,
-        }
+        "components": {
+            "transform_registry": TransformRegistry is not None,
+            "transform_composer": TransformComposer is not None,
+            "plugin_registry": PluginRegistry is not None,
+            "experiment_configuration": ExperimentConfiguration is not None,
+        },
     }
 
 
@@ -569,104 +561,89 @@ def get_module_info() -> Dict[str, Any]:
 
 __all__ = [
     # Module metadata
-    '__version__',
-    '__author__',
-    '__license__',
-    
+    "__version__",
+    "__author__",
+    "__license__",
     # Availability flags
-    'GRAPH_TRANSFORMS_AVAILABLE',
-    'CUSTOM_TRANSFORMS_AVAILABLE',
-    'PLUGIN_SYSTEM_AVAILABLE',
-    'RESEARCH_API_AVAILABLE',
-    
+    "GRAPH_TRANSFORMS_AVAILABLE",
+    "CUSTOM_TRANSFORMS_AVAILABLE",
+    "PLUGIN_SYSTEM_AVAILABLE",
+    "RESEARCH_API_AVAILABLE",
     # Graph transforms - Core classes
-    'TransformRegistry',
-    'TransformComposer',
-    'TransformValidator',
-    'DynamicTransformDiscovery',
-    'ConfigurationBridge',
-    'TransformErrorRecovery',
-    'ValidationLevel',
-    'ValidationScope',
-    'TransformInfo',
-    'TransformDependency',
-    'TransformCompatibility',
-    'GraphTransforms',
-    
+    "TransformRegistry",
+    "TransformComposer",
+    "TransformValidator",
+    "DynamicTransformDiscovery",
+    "ConfigurationBridge",
+    "TransformErrorRecovery",
+    "ValidationLevel",
+    "ValidationScope",
+    "TransformInfo",
+    "TransformDependency",
+    "TransformCompatibility",
+    "GraphTransforms",
     # Graph transforms - Main API
-    'get_graph_transforms',
-    
+    "get_graph_transforms",
     # Graph transforms - Convenience functions
-    'get_transform_info',
-    'validate_v3_configuration',
-    'validate_comprehensive',
-    'get_configuration_format_help',
-    'export_metrics',
-    'optimize_performance',
-    'get_milia_setups',
-    'perform_system_health_check',
-    'get_validation_report_text',
-    'discover_custom_transforms',
-    'register_all_custom_transforms',
-    
+    "get_transform_info",
+    "validate_v3_configuration",
+    "validate_comprehensive",
+    "get_configuration_format_help",
+    "export_metrics",
+    "optimize_performance",
+    "get_milia_setups",
+    "perform_system_health_check",
+    "get_validation_report_text",
+    "discover_custom_transforms",
+    "register_all_custom_transforms",
     # Custom transforms - Base classes
-    'CustomTransformBase',
-    'MolecularTransformBase',
-    'QuantumTransformBase',
-    'TransformMetadata',
-    
+    "CustomTransformBase",
+    "MolecularTransformBase",
+    "QuantumTransformBase",
+    "TransformMetadata",
     # Custom transforms - Example implementations
-    'NormalizeVibrationalModes',
-    'FilterByDMCUncertainty',
-    'ScaleMullikenCharges',
-    
+    "NormalizeVibrationalModes",
+    "FilterByDMCUncertainty",
+    "ScaleMullikenCharges",
     # Custom transforms - Exceptions
-    'TransformValidationError',
-    'TransformExecutionError',
-    'TransformConfigurationError',
-    
+    "TransformValidationError",
+    "TransformExecutionError",
+    "TransformConfigurationError",
     # Plugin system - Core classes
-    'PluginMetadata',
-    'PluginRegistry',
-    'PluginValidator',
-    'TransformDeclaration',
-    
+    "PluginMetadata",
+    "PluginRegistry",
+    "PluginValidator",
+    "TransformDeclaration",
     # Plugin system - Exceptions
-    'PluginError',
-    'PluginValidationError',
-    'PluginSecurityError',
-    'PluginDependencyError',
-    
+    "PluginError",
+    "PluginValidationError",
+    "PluginSecurityError",
+    "PluginDependencyError",
     # Research API - Configuration
-    'ExperimentConfiguration',
-    
+    "ExperimentConfiguration",
     # Research API - Builders
-    'AblationStudyBuilder',
-    'ParameterSweepBuilder',
-    'ComparativeStudyBuilder',
-    
+    "AblationStudyBuilder",
+    "ParameterSweepBuilder",
+    "ComparativeStudyBuilder",
     # Research API - Execution
-    'ExperimentRunner',
-    
+    "ExperimentRunner",
     # Research API - Convenience functions
-    'create_ablation_study',
-    'create_parameter_sweep',
-    'create_comparative_study',
-    'load_experiments_from_config',
-    'get_experiment',
-    'list_available_experiments',
-    
+    "create_ablation_study",
+    "create_parameter_sweep",
+    "create_comparative_study",
+    "load_experiments_from_config",
+    "get_experiment",
+    "list_available_experiments",
     # Module-level convenience functions
-    'get_available_transforms',
-    'create_transform_sequence',
-    'validate_transform_config',
-    'register_custom_transform',
-    'discover_and_register_plugins',
-    'get_system_status',
-    'get_module_info',
-    
+    "get_available_transforms",
+    "create_transform_sequence",
+    "validate_transform_config",
+    "register_custom_transform",
+    "discover_and_register_plugins",
+    "get_system_status",
+    "get_module_info",
     # Initialization
-    '_ensure_initialized',
+    "_ensure_initialized",
 ]
 
 

@@ -1,4 +1,4 @@
-#/models/builders/__init__.py
+# /models/builders/__init__.py
 """
 Models Builder Module
 
@@ -33,55 +33,57 @@ Public API:
 Version: 1.0.0
 """
 
-from typing import Dict, List, Optional, Any
-
-# Import layer registry components
-from .layer_registry import (
-    LayerRegistry,
-    LayerCategory,
-    LayerMetadata,
-    FunctionalLayerWrapper,
-    LayerNotFoundError,
-    get_layer,
-    list_layers,
-    get_layer_metadata,
-    registry as layer_registry,
-)
+from typing import Any, Dict, List, Optional
 
 # Import architecture builder components
 from .architecture_builder import (
     ArchitectureBuilder,
-    LayerConfig,
     ArchitectureConfig,
-    ResidualConnection,
     ArchitectureError,
     ChannelMismatchError,
     CustomArchitecture,
-)
-
-# Import model composer components
-from .model_composer import (
-    ModelSpec,
-    EnsembleConfig,
-    CompositionError,
-    ModelComposer,
-    ParallelEnsemble,
-    SequentialStack,
-    HierarchicalComposition,
-)
-
-# Import templates
-from .templates import (
-    ArchitectureTemplates,
+    LayerConfig,
+    ResidualConnection,
 )
 
 # Import config parser components
 from .config_parser import (
     ArchitectureConfigParser,
+    load_config,
     parse_custom_architecture,
     parse_ensemble,
-    load_config,
     validate_config,
+)
+
+# Import layer registry components
+from .layer_registry import (
+    FunctionalLayerWrapper,
+    LayerCategory,
+    LayerMetadata,
+    LayerNotFoundError,
+    LayerRegistry,
+    get_layer,
+    get_layer_metadata,
+    list_layers,
+)
+from .layer_registry import (
+    registry as layer_registry,
+)
+
+# Import model composer components
+from .model_composer import (
+    CompositionError,
+    EnsembleConfig,
+    HierarchicalComposition,
+    ModelComposer,
+    ModelSpec,
+    ParallelEnsemble,
+    SequentialStack,
+)
+
+# Import templates
+from .templates import (
+    ArchitectureTemplates,
 )
 
 # Import validation components
@@ -105,7 +107,6 @@ __all__ = [
     "list_layers",
     "get_layer_metadata",
     "layer_registry",
-    
     # Architecture Builder
     "ArchitectureBuilder",
     "LayerConfig",
@@ -114,7 +115,6 @@ __all__ = [
     "ArchitectureError",
     "ChannelMismatchError",
     "CustomArchitecture",
-    
     # Model Composer
     "ModelSpec",
     "EnsembleConfig",
@@ -123,22 +123,18 @@ __all__ = [
     "ParallelEnsemble",
     "SequentialStack",
     "HierarchicalComposition",
-    
     # Templates
     "ArchitectureTemplates",
-    
     # Config Parser
     "ArchitectureConfigParser",
     "parse_custom_architecture",
     "parse_ensemble",
     "load_config",
     "validate_config",
-    
     # Validation
     "ArchitectureValidator",
     "validate_architecture",
     "validate_data_compatibility",
-    
     # Metadata
     "__version__",
 ]

@@ -63,12 +63,11 @@ Markers:
 
 import importlib
 import inspect
-import sys
-import types
-import threading
 import logging
+import sys
+import threading
+import types
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -86,6 +85,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def plugins_pkg():
     """
@@ -96,6 +96,7 @@ def plugins_pkg():
     """
     try:
         import milia_pipeline.plugins as plugins
+
         return plugins
     except ImportError as exc:
         pytest.fail(
@@ -146,19 +147,25 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_exists(self, plugins_pkg, attr):
         """Each metadata dunder is defined on the plugins package."""
         assert hasattr(plugins_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, plugins_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(plugins_pkg, attr)
@@ -170,9 +177,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = plugins_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -180,9 +185,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeInternalStateVariables:
@@ -320,8 +323,7 @@ class TestSmokeLoggerConfiguration:
     def test_logger_name_follows_convention(self, plugins_pkg):
         """``logger`` name follows the ``milia_Main.PluginSystem`` convention."""
         assert plugins_pkg.logger.name == "milia_Main.PluginSystem", (
-            f"Logger name should be 'milia_Main.PluginSystem', "
-            f"got '{plugins_pkg.logger.name}'"
+            f"Logger name should be 'milia_Main.PluginSystem', got '{plugins_pkg.logger.name}'"
         )
 
 
@@ -333,9 +335,7 @@ class TestSmokeModuleGetattr:
         """The module defines a ``__getattr__`` function for lazy imports."""
         # __getattr__ is a module-level function, accessible via the module dict
         module_dict = vars(plugins_pkg)
-        assert "__getattr__" in module_dict, (
-            "Module-level __getattr__ function is not defined"
-        )
+        assert "__getattr__" in module_dict, "Module-level __getattr__ function is not defined"
 
     @pytest.mark.smoke
     def test_getattr_is_callable(self, plugins_pkg):
@@ -403,9 +403,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, plugins_pkg, all_names):
@@ -413,10 +411,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(plugins_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(plugins_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -424,13 +419,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -493,13 +483,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in plugins/__init__.py but not in __all__: "
@@ -542,9 +536,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -582,17 +574,14 @@ class TestContractListSubplugins:
         result = plugins_pkg.list_subplugins()
         for item in result:
             assert isinstance(item, str), (
-                f"Each item in list_subplugins() should be str, "
-                f"got {type(item).__name__}: {item}"
+                f"Each item in list_subplugins() should be str, got {type(item).__name__}: {item}"
             )
 
     @pytest.mark.contract
     def test_list_subplugins_is_sorted(self, plugins_pkg):
         """``list_subplugins()`` returns a sorted list."""
         result = plugins_pkg.list_subplugins()
-        assert result == sorted(result), (
-            "list_subplugins() should return a sorted list"
-        )
+        assert result == sorted(result), "list_subplugins() should return a sorted list"
 
     @pytest.mark.contract
     def test_list_subplugins_is_idempotent(self, plugins_pkg):
@@ -620,8 +609,7 @@ class TestContractGetPluginsDirectory:
         """``get_plugins_directory()`` returns an absolute path."""
         result = plugins_pkg.get_plugins_directory()
         assert result.is_absolute(), (
-            f"get_plugins_directory() should return an absolute path, "
-            f"got '{result}'"
+            f"get_plugins_directory() should return an absolute path, got '{result}'"
         )
 
     @pytest.mark.contract
@@ -629,8 +617,7 @@ class TestContractGetPluginsDirectory:
         """``get_plugins_directory()`` path ends with 'plugins'."""
         result = plugins_pkg.get_plugins_directory()
         assert result.name == "plugins", (
-            f"get_plugins_directory() path should end with 'plugins', "
-            f"got '{result.name}'"
+            f"get_plugins_directory() path should end with 'plugins', got '{result.name}'"
         )
 
 
@@ -642,8 +629,7 @@ class TestContractGetDescriptorPluginsDirectory:
         """``get_descriptor_plugins_directory()`` returns a ``Path`` object."""
         result = plugins_pkg.get_descriptor_plugins_directory()
         assert isinstance(result, Path), (
-            f"get_descriptor_plugins_directory() should return Path, "
-            f"got {type(result).__name__}"
+            f"get_descriptor_plugins_directory() should return Path, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -651,8 +637,7 @@ class TestContractGetDescriptorPluginsDirectory:
         """``get_descriptor_plugins_directory()`` returns an absolute path."""
         result = plugins_pkg.get_descriptor_plugins_directory()
         assert result.is_absolute(), (
-            f"get_descriptor_plugins_directory() should return an absolute path, "
-            f"got '{result}'"
+            f"get_descriptor_plugins_directory() should return an absolute path, got '{result}'"
         )
 
     @pytest.mark.contract
@@ -693,17 +678,13 @@ class TestContractGetSystemStatus:
     def test_get_system_status_has_version_key(self, plugins_pkg):
         """``get_system_status()`` result includes 'version' key."""
         result = plugins_pkg.get_system_status()
-        assert "version" in result, (
-            "get_system_status() missing 'version' key"
-        )
+        assert "version" in result, "get_system_status() missing 'version' key"
 
     @pytest.mark.contract
     def test_get_system_status_has_plugins_directory_key(self, plugins_pkg):
         """``get_system_status()`` result includes 'plugins_directory' key."""
         result = plugins_pkg.get_system_status()
-        assert "plugins_directory" in result, (
-            "get_system_status() missing 'plugins_directory' key"
-        )
+        assert "plugins_directory" in result, "get_system_status() missing 'plugins_directory' key"
 
     @pytest.mark.contract
     def test_get_system_status_has_descriptor_plugins_directory_key(self, plugins_pkg):
@@ -717,17 +698,13 @@ class TestContractGetSystemStatus:
     def test_get_system_status_has_discovery_key(self, plugins_pkg):
         """``get_system_status()`` result includes 'discovery' key."""
         result = plugins_pkg.get_system_status()
-        assert "discovery" in result, (
-            "get_system_status() missing 'discovery' key"
-        )
+        assert "discovery" in result, "get_system_status() missing 'discovery' key"
 
     @pytest.mark.contract
     def test_get_system_status_has_subplugins_key(self, plugins_pkg):
         """``get_system_status()`` result includes 'subplugins' key."""
         result = plugins_pkg.get_system_status()
-        assert "subplugins" in result, (
-            "get_system_status() missing 'subplugins' key"
-        )
+        assert "subplugins" in result, "get_system_status() missing 'subplugins' key"
 
     @pytest.mark.contract
     def test_get_system_status_discovery_structure(self, plugins_pkg):
@@ -742,9 +719,7 @@ class TestContractGetSystemStatus:
         )
         expected_keys = {"attempted", "subplugins_found", "subplugin_names"}
         missing = expected_keys - set(discovery.keys())
-        assert not missing, (
-            f"discovery dict missing keys: {sorted(missing)}"
-        )
+        assert not missing, f"discovery dict missing keys: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_get_system_status_discovery_types(self, plugins_pkg):
@@ -753,8 +728,7 @@ class TestContractGetSystemStatus:
         discovery = result["discovery"]
 
         assert isinstance(discovery["attempted"], bool), (
-            f"discovery['attempted'] should be bool, "
-            f"got {type(discovery['attempted']).__name__}"
+            f"discovery['attempted'] should be bool, got {type(discovery['attempted']).__name__}"
         )
         assert isinstance(discovery["subplugins_found"], int), (
             f"discovery['subplugins_found'] should be int, "
@@ -779,8 +753,7 @@ class TestContractGetSystemStatus:
         """``get_system_status()['subplugins']`` is a dict."""
         result = plugins_pkg.get_system_status()
         assert isinstance(result["subplugins"], dict), (
-            f"subplugins should be dict, "
-            f"got {type(result['subplugins']).__name__}"
+            f"subplugins should be dict, got {type(result['subplugins']).__name__}"
         )
 
 
@@ -792,8 +765,7 @@ class TestContractGetSubpluginInfo:
         """``get_subplugin_info()`` returns None for an unknown plugin name."""
         result = plugins_pkg.get_subplugin_info("__nonexistent_plugin_xyz__")
         assert result is None, (
-            f"get_subplugin_info() for unknown plugin should return None, "
-            f"got {result}"
+            f"get_subplugin_info() for unknown plugin should return None, got {result}"
         )
 
     @pytest.mark.contract
@@ -810,8 +782,7 @@ class TestContractGetAllPluginInfo:
         """``get_all_plugin_info()`` returns a dict."""
         result = plugins_pkg.get_all_plugin_info()
         assert isinstance(result, dict), (
-            f"get_all_plugin_info() should return dict, "
-            f"got {type(result).__name__}"
+            f"get_all_plugin_info() should return dict, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -820,8 +791,7 @@ class TestContractGetAllPluginInfo:
         result = plugins_pkg.get_all_plugin_info()
         for key in result:
             assert isinstance(key, str), (
-                f"get_all_plugin_info() key should be str, "
-                f"got {type(key).__name__}: {key}"
+                f"get_all_plugin_info() key should be str, got {type(key).__name__}: {key}"
             )
 
     @pytest.mark.contract
@@ -830,8 +800,7 @@ class TestContractGetAllPluginInfo:
         result = plugins_pkg.get_all_plugin_info()
         for name, info in result.items():
             assert isinstance(info, dict), (
-                f"get_all_plugin_info()['{name}'] should be dict, "
-                f"got {type(info).__name__}"
+                f"get_all_plugin_info()['{name}'] should be dict, got {type(info).__name__}"
             )
 
 
@@ -843,8 +812,7 @@ class TestContractEnableSubplugin:
         """``enable_subplugin()`` returns False for an unknown plugin name."""
         result = plugins_pkg.enable_subplugin("__nonexistent_plugin_xyz__")
         assert result is False, (
-            f"enable_subplugin() for unknown plugin should return False, "
-            f"got {result}"
+            f"enable_subplugin() for unknown plugin should return False, got {result}"
         )
 
     @pytest.mark.contract
@@ -852,8 +820,7 @@ class TestContractEnableSubplugin:
         """``enable_subplugin()`` always returns a bool."""
         result = plugins_pkg.enable_subplugin("__nonexistent_plugin_xyz__")
         assert isinstance(result, bool), (
-            f"enable_subplugin() should return bool, "
-            f"got {type(result).__name__}"
+            f"enable_subplugin() should return bool, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -870,8 +837,7 @@ class TestContractDisableSubplugin:
         """``disable_subplugin()`` returns False for an unknown plugin name."""
         result = plugins_pkg.disable_subplugin("__nonexistent_plugin_xyz__")
         assert result is False, (
-            f"disable_subplugin() for unknown plugin should return False, "
-            f"got {result}"
+            f"disable_subplugin() for unknown plugin should return False, got {result}"
         )
 
     @pytest.mark.contract
@@ -879,8 +845,7 @@ class TestContractDisableSubplugin:
         """``disable_subplugin()`` always returns a bool."""
         result = plugins_pkg.disable_subplugin("__nonexistent_plugin_xyz__")
         assert isinstance(result, bool), (
-            f"disable_subplugin() should return bool, "
-            f"got {type(result).__name__}"
+            f"disable_subplugin() should return bool, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -897,8 +862,7 @@ class TestContractGetSubpluginTransforms:
         """``get_subplugin_transforms()`` returns [] for an unknown plugin."""
         result = plugins_pkg.get_subplugin_transforms("__nonexistent_plugin_xyz__")
         assert result == [], (
-            f"get_subplugin_transforms() for unknown plugin should return [], "
-            f"got {result}"
+            f"get_subplugin_transforms() for unknown plugin should return [], got {result}"
         )
 
     @pytest.mark.contract
@@ -906,8 +870,7 @@ class TestContractGetSubpluginTransforms:
         """``get_subplugin_transforms()`` returns a list."""
         result = plugins_pkg.get_subplugin_transforms("__nonexistent_plugin_xyz__")
         assert isinstance(result, list), (
-            f"get_subplugin_transforms() should return list, "
-            f"got {type(result).__name__}"
+            f"get_subplugin_transforms() should return list, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -922,12 +885,9 @@ class TestContractGetTransform:
     @pytest.mark.contract
     def test_get_transform_unknown_plugin_returns_none(self, plugins_pkg):
         """``get_transform()`` returns None for an unknown plugin name."""
-        result = plugins_pkg.get_transform(
-            "__nonexistent_plugin_xyz__", "SomeTransform"
-        )
+        result = plugins_pkg.get_transform("__nonexistent_plugin_xyz__", "SomeTransform")
         assert result is None, (
-            f"get_transform() for unknown plugin should return None, "
-            f"got {result}"
+            f"get_transform() for unknown plugin should return None, got {result}"
         )
 
     @pytest.mark.contract
@@ -968,8 +928,7 @@ class TestContractDiscoverSubplugins:
         """``_discover_subplugins()`` returns a dict."""
         result = plugins_pkg._discover_subplugins()
         assert isinstance(result, dict), (
-            f"_discover_subplugins() should return dict, "
-            f"got {type(result).__name__}"
+            f"_discover_subplugins() should return dict, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -978,8 +937,7 @@ class TestContractDiscoverSubplugins:
         result = plugins_pkg._discover_subplugins()
         for key in result:
             assert isinstance(key, str), (
-                f"_discover_subplugins() key should be str, "
-                f"got {type(key).__name__}: {key}"
+                f"_discover_subplugins() key should be str, got {type(key).__name__}: {key}"
             )
 
     @pytest.mark.contract
@@ -1008,8 +966,7 @@ class TestContractGetSubpluginModule:
         """``_get_subplugin_module()`` returns None for an unknown name."""
         result = plugins_pkg._get_subplugin_module("__nonexistent_plugin_xyz__")
         assert result is None, (
-            f"_get_subplugin_module() for unknown name should return None, "
-            f"got {result}"
+            f"_get_subplugin_module() for unknown name should return None, got {result}"
         )
 
     @pytest.mark.contract
@@ -1025,8 +982,7 @@ class TestContractThreadSafetyPrimitives:
     def test_lock_is_threading_lock(self, plugins_pkg):
         """``_lock`` is a ``threading.Lock`` instance."""
         assert isinstance(plugins_pkg._lock, type(threading.Lock())), (
-            f"_lock should be threading.Lock, "
-            f"got {type(plugins_pkg._lock).__name__}"
+            f"_lock should be threading.Lock, got {type(plugins_pkg._lock).__name__}"
         )
 
 
@@ -1042,8 +998,7 @@ class TestContractFunctionSignatures:
             "get_subplugin_info should accept at least one parameter (name)"
         )
         assert param_names[0] == "name", (
-            f"First parameter of get_subplugin_info should be 'name', "
-            f"got '{param_names[0]}'"
+            f"First parameter of get_subplugin_info should be 'name', got '{param_names[0]}'"
         )
 
     @pytest.mark.contract
@@ -1051,12 +1006,9 @@ class TestContractFunctionSignatures:
         """``enable_subplugin`` has a parameter for the plugin name."""
         sig = inspect.signature(plugins_pkg.enable_subplugin)
         param_names = list(sig.parameters.keys())
-        assert len(param_names) >= 1, (
-            "enable_subplugin should accept at least one parameter (name)"
-        )
+        assert len(param_names) >= 1, "enable_subplugin should accept at least one parameter (name)"
         assert param_names[0] == "name", (
-            f"First parameter of enable_subplugin should be 'name', "
-            f"got '{param_names[0]}'"
+            f"First parameter of enable_subplugin should be 'name', got '{param_names[0]}'"
         )
 
     @pytest.mark.contract
@@ -1068,8 +1020,7 @@ class TestContractFunctionSignatures:
             "disable_subplugin should accept at least one parameter (name)"
         )
         assert param_names[0] == "name", (
-            f"First parameter of disable_subplugin should be 'name', "
-            f"got '{param_names[0]}'"
+            f"First parameter of disable_subplugin should be 'name', got '{param_names[0]}'"
         )
 
     @pytest.mark.contract
@@ -1081,8 +1032,7 @@ class TestContractFunctionSignatures:
             "get_subplugin_transforms should accept at least one parameter (name)"
         )
         assert param_names[0] == "name", (
-            f"First parameter of get_subplugin_transforms should be 'name', "
-            f"got '{param_names[0]}'"
+            f"First parameter of get_subplugin_transforms should be 'name', got '{param_names[0]}'"
         )
 
     @pytest.mark.contract
@@ -1094,12 +1044,10 @@ class TestContractFunctionSignatures:
             "get_transform should accept at least two parameters (name, transform_name)"
         )
         assert param_names[0] == "name", (
-            f"First parameter of get_transform should be 'name', "
-            f"got '{param_names[0]}'"
+            f"First parameter of get_transform should be 'name', got '{param_names[0]}'"
         )
         assert param_names[1] == "transform_name", (
-            f"Second parameter of get_transform should be 'transform_name', "
-            f"got '{param_names[1]}'"
+            f"Second parameter of get_transform should be 'transform_name', got '{param_names[1]}'"
         )
 
     @pytest.mark.contract
@@ -1107,12 +1055,12 @@ class TestContractFunctionSignatures:
         """``list_subplugins`` takes no required parameters."""
         sig = inspect.signature(plugins_pkg.list_subplugins)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
         ]
         assert len(required_params) == 0, (
-            f"list_subplugins should take no required parameters, "
-            f"got {required_params}"
+            f"list_subplugins should take no required parameters, got {required_params}"
         )
 
     @pytest.mark.contract
@@ -1120,12 +1068,12 @@ class TestContractFunctionSignatures:
         """``get_plugins_directory`` takes no required parameters."""
         sig = inspect.signature(plugins_pkg.get_plugins_directory)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
         ]
         assert len(required_params) == 0, (
-            f"get_plugins_directory should take no required parameters, "
-            f"got {required_params}"
+            f"get_plugins_directory should take no required parameters, got {required_params}"
         )
 
     @pytest.mark.contract
@@ -1133,7 +1081,8 @@ class TestContractFunctionSignatures:
         """``get_descriptor_plugins_directory`` takes no required parameters."""
         sig = inspect.signature(plugins_pkg.get_descriptor_plugins_directory)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
         ]
         assert len(required_params) == 0, (
@@ -1146,12 +1095,12 @@ class TestContractFunctionSignatures:
         """``get_system_status`` takes no required parameters."""
         sig = inspect.signature(plugins_pkg.get_system_status)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
         ]
         assert len(required_params) == 0, (
-            f"get_system_status should take no required parameters, "
-            f"got {required_params}"
+            f"get_system_status should take no required parameters, got {required_params}"
         )
 
     @pytest.mark.contract
@@ -1159,12 +1108,12 @@ class TestContractFunctionSignatures:
         """``get_all_plugin_info`` takes no required parameters."""
         sig = inspect.signature(plugins_pkg.get_all_plugin_info)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
         ]
         assert len(required_params) == 0, (
-            f"get_all_plugin_info should take no required parameters, "
-            f"got {required_params}"
+            f"get_all_plugin_info should take no required parameters, got {required_params}"
         )
 
 
@@ -1189,9 +1138,7 @@ class TestContractFunctionTypes:
     def test_public_api_entry_is_function(self, plugins_pkg, name):
         """Each public API entry is a function (not a class or method)."""
         obj = getattr(plugins_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractConsistencyBetweenAPIs:
@@ -1235,8 +1182,7 @@ class TestContractConsistencyBetweenAPIs:
         listed = set(plugins_pkg.list_subplugins())
         extra_keys = set(all_info.keys()) - listed
         assert not extra_keys, (
-            f"get_all_plugin_info() has keys not in list_subplugins(): "
-            f"{sorted(extra_keys)}"
+            f"get_all_plugin_info() has keys not in list_subplugins(): {sorted(extra_keys)}"
         )
 
     @pytest.mark.contract

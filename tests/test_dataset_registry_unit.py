@@ -22,40 +22,35 @@ Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
 import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
-import logging
 import threading
-import time
-from typing import Dict, List, Type, Optional, Any
+import unittest
+from pathlib import Path
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.registry import (
-    DatasetRegistry,
-    get_default_registry,
-    register,
-    get,
-    list_all,
-    is_registered,
-)
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
+)
+from milia_pipeline.datasets.registry import (
+    DatasetRegistry,
+    get,
+    get_default_registry,
+    is_registered,
+    list_all,
+    register,
 )
 from milia_pipeline.exceptions import DatasetNotFoundError, DatasetRegistrationError
-
 
 # ============================================================================
 # HELPER: Reusable fixtures for building concrete BaseDataset subclasses
 # ============================================================================
+
 
 def _make_valid_metadata(**overrides):
     """Create a valid DatasetMetadata with optional overrides."""
@@ -158,6 +153,7 @@ def _build_concrete_dataset_class(
 # GROUP 1: DatasetRegistry — Construction and Empty State (6 tests)
 # ============================================================================
 
+
 class TestRegistryConstruction(unittest.TestCase):
     """Test DatasetRegistry initialization and empty state."""
 
@@ -200,6 +196,7 @@ class TestRegistryConstruction(unittest.TestCase):
 # ============================================================================
 # GROUP 2: DatasetRegistry.register — Happy Path (8 tests)
 # ============================================================================
+
 
 class TestRegistryRegisterHappyPath(unittest.TestCase):
     """Test successful registration scenarios."""
@@ -271,6 +268,7 @@ class TestRegistryRegisterHappyPath(unittest.TestCase):
 # GROUP 3: DatasetRegistry.register — Error Paths (8 tests)
 # ============================================================================
 
+
 class TestRegistryRegisterErrors(unittest.TestCase):
     """Test registration validation and error handling."""
 
@@ -290,6 +288,7 @@ class TestRegistryRegisterErrors(unittest.TestCase):
 
     def test_register_non_basedataset_subclass_raises_type_error(self):
         """Registering a class that does not subclass BaseDataset raises TypeError."""
+
         class NotADataset:
             pass
 
@@ -313,13 +312,11 @@ class TestRegistryRegisterErrors(unittest.TestCase):
 
             @classmethod
             @abstractmethod
-            def get_feature_support(cls):
-                ...
+            def get_feature_support(cls): ...
 
             @classmethod
             @abstractmethod
-            def get_molecule_creation_strategy(cls):
-                ...
+            def get_molecule_creation_strategy(cls): ...
 
         with self.assertRaises(DatasetRegistrationError) as ctx:
             self.registry.register(AbstractDS)
@@ -347,7 +344,7 @@ class TestRegistryRegisterErrors(unittest.TestCase):
         # Should mention either the conflicting class name or the "already registered" message
         self.assertTrue(
             "already registered" in error_str.lower() or name in error_str,
-            f"Error message should reference conflict: {error_str}"
+            f"Error message should reference conflict: {error_str}",
         )
 
     def test_register_none_raises_type_error(self):
@@ -364,6 +361,7 @@ class TestRegistryRegisterErrors(unittest.TestCase):
 # ============================================================================
 # GROUP 4: DatasetRegistry.get and get_or_none — Lookup (8 tests)
 # ============================================================================
+
 
 class TestRegistryLookup(unittest.TestCase):
     """Test dataset lookup by name."""
@@ -398,7 +396,7 @@ class TestRegistryLookup(unittest.TestCase):
         # The exception should carry available_datasets info
         self.assertTrue(
             hasattr(exc, "available_datasets") or self.ds_name in str(exc),
-            "Error should include available datasets"
+            "Error should include available datasets",
         )
 
     def test_get_or_none_existing_returns_class(self):
@@ -425,6 +423,7 @@ class TestRegistryLookup(unittest.TestCase):
 # ============================================================================
 # GROUP 5: DatasetRegistry.unregister (7 tests)
 # ============================================================================
+
 
 class TestRegistryUnregister(unittest.TestCase):
     """Test dataset unregistration."""
@@ -500,6 +499,7 @@ class TestRegistryUnregister(unittest.TestCase):
 # GROUP 6: DatasetRegistry — is_registered, __contains__, __len__, __iter__ (8 tests)
 # ============================================================================
 
+
 class TestRegistryProtocolMethods(unittest.TestCase):
     """Test is_registered, 'in' operator, len, and iteration."""
 
@@ -559,6 +559,7 @@ class TestRegistryProtocolMethods(unittest.TestCase):
 # GROUP 7: DatasetRegistry.clear (5 tests)
 # ============================================================================
 
+
 class TestRegistryClear(unittest.TestCase):
     """Test registry clearing functionality."""
 
@@ -612,6 +613,7 @@ class TestRegistryClear(unittest.TestCase):
 # GROUP 8: DatasetRegistry — Change Callbacks (10 tests)
 # ============================================================================
 
+
 class TestRegistryChangeCallbacks(unittest.TestCase):
     """Test cache invalidation / on-change callback system."""
 
@@ -621,8 +623,10 @@ class TestRegistryChangeCallbacks(unittest.TestCase):
 
     def _make_callback(self, label="default"):
         """Create a callback that records invocations."""
+
         def cb():
             self.callback_calls.append(label)
+
         return cb
 
     def test_callback_fired_on_register(self):
@@ -705,6 +709,7 @@ class TestRegistryChangeCallbacks(unittest.TestCase):
 
     def test_failing_callback_does_not_block_others(self):
         """A callback that raises an exception does not prevent other callbacks from running."""
+
         def failing_cb():
             raise RuntimeError("callback error")
 
@@ -721,6 +726,7 @@ class TestRegistryChangeCallbacks(unittest.TestCase):
 # ============================================================================
 # GROUP 9: DatasetRegistry — Thread Safety (6 tests)
 # ============================================================================
+
 
 class TestRegistryThreadSafety(unittest.TestCase):
     """Test thread-safe concurrent access to DatasetRegistry."""
@@ -743,10 +749,7 @@ class TestRegistryThreadSafety(unittest.TestCase):
             except Exception as e:
                 errors.append(e)
 
-        threads = [
-            threading.Thread(target=register_one, args=(cls,))
-            for _, cls in classes
-        ]
+        threads = [threading.Thread(target=register_one, args=(cls,)) for _, cls in classes]
         for t in threads:
             t.start()
         for t in threads:
@@ -806,10 +809,7 @@ class TestRegistryThreadSafety(unittest.TestCase):
             except Exception as e:
                 errors.append(e)
 
-        threads = [
-            threading.Thread(target=unreg_one, args=(n,))
-            for n in names
-        ]
+        threads = [threading.Thread(target=unreg_one, args=(n,)) for n in names]
         for t in threads:
             t.start()
         for t in threads:
@@ -851,6 +851,7 @@ class TestRegistryThreadSafety(unittest.TestCase):
 
     def test_rlock_allows_reentrant_access(self):
         """RLock allows re-entrant access (e.g., callback calling registry methods)."""
+
         def reentrant_callback():
             # This accesses the registry from inside a lock-protected operation
             self.registry.list_all()
@@ -900,6 +901,7 @@ class TestRegistryThreadSafety(unittest.TestCase):
 # ============================================================================
 # GROUP 10: Module-Level Convenience Functions (12 tests)
 # ============================================================================
+
 
 class TestModuleLevelFunctions(unittest.TestCase):
     """Test module-level convenience functions that operate on the default registry."""
@@ -985,12 +987,14 @@ class TestModuleLevelFunctions(unittest.TestCase):
     def test_default_registry_is_not_new_instance(self):
         """The default registry is a module-level pre-created instance, not created on call."""
         from milia_pipeline.datasets import registry as reg_module
+
         self.assertIs(get_default_registry(), reg_module._default_registry)
 
 
 # ============================================================================
 # GROUP 11: Logging Verification (6 tests)
 # ============================================================================
+
 
 class TestRegistryLogging(unittest.TestCase):
     """Test that registry operations produce appropriate log output."""
@@ -1034,6 +1038,7 @@ class TestRegistryLogging(unittest.TestCase):
 
     def test_failing_callback_logs_warning(self):
         """A failing callback logs a warning about the failure."""
+
         def bad_cb():
             raise ValueError("intentional error")
 
@@ -1057,6 +1062,7 @@ class TestRegistryLogging(unittest.TestCase):
 # ============================================================================
 # GROUP 12: Edge Cases and Boundary Conditions (8 tests)
 # ============================================================================
+
 
 class TestRegistryEdgeCases(unittest.TestCase):
     """Test edge cases and boundary conditions."""
@@ -1137,6 +1143,7 @@ class TestRegistryEdgeCases(unittest.TestCase):
         def outer_cb():
             def inner_cb():
                 inner_called.append(True)
+
             # This accesses the callback list from within a callback
             self.registry.add_on_change_callback(inner_cb)
 
@@ -1151,24 +1158,25 @@ class TestRegistryEdgeCases(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestRegistryConstruction,           # GROUP 1:  6 tests
-        TestRegistryRegisterHappyPath,      # GROUP 2:  8 tests
-        TestRegistryRegisterErrors,         # GROUP 3:  8 tests
-        TestRegistryLookup,                 # GROUP 4:  8 tests
-        TestRegistryUnregister,             # GROUP 5:  7 tests
-        TestRegistryProtocolMethods,        # GROUP 6:  8 tests
-        TestRegistryClear,                  # GROUP 7:  5 tests
-        TestRegistryChangeCallbacks,        # GROUP 8: 10 tests
-        TestRegistryThreadSafety,           # GROUP 9:  6 tests
-        TestModuleLevelFunctions,           # GROUP 10: 12 tests
-        TestRegistryLogging,                # GROUP 11:  6 tests
-        TestRegistryEdgeCases,              # GROUP 12:  8 tests
+        TestRegistryConstruction,  # GROUP 1:  6 tests
+        TestRegistryRegisterHappyPath,  # GROUP 2:  8 tests
+        TestRegistryRegisterErrors,  # GROUP 3:  8 tests
+        TestRegistryLookup,  # GROUP 4:  8 tests
+        TestRegistryUnregister,  # GROUP 5:  7 tests
+        TestRegistryProtocolMethods,  # GROUP 6:  8 tests
+        TestRegistryClear,  # GROUP 7:  5 tests
+        TestRegistryChangeCallbacks,  # GROUP 8: 10 tests
+        TestRegistryThreadSafety,  # GROUP 9:  6 tests
+        TestModuleLevelFunctions,  # GROUP 10: 12 tests
+        TestRegistryLogging,  # GROUP 11:  6 tests
+        TestRegistryEdgeCases,  # GROUP 12:  8 tests
     ]
 
     for test_class in test_classes:

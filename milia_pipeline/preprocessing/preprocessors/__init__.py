@@ -22,20 +22,20 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Modules to exclude from dynamic import
-_EXCLUDED_MODULES = {'__init__', 'base', 'utils', 'common'}
+_EXCLUDED_MODULES = {"__init__", "base", "utils", "common"}
 
 # Dynamic import: scan this directory for all .py files and import them
 _preprocessors_dir = Path(__file__).parent
 _discovered_modules = []
 
-for _py_file in _preprocessors_dir.glob('*.py'):
+for _py_file in _preprocessors_dir.glob("*.py"):
     _module_name = _py_file.stem
-    if _module_name in _EXCLUDED_MODULES or _module_name.startswith('_'):
+    if _module_name in _EXCLUDED_MODULES or _module_name.startswith("_"):
         continue
-    
+
     try:
         # Import the module - this triggers any auto-registration
-        _module = importlib.import_module(f'.{_module_name}', package=__name__)
+        _module = importlib.import_module(f".{_module_name}", package=__name__)
         _discovered_modules.append(_module_name)
         logger.debug(f"Dynamically loaded preprocessor: {_module_name}")
     except Exception as e:

@@ -17,17 +17,17 @@
 xxmd_config:
   # Filename for the preprocessed .npz xxMD dataset file (OUTPUT after preprocessing)
   raw_npz_filename: xxmd.npz
-  
+
   # Filename for the raw archive file (INPUT before preprocessing)
   # xxMD is distributed as a ZIP archive containing extended XYZ files
   raw_source_filename: xxMD-main.zip
-  
+
   # URL to download the raw xxMD archive
   # Source: Zenodo (DOI: 10.5281/zenodo.10393858)
   # Reference: Pengmei et al., Scientific Data 11, 222 (2024)
   # DOI: 10.1038/s41597-024-03019-3
   raw_data_download_url: https://zenodo.org/api/records/10393859/files/xxMD-main.zip/content
-  
+
   # xxMD processing configuration
   processing_config:
     # Preprocessing parameters (for automatic ZIP → npz conversion)
@@ -45,18 +45,18 @@ xxmd_config:
       # Subset to process: 'DFT' (ground state) or 'CASSCF' (multi-state)
       # CASSCF is more complex and not yet fully supported
       subset: DFT
-      
+
       # Molecules to include (null = all 4 molecules)
       # Available: azobenzene, dithiophene, malonaldehyde, stilbene
       molecules_to_include: null
-      
+
       # Maximum conformers per molecule (null = all conformers)
       # Use integer for testing/limiting dataset size (e.g., 100, 1000)
       max_conformers_per_molecule: 25
-      
+
       # Whether to clean up temporary extraction directory after preprocessing
       cleanup_temp: true
-  
+
   # xxMD does not have uncertainty handling (DFT calculations are deterministic)
   uncertainty_handling:
     enabled: false
@@ -65,7 +65,7 @@ xxmd_config:
 
 # ────────────────────────────────────────────────────
 # XXMD Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     XXMD:
@@ -74,21 +74,21 @@ data_config:
       # Level of theory: M06 (spin-polarized KS-DFT)
       # Contains nonadiabatic dynamics trajectories - samples broader configuration space
       # CRITICAL: More challenging benchmark than MD17/rMD17 due to transition states
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         - energy          # M06 DFT total energy (Hartree, converted from eV)
-      
+
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
         - forces          # Atomic forces (Hartree/Angstrom) - for force-field training
-      
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include: []
-      
+
       # Variable-length graph properties
       variable_len_graph_properties_to_include: []
-      
+
       # XXMD-specific settings
       # Calculate atomization energy from total energy
       calculate_atomization_energy_from: energy
@@ -98,7 +98,7 @@ data_config:
 
 # ────────────────────────────────────────────────────
 # XXMD Property Availability Matrix
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 property_availability:
   XXMD:
     # xxMD (Extended Excited-state Molecular Dynamics) Dataset Property Availability
@@ -112,38 +112,36 @@ property_availability:
     # Force units: Hartree/Angstrom (converted from eV/Angstrom)
     # CRITICAL: xxMD samples broader configuration space including transition states
     # and conical intersections - more challenging benchmark than MD17/rMD17
-    
+
     # Molecular identifiers (1 key)
     molecular_identifiers:
       - molecule_name   # Molecule type identifier (azobenzene, dithiophene, malonaldehyde, stilbene)
-    
+
     # Atomic structure properties (2 keys)
     atomic_structure:
       - atoms           # Atomic numbers (uint8 array)
       - coordinates     # Cartesian coordinates in Angstrom (object array, shape: n_atoms x 3)
-    
+
     # Scalar graph-level properties (1 key)
     scalar_graph_targets:
       - energy          # M06 DFT total energy (Hartree, converted from eV, float64)
-    
+
     # Node-level (atomic) properties (1 key)
     node_features:
       - forces          # Atomic forces (Hartree/Angstrom, converted from eV/Angstrom, object array)
-    
+
     # Fixed-size vector graph properties
     vector_graph_properties: []  # xxMD does not have dipole or other vector properties
-    
+
     # Variable-length graph properties
     variable_len_graph_properties: []  # Forces are in node_features
-    
+
     # Metadata fields (1 key)
     metadata_fields:
       - _metadata       # Preprocessing metadata as string array (object)
-    
+
     # Optional: Split information (if include_splits=true during preprocessing)
     # split             # train/val/test split indicator (object/string)
-    
+
     # xxMD is DFT-based - no uncertainty fields
     uncertainty_fields: []
-
-

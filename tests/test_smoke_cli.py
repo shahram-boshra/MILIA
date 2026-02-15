@@ -38,14 +38,12 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import os
-import sys
 import logging
-import tempfile
 import shutil
+import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from unittest.mock import patch, MagicMock
+from typing import Any
 
 import pytest
 
@@ -98,6 +96,7 @@ logger = logging.getLogger(__name__)
 # FIXTURES
 # ===========================================================================
 
+
 @pytest.fixture(scope="module")
 def tmp_work_dir():
     """Provide a temporary working directory for the test module.
@@ -110,7 +109,7 @@ def tmp_work_dir():
 
 
 @pytest.fixture(scope="module")
-def minimal_config_dict() -> Dict[str, Any]:
+def minimal_config_dict() -> dict[str, Any]:
     """Provide a minimal valid configuration dictionary.
 
     This mirrors the structure of config.yaml with only the fields
@@ -132,9 +131,7 @@ def minimal_config_dict() -> Dict[str, Any]:
                 "max_atoms": 50,
                 "min_atoms": 1,
             },
-            "property_selection": {
-                "DFT": ["energy"]
-            }
+            "property_selection": {"DFT": ["energy"]},
         },
         "filter_config": {
             "max_atoms": 50,
@@ -201,6 +198,7 @@ def minimal_config_yaml_path(tmp_work_dir, minimal_config_dict) -> Path:
 # ===========================================================================
 # SECTION 1: CLI MODULE IMPORT SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIModuleImportsSmoke:
     """Smoke tests verifying that the CLI module can be imported.
@@ -276,6 +274,7 @@ class TestCLIModuleImportsSmoke:
 # SECTION 2: CLI MANAGER INSTANTIATION SMOKE TESTS
 # ===========================================================================
 
+
 class TestCLIManagerInstantiationSmoke:
     """Smoke tests verifying CLIManager can be instantiated.
 
@@ -294,9 +293,9 @@ class TestCLIManagerInstantiationSmoke:
 
         cli = CLIManager()
         assert cli is not None
-        assert hasattr(cli, 'parser')
-        assert hasattr(cli, 'logger')
-        assert hasattr(cli, 'config')
+        assert hasattr(cli, "parser")
+        assert hasattr(cli, "logger")
+        assert hasattr(cli, "config")
 
     def test_cli_manager_instantiation_with_logger(self):
         """CLIManager can be created with a custom logger."""
@@ -314,7 +313,7 @@ class TestCLIManagerInstantiationSmoke:
             def create_cli_manager(logger=None) -> CLIManager:
                 return CLIManager(logger)
         """
-        from milia_pipeline.cli_manager import create_cli_manager, CLIManager
+        from milia_pipeline.cli_manager import CLIManager, create_cli_manager
 
         cli = create_cli_manager()
         assert cli is not None
@@ -330,13 +329,14 @@ class TestCLIManagerInstantiationSmoke:
         from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
-        assert cli.parser.prog == 'milia_process'
-        assert 'milia' in cli.parser.description.lower()
+        assert cli.parser.prog == "milia_process"
+        assert "milia" in cli.parser.description.lower()
 
 
 # ===========================================================================
 # SECTION 3: --help FLAG SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIHelpSmoke:
     """Smoke tests verifying --help flag works without crashing.
@@ -361,7 +361,7 @@ class TestCLIHelpSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit) as exc_info:
-            cli.parse_args(['--help'])
+            cli.parse_args(["--help"])
 
         assert exc_info.value.code == 0
 
@@ -375,12 +375,12 @@ class TestCLIHelpSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit):
-            cli.parse_args(['--help'])
+            cli.parse_args(["--help"])
 
         captured = capsys.readouterr()
         # argparse prints help to stdout
         help_text = captured.out
-        assert 'milia_process' in help_text or 'milia' in help_text.lower(), (
+        assert "milia_process" in help_text or "milia" in help_text.lower(), (
             f"Help text should contain program name. Got:\n{help_text[:500]}"
         )
 
@@ -396,7 +396,7 @@ class TestCLIHelpSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit):
-            cli.parse_args(['--help'])
+            cli.parse_args(["--help"])
 
         captured = capsys.readouterr()
         help_text = captured.out
@@ -405,8 +405,8 @@ class TestCLIHelpSmoke:
         # argument group names (case-insensitive check for robustness)
         help_lower = help_text.lower()
         expected_groups = [
-            'basic options',
-            'processing modes',
+            "basic options",
+            "processing modes",
         ]
 
         for group in expected_groups:
@@ -419,6 +419,7 @@ class TestCLIHelpSmoke:
 # ===========================================================================
 # SECTION 4: ARGUMENT PARSING SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIArgumentParsingSmoke:
     """Smoke tests verifying argument parsing works for safe flags.
@@ -470,7 +471,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-transforms'])
+            args = cli.parse_args(["--list-transforms"])
             assert args.list_transforms is True
         except CLIValidationError:
             # Validation may fail due to config path, but the flag itself
@@ -488,7 +489,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-experimental-setups'])
+            args = cli.parse_args(["--list-experimental-setups"])
             assert args.list_experimental_setups is True
         except CLIValidationError:
             pass
@@ -503,7 +504,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--validate-config'])
+            args = cli.parse_args(["--validate-config"])
             assert args.validate_config is True
         except CLIValidationError:
             pass
@@ -518,7 +519,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-plugins'])
+            args = cli.parse_args(["--list-plugins"])
             assert args.list_plugins is True
         except CLIValidationError:
             pass
@@ -533,7 +534,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-descriptors'])
+            args = cli.parse_args(["--list-descriptors"])
             assert args.list_descriptors is True
         except CLIValidationError:
             pass
@@ -548,7 +549,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-preprocessors'])
+            args = cli.parse_args(["--list-preprocessors"])
             assert args.list_preprocessors is True
         except CLIValidationError:
             pass
@@ -563,7 +564,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-experiments'])
+            args = cli.parse_args(["--list-experiments"])
             assert args.list_experiments is True
         except CLIValidationError:
             pass
@@ -579,8 +580,8 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--verbose', '--list-transforms'])
-            assert args.log_level == 'DEBUG'
+            args = cli.parse_args(["--verbose", "--list-transforms"])
+            assert args.log_level == "DEBUG"
         except CLIValidationError:
             pass
 
@@ -595,8 +596,8 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--quiet', '--list-transforms'])
-            assert args.log_level == 'ERROR'
+            args = cli.parse_args(["--quiet", "--list-transforms"])
+            assert args.log_level == "ERROR"
         except CLIValidationError:
             pass
 
@@ -610,11 +611,9 @@ class TestCLIArgumentParsingSmoke:
 
         cli = CLIManager()
 
-        for level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        for level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             try:
-                args = cli.parse_args([
-                    '--log-level', level, '--list-transforms'
-                ])
+                args = cli.parse_args(["--log-level", level, "--list-transforms"])
                 assert args.log_level == level
             except CLIValidationError:
                 # Config path validation — acceptable
@@ -631,9 +630,7 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args([
-                '--chunk-size', '1000', '--list-transforms'
-            ])
+            args = cli.parse_args(["--chunk-size", "1000", "--list-transforms"])
             assert args.chunk_size == 1000
         except CLIValidationError:
             pass
@@ -642,6 +639,7 @@ class TestCLIArgumentParsingSmoke:
 # ===========================================================================
 # SECTION 5: CLI VALIDATION ERROR SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIValidationErrorSmoke:
     """Smoke tests verifying CLIValidationError is raised for invalid inputs.
@@ -667,7 +665,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args(['--chunk-size', '10', '--list-transforms'])
+            cli.parse_args(["--chunk-size", "10", "--list-transforms"])
 
     def test_invalid_chunk_size_above_maximum(self):
         """Chunk size above 50000 raises CLIValidationError.
@@ -679,7 +677,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args(['--chunk-size', '100000', '--list-transforms'])
+            cli.parse_args(["--chunk-size", "100000", "--list-transforms"])
 
     def test_invalid_test_limit_zero(self):
         """Test limit of 0 raises CLIValidationError.
@@ -693,7 +691,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args(['--test-limit', '0', '--list-transforms'])
+            cli.parse_args(["--test-limit", "0", "--list-transforms"])
 
     def test_conflicting_no_filters_with_max_atoms(self):
         """--no-filters with --max-atoms raises CLIValidationError.
@@ -707,9 +705,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args([
-                '--no-filters', '--max-atoms', '50', '--list-transforms'
-            ])
+            cli.parse_args(["--no-filters", "--max-atoms", "50", "--list-transforms"])
 
     def test_invalid_min_max_atoms_range(self):
         """min_atoms > max_atoms raises CLIValidationError.
@@ -723,9 +719,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args([
-                '--min-atoms', '100', '--max-atoms', '10', '--list-transforms'
-            ])
+            cli.parse_args(["--min-atoms", "100", "--max-atoms", "10", "--list-transforms"])
 
     def test_skip_validation_with_validate_config_conflict(self):
         """--skip-validation with --validate-config raises CLIValidationError.
@@ -738,7 +732,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args(['--skip-validation', '--validate-config'])
+            cli.parse_args(["--skip-validation", "--validate-config"])
 
     def test_invalid_log_level_rejected(self):
         """Invalid --log-level value is rejected by argparse.
@@ -752,7 +746,7 @@ class TestCLIValidationErrorSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit) as exc_info:
-            cli.parse_args(['--log-level', 'INVALID'])
+            cli.parse_args(["--log-level", "INVALID"])
 
         assert exc_info.value.code == 2
 
@@ -760,6 +754,7 @@ class TestCLIValidationErrorSmoke:
 # ===========================================================================
 # SECTION 6: PARSE_CLI_ARGS CONVENIENCE FUNCTION SMOKE TESTS
 # ===========================================================================
+
 
 class TestParseCLIArgsSmoke:
     """Smoke tests for the parse_cli_args convenience function.
@@ -775,15 +770,16 @@ class TestParseCLIArgsSmoke:
         Evidence: cli_manager.py line 3795:
             Returns: Tuple of (parsed_args, cli_manager)
         """
-        from milia_pipeline.cli_manager import (
-            parse_cli_args,
-            CLIManager,
-            CLIValidationError,
-        )
         import argparse
 
+        from milia_pipeline.cli_manager import (
+            CLIManager,
+            CLIValidationError,
+            parse_cli_args,
+        )
+
         try:
-            result = parse_cli_args(args=['--list-transforms'])
+            result = parse_cli_args(args=["--list-transforms"])
             assert isinstance(result, tuple)
             assert len(result) == 2
             parsed_args, cli_mgr = result
@@ -800,16 +796,14 @@ class TestParseCLIArgsSmoke:
             def parse_cli_args(args=None, logger=None)
         """
         from milia_pipeline.cli_manager import (
-            parse_cli_args,
             CLIValidationError,
+            parse_cli_args,
         )
 
         custom_logger = logging.getLogger("smoke_test.parse_cli_args")
 
         try:
-            _, cli_mgr = parse_cli_args(
-                args=['--list-transforms'], logger=custom_logger
-            )
+            _, cli_mgr = parse_cli_args(args=["--list-transforms"], logger=custom_logger)
             assert cli_mgr.logger is custom_logger
         except CLIValidationError:
             pass
@@ -818,6 +812,7 @@ class TestParseCLIArgsSmoke:
 # ===========================================================================
 # SECTION 7: REGISTRY INTEGRATION SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIRegistryIntegrationSmoke:
     """Smoke tests for CLI registry integration functions.
@@ -845,11 +840,11 @@ class TestCLIRegistryIntegrationSmoke:
 
         status = get_cli_registry_status()
         assert isinstance(status, dict)
-        assert 'registry_available' in status
-        assert 'registry_initialized' in status
-        assert 'available_dataset_types' in status
-        assert 'phase_7_integration' in status
-        assert status['phase_7_integration'] is True
+        assert "registry_available" in status
+        assert "registry_initialized" in status
+        assert "available_dataset_types" in status
+        assert "phase_7_integration" in status
+        assert status["phase_7_integration"] is True
 
     def test_available_dataset_types_is_list(self):
         """_get_available_dataset_types returns a list.
@@ -883,7 +878,7 @@ class TestCLIRegistryIntegrationSmoke:
         from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
-        assert hasattr(cli, 'get_registry_integration_status')
+        assert hasattr(cli, "get_registry_integration_status")
         assert callable(cli.get_registry_integration_status)
 
         status = cli.get_registry_integration_status()
@@ -893,6 +888,7 @@ class TestCLIRegistryIntegrationSmoke:
 # ===========================================================================
 # SECTION 8: CONFIG LOADING VIA CLI SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIConfigLoadingSmoke:
     """Smoke tests for config loading via CLIManager.
@@ -904,9 +900,7 @@ class TestCLIConfigLoadingSmoke:
       "milia_pipeline/config/config_loader.py — Config loading via CLI"
     """
 
-    def test_load_and_merge_config_with_valid_yaml(
-        self, minimal_config_yaml_path
-    ):
+    def test_load_and_merge_config_with_valid_yaml(self, minimal_config_yaml_path):
         """load_and_merge_config loads a valid YAML config file.
 
         Evidence: cli_manager.py line 2079-2109:
@@ -924,13 +918,17 @@ class TestCLIConfigLoadingSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args([
-                '--config', str(minimal_config_yaml_path),
-                '--list-transforms',
-            ])
+            args = cli.parse_args(
+                [
+                    "--config",
+                    str(minimal_config_yaml_path),
+                    "--list-transforms",
+                ]
+            )
         except CLIValidationError:
             # If validation fails for other reasons, try direct parse
             import argparse
+
             args = argparse.Namespace(
                 config=str(minimal_config_yaml_path),
                 root_dir=None,
@@ -948,12 +946,8 @@ class TestCLIConfigLoadingSmoke:
 
         try:
             config = cli.load_and_merge_config(args)
-            assert isinstance(config, dict), (
-                "load_and_merge_config must return a dict"
-            )
-            assert 'dataset_type' in config, (
-                "Loaded config must contain 'dataset_type'"
-            )
+            assert isinstance(config, dict), "load_and_merge_config must return a dict"
+            assert "dataset_type" in config, "Loaded config must contain 'dataset_type'"
         except CLIValidationError as e:
             # Configuration loading failure is a legitimate
             # CLI validation outcome, not a crash
@@ -968,16 +962,17 @@ class TestCLIConfigLoadingSmoke:
             if args.root_dir:
                 self.config['dataset_root_dir'] = args.root_dir
         """
+        import argparse
+
         from milia_pipeline.cli_manager import CLIManager, CLIValidationError
         from milia_pipeline.config.config_loader import clear_config_cache
-        import argparse
 
         clear_config_cache()
         cli = CLIManager()
 
         args = argparse.Namespace(
             config=str(minimal_config_yaml_path),
-            root_dir='/tmp/custom_root',
+            root_dir="/tmp/custom_root",
             no_filters=False,
             max_atoms=None,
             min_atoms=None,
@@ -992,7 +987,7 @@ class TestCLIConfigLoadingSmoke:
 
         try:
             config = cli.load_and_merge_config(args)
-            assert config.get('dataset_root_dir') == '/tmp/custom_root'
+            assert config.get("dataset_root_dir") == "/tmp/custom_root"
         except CLIValidationError:
             pass
         finally:
@@ -1002,6 +997,7 @@ class TestCLIConfigLoadingSmoke:
 # ===========================================================================
 # SECTION 9: HANDLER AND TRANSFORM LISTING SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIListingOperationsSmoke:
     """Smoke tests for listing operations accessible from CLI context.
@@ -1028,13 +1024,9 @@ class TestCLIListingOperationsSmoke:
         assert isinstance(handlers, list), (
             f"get_available_handlers must return a list, got {type(handlers)}"
         )
-        assert len(handlers) > 0, (
-            "get_available_handlers must return at least one handler type"
-        )
+        assert len(handlers) > 0, "get_available_handlers must return at least one handler type"
         # DFT should always be available as the base handler
-        assert 'DFT' in handlers, (
-            f"DFT handler must be available. Got: {handlers}"
-        )
+        assert "DFT" in handlers, f"DFT handler must be available. Got: {handlers}"
 
     def test_handlers_get_handler_info_for_dft(self):
         """get_handler_info returns info dict for DFT handler.
@@ -1045,11 +1037,11 @@ class TestCLIListingOperationsSmoke:
         """
         from milia_pipeline.handlers import get_handler_info
 
-        info = get_handler_info('DFT')
+        info = get_handler_info("DFT")
         assert isinstance(info, dict)
-        assert 'class' in info
-        assert 'description' in info
-        assert info['class'] == 'DFTDatasetHandler'
+        assert "class" in info
+        assert "description" in info
+        assert info["class"] == "DFTDatasetHandler"
 
     def test_transformations_module_has_availability_flags(self):
         """Transformations module exposes availability flags.
@@ -1062,13 +1054,13 @@ class TestCLIListingOperationsSmoke:
         """
         import milia_pipeline.transformations as transforms_mod
 
-        assert hasattr(transforms_mod, 'GRAPH_TRANSFORMS_AVAILABLE')
+        assert hasattr(transforms_mod, "GRAPH_TRANSFORMS_AVAILABLE")
         assert isinstance(transforms_mod.GRAPH_TRANSFORMS_AVAILABLE, bool)
 
-        assert hasattr(transforms_mod, 'CUSTOM_TRANSFORMS_AVAILABLE')
+        assert hasattr(transforms_mod, "CUSTOM_TRANSFORMS_AVAILABLE")
         assert isinstance(transforms_mod.CUSTOM_TRANSFORMS_AVAILABLE, bool)
 
-        assert hasattr(transforms_mod, 'PLUGIN_SYSTEM_AVAILABLE')
+        assert hasattr(transforms_mod, "PLUGIN_SYSTEM_AVAILABLE")
         assert isinstance(transforms_mod.PLUGIN_SYSTEM_AVAILABLE, bool)
 
     def test_transformations_get_available_transforms(self):
@@ -1088,25 +1080,28 @@ class TestCLIListingOperationsSmoke:
         import milia_pipeline.transformations as transforms_mod
 
         if not transforms_mod.GRAPH_TRANSFORMS_AVAILABLE:
-            pytest.skip(
-                "Graph transforms not available — "
-                "cannot test get_available_transforms()"
-            )
+            pytest.skip("Graph transforms not available — cannot test get_available_transforms()")
 
         # Try the module-level convenience function first
         transforms = None
         try:
             from milia_pipeline.transformations import get_available_transforms
+
             transforms = get_available_transforms()
         except AttributeError:
             # Known issue: __init__.py calls gt.list_available_transforms()
             # but the actual method is gt.get_available_transforms().
             # Fall back to calling GraphTransforms directly.
             from milia_pipeline.transformations import get_graph_transforms
+
             gt = get_graph_transforms()
             # Discover the actual listing method via introspection
-            for candidate in ['get_available_transforms', 'list_available_transforms',
-                              'list_transforms', 'get_transforms']:
+            for candidate in [
+                "get_available_transforms",
+                "list_available_transforms",
+                "list_transforms",
+                "get_transforms",
+            ]:
                 if hasattr(gt, candidate) and callable(getattr(gt, candidate)):
                     transforms = getattr(gt, candidate)()
                     break
@@ -1137,14 +1132,15 @@ class TestCLIListingOperationsSmoke:
 
         status = get_system_status()
         assert isinstance(status, dict)
-        assert 'graph_transforms_available' in status
-        assert 'custom_transforms_available' in status
-        assert 'plugin_system_available' in status
+        assert "graph_transforms_available" in status
+        assert "custom_transforms_available" in status
+        assert "plugin_system_available" in status
 
 
 # ===========================================================================
 # SECTION 10: PREDICTION CLI ARGUMENTS SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIPredictionArgsSmoke:
     """Smoke tests for prediction mode CLI arguments.
@@ -1169,9 +1165,7 @@ class TestCLIPredictionArgsSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args([
-                '--predict', '--test-path', '/tmp/data.csv'
-            ])
+            cli.parse_args(["--predict", "--test-path", "/tmp/data.csv"])
 
     def test_predict_without_test_path_raises_error(self):
         """--predict without --test-path raises CLIValidationError.
@@ -1183,9 +1177,7 @@ class TestCLIPredictionArgsSmoke:
         cli = CLIManager()
 
         with pytest.raises(CLIValidationError):
-            cli.parse_args([
-                '--predict', '--model-path', '/tmp/model.pt'
-            ])
+            cli.parse_args(["--predict", "--model-path", "/tmp/model.pt"])
 
     def test_predict_flag_is_parsed(self):
         """--predict flag can be parsed (validation may fail on paths).
@@ -1199,11 +1191,11 @@ class TestCLIPredictionArgsSmoke:
         # This will fail validation because model-path and test-path
         # are required, but the --predict flag itself should be parsed.
         with pytest.raises(CLIValidationError) as exc_info:
-            cli.parse_args(['--predict'])
+            cli.parse_args(["--predict"])
 
         # The error should mention model-path or test-path, not --predict itself
         error_msg = str(exc_info.value)
-        assert 'model-path' in error_msg.lower() or 'model_path' in error_msg.lower(), (
+        assert "model-path" in error_msg.lower() or "model_path" in error_msg.lower(), (
             f"Error should mention --model-path requirement. Got: {error_msg}"
         )
 
@@ -1211,6 +1203,7 @@ class TestCLIPredictionArgsSmoke:
 # ===========================================================================
 # SECTION 11: TRAINING CLI ARGUMENTS SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLITrainingArgsSmoke:
     """Smoke tests for training mode CLI arguments.
@@ -1231,7 +1224,7 @@ class TestCLITrainingArgsSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--train', '--list-transforms'])
+            args = cli.parse_args(["--train", "--list-transforms"])
             assert args.train is True
         except CLIValidationError:
             pass
@@ -1246,11 +1239,9 @@ class TestCLITrainingArgsSmoke:
 
         cli = CLIManager()
 
-        for mode in ['single', 'custom', 'ensemble']:
+        for mode in ["single", "custom", "ensemble"]:
             try:
-                args = cli.parse_args([
-                    '--mode', mode, '--list-transforms'
-                ])
+                args = cli.parse_args(["--mode", mode, "--list-transforms"])
                 assert args.mode == mode
             except CLIValidationError:
                 pass
@@ -1265,12 +1256,14 @@ class TestCLITrainingArgsSmoke:
 
         cli = CLIManager()
 
-        for task in ['graph_regression', 'graph_classification',
-                     'node_regression', 'node_classification']:
+        for task in [
+            "graph_regression",
+            "graph_classification",
+            "node_regression",
+            "node_classification",
+        ]:
             try:
-                args = cli.parse_args([
-                    '--task-type', task, '--list-transforms'
-                ])
+                args = cli.parse_args(["--task-type", task, "--list-transforms"])
                 assert args.task_type == task
             except CLIValidationError:
                 pass
@@ -1289,7 +1282,7 @@ class TestCLITrainingArgsSmoke:
 
         # argparse should reject both flags together with SystemExit(2)
         with pytest.raises(SystemExit) as exc_info:
-            cli.parse_args(['--hpo', '--no-hpo'])
+            cli.parse_args(["--hpo", "--no-hpo"])
 
         assert exc_info.value.code == 2
 
@@ -1304,7 +1297,7 @@ class TestCLITrainingArgsSmoke:
         cli = CLIManager()
 
         try:
-            args = cli.parse_args(['--list-transforms'])
+            args = cli.parse_args(["--list-transforms"])
             assert args.hpo is None
         except CLIValidationError:
             pass
@@ -1313,6 +1306,7 @@ class TestCLITrainingArgsSmoke:
 # ===========================================================================
 # SECTION 12: MUTUALLY EXCLUSIVE ARGUMENTS SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIMutuallyExclusiveArgsSmoke:
     """Smoke tests for mutually exclusive argument groups.
@@ -1336,7 +1330,7 @@ class TestCLIMutuallyExclusiveArgsSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit) as exc_info:
-            cli.parse_args(['--process', '--stats-only'])
+            cli.parse_args(["--process", "--stats-only"])
 
         assert exc_info.value.code == 2
 
@@ -1351,7 +1345,7 @@ class TestCLIMutuallyExclusiveArgsSmoke:
         cli = CLIManager()
 
         with pytest.raises(SystemExit) as exc_info:
-            cli.parse_args(['--quiet', '--verbose'])
+            cli.parse_args(["--quiet", "--verbose"])
 
         assert exc_info.value.code == 2
 
@@ -1359,6 +1353,7 @@ class TestCLIMutuallyExclusiveArgsSmoke:
 # ===========================================================================
 # SECTION 13: CLI FEATURE FLAG INTEGRATION SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIFeatureFlagsSmoke:
     """Smoke tests for CLI feature detection flags.
@@ -1393,7 +1388,7 @@ class TestCLIFeatureFlagsSmoke:
         from milia_pipeline.cli_manager import _LEGACY_DATASET_TYPES
 
         assert isinstance(_LEGACY_DATASET_TYPES, list)
-        assert 'DFT' in _LEGACY_DATASET_TYPES
+        assert "DFT" in _LEGACY_DATASET_TYPES
 
     def test_legacy_features_dict_exists(self):
         """Legacy features dictionary exists as fallback.
@@ -1404,14 +1399,15 @@ class TestCLIFeatureFlagsSmoke:
         from milia_pipeline.cli_manager import _LEGACY_FEATURES
 
         assert isinstance(_LEGACY_FEATURES, dict)
-        assert 'DFT' in _LEGACY_FEATURES
-        assert 'DMC' in _LEGACY_FEATURES
-        assert 'Wavefunction' in _LEGACY_FEATURES
+        assert "DFT" in _LEGACY_FEATURES
+        assert "DMC" in _LEGACY_FEATURES
+        assert "Wavefunction" in _LEGACY_FEATURES
 
 
 # ===========================================================================
 # SECTION 14: VALIDATE CONFIG VIA CLI SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIValidateConfigSmoke:
     """Smoke tests for --validate-config workflow.
@@ -1432,7 +1428,7 @@ class TestCLIValidateConfigSmoke:
         from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
-        assert hasattr(cli, 'validate_configuration')
+        assert hasattr(cli, "validate_configuration")
         assert callable(cli.validate_configuration)
 
     def test_validate_configuration_with_skip_validation(self):
@@ -1442,8 +1438,9 @@ class TestCLIValidateConfigSmoke:
             if args.skip_validation:
                 return True
         """
-        from milia_pipeline.cli_manager import CLIManager
         import argparse
+
+        from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
         args = argparse.Namespace(skip_validation=True)
@@ -1460,7 +1457,7 @@ class TestCLIValidateConfigSmoke:
         from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
-        assert hasattr(cli, 'validate_descriptor_config')
+        assert hasattr(cli, "validate_descriptor_config")
         assert callable(cli.validate_descriptor_config)
 
     def test_validate_descriptor_config_empty_config(self):
@@ -1481,6 +1478,7 @@ class TestCLIValidateConfigSmoke:
 # ===========================================================================
 # SECTION 15: DEFAULT CONFIG PATH RESOLUTION SMOKE TESTS
 # ===========================================================================
+
 
 class TestCLIDefaultConfigPathSmoke:
     """Smoke tests for _get_default_config_path() function.
@@ -1526,6 +1524,7 @@ class TestCLIDefaultConfigPathSmoke:
 # SECTION 16: DATASET FEATURE QUERY SMOKE TESTS
 # ===========================================================================
 
+
 class TestCLIDatasetFeatureQuerySmoke:
     """Smoke tests for _get_dataset_feature and _get_dataset_input_format.
 
@@ -1542,7 +1541,7 @@ class TestCLIDatasetFeatureQuerySmoke:
         """
         from milia_pipeline.cli_manager import _get_dataset_feature
 
-        result = _get_dataset_feature('DFT', 'vibrational_analysis')
+        result = _get_dataset_feature("DFT", "vibrational_analysis")
         assert isinstance(result, bool)
 
     def test_get_dataset_feature_with_default(self):
@@ -1553,7 +1552,7 @@ class TestCLIDatasetFeatureQuerySmoke:
         """
         from milia_pipeline.cli_manager import _get_dataset_feature
 
-        result = _get_dataset_feature('DFT', 'nonexistent_feature', default=False)
+        result = _get_dataset_feature("DFT", "nonexistent_feature", default=False)
         assert result is False
 
     def test_get_dataset_input_format_returns_string(self):
@@ -1564,7 +1563,7 @@ class TestCLIDatasetFeatureQuerySmoke:
         """
         from milia_pipeline.cli_manager import _get_dataset_input_format
 
-        result = _get_dataset_input_format('DFT')
+        result = _get_dataset_input_format("DFT")
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -1586,7 +1585,7 @@ class TestCLIDatasetFeatureQuerySmoke:
         """
         from milia_pipeline.cli_manager import _get_dataset_feature
 
-        result = _get_dataset_feature('Wavefunction', 'requires_archive_input')
+        result = _get_dataset_feature("Wavefunction", "requires_archive_input")
         assert isinstance(result, bool), (
             f"_get_dataset_feature must return bool, got {type(result)}"
         )
@@ -1601,5 +1600,5 @@ class TestCLIDatasetFeatureQuerySmoke:
         """
         from milia_pipeline.cli_manager import _get_dataset_feature
 
-        result = _get_dataset_feature('DFT', 'requires_archive_input')
+        result = _get_dataset_feature("DFT", "requires_archive_input")
         assert result is False

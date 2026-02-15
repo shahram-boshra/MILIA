@@ -34,18 +34,13 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import sys
-import os
 import logging
-import tempfile
-import shutil
+import sys
 from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional
 
 import pytest
 import torch
 import torch.nn as nn
-from torch.utils.data import Subset
 
 # ---------------------------------------------------------------------------
 # Add project root to Python path FIRST
@@ -76,9 +71,8 @@ torch_geometric = pytest.importorskip(
     reason="torch_geometric is required for E2E training workflow tests",
 )
 
-from torch_geometric.data import Data, InMemoryDataset  # noqa: E402
+from torch_geometric.data import Data  # noqa: E402
 from torch_geometric.loader import DataLoader  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # MILIA imports — each wrapped so that a missing component produces a clear
@@ -86,36 +80,42 @@ from torch_geometric.loader import DataLoader  # noqa: E402
 # ---------------------------------------------------------------------------
 try:
     from milia_pipeline.models.training.data_splitting import DataSplitter
+
     _DATA_SPLITTING_AVAILABLE = True
 except ImportError:
     _DATA_SPLITTING_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.loss_functions import LossRegistry, get_loss
+
     _LOSS_REGISTRY_AVAILABLE = True
 except ImportError:
     _LOSS_REGISTRY_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.optimizers import OptimizerRegistry, get_optimizer
+
     _OPTIMIZER_REGISTRY_AVAILABLE = True
 except ImportError:
     _OPTIMIZER_REGISTRY_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.schedulers import SchedulerRegistry, get_scheduler
+
     _SCHEDULER_REGISTRY_AVAILABLE = True
 except ImportError:
     _SCHEDULER_REGISTRY_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.metrics import MetricsRegistry
+
     _METRICS_REGISTRY_AVAILABLE = True
 except ImportError:
     _METRICS_REGISTRY_AVAILABLE = False
 
 try:
     from milia_pipeline.models.training.trainer import Trainer
+
     _TRAINER_AVAILABLE = True
 except ImportError:
     _TRAINER_AVAILABLE = False
@@ -126,6 +126,7 @@ try:
         EarlyStopping,
         ModelCheckpoint,
     )
+
     _CALLBACKS_AVAILABLE = True
 except ImportError:
     _CALLBACKS_AVAILABLE = False
@@ -133,47 +134,53 @@ except ImportError:
 try:
     from milia_pipeline.models.factory.model_factory import (
         ModelFactory,
-        get_factory,
         create_model,
+        get_factory,
     )
+
     _MODEL_FACTORY_AVAILABLE = True
 except ImportError:
     _MODEL_FACTORY_AVAILABLE = False
 
 try:
     from milia_pipeline.models.factory.target_selection_config import (
-        TargetSelectionConfig,
         SelectionMode,
         TargetLevel,
+        TargetSelectionConfig,
         TargetSource,
     )
+
     _TARGET_SELECTION_AVAILABLE = True
 except ImportError:
     _TARGET_SELECTION_AVAILABLE = False
 
 try:
     from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
-        CheckpointManager,
         CHECKPOINT_FORMAT_VERSION,
+        CheckpointManager,
     )
+
     _CHECKPOINT_MANAGER_AVAILABLE = True
 except ImportError:
     _CHECKPOINT_MANAGER_AVAILABLE = False
 
 try:
     from milia_pipeline.models.post_training.inference.model_loader import ModelLoader
+
     _MODEL_LOADER_AVAILABLE = True
 except ImportError:
     _MODEL_LOADER_AVAILABLE = False
 
 try:
     from milia_pipeline.models.post_training.inference.predictor import Predictor
+
     _PREDICTOR_AVAILABLE = True
 except ImportError:
     _PREDICTOR_AVAILABLE = False
 
 try:
     from milia_pipeline.config.config_loader import load_config
+
     _CONFIG_LOADER_AVAILABLE = True
 except ImportError:
     _CONFIG_LOADER_AVAILABLE = False
@@ -181,20 +188,24 @@ except ImportError:
 
 # Aggregate availability flag — if ALL core training components are present
 # the full E2E tests can execute; otherwise individual tests skip gracefully.
-_TRAINING_STACK_AVAILABLE = all([
-    _DATA_SPLITTING_AVAILABLE,
-    _LOSS_REGISTRY_AVAILABLE,
-    _OPTIMIZER_REGISTRY_AVAILABLE,
-    _TRAINER_AVAILABLE,
-    _CALLBACKS_AVAILABLE,
-    _MODEL_FACTORY_AVAILABLE,
-])
+_TRAINING_STACK_AVAILABLE = all(
+    [
+        _DATA_SPLITTING_AVAILABLE,
+        _LOSS_REGISTRY_AVAILABLE,
+        _OPTIMIZER_REGISTRY_AVAILABLE,
+        _TRAINER_AVAILABLE,
+        _CALLBACKS_AVAILABLE,
+        _MODEL_FACTORY_AVAILABLE,
+    ]
+)
 
-_POST_TRAINING_STACK_AVAILABLE = all([
-    _CHECKPOINT_MANAGER_AVAILABLE,
-    _MODEL_LOADER_AVAILABLE,
-    _PREDICTOR_AVAILABLE,
-])
+_POST_TRAINING_STACK_AVAILABLE = all(
+    [
+        _CHECKPOINT_MANAGER_AVAILABLE,
+        _MODEL_LOADER_AVAILABLE,
+        _PREDICTOR_AVAILABLE,
+    ]
+)
 
 
 # =============================================================================
@@ -209,13 +220,14 @@ pytestmark = [
 # SYNTHETIC DATA GENERATION HELPERS
 # =============================================================================
 
+
 def _create_single_graph(
     num_nodes: int,
     num_node_features: int,
     num_targets: int = 1,
     include_edge_attr: bool = False,
     num_edge_features: int = 4,
-    seed: Optional[int] = None,
+    seed: int | None = None,
 ) -> Data:
     """
     Create a single synthetic PyG Data object representing a graph.
@@ -243,8 +255,8 @@ def _create_single_graph(
     x = torch.randn(num_nodes, num_node_features)
 
     # Build random edges — each node connects to 2-3 others
-    edges_src: List[int] = []
-    edges_dst: List[int] = []
+    edges_src: list[int] = []
+    edges_dst: list[int] = []
     for i in range(num_nodes):
         n_neighbours = torch.randint(2, min(4, num_nodes), (1,)).item()
         targets = torch.randperm(num_nodes)[:n_neighbours]
@@ -277,7 +289,7 @@ def create_synthetic_dataset(
     include_edge_attr: bool = False,
     num_edge_features: int = 4,
     seed: int = 42,
-) -> List[Data]:
+) -> list[Data]:
     """
     Create a list of synthetic PyG Data objects for testing.
 
@@ -293,7 +305,7 @@ def create_synthetic_dataset(
         List of ``Data`` objects ready for splitting and loading.
     """
     torch.manual_seed(seed)
-    graphs: List[Data] = []
+    graphs: list[Data] = []
     for i in range(num_graphs):
         num_nodes = torch.randint(5, 20, (1,)).item()
         g = _create_single_graph(
@@ -311,6 +323,7 @@ def create_synthetic_dataset(
 # =============================================================================
 # SIMPLE GNN MODEL FOR TESTING (avoids dependency on full model registry)
 # =============================================================================
+
 
 class _SimpleGNN(nn.Module):
     """
@@ -353,8 +366,9 @@ class _SimpleGNN(nn.Module):
 # FIXTURES
 # =============================================================================
 
+
 @pytest.fixture(scope="module")
-def synthetic_graphs() -> List[Data]:
+def synthetic_graphs() -> list[Data]:
     """Module-scoped synthetic dataset — created once, shared across tests."""
     return create_synthetic_dataset(
         num_graphs=80,
@@ -365,7 +379,7 @@ def synthetic_graphs() -> List[Data]:
 
 
 @pytest.fixture(scope="module")
-def multi_target_graphs() -> List[Data]:
+def multi_target_graphs() -> list[Data]:
     """Module-scoped synthetic dataset with multiple targets."""
     return create_synthetic_dataset(
         num_graphs=80,
@@ -412,13 +426,14 @@ def multi_target_model() -> _SimpleGNN:
 # HELPER FUNCTIONS
 # =============================================================================
 
+
 def _split_dataset(
-    dataset: List[Data],
+    dataset: list[Data],
     train_ratio: float = 0.7,
     val_ratio: float = 0.15,
     test_ratio: float = 0.15,
     seed: int = 42,
-) -> Tuple[List[Data], List[Data], List[Data]]:
+) -> tuple[list[Data], list[Data], list[Data]]:
     """
     Simple deterministic split of a list of Data objects.
 
@@ -441,25 +456,22 @@ def _split_dataset(
 
 
 def _make_loaders(
-    train_data: List[Data],
-    val_data: List[Data],
-    test_data: Optional[List[Data]] = None,
+    train_data: list[Data],
+    val_data: list[Data],
+    test_data: list[Data] | None = None,
     batch_size: int = 16,
-) -> Tuple[DataLoader, DataLoader, Optional[DataLoader]]:
+) -> tuple[DataLoader, DataLoader, DataLoader | None]:
     """Create DataLoaders from lists of Data objects."""
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    test_loader = (
-        DataLoader(test_data, batch_size=batch_size, shuffle=False)
-        if test_data
-        else None
-    )
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False) if test_data else None
     return train_loader, val_loader, test_loader
 
 
 # =============================================================================
 # TEST CLASS: Synthetic Data Validation
 # =============================================================================
+
 
 class TestSyntheticDataCreation:
     """Verify that synthetic data helpers produce valid PyG graphs."""
@@ -512,6 +524,7 @@ class TestSyntheticDataCreation:
 # TEST CLASS: Data Splitting
 # =============================================================================
 
+
 class TestDataSplitting:
     """Validate data splitting produces correct partition sizes."""
 
@@ -543,12 +556,8 @@ class TestDataSplitting:
     )
     def test_random_split_reproducibility(self, synthetic_graphs):
         """Same seed must yield identical splits."""
-        t1, v1, te1 = DataSplitter.random_split(
-            synthetic_graphs, random_seed=42
-        )
-        t2, v2, te2 = DataSplitter.random_split(
-            synthetic_graphs, random_seed=42
-        )
+        t1, v1, te1 = DataSplitter.random_split(synthetic_graphs, random_seed=42)
+        t2, v2, te2 = DataSplitter.random_split(synthetic_graphs, random_seed=42)
         assert len(t1) == len(t2)
         assert len(v1) == len(v2)
         assert len(te1) == len(te2)
@@ -563,6 +572,7 @@ class TestDataSplitting:
 # =============================================================================
 # TEST CLASS: Loss Function Registry
 # =============================================================================
+
 
 class TestLossFunctionRegistry:
     """Validate loss function instantiation from the registry."""
@@ -616,6 +626,7 @@ class TestLossFunctionRegistry:
 # =============================================================================
 # TEST CLASS: Optimizer Registry
 # =============================================================================
+
 
 class TestOptimizerRegistry:
     """Validate optimizer instantiation from the registry."""
@@ -677,6 +688,7 @@ class TestOptimizerRegistry:
 # TEST CLASS: Scheduler Registry
 # =============================================================================
 
+
 class TestSchedulerRegistry:
     """Validate scheduler instantiation from the registry."""
 
@@ -704,6 +716,7 @@ class TestSchedulerRegistry:
 # TEST CLASS: Metrics Registry
 # =============================================================================
 
+
 class TestMetricsRegistry:
     """Validate metric instantiation from the registry."""
 
@@ -730,6 +743,7 @@ class TestMetricsRegistry:
 # =============================================================================
 # TEST CLASS: Target Selection Config
 # =============================================================================
+
 
 class TestTargetSelectionConfig:
     """Validate TargetSelectionConfig creation and resolution."""
@@ -780,6 +794,7 @@ class TestTargetSelectionConfig:
 # =============================================================================
 # TEST CLASS: Trainer (Core Training Loop)
 # =============================================================================
+
 
 class TestTrainerCore:
     """
@@ -917,6 +932,7 @@ class TestTrainerCore:
 # TEST CLASS: Callbacks Integration
 # =============================================================================
 
+
 class TestCallbacksIntegration:
     """Test callback integration with the Trainer."""
 
@@ -946,9 +962,7 @@ class TestCallbacksIntegration:
 
         epochs_run = len(results["train_metrics"]["train_loss"])
         # With patience=2 and tiny LR, training should stop well before 50
-        assert epochs_run < 50, (
-            f"EarlyStopping did not trigger: ran all {epochs_run} epochs"
-        )
+        assert epochs_run < 50, f"EarlyStopping did not trigger: ran all {epochs_run} epochs"
 
     @pytest.mark.skipif(
         not _TRAINING_STACK_AVAILABLE,
@@ -983,9 +997,7 @@ class TestCallbacksIntegration:
 
         # At least one checkpoint file must exist
         checkpoint_files = list(checkpoint_dir.glob("*.pt"))
-        assert len(checkpoint_files) > 0, (
-            f"No checkpoint files found in {checkpoint_dir}"
-        )
+        assert len(checkpoint_files) > 0, f"No checkpoint files found in {checkpoint_dir}"
 
     @pytest.mark.skipif(
         not _TRAINING_STACK_AVAILABLE,
@@ -1000,6 +1012,7 @@ class TestCallbacksIntegration:
 # =============================================================================
 # TEST CLASS: Checkpoint Manager
 # =============================================================================
+
 
 class TestCheckpointManager:
     """Test CheckpointManager save/load lifecycle."""
@@ -1093,6 +1106,7 @@ class TestCheckpointManager:
 # =============================================================================
 # TEST CLASS: Full E2E Training → Checkpoint → Load Workflow
 # =============================================================================
+
 
 class TestEndToEndTrainingWorkflow:
     """
@@ -1300,6 +1314,7 @@ class TestEndToEndTrainingWorkflow:
 # TEST CLASS: Predictor Integration (Post-Training)
 # =============================================================================
 
+
 class TestPredictorIntegration:
     """Test the Predictor class with trained model checkpoints."""
 
@@ -1384,6 +1399,7 @@ class TestPredictorIntegration:
 # TEST CLASS: Model Factory Integration
 # =============================================================================
 
+
 class TestModelFactoryIntegration:
     """Test ModelFactory for model creation with the training stack."""
 
@@ -1433,6 +1449,7 @@ class TestModelFactoryIntegration:
 # =============================================================================
 # TEST CLASS: Config Loader Integration
 # =============================================================================
+
 
 class TestConfigLoaderIntegration:
     """Test config loading as the entry point of the E2E workflow."""

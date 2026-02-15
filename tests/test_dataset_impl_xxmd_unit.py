@@ -43,34 +43,29 @@ xxMD-specific characteristics (from xxmd.py source):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock
 import inspect
-from typing import Dict, List
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.datasets.base import (
+    BaseDataset,
+    DatasetFeatures,
+    DatasetMetadata,
+    DatasetSchema,
+)
 from milia_pipeline.datasets.implementations.xxmd import (
     XXMDDataset,
 )
-from milia_pipeline.datasets.base import (
-    BaseDataset,
-    DatasetMetadata,
-    DatasetSchema,
-    DatasetFeatures,
-)
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from xxmd.py source
@@ -88,36 +83,36 @@ EXPECTED_METADATA_DESCRIPTION = (
 EXPECTED_METADATA_AUTHOR = "Pengmei, Liu, Shu"
 EXPECTED_METADATA_LICENSE = "CC0"
 
-EXPECTED_REQUIRED_PROPERTIES = ('energy', 'atoms', 'coordinates')
+EXPECTED_REQUIRED_PROPERTIES = ("energy", "atoms", "coordinates")
 EXPECTED_OPTIONAL_PROPERTIES = (
-    'forces',           # Atomic forces (eV/Angstrom → Hartree/Angstrom)
-    'molecule_name',    # Molecule identifier (azobenzene, dithiophene, etc.)
-    'split',            # train/val/test split indicator
+    "forces",  # Atomic forces (eV/Angstrom → Hartree/Angstrom)
+    "molecule_name",  # Molecule identifier (azobenzene, dithiophene, etc.)
+    "split",  # train/val/test split indicator
 )
 # CRITICAL: xxMD has NO parseable chemical identifiers — empty tuple
 EXPECTED_IDENTIFIER_KEYS = ()
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": False,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "xxmd_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -127,6 +122,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: XXMDDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetClassIdentity(unittest.TestCase):
     """Verify XXMDDataset is a proper BaseDataset subclass with correct identity."""
@@ -176,6 +172,7 @@ class TestXXMDDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: XXMDDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetRegistration(unittest.TestCase):
     """Verify XXMDDataset is registered via @register decorator."""
 
@@ -196,6 +193,7 @@ class TestXXMDDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class.
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("XXMD")
         self.assertIs(retrieved, XXMDDataset)
 
@@ -205,6 +203,7 @@ class TestXXMDDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names.
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("XXMD", all_names)
 
@@ -213,9 +212,7 @@ class TestXXMDDatasetRegistration(unittest.TestCase):
 
         Evidence: xxmd.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[XXMDDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[XXMDDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -231,6 +228,7 @@ class TestXXMDDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: XXMDDataset.metadata — DatasetMetadata (7 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetMetadata(unittest.TestCase):
     """Verify XXMDDataset.metadata is a correctly configured DatasetMetadata.
@@ -282,6 +280,7 @@ class TestXXMDDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: XXMDDataset.schema — DatasetSchema (9 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetSchema(unittest.TestCase):
     """Verify XXMDDataset.schema is a correctly configured DatasetSchema.
@@ -356,7 +355,7 @@ class TestXXMDDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            XXMDDataset.schema.required_properties = ('modified',)
+            XXMDDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -374,6 +373,7 @@ class TestXXMDDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: XXMDDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetFeatures(unittest.TestCase):
     """Verify XXMDDataset.features is a correctly configured DatasetFeatures.
@@ -456,6 +456,7 @@ class TestXXMDDatasetFeatures(unittest.TestCase):
 # GROUP 6: XXMDDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetConfigKey(unittest.TestCase):
     """Verify XXMDDataset.config_key is correctly set.
 
@@ -475,6 +476,7 @@ class TestXXMDDatasetConfigKey(unittest.TestCase):
 # GROUP 7: XXMDDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetGetRequiredProperties(unittest.TestCase):
     """Verify XXMDDataset.get_required_properties() classmethod.
 
@@ -487,7 +489,7 @@ class TestXXMDDatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = XXMDDataset.__dict__.get('get_required_properties')
+        descriptor = XXMDDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -527,6 +529,7 @@ class TestXXMDDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: XXMDDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetGetFeatureSupport(unittest.TestCase):
     """Verify XXMDDataset.get_feature_support() classmethod.
 
@@ -536,7 +539,7 @@ class TestXXMDDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = XXMDDataset.__dict__.get('get_feature_support')
+        descriptor = XXMDDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -583,6 +586,7 @@ class TestXXMDDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: XXMDDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify XXMDDataset.get_molecule_creation_strategy() classmethod.
 
@@ -592,7 +596,7 @@ class TestXXMDDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = XXMDDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = XXMDDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -615,7 +619,7 @@ class TestXXMDDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(XXMDDataset, 'get_molecule_creation_strategy')
+        method = XXMDDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -623,6 +627,7 @@ class TestXXMDDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: XXMDDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetCreateHandler(unittest.TestCase):
     """Verify XXMDDataset.create_handler() factory method with lazy import.
@@ -634,7 +639,7 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = XXMDDataset.__dict__.get('create_handler')
+        descriptor = XXMDDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -649,13 +654,19 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = XXMDDataset.__dict__['create_handler'].__func__
+        unbound_func = XXMDDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -664,7 +675,7 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
         Evidence: xxmd.py create_handler signature: experimental_setup=None.
         """
         sig = inspect.signature(XXMDDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -684,11 +695,11 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockXXMDDatasetHandler')
+            mock_handler_cls = Mock(name="MockXXMDDatasetHandler")
             mock_module = MagicMock()
             mock_module.XXMDDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.xxmd'
+            handler_mod_key = "milia_pipeline.handlers.implementations.xxmd"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -723,11 +734,11 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 
         Evidence: xxmd.py create_handler() return XXMDDatasetHandler(...).
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -751,7 +762,7 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 
         Evidence: xxmd.py: return XXMDDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = XXMDDataset.create_handler(
@@ -764,7 +775,7 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring mentioning lazy import."""
-        method = getattr(XXMDDataset, 'create_handler')
+        method = XXMDDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -772,6 +783,7 @@ class TestXXMDDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: XXMDDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify XXMDDataset.handler_class is None (default from BaseDataset).
@@ -809,6 +821,7 @@ class TestXXMDDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: XXMDDataset — Method Signatures and Return Annotations (7 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations.
 
@@ -822,35 +835,35 @@ class TestXXMDDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -859,19 +872,25 @@ class TestXXMDDatasetMethodSignatures(unittest.TestCase):
 
         Evidence: base.py BaseDataset.create_handler() with 5-parameter signature.
         """
-        sig = self._get_sig('create_handler')
+        sig = self._get_sig("create_handler")
         params = list(sig.parameters.keys())
         self.assertEqual(len(params), 5)
         self.assertEqual(
             params,
-            ['dataset_config', 'filter_config', 'processing_config',
-             'logger', 'experimental_setup'],
+            [
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
 
 # ============================================================================
 # GROUP 13: XXMDDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
     """Verify each XXMDDataset method has a non-empty docstring."""
@@ -882,11 +901,10 @@ class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(XXMDDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
@@ -896,7 +914,7 @@ class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
         Evidence: xxmd.py get_required_properties docstring mentions
         'energy' → 'energy' (converted from eV to Hartree) mapping.
         """
-        method = getattr(XXMDDataset, 'get_required_properties')
+        method = XXMDDataset.get_required_properties
         doc = method.__doc__
         self.assertIn("energy", doc.lower())
 
@@ -905,7 +923,7 @@ class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: xxmd.py get_feature_support docstring lists available features.
         """
-        method = getattr(XXMDDataset, 'get_feature_support')
+        method = XXMDDataset.get_feature_support
         doc = method.__doc__
         self.assertIn("vibrational_analysis", doc)
 
@@ -915,7 +933,7 @@ class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
         Evidence: xxmd.py get_molecule_creation_strategy docstring explains why
         coordinate_based is used (no parseable identifiers in extended XYZ).
         """
-        method = getattr(XXMDDataset, 'get_molecule_creation_strategy')
+        method = XXMDDataset.get_molecule_creation_strategy
         doc = method.__doc__
         self.assertIn("coordinate_based", doc)
 
@@ -924,18 +942,21 @@ class TestXXMDDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: XXMDDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the xxmd implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The xxmd.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.xxmd as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_xxmd_dataset(self):
         """XXMDDataset is importable from the implementations.xxmd module."""
         import milia_pipeline.datasets.implementations.xxmd as mod
+
         self.assertTrue(hasattr(mod, "XXMDDataset"))
         self.assertIs(mod.XXMDDataset, XXMDDataset)
 
@@ -944,9 +965,7 @@ class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: xxmd.py imports from milia_pipeline.datasets.base.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.xxmd']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.xxmd"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -958,9 +977,7 @@ class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: xxmd.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.xxmd']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.xxmd"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -974,9 +991,7 @@ class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.xxmd']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.xxmd"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -987,10 +1002,12 @@ class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -1014,6 +1031,7 @@ class TestXXMDDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: XXMDDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestXXMDDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with xxMD.
 
@@ -1031,14 +1049,14 @@ class TestXXMDDatasetFeaturesIntegration(unittest.TestCase):
 
         xxMD specific: atomization_energy is the only enabled feature.
         """
-        self.assertTrue(XXMDDataset.features.supports('atomization_energy'))
+        self.assertTrue(XXMDDataset.features.supports("atomization_energy"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         xxMD specific: no vibrational frequencies available.
         """
-        self.assertFalse(XXMDDataset.features.supports('vibrational_analysis'))
+        self.assertFalse(XXMDDataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -1049,6 +1067,7 @@ class TestXXMDDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: XXMDDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -1080,6 +1099,7 @@ class TestXXMDDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: XXMDDataset — Edge Cases and Robustness (9 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of XXMDDataset."""
@@ -1123,10 +1143,10 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockXXMDDatasetHandler')
+            mock_handler_cls = Mock(name="MockXXMDDatasetHandler")
             mock_module = MagicMock()
             mock_module.XXMDDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.xxmd'
+            handler_mod_key = "milia_pipeline.handlers.implementations.xxmd"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1154,10 +1174,10 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. XXMDDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', XXMDDataset.__dict__)
-        self.assertIn('schema', XXMDDataset.__dict__)
-        self.assertIn('features', XXMDDataset.__dict__)
-        self.assertIn('config_key', XXMDDataset.__dict__)
+        self.assertIn("metadata", XXMDDataset.__dict__)
+        self.assertIn("schema", XXMDDataset.__dict__)
+        self.assertIn("features", XXMDDataset.__dict__)
+        self.assertIn("config_key", XXMDDataset.__dict__)
 
     def test_strategy_is_not_identifier_based(self):
         """get_molecule_creation_strategy() does NOT return 'identifier_coordinate_based'.
@@ -1166,8 +1186,8 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
         xxMD uses 'coordinate_based' because it has no chemical identifiers.
         """
         result = XXMDDataset.get_molecule_creation_strategy()
-        self.assertNotEqual(result, 'identifier_coordinate_based')
-        self.assertEqual(result, 'coordinate_based')
+        self.assertNotEqual(result, "identifier_coordinate_based")
+        self.assertEqual(result, "coordinate_based")
 
     def test_required_properties_uses_energy_not_energies(self):
         """xxMD required_properties uses 'energy' (singular), NOT 'energies' (plural).
@@ -1176,8 +1196,8 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
         xxMD uses 'energy' (singular) matching the extended XYZ key name.
         """
         result = XXMDDataset.get_required_properties()
-        self.assertIn('energy', result)
-        self.assertNotIn('energies', result)
+        self.assertIn("energy", result)
+        self.assertNotIn("energies", result)
 
     def test_no_molecules_class_attribute(self):
         """xxMD does NOT have a MOLECULES class attribute in its own __dict__.
@@ -1186,7 +1206,7 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
         xxMD does not define such an attribute. If a MOLECULES attribute is
         accessible, it would only be inherited from BaseDataset (if at all).
         """
-        self.assertNotIn('MOLECULES', XXMDDataset.__dict__)
+        self.assertNotIn("MOLECULES", XXMDDataset.__dict__)
 
     def test_optional_properties_includes_split(self):
         """xxMD optional_properties includes 'split' for train/val/test split indicator.
@@ -1194,12 +1214,13 @@ class TestXXMDDatasetEdgeCases(unittest.TestCase):
         xxMD-specific: pre-split into train/val/test based on temporal information.
         Evidence: xxmd.py schema optional_properties definition.
         """
-        self.assertIn('split', XXMDDataset.schema.optional_properties)
+        self.assertIn("split", XXMDDataset.schema.optional_properties)
 
 
 # ============================================================================
 # GROUP 18: XXMDDataset — xxMD-Specific Distinctions (6 tests)
 # ============================================================================
+
 
 class TestXXMDDatasetSpecificDistinctions(unittest.TestCase):
     """Test xxMD-specific characteristics that distinguish it from other datasets.
@@ -1253,12 +1274,13 @@ class TestXXMDDatasetSpecificDistinctions(unittest.TestCase):
         Evidence: xxmd.py schema optional_properties includes 'forces'
         for atomic forces (eV/Angstrom → Hartree/Angstrom).
         """
-        self.assertIn('forces', XXMDDataset.schema.optional_properties)
+        self.assertIn("forces", XXMDDataset.schema.optional_properties)
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1266,24 +1288,24 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestXXMDDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestXXMDDatasetRegistration,                  # GROUP 2:  5 tests
-        TestXXMDDatasetMetadata,                      # GROUP 3:  7 tests
-        TestXXMDDatasetSchema,                        # GROUP 4:  9 tests
-        TestXXMDDatasetFeatures,                      # GROUP 5: 10 tests
-        TestXXMDDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestXXMDDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestXXMDDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestXXMDDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestXXMDDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestXXMDDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestXXMDDatasetMethodSignatures,              # GROUP 12: 7 tests
-        TestXXMDDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestXXMDDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestXXMDDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestXXMDDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestXXMDDatasetEdgeCases,                     # GROUP 17: 9 tests
-        TestXXMDDatasetSpecificDistinctions,          # GROUP 18: 6 tests
+        TestXXMDDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestXXMDDatasetRegistration,  # GROUP 2:  5 tests
+        TestXXMDDatasetMetadata,  # GROUP 3:  7 tests
+        TestXXMDDatasetSchema,  # GROUP 4:  9 tests
+        TestXXMDDatasetFeatures,  # GROUP 5: 10 tests
+        TestXXMDDatasetConfigKey,  # GROUP 6:  2 tests
+        TestXXMDDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestXXMDDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestXXMDDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestXXMDDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestXXMDDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestXXMDDatasetMethodSignatures,  # GROUP 12: 7 tests
+        TestXXMDDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestXXMDDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestXXMDDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestXXMDDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestXXMDDatasetEdgeCases,  # GROUP 17: 9 tests
+        TestXXMDDatasetSpecificDistinctions,  # GROUP 18: 6 tests
     ]
 
     for test_class in test_classes:

@@ -26,15 +26,13 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, call
 import logging
-import tempfile
 import shutil
-from typing import Dict, Any
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -43,30 +41,43 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import DataProcessingError
 from milia_pipeline.preprocessing.utils.qm9_xyz_parser import (
     ELEMENT_TO_Z,
     QM9_PROPERTY_NAMES,
-    _parse_scientific_notation,
     _parse_qm9_xyz_file,
-    parse_qm9_xyz_files,
+    _parse_scientific_notation,
     get_qm9_property_info,
+    parse_qm9_xyz_files,
 )
-from milia_pipeline.exceptions import DataProcessingError
-
 
 # ============================================================================
 # CONSTANTS: QM9 property names (numeric, excluding tag and index)
 # ============================================================================
 
 QM9_NUMERIC_PROPERTY_NAMES = [
-    'A', 'B', 'C', 'mu', 'alpha', 'homo', 'lumo', 'gap',
-    'r2', 'zpve', 'U0', 'U', 'H', 'G', 'Cv',
+    "A",
+    "B",
+    "C",
+    "mu",
+    "alpha",
+    "homo",
+    "lumo",
+    "gap",
+    "r2",
+    "zpve",
+    "U0",
+    "U",
+    "H",
+    "G",
+    "Cv",
 ]
 
 
 # ============================================================================
 # HELPERS: QM9 XYZ file content builders for realistic test data
 # ============================================================================
+
 
 def _make_logger():
     """Create a logger instance for testing."""
@@ -121,21 +132,21 @@ def _build_qm9_xyz_content(
     # Line 2: Properties (tab-separated)
     if scalar_props is None:
         scalar_props = [
-            157.7118,    # A (GHz)
-            157.7118,    # B (GHz)
-            157.7118,    # C (GHz)
-            0.0,         # mu (Debye)
-            13.21,       # alpha (Bohr^3)
-            -0.3877,     # homo (Hartree)
-            0.1171,      # lumo (Hartree)
-            0.5048,      # gap (Hartree)
-            35.3641,     # r2 (Bohr^2)
-            0.04489,     # zpve (Hartree)
-            -40.47893,   # U0 (Hartree)
-            -40.47625,   # U (Hartree)
-            -40.47582,   # H (Hartree)
-            -40.49838,   # G (Hartree)
-            6.469,       # Cv (cal/(mol·K))
+            157.7118,  # A (GHz)
+            157.7118,  # B (GHz)
+            157.7118,  # C (GHz)
+            0.0,  # mu (Debye)
+            13.21,  # alpha (Bohr^3)
+            -0.3877,  # homo (Hartree)
+            0.1171,  # lumo (Hartree)
+            0.5048,  # gap (Hartree)
+            35.3641,  # r2 (Bohr^2)
+            0.04489,  # zpve (Hartree)
+            -40.47893,  # U0 (Hartree)
+            -40.47625,  # U (Hartree)
+            -40.47582,  # H (Hartree)
+            -40.49838,  # G (Hartree)
+            6.469,  # Cv (cal/(mol·K))
         ]
     prop_strs = [str(v) for v in scalar_props]
     prop_line = f"{tag} {mol_index}\t" + "\t".join(prop_strs)
@@ -143,7 +154,7 @@ def _build_qm9_xyz_content(
 
     # Lines 3..num_atoms+2: Atom data (element, x, y, z, charge)
     if elements is None:
-        elements = ['C', 'H', 'H', 'H', 'H'][:num_atoms]
+        elements = ["C", "H", "H", "H", "H"][:num_atoms]
     if coords is None:
         coords = [
             [-0.0126981359, 1.0858041578, 0.0080009958],
@@ -158,7 +169,11 @@ def _build_qm9_xyz_content(
     for i in range(num_atoms):
         if use_star_notation:
             # Use QM9's '*^' notation for some values
-            x_str = f"{coords[i][0]:.10f}".replace('e', '*^') if 'e' in f"{coords[i][0]:.10e}" else f"{coords[i][0]:.10f}"
+            x_str = (
+                f"{coords[i][0]:.10f}".replace("e", "*^")
+                if "e" in f"{coords[i][0]:.10e}"
+                else f"{coords[i][0]:.10f}"
+            )
             y_str = f"{coords[i][1]:.10f}"
             z_str = f"{coords[i][2]:.10f}"
             c_str = f"{charges[i]:.6f}"
@@ -219,6 +234,7 @@ def _create_qm9_xyz_files(directory: Path, count: int = 3) -> list:
 # GROUP 1: ELEMENT_TO_Z Module-Level Constant (8 tests)
 # ============================================================================
 
+
 class TestElementToZ(unittest.TestCase):
     """Test that ELEMENT_TO_Z is correctly defined and consistent."""
 
@@ -240,32 +256,33 @@ class TestElementToZ(unittest.TestCase):
 
     def test_contains_qm9_core_elements(self):
         """Contains the 5 core QM9 elements: H, C, N, O, F."""
-        qm9_elements = {'H', 'C', 'N', 'O', 'F'}
+        qm9_elements = {"H", "C", "N", "O", "F"}
         self.assertTrue(
             qm9_elements.issubset(set(ELEMENT_TO_Z.keys())),
-            f"Missing QM9 core elements: {qm9_elements - set(ELEMENT_TO_Z.keys())}"
+            f"Missing QM9 core elements: {qm9_elements - set(ELEMENT_TO_Z.keys())}",
         )
 
     def test_hydrogen_is_1(self):
         """Hydrogen maps to atomic number 1."""
-        self.assertEqual(ELEMENT_TO_Z['H'], 1)
+        self.assertEqual(ELEMENT_TO_Z["H"], 1)
 
     def test_carbon_is_6(self):
         """Carbon maps to atomic number 6."""
-        self.assertEqual(ELEMENT_TO_Z['C'], 6)
+        self.assertEqual(ELEMENT_TO_Z["C"], 6)
 
     def test_nitrogen_is_7(self):
         """Nitrogen maps to atomic number 7."""
-        self.assertEqual(ELEMENT_TO_Z['N'], 7)
+        self.assertEqual(ELEMENT_TO_Z["N"], 7)
 
     def test_oxygen_is_8(self):
         """Oxygen maps to atomic number 8."""
-        self.assertEqual(ELEMENT_TO_Z['O'], 8)
+        self.assertEqual(ELEMENT_TO_Z["O"], 8)
 
 
 # ============================================================================
 # GROUP 2: QM9_PROPERTY_NAMES Module-Level Constant (8 tests)
 # ============================================================================
+
 
 class TestQM9PropertyNames(unittest.TestCase):
     """Test that QM9_PROPERTY_NAMES is correctly defined and consistent."""
@@ -285,24 +302,39 @@ class TestQM9PropertyNames(unittest.TestCase):
 
     def test_first_is_tag(self):
         """First property is 'tag'."""
-        self.assertEqual(QM9_PROPERTY_NAMES[0], 'tag')
+        self.assertEqual(QM9_PROPERTY_NAMES[0], "tag")
 
     def test_second_is_index(self):
         """Second property is 'index'."""
-        self.assertEqual(QM9_PROPERTY_NAMES[1], 'index')
+        self.assertEqual(QM9_PROPERTY_NAMES[1], "index")
 
     def test_numeric_properties_start_at_index_2(self):
         """Numeric properties (A, B, C, ...) start at index 2."""
-        self.assertEqual(QM9_PROPERTY_NAMES[2], 'A')
+        self.assertEqual(QM9_PROPERTY_NAMES[2], "A")
 
     def test_last_is_cv(self):
         """Last property is 'Cv'."""
-        self.assertEqual(QM9_PROPERTY_NAMES[-1], 'Cv')
+        self.assertEqual(QM9_PROPERTY_NAMES[-1], "Cv")
 
     def test_contains_all_expected_numeric_properties(self):
         """Contains all 15 expected numeric property names."""
-        expected = {'A', 'B', 'C', 'mu', 'alpha', 'homo', 'lumo', 'gap',
-                    'r2', 'zpve', 'U0', 'U', 'H', 'G', 'Cv'}
+        expected = {
+            "A",
+            "B",
+            "C",
+            "mu",
+            "alpha",
+            "homo",
+            "lumo",
+            "gap",
+            "r2",
+            "zpve",
+            "U0",
+            "U",
+            "H",
+            "G",
+            "Cv",
+        }
         actual_numeric = set(QM9_PROPERTY_NAMES[2:])
         self.assertEqual(actual_numeric, expected)
 
@@ -310,6 +342,7 @@ class TestQM9PropertyNames(unittest.TestCase):
 # ============================================================================
 # GROUP 3: _parse_scientific_notation (10 tests)
 # ============================================================================
+
 
 class TestParseScientificNotation(unittest.TestCase):
     """Test _parse_scientific_notation for QM9's '*^' notation and standard floats."""
@@ -360,18 +393,19 @@ class TestParseScientificNotation(unittest.TestCase):
 # GROUP 4: _parse_qm9_xyz_file — Happy Path (16 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFileHappyPath(unittest.TestCase):
     """Test _parse_qm9_xyz_file with valid QM9 XYZ content."""
 
     def setUp(self):
         """Create temp directory and write a valid QM9 XYZ file."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_xyz_happy_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_xyz_happy_")
         self._xyz_dir = Path(self._tmpdir)
         content = _build_qm9_xyz_content(
             num_atoms=5,
             tag="gdb",
             mol_index=1,
-            elements=['C', 'H', 'H', 'H', 'H'],
+            elements=["C", "H", "H", "H", "H"],
         )
         self._xyz_file = _write_qm9_xyz_file(self._xyz_dir, "dsgdb9nsd_000001.xyz", content)
         self._result = _parse_qm9_xyz_file(self._xyz_file)
@@ -386,87 +420,100 @@ class TestParseQM9XYZFileHappyPath(unittest.TestCase):
 
     def test_tag_extracted(self):
         """'tag' key contains the gdb tag string."""
-        self.assertEqual(self._result['tag'], 'gdb')
+        self.assertEqual(self._result["tag"], "gdb")
 
     def test_index_extracted(self):
         """'index' key contains the molecule index."""
-        self.assertEqual(self._result['index'], 1)
+        self.assertEqual(self._result["index"], 1)
 
     def test_num_atoms_correct(self):
         """'num_atoms' matches the declared atom count."""
-        self.assertEqual(self._result['num_atoms'], 5)
+        self.assertEqual(self._result["num_atoms"], 5)
 
     def test_atoms_is_numpy_array(self):
         """'atoms' is a numpy int32 array."""
-        self.assertIsInstance(self._result['atoms'], np.ndarray)
-        self.assertEqual(self._result['atoms'].dtype, np.int32)
+        self.assertIsInstance(self._result["atoms"], np.ndarray)
+        self.assertEqual(self._result["atoms"].dtype, np.int32)
 
     def test_atoms_values_correct(self):
         """'atoms' contains correct atomic numbers for CH4 (C=6, H=1)."""
         expected = np.array([6, 1, 1, 1, 1], dtype=np.int32)
-        np.testing.assert_array_equal(self._result['atoms'], expected)
+        np.testing.assert_array_equal(self._result["atoms"], expected)
 
     def test_coordinates_shape(self):
         """'coordinates' has shape (num_atoms, 3)."""
-        self.assertEqual(self._result['coordinates'].shape, (5, 3))
+        self.assertEqual(self._result["coordinates"].shape, (5, 3))
 
     def test_coordinates_dtype(self):
         """'coordinates' is float64."""
-        self.assertEqual(self._result['coordinates'].dtype, np.float64)
+        self.assertEqual(self._result["coordinates"].dtype, np.float64)
 
     def test_mulliken_charges_shape(self):
         """'Qmulliken' has length equal to num_atoms."""
-        self.assertEqual(len(self._result['Qmulliken']), 5)
+        self.assertEqual(len(self._result["Qmulliken"]), 5)
 
     def test_mulliken_charges_dtype(self):
         """'Qmulliken' is float64."""
-        self.assertEqual(self._result['Qmulliken'].dtype, np.float64)
+        self.assertEqual(self._result["Qmulliken"].dtype, np.float64)
 
     def test_freqs_is_numpy_array(self):
         """'freqs' is a numpy float64 array."""
-        self.assertIsInstance(self._result['freqs'], np.ndarray)
-        self.assertEqual(self._result['freqs'].dtype, np.float64)
+        self.assertIsInstance(self._result["freqs"], np.ndarray)
+        self.assertEqual(self._result["freqs"].dtype, np.float64)
 
     def test_freqs_nonempty(self):
         """'freqs' array has at least one frequency."""
-        self.assertGreater(len(self._result['freqs']), 0)
+        self.assertGreater(len(self._result["freqs"]), 0)
 
     def test_smiles_extracted(self):
         """'smiles' is a non-empty string."""
-        self.assertIsInstance(self._result['smiles'], str)
-        self.assertGreater(len(self._result['smiles']), 0)
+        self.assertIsInstance(self._result["smiles"], str)
+        self.assertGreater(len(self._result["smiles"]), 0)
 
     def test_smiles_relaxed_extracted(self):
         """'smiles_relaxed' is a non-empty string."""
-        self.assertIsInstance(self._result['smiles_relaxed'], str)
-        self.assertGreater(len(self._result['smiles_relaxed']), 0)
+        self.assertIsInstance(self._result["smiles_relaxed"], str)
+        self.assertGreater(len(self._result["smiles_relaxed"]), 0)
 
     def test_inchi_extracted(self):
         """'inchi' is a non-empty string."""
-        self.assertIsInstance(self._result['inchi'], str)
-        self.assertIn('InChI', self._result['inchi'])
+        self.assertIsInstance(self._result["inchi"], str)
+        self.assertIn("InChI", self._result["inchi"])
 
     def test_inchi_relaxed_extracted(self):
         """'inchi_relaxed' is a non-empty string."""
-        self.assertIsInstance(self._result['inchi_relaxed'], str)
-        self.assertIn('InChI', self._result['inchi_relaxed'])
+        self.assertIsInstance(self._result["inchi_relaxed"], str)
+        self.assertIn("InChI", self._result["inchi_relaxed"])
 
 
 # ============================================================================
 # GROUP 5: _parse_qm9_xyz_file — Scalar Properties (10 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFileScalarProperties(unittest.TestCase):
     """Test that _parse_qm9_xyz_file correctly extracts all 15 scalar properties."""
 
     def setUp(self):
         """Create a file with known scalar property values."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_xyz_scalars_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_xyz_scalars_")
         self._xyz_dir = Path(self._tmpdir)
         self._known_props = [
-            157.7118, 157.7118, 157.7118, 0.0, 13.21,
-            -0.3877, 0.1171, 0.5048, 35.3641, 0.04489,
-            -40.47893, -40.47625, -40.47582, -40.49838, 6.469,
+            157.7118,
+            157.7118,
+            157.7118,
+            0.0,
+            13.21,
+            -0.3877,
+            0.1171,
+            0.5048,
+            35.3641,
+            0.04489,
+            -40.47893,
+            -40.47625,
+            -40.47582,
+            -40.49838,
+            6.469,
         ]
         content = _build_qm9_xyz_content(scalar_props=self._known_props)
         xyz_file = _write_qm9_xyz_file(self._xyz_dir, "test_mol.xyz", content)
@@ -483,51 +530,52 @@ class TestParseQM9XYZFileScalarProperties(unittest.TestCase):
 
     def test_rotational_constant_A(self):
         """Rotational constant A parsed correctly."""
-        self.assertAlmostEqual(self._result['A'], 157.7118, places=4)
+        self.assertAlmostEqual(self._result["A"], 157.7118, places=4)
 
     def test_dipole_moment_mu(self):
         """Dipole moment mu parsed correctly."""
-        self.assertAlmostEqual(self._result['mu'], 0.0, places=4)
+        self.assertAlmostEqual(self._result["mu"], 0.0, places=4)
 
     def test_homo_energy(self):
         """HOMO energy parsed correctly in Hartree."""
-        self.assertAlmostEqual(self._result['homo'], -0.3877, places=4)
+        self.assertAlmostEqual(self._result["homo"], -0.3877, places=4)
 
     def test_lumo_energy(self):
         """LUMO energy parsed correctly in Hartree."""
-        self.assertAlmostEqual(self._result['lumo'], 0.1171, places=4)
+        self.assertAlmostEqual(self._result["lumo"], 0.1171, places=4)
 
     def test_gap_energy(self):
         """HOMO-LUMO gap parsed correctly in Hartree."""
-        self.assertAlmostEqual(self._result['gap'], 0.5048, places=4)
+        self.assertAlmostEqual(self._result["gap"], 0.5048, places=4)
 
     def test_internal_energy_U0(self):
         """Internal energy at 0K (U0) parsed correctly."""
-        self.assertAlmostEqual(self._result['U0'], -40.47893, places=5)
+        self.assertAlmostEqual(self._result["U0"], -40.47893, places=5)
 
     def test_enthalpy_H(self):
         """Enthalpy at 298.15K (H) parsed correctly."""
-        self.assertAlmostEqual(self._result['H'], -40.47582, places=5)
+        self.assertAlmostEqual(self._result["H"], -40.47582, places=5)
 
     def test_free_energy_G(self):
         """Free energy at 298.15K (G) parsed correctly."""
-        self.assertAlmostEqual(self._result['G'], -40.49838, places=5)
+        self.assertAlmostEqual(self._result["G"], -40.49838, places=5)
 
     def test_heat_capacity_Cv(self):
         """Heat capacity (Cv) parsed correctly."""
-        self.assertAlmostEqual(self._result['Cv'], 6.469, places=3)
+        self.assertAlmostEqual(self._result["Cv"], 6.469, places=3)
 
 
 # ============================================================================
 # GROUP 6: _parse_qm9_xyz_file — Star Notation in Coordinates (4 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFileStarNotation(unittest.TestCase):
     """Test _parse_qm9_xyz_file with QM9's '*^' scientific notation in atom lines."""
 
     def setUp(self):
         """Create a file with '*^' notation in coordinate/charge values."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_xyz_star_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_xyz_star_")
         self._xyz_dir = Path(self._tmpdir)
 
         # Manually craft lines with *^ notation in atom data
@@ -549,30 +597,31 @@ class TestParseQM9XYZFileStarNotation(unittest.TestCase):
 
     def test_star_notation_x_coordinate(self):
         """'1.5*^-1' is parsed as 0.15 for x coordinate."""
-        self.assertAlmostEqual(self._result['coordinates'][0][0], 0.15, places=6)
+        self.assertAlmostEqual(self._result["coordinates"][0][0], 0.15, places=6)
 
     def test_star_notation_y_coordinate(self):
         """'2.0*^0' is parsed as 2.0 for y coordinate."""
-        self.assertAlmostEqual(self._result['coordinates'][0][1], 2.0, places=6)
+        self.assertAlmostEqual(self._result["coordinates"][0][1], 2.0, places=6)
 
     def test_star_notation_z_coordinate(self):
         """'-3.0*^-2' is parsed as -0.03 for z coordinate."""
-        self.assertAlmostEqual(self._result['coordinates'][0][2], -0.03, places=6)
+        self.assertAlmostEqual(self._result["coordinates"][0][2], -0.03, places=6)
 
     def test_star_notation_charge(self):
         """'5.0*^-3' is parsed as 0.005 for Mulliken charge."""
-        self.assertAlmostEqual(self._result['Qmulliken'][0], 0.005, places=6)
+        self.assertAlmostEqual(self._result["Qmulliken"][0], 0.005, places=6)
 
 
 # ============================================================================
 # GROUP 7: _parse_qm9_xyz_file — Edge Cases & Missing Data (10 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
     """Test _parse_qm9_xyz_file with edge cases and missing optional data."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_xyz_edge_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_xyz_edge_")
         self._xyz_dir = Path(self._tmpdir)
 
     def tearDown(self):
@@ -582,15 +631,15 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         """Parse a single-atom molecule (e.g., single H)."""
         content = _build_qm9_xyz_content(
             num_atoms=1,
-            elements=['H'],
+            elements=["H"],
             coords=[[0.0, 0.0, 0.0]],
             charges=[0.0],
         )
         fpath = _write_qm9_xyz_file(self._xyz_dir, "single.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(result['num_atoms'], 1)
-        self.assertEqual(len(result['atoms']), 1)
-        self.assertEqual(result['coordinates'].shape, (1, 3))
+        self.assertEqual(result["num_atoms"], 1)
+        self.assertEqual(len(result["atoms"]), 1)
+        self.assertEqual(result["coordinates"].shape, (1, 3))
 
     def test_missing_freq_line_gives_empty_array(self):
         """If frequency line is missing, 'freqs' defaults to empty array."""
@@ -603,7 +652,7 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         content = "\n".join(lines)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "no_freq.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(len(result['freqs']), 0)
+        self.assertEqual(len(result["freqs"]), 0)
 
     def test_missing_smiles_line_gives_empty_strings(self):
         """If SMILES line is missing, 'smiles' and 'smiles_relaxed' default to ''."""
@@ -616,8 +665,8 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         content = "\n".join(lines)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "no_smiles.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(result['smiles'], '')
-        self.assertEqual(result['smiles_relaxed'], '')
+        self.assertEqual(result["smiles"], "")
+        self.assertEqual(result["smiles_relaxed"], "")
 
     def test_missing_inchi_line_gives_empty_strings(self):
         """If InChI line is missing, 'inchi' and 'inchi_relaxed' default to ''."""
@@ -631,8 +680,8 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         content = "\n".join(lines)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "no_inchi.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(result['inchi'], '')
-        self.assertEqual(result['inchi_relaxed'], '')
+        self.assertEqual(result["inchi"], "")
+        self.assertEqual(result["inchi_relaxed"], "")
 
     def test_smiles_single_value_no_relaxed(self):
         """If SMILES line has only one value, 'smiles_relaxed' defaults to ''."""
@@ -646,28 +695,28 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         content = "\n".join(lines)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "single_smiles.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(result['smiles'], 'C')
-        self.assertEqual(result['smiles_relaxed'], '')
+        self.assertEqual(result["smiles"], "C")
+        self.assertEqual(result["smiles_relaxed"], "")
 
     def test_large_molecule_index(self):
         """Handles large molecule index numbers."""
         content = _build_qm9_xyz_content(mol_index=133885)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "large_idx.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(result['index'], 133885)
+        self.assertEqual(result["index"], 133885)
 
     def test_negative_coordinates(self):
         """Handles negative coordinates correctly."""
         content = _build_qm9_xyz_content(
             num_atoms=1,
-            elements=['C'],
+            elements=["C"],
             coords=[[-1.5, -2.7, -0.01]],
             charges=[0.0],
         )
         fpath = _write_qm9_xyz_file(self._xyz_dir, "neg_coords.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertAlmostEqual(result['coordinates'][0][0], -1.5, places=4)
-        self.assertAlmostEqual(result['coordinates'][0][1], -2.7, places=4)
+        self.assertAlmostEqual(result["coordinates"][0][0], -1.5, places=4)
+        self.assertAlmostEqual(result["coordinates"][0][1], -2.7, places=4)
 
     def test_empty_freq_line(self):
         """Empty frequency line yields empty freqs array."""
@@ -682,43 +731,44 @@ class TestParseQM9XYZFileEdgeCases(unittest.TestCase):
         content = "\n".join(lines)
         fpath = _write_qm9_xyz_file(self._xyz_dir, "empty_freq.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        self.assertEqual(len(result['freqs']), 0)
+        self.assertEqual(len(result["freqs"]), 0)
 
     def test_fluorine_element(self):
         """Fluorine (F, Z=9) is correctly parsed as a QM9 element."""
         content = _build_qm9_xyz_content(
             num_atoms=2,
-            elements=['C', 'F'],
+            elements=["C", "F"],
             coords=[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
             charges=[0.1, -0.1],
         )
         fpath = _write_qm9_xyz_file(self._xyz_dir, "cf.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
-        np.testing.assert_array_equal(result['atoms'], np.array([6, 9], dtype=np.int32))
+        np.testing.assert_array_equal(result["atoms"], np.array([6, 9], dtype=np.int32))
 
     def test_all_five_qm9_elements(self):
         """Parses all 5 QM9 elements (H, C, N, O, F) in one molecule."""
         content = _build_qm9_xyz_content(
             num_atoms=5,
-            elements=['H', 'C', 'N', 'O', 'F'],
+            elements=["H", "C", "N", "O", "F"],
             coords=[[i * 1.0, 0.0, 0.0] for i in range(5)],
             charges=[0.0] * 5,
         )
         fpath = _write_qm9_xyz_file(self._xyz_dir, "all_elements.xyz", content)
         result = _parse_qm9_xyz_file(fpath)
         expected = np.array([1, 6, 7, 8, 9], dtype=np.int32)
-        np.testing.assert_array_equal(result['atoms'], expected)
+        np.testing.assert_array_equal(result["atoms"], expected)
 
 
 # ============================================================================
 # GROUP 8: _parse_qm9_xyz_file — Error Paths (8 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFileErrors(unittest.TestCase):
     """Test _parse_qm9_xyz_file error handling."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_xyz_err_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_xyz_err_")
         self._xyz_dir = Path(self._tmpdir)
 
     def tearDown(self):
@@ -801,18 +851,17 @@ class TestParseQM9XYZFileErrors(unittest.TestCase):
 # GROUP 9: parse_qm9_xyz_files — Happy Path (12 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFilesHappyPath(unittest.TestCase):
     """Test parse_qm9_xyz_files with valid directory of XYZ files."""
 
     def setUp(self):
         """Create temp directory with valid QM9 XYZ files."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_batch_happy_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_batch_happy_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
         _create_qm9_xyz_files(self._xyz_dir, count=3)
-        self._features, self._metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
+        self._features, self._metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
@@ -833,40 +882,40 @@ class TestParseQM9XYZFilesHappyPath(unittest.TestCase):
 
     def test_metadata_num_molecules_parsed(self):
         """Metadata records correct number of parsed molecules."""
-        self.assertEqual(self._metadata['num_molecules_parsed'], 3)
+        self.assertEqual(self._metadata["num_molecules_parsed"], 3)
 
     def test_metadata_num_molecules_failed(self):
         """Metadata records zero failures for valid files."""
-        self.assertEqual(self._metadata['num_molecules_failed'], 0)
+        self.assertEqual(self._metadata["num_molecules_failed"], 0)
 
     def test_metadata_total_files_found(self):
         """Metadata records total .xyz files discovered."""
-        self.assertEqual(self._metadata['total_files_found'], 3)
+        self.assertEqual(self._metadata["total_files_found"], 3)
 
     def test_metadata_source_format(self):
         """Metadata identifies source format as 'qm9_xyz'."""
-        self.assertEqual(self._metadata['source_format'], 'qm9_xyz')
+        self.assertEqual(self._metadata["source_format"], "qm9_xyz")
 
     def test_features_contain_compounds(self):
         """Features dict contains 'compounds' key."""
-        self.assertIn('compounds', self._features)
-        self.assertEqual(len(self._features['compounds']), 3)
+        self.assertIn("compounds", self._features)
+        self.assertEqual(len(self._features["compounds"]), 3)
 
     def test_compound_names_from_file_stems(self):
         """Compound names are derived from file stems (e.g., 'dsgdb9nsd_000001')."""
-        compounds = list(self._features['compounds'])
+        compounds = list(self._features["compounds"])
         for comp in compounds:
-            self.assertTrue(comp.startswith('dsgdb9nsd_'))
+            self.assertTrue(comp.startswith("dsgdb9nsd_"))
 
     def test_features_contain_atoms(self):
         """Features dict contains 'atoms' key with correct count."""
-        self.assertIn('atoms', self._features)
-        self.assertEqual(len(self._features['atoms']), 3)
+        self.assertIn("atoms", self._features)
+        self.assertEqual(len(self._features["atoms"]), 3)
 
     def test_features_contain_coordinates(self):
         """Features dict contains 'coordinates' key with correct count."""
-        self.assertIn('coordinates', self._features)
-        self.assertEqual(len(self._features['coordinates']), 3)
+        self.assertIn("coordinates", self._features)
+        self.assertEqual(len(self._features["coordinates"]), 3)
 
     def test_features_contain_scalar_properties(self):
         """Features dict contains all 15 scalar property arrays."""
@@ -880,11 +929,12 @@ class TestParseQM9XYZFilesHappyPath(unittest.TestCase):
 # GROUP 10: parse_qm9_xyz_files — max_molecules Parameter (6 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFilesMaxMolecules(unittest.TestCase):
     """Test parse_qm9_xyz_files with max_molecules parameter."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_batch_max_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_batch_max_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
         _create_qm9_xyz_files(self._xyz_dir, count=5)
@@ -897,43 +947,39 @@ class TestParseQM9XYZFilesMaxMolecules(unittest.TestCase):
         features, metadata = parse_qm9_xyz_files(
             self._xyz_dir, max_molecules=2, logger=_make_logger()
         )
-        self.assertEqual(metadata['num_molecules_parsed'], 2)
-        self.assertEqual(len(features['compounds']), 2)
+        self.assertEqual(metadata["num_molecules_parsed"], 2)
+        self.assertEqual(len(features["compounds"]), 2)
 
     def test_max_molecules_none_parses_all(self):
         """max_molecules=None parses all files."""
         features, metadata = parse_qm9_xyz_files(
             self._xyz_dir, max_molecules=None, logger=_make_logger()
         )
-        self.assertEqual(metadata['num_molecules_parsed'], 5)
+        self.assertEqual(metadata["num_molecules_parsed"], 5)
 
     def test_max_molecules_greater_than_total(self):
         """max_molecules > total files parses all available files."""
         features, metadata = parse_qm9_xyz_files(
             self._xyz_dir, max_molecules=100, logger=_make_logger()
         )
-        self.assertEqual(metadata['num_molecules_parsed'], 5)
+        self.assertEqual(metadata["num_molecules_parsed"], 5)
 
     def test_max_molecules_one(self):
         """max_molecules=1 parses exactly one file."""
         features, metadata = parse_qm9_xyz_files(
             self._xyz_dir, max_molecules=1, logger=_make_logger()
         )
-        self.assertEqual(metadata['num_molecules_parsed'], 1)
-        self.assertEqual(len(features['compounds']), 1)
+        self.assertEqual(metadata["num_molecules_parsed"], 1)
+        self.assertEqual(len(features["compounds"]), 1)
 
     def test_total_files_found_unaffected_by_max(self):
         """total_files_found reflects all files found, not max_molecules."""
-        _, metadata = parse_qm9_xyz_files(
-            self._xyz_dir, max_molecules=2, logger=_make_logger()
-        )
-        self.assertEqual(metadata['total_files_found'], 5)
+        _, metadata = parse_qm9_xyz_files(self._xyz_dir, max_molecules=2, logger=_make_logger())
+        self.assertEqual(metadata["total_files_found"], 5)
 
     def test_scalar_arrays_length_matches_max(self):
         """Scalar property arrays have length matching max_molecules."""
-        features, _ = parse_qm9_xyz_files(
-            self._xyz_dir, max_molecules=3, logger=_make_logger()
-        )
+        features, _ = parse_qm9_xyz_files(self._xyz_dir, max_molecules=3, logger=_make_logger())
         for prop_name in QM9_NUMERIC_PROPERTY_NAMES:
             with self.subTest(prop=prop_name):
                 self.assertEqual(len(features[prop_name]), 3)
@@ -943,11 +989,12 @@ class TestParseQM9XYZFilesMaxMolecules(unittest.TestCase):
 # GROUP 11: parse_qm9_xyz_files — Error Paths (8 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFilesErrors(unittest.TestCase):
     """Test parse_qm9_xyz_files error handling."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_batch_err_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_batch_err_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
 
@@ -991,8 +1038,8 @@ class TestParseQM9XYZFilesErrors(unittest.TestCase):
         fpath = self._xyz_dir / "bad_000099.xyz"
         fpath.write_text("1\n")  # Too short
         _, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        self.assertEqual(metadata['num_molecules_failed'], 1)
-        self.assertEqual(metadata['num_molecules_parsed'], 3)
+        self.assertEqual(metadata["num_molecules_failed"], 1)
+        self.assertEqual(metadata["num_molecules_parsed"], 3)
 
     def test_partial_failure_sample_in_metadata(self):
         """Failed files sample is included in metadata."""
@@ -1002,15 +1049,15 @@ class TestParseQM9XYZFilesErrors(unittest.TestCase):
         fpath = self._xyz_dir / "bad_000099.xyz"
         fpath.write_text("1\n")
         _, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        self.assertIn('failed_files_sample', metadata)
-        self.assertIsInstance(metadata['failed_files_sample'], list)
-        self.assertGreater(len(metadata['failed_files_sample']), 0)
+        self.assertIn("failed_files_sample", metadata)
+        self.assertIsInstance(metadata["failed_files_sample"], list)
+        self.assertGreater(len(metadata["failed_files_sample"]), 0)
 
     def test_no_failed_files_sample_on_success(self):
         """Metadata omits 'failed_files_sample' when all files parse successfully."""
         _create_qm9_xyz_files(self._xyz_dir, count=2)
         _, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        self.assertNotIn('failed_files_sample', metadata)
+        self.assertNotIn("failed_files_sample", metadata)
 
     def test_rglob_finds_nested_xyz_files(self):
         """parse_qm9_xyz_files uses rglob, finding .xyz files in subdirectories."""
@@ -1021,14 +1068,14 @@ class TestParseQM9XYZFilesErrors(unittest.TestCase):
         content2 = _build_qm9_xyz_content(mol_index=2)
         _write_qm9_xyz_file(self._xyz_dir, "top.xyz", content2)
         _, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        self.assertEqual(metadata['total_files_found'], 2)
-        self.assertEqual(metadata['num_molecules_parsed'], 2)
+        self.assertEqual(metadata["total_files_found"], 2)
+        self.assertEqual(metadata["num_molecules_parsed"], 2)
 
     def test_custom_logger_used(self):
         """Custom logger is used when provided."""
         _create_qm9_xyz_files(self._xyz_dir, count=1)
         test_logger = _make_logger()
-        with patch.object(test_logger, 'info') as mock_info:
+        with patch.object(test_logger, "info") as mock_info:
             parse_qm9_xyz_files(self._xyz_dir, logger=test_logger)
             self.assertTrue(mock_info.called)
 
@@ -1037,11 +1084,12 @@ class TestParseQM9XYZFilesErrors(unittest.TestCase):
 # GROUP 12: parse_qm9_xyz_files — Logging (6 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFilesLogging(unittest.TestCase):
     """Test parse_qm9_xyz_files logging behavior."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_batch_log_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_batch_log_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
 
@@ -1052,43 +1100,43 @@ class TestParseQM9XYZFilesLogging(unittest.TestCase):
         """Logs the number of .xyz files found."""
         _create_qm9_xyz_files(self._xyz_dir, count=3)
         test_logger = _make_logger()
-        with patch.object(test_logger, 'info') as mock_info:
+        with patch.object(test_logger, "info") as mock_info:
             parse_qm9_xyz_files(self._xyz_dir, logger=test_logger)
             info_messages = [str(c) for c in mock_info.call_args_list]
-            joined = ' '.join(info_messages)
-            self.assertIn('3', joined)
+            joined = " ".join(info_messages)
+            self.assertIn("3", joined)
 
     def test_logs_processing_count(self):
         """Logs the number of files being processed."""
         _create_qm9_xyz_files(self._xyz_dir, count=2)
         test_logger = _make_logger()
-        with patch.object(test_logger, 'info') as mock_info:
+        with patch.object(test_logger, "info") as mock_info:
             parse_qm9_xyz_files(self._xyz_dir, max_molecules=1, logger=test_logger)
             info_messages = [str(c) for c in mock_info.call_args_list]
-            joined = ' '.join(info_messages)
+            joined = " ".join(info_messages)
             # Should mention both total found and processing count
-            self.assertIn('2', joined)
-            self.assertIn('1', joined)
+            self.assertIn("2", joined)
+            self.assertIn("1", joined)
 
     def test_logs_parsing_commenced(self):
         """Logs a 'Parsing commenced...' message."""
         _create_qm9_xyz_files(self._xyz_dir, count=1)
         test_logger = _make_logger()
-        with patch.object(test_logger, 'info') as mock_info:
+        with patch.object(test_logger, "info") as mock_info:
             parse_qm9_xyz_files(self._xyz_dir, logger=test_logger)
             info_messages = [str(c) for c in mock_info.call_args_list]
-            joined = ' '.join(info_messages)
-            self.assertIn('commenced', joined.lower())
+            joined = " ".join(info_messages)
+            self.assertIn("commenced", joined.lower())
 
     def test_logs_completion_message(self):
         """Logs a completion message with parsed count."""
         _create_qm9_xyz_files(self._xyz_dir, count=2)
         test_logger = _make_logger()
-        with patch.object(test_logger, 'info') as mock_info:
+        with patch.object(test_logger, "info") as mock_info:
             parse_qm9_xyz_files(self._xyz_dir, logger=test_logger)
             info_messages = [str(c) for c in mock_info.call_args_list]
-            joined = ' '.join(info_messages)
-            self.assertIn('complete', joined.lower())
+            joined = " ".join(info_messages)
+            self.assertIn("complete", joined.lower())
 
     def test_logs_warning_on_failure(self):
         """Logs a warning when a file fails to parse."""
@@ -1096,7 +1144,7 @@ class TestParseQM9XYZFilesLogging(unittest.TestCase):
         fpath = self._xyz_dir / "bad_file.xyz"
         fpath.write_text("1\n")  # Too short
         test_logger = _make_logger()
-        with patch.object(test_logger, 'warning') as mock_warning:
+        with patch.object(test_logger, "warning") as mock_warning:
             parse_qm9_xyz_files(self._xyz_dir, logger=test_logger)
             self.assertTrue(mock_warning.called)
 
@@ -1105,39 +1153,38 @@ class TestParseQM9XYZFilesLogging(unittest.TestCase):
         _create_qm9_xyz_files(self._xyz_dir, count=1)
         # Should not raise — uses module-level logger
         features, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=None)
-        self.assertEqual(metadata['num_molecules_parsed'], 1)
+        self.assertEqual(metadata["num_molecules_parsed"], 1)
 
 
 # ============================================================================
 # GROUP 13: parse_qm9_xyz_files — Feature Array Dtypes & Metadata (10 tests)
 # ============================================================================
 
+
 class TestParseQM9XYZFilesFeaturesAndMetadata(unittest.TestCase):
     """Test the feature arrays and metadata produced by parse_qm9_xyz_files."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_features_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_features_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
         _create_qm9_xyz_files(self._xyz_dir, count=3)
-        self._features, self._metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
+        self._features, self._metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_compounds_dtype_object(self):
         """'compounds' array has object dtype."""
-        self.assertEqual(self._features['compounds'].dtype, object)
+        self.assertEqual(self._features["compounds"].dtype, object)
 
     def test_atoms_dtype_object(self):
         """'atoms' array has object dtype (ragged arrays)."""
-        self.assertEqual(self._features['atoms'].dtype, object)
+        self.assertEqual(self._features["atoms"].dtype, object)
 
     def test_coordinates_dtype_object(self):
         """'coordinates' array has object dtype (ragged arrays)."""
-        self.assertEqual(self._features['coordinates'].dtype, object)
+        self.assertEqual(self._features["coordinates"].dtype, object)
 
     def test_scalar_properties_dtype_float64(self):
         """All scalar property arrays have float64 dtype."""
@@ -1147,39 +1194,40 @@ class TestParseQM9XYZFilesFeaturesAndMetadata(unittest.TestCase):
 
     def test_smiles_array_present(self):
         """Features contain 'smiles' array."""
-        self.assertIn('smiles', self._features)
-        self.assertEqual(len(self._features['smiles']), 3)
+        self.assertIn("smiles", self._features)
+        self.assertEqual(len(self._features["smiles"]), 3)
 
     def test_smiles_relaxed_array_present(self):
         """Features contain 'smiles_relaxed' array."""
-        self.assertIn('smiles_relaxed', self._features)
+        self.assertIn("smiles_relaxed", self._features)
 
     def test_inchi_array_present(self):
         """Features contain 'inchi' array."""
-        self.assertIn('inchi', self._features)
+        self.assertIn("inchi", self._features)
 
     def test_freqs_array_present(self):
         """Features contain 'freqs' array."""
-        self.assertIn('freqs', self._features)
-        self.assertEqual(len(self._features['freqs']), 3)
+        self.assertIn("freqs", self._features)
+        self.assertEqual(len(self._features["freqs"]), 3)
 
     def test_metadata_property_names(self):
         """Metadata 'property_names' lists all 15 numeric properties."""
-        self.assertIn('property_names', self._metadata)
-        self.assertEqual(len(self._metadata['property_names']), 15)
-        self.assertEqual(set(self._metadata['property_names']), set(QM9_NUMERIC_PROPERTY_NAMES))
+        self.assertIn("property_names", self._metadata)
+        self.assertEqual(len(self._metadata["property_names"]), 15)
+        self.assertEqual(set(self._metadata["property_names"]), set(QM9_NUMERIC_PROPERTY_NAMES))
 
     def test_metadata_flags(self):
         """Metadata contains expected boolean and string flags."""
-        self.assertTrue(self._metadata['has_mulliken_charges'])
-        self.assertTrue(self._metadata['has_frequencies'])
-        self.assertEqual(self._metadata['coordinate_units'], 'angstrom')
-        self.assertEqual(self._metadata['energy_units'], 'hartree')
+        self.assertTrue(self._metadata["has_mulliken_charges"])
+        self.assertTrue(self._metadata["has_frequencies"])
+        self.assertEqual(self._metadata["coordinate_units"], "angstrom")
+        self.assertEqual(self._metadata["energy_units"], "hartree")
 
 
 # ============================================================================
 # GROUP 14: get_qm9_property_info (8 tests)
 # ============================================================================
+
 
 class TestGetQM9PropertyInfo(unittest.TestCase):
     """Test get_qm9_property_info returns correct property metadata."""
@@ -1204,37 +1252,38 @@ class TestGetQM9PropertyInfo(unittest.TestCase):
         """Each property has 'unit' and 'description' keys."""
         for prop_name, meta in self._info.items():
             with self.subTest(prop=prop_name):
-                self.assertIn('unit', meta)
-                self.assertIn('description', meta)
-                self.assertIsInstance(meta['unit'], str)
-                self.assertIsInstance(meta['description'], str)
+                self.assertIn("unit", meta)
+                self.assertIn("description", meta)
+                self.assertIsInstance(meta["unit"], str)
+                self.assertIsInstance(meta["description"], str)
 
     def test_U0_unit_is_hartree(self):
         """U0 unit is 'Hartree'."""
-        self.assertEqual(self._info['U0']['unit'], 'Hartree')
+        self.assertEqual(self._info["U0"]["unit"], "Hartree")
 
     def test_mu_unit_is_debye(self):
         """mu unit is 'Debye'."""
-        self.assertEqual(self._info['mu']['unit'], 'Debye')
+        self.assertEqual(self._info["mu"]["unit"], "Debye")
 
     def test_Cv_unit_is_cal_mol_K(self):
         """Cv unit is 'cal/(mol·K)'."""
-        self.assertEqual(self._info['Cv']['unit'], 'cal/(mol·K)')
+        self.assertEqual(self._info["Cv"]["unit"], "cal/(mol·K)")
 
     def test_A_description_mentions_rotational(self):
         """A description mentions 'Rotational'."""
-        self.assertIn('otational', self._info['A']['description'])
+        self.assertIn("otational", self._info["A"]["description"])
 
 
 # ============================================================================
 # GROUP 15: Integration Scenarios (8 tests)
 # ============================================================================
 
+
 class TestQM9ParserIntegration(unittest.TestCase):
     """Integration tests combining multiple parser functions."""
 
     def setUp(self):
-        self._tmpdir = tempfile.mkdtemp(prefix='test_qm9_integ_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_qm9_integ_")
         self._xyz_dir = Path(self._tmpdir) / "xyz_files"
         self._xyz_dir.mkdir()
 
@@ -1244,30 +1293,26 @@ class TestQM9ParserIntegration(unittest.TestCase):
     def test_end_to_end_pipeline(self):
         """Full end-to-end: create files → parse → verify features and metadata."""
         _create_qm9_xyz_files(self._xyz_dir, count=3)
-        features, metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
-        self.assertEqual(metadata['num_molecules_parsed'], 3)
-        self.assertIn('compounds', features)
-        self.assertIn('atoms', features)
-        self.assertIn('coordinates', features)
+        features, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
+        self.assertEqual(metadata["num_molecules_parsed"], 3)
+        self.assertIn("compounds", features)
+        self.assertIn("atoms", features)
+        self.assertIn("coordinates", features)
         for prop_name in QM9_NUMERIC_PROPERTY_NAMES:
             self.assertIn(prop_name, features)
 
     def test_feature_arrays_consistent_length(self):
         """All feature arrays have consistent length across molecules."""
         _create_qm9_xyz_files(self._xyz_dir, count=4)
-        features, metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
-        n = metadata['num_molecules_parsed']
-        self.assertEqual(len(features['compounds']), n)
-        self.assertEqual(len(features['atoms']), n)
-        self.assertEqual(len(features['coordinates']), n)
-        self.assertEqual(len(features['Qmulliken']), n)
-        self.assertEqual(len(features['freqs']), n)
-        self.assertEqual(len(features['smiles']), n)
-        self.assertEqual(len(features['inchi']), n)
+        features, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
+        n = metadata["num_molecules_parsed"]
+        self.assertEqual(len(features["compounds"]), n)
+        self.assertEqual(len(features["atoms"]), n)
+        self.assertEqual(len(features["coordinates"]), n)
+        self.assertEqual(len(features["Qmulliken"]), n)
+        self.assertEqual(len(features["freqs"]), n)
+        self.assertEqual(len(features["smiles"]), n)
+        self.assertEqual(len(features["inchi"]), n)
         for prop_name in QM9_NUMERIC_PROPERTY_NAMES:
             self.assertEqual(len(features[prop_name]), n)
 
@@ -1277,29 +1322,41 @@ class TestQM9ParserIntegration(unittest.TestCase):
         fpath = self._xyz_dir / "bad.xyz"
         fpath.write_text("1\n")
         _, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        total = metadata['num_molecules_parsed'] + metadata['num_molecules_failed']
-        self.assertLessEqual(total, metadata['total_files_found'])
+        total = metadata["num_molecules_parsed"] + metadata["num_molecules_failed"]
+        self.assertLessEqual(total, metadata["total_files_found"])
 
     def test_single_file_parse_round_trip(self):
         """_parse_qm9_xyz_file result feeds correctly into the batch pipeline."""
-        known_props = [100.0, 200.0, 300.0, 0.5, 10.0,
-                       -0.3, 0.1, 0.4, 30.0, 0.04,
-                       -40.0, -39.9, -39.8, -40.1, 5.0]
+        known_props = [
+            100.0,
+            200.0,
+            300.0,
+            0.5,
+            10.0,
+            -0.3,
+            0.1,
+            0.4,
+            30.0,
+            0.04,
+            -40.0,
+            -39.9,
+            -39.8,
+            -40.1,
+            5.0,
+        ]
         content = _build_qm9_xyz_content(
             num_atoms=2,
             mol_index=42,
-            elements=['C', 'H'],
+            elements=["C", "H"],
             coords=[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
             charges=[0.1, -0.1],
             scalar_props=known_props,
         )
         _write_qm9_xyz_file(self._xyz_dir, "dsgdb9nsd_000042.xyz", content)
-        features, metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
-        self.assertEqual(metadata['num_molecules_parsed'], 1)
-        self.assertAlmostEqual(features['A'][0], 100.0, places=4)
-        self.assertAlmostEqual(features['U0'][0], -40.0, places=4)
+        features, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
+        self.assertEqual(metadata["num_molecules_parsed"], 1)
+        self.assertAlmostEqual(features["A"][0], 100.0, places=4)
+        self.assertAlmostEqual(features["U0"][0], -40.0, places=4)
 
     def test_multiple_distinct_molecules(self):
         """Multiple molecules with distinct properties are accumulated correctly."""
@@ -1309,13 +1366,13 @@ class TestQM9ParserIntegration(unittest.TestCase):
                 mol_index=i + 1,
                 scalar_props=props,
                 num_atoms=2,
-                elements=['C', 'H'],
+                elements=["C", "H"],
                 coords=[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
                 charges=[0.0, 0.0],
             )
             _write_qm9_xyz_file(self._xyz_dir, f"mol_{i:06d}.xyz", content)
         features, _ = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        u0_values = features['U0']
+        u0_values = features["U0"]
         self.assertEqual(len(u0_values), 3)
         self.assertAlmostEqual(sorted(u0_values)[0], -60.0, places=4)
         self.assertAlmostEqual(sorted(u0_values)[2], -40.0, places=4)
@@ -1323,11 +1380,9 @@ class TestQM9ParserIntegration(unittest.TestCase):
     def test_property_info_covers_all_parsed_properties(self):
         """get_qm9_property_info covers all properties returned by parsing."""
         _create_qm9_xyz_files(self._xyz_dir, count=1)
-        features, metadata = parse_qm9_xyz_files(
-            self._xyz_dir, logger=_make_logger()
-        )
+        features, metadata = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
         info = get_qm9_property_info()
-        for prop_name in metadata['property_names']:
+        for prop_name in metadata["property_names"]:
             with self.subTest(prop=prop_name):
                 self.assertIn(prop_name, info)
 
@@ -1335,13 +1390,13 @@ class TestQM9ParserIntegration(unittest.TestCase):
         """ELEMENT_TO_Z covers all elements that might appear in parsed files."""
         content = _build_qm9_xyz_content(
             num_atoms=5,
-            elements=['H', 'C', 'N', 'O', 'F'],
+            elements=["H", "C", "N", "O", "F"],
             coords=[[i, 0.0, 0.0] for i in range(5)],
             charges=[0.0] * 5,
         )
         _write_qm9_xyz_file(self._xyz_dir, "all_elem.xyz", content)
         features, _ = parse_qm9_xyz_files(self._xyz_dir, logger=_make_logger())
-        atoms = features['atoms'][0]
+        atoms = features["atoms"][0]
         for z in atoms:
             self.assertIn(z, ELEMENT_TO_Z.values())
 
@@ -1354,7 +1409,7 @@ class TestQM9ParserIntegration(unittest.TestCase):
         # into a 2D object array, so each element may itself be object-dtype.
         # We verify the values are numerically correct regardless of inner dtype.
         for i in range(2):
-            charges = features['Qmulliken'][i]
+            charges = features["Qmulliken"][i]
             self.assertIsInstance(charges, np.ndarray)
             self.assertEqual(len(charges), 5)  # Default CH4 has 5 atoms
             # Values should be convertible to float (numeric content intact)
@@ -1373,21 +1428,21 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestElementToZ,                        # GROUP  1:  8 tests
-        TestQM9PropertyNames,                  # GROUP  2:  8 tests
-        TestParseScientificNotation,           # GROUP  3: 10 tests
-        TestParseQM9XYZFileHappyPath,          # GROUP  4: 16 tests
-        TestParseQM9XYZFileScalarProperties,   # GROUP  5: 10 tests
-        TestParseQM9XYZFileStarNotation,       # GROUP  6:  4 tests
-        TestParseQM9XYZFileEdgeCases,          # GROUP  7: 10 tests
-        TestParseQM9XYZFileErrors,             # GROUP  8:  8 tests
-        TestParseQM9XYZFilesHappyPath,         # GROUP  9: 12 tests
-        TestParseQM9XYZFilesMaxMolecules,      # GROUP 10:  6 tests
-        TestParseQM9XYZFilesErrors,            # GROUP 11:  8 tests
-        TestParseQM9XYZFilesLogging,           # GROUP 12:  6 tests
+        TestElementToZ,  # GROUP  1:  8 tests
+        TestQM9PropertyNames,  # GROUP  2:  8 tests
+        TestParseScientificNotation,  # GROUP  3: 10 tests
+        TestParseQM9XYZFileHappyPath,  # GROUP  4: 16 tests
+        TestParseQM9XYZFileScalarProperties,  # GROUP  5: 10 tests
+        TestParseQM9XYZFileStarNotation,  # GROUP  6:  4 tests
+        TestParseQM9XYZFileEdgeCases,  # GROUP  7: 10 tests
+        TestParseQM9XYZFileErrors,  # GROUP  8:  8 tests
+        TestParseQM9XYZFilesHappyPath,  # GROUP  9: 12 tests
+        TestParseQM9XYZFilesMaxMolecules,  # GROUP 10:  6 tests
+        TestParseQM9XYZFilesErrors,  # GROUP 11:  8 tests
+        TestParseQM9XYZFilesLogging,  # GROUP 12:  6 tests
         TestParseQM9XYZFilesFeaturesAndMetadata,  # GROUP 13: 10 tests
-        TestGetQM9PropertyInfo,                # GROUP 14:  8 tests
-        TestQM9ParserIntegration,              # GROUP 15:  8 tests
+        TestGetQM9PropertyInfo,  # GROUP 14:  8 tests
+        TestQM9ParserIntegration,  # GROUP 15:  8 tests
     ]
 
     for test_class in test_classes:

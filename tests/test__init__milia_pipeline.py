@@ -41,12 +41,11 @@ Markers:
 
 import importlib
 import inspect
-import sys
-import os
-import types
 import logging
+import sys
+import types
 from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch
 
 import pytest
 
@@ -64,6 +63,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def milia_pkg():
     """
@@ -74,20 +74,18 @@ def milia_pkg():
     """
     try:
         import milia_pipeline
+
         return milia_pipeline
     except ImportError as exc:
         pytest.fail(
-            f"milia_pipeline could not be imported — smoke test precondition "
-            f"violated: {exc}"
+            f"milia_pipeline could not be imported — smoke test precondition violated: {exc}"
         )
 
 
 @pytest.fixture(scope="module")
 def all_names(milia_pkg):
     """Return the ``__all__`` list from the package."""
-    assert hasattr(milia_pkg, "__all__"), (
-        "milia_pipeline.__all__ is missing — contract violation"
-    )
+    assert hasattr(milia_pkg, "__all__"), "milia_pipeline.__all__ is missing — contract violation"
     return list(milia_pkg.__all__)
 
 
@@ -119,25 +117,31 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-        "__maintainer__",
-        "__status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+            "__maintainer__",
+            "__status__",
+        ],
+    )
     def test_metadata_attribute_exists(self, milia_pkg, attr):
         """Each metadata dunder is defined on the package."""
         assert hasattr(milia_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-        "__maintainer__",
-        "__status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+            "__maintainer__",
+            "__status__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, milia_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(milia_pkg, attr)
@@ -149,9 +153,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = milia_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         # Each part should be numeric (allows pre-release suffixes like 1.1.0rc1)
         for part in parts:
             numeric_part = ""
@@ -160,16 +162,20 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
     def test_status_is_recognized_value(self, milia_pkg):
         """``__status__`` is one of the standard PyPI classifier values."""
         recognized = {
-            "Planning", "Pre-Alpha", "Alpha", "Beta",
-            "Production", "Production/Stable", "Mature", "Inactive",
+            "Planning",
+            "Pre-Alpha",
+            "Alpha",
+            "Beta",
+            "Production",
+            "Production/Stable",
+            "Mature",
+            "Inactive",
         }
         assert milia_pkg.__status__ in recognized, (
             f"Unexpected __status__ = '{milia_pkg.__status__}'"
@@ -180,13 +186,16 @@ class TestSmokeCLIExports:
     """§1.2 + §1.3 — CLI management exports are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "CLIManager",
-        "CLIValidationError",
-        "create_cli_manager",
-        "parse_cli_args",
-        "get_cli_registry_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "CLIManager",
+            "CLIValidationError",
+            "create_cli_manager",
+            "parse_cli_args",
+            "get_cli_registry_status",
+        ],
+    )
     def test_cli_export_is_importable(self, milia_pkg, name):
         """Each CLI export resolves to a non-None object."""
         obj = getattr(milia_pkg, name, None)
@@ -197,19 +206,22 @@ class TestSmokeLoggingExports:
     """§1.2 — Logging configuration exports are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "setup_logging",
-        "HandlerLoggerAdapter",
-        "MigrationLoggerAdapter",
-        "TransformLoggerAdapter",
-        "create_handler_logger",
-        "create_migration_logger",
-        "create_transform_logger",
-        "log_exception_with_context",
-        "configure_debug_logging_for_handlers",
-        "configure_debug_logging_for_transforms",
-        "disable_verbose_third_party_logging",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "setup_logging",
+            "HandlerLoggerAdapter",
+            "MigrationLoggerAdapter",
+            "TransformLoggerAdapter",
+            "create_handler_logger",
+            "create_migration_logger",
+            "create_transform_logger",
+            "log_exception_with_context",
+            "configure_debug_logging_for_handlers",
+            "configure_debug_logging_for_transforms",
+            "disable_verbose_third_party_logging",
+        ],
+    )
     def test_logging_export_is_importable(self, milia_pkg, name):
         """Each logging export resolves to a non-None object."""
         obj = getattr(milia_pkg, name, None)
@@ -293,35 +305,39 @@ class TestSmokeExceptionExports:
     def test_exception_is_a_class(self, milia_pkg, name):
         """Each exception export is a class (not an instance or function)."""
         obj = getattr(milia_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeExceptionFactoryExports:
     """§1.2 — Exception factory functions and registry utilities are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler_error",
-        "create_uncertainty_processing_error",
-        "create_handler_not_available_error",
-        "get_exception_registry_status",
-        "validate_exception_hierarchy",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler_error",
+            "create_uncertainty_processing_error",
+            "create_handler_not_available_error",
+            "get_exception_registry_status",
+            "validate_exception_hierarchy",
+        ],
+    )
     def test_factory_export_exists(self, milia_pkg, name):
         """Each factory/utility export is present and non-None."""
         obj = getattr(milia_pkg, name, None)
         assert obj is not None, f"Factory export '{name}' is None or missing"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "create_dataset_handler_error",
-        "create_uncertainty_processing_error",
-        "create_handler_not_available_error",
-        "get_exception_registry_status",
-        "validate_exception_hierarchy",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_dataset_handler_error",
+            "create_uncertainty_processing_error",
+            "create_handler_not_available_error",
+            "get_exception_registry_status",
+            "validate_exception_hierarchy",
+        ],
+    )
     def test_factory_export_is_callable(self, milia_pkg, name):
         """Each factory/utility export is callable."""
         obj = getattr(milia_pkg, name)
@@ -332,27 +348,31 @@ class TestSmokeConditionalPostTrainingFlags:
     """§1.2 — Conditional availability flags exist and are boolean."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_POST_TRAINING_AVAILABLE",
-        "_DATA_PREPARATION_AVAILABLE",
-        "_TRANSFER_LEARNING_AVAILABLE",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_POST_TRAINING_AVAILABLE",
+            "_DATA_PREPARATION_AVAILABLE",
+            "_TRANSFER_LEARNING_AVAILABLE",
+        ],
+    )
     def test_availability_flag_exists(self, milia_pkg, flag):
         """Each conditional availability flag is defined."""
         assert hasattr(milia_pkg, flag), f"Flag '{flag}' is missing"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_POST_TRAINING_AVAILABLE",
-        "_DATA_PREPARATION_AVAILABLE",
-        "_TRANSFER_LEARNING_AVAILABLE",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_POST_TRAINING_AVAILABLE",
+            "_DATA_PREPARATION_AVAILABLE",
+            "_TRANSFER_LEARNING_AVAILABLE",
+        ],
+    )
     def test_availability_flag_is_bool(self, milia_pkg, flag):
         """Each conditional availability flag is a boolean."""
         value = getattr(milia_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
 
 class TestSmokeConditionalPostTrainingExports:
@@ -390,25 +410,19 @@ class TestSmokeConditionalPostTrainingExports:
         Post-training exports are defined on the package regardless of
         availability (they may be ``None`` if the submodule is absent).
         """
-        assert hasattr(milia_pkg, name), (
-            f"Post-training export '{name}' is not defined"
-        )
+        assert hasattr(milia_pkg, name), f"Post-training export '{name}' is not defined"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DATA_PREP_NAMES)
     def test_data_preparation_name_defined(self, milia_pkg, name):
         """Data-preparation exports are defined (possibly None)."""
-        assert hasattr(milia_pkg, name), (
-            f"Data-preparation export '{name}' is not defined"
-        )
+        assert hasattr(milia_pkg, name), f"Data-preparation export '{name}' is not defined"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", TRANSFER_NAMES)
     def test_transfer_learning_name_defined(self, milia_pkg, name):
         """Transfer-learning exports are defined (possibly None)."""
-        assert hasattr(milia_pkg, name), (
-            f"Transfer-learning export '{name}' is not defined"
-        )
+        assert hasattr(milia_pkg, name), f"Transfer-learning export '{name}' is not defined"
 
     @pytest.mark.smoke
     def test_post_training_consistency_when_available(self, milia_pkg):
@@ -420,9 +434,7 @@ class TestSmokeConditionalPostTrainingExports:
             pytest.skip("Post-training module not available")
         for name in self.POST_TRAINING_NAMES:
             obj = getattr(milia_pkg, name)
-            assert obj is not None, (
-                f"_POST_TRAINING_AVAILABLE is True but '{name}' is None"
-            )
+            assert obj is not None, f"_POST_TRAINING_AVAILABLE is True but '{name}' is None"
 
     @pytest.mark.smoke
     def test_data_preparation_consistency_when_available(self, milia_pkg):
@@ -434,9 +446,7 @@ class TestSmokeConditionalPostTrainingExports:
             pytest.skip("Data preparation module not available")
         for name in self.DATA_PREP_NAMES:
             obj = getattr(milia_pkg, name)
-            assert obj is not None, (
-                f"_DATA_PREPARATION_AVAILABLE is True but '{name}' is None"
-            )
+            assert obj is not None, f"_DATA_PREPARATION_AVAILABLE is True but '{name}' is None"
 
     @pytest.mark.smoke
     def test_transfer_learning_consistency_when_available(self, milia_pkg):
@@ -448,9 +458,7 @@ class TestSmokeConditionalPostTrainingExports:
             pytest.skip("Transfer learning module not available")
         for name in self.TRANSFER_NAMES:
             obj = getattr(milia_pkg, name)
-            assert obj is not None, (
-                f"_TRANSFER_LEARNING_AVAILABLE is True but '{name}' is None"
-            )
+            assert obj is not None, f"_TRANSFER_LEARNING_AVAILABLE is True but '{name}' is None"
 
     @pytest.mark.smoke
     def test_post_training_none_when_unavailable(self, milia_pkg):
@@ -462,8 +470,11 @@ class TestSmokeConditionalPostTrainingExports:
         absent, every post-training export is set to ``None``.
         """
         import importlib
+
         target = "milia_pipeline.models.post_training"
-        original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+        original_import = (
+            __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
+        )
 
         def _mock_import(name, *args, **kwargs):
             if name == target or name.startswith(target + "."):
@@ -486,9 +497,7 @@ class TestSmokeConditionalPostTrainingExports:
             )
             for name in self.POST_TRAINING_NAMES:
                 obj = getattr(reloaded, name)
-                assert obj is None, (
-                    f"_POST_TRAINING_AVAILABLE is False but '{name}' is not None"
-                )
+                assert obj is None, f"_POST_TRAINING_AVAILABLE is False but '{name}' is not None"
         finally:
             # Fully restore sys.modules to the pre-reload snapshot, then
             # reload the package cleanly so subsequent tests (and test
@@ -505,8 +514,11 @@ class TestSmokeConditionalPostTrainingExports:
         the data_preparation import patched to raise ImportError.
         """
         import importlib
+
         target = "milia_pipeline.models.post_training.data_preparation"
-        original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+        original_import = (
+            __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
+        )
 
         def _mock_import(name, *args, **kwargs):
             if name == target or name.startswith(target + "."):
@@ -524,9 +536,7 @@ class TestSmokeConditionalPostTrainingExports:
             )
             for name in self.DATA_PREP_NAMES:
                 obj = getattr(reloaded, name)
-                assert obj is None, (
-                    f"_DATA_PREPARATION_AVAILABLE is False but '{name}' is not None"
-                )
+                assert obj is None, f"_DATA_PREPARATION_AVAILABLE is False but '{name}' is not None"
         finally:
             sys.modules.clear()
             sys.modules.update(saved_modules)
@@ -539,8 +549,11 @@ class TestSmokeConditionalPostTrainingExports:
         the transfer_learning import patched to raise ImportError.
         """
         import importlib
+
         target = "milia_pipeline.models.post_training.transfer_learning"
-        original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+        original_import = (
+            __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
+        )
 
         def _mock_import(name, *args, **kwargs):
             if name == target or name.startswith(target + "."):
@@ -593,8 +606,12 @@ class TestSmokeConvenienceFunctions:
         """``get_package_info()`` contains all documented keys."""
         info = milia_pkg.get_package_info()
         required_keys = {
-            "version", "author", "license", "maintainer",
-            "status", "python_requires",
+            "version",
+            "author",
+            "license",
+            "maintainer",
+            "status",
+            "python_requires",
         }
         missing = required_keys - set(info.keys())
         assert not missing, f"get_package_info() missing keys: {missing}"
@@ -792,71 +809,118 @@ class TestContractAllCompleteness:
         assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        # Package Metadata
-        "__version__", "__author__", "__license__", "__maintainer__", "__status__",
-        # CLI Management
-        "CLIManager", "CLIValidationError", "create_cli_manager",
-        "parse_cli_args", "get_cli_registry_status",
-        # Post-Training (conditional — names still listed in __all__)
-        "ModelLoader", "load_model", "load_model_only",
-        "Predictor", "predict",
-        "CheckpointManager", "CHECKPOINT_FORMAT_VERSION",
-        "convert_to_pyg", "convert_batch_to_pyg",
-        "list_available_formats", "DataConverterRegistry",
-        "FineTuner", "FreezeStrategy",
-        "_POST_TRAINING_AVAILABLE", "_DATA_PREPARATION_AVAILABLE",
-        "_TRANSFER_LEARNING_AVAILABLE",
-        # Logging
-        "setup_logging", "HandlerLoggerAdapter", "MigrationLoggerAdapter",
-        "TransformLoggerAdapter", "create_handler_logger",
-        "create_migration_logger", "create_transform_logger",
-        "log_exception_with_context",
-        "configure_debug_logging_for_handlers",
-        "configure_debug_logging_for_transforms",
-        "disable_verbose_third_party_logging",
-        # Base + Config Exceptions
-        "BaseProjectError", "LoggingConfigurationError",
-        "ConfigurationError", "DataProcessingError",
-        "PreprocessingRequiredError", "MissingDependencyError",
-        # Molecule Exceptions
-        "MoleculeProcessingError", "MoleculeFilterRejectedError",
-        "AtomFilterError", "RDKitConversionError", "PyGDataCreationError",
-        "PropertyEnrichmentError", "StructuralFeatureError",
-        "VibrationRefinementError",
-        # Phase 7
-        "UncertaintyProcessingError",
-        # Handler Exceptions
-        "HandlerError", "HandlerNotAvailableError",
-        "HandlerConfigurationError", "HandlerOperationError",
-        "HandlerValidationError", "HandlerCompatibilityError",
-        "HandlerIntegrationError", "TransformHandlerIntegrationError",
-        "DatasetSpecificHandlerError",
-        # Validation/Compat Exceptions
-        "ValidationError", "CompatibilityError",
-        "MigrationError", "LegacyCodeError",
-        # Transform Exceptions
-        "TransformError", "TransformCompatibilityError",
-        "TransformationError", "DatasetIntegrationError",
-        "TransformValidationError", "TransformCompositionError",
-        "TransformNotFoundError", "TransformRegistryError",
-        "ExperimentalSetupError", "TransformConfigurationError",
-        # Plugin Exceptions
-        "PluginError", "PluginValidationError", "PluginSecurityError",
-        "PluginDependencyError", "PluginDiscoveryError",
-        "PluginRegistrationError", "PluginLoadError",
-        # Descriptor Exceptions
-        "DescriptorError", "DescriptorCalculationError",
-        "DescriptorValidationError", "DescriptorPluginError",
-        "DescriptorPluginLoadError", "DescriptorPluginValidationError",
-        "DescriptorPluginConfigError",
-        # Factory Functions
-        "create_dataset_handler_error",
-        "create_uncertainty_processing_error",
-        "create_handler_not_available_error",
-        "get_exception_registry_status",
-        "validate_exception_hierarchy",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            # Package Metadata
+            "__version__",
+            "__author__",
+            "__license__",
+            "__maintainer__",
+            "__status__",
+            # CLI Management
+            "CLIManager",
+            "CLIValidationError",
+            "create_cli_manager",
+            "parse_cli_args",
+            "get_cli_registry_status",
+            # Post-Training (conditional — names still listed in __all__)
+            "ModelLoader",
+            "load_model",
+            "load_model_only",
+            "Predictor",
+            "predict",
+            "CheckpointManager",
+            "CHECKPOINT_FORMAT_VERSION",
+            "convert_to_pyg",
+            "convert_batch_to_pyg",
+            "list_available_formats",
+            "DataConverterRegistry",
+            "FineTuner",
+            "FreezeStrategy",
+            "_POST_TRAINING_AVAILABLE",
+            "_DATA_PREPARATION_AVAILABLE",
+            "_TRANSFER_LEARNING_AVAILABLE",
+            # Logging
+            "setup_logging",
+            "HandlerLoggerAdapter",
+            "MigrationLoggerAdapter",
+            "TransformLoggerAdapter",
+            "create_handler_logger",
+            "create_migration_logger",
+            "create_transform_logger",
+            "log_exception_with_context",
+            "configure_debug_logging_for_handlers",
+            "configure_debug_logging_for_transforms",
+            "disable_verbose_third_party_logging",
+            # Base + Config Exceptions
+            "BaseProjectError",
+            "LoggingConfigurationError",
+            "ConfigurationError",
+            "DataProcessingError",
+            "PreprocessingRequiredError",
+            "MissingDependencyError",
+            # Molecule Exceptions
+            "MoleculeProcessingError",
+            "MoleculeFilterRejectedError",
+            "AtomFilterError",
+            "RDKitConversionError",
+            "PyGDataCreationError",
+            "PropertyEnrichmentError",
+            "StructuralFeatureError",
+            "VibrationRefinementError",
+            # Phase 7
+            "UncertaintyProcessingError",
+            # Handler Exceptions
+            "HandlerError",
+            "HandlerNotAvailableError",
+            "HandlerConfigurationError",
+            "HandlerOperationError",
+            "HandlerValidationError",
+            "HandlerCompatibilityError",
+            "HandlerIntegrationError",
+            "TransformHandlerIntegrationError",
+            "DatasetSpecificHandlerError",
+            # Validation/Compat Exceptions
+            "ValidationError",
+            "CompatibilityError",
+            "MigrationError",
+            "LegacyCodeError",
+            # Transform Exceptions
+            "TransformError",
+            "TransformCompatibilityError",
+            "TransformationError",
+            "DatasetIntegrationError",
+            "TransformValidationError",
+            "TransformCompositionError",
+            "TransformNotFoundError",
+            "TransformRegistryError",
+            "ExperimentalSetupError",
+            "TransformConfigurationError",
+            # Plugin Exceptions
+            "PluginError",
+            "PluginValidationError",
+            "PluginSecurityError",
+            "PluginDependencyError",
+            "PluginDiscoveryError",
+            "PluginRegistrationError",
+            "PluginLoadError",
+            # Descriptor Exceptions
+            "DescriptorError",
+            "DescriptorCalculationError",
+            "DescriptorValidationError",
+            "DescriptorPluginError",
+            "DescriptorPluginLoadError",
+            "DescriptorPluginValidationError",
+            "DescriptorPluginConfigError",
+            # Factory Functions
+            "create_dataset_handler_error",
+            "create_uncertainty_processing_error",
+            "create_handler_not_available_error",
+            "get_exception_registry_status",
+            "validate_exception_hierarchy",
+        ],
+    )
     def test_all_name_is_resolvable(self, milia_pkg, name):
         """
         Every name that appears in ``__all__`` resolves to an attribute on
@@ -875,10 +939,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized above.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(milia_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(milia_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -933,17 +994,20 @@ class TestContractAllConsistency:
 
         # Filter out common Python internals that might leak through
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
-            f"Public names imported in __init__.py but not in __all__: "
-            f"{sorted(missing_from_all)}"
+            f"Public names imported in __init__.py but not in __all__: {sorted(missing_from_all)}"
         )
 
 
@@ -978,16 +1042,19 @@ class TestContractExceptionHierarchy:
         assert issubclass(milia_pkg.BaseProjectError, Exception)
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "ConfigurationError",
-        "DataProcessingError",
-        "MoleculeProcessingError",
-        "HandlerError",
-        "TransformError",
-        "PluginError",
-        "ValidationError",
-        "DescriptorError",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ConfigurationError",
+            "DataProcessingError",
+            "MoleculeProcessingError",
+            "HandlerError",
+            "TransformError",
+            "PluginError",
+            "ValidationError",
+            "DescriptorError",
+        ],
+    )
     def test_tier2_inherits_from_base_project_error(self, milia_pkg, name):
         """Tier 2: Domain base classes inherit from ``BaseProjectError``."""
         cls = getattr(milia_pkg, name)
@@ -1001,9 +1068,7 @@ class TestContractExceptionHierarchy:
         ``MoleculeFilterRejectedError`` inherits from ``BaseException``
         (not ``Exception``) — documented as an expected-rejection signal.
         """
-        assert issubclass(
-            milia_pkg.MoleculeFilterRejectedError, BaseException
-        )
+        assert issubclass(milia_pkg.MoleculeFilterRejectedError, BaseException)
 
     # Tier 3 → direct parent mapping (verified from exceptions.py source)
     TIER3_TO_PARENT = {
@@ -1077,9 +1142,7 @@ class TestContractExceptionHierarchy:
         """Tier 3 exceptions inherit from their actual documented parent."""
         child = getattr(milia_pkg, child_name)
         parent = getattr(milia_pkg, parent_name)
-        assert issubclass(child, parent), (
-            f"{child_name} should be a subclass of {parent_name}"
-        )
+        assert issubclass(child, parent), f"{child_name} should be a subclass of {parent_name}"
 
     @pytest.mark.contract
     def test_transform_validation_error_inherits_validation_error(self, milia_pkg):
@@ -1227,13 +1290,19 @@ class TestContractPublicAPISurface:
     # The minimum API surface that MUST be present in __all__
     MINIMUM_API = {
         # Metadata
-        "__version__", "__author__", "__license__",
+        "__version__",
+        "__author__",
+        "__license__",
         # CLI
-        "CLIManager", "create_cli_manager", "parse_cli_args",
+        "CLIManager",
+        "create_cli_manager",
+        "parse_cli_args",
         # Logging
         "setup_logging",
         # Base exceptions
-        "BaseProjectError", "ConfigurationError", "DataProcessingError",
+        "BaseProjectError",
+        "ConfigurationError",
+        "DataProcessingError",
         # Availability flags
         "_POST_TRAINING_AVAILABLE",
         "_DATA_PREPARATION_AVAILABLE",
@@ -1245,9 +1314,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_length_matches_expected(self, all_names):
@@ -1307,9 +1374,7 @@ class TestContractExceptionFactoryFunctionSignatures:
     def test_get_exception_registry_status_returns_dict(self, milia_pkg):
         """``get_exception_registry_status()`` returns a dict."""
         result = milia_pkg.get_exception_registry_status()
-        assert isinstance(result, dict), (
-            f"Expected dict, got {type(result).__name__}"
-        )
+        assert isinstance(result, dict), f"Expected dict, got {type(result).__name__}"
 
 
 class TestContractConditionalExportSemantics:
@@ -1334,20 +1399,20 @@ class TestContractConditionalExportSemantics:
         """
         flag = milia_pkg._POST_TRAINING_AVAILABLE
         names = [
-            "ModelLoader", "load_model", "load_model_only",
-            "Predictor", "predict", "CheckpointManager",
+            "ModelLoader",
+            "load_model",
+            "load_model_only",
+            "Predictor",
+            "predict",
+            "CheckpointManager",
             "CHECKPOINT_FORMAT_VERSION",
         ]
         for name in names:
             obj = getattr(milia_pkg, name)
             if flag:
-                assert obj is not None, (
-                    f"Flag is True but '{name}' is None"
-                )
+                assert obj is not None, f"Flag is True but '{name}' is None"
             else:
-                assert obj is None, (
-                    f"Flag is False but '{name}' is {obj!r}"
-                )
+                assert obj is None, f"Flag is False but '{name}' is {obj!r}"
 
     @pytest.mark.contract
     def test_data_preparation_ternary_consistency(self, milia_pkg):
@@ -1356,19 +1421,17 @@ class TestContractConditionalExportSemantics:
         """
         flag = milia_pkg._DATA_PREPARATION_AVAILABLE
         names = [
-            "convert_to_pyg", "convert_batch_to_pyg",
-            "list_available_formats", "DataConverterRegistry",
+            "convert_to_pyg",
+            "convert_batch_to_pyg",
+            "list_available_formats",
+            "DataConverterRegistry",
         ]
         for name in names:
             obj = getattr(milia_pkg, name)
             if flag:
-                assert obj is not None, (
-                    f"Flag is True but '{name}' is None"
-                )
+                assert obj is not None, f"Flag is True but '{name}' is None"
             else:
-                assert obj is None, (
-                    f"Flag is False but '{name}' is {obj!r}"
-                )
+                assert obj is None, f"Flag is False but '{name}' is {obj!r}"
 
     @pytest.mark.contract
     def test_transfer_learning_ternary_consistency(self, milia_pkg):
@@ -1380,13 +1443,9 @@ class TestContractConditionalExportSemantics:
         for name in names:
             obj = getattr(milia_pkg, name)
             if flag:
-                assert obj is not None, (
-                    f"Flag is True but '{name}' is None"
-                )
+                assert obj is not None, f"Flag is True but '{name}' is None"
             else:
-                assert obj is None, (
-                    f"Flag is False but '{name}' is {obj!r}"
-                )
+                assert obj is None, f"Flag is False but '{name}' is {obj!r}"
 
     @pytest.mark.contract
     def test_post_training_types_when_available(self, milia_pkg):
@@ -1426,9 +1485,7 @@ class TestContractConditionalExportSemantics:
 
         assert inspect.isclass(milia_pkg.FineTuner)
         # FreezeStrategy could be a class or an enum
-        assert inspect.isclass(milia_pkg.FreezeStrategy) or callable(
-            milia_pkg.FreezeStrategy
-        )
+        assert inspect.isclass(milia_pkg.FreezeStrategy) or callable(milia_pkg.FreezeStrategy)
 
 
 class TestContractExceptionInstantiation:
@@ -1514,10 +1571,7 @@ class TestContractExceptionInstantiation:
         try:
             instance = cls(*dummy_args)
         except (TypeError, ValueError) as exc:
-            pytest.fail(
-                f"Could not instantiate {name} with dummy args "
-                f"{dummy_args!r}: {exc}"
-            )
+            pytest.fail(f"Could not instantiate {name} with dummy args {dummy_args!r}: {exc}")
 
         assert isinstance(instance, BaseException), (
             f"Instantiated {name} is not a BaseException subclass"
@@ -1604,9 +1658,9 @@ class TestEdgeCaseCheckDependencies:
 
         milia_pkg.check_dependencies()
 
-        assert milia_pkg._POST_TRAINING_AVAILABLE == before_pt
-        assert milia_pkg._DATA_PREPARATION_AVAILABLE == before_dp
-        assert milia_pkg._TRANSFER_LEARNING_AVAILABLE == before_tl
+        assert before_pt == milia_pkg._POST_TRAINING_AVAILABLE
+        assert before_dp == milia_pkg._DATA_PREPARATION_AVAILABLE
+        assert before_tl == milia_pkg._TRANSFER_LEARNING_AVAILABLE
 
 
 class TestEdgeCaseGetPackageInfo:

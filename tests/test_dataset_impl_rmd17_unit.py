@@ -37,35 +37,30 @@ Evidence sources:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.rmd17 import (
-    RMD17Dataset,
-    KCAL_MOL_TO_HARTREE,
-)
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
+)
+from milia_pipeline.datasets.implementations.rmd17 import (
+    KCAL_MOL_TO_HARTREE,
+    RMD17Dataset,
 )
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from rmd17.py source
@@ -83,53 +78,53 @@ EXPECTED_METADATA_DESCRIPTION = (
 EXPECTED_METADATA_AUTHOR = "Anders S. Christensen, O. Anatole von Lilienfeld"
 EXPECTED_METADATA_LICENSE = "CC BY 4.0"
 
-EXPECTED_REQUIRED_PROPERTIES = ('energies', 'atoms', 'coordinates')
+EXPECTED_REQUIRED_PROPERTIES = ("energies", "atoms", "coordinates")
 EXPECTED_OPTIONAL_PROPERTIES = (
-    'forces',
-    'molecule_name',
-    'old_indices',
-    'old_energies',
-    'old_forces',
+    "forces",
+    "molecule_name",
+    "old_indices",
+    "old_energies",
+    "old_forces",
 )
 # CRITICAL: rMD17 has NO parseable chemical identifiers — empty tuple
 EXPECTED_IDENTIFIER_KEYS = ()
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": False,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "rmd17_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "coordinate_based"
 
 # Expected molecule list from rmd17.py MOLECULES class attribute
 EXPECTED_MOLECULES = [
-    'aspirin',
-    'azobenzene',
-    'benzene',
-    'ethanol',
-    'malonaldehyde',
-    'naphthalene',
-    'paracetamol',
-    'salicylic',
-    'toluene',
-    'uracil',
+    "aspirin",
+    "azobenzene",
+    "benzene",
+    "ethanol",
+    "malonaldehyde",
+    "naphthalene",
+    "paracetamol",
+    "salicylic",
+    "toluene",
+    "uracil",
 ]
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'get_molecules',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "get_molecules",
+    "create_handler",
 ]
 
 # Module-level constant: 1 kcal/mol = 0.00159360143764 Hartree (NIST CODATA 2018)
@@ -142,6 +137,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: RMD17Dataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetClassIdentity(unittest.TestCase):
     """Verify RMD17Dataset is a proper BaseDataset subclass with correct identity."""
@@ -191,6 +187,7 @@ class TestRMD17DatasetClassIdentity(unittest.TestCase):
 # GROUP 2: RMD17Dataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetRegistration(unittest.TestCase):
     """Verify RMD17Dataset is registered via @register decorator."""
 
@@ -211,6 +208,7 @@ class TestRMD17DatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class.
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("RMD17")
         self.assertIs(retrieved, RMD17Dataset)
 
@@ -220,6 +218,7 @@ class TestRMD17DatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names.
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("RMD17", all_names)
 
@@ -228,9 +227,7 @@ class TestRMD17DatasetRegistration(unittest.TestCase):
 
         Evidence: rmd17.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[RMD17Dataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[RMD17Dataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -246,6 +243,7 @@ class TestRMD17DatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: RMD17Dataset.metadata — DatasetMetadata (7 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetMetadata(unittest.TestCase):
     """Verify RMD17Dataset.metadata is a correctly configured DatasetMetadata.
@@ -297,6 +295,7 @@ class TestRMD17DatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: RMD17Dataset.schema — DatasetSchema (9 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetSchema(unittest.TestCase):
     """Verify RMD17Dataset.schema is a correctly configured DatasetSchema.
@@ -371,7 +370,7 @@ class TestRMD17DatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            RMD17Dataset.schema.required_properties = ('modified',)
+            RMD17Dataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -389,6 +388,7 @@ class TestRMD17DatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: RMD17Dataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetFeatures(unittest.TestCase):
     """Verify RMD17Dataset.features is a correctly configured DatasetFeatures.
@@ -471,6 +471,7 @@ class TestRMD17DatasetFeatures(unittest.TestCase):
 # GROUP 6: RMD17Dataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetConfigKey(unittest.TestCase):
     """Verify RMD17Dataset.config_key is correctly set.
 
@@ -490,6 +491,7 @@ class TestRMD17DatasetConfigKey(unittest.TestCase):
 # GROUP 7: RMD17Dataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetGetRequiredProperties(unittest.TestCase):
     """Verify RMD17Dataset.get_required_properties() classmethod.
 
@@ -502,7 +504,7 @@ class TestRMD17DatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = RMD17Dataset.__dict__.get('get_required_properties')
+        descriptor = RMD17Dataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -542,6 +544,7 @@ class TestRMD17DatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: RMD17Dataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetGetFeatureSupport(unittest.TestCase):
     """Verify RMD17Dataset.get_feature_support() classmethod.
 
@@ -551,7 +554,7 @@ class TestRMD17DatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = RMD17Dataset.__dict__.get('get_feature_support')
+        descriptor = RMD17Dataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -598,6 +601,7 @@ class TestRMD17DatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: RMD17Dataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify RMD17Dataset.get_molecule_creation_strategy() classmethod.
 
@@ -607,7 +611,7 @@ class TestRMD17DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = RMD17Dataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = RMD17Dataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -630,7 +634,7 @@ class TestRMD17DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(RMD17Dataset, 'get_molecule_creation_strategy')
+        method = RMD17Dataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -638,6 +642,7 @@ class TestRMD17DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: RMD17Dataset.get_molecules() (7 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetGetMolecules(unittest.TestCase):
     """Verify RMD17Dataset.get_molecules() classmethod.
@@ -648,7 +653,7 @@ class TestRMD17DatasetGetMolecules(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecules is a classmethod."""
-        descriptor = RMD17Dataset.__dict__.get('get_molecules')
+        descriptor = RMD17Dataset.__dict__.get("get_molecules")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -706,6 +711,7 @@ class TestRMD17DatasetGetMolecules(unittest.TestCase):
 # GROUP 11: RMD17Dataset.MOLECULES Class Attribute (5 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetMOLECULESAttribute(unittest.TestCase):
     """Verify RMD17Dataset.MOLECULES class attribute.
 
@@ -714,7 +720,7 @@ class TestRMD17DatasetMOLECULESAttribute(unittest.TestCase):
 
     def test_molecules_attribute_exists(self):
         """MOLECULES class attribute exists on RMD17Dataset."""
-        self.assertTrue(hasattr(RMD17Dataset, 'MOLECULES'))
+        self.assertTrue(hasattr(RMD17Dataset, "MOLECULES"))
 
     def test_molecules_attribute_is_list(self):
         """MOLECULES is a list."""
@@ -730,12 +736,13 @@ class TestRMD17DatasetMOLECULESAttribute(unittest.TestCase):
 
     def test_molecules_attribute_is_class_level(self):
         """MOLECULES is defined in the class __dict__ (not inherited)."""
-        self.assertIn('MOLECULES', RMD17Dataset.__dict__)
+        self.assertIn("MOLECULES", RMD17Dataset.__dict__)
 
 
 # ============================================================================
 # GROUP 12: RMD17Dataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetCreateHandler(unittest.TestCase):
     """Verify RMD17Dataset.create_handler() factory method with lazy import.
@@ -747,7 +754,7 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = RMD17Dataset.__dict__.get('create_handler')
+        descriptor = RMD17Dataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -762,13 +769,19 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = RMD17Dataset.__dict__['create_handler'].__func__
+        unbound_func = RMD17Dataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -777,7 +790,7 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
         Evidence: rmd17.py create_handler signature: experimental_setup=None.
         """
         sig = inspect.signature(RMD17Dataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -797,11 +810,11 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockRMD17DatasetHandler')
+            mock_handler_cls = Mock(name="MockRMD17DatasetHandler")
             mock_module = MagicMock()
             mock_module.RMD17DatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.rmd17'
+            handler_mod_key = "milia_pipeline.handlers.implementations.rmd17"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -836,11 +849,11 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 
         Evidence: rmd17.py create_handler() return RMD17DatasetHandler(...).
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -864,7 +877,7 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 
         Evidence: rmd17.py: return RMD17DatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = RMD17Dataset.create_handler(
@@ -877,7 +890,7 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring mentioning lazy import."""
-        method = getattr(RMD17Dataset, 'create_handler')
+        method = RMD17Dataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -885,6 +898,7 @@ class TestRMD17DatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 13: RMD17Dataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetHandlerClassAttribute(unittest.TestCase):
     """Verify RMD17Dataset.handler_class is None (default from BaseDataset).
@@ -922,6 +936,7 @@ class TestRMD17DatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 14: RMD17Dataset — Method Signatures and Return Annotations (8 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -932,46 +947,46 @@ class TestRMD17DatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_molecules_return_annotation(self):
         """get_molecules() -> List[str]."""
-        sig = self._get_sig('get_molecules')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_molecules")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecules_params(self):
         """get_molecules(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecules')
+        sig = self._get_sig("get_molecules")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -979,6 +994,7 @@ class TestRMD17DatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 15: RMD17Dataset — Method Docstrings (5 tests with subTests)
 # ============================================================================
+
 
 class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
     """Verify each RMD17Dataset method has a non-empty docstring."""
@@ -989,11 +1005,10 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(RMD17Dataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
@@ -1003,7 +1018,7 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
         Evidence: rmd17.py get_required_properties docstring mentions
         'nuclear_charges' → 'atoms' and 'coords' → 'coordinates' mappings.
         """
-        method = getattr(RMD17Dataset, 'get_required_properties')
+        method = RMD17Dataset.get_required_properties
         doc = method.__doc__
         self.assertIn("energies", doc)
 
@@ -1012,7 +1027,7 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: rmd17.py get_feature_support docstring lists available features.
         """
-        method = getattr(RMD17Dataset, 'get_feature_support')
+        method = RMD17Dataset.get_feature_support
         doc = method.__doc__
         self.assertIn("vibrational_analysis", doc)
 
@@ -1022,7 +1037,7 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
         Evidence: rmd17.py get_molecule_creation_strategy docstring explains why
         coordinate_based is used (no parseable identifiers in NPZ).
         """
-        method = getattr(RMD17Dataset, 'get_molecule_creation_strategy')
+        method = RMD17Dataset.get_molecule_creation_strategy
         doc = method.__doc__
         self.assertIn("coordinate_based", doc)
 
@@ -1031,7 +1046,7 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: rmd17.py get_molecules docstring lists molecule names.
         """
-        method = getattr(RMD17Dataset, 'get_molecules')
+        method = RMD17Dataset.get_molecules
         doc = method.__doc__
         self.assertIn("molecule", doc.lower())
 
@@ -1040,18 +1055,21 @@ class TestRMD17DatasetMethodDocstrings(unittest.TestCase):
 # GROUP 16: RMD17Dataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the rmd17 implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The rmd17.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.rmd17 as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_rmd17_dataset(self):
         """RMD17Dataset is importable from the implementations.rmd17 module."""
         import milia_pipeline.datasets.implementations.rmd17 as mod
+
         self.assertTrue(hasattr(mod, "RMD17Dataset"))
         self.assertIs(mod.RMD17Dataset, RMD17Dataset)
 
@@ -1060,9 +1078,7 @@ class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: rmd17.py imports from milia_pipeline.datasets.base.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.rmd17']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.rmd17"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -1074,9 +1090,7 @@ class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: rmd17.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.rmd17']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.rmd17"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -1090,9 +1104,7 @@ class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.rmd17']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.rmd17"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -1103,10 +1115,12 @@ class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -1130,6 +1144,7 @@ class TestRMD17DatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 17: RMD17Dataset — Module-Level Constant KCAL_MOL_TO_HARTREE (4 tests)
 # ============================================================================
 
+
 class TestRMD17ModuleLevelConstant(unittest.TestCase):
     """Verify the KCAL_MOL_TO_HARTREE module-level constant.
 
@@ -1140,7 +1155,8 @@ class TestRMD17ModuleLevelConstant(unittest.TestCase):
     def test_constant_exists(self):
         """KCAL_MOL_TO_HARTREE is importable from the rmd17 module."""
         import milia_pipeline.datasets.implementations.rmd17 as mod
-        self.assertTrue(hasattr(mod, 'KCAL_MOL_TO_HARTREE'))
+
+        self.assertTrue(hasattr(mod, "KCAL_MOL_TO_HARTREE"))
 
     def test_constant_value(self):
         """KCAL_MOL_TO_HARTREE has the expected value.
@@ -1167,6 +1183,7 @@ class TestRMD17ModuleLevelConstant(unittest.TestCase):
 # GROUP 18: RMD17Dataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestRMD17DatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with rMD17.
 
@@ -1184,14 +1201,14 @@ class TestRMD17DatasetFeaturesIntegration(unittest.TestCase):
 
         rMD17 specific: atomization_energy is the only enabled feature.
         """
-        self.assertTrue(RMD17Dataset.features.supports('atomization_energy'))
+        self.assertTrue(RMD17Dataset.features.supports("atomization_energy"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         rMD17 specific: no vibrational frequencies available.
         """
-        self.assertFalse(RMD17Dataset.features.supports('vibrational_analysis'))
+        self.assertFalse(RMD17Dataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -1202,6 +1219,7 @@ class TestRMD17DatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 19: RMD17Dataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -1233,6 +1251,7 @@ class TestRMD17DatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 20: RMD17Dataset — Edge Cases and Robustness (8 tests)
 # ============================================================================
+
 
 class TestRMD17DatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of RMD17Dataset."""
@@ -1281,10 +1300,10 @@ class TestRMD17DatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockRMD17DatasetHandler')
+            mock_handler_cls = Mock(name="MockRMD17DatasetHandler")
             mock_module = MagicMock()
             mock_module.RMD17DatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.rmd17'
+            handler_mod_key = "milia_pipeline.handlers.implementations.rmd17"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1312,10 +1331,10 @@ class TestRMD17DatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. RMD17Dataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', RMD17Dataset.__dict__)
-        self.assertIn('schema', RMD17Dataset.__dict__)
-        self.assertIn('features', RMD17Dataset.__dict__)
-        self.assertIn('config_key', RMD17Dataset.__dict__)
+        self.assertIn("metadata", RMD17Dataset.__dict__)
+        self.assertIn("schema", RMD17Dataset.__dict__)
+        self.assertIn("features", RMD17Dataset.__dict__)
+        self.assertIn("config_key", RMD17Dataset.__dict__)
 
     def test_strategy_is_not_identifier_based(self):
         """get_molecule_creation_strategy() does NOT return 'identifier_coordinate_based'.
@@ -1324,8 +1343,8 @@ class TestRMD17DatasetEdgeCases(unittest.TestCase):
         rMD17 uses 'coordinate_based' because it has no chemical identifiers.
         """
         result = RMD17Dataset.get_molecule_creation_strategy()
-        self.assertNotEqual(result, 'identifier_coordinate_based')
-        self.assertEqual(result, 'coordinate_based')
+        self.assertNotEqual(result, "identifier_coordinate_based")
+        self.assertEqual(result, "coordinate_based")
 
     def test_get_molecules_does_not_mutate_class_attribute(self):
         """get_molecules() returns a copy — mutating the result does not affect MOLECULES.
@@ -1334,9 +1353,9 @@ class TestRMD17DatasetEdgeCases(unittest.TestCase):
         """
         result = RMD17Dataset.get_molecules()
         original_len = len(RMD17Dataset.MOLECULES)
-        result.append('fake_molecule')
+        result.append("fake_molecule")
         self.assertEqual(len(RMD17Dataset.MOLECULES), original_len)
-        self.assertNotIn('fake_molecule', RMD17Dataset.MOLECULES)
+        self.assertNotIn("fake_molecule", RMD17Dataset.MOLECULES)
 
     def test_required_properties_uses_energies_not_energy(self):
         """rMD17 required_properties uses 'energies' (plural), NOT 'energy' (singular).
@@ -1345,13 +1364,14 @@ class TestRMD17DatasetEdgeCases(unittest.TestCase):
         rMD17 uses 'energies' (plural) matching the NPZ key name.
         """
         result = RMD17Dataset.get_required_properties()
-        self.assertIn('energies', result)
-        self.assertNotIn('energy', result)
+        self.assertIn("energies", result)
+        self.assertNotIn("energy", result)
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1359,26 +1379,26 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestRMD17DatasetClassIdentity,                # GROUP 1:  8 tests
-        TestRMD17DatasetRegistration,                  # GROUP 2:  5 tests
-        TestRMD17DatasetMetadata,                      # GROUP 3:  7 tests
-        TestRMD17DatasetSchema,                        # GROUP 4:  9 tests
-        TestRMD17DatasetFeatures,                      # GROUP 5: 10 tests
-        TestRMD17DatasetConfigKey,                     # GROUP 6:  2 tests
-        TestRMD17DatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestRMD17DatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestRMD17DatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestRMD17DatasetGetMolecules,                  # GROUP 10: 7 tests
-        TestRMD17DatasetMOLECULESAttribute,            # GROUP 11: 5 tests
-        TestRMD17DatasetCreateHandler,                 # GROUP 12: 7 tests
-        TestRMD17DatasetHandlerClassAttribute,         # GROUP 13: 3 tests
-        TestRMD17DatasetMethodSignatures,              # GROUP 14: 8 tests
-        TestRMD17DatasetMethodDocstrings,              # GROUP 15: 5 tests
-        TestRMD17DatasetModuleImportsAndExports,       # GROUP 16: 5 tests
-        TestRMD17ModuleLevelConstant,                  # GROUP 17: 4 tests
-        TestRMD17DatasetFeaturesIntegration,           # GROUP 18: 4 tests
-        TestRMD17DatasetSchemaMethodConsistency,       # GROUP 19: 3 tests
-        TestRMD17DatasetEdgeCases,                     # GROUP 20: 8 tests
+        TestRMD17DatasetClassIdentity,  # GROUP 1:  8 tests
+        TestRMD17DatasetRegistration,  # GROUP 2:  5 tests
+        TestRMD17DatasetMetadata,  # GROUP 3:  7 tests
+        TestRMD17DatasetSchema,  # GROUP 4:  9 tests
+        TestRMD17DatasetFeatures,  # GROUP 5: 10 tests
+        TestRMD17DatasetConfigKey,  # GROUP 6:  2 tests
+        TestRMD17DatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestRMD17DatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestRMD17DatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestRMD17DatasetGetMolecules,  # GROUP 10: 7 tests
+        TestRMD17DatasetMOLECULESAttribute,  # GROUP 11: 5 tests
+        TestRMD17DatasetCreateHandler,  # GROUP 12: 7 tests
+        TestRMD17DatasetHandlerClassAttribute,  # GROUP 13: 3 tests
+        TestRMD17DatasetMethodSignatures,  # GROUP 14: 8 tests
+        TestRMD17DatasetMethodDocstrings,  # GROUP 15: 5 tests
+        TestRMD17DatasetModuleImportsAndExports,  # GROUP 16: 5 tests
+        TestRMD17ModuleLevelConstant,  # GROUP 17: 4 tests
+        TestRMD17DatasetFeaturesIntegration,  # GROUP 18: 4 tests
+        TestRMD17DatasetSchemaMethodConsistency,  # GROUP 19: 3 tests
+        TestRMD17DatasetEdgeCases,  # GROUP 20: 8 tests
     ]
 
     for test_class in test_classes:

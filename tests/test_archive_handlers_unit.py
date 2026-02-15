@@ -24,22 +24,21 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, call
 import logging
+import shutil
+import sys
 import tarfile
 import tempfile
-import shutil
-from typing import Optional
+import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import DataProcessingError
 from milia_pipeline.preprocessing.utils.archive_handlers import (
     COMPRESSION_MODES,
     _detect_compression_mode,
@@ -47,17 +46,16 @@ from milia_pipeline.preprocessing.utils.archive_handlers import (
     extract_from_targz,
     get_supported_formats,
 )
-from milia_pipeline.exceptions import DataProcessingError
-
 
 # ============================================================================
 # HELPERS: Archive creation utilities for testing
 # ============================================================================
 
+
 def _create_tar_archive(
     archive_path: Path,
     files: dict,
-    mode: str = 'w:gz',
+    mode: str = "w:gz",
 ) -> Path:
     """
     Create a tar archive with the given files for testing.
@@ -74,7 +72,7 @@ def _create_tar_archive(
 
     with tarfile.open(archive_path, mode) as tar:
         for name, content in files.items():
-            data = content if isinstance(content, bytes) else content.encode('utf-8')
+            data = content if isinstance(content, bytes) else content.encode("utf-8")
             info = tarfile.TarInfo(name=name)
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
@@ -93,6 +91,7 @@ def _make_logger():
 # GROUP 1: COMPRESSION_MODES Module-Level Constant (7 tests)
 # ============================================================================
 
+
 class TestCompressionModes(unittest.TestCase):
     """Test that COMPRESSION_MODES is correctly defined."""
 
@@ -102,27 +101,27 @@ class TestCompressionModes(unittest.TestCase):
 
     def test_tar_gz_extension_present(self):
         """.tar.gz extension maps to 'r:gz'."""
-        self.assertEqual(COMPRESSION_MODES['.tar.gz'], 'r:gz')
+        self.assertEqual(COMPRESSION_MODES[".tar.gz"], "r:gz")
 
     def test_tgz_extension_present(self):
         """.tgz extension maps to 'r:gz'."""
-        self.assertEqual(COMPRESSION_MODES['.tgz'], 'r:gz')
+        self.assertEqual(COMPRESSION_MODES[".tgz"], "r:gz")
 
     def test_tar_bz2_extension_present(self):
         """.tar.bz2 extension maps to 'r:bz2'."""
-        self.assertEqual(COMPRESSION_MODES['.tar.bz2'], 'r:bz2')
+        self.assertEqual(COMPRESSION_MODES[".tar.bz2"], "r:bz2")
 
     def test_tbz2_extension_present(self):
         """.tbz2 extension maps to 'r:bz2'."""
-        self.assertEqual(COMPRESSION_MODES['.tbz2'], 'r:bz2')
+        self.assertEqual(COMPRESSION_MODES[".tbz2"], "r:bz2")
 
     def test_tar_xz_extension_present(self):
         """.tar.xz extension maps to 'r:xz'."""
-        self.assertEqual(COMPRESSION_MODES['.tar.xz'], 'r:xz')
+        self.assertEqual(COMPRESSION_MODES[".tar.xz"], "r:xz")
 
     def test_tar_uncompressed_present(self):
         """.tar extension maps to 'r:' (uncompressed)."""
-        self.assertEqual(COMPRESSION_MODES['.tar'], 'r:')
+        self.assertEqual(COMPRESSION_MODES[".tar"], "r:")
 
     def test_expected_number_of_formats(self):
         """COMPRESSION_MODES contains exactly 7 format mappings."""
@@ -133,72 +132,74 @@ class TestCompressionModes(unittest.TestCase):
 # GROUP 2: _detect_compression_mode (10 tests)
 # ============================================================================
 
+
 class TestDetectCompressionMode(unittest.TestCase):
     """Test _detect_compression_mode correctly identifies compression from filename."""
 
     def test_detects_tar_gz(self):
         """Detects .tar.gz as 'r:gz'."""
         result = _detect_compression_mode(Path("archive.tar.gz"))
-        self.assertEqual(result, 'r:gz')
+        self.assertEqual(result, "r:gz")
 
     def test_detects_tgz(self):
         """Detects .tgz as 'r:gz'."""
         result = _detect_compression_mode(Path("archive.tgz"))
-        self.assertEqual(result, 'r:gz')
+        self.assertEqual(result, "r:gz")
 
     def test_detects_tar_bz2(self):
         """Detects .tar.bz2 as 'r:bz2'."""
         result = _detect_compression_mode(Path("data.tar.bz2"))
-        self.assertEqual(result, 'r:bz2')
+        self.assertEqual(result, "r:bz2")
 
     def test_detects_tbz2(self):
         """Detects .tbz2 as 'r:bz2'."""
         result = _detect_compression_mode(Path("data.tbz2"))
-        self.assertEqual(result, 'r:bz2')
+        self.assertEqual(result, "r:bz2")
 
     def test_detects_tar_xz(self):
         """Detects .tar.xz as 'r:xz'."""
         result = _detect_compression_mode(Path("data.tar.xz"))
-        self.assertEqual(result, 'r:xz')
+        self.assertEqual(result, "r:xz")
 
     def test_detects_txz(self):
         """Detects .txz as 'r:xz'."""
         result = _detect_compression_mode(Path("data.txz"))
-        self.assertEqual(result, 'r:xz')
+        self.assertEqual(result, "r:xz")
 
     def test_detects_plain_tar(self):
         """Detects .tar as 'r:' (uncompressed)."""
         result = _detect_compression_mode(Path("data.tar"))
-        self.assertEqual(result, 'r:')
+        self.assertEqual(result, "r:")
 
     def test_unknown_extension_returns_auto_detect(self):
         """Unknown extension falls back to 'r:*' auto-detection mode."""
         result = _detect_compression_mode(Path("data.zip"))
-        self.assertEqual(result, 'r:*')
+        self.assertEqual(result, "r:*")
 
     def test_case_insensitive_detection(self):
         """Detection is case-insensitive (uses .lower() on filename)."""
         result = _detect_compression_mode(Path("DATA.TAR.GZ"))
-        self.assertEqual(result, 'r:gz')
+        self.assertEqual(result, "r:gz")
 
     def test_compound_extension_takes_priority(self):
         """Compound extensions like .tar.gz match before .gz alone."""
         # Even if .gz were in the dict, .tar.gz should match first
         result = _detect_compression_mode(Path("myfile.tar.gz"))
-        self.assertEqual(result, 'r:gz')
+        self.assertEqual(result, "r:gz")
 
 
 # ============================================================================
 # GROUP 3: extract_from_archive — Happy Path (12 tests)
 # ============================================================================
 
+
 class TestExtractFromArchiveHappyPath(unittest.TestCase):
     """Test extract_from_archive with valid archives and expected behavior."""
 
     def setUp(self):
         """Create temporary directories for test archives and extraction."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_archive_handlers_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_archive_handlers_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_")
 
     def tearDown(self):
         """Clean up temporary directories."""
@@ -217,11 +218,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
                 "mol2.xyz": "atom data 2",
                 "readme.txt": "not an xyz file",
             },
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -232,11 +233,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         self.assertIsInstance(result, Path)
@@ -246,11 +247,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         self.assertEqual(result, Path(self._extract_dir))
@@ -261,12 +262,12 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=3,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -277,11 +278,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("test.tar.bz2"),
             files={"mol.xyz": "bz2 data"},
-            mode='w:bz2',
+            mode="w:bz2",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -292,11 +293,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("test.tar.xz"),
             files={"mol.xyz": "xz data"},
-            mode='w:xz',
+            mode="w:xz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -307,11 +308,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("test.tar"),
             files={"mol.xyz": "plain tar data"},
-            mode='w:',
+            mode="w:",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -323,13 +324,13 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("test.tar.gz"),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
-            compression_mode='r:gz',
+            compression_mode="r:gz",
         )
         extracted = list(result_dir.rglob("*.xyz"))
         self.assertEqual(len(extracted), 1)
@@ -339,7 +340,7 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data", "other.txt": "text"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
@@ -355,18 +356,18 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=None,
         )
         try:
             self.assertTrue(result_dir.exists())
             self.assertTrue(result_dir.is_dir())
             # Should have the milia_extract_ prefix
-            self.assertIn('milia_extract_', result_dir.name)
+            self.assertIn("milia_extract_", result_dir.name)
         finally:
             shutil.rmtree(result_dir, ignore_errors=True)
 
@@ -376,11 +377,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=nested_dir,
         )
         self.assertTrue(result_dir.exists())
@@ -393,11 +394,11 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
                 "subdir/mol1.xyz": "data1",
                 "subdir/nested/mol2.xyz": "data2",
             },
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -408,13 +409,14 @@ class TestExtractFromArchiveHappyPath(unittest.TestCase):
 # GROUP 4: extract_from_archive — Error Paths (8 tests)
 # ============================================================================
 
+
 class TestExtractFromArchiveErrors(unittest.TestCase):
     """Test extract_from_archive error handling and edge cases."""
 
     def setUp(self):
         """Create temporary directories."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_archive_errors_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_errors_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_archive_errors_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_errors_")
 
     def tearDown(self):
         """Clean up temporary directories."""
@@ -443,12 +445,12 @@ class TestExtractFromArchiveErrors(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"readme.txt": "text only", "data.csv": "csv data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         with self.assertRaises(DataProcessingError) as ctx:
             extract_from_archive(
                 archive_path=archive,
-                file_extension='.xyz',
+                file_extension=".xyz",
                 temp_dir=Path(self._extract_dir),
             )
         self.assertIn(".xyz", str(ctx.exception))
@@ -458,12 +460,12 @@ class TestExtractFromArchiveErrors(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"readme.txt": "text"},
-            mode='w:gz',
+            mode="w:gz",
         )
         with self.assertRaises(DataProcessingError) as ctx:
             extract_from_archive(
                 archive_path=archive,
-                file_extension='.molden',
+                file_extension=".molden",
                 temp_dir=Path(self._extract_dir),
             )
         self.assertIn(".molden", str(ctx.exception))
@@ -475,7 +477,7 @@ class TestExtractFromArchiveErrors(unittest.TestCase):
         with self.assertRaises(DataProcessingError):
             extract_from_archive(
                 archive_path=corrupt_path,
-                file_extension='.xyz',
+                file_extension=".xyz",
                 temp_dir=Path(self._extract_dir),
             )
 
@@ -486,7 +488,7 @@ class TestExtractFromArchiveErrors(unittest.TestCase):
         with self.assertRaises(DataProcessingError) as ctx:
             extract_from_archive(
                 archive_path=corrupt_path,
-                file_extension='.xyz',
+                file_extension=".xyz",
                 temp_dir=Path(self._extract_dir),
             )
         self.assertIsInstance(ctx.exception.__cause__, tarfile.TarError)
@@ -511,17 +513,18 @@ class TestExtractFromArchiveErrors(unittest.TestCase):
 # GROUP 5: extract_from_archive — Logging (8 tests)
 # ============================================================================
 
+
 class TestExtractFromArchiveLogging(unittest.TestCase):
     """Test that extract_from_archive logs appropriate messages."""
 
     def setUp(self):
         """Create temp directories and a simple test archive."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_archive_logging_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_logging_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_archive_logging_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_logging_")
         self._archive = _create_tar_archive(
             Path(self._tmpdir) / "test.tar.gz",
             files={f"mol_{i}.xyz": f"data {i}" for i in range(5)},
-            mode='w:gz',
+            mode="w:gz",
         )
 
     def tearDown(self):
@@ -529,116 +532,100 @@ class TestExtractFromArchiveLogging(unittest.TestCase):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
         shutil.rmtree(self._extract_dir, ignore_errors=True)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_archive_name(self, mock_logger):
         """Logs the archive filename during extraction."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("test.tar.gz", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_archive_size(self, mock_logger):
         """Logs the archive size in GB."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("GB", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_compression_mode(self, mock_logger):
         """Logs the compression mode being used."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("r:gz", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_extraction_complete_count(self, mock_logger):
         """Logs the total count of extracted files upon completion."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("5", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_max_files_limit_when_reached(self, mock_logger):
         """Logs when max_files limit is reached."""
         extract_from_archive(
             archive_path=self._archive,
             max_files=2,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("max_files", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_file_extension_in_completion(self, mock_logger):
         """Completion log includes the file extension being extracted."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn(".xyz", joined)
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_logs_extraction_commenced(self, mock_logger):
         """Logs that extraction has commenced."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        info_messages = [
-            str(c) for c in mock_logger.info.call_args_list
-        ]
+        info_messages = [str(c) for c in mock_logger.info.call_args_list]
         joined = " ".join(info_messages)
         self.assertIn("commenced", joined.lower())
 
-    @patch('milia_pipeline.preprocessing.utils.archive_handlers.logger')
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.logger")
     def test_debug_logs_individual_files(self, mock_logger):
         """Debug-level logs include individual extracted file names."""
         extract_from_archive(
             archive_path=self._archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
-        debug_messages = [
-            str(c) for c in mock_logger.debug.call_args_list
-        ]
+        debug_messages = [str(c) for c in mock_logger.debug.call_args_list]
         joined = " ".join(debug_messages)
         self.assertIn("mol_0.xyz", joined)
 
@@ -647,13 +634,14 @@ class TestExtractFromArchiveLogging(unittest.TestCase):
 # GROUP 6: extract_from_targz — Backward Compatibility Wrapper (6 tests)
 # ============================================================================
 
+
 class TestExtractFromTargz(unittest.TestCase):
     """Test extract_from_targz backward-compatibility wrapper."""
 
     def setUp(self):
         """Create temp directories."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_targz_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_targz_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_targz_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_targz_")
 
     def tearDown(self):
         """Clean up."""
@@ -668,7 +656,7 @@ class TestExtractFromTargz(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"file.molden": "molden data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_targz(
             tar_path=archive,
@@ -682,7 +670,7 @@ class TestExtractFromTargz(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"file.molden": "molden data", "file.xyz": "xyz data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_targz(
             tar_path=archive,
@@ -699,7 +687,7 @@ class TestExtractFromTargz(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_targz(
             tar_path=archive,
@@ -709,9 +697,7 @@ class TestExtractFromTargz(unittest.TestCase):
         extracted = list(result_dir.rglob("*.molden"))
         self.assertEqual(len(extracted), 4)
 
-    @patch(
-        'milia_pipeline.preprocessing.utils.archive_handlers.extract_from_archive'
-    )
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.extract_from_archive")
     def test_delegates_to_extract_from_archive(self, mock_extract):
         """extract_from_targz delegates to extract_from_archive with compression_mode='r:gz'."""
         mock_extract.return_value = Path("/tmp/mock_dir")
@@ -720,21 +706,19 @@ class TestExtractFromTargz(unittest.TestCase):
         extract_from_targz(
             tar_path=tar_path,
             max_files=5,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path("/tmp/out"),
         )
 
         mock_extract.assert_called_once_with(
             archive_path=tar_path,
             max_files=5,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path("/tmp/out"),
-            compression_mode='r:gz',
+            compression_mode="r:gz",
         )
 
-    @patch(
-        'milia_pipeline.preprocessing.utils.archive_handlers.extract_from_archive'
-    )
+    @patch("milia_pipeline.preprocessing.utils.archive_handlers.extract_from_archive")
     def test_returns_result_from_extract_from_archive(self, mock_extract):
         """extract_from_targz returns the Path from extract_from_archive."""
         expected = Path("/tmp/result_dir")
@@ -753,6 +737,7 @@ class TestExtractFromTargz(unittest.TestCase):
 # ============================================================================
 # GROUP 7: get_supported_formats (4 tests)
 # ============================================================================
+
 
 class TestGetSupportedFormats(unittest.TestCase):
     """Test get_supported_formats utility function."""
@@ -775,21 +760,22 @@ class TestGetSupportedFormats(unittest.TestCase):
     def test_mutation_does_not_affect_original(self):
         """Mutating the returned dict does not affect COMPRESSION_MODES."""
         result = get_supported_formats()
-        result['.tar.zst'] = 'r:zst'
-        self.assertNotIn('.tar.zst', COMPRESSION_MODES)
+        result[".tar.zst"] = "r:zst"
+        self.assertNotIn(".tar.zst", COMPRESSION_MODES)
 
 
 # ============================================================================
 # GROUP 8: Edge Cases and Boundary Conditions (10 tests)
 # ============================================================================
 
+
 class TestArchiveHandlersEdgeCases(unittest.TestCase):
     """Test edge cases and boundary conditions."""
 
     def setUp(self):
         """Create temp directories."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_archive_edge_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_edge_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_archive_edge_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_edge_")
 
     def tearDown(self):
         """Clean up."""
@@ -805,12 +791,12 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=None,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -822,12 +808,12 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=1,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -839,12 +825,12 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=100,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -855,12 +841,12 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={},
-            mode='w:gz',
+            mode="w:gz",
         )
         with self.assertRaises(DataProcessingError):
             extract_from_archive(
                 archive_path=archive,
-                file_extension='.xyz',
+                file_extension=".xyz",
                 temp_dir=Path(self._extract_dir),
             )
 
@@ -869,11 +855,11 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"wfn.molden": "molden data", "other.xyz": "xyz"},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.molden',
+            file_extension=".molden",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.molden"))
@@ -884,12 +870,12 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"mol.xyz": "data"},
-            mode='w:gz',
+            mode="w:gz",
         )
         # Module signature expects Path, verify it works with Path
         result = extract_from_archive(
             archive_path=Path(str(archive)),
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         self.assertTrue(result.exists())
@@ -900,11 +886,11 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files={"water.xyz": content},
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted_files = list(result_dir.rglob("*.xyz"))
@@ -914,8 +900,9 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
     def test_directories_in_archive_skipped(self):
         """Directory entries in the archive are not counted as extracted files."""
         import io
+
         archive_path = self._archive_path()
-        with tarfile.open(archive_path, 'w:gz') as tar:
+        with tarfile.open(archive_path, "w:gz") as tar:
             # Add a directory entry
             dir_info = tarfile.TarInfo(name="subdir/")
             dir_info.type = tarfile.DIRTYPE
@@ -928,7 +915,7 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
 
         result_dir = extract_from_archive(
             archive_path=archive_path,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -936,13 +923,13 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
 
     def test_detect_compression_mode_with_unknown_logs_warning(self):
         """_detect_compression_mode logs a warning for unknown extensions."""
-        with patch('milia_pipeline.preprocessing.utils.archive_handlers.logger') as mock_logger:
+        with patch("milia_pipeline.preprocessing.utils.archive_handlers.logger") as mock_logger:
             _detect_compression_mode(Path("data.unknown_format"))
             mock_logger.warning.assert_called_once()
 
     def test_detect_compression_mode_with_known_logs_debug(self):
         """_detect_compression_mode logs debug for recognized extensions."""
-        with patch('milia_pipeline.preprocessing.utils.archive_handlers.logger') as mock_logger:
+        with patch("milia_pipeline.preprocessing.utils.archive_handlers.logger") as mock_logger:
             _detect_compression_mode(Path("data.tar.gz"))
             mock_logger.debug.assert_called_once()
 
@@ -951,13 +938,14 @@ class TestArchiveHandlersEdgeCases(unittest.TestCase):
 # GROUP 9: Integration Scenarios (6 tests)
 # ============================================================================
 
+
 class TestArchiveHandlersIntegration(unittest.TestCase):
     """Integration-style tests combining multiple aspects of the module."""
 
     def setUp(self):
         """Create temp directories."""
-        self._tmpdir = tempfile.mkdtemp(prefix='test_archive_integ_')
-        self._extract_dir = tempfile.mkdtemp(prefix='test_extract_integ_')
+        self._tmpdir = tempfile.mkdtemp(prefix="test_archive_integ_")
+        self._extract_dir = tempfile.mkdtemp(prefix="test_extract_integ_")
 
     def tearDown(self):
         """Clean up."""
@@ -969,19 +957,16 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
 
     def test_full_lifecycle_create_extract_verify(self):
         """Full lifecycle: create archive → extract → verify file count and content."""
-        molecules = {
-            f"molecule_{i:04d}.xyz": f"H 0.0 0.0 {float(i)}\n"
-            for i in range(20)
-        }
+        molecules = {f"molecule_{i:04d}.xyz": f"H 0.0 0.0 {float(i)}\n" for i in range(20)}
         archive = _create_tar_archive(
             self._archive_path(),
             files=molecules,
-            mode='w:gz',
+            mode="w:gz",
         )
 
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
 
@@ -998,11 +983,11 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path(),
             files=files,
-            mode='w:gz',
+            mode="w:gz",
         )
 
-        extract_dir_1 = tempfile.mkdtemp(prefix='compat_1_')
-        extract_dir_2 = tempfile.mkdtemp(prefix='compat_2_')
+        extract_dir_1 = tempfile.mkdtemp(prefix="compat_1_")
+        extract_dir_2 = tempfile.mkdtemp(prefix="compat_2_")
 
         try:
             result_1 = extract_from_targz(
@@ -1011,9 +996,9 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
             )
             result_2 = extract_from_archive(
                 archive_path=archive,
-                file_extension='.molden',
+                file_extension=".molden",
                 temp_dir=Path(extract_dir_2),
-                compression_mode='r:gz',
+                compression_mode="r:gz",
             )
 
             files_1 = sorted(f.name for f in result_1.rglob("*.molden"))
@@ -1026,15 +1011,15 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
     def test_all_supported_formats_extract_successfully(self):
         """All supported compression formats can create and extract archives."""
         format_modes = {
-            'test.tar.gz': ('w:gz', 'r:gz'),
-            'test.tar.bz2': ('w:bz2', 'r:bz2'),
-            'test.tar.xz': ('w:xz', 'r:xz'),
-            'test.tar': ('w:', 'r:'),
+            "test.tar.gz": ("w:gz", "r:gz"),
+            "test.tar.bz2": ("w:bz2", "r:bz2"),
+            "test.tar.xz": ("w:xz", "r:xz"),
+            "test.tar": ("w:", "r:"),
         }
 
         for filename, (write_mode, read_mode) in format_modes.items():
             with self.subTest(filename=filename):
-                extract_dir = tempfile.mkdtemp(prefix=f'test_{filename}_')
+                extract_dir = tempfile.mkdtemp(prefix=f"test_{filename}_")
                 try:
                     archive = _create_tar_archive(
                         self._archive_path(filename),
@@ -1043,7 +1028,7 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
                     )
                     result_dir = extract_from_archive(
                         archive_path=archive,
-                        file_extension='.xyz',
+                        file_extension=".xyz",
                         temp_dir=Path(extract_dir),
                     )
                     extracted = list(result_dir.rglob("*.xyz"))
@@ -1063,17 +1048,17 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
                 "data.csv": "csv data",
                 "mol3.xyz": "xyz data 3",
             },
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         all_files = list(result_dir.rglob("*"))
         # Only directories and .xyz files should exist
-        xyz_files = [f for f in all_files if f.is_file() and f.suffix == '.xyz']
-        non_xyz_files = [f for f in all_files if f.is_file() and f.suffix != '.xyz']
+        xyz_files = [f for f in all_files if f.is_file() and f.suffix == ".xyz"]
+        non_xyz_files = [f for f in all_files if f.is_file() and f.suffix != ".xyz"]
         self.assertEqual(len(xyz_files), 3)
         self.assertEqual(len(non_xyz_files), 0)
 
@@ -1094,12 +1079,12 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("qm9.tar.bz2"),
             files=qm9_files,
-            mode='w:bz2',
+            mode="w:bz2",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=10,
-            file_extension='.xyz',
+            file_extension=".xyz",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.xyz"))
@@ -1114,12 +1099,12 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
         archive = _create_tar_archive(
             self._archive_path("wavefunctions.tar.gz"),
             files=molden_files,
-            mode='w:gz',
+            mode="w:gz",
         )
         result_dir = extract_from_archive(
             archive_path=archive,
             max_files=5,
-            file_extension='.molden',
+            file_extension=".molden",
             temp_dir=Path(self._extract_dir),
         )
         extracted = list(result_dir.rglob("*.molden"))
@@ -1137,15 +1122,15 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestCompressionModes,                # GROUP 1:  8 tests
-        TestDetectCompressionMode,           # GROUP 2: 10 tests
-        TestExtractFromArchiveHappyPath,     # GROUP 3: 12 tests
-        TestExtractFromArchiveErrors,        # GROUP 4:  8 tests
-        TestExtractFromArchiveLogging,       # GROUP 5:  8 tests
-        TestExtractFromTargz,                # GROUP 6:  6 tests
-        TestGetSupportedFormats,             # GROUP 7:  4 tests
-        TestArchiveHandlersEdgeCases,        # GROUP 8: 10 tests
-        TestArchiveHandlersIntegration,      # GROUP 9:  6 tests
+        TestCompressionModes,  # GROUP 1:  8 tests
+        TestDetectCompressionMode,  # GROUP 2: 10 tests
+        TestExtractFromArchiveHappyPath,  # GROUP 3: 12 tests
+        TestExtractFromArchiveErrors,  # GROUP 4:  8 tests
+        TestExtractFromArchiveLogging,  # GROUP 5:  8 tests
+        TestExtractFromTargz,  # GROUP 6:  6 tests
+        TestGetSupportedFormats,  # GROUP 7:  4 tests
+        TestArchiveHandlersEdgeCases,  # GROUP 8: 10 tests
+        TestArchiveHandlersIntegration,  # GROUP 9:  6 tests
     ]
 
     for test_class in test_classes:

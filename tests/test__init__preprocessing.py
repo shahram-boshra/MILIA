@@ -63,11 +63,10 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -85,6 +84,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def preprocessing_pkg():
     """
@@ -95,6 +95,7 @@ def preprocessing_pkg():
     """
     try:
         import milia_pipeline.preprocessing as prep
+
         return prep
     except ImportError as exc:
         pytest.fail(
@@ -153,9 +154,7 @@ class TestSmokeMetadataAttributes:
     def test_version_attribute_is_string(self, preprocessing_pkg):
         """``__version__`` is a non-empty string."""
         value = preprocessing_pkg.__version__
-        assert isinstance(value, str), (
-            f"__version__ should be str, got {type(value)}"
-        )
+        assert isinstance(value, str), f"__version__ should be str, got {type(value)}"
         assert len(value) > 0, "__version__ should be non-empty"
 
     @pytest.mark.smoke
@@ -163,9 +162,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR pattern (e.g., '1.1')."""
         version = preprocessing_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 1, (
-            f"Version '{version}' should have at least one numeric component"
-        )
+        assert len(parts) >= 1, f"Version '{version}' should have at least one numeric component"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -173,9 +170,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeCoreClassExports:
@@ -198,9 +193,7 @@ class TestSmokeCoreClassExports:
     def test_core_class_is_a_class(self, preprocessing_pkg, name):
         """Each core export is a class (not an instance or function)."""
         obj = getattr(preprocessing_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeUtilityFunctionExports:
@@ -306,9 +299,7 @@ class TestSmokeInternalFunctions:
     @pytest.mark.parametrize("name", INTERNAL_FUNCTIONS)
     def test_internal_function_exists(self, preprocessing_pkg, name):
         """Each internal function is present."""
-        assert hasattr(preprocessing_pkg, name), (
-            f"Internal function '{name}' is missing"
-        )
+        assert hasattr(preprocessing_pkg, name), f"Internal function '{name}' is missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", INTERNAL_FUNCTIONS)
@@ -379,12 +370,15 @@ class TestSmokeNamespaceCleanup:
     """§1.2 — Namespace cleanup verifies standard library names are deleted."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "logging",
-        "warnings",
-        "Optional",
-        "List",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "logging",
+            "warnings",
+            "Optional",
+            "List",
+        ],
+    )
     def test_cleaned_name_not_in_namespace(self, preprocessing_pkg, name):
         """
         The ``__init__.py`` explicitly deletes standard library names
@@ -452,9 +446,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, preprocessing_pkg, all_names):
@@ -462,10 +454,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(preprocessing_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(preprocessing_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -473,13 +462,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -534,13 +518,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in preprocessing/__init__.py but not in __all__: "
@@ -570,10 +558,9 @@ class TestContractCoreClassTypes:
         cls = preprocessing_pkg.BasePreprocessor
         # Check for ABC metaclass or __abstractmethods__
         from abc import ABCMeta
+
         is_abc = isinstance(cls, ABCMeta) or hasattr(cls, "__abstractmethods__")
-        assert is_abc, (
-            "BasePreprocessor should be an abstract base class (ABC)"
-        )
+        assert is_abc, "BasePreprocessor should be an abstract base class (ABC)"
 
     @pytest.mark.contract
     def test_base_preprocessor_has_abstract_methods(self, preprocessing_pkg):
@@ -604,12 +591,8 @@ class TestContractCoreClassTypes:
         pipeline with timing and validation.
         """
         cls = preprocessing_pkg.BasePreprocessor
-        assert hasattr(cls, "run"), (
-            "BasePreprocessor should have a 'run' method"
-        )
-        assert callable(getattr(cls, "run")), (
-            "BasePreprocessor.run should be callable"
-        )
+        assert hasattr(cls, "run"), "BasePreprocessor should have a 'run' method"
+        assert callable(cls.run), "BasePreprocessor.run should be callable"
 
     @pytest.mark.contract
     def test_base_preprocessor_has_validate_output_method(self, preprocessing_pkg):
@@ -649,9 +632,7 @@ class TestContractPreprocessorRegistryAPI:
     def test_registry_method_exists(self, preprocessing_pkg, method_name):
         """Each documented class method exists on PreprocessorRegistry."""
         cls = preprocessing_pkg.PreprocessorRegistry
-        assert hasattr(cls, method_name), (
-            f"PreprocessorRegistry should have method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"PreprocessorRegistry should have method '{method_name}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", DOCUMENTED_CLASS_METHODS)
@@ -659,9 +640,7 @@ class TestContractPreprocessorRegistryAPI:
         """Each documented class method is callable."""
         cls = preprocessing_pkg.PreprocessorRegistry
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"PreprocessorRegistry.{method_name} should be callable"
-        )
+        assert callable(method), f"PreprocessorRegistry.{method_name} should be callable"
 
     @pytest.mark.contract
     def test_registry_has_preprocessors_dict(self, preprocessing_pkg):
@@ -697,17 +676,14 @@ class TestContractPreprocessorRegistryReturnTypes:
         result = preprocessing_pkg.PreprocessorRegistry.list_preprocessors()
         for item in result:
             assert isinstance(item, str), (
-                f"Each entry from list_preprocessors() should be str, "
-                f"got {type(item).__name__}"
+                f"Each entry from list_preprocessors() should be str, got {type(item).__name__}"
             )
 
     @pytest.mark.contract
     def test_supports_preprocessing_returns_bool(self, preprocessing_pkg):
         """``PreprocessorRegistry.supports_preprocessing()`` returns a bool."""
         # Test with a known type name (may or may not be registered)
-        result = preprocessing_pkg.PreprocessorRegistry.supports_preprocessing(
-            "Wavefunction"
-        )
+        result = preprocessing_pkg.PreprocessorRegistry.supports_preprocessing("Wavefunction")
         assert isinstance(result, bool), (
             f"supports_preprocessing() should return bool, got {type(result).__name__}"
         )
@@ -752,9 +728,7 @@ class TestContractUtilityFunctionTypes:
         """
         obj = preprocessing_pkg.extract_from_targz
         if obj is not None:
-            assert callable(obj), (
-                f"extract_from_targz should be callable, got {type(obj).__name__}"
-            )
+            assert callable(obj), f"extract_from_targz should be callable, got {type(obj).__name__}"
             assert inspect.isfunction(obj), (
                 f"extract_from_targz should be a function, got {type(obj).__name__}"
             )
@@ -767,9 +741,7 @@ class TestContractUtilityFunctionTypes:
         """
         obj = preprocessing_pkg.parse_molden_files
         if obj is not None:
-            assert callable(obj), (
-                f"parse_molden_files should be callable, got {type(obj).__name__}"
-            )
+            assert callable(obj), f"parse_molden_files should be callable, got {type(obj).__name__}"
             assert inspect.isfunction(obj), (
                 f"parse_molden_files should be a function, got {type(obj).__name__}"
             )
@@ -782,9 +754,7 @@ class TestContractUtilityFunctionTypes:
         """
         obj = preprocessing_pkg.build_npz
         if obj is not None:
-            assert callable(obj), (
-                f"build_npz should be callable, got {type(obj).__name__}"
-            )
+            assert callable(obj), f"build_npz should be callable, got {type(obj).__name__}"
             assert inspect.isfunction(obj), (
                 f"build_npz should be a function, got {type(obj).__name__}"
             )
@@ -890,8 +860,7 @@ class TestContractConvenienceFunctionReturnTypes:
         """``list_available_preprocessors()`` returns a list."""
         result = preprocessing_pkg.list_available_preprocessors()
         assert isinstance(result, list), (
-            f"list_available_preprocessors() should return list, "
-            f"got {type(result).__name__}"
+            f"list_available_preprocessors() should return list, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -939,9 +908,7 @@ class TestContractConvenienceFunctionReturnTypes:
         """
         test_type = "Wavefunction"
         convenience_result = preprocessing_pkg.supports_dataset(test_type)
-        registry_result = preprocessing_pkg.PreprocessorRegistry.supports_preprocessing(
-            test_type
-        )
+        registry_result = preprocessing_pkg.PreprocessorRegistry.supports_preprocessing(test_type)
         assert convenience_result == registry_result, (
             f"supports_dataset('{test_type}') returned {convenience_result}, but "
             f"PreprocessorRegistry.supports_preprocessing('{test_type}') "
@@ -951,12 +918,8 @@ class TestContractConvenienceFunctionReturnTypes:
     @pytest.mark.contract
     def test_supports_dataset_false_for_unknown(self, preprocessing_pkg):
         """``supports_dataset()`` returns False for an unknown dataset type."""
-        result = preprocessing_pkg.supports_dataset(
-            "NonExistentDatasetType_XYZ_12345"
-        )
-        assert result is False, (
-            "supports_dataset() should return False for unknown dataset type"
-        )
+        result = preprocessing_pkg.supports_dataset("NonExistentDatasetType_XYZ_12345")
+        assert result is False, "supports_dataset() should return False for unknown dataset type"
 
 
 class TestContractImportErrorTrackingStructure:
@@ -976,12 +939,8 @@ class TestContractImportErrorTrackingStructure:
                 f"Each entry should have 2 elements (name, error), got {len(entry)}"
             )
             name, error = entry
-            assert isinstance(name, str), (
-                f"Entry name should be str, got {type(name).__name__}"
-            )
-            assert isinstance(error, str), (
-                f"Entry error should be str, got {type(error).__name__}"
-            )
+            assert isinstance(name, str), f"Entry name should be str, got {type(name).__name__}"
+            assert isinstance(error, str), f"Entry error should be str, got {type(error).__name__}"
 
     @pytest.mark.contract
     def test_utility_import_errors_entries_are_tuples(self, preprocessing_pkg):
@@ -997,12 +956,8 @@ class TestContractImportErrorTrackingStructure:
                 f"Each entry should have 2 elements (name, error), got {len(entry)}"
             )
             name, error = entry
-            assert isinstance(name, str), (
-                f"Entry name should be str, got {type(name).__name__}"
-            )
-            assert isinstance(error, str), (
-                f"Entry error should be str, got {type(error).__name__}"
-            )
+            assert isinstance(name, str), f"Entry name should be str, got {type(name).__name__}"
+            assert isinstance(error, str), f"Entry error should be str, got {type(error).__name__}"
 
 
 class TestContractConvenienceFunctionSignatures:
@@ -1013,16 +968,17 @@ class TestContractConvenienceFunctionSignatures:
         """``get_preprocessing_info()`` takes no required parameters."""
         sig = inspect.signature(preprocessing_pkg.get_preprocessing_info)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
-            and param.kind not in (
+            and param.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required_params) == 0, (
-            f"get_preprocessing_info() should have no required parameters, "
-            f"found: {required_params}"
+            f"get_preprocessing_info() should have no required parameters, found: {required_params}"
         )
 
     @pytest.mark.contract
@@ -1030,9 +986,11 @@ class TestContractConvenienceFunctionSignatures:
         """``list_available_preprocessors()`` takes no required parameters."""
         sig = inspect.signature(preprocessing_pkg.list_available_preprocessors)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
-            and param.kind not in (
+            and param.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
@@ -1047,16 +1005,17 @@ class TestContractConvenienceFunctionSignatures:
         """``supports_dataset()`` takes exactly one required parameter (dataset_type)."""
         sig = inspect.signature(preprocessing_pkg.supports_dataset)
         required_params = [
-            name for name, param in sig.parameters.items()
+            name
+            for name, param in sig.parameters.items()
             if param.default is inspect.Parameter.empty
-            and param.kind not in (
+            and param.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required_params) == 1, (
-            f"supports_dataset() should have exactly 1 required parameter, "
-            f"found: {required_params}"
+            f"supports_dataset() should have exactly 1 required parameter, found: {required_params}"
         )
 
     @pytest.mark.contract
@@ -1065,8 +1024,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(preprocessing_pkg.supports_dataset)
         param_names = list(sig.parameters.keys())
         assert "dataset_type" in param_names, (
-            f"supports_dataset() should have a 'dataset_type' parameter, "
-            f"found: {param_names}"
+            f"supports_dataset() should have a 'dataset_type' parameter, found: {param_names}"
         )
 
 
@@ -1084,9 +1042,7 @@ class TestContractConvenienceFunctionsAreFunction:
     def test_convenience_function_is_function(self, preprocessing_pkg, name):
         """Each convenience function is a function (not a class)."""
         obj = getattr(preprocessing_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractPublicAPISurface:
@@ -1121,9 +1077,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1172,8 +1126,7 @@ class TestContractGracefulDegradationPattern:
         """
         obj = getattr(preprocessing_pkg, name)
         assert obj is None or callable(obj), (
-            f"'{name}' should be callable or None (graceful degradation), "
-            f"got {type(obj).__name__}"
+            f"'{name}' should be callable or None (graceful degradation), got {type(obj).__name__}"
         )
 
     @pytest.mark.contract
@@ -1186,7 +1139,8 @@ class TestContractGracefulDegradationPattern:
         available = info["available_utilities"]
 
         expected_available = [
-            name for name in self.DEGRADABLE_UTILITIES
+            name
+            for name in self.DEGRADABLE_UTILITIES
             if getattr(preprocessing_pkg, name) is not None
         ]
 
@@ -1286,12 +1240,8 @@ class TestContractPreprocessorAutoRegistration:
         This verifies that no import attempt is silently dropped without
         either succeeding or recording an error.
         """
-        registered = set(
-            preprocessing_pkg.PreprocessorRegistry.list_preprocessors()
-        )
-        failed_modules = {
-            name for name, _error in preprocessing_pkg._PREPROCESSOR_IMPORT_ERRORS
-        }
+        registered = set(preprocessing_pkg.PreprocessorRegistry.list_preprocessors())
+        failed_modules = {name for name, _error in preprocessing_pkg._PREPROCESSOR_IMPORT_ERRORS}
         # Verify no overlap — a module can't both succeed and fail
         overlap = registered & failed_modules
         # Note: registered uses type names (e.g., "Wavefunction"), while
@@ -1315,8 +1265,7 @@ class TestContractGetPreprocessorReturnType:
         for name in registered:
             cls = preprocessing_pkg.PreprocessorRegistry.get_preprocessor(name)
             assert inspect.isclass(cls), (
-                f"get_preprocessor('{name}') should return a class, "
-                f"got {type(cls).__name__}"
+                f"get_preprocessor('{name}') should return a class, got {type(cls).__name__}"
             )
             assert issubclass(cls, BasePreprocessor), (
                 f"get_preprocessor('{name}') should return a BasePreprocessor subclass"
@@ -1400,9 +1349,7 @@ class TestContractRegisteredPreprocessorClasses:
         registered = preprocessing_pkg.PreprocessorRegistry.list_preprocessors()
         for name in registered:
             cls = preprocessing_pkg.PreprocessorRegistry.get_preprocessor(name)
-            assert inspect.isclass(cls), (
-                f"Registered preprocessor '{name}' should be a class"
-            )
+            assert inspect.isclass(cls), f"Registered preprocessor '{name}' should be a class"
 
     @pytest.mark.contract
     def test_each_registered_preprocessor_is_base_subclass(self, preprocessing_pkg):

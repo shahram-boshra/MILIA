@@ -36,12 +36,12 @@ Author: MILIA Test Suite
 Version: 1.0.0
 """
 
-import sys
-import os
 import logging
+import os
+import sys
+from unittest.mock import MagicMock
+
 import pytest
-from typing import List, Set, Dict, Any, Type
-from unittest.mock import patch, MagicMock, PropertyMock
 
 # ---------------------------------------------------------------------------
 # Path Setup: Add project root to Python path FIRST
@@ -68,6 +68,7 @@ pytestmark = [
 # Import Safety Helpers
 # ===========================================================================
 
+
 def _safe_import_dataset_registry():
     """
     Safely import the DatasetRegistry and its module-level convenience functions.
@@ -79,6 +80,7 @@ def _safe_import_dataset_registry():
     try:
         from milia_pipeline.datasets import registry as ds_registry_module
         from milia_pipeline.datasets.registry import DatasetRegistry
+
         return ds_registry_module, DatasetRegistry
     except ImportError as exc:
         logger.warning("Could not import dataset registry: %s", exc)
@@ -95,6 +97,7 @@ def _safe_import_handler_registry():
     try:
         from milia_pipeline.handlers import handler_registry as hr_module
         from milia_pipeline.handlers.handler_registry import HandlerRegistry
+
         return hr_module, HandlerRegistry
     except ImportError as exc:
         logger.warning("Could not import handler registry: %s", exc)
@@ -110,6 +113,7 @@ def _safe_import_base_handler():
     """
     try:
         from milia_pipeline.handlers.base_handler import create_dataset_handler
+
         return create_dataset_handler
     except ImportError as exc:
         logger.warning("Could not import create_dataset_handler: %s", exc)
@@ -129,6 +133,7 @@ def _safe_import_config_containers():
             FilterConfig,
             ProcessingConfig,
         )
+
         return DatasetConfig, FilterConfig, ProcessingConfig
     except ImportError as exc:
         logger.warning("Could not import config containers: %s", exc)
@@ -150,9 +155,7 @@ _HANDLER_REGISTRY_AVAILABLE = _hr_registry_mod is not None
 _FACTORY_AVAILABLE = _create_dataset_handler is not None
 _CONFIGS_AVAILABLE = _DatasetConfig is not None
 _BOTH_REGISTRIES_AVAILABLE = _DATASET_REGISTRY_AVAILABLE and _HANDLER_REGISTRY_AVAILABLE
-_FULL_STACK_AVAILABLE = (
-    _BOTH_REGISTRIES_AVAILABLE and _FACTORY_AVAILABLE and _CONFIGS_AVAILABLE
-)
+_FULL_STACK_AVAILABLE = _BOTH_REGISTRIES_AVAILABLE and _FACTORY_AVAILABLE and _CONFIGS_AVAILABLE
 
 
 # ===========================================================================
@@ -160,7 +163,9 @@ _FULL_STACK_AVAILABLE = (
 # ===========================================================================
 
 SKIP_NO_DATASET_REGISTRY = "DatasetRegistry not importable (milia_pipeline.datasets.registry)"
-SKIP_NO_HANDLER_REGISTRY = "HandlerRegistry not importable (milia_pipeline.handlers.handler_registry)"
+SKIP_NO_HANDLER_REGISTRY = (
+    "HandlerRegistry not importable (milia_pipeline.handlers.handler_registry)"
+)
 SKIP_NO_BOTH_REGISTRIES = "Both registries must be importable for cross-registry tests"
 SKIP_NO_FACTORY = "create_dataset_handler not importable (milia_pipeline.handlers.base_handler)"
 SKIP_NO_CONFIGS = "Config containers not importable (milia_pipeline.config.config_containers)"
@@ -173,8 +178,9 @@ SKIP_NO_FULL_STACK = (
 # Fixtures
 # ===========================================================================
 
+
 @pytest.fixture
-def dataset_registry_entries() -> List[str]:
+def dataset_registry_entries() -> list[str]:
     """
     Retrieve the list of all dataset names currently registered in the
     default DatasetRegistry.
@@ -188,7 +194,7 @@ def dataset_registry_entries() -> List[str]:
 
 
 @pytest.fixture
-def handler_registry_entries() -> List[str]:
+def handler_registry_entries() -> list[str]:
     """
     Retrieve the list of all handler names currently registered in the
     default HandlerRegistry.
@@ -226,12 +232,11 @@ def isolated_handler_registry():
 # Section 1: Dataset Registry Availability & Contract
 # ===========================================================================
 
+
 class TestDatasetRegistryContract:
     """Verify the DatasetRegistry satisfies its public API contract."""
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_default_registry_is_accessible(self):
         """get_default_registry() returns a DatasetRegistry instance."""
         registry = _ds_registry_mod.get_default_registry()
@@ -239,9 +244,7 @@ class TestDatasetRegistryContract:
             f"Expected DatasetRegistry instance, got {type(registry).__name__}"
         )
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_list_all_returns_list_of_strings(self, dataset_registry_entries):
         """list_all() returns List[str]."""
         assert isinstance(dataset_registry_entries, list), (
@@ -252,9 +255,7 @@ class TestDatasetRegistryContract:
                 f"Expected str entry, got {type(entry).__name__}: {entry!r}"
             )
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_registry_is_not_empty(self, dataset_registry_entries):
         """
         At least one dataset must be registered for the pipeline to function.
@@ -266,27 +267,19 @@ class TestDatasetRegistryContract:
             "Verify that datasets/implementations/__init__.py triggers @register decorators."
         )
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_no_duplicate_dataset_names(self, dataset_registry_entries):
         """Dataset names in the registry must be unique."""
-        seen: Set[str] = set()
-        duplicates: List[str] = []
+        seen: set[str] = set()
+        duplicates: list[str] = []
         for name in dataset_registry_entries:
             if name in seen:
                 duplicates.append(name)
             seen.add(name)
-        assert not duplicates, (
-            f"Duplicate dataset names found in registry: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate dataset names found in registry: {duplicates}"
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_get_returns_class_for_each_registered_dataset(
-        self, dataset_registry_entries
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_get_returns_class_for_each_registered_dataset(self, dataset_registry_entries):
         """registry.get(name) returns a class (type) for every registered name."""
         for name in dataset_registry_entries:
             cls = _ds_registry_mod.get(name)
@@ -294,9 +287,7 @@ class TestDatasetRegistryContract:
                 f"get('{name}') returned {type(cls).__name__}, expected a class"
             )
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_is_registered_consistent_with_list_all(self, dataset_registry_entries):
         """is_registered(name) must return True for every name in list_all()."""
         for name in dataset_registry_entries:
@@ -304,26 +295,21 @@ class TestDatasetRegistryContract:
                 f"is_registered('{name}') returned False, but '{name}' is in list_all()"
             )
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_is_registered_false_for_nonexistent(self):
         """is_registered() returns False for a name that was never registered."""
-        assert not _ds_registry_mod.is_registered(
-            "__nonexistent_dataset_type_for_testing__"
-        )
+        assert not _ds_registry_mod.is_registered("__nonexistent_dataset_type_for_testing__")
 
 
 # ===========================================================================
 # Section 2: Handler Registry Availability & Contract
 # ===========================================================================
 
+
 class TestHandlerRegistryContract:
     """Verify the HandlerRegistry satisfies its public API contract."""
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_default_registry_is_accessible(self):
         """get_default_registry() returns a HandlerRegistry instance."""
         registry = _hr_registry_mod.get_default_registry()
@@ -331,9 +317,7 @@ class TestHandlerRegistryContract:
             f"Expected HandlerRegistry instance, got {type(registry).__name__}"
         )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_list_all_returns_list_of_strings(self, handler_registry_entries):
         """list_all() returns List[str]."""
         assert isinstance(handler_registry_entries, list), (
@@ -344,9 +328,7 @@ class TestHandlerRegistryContract:
                 f"Expected str entry, got {type(entry).__name__}: {entry!r}"
             )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_registry_is_not_empty(self, handler_registry_entries):
         """
         At least one handler must be registered for the pipeline to function.
@@ -359,27 +341,19 @@ class TestHandlerRegistryContract:
             "@register_handler decorators."
         )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_no_duplicate_handler_names(self, handler_registry_entries):
         """Handler names in the registry must be unique."""
-        seen: Set[str] = set()
-        duplicates: List[str] = []
+        seen: set[str] = set()
+        duplicates: list[str] = []
         for name in handler_registry_entries:
             if name in seen:
                 duplicates.append(name)
             seen.add(name)
-        assert not duplicates, (
-            f"Duplicate handler names found in registry: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate handler names found in registry: {duplicates}"
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_get_returns_class_for_each_registered_handler(
-        self, handler_registry_entries
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_get_returns_class_for_each_registered_handler(self, handler_registry_entries):
         """registry.get(name) returns a class (type) for every registered name."""
         for name in handler_registry_entries:
             cls = _hr_registry_mod.get(name)
@@ -387,9 +361,7 @@ class TestHandlerRegistryContract:
                 f"get('{name}') returned {type(cls).__name__}, expected a class"
             )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_is_registered_consistent_with_list_all(self, handler_registry_entries):
         """is_registered(name) must return True for every name in list_all()."""
         for name in handler_registry_entries:
@@ -397,18 +369,12 @@ class TestHandlerRegistryContract:
                 f"is_registered('{name}') returned False, but '{name}' is in list_all()"
             )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_is_registered_false_for_nonexistent(self):
         """is_registered() returns False for a name that was never registered."""
-        assert not _hr_registry_mod.is_registered(
-            "__nonexistent_handler_type_for_testing__"
-        )
+        assert not _hr_registry_mod.is_registered("__nonexistent_handler_type_for_testing__")
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_get_registry_info_returns_valid_dict(self):
         """
         get_registry_info() must return a dict with the documented keys:
@@ -438,6 +404,7 @@ class TestHandlerRegistryContract:
 # Section 3: Cross-Registry Consistency (Core of Section 2.3)
 # ===========================================================================
 
+
 class TestCrossRegistryConsistency:
     """
     Verify the bijective relationship between DatasetRegistry and HandlerRegistry.
@@ -459,12 +426,8 @@ class TestCrossRegistryConsistency:
     must be a strict subset of the other.
     """
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
-    def test_every_dataset_has_a_handler(
-        self, dataset_registry_entries, handler_registry_entries
-    ):
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
+    def test_every_dataset_has_a_handler(self, dataset_registry_entries, handler_registry_entries):
         """
         Forward coverage: every dataset type in DatasetRegistry should have
         a corresponding entry in HandlerRegistry.
@@ -473,7 +436,7 @@ class TestCrossRegistryConsistency:
         create_dataset_handler() would fail for that dataset_type.
         """
         handler_set = set(handler_registry_entries)
-        datasets_without_handlers: List[str] = [
+        datasets_without_handlers: list[str] = [
             ds for ds in dataset_registry_entries if ds not in handler_set
         ]
         assert not datasets_without_handlers, (
@@ -483,12 +446,8 @@ class TestCrossRegistryConsistency:
             f"Registered handlers: {sorted(handler_registry_entries)}."
         )
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
-    def test_every_handler_has_a_dataset(
-        self, dataset_registry_entries, handler_registry_entries
-    ):
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
+    def test_every_handler_has_a_dataset(self, dataset_registry_entries, handler_registry_entries):
         """
         Reverse coverage: every handler type in HandlerRegistry should have
         a corresponding entry in DatasetRegistry.
@@ -498,7 +457,7 @@ class TestCrossRegistryConsistency:
         the dynamic import fallback in create_dataset_handler).
         """
         dataset_set = set(dataset_registry_entries)
-        handlers_without_datasets: List[str] = [
+        handlers_without_datasets: list[str] = [
             h for h in handler_registry_entries if h not in dataset_set
         ]
         # NOTE: This is documented as a known asymmetry in the project.
@@ -511,9 +470,7 @@ class TestCrossRegistryConsistency:
             f"Registered datasets: {sorted(dataset_registry_entries)}."
         )
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
     def test_registry_entry_counts_diagnostic(
         self, dataset_registry_entries, handler_registry_entries
     ):
@@ -538,11 +495,16 @@ class TestCrossRegistryConsistency:
             "  In both:              %d %s\n"
             "  Only in datasets:     %d %s\n"
             "  Only in handlers:     %d %s",
-            len(ds_set), sorted(ds_set),
-            len(hr_set), sorted(hr_set),
-            len(in_both), sorted(in_both),
-            len(only_in_datasets), sorted(only_in_datasets),
-            len(only_in_handlers), sorted(only_in_handlers),
+            len(ds_set),
+            sorted(ds_set),
+            len(hr_set),
+            sorted(hr_set),
+            len(in_both),
+            sorted(in_both),
+            len(only_in_datasets),
+            sorted(only_in_datasets),
+            len(only_in_handlers),
+            sorted(only_in_handlers),
         )
 
         # At minimum, there must be overlap — a pipeline with zero
@@ -553,33 +515,23 @@ class TestCrossRegistryConsistency:
             "The pipeline cannot function without at least one matching pair."
         )
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
-    def test_no_name_case_mismatches(
-        self, dataset_registry_entries, handler_registry_entries
-    ):
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
+    def test_no_name_case_mismatches(self, dataset_registry_entries, handler_registry_entries):
         """
         Detect case-insensitive matches that differ in casing.
 
         For example, if DatasetRegistry has 'DFT' but HandlerRegistry has
         'dft' or 'Dft', that is a silent consistency bug.
         """
-        ds_lower_map: Dict[str, str] = {
-            name.lower(): name for name in dataset_registry_entries
-        }
-        hr_lower_map: Dict[str, str] = {
-            name.lower(): name for name in handler_registry_entries
-        }
+        ds_lower_map: dict[str, str] = {name.lower(): name for name in dataset_registry_entries}
+        hr_lower_map: dict[str, str] = {name.lower(): name for name in handler_registry_entries}
 
-        case_mismatches: List[str] = []
+        case_mismatches: list[str] = []
         for lower_name, ds_name in ds_lower_map.items():
             if lower_name in hr_lower_map:
                 hr_name = hr_lower_map[lower_name]
                 if ds_name != hr_name:
-                    case_mismatches.append(
-                        f"Dataset='{ds_name}' vs Handler='{hr_name}'"
-                    )
+                    case_mismatches.append(f"Dataset='{ds_name}' vs Handler='{hr_name}'")
 
         assert not case_mismatches, (
             f"Case mismatches detected between registries: {case_mismatches}. "
@@ -590,6 +542,7 @@ class TestCrossRegistryConsistency:
 # ===========================================================================
 # Section 4: Factory Function Contract — create_dataset_handler()
 # ===========================================================================
+
 
 class TestCreateDatasetHandlerContract:
     """
@@ -623,7 +576,7 @@ class TestCreateDatasetHandlerContract:
             )
 
         test_logger = logging.getLogger("test.factory")
-        failures: List[str] = []
+        failures: list[str] = []
 
         for dataset_type in sorted(common_types):
             # Build a mock DatasetConfig with the correct dataset_type
@@ -658,9 +611,7 @@ class TestCreateDatasetHandlerContract:
                     f"Handler for '{dataset_type}' missing get_dataset_type() method"
                 )
             except Exception as exc:
-                failures.append(
-                    f"  {dataset_type}: {type(exc).__name__}: {exc}"
-                )
+                failures.append(f"  {dataset_type}: {type(exc).__name__}: {exc}")
 
         if failures:
             pytest.fail(
@@ -676,6 +627,7 @@ class TestCreateDatasetHandlerContract:
         """
         try:
             from milia_pipeline.exceptions import HandlerNotAvailableError
+
             expected_error = HandlerNotAvailableError
         except ImportError:
             # If the custom exception is not importable, accept any Exception
@@ -700,6 +652,7 @@ class TestCreateDatasetHandlerContract:
 # ===========================================================================
 # Section 5: Registry API Surface Parity
 # ===========================================================================
+
 
 class TestRegistryAPIParity:
     """
@@ -739,39 +692,27 @@ class TestRegistryAPIParity:
         "is_registered",
     ]
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
-    def test_dataset_registry_has_all_shared_instance_methods(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
+    def test_dataset_registry_has_all_shared_instance_methods(self, isolated_dataset_registry):
         """DatasetRegistry instances expose all expected public methods."""
         missing = [
-            m for m in self._SHARED_INSTANCE_METHODS
+            m
+            for m in self._SHARED_INSTANCE_METHODS
             if not callable(getattr(isolated_dataset_registry, m, None))
         ]
-        assert not missing, (
-            f"DatasetRegistry missing instance methods: {missing}"
-        )
+        assert not missing, f"DatasetRegistry missing instance methods: {missing}"
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
-    def test_handler_registry_has_all_shared_instance_methods(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
+    def test_handler_registry_has_all_shared_instance_methods(self, isolated_handler_registry):
         """HandlerRegistry instances expose all expected public methods."""
         missing = [
-            m for m in self._SHARED_INSTANCE_METHODS
+            m
+            for m in self._SHARED_INSTANCE_METHODS
             if not callable(getattr(isolated_handler_registry, m, None))
         ]
-        assert not missing, (
-            f"HandlerRegistry missing instance methods: {missing}"
-        )
+        assert not missing, f"HandlerRegistry missing instance methods: {missing}"
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
     def test_both_registries_support_dunder_protocols(
         self, isolated_dataset_registry, isolated_handler_registry
     ):
@@ -784,9 +725,7 @@ class TestRegistryAPIParity:
                 f"HandlerRegistry missing {method_name}"
             )
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
     def test_both_modules_expose_convenience_functions(self):
         """Both registry modules expose the shared convenience functions."""
         for func_name in self._SHARED_MODULE_FUNCTIONS:
@@ -802,6 +741,7 @@ class TestRegistryAPIParity:
 # Section 6: Isolated Registry Behavioral Contract
 # ===========================================================================
 
+
 class TestIsolatedRegistryBehavior:
     """
     Verify that creating independent registry instances (non-singleton)
@@ -811,38 +751,24 @@ class TestIsolatedRegistryBehavior:
     must not corrupt the default global registries.
     """
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_isolated_dataset_registry_starts_empty(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_isolated_dataset_registry_starts_empty(self, isolated_dataset_registry):
         """A fresh DatasetRegistry() instance has zero entries."""
         assert len(isolated_dataset_registry) == 0, (
-            f"Fresh DatasetRegistry has {len(isolated_dataset_registry)} entries, "
-            "expected 0"
+            f"Fresh DatasetRegistry has {len(isolated_dataset_registry)} entries, expected 0"
         )
         assert isolated_dataset_registry.list_all() == []
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_isolated_handler_registry_starts_empty(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_isolated_handler_registry_starts_empty(self, isolated_handler_registry):
         """A fresh HandlerRegistry() instance has zero entries."""
         assert len(isolated_handler_registry) == 0, (
-            f"Fresh HandlerRegistry has {len(isolated_handler_registry)} entries, "
-            "expected 0"
+            f"Fresh HandlerRegistry has {len(isolated_handler_registry)} entries, expected 0"
         )
         assert isolated_handler_registry.list_all() == []
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_isolated_dataset_registry_does_not_affect_default(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_isolated_dataset_registry_does_not_affect_default(self, isolated_dataset_registry):
         """
         Operations on an isolated DatasetRegistry must not change the
         default global registry.
@@ -860,12 +786,8 @@ class TestIsolatedRegistryBehavior:
             f"(before={default_count_before}, after={default_count_after})"
         )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_isolated_handler_registry_does_not_affect_default(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_isolated_handler_registry_does_not_affect_default(self, isolated_handler_registry):
         """
         Operations on an isolated HandlerRegistry must not change the
         default global registry.
@@ -886,15 +808,14 @@ class TestIsolatedRegistryBehavior:
 # Section 7: Change Callback Contract
 # ===========================================================================
 
+
 class TestRegistryCallbackContract:
     """
     Verify that both registries correctly implement the on-change callback
     mechanism, which is part of their documented public API.
     """
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_dataset_registry_callback_add_remove(self, isolated_dataset_registry):
         """add_on_change_callback / remove_on_change_callback round-trip."""
         callback_called = []
@@ -912,9 +833,7 @@ class TestRegistryCallbackContract:
             "remove_on_change_callback should return False when callback not found"
         )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_registry_callback_add_remove(self, isolated_handler_registry):
         """add_on_change_callback / remove_on_change_callback round-trip."""
         callback_called = []
@@ -929,12 +848,8 @@ class TestRegistryCallbackContract:
         removed_again = isolated_handler_registry.remove_on_change_callback(on_change)
         assert removed_again is False
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_handler_registry_callback_fires_on_clear(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_handler_registry_callback_fires_on_clear(self, isolated_handler_registry):
         """Clearing the registry must fire registered callbacks."""
         callback_called = []
 
@@ -951,12 +866,8 @@ class TestRegistryCallbackContract:
         # Cleanup: remove callback to prevent interference
         isolated_handler_registry.remove_on_change_callback(on_change)
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_dataset_registry_callback_fires_on_clear(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_dataset_registry_callback_fires_on_clear(self, isolated_dataset_registry):
         """Clearing the registry must fire registered callbacks."""
         callback_called = []
 
@@ -977,19 +888,19 @@ class TestRegistryCallbackContract:
 # Section 8: Error Handling Contract
 # ===========================================================================
 
+
 class TestRegistryErrorHandling:
     """
     Verify that both registries raise the documented exception types
     when operations fail.
     """
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_dataset_registry_get_raises_on_missing(self, isolated_dataset_registry):
         """get() on DatasetRegistry raises DatasetNotFoundError for unknown name."""
         try:
             from milia_pipeline.exceptions import DatasetNotFoundError
+
             expected_exc = DatasetNotFoundError
         except ImportError:
             expected_exc = Exception
@@ -997,13 +908,12 @@ class TestRegistryErrorHandling:
         with pytest.raises(expected_exc):
             isolated_dataset_registry.get("__nonexistent__")
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_registry_get_raises_on_missing(self, isolated_handler_registry):
         """get() on HandlerRegistry raises HandlerNotFoundError for unknown name."""
         try:
             from milia_pipeline.handlers.handler_registry import HandlerNotFoundError
+
             expected_exc = HandlerNotFoundError
         except ImportError:
             expected_exc = Exception
@@ -1011,29 +921,19 @@ class TestRegistryErrorHandling:
         with pytest.raises(expected_exc):
             isolated_handler_registry.get("__nonexistent__")
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_dataset_registry_register_rejects_non_class(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_dataset_registry_register_rejects_non_class(self, isolated_dataset_registry):
         """register() raises TypeError when passed an instance instead of a class."""
         with pytest.raises(TypeError, match="Expected class"):
             isolated_dataset_registry.register("not_a_class")
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_handler_registry_register_rejects_non_class(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_handler_registry_register_rejects_non_class(self, isolated_handler_registry):
         """register() raises TypeError when passed an instance instead of a class."""
         with pytest.raises(TypeError, match="Expected class"):
             isolated_handler_registry.register("not_a_class")
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_registry_register_rejects_class_without_get_dataset_type(
         self, isolated_handler_registry
     ):
@@ -1045,27 +945,20 @@ class TestRegistryErrorHandling:
 
         class BadHandler:
             """A class that does not implement get_dataset_type()."""
+
             pass
 
         with pytest.raises(TypeError, match="get_dataset_type"):
             isolated_handler_registry.register(BadHandler)
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
-    def test_dataset_registry_get_or_none_returns_none_for_missing(
-        self, isolated_dataset_registry
-    ):
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
+    def test_dataset_registry_get_or_none_returns_none_for_missing(self, isolated_dataset_registry):
         """get_or_none() returns None rather than raising for unknown names."""
         result = isolated_dataset_registry.get_or_none("__nonexistent__")
         assert result is None
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
-    def test_handler_registry_get_or_none_returns_none_for_missing(
-        self, isolated_handler_registry
-    ):
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
+    def test_handler_registry_get_or_none_returns_none_for_missing(self, isolated_handler_registry):
         """get_or_none() returns None rather than raising for unknown names."""
         result = isolated_handler_registry.get_or_none("__nonexistent__")
         assert result is None
@@ -1074,6 +967,7 @@ class TestRegistryErrorHandling:
 # ===========================================================================
 # Section 9: Handler Registry — get_dataset_type Consistency
 # ===========================================================================
+
 
 class TestHandlerDatasetTypeConsistency:
     """
@@ -1086,15 +980,13 @@ class TestHandlerDatasetTypeConsistency:
     the registration key is consistent with that derivation.
     """
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_class_names_follow_convention(self, handler_registry_entries):
         """
         Each handler's class name should end with 'DatasetHandler' or 'Handler',
         and stripping that suffix should relate to the registration key.
         """
-        violations: List[str] = []
+        violations: list[str] = []
 
         for name in handler_registry_entries:
             handler_cls = _hr_registry_mod.get(name)
@@ -1102,9 +994,7 @@ class TestHandlerDatasetTypeConsistency:
 
             # The class name should contain 'Handler' (convention check)
             if "Handler" not in cls_name:
-                violations.append(
-                    f"'{name}': class {cls_name} does not contain 'Handler' in name"
-                )
+                violations.append(f"'{name}': class {cls_name} does not contain 'Handler' in name")
 
         if violations:
             logger.warning(
@@ -1121,6 +1011,7 @@ class TestHandlerDatasetTypeConsistency:
 # Section 10: Thread Safety Smoke Check
 # ===========================================================================
 
+
 class TestRegistryThreadSafetySmoke:
     """
     Lightweight thread-safety smoke check for both registries.
@@ -1130,27 +1021,21 @@ class TestRegistryThreadSafetySmoke:
     that the RLock attribute exists and that concurrent reads do not raise.
     """
 
-    @pytest.mark.skipif(
-        not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY
-    )
+    @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_dataset_registry_has_lock(self, isolated_dataset_registry):
         """DatasetRegistry instances have an RLock (_lock attribute)."""
         assert hasattr(isolated_dataset_registry, "_lock"), (
             "DatasetRegistry missing _lock attribute (RLock for thread safety)"
         )
 
-    @pytest.mark.skipif(
-        not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY
-    )
+    @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_registry_has_lock(self, isolated_handler_registry):
         """HandlerRegistry instances have an RLock (_lock attribute)."""
         assert hasattr(isolated_handler_registry, "_lock"), (
             "HandlerRegistry missing _lock attribute (RLock for thread safety)"
         )
 
-    @pytest.mark.skipif(
-        not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES
-    )
+    @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
     def test_concurrent_reads_do_not_raise(self):
         """
         Multiple threads calling list_all() simultaneously on the default
@@ -1158,7 +1043,7 @@ class TestRegistryThreadSafetySmoke:
         """
         import concurrent.futures
 
-        errors: List[str] = []
+        errors: list[str] = []
 
         def read_dataset_registry():
             try:
@@ -1179,6 +1064,4 @@ class TestRegistryThreadSafetySmoke:
                 futures.append(executor.submit(read_handler_registry))
             concurrent.futures.wait(futures)
 
-        assert not errors, (
-            f"Concurrent reads raised exceptions: {errors}"
-        )
+        assert not errors, f"Concurrent reads raised exceptions: {errors}"

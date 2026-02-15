@@ -8,25 +8,25 @@
 
 models:
   enabled: false                         # MASTER SWITCH (true OR false) that controls whether the entire models module is active in the Milia pipeline.
-  
+
   # ───────────────────────────────────────────────────────────
   # MODEL SELECTION (ENHANCED)
   # ───────────────────────────────────────────────────────────
-  
+
   selection:
     # Mode determines how model is created
-    
+
     mode: "ensemble"                         # "single", "custom", "ensemble"
-    
+
     task_type: "graph_regression"         # node_regression, node_classification,
                                           # graph_regression, graph_classification,
                                           # link_prediction, edge_regression, edge_classification
-    
+
 
     model_name: "ensemble"                   # ARGA + ARGVA ensemble - Adversarial autoencoder ensemble
                                              # Use "custom" when mode="custom"
                                              # Use "ensemble" when mode="ensemble"
-    
+
     # ─────────────────────────────────────────────────────────
     # GLOBAL POOLING METHOD (For graph-level tasks)
     # ─────────────────────────────────────────────────────────
@@ -39,14 +39,14 @@ models:
     #   - "max":  Max pooling - captures dominant features
     #   - "add":  Sum pooling - preserves graph size information
     #
-    # PyG Reference: torch_geometric.nn.global_mean_pool, 
+    # PyG Reference: torch_geometric.nn.global_mean_pool,
     #                global_max_pool, global_add_pool
     # ─────────────────────────────────────────────────────────
     pooling_method: "mean"               # Options: "mean", "max", "add"
-    
+
     # Optional baseline for comparison
     baseline_model: null
-    
+
     # ─────────────────────────────────────────────────────────
     # TARGET SELECTION
     # ─────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ models:
       #   target_level: "node"           # Force node-level (e.g., node property prediction)
       #   target_level: "edge"           # Force edge-level (e.g., bond property prediction)
       target_level: "auto"
-      
+
       # Target source: Which data attribute contains the targets
       # - "auto": Try y first (PyG convention), fallback to x/edge_attr if shape mismatch
       # - "y": Standard target attribute
@@ -92,7 +92,7 @@ models:
       # NOTE: For "edge_classification" can set to "edge_attr" to extract
       #       bond features as targets. Use indices to select specific column.
       target_source: "auto"
-      
+
       # ─────────────────────────────────────────────────────────
       # COLUMN/PROPERTY SELECTION
       # ─────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ models:
       # properties: ["gap"]              # Single property
       # properties: ["Etot", "gap"]      # Multiple properties
       properties: null                   # null = all properties (default)
-      
+
       # MODE 2: By index/indices - Use when property names unavailable
       # indices: 3                       # Single index (4th column)
       # indices: [0, 3, 5]               # Multiple indices
@@ -112,10 +112,10 @@ models:
       #       Bond feature order: bond_type(0-3), is_conjugated(4), is_aromatic(5),
       #       is_in_any_ring(6), stereo(7+), bond_length, bond_length_binned
       indices: null                       # is_aromatic: binary classification (aromatic vs non-aromatic bonds)
-      
+
       # Validation mode
       strict: true                       # true = fail on invalid, false = warn and skip
-      
+
       # ─────────────────────────────────────────────────────────
       # COMMON USE CASE EXAMPLES
       # ─────────────────────────────────────────────────────────
@@ -159,22 +159,22 @@ models:
       #     target_level: "node"
       #     target_source: "atomic_charges"  # Custom attr in your data
       #     indices: null                    # Use all columns
-  
+
   # ───────────────────────────────────────────────────────────
   # CUSTOM ARCHITECTURE (NEW - For mode="custom")
   # Define your own architecture with ANY NUMBER of layers in ANY ORDER
   # Choose from 120+ registered layer types (GCN, GAT, SAGE, etc.)
   # ───────────────────────────────────────────────────────────
-  
+
   custom_architecture:                  # Build custom architectures layer-by-layer
     enabled: true                       # Set to true when mode="custom"
     name: "MyCustomArchitecture"         # Optional name for the architecture
-    
+
     # Builder configuration
     builder_type: "sequential"           # "sequential", "parallel", "hierarchical"
     in_channels: null                    # null = auto-detect from data
     out_channels: null                   # null = infer from task_type
-    
+
     # Layer sequence
     # NOTE: You can specify ANY NUMBER of layers in ANY ORDER
     # Available layer types: 120+ registered layers including:
@@ -201,13 +201,13 @@ models:
       - type: "Linear"
         params:
           out_features: 1
-    
+
     # Advanced features (optional)
     residual_connections:               # Skip connections
       - start: 0                        # Start layer index
         end: 3                          # End layer index
         type: "add"                     # "add" or "concat"
-    
+
     branches:                           # Parallel branches (optional)
       - branch_point: 1                 # Where to branch
         branch_name: "attention_path"   # Optional name
@@ -220,29 +220,29 @@ models:
             params: {}
         merge_point: 3                  # Where to merge back
         merge_strategy: "concat"        # "concat", "add", "mean", "max"
-    
+
     # Validation settings
     validation:
       strict: true                      # Fail on validation errors
       auto_fix_channels: true           # Automatically adjust channel dims
       check_cycles: true                # Detect cycles in architecture graph
-    
+
     # Channel optimization (optional)
     optimize_channels:
       enabled: false                    # Auto-optimize hidden dimensions
-      strategy: "gradual_reduction"     # "gradual_reduction", "bottleneck", 
+      strategy: "gradual_reduction"     # "gradual_reduction", "bottleneck",
                                         # "expansion", "uniform"
-  
+
   # ───────────────────────────────────────────────────────────
   # MODEL ENSEMBLE (For mode="ensemble")
   # ───────────────────────────────────────────────────────────
-  
+
   ensemble:
     enabled: true                        # Enabled for ARGA + ARGVA ensemble
     name: "MyEnsemble"                  # Optional name for the ensemble
-    
+
     strategy: "parallel"                # "parallel", "sequential", "hierarchical"
-    
+
     # Models in ensemble
     models:
 
@@ -250,7 +250,7 @@ models:
       # Previous 2D Model Ensemble (GCN + GAT + GraphSAGE)
       # uncomment to restore
       # ─────────────────────────────────────────────────────────
-      
+
       - name: "GCN"
         hyperparameters:
           # GCN: Graph Convolutional Network (ICLR 2017)
@@ -258,7 +258,7 @@ models:
           {}                               # Empty - use registry defaults
         weight: 0.4                        # Test 15: Ensemble weighted fusion
         level: 0                           # Level 0 - parallel tier
-          
+
       - name: "GAT"
         hyperparameters:
           # GAT: Graph Attention Network (ICLR 2018)
@@ -267,7 +267,7 @@ models:
           {}                               # Empty - use registry defaults
         weight: 0.3                        # Test 15: Ensemble weighted fusion
         level: 0                           # Level 0 - parallel tier
-     
+
       - name: "GraphSAGE"
         hyperparameters:
           {}                               # Empty - use registry defaults
@@ -281,7 +281,7 @@ models:
       # Validates Fix 31 works in ensemble context
       # *** LIGHTWEIGHT CONFIG for limited resources ***
       # ─────────────────────────────────────────────────────────
-      
+
       #  - name: "ARGA"
       #    hyperparameters:
       #      # ARGA: Adversarially Regularized Graph Auto-Encoder (IJCAI 2018)
@@ -294,7 +294,7 @@ models:
       #      dropout: 0.0
       #    weight: 0.5                        # Equal weight in mean fusion
       #    level: 0                           # Level 0 - parallel tier
-        
+
       #  - name: "ARGVA"
       #    hyperparameters:
       #      # ARGVA: Adversarially Regularized Variational Graph Auto-Encoder (IJCAI 2018)
@@ -307,12 +307,12 @@ models:
       #      dropout: 0.0
       #    weight: 0.5                        # Equal weight in mean fusion
       #  s  level: 0                           # Level 0 - parallel tier
-      
+
       # ─────────────────────────────────────────────────────────
       # Previous: GAE + VGAE Autoencoder Ensemble
       # Uncomment to restore
       # ─────────────────────────────────────────────────────────
-      
+
       # - name: "GAE"
       #   hyperparameters:
       #     encoder_type: "GCN"
@@ -322,7 +322,7 @@ models:
       #     dropout: 0.0
       #   weight: 0.5
       #   level: 0
-      #     
+      #
       # - name: "VGAE"
       #   hyperparameters:
       #     encoder_type: "GCN"
@@ -332,12 +332,12 @@ models:
       #     dropout: 0.0
       #   weight: 0.5
       #   level: 0
-      
+
       # ─────────────────────────────────────────────────────────
       # Previous: Mixed Ensemble (GCN + SchNet)
       # Uncomment to restore
       # ─────────────────────────────────────────────────────────
-      
+
       # - name: "GCN"
       #   hyperparameters:
       #     # GCN: Graph Convolutional Network (ICLR 2017)
@@ -347,7 +347,7 @@ models:
       #     num_layers: 2                  # Minimal layers
       #   weight: 0.5                      # Equal weight in mean fusion
       #   level: 0                         # Level 0 - parallel tier
-      #     
+      #
       # - name: "SchNet"
       #   hyperparameters:
       #     # SchNet: Continuous-filter CNN for quantum interactions (NIPS 2017)
@@ -359,12 +359,12 @@ models:
       #     cutoff: 5.0                    # MILIA default
       #   weight: 0.5                      # Equal weight in mean fusion
       #   level: 0                         # Level 0 - parallel tier
-      
+
       # ─────────────────────────────────────────────────────────
       # Previous configs
       # uncomment to restore
       # ─────────────────────────────────────────────────────────
-      
+
       # - name: "SchNet"
       #   hyperparameters:
       #     hidden_channels: 32
@@ -375,7 +375,7 @@ models:
       #     max_num_neighbors: 16
       #   weight: 0.5
       #   level: 0
-      #     
+      #
       # - name: "DimeNetPlusPlus"
       #   hyperparameters:
       #     hidden_channels: 32
@@ -390,15 +390,15 @@ models:
       #     max_num_neighbors: 16
       #   weight: 0.5
       #   level: 0
-      
 
-      
-      
+
+
+
       # ─────────────────────────────────────────────────────────
       # Previous 2D GNN Models
       # Uncomment to restore default ensemble configuration
       # ─────────────────────────────────────────────────────────
-      
+
       # - name: "GCN"
       #   hyperparameters:
       #     hidden_channels: 64
@@ -407,7 +407,7 @@ models:
       #     add_self_loops: true
       #   weight: 0.25                    # Weight in ensemble (for weighted fusion)
       #   level: 0                        # Level 0 - first tier
-        
+
       # - name: "GAT"
       #   hyperparameters:
       #     hidden_channels: 64
@@ -427,28 +427,28 @@ models:
       #     train_eps: false   # Optional: Make epsilon trainable (default: false)
       #   weight: 0.25
       #   level: 0
-    
+
     # Fusion configuration
     fusion:
 
       method: "weighted"                     # Test 15: "weighted" fusion for parallel ensemble
-      
+
       # Optional fusion layer (for attention/learnable fusion)
       fusion_layer:
         enabled: false                  # Disabled for mean fusion
         type: "Linear"                  # Layer type
         params:
           hidden_dim: 32
-    
+
     # Validation settings
     validation:
       check_compatibility: true         # Ensure all models compatible
       check_output_dims: true           # Verify output dimensions match
-  
+
   # ───────────────────────────────────────────────────────────
   # CORE CONFIGURATION (Always Active - UNCHANGED)
   # ───────────────────────────────────────────────────────────
-  
+
   # Model Hyperparameters
   hyperparameters:
     # ─────────────────────────────────────────────────────────
@@ -459,28 +459,28 @@ models:
     # This section provides fallback defaults
     # *** LIGHTWEIGHT CONFIG for limited resources ***
     # ─────────────────────────────────────────────────────────
-    
+
     # Encoder configuration (fallback defaults)
     encoder_type: "GCN"                   # "GCN", "GAT", "GraphSAGE", "GIN", "PNA", "EdgeCNN"
     hidden_channels: 64                   # Encoder hidden dimension
     num_layers: 2                         # Number of GNN layers in encoder
     out_channels: 32                      # Latent embedding dimension
     dropout: 0.0                          # Dropout rate
-    
+
     # Discriminator configuration (optional - defaults computed from out_channels)
     # discriminator_hidden_channels: 64   # Default: 2 * out_channels
     # discriminator_out_channels: 32      # Default: same as out_channels
-    
+
     # Training
     learning_rate: 0.001
     weight_decay: 0.0001
     batch_size: 8                         # LOW RESOURCE
     epochs: 3                             # LOW RESOURCE
-    
+
     # GCN-specific (for encoder)
     add_self_loops: true
     normalize: true
-    
+
     # ─────────────────────────────────────────────────────────
     # SchNet-specific parameters (kept for reference)
     # ─────────────────────────────────────────────────────────
@@ -494,7 +494,7 @@ models:
     cutoff: 5.0                          # MILIA default (PyG default is 10.0)
     max_num_neighbors: 16                # Reduced from 32 (2x fewer)
     readout: "add"                       # "add", "mean", "max"
-    
+
     # ─────────────────────────────────────────────────────────
     # DimeNet-specific parameters (kept for reference)
     # ─────────────────────────────────────────────────────────
@@ -503,7 +503,7 @@ models:
     # CONSTRAINT: num_spherical >= 2 (PyG hard constraint)
     # ─────────────────────────────────────────────────────────
     num_bilinear: 8                       # DimeNet-specific: bilinear layer size
-    
+
     # ─────────────────────────────────────────────────────────
     # DimeNetPlusPlus-specific parameters (kept for reference)
     # ─────────────────────────────────────────────────────────
@@ -523,7 +523,7 @@ models:
     num_before_skip: 1                    # Residual layers before skip (default)
     num_after_skip: 1                     # Reduced from 2 (minimal)
     num_output_layers: 2                  # Reduced from 3 (minimal)
-  
+
   # Training Configuration
   training:
     # Data Splitting
@@ -534,20 +534,20 @@ models:
       test_ratio: 0.1
       random_seed: 42
       shuffle: true
-    
+
     # Loss Function
     loss:
       name: "mse"                        # Regression: mse, mae, huber, smooth_l1
                                          # Classification: cross_entropy, bce, focal
       params: {}                         # Loss-specific parameters
-    
+
     # Optimizer
     optimizer:
       name: "adam"                       # adam, adamw, sgd, rmsprop, adagrad
       params:
         lr: 0.001
         weight_decay: 0.0001
-    
+
     # Learning Rate Scheduler
     scheduler:
       enabled: true
@@ -558,7 +558,7 @@ models:
         factor: 0.5
         patience: 10
         min_lr: 0.00001
-    
+
     # Callbacks
     callbacks:
       early_stopping:
@@ -568,7 +568,7 @@ models:
           patience: 20
           mode: "min"                    # "min", "max"
           min_delta: 0.0001
-      
+
       model_checkpoint:
         enabled: true
         params:
@@ -578,34 +578,34 @@ models:
           save_last: true
           save_best: true                # Save dedicated best.pt file (default: true)
           dirpath: null                  # null = auto-generate in working_root_dir
-      
+
       tensorboard:
         enabled: true
         params:
           log_dir: null                  # null = auto-generate
-      
+
       lr_monitor:
         enabled: true
         params:
           logging_interval: "epoch"      # "epoch", "step"
-      
+
       progress_bar:
         enabled: true
         params:
           refresh_rate: 1
-    
+
     # Validation
     validation:
       check_val_every_n_epoch: 1
       val_check_interval: null           # null = once per epoch, or number of batches
-    
+
     # Logging
     logging:
       log_every_n_steps: 50
       log_metrics: true
       log_gradients: false
       log_weights: false
-  
+
   # Evaluation
   evaluation:
     metrics:
@@ -619,12 +619,12 @@ models:
       # - "recall"
       # - "f1"
       # - "auroc"
-    
+
     # Test set evaluation
     test_after_training: true
     save_predictions: true
     predictions_dir: null                # null = auto-generate
-    
+
     # ─────────────────────────────────────────────────────────────
     # VISUALIZATION CONFIGURATION
     # ─────────────────────────────────────────────────────────────
@@ -637,20 +637,20 @@ models:
     # ─────────────────────────────────────────────────────────────
     visualization:
       enabled: true                       # Master switch for visualization
-      
+
       # Output formats (generated in parallel)
       formats:
         - "png"                           # Static matplotlib plots
         - "html"                          # Interactive plotly plots
         # - "pdf"                         # PDF export (requires kaleido)
-      
+
       # Individual plot types (all enabled by default)
       plots:
         loss_curves: true                 # Train/Val loss over epochs
         metrics: true                     # All metrics in subplots (MAE, MSE, R2, AUROC, etc.)
         learning_rate: true               # Learning rate schedule
         interactive: true                 # Combined interactive dashboard (plotly)
-      
+
       # Style configuration
       style:
         figure_size: [12, 6]              # Width, height in inches
@@ -661,14 +661,14 @@ models:
         title_size: 14                    # Plot title font size
         legend_size: 10                   # Legend font size
         grid_alpha: 0.3                   # Grid line transparency (0-1)
-        
+
         # Color scheme (hex codes)
         colors:
           train: "#2196F3"                # Blue - training metrics
           val: "#FF9800"                  # Orange - validation metrics
           test: "#4CAF50"                 # Green - test metrics
           lr: "#9C27B0"                   # Purple - learning rate
-  
+
   # ───────────────────────────────────────────────────────────
   # PREDICTION CONFIGURATION (Phase 5b)
   # ───────────────────────────────────────────────────────────
@@ -682,7 +682,7 @@ models:
   # PRODUCTION-READY: Comprehensive defaults with CLI override support
   # FUTURE-PROOF: New formats auto-supported via registry pattern
   # ───────────────────────────────────────────────────────────
-  
+
   prediction:
     # =========================================================================
     # MASTER SWITCH
@@ -690,19 +690,19 @@ models:
     # NOTE: Prediction mode is triggered via CLI (--predict), not config.
     # This section provides default values that CLI can override.
     # =========================================================================
-    
+
     # =========================================================================
     # RUNTIME CONFIGURATION
     # =========================================================================
     # Default batch size for inference
     # CLI Override: --predict-batch-size
     batch_size: 32
-    
+
     # Device selection for inference
     # Options: "auto", "cpu", "cuda", "mps"
     # CLI Override: --predict-device
     device: "auto"
-    
+
     # =========================================================================
     # INPUT CONFIGURATION
     # =========================================================================
@@ -710,63 +710,63 @@ models:
     # Options: "auto", "smiles", "inchi", "xyz", "sdf", "csv", "dataset"
     # CLI Override: --predict-format
     format: "auto"
-    
+
     # Dataset split to predict on (only for miliaDataset inputs)
     # Options: "all", "train", "val", "test"
     # CLI Override: --predict-split
     split: "all"
-    
+
     # Limit number of samples for prediction
     # null = all samples, integer = limit to N samples
     # CLI Override: --predict-num-samples
     num_samples: null
-    
+
     # =========================================================================
     # OUTPUT CONFIGURATION
     # =========================================================================
     # Default path to save predictions
     # CLI Override: --preds-path
     output_path: "./predictions.csv"
-    
+
     # Output format for predictions
     # Options: "csv", "json", "npy", "pt"
     # CLI Override: --predict-output-format
     output_format: "csv"
-    
+
     # Include input identifiers in output (e.g., SMILES strings)
     # CLI Override: --predict-include-inputs
     include_inputs: false
-    
+
     # =========================================================================
     # UNCERTAINTY ESTIMATION
     # =========================================================================
     # Enable uncertainty estimation (if model supports)
     # CLI Override: --predict-uncertainty
     uncertainty: false
-    
+
     # Uncertainty method (for models that support multiple methods)
     # Options: "dropout", "ensemble", "evidential"
     uncertainty_method: "dropout"
-    
+
     # Number of forward passes for dropout-based uncertainty
     num_dropout_samples: 10
-    
+
     # =========================================================================
     # POST-PROCESSING
     # =========================================================================
     # Apply inverse transform to predictions (if model was trained with scaling)
     inverse_transform: true
-    
+
     # Round predictions to specified decimal places (null = no rounding)
     round_decimals: null
-    
+
     # =========================================================================
     # LOGGING
     # =========================================================================
     # Verbosity level for prediction
     # Options: "quiet", "normal", "verbose"
     verbosity: "normal"
-    
+
     # Log progress every N batches (0 = no progress logging)
     log_every_n_batches: 10
 
@@ -775,7 +775,7 @@ models:
   # ───────────────────────────────────────────────────────────
   # This section configures HPO settings (trials, sampler, search space, etc.)
   # The hpo/ module handles optimization ONLY - it does NOT manage config.
-  
+
   hpo:
     # =========================================================================
     # MASTER SWITCH - Pipeline Inclusion Control
@@ -792,7 +792,7 @@ models:
     #       but does NOT determine when/whether HPO runs.
     # =========================================================================
     enabled: false                  # Test57: HPO disabled - ARGA + ARGVA ensemble
-    
+
     # =========================================================================
     # BACKEND CONFIGURATION
     # =========================================================================
@@ -800,7 +800,7 @@ models:
     n_trials: 3                        # LOW RESOURCE - 3 trials only
     timeout: 120                       # LOW RESOURCE - 120s max
     n_jobs: 1                          # Parallel trials (1 = sequential)
-    
+
     # =========================================================================
     # SEARCH SPACE DEFINITION
     # =========================================================================
@@ -809,7 +809,7 @@ models:
     # Categories: hyperparameters, optimizer, scheduler, loss
     # NOTE: Parameters not applicable to the selected model are automatically
     #       filtered at runtime (e.g., 'heads' is skipped for GCN models).
-    
+
     search_space:
       # Model hyperparameters
       hyperparameters:
@@ -818,82 +818,82 @@ models:
           low: 32
           high: 256
           step: 32
-        
+
         num_layers:
           type: "int"
           low: 2
           high: 6
-        
+
         dropout:
           type: "float"
           low: 0.0
           high: 0.7
-        
+
         heads:                        # For attention models (GAT, etc.)
           type: "int"
           low: 1
           high: 8
-      
+
       # Optimizer hyperparameters
       optimizer:
         lr:
           type: "loguniform"
           low: 1.0e-5
           high: 1.0e-2
-        
+
         weight_decay:
           type: "loguniform"
           low: 1.0e-6
           high: 1.0e-3
-      
+
       # Scheduler hyperparameters
       scheduler:
         factor:
           type: "float"
           low: 0.1
           high: 0.9
-        
+
         patience:
           type: "int"
           low: 5
           high: 20
-      
+
       # Loss function hyperparameters (for focal loss, etc.)
       loss:
         alpha:
           type: "float"
           low: 0.1
           high: 0.9
-    
+
     # =========================================================================
     # PRUNER CONFIGURATION
     # =========================================================================
     # Controls early stopping of unpromising trials
-    
+
     pruner:
       type: "median"                  # median, hyperband, percentile, none
       n_startup_trials: 5             # Trials before pruning begins
       n_warmup_steps: 10              # Epochs before pruning within trial
       interval_steps: 1               # Check pruning every N steps
       percentile: 25.0                # For percentile pruner
-    
+
     # =========================================================================
     # SAMPLER CONFIGURATION
     # =========================================================================
     # Controls hyperparameter suggestion strategy
-    
+
     sampler:
       type: "tpe"                     # tpe, random, cmaes, grid
       n_startup_trials: 10            # Random trials before Bayesian
       seed: null                      # Random seed (null = random)
       multivariate: true              # Use multivariate TPE
       constant_liar: false            # For parallel optimization
-    
+
     # =========================================================================
     # STUDY CONFIGURATION
     # =========================================================================
     # Optuna study settings
-    
+
     study:
       direction: "minimize"           # minimize or maximize
       metric: "val_loss"              # Metric to optimize
@@ -901,44 +901,44 @@ models:
       storage: null                   # null = in-memory
                                       # "sqlite:///hpo_results.db" for persistence
       load_if_exists: true            # Resume existing study
-    
+
     # =========================================================================
     # CROSS-VALIDATION
     # =========================================================================
     # Optional k-fold CV for more robust evaluation
-    
+
     cv_folds: 0                       # 0 = no CV, >0 = k-fold CV
     cv_metric_aggregation: "mean"     # mean, median, min, max
-  
+
   # ───────────────────────────────────────────────────────────
   # ACCELERATION (Optional - Default: Disabled)
   # ───────────────────────────────────────────────────────────
-  
+
   acceleration:
     enabled: false                       # ⚠️ Set to true to enable
-    
+
     # Device Configuration
     device:
       type: "auto"                       # auto, cpu, cuda, mps, tpu
       gpu_ids: [0]                       # For multi-GPU: [0, 1, 2, 3]
       allow_fallback: true               # Fallback to CPU if device unavailable
-    
+
     # Distributed Training (Single/Multi-Node)
     distributed:
       enabled: false
       strategy: "ddp"                    # ddp, fsdp, deepspeed, horovod, none
-      
+
       # DDP Configuration
       ddp:
         find_unused_parameters: false
         gradient_as_bucket_view: true
-      
+
       # FSDP Configuration
       fsdp:
         sharding_strategy: "full_shard"  # full_shard, shard_grad_op, no_shard
         cpu_offload: false
         backward_prefetch: true
-      
+
       # DeepSpeed Configuration
       deepspeed:
         enabled: false
@@ -946,14 +946,14 @@ models:
         zero_stage: 2                    # 0, 1, 2, 3
         offload_optimizer: false
         offload_param: false
-      
+
       # Multi-Node Configuration
       num_nodes: 1
       world_size: 1                      # Total processes (num_nodes * gpus_per_node)
       node_rank: 0                       # Rank of current node
       master_addr: "localhost"
       master_port: 12355
-    
+
     # Memory Optimization
     memory:
       mixed_precision: "no"              # no, fp16, bf16, fp8 (if supported)
@@ -961,28 +961,28 @@ models:
       gradient_accumulation_steps: 1
       max_memory_per_gpu: null           # null = auto, or specify in GB
       empty_cache_interval: 0            # Clear cache every N batches (0 = disabled)
-    
+
     # Computation Optimization
     computation:
       compile_model: false               # torch.compile (PyTorch 2.0+)
       compile_mode: "default"            # default, reduce-overhead, max-autotune
       use_cudnn_benchmark: true          # Enable cuDNN auto-tuner
       enable_tf32: true                  # TensorFloat-32 on Ampere+ GPUs
-      
+
       # DataLoader Optimization
       dataloader:
         num_workers: 4
         pin_memory: true
         prefetch_factor: 2
         persistent_workers: false
-  
+
   # ───────────────────────────────────────────────────────────
   # DEPLOYMENT & OPTIMIZATION (Optional - Default: Disabled)
   # ───────────────────────────────────────────────────────────
-  
+
   deployment:
     enabled: false                       # ⚠️ Set to true to enable
-    
+
     # Model Optimization
     optimization:
       # Quantization
@@ -991,7 +991,7 @@ models:
         method: "dynamic"                # dynamic, static, qat (quantization-aware)
         backend: "fbgemm"                # fbgemm (x86), qnnpack (ARM)
         dtype: "qint8"                   # qint8, quint8, float16
-      
+
       # Pruning
       pruning:
         enabled: false
@@ -999,22 +999,22 @@ models:
         amount: 0.3                      # Sparsity level (0.0-1.0)
         iterative: false
         iterations: 5
-      
+
       # Knowledge Distillation
       distillation:
         enabled: false
         teacher_checkpoint: null         # Path to teacher model
         temperature: 3.0
         alpha: 0.5                       # Weight for distillation loss
-    
+
     # Deployment Strategy
     strategy: "cloud"                    # local, cloud, edge, federated, serverless
-    
+
     # Edge Deployment
     edge:
       target_device: "jetson_nano"       # jetson_nano, raspberry_pi, coral, custom
       optimization_level: "balanced"     # speed, balanced, size
-    
+
     # Cloud Deployment
     cloud:
       provider: null                     # aws, gcp, azure, local
@@ -1023,14 +1023,14 @@ models:
       auto_scaling: false
       min_instances: 1
       max_instances: 10
-    
+
     # Federated Learning
     federated:
       num_clients: 10
       rounds: 50
       aggregation: "fedavg"              # fedavg, fedprox, fedadam
       client_selection: "random"
-    
+
     # Monitoring
     monitoring:
       enabled: true
@@ -1039,24 +1039,24 @@ models:
         - "throughput"
         - "memory_usage"
         - "prediction_accuracy"
-      
+
       # Drift Detection
       drift_detection:
         enabled: true
         method: "statistical"            # statistical, model_based
         threshold: 0.1
-      
+
       # Retraining
       retraining:
         enabled: false
         trigger: "manual"                # drift, schedule, manual, performance
         schedule: null                   # e.g., "0 0 * * 0" (weekly cron)
         performance_threshold: 0.05      # Retrain if performance drops > 5%
-  
+
   # ───────────────────────────────────────────────────────────
   # PLUGIN SYSTEM
   # ───────────────────────────────────────────────────────────
-  
+
   plugins:
     enabled: true
     plugin_paths:
@@ -1064,4 +1064,3 @@ models:
     auto_discover: true
     auto_validate: true
     validation_level: "standard"         # permissive, standard, strict
-

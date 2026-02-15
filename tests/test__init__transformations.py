@@ -57,11 +57,10 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -79,6 +78,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def transformations_pkg():
     """
@@ -89,6 +89,7 @@ def transformations_pkg():
     """
     try:
         import milia_pipeline.transformations as tfm
+
         return tfm
     except ImportError as exc:
         pytest.fail(
@@ -139,21 +140,27 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+        ],
+    )
     def test_metadata_attribute_exists(self, transformations_pkg, attr):
         """Each metadata dunder is defined on the transformations package."""
         assert hasattr(transformations_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, transformations_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(transformations_pkg, attr)
@@ -165,9 +172,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = transformations_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -175,9 +180,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeFeatureAvailabilityFlags:
@@ -201,9 +204,7 @@ class TestSmokeFeatureAvailabilityFlags:
     def test_availability_flag_is_bool(self, transformations_pkg, flag):
         """Each feature availability flag is actually a bool."""
         value = getattr(transformations_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
 
 class TestSmokeCircularDependencyResolutionSystem:
@@ -223,17 +224,13 @@ class TestSmokeCircularDependencyResolutionSystem:
     def test_initializing_flag_is_bool(self, transformations_pkg):
         """``_INITIALIZING`` is a bool."""
         value = transformations_pkg._INITIALIZING
-        assert isinstance(value, bool), (
-            f"_INITIALIZING should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"_INITIALIZING should be bool, got {type(value).__name__}"
 
     @pytest.mark.smoke
     def test_initialized_flag_is_bool(self, transformations_pkg):
         """``_INITIALIZED`` is a bool."""
         value = transformations_pkg._INITIALIZED
-        assert isinstance(value, bool), (
-            f"_INITIALIZED should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"_INITIALIZED should be bool, got {type(value).__name__}"
 
     @pytest.mark.smoke
     def test_ensure_initialized_exists(self, transformations_pkg):
@@ -300,9 +297,7 @@ class TestSmokeGraphTransformsExports:
     @pytest.mark.parametrize("name", ALL_GRAPH_EXPORTS)
     def test_graph_transform_export_exists(self, transformations_pkg, name):
         """Each graph transform export is defined on the transformations package."""
-        assert hasattr(transformations_pkg, name), (
-            f"Graph transform export '{name}' is missing"
-        )
+        assert hasattr(transformations_pkg, name), f"Graph transform export '{name}' is missing"
 
     @pytest.mark.smoke
     def test_graph_transforms_available_controls_exports(self, transformations_pkg):
@@ -360,9 +355,7 @@ class TestSmokeCustomTransformsExports:
     @pytest.mark.parametrize("name", ALL_CUSTOM_EXPORTS)
     def test_custom_transform_export_exists(self, transformations_pkg, name):
         """Each custom transform export is defined on the transformations package."""
-        assert hasattr(transformations_pkg, name), (
-            f"Custom transform export '{name}' is missing"
-        )
+        assert hasattr(transformations_pkg, name), f"Custom transform export '{name}' is missing"
 
     @pytest.mark.smoke
     def test_custom_transforms_available_controls_base_classes(self, transformations_pkg):
@@ -407,9 +400,7 @@ class TestSmokePluginSystemExports:
     @pytest.mark.parametrize("name", ALL_PLUGIN_EXPORTS)
     def test_plugin_export_exists(self, transformations_pkg, name):
         """Each plugin system export is defined on the transformations package."""
-        assert hasattr(transformations_pkg, name), (
-            f"Plugin system export '{name}' is missing"
-        )
+        assert hasattr(transformations_pkg, name), f"Plugin system export '{name}' is missing"
 
     @pytest.mark.smoke
     def test_plugin_system_available_controls_core_classes(self, transformations_pkg):
@@ -426,9 +417,7 @@ class TestSmokePluginSystemExports:
         else:
             for name in self.PLUGIN_CORE_CLASSES:
                 obj = getattr(transformations_pkg, name)
-                assert obj is None, (
-                    f"'{name}' should be None when PLUGIN_SYSTEM_AVAILABLE is False"
-                )
+                assert obj is None, f"'{name}' should be None when PLUGIN_SYSTEM_AVAILABLE is False"
 
 
 class TestSmokeResearchAPIExports:
@@ -458,19 +447,14 @@ class TestSmokeResearchAPIExports:
     ]
 
     ALL_RESEARCH_EXPORTS = (
-        RESEARCH_CONFIGURATION
-        + RESEARCH_BUILDERS
-        + RESEARCH_EXECUTION
-        + RESEARCH_CONVENIENCE
+        RESEARCH_CONFIGURATION + RESEARCH_BUILDERS + RESEARCH_EXECUTION + RESEARCH_CONVENIENCE
     )
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", ALL_RESEARCH_EXPORTS)
     def test_research_api_export_exists(self, transformations_pkg, name):
         """Each research API export is defined on the transformations package."""
-        assert hasattr(transformations_pkg, name), (
-            f"Research API export '{name}' is missing"
-        )
+        assert hasattr(transformations_pkg, name), f"Research API export '{name}' is missing"
 
     @pytest.mark.smoke
     def test_research_api_available_controls_exports(self, transformations_pkg):
@@ -487,9 +471,7 @@ class TestSmokeResearchAPIExports:
         else:
             for name in self.RESEARCH_CONFIGURATION + self.RESEARCH_BUILDERS:
                 obj = getattr(transformations_pkg, name)
-                assert obj is None, (
-                    f"'{name}' should be None when RESEARCH_API_AVAILABLE is False"
-                )
+                assert obj is None, f"'{name}' should be None when RESEARCH_API_AVAILABLE is False"
 
 
 class TestSmokeConvenienceFunctionExports:
@@ -558,10 +540,10 @@ class TestSmokeModuleInitialization:
 
         reloaded = importlib.reload(transformations_pkg)
 
-        assert reloaded.GRAPH_TRANSFORMS_AVAILABLE == original_graph
-        assert reloaded.CUSTOM_TRANSFORMS_AVAILABLE == original_custom
-        assert reloaded.PLUGIN_SYSTEM_AVAILABLE == original_plugin
-        assert reloaded.RESEARCH_API_AVAILABLE == original_research
+        assert original_graph == reloaded.GRAPH_TRANSFORMS_AVAILABLE
+        assert original_custom == reloaded.CUSTOM_TRANSFORMS_AVAILABLE
+        assert original_plugin == reloaded.PLUGIN_SYSTEM_AVAILABLE
+        assert original_research == reloaded.RESEARCH_API_AVAILABLE
 
     @pytest.mark.smoke
     def test_logger_is_present(self, transformations_pkg):
@@ -596,9 +578,7 @@ class TestSmokeExceptionFallbacks:
     @pytest.mark.parametrize("name", EXCEPTION_NAMES)
     def test_exception_export_exists(self, transformations_pkg, name):
         """Each exception export is defined on the transformations package."""
-        assert hasattr(transformations_pkg, name), (
-            f"Exception export '{name}' is missing"
-        )
+        assert hasattr(transformations_pkg, name), f"Exception export '{name}' is missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", EXCEPTION_NAMES)
@@ -634,9 +614,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, transformations_pkg, all_names):
@@ -644,10 +622,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(transformations_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(transformations_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -655,13 +630,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -718,13 +688,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in transformations/__init__.py but not in __all__: "
@@ -762,9 +736,7 @@ class TestContractGraphTransformClassTypes:
         if not transformations_pkg.GRAPH_TRANSFORMS_AVAILABLE:
             pytest.skip("graph_transforms submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", ENUM_CLASSES)
@@ -773,9 +745,7 @@ class TestContractGraphTransformClassTypes:
         if not transformations_pkg.GRAPH_TRANSFORMS_AVAILABLE:
             pytest.skip("graph_transforms submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class (enum), got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class (enum), got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", METADATA_CLASSES)
@@ -784,9 +754,7 @@ class TestContractGraphTransformClassTypes:
         if not transformations_pkg.GRAPH_TRANSFORMS_AVAILABLE:
             pytest.skip("graph_transforms submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     def test_graph_transforms_main_api_is_class_when_available(self, transformations_pkg):
@@ -824,9 +792,7 @@ class TestContractCustomTransformClassTypes:
         if not transformations_pkg.CUSTOM_TRANSFORMS_AVAILABLE:
             pytest.skip("custom_transforms submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     def test_transform_metadata_is_class_when_available(self, transformations_pkg):
@@ -839,19 +805,20 @@ class TestContractCustomTransformClassTypes:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "NormalizeVibrationalModes",
-        "FilterByDMCUncertainty",
-        "ScaleMullikenCharges",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "NormalizeVibrationalModes",
+            "FilterByDMCUncertainty",
+            "ScaleMullikenCharges",
+        ],
+    )
     def test_example_transform_is_class_when_available(self, transformations_pkg, name):
         """Each example transform is a class when CUSTOM_TRANSFORMS_AVAILABLE."""
         if not transformations_pkg.CUSTOM_TRANSFORMS_AVAILABLE:
             pytest.skip("custom_transforms submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractPluginSystemClassTypes:
@@ -871,9 +838,7 @@ class TestContractPluginSystemClassTypes:
         if not transformations_pkg.PLUGIN_SYSTEM_AVAILABLE:
             pytest.skip("plugin_system submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractResearchAPIClassTypes:
@@ -890,19 +855,20 @@ class TestContractResearchAPIClassTypes:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "AblationStudyBuilder",
-        "ParameterSweepBuilder",
-        "ComparativeStudyBuilder",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "AblationStudyBuilder",
+            "ParameterSweepBuilder",
+            "ComparativeStudyBuilder",
+        ],
+    )
     def test_builder_is_class_when_available(self, transformations_pkg, name):
         """Each builder class is a class when RESEARCH_API_AVAILABLE."""
         if not transformations_pkg.RESEARCH_API_AVAILABLE:
             pytest.skip("research_api submodule not available")
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     def test_experiment_runner_is_class_when_available(self, transformations_pkg):
@@ -915,14 +881,17 @@ class TestContractResearchAPIClassTypes:
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "create_ablation_study",
-        "create_parameter_sweep",
-        "create_comparative_study",
-        "load_experiments_from_config",
-        "get_experiment",
-        "list_available_experiments",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "create_ablation_study",
+            "create_parameter_sweep",
+            "create_comparative_study",
+            "load_experiments_from_config",
+            "get_experiment",
+            "list_available_experiments",
+        ],
+    )
     def test_research_convenience_is_callable_when_available(self, transformations_pkg, name):
         """Each research convenience function is callable when RESEARCH_API_AVAILABLE."""
         if not transformations_pkg.RESEARCH_API_AVAILABLE:
@@ -954,9 +923,7 @@ class TestContractExceptionFallbackTypes:
     def test_exception_is_class(self, transformations_pkg, name):
         """Each exception export is a class."""
         obj = getattr(transformations_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", ALL_EXCEPTIONS)
@@ -980,9 +947,11 @@ class TestContractConvenienceFunctionSignatures:
         """``get_available_transforms`` accepts no required arguments."""
         sig = inspect.signature(transformations_pkg.get_available_transforms)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
@@ -998,8 +967,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(transformations_pkg.create_transform_sequence)
         param_names = set(sig.parameters.keys())
         assert "configs" in param_names, (
-            f"create_transform_sequence should accept 'configs', "
-            f"found params: {param_names}"
+            f"create_transform_sequence should accept 'configs', found params: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1008,8 +976,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(transformations_pkg.create_transform_sequence)
         param_names = set(sig.parameters.keys())
         assert "dataset_type" in param_names, (
-            f"create_transform_sequence should accept 'dataset_type', "
-            f"found params: {param_names}"
+            f"create_transform_sequence should accept 'dataset_type', found params: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1018,8 +985,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(transformations_pkg.validate_transform_config)
         param_names = set(sig.parameters.keys())
         assert "configs" in param_names, (
-            f"validate_transform_config should accept 'configs', "
-            f"found params: {param_names}"
+            f"validate_transform_config should accept 'configs', found params: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1028,8 +994,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(transformations_pkg.validate_transform_config)
         param_names = set(sig.parameters.keys())
         assert "dataset_type" in param_names, (
-            f"validate_transform_config should accept 'dataset_type', "
-            f"found params: {param_names}"
+            f"validate_transform_config should accept 'dataset_type', found params: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1058,8 +1023,7 @@ class TestContractConvenienceFunctionSignatures:
         sig = inspect.signature(transformations_pkg.register_custom_transform)
         param_names = set(sig.parameters.keys())
         assert "force" in param_names, (
-            f"register_custom_transform should accept 'force', "
-            f"found params: {param_names}"
+            f"register_custom_transform should accept 'force', found params: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1077,16 +1041,17 @@ class TestContractConvenienceFunctionSignatures:
         """``get_system_status`` accepts no required arguments."""
         sig = inspect.signature(transformations_pkg.get_system_status)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required) == 0, (
-            f"get_system_status should take no required args, "
-            f"found: {[p.name for p in required]}"
+            f"get_system_status should take no required args, found: {[p.name for p in required]}"
         )
 
     @pytest.mark.contract
@@ -1094,16 +1059,17 @@ class TestContractConvenienceFunctionSignatures:
         """``get_module_info`` accepts no required arguments."""
         sig = inspect.signature(transformations_pkg.get_module_info)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required) == 0, (
-            f"get_module_info should take no required args, "
-            f"found: {[p.name for p in required]}"
+            f"get_module_info should take no required args, found: {[p.name for p in required]}"
         )
 
 
@@ -1125,9 +1091,7 @@ class TestContractConvenienceFunctionTypes:
     def test_convenience_is_function(self, transformations_pkg, name):
         """Each convenience function is a function (not a class or unbound method)."""
         obj = getattr(transformations_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractConvenienceFunctionUnavailableBehavior:
@@ -1159,8 +1123,7 @@ class TestContractConvenienceFunctionUnavailableBehavior:
         """
         result = transformations_pkg.get_available_transforms()
         assert isinstance(result, list), (
-            f"get_available_transforms() should return list, got "
-            f"{type(result).__name__}"
+            f"get_available_transforms() should return list, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -1258,8 +1221,7 @@ class TestContractGetSystemStatusReturnType:
         ]
         for key in bool_keys:
             assert isinstance(result[key], bool), (
-                f"get_system_status()['{key}'] should be bool, "
-                f"got {type(result[key]).__name__}"
+                f"get_system_status()['{key}'] should be bool, got {type(result[key]).__name__}"
             )
 
     @pytest.mark.contract
@@ -1269,8 +1231,12 @@ class TestContractGetSystemStatusReturnType:
         module-level availability flags.
         """
         result = transformations_pkg.get_system_status()
-        assert result["graph_transforms_available"] == transformations_pkg.GRAPH_TRANSFORMS_AVAILABLE
-        assert result["custom_transforms_available"] == transformations_pkg.CUSTOM_TRANSFORMS_AVAILABLE
+        assert (
+            result["graph_transforms_available"] == transformations_pkg.GRAPH_TRANSFORMS_AVAILABLE
+        )
+        assert (
+            result["custom_transforms_available"] == transformations_pkg.CUSTOM_TRANSFORMS_AVAILABLE
+        )
         assert result["plugin_system_available"] == transformations_pkg.PLUGIN_SYSTEM_AVAILABLE
         assert result["research_api_available"] == transformations_pkg.RESEARCH_API_AVAILABLE
 
@@ -1291,8 +1257,7 @@ class TestContractGetModuleInfoReturnType:
         """``get_module_info()`` result includes a ``version`` key."""
         result = transformations_pkg.get_module_info()
         assert "version" in result, (
-            f"get_module_info() missing 'version' key. "
-            f"Available keys: {sorted(result.keys())}"
+            f"get_module_info() missing 'version' key. Available keys: {sorted(result.keys())}"
         )
 
     @pytest.mark.contract
@@ -1309,8 +1274,7 @@ class TestContractGetModuleInfoReturnType:
         """``get_module_info()`` result includes an ``author`` key."""
         result = transformations_pkg.get_module_info()
         assert "author" in result, (
-            f"get_module_info() missing 'author' key. "
-            f"Available keys: {sorted(result.keys())}"
+            f"get_module_info() missing 'author' key. Available keys: {sorted(result.keys())}"
         )
 
     @pytest.mark.contract
@@ -1318,8 +1282,7 @@ class TestContractGetModuleInfoReturnType:
         """``get_module_info()`` result includes a ``license`` key."""
         result = transformations_pkg.get_module_info()
         assert "license" in result, (
-            f"get_module_info() missing 'license' key. "
-            f"Available keys: {sorted(result.keys())}"
+            f"get_module_info() missing 'license' key. Available keys: {sorted(result.keys())}"
         )
 
     @pytest.mark.contract
@@ -1327,13 +1290,11 @@ class TestContractGetModuleInfoReturnType:
         """``get_module_info()['features']`` is a dict of booleans."""
         result = transformations_pkg.get_module_info()
         assert "features" in result, (
-            f"get_module_info() missing 'features' key. "
-            f"Available keys: {sorted(result.keys())}"
+            f"get_module_info() missing 'features' key. Available keys: {sorted(result.keys())}"
         )
         features = result["features"]
         assert isinstance(features, dict), (
-            f"get_module_info()['features'] should be dict, got "
-            f"{type(features).__name__}"
+            f"get_module_info()['features'] should be dict, got {type(features).__name__}"
         )
         expected_feature_keys = [
             "graph_transforms",
@@ -1356,13 +1317,11 @@ class TestContractGetModuleInfoReturnType:
         """``get_module_info()['components']`` is a dict of booleans."""
         result = transformations_pkg.get_module_info()
         assert "components" in result, (
-            f"get_module_info() missing 'components' key. "
-            f"Available keys: {sorted(result.keys())}"
+            f"get_module_info() missing 'components' key. Available keys: {sorted(result.keys())}"
         )
         components = result["components"]
         assert isinstance(components, dict), (
-            f"get_module_info()['components'] should be dict, got "
-            f"{type(components).__name__}"
+            f"get_module_info()['components'] should be dict, got {type(components).__name__}"
         )
         expected_component_keys = [
             "transform_registry",
@@ -1407,16 +1366,17 @@ class TestContractEnsureInitializedIdempotency:
         """``_ensure_initialized`` takes no parameters."""
         sig = inspect.signature(transformations_pkg._ensure_initialized)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required) == 0, (
-            f"_ensure_initialized should take no required args, "
-            f"found: {[p.name for p in required]}"
+            f"_ensure_initialized should take no required args, found: {[p.name for p in required]}"
         )
 
     @pytest.mark.contract
@@ -1507,13 +1467,11 @@ class TestContractPublicAPISurface:
         "__version__",
         "__author__",
         "__license__",
-
         # Availability flags
         "GRAPH_TRANSFORMS_AVAILABLE",
         "CUSTOM_TRANSFORMS_AVAILABLE",
         "PLUGIN_SYSTEM_AVAILABLE",
         "RESEARCH_API_AVAILABLE",
-
         # Graph transforms - Core classes
         "TransformRegistry",
         "TransformComposer",
@@ -1527,10 +1485,8 @@ class TestContractPublicAPISurface:
         "TransformDependency",
         "TransformCompatibility",
         "GraphTransforms",
-
         # Graph transforms - Main API
         "get_graph_transforms",
-
         # Graph transforms - Convenience functions
         "get_transform_info",
         "validate_v3_configuration",
@@ -1543,46 +1499,37 @@ class TestContractPublicAPISurface:
         "get_validation_report_text",
         "discover_custom_transforms",
         "register_all_custom_transforms",
-
         # Custom transforms - Base classes
         "CustomTransformBase",
         "MolecularTransformBase",
         "QuantumTransformBase",
         "TransformMetadata",
-
         # Custom transforms - Example implementations
         "NormalizeVibrationalModes",
         "FilterByDMCUncertainty",
         "ScaleMullikenCharges",
-
         # Custom transforms - Exceptions
         "TransformValidationError",
         "TransformExecutionError",
         "TransformConfigurationError",
-
         # Plugin system - Core classes
         "PluginMetadata",
         "PluginRegistry",
         "PluginValidator",
         "TransformDeclaration",
-
         # Plugin system - Exceptions
         "PluginError",
         "PluginValidationError",
         "PluginSecurityError",
         "PluginDependencyError",
-
         # Research API - Configuration
         "ExperimentConfiguration",
-
         # Research API - Builders
         "AblationStudyBuilder",
         "ParameterSweepBuilder",
         "ComparativeStudyBuilder",
-
         # Research API - Execution
         "ExperimentRunner",
-
         # Research API - Convenience functions
         "create_ablation_study",
         "create_parameter_sweep",
@@ -1590,7 +1537,6 @@ class TestContractPublicAPISurface:
         "load_experiments_from_config",
         "get_experiment",
         "list_available_experiments",
-
         # Module-level convenience functions
         "get_available_transforms",
         "create_transform_sequence",
@@ -1599,7 +1545,6 @@ class TestContractPublicAPISurface:
         "discover_and_register_plugins",
         "get_system_status",
         "get_module_info",
-
         # Initialization
         "_ensure_initialized",
     }
@@ -1609,9 +1554,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1685,13 +1628,9 @@ class TestContractAvailabilityFlagConsistency:
         obj = transformations_pkg.PluginRegistry
 
         if flag:
-            assert obj is not None, (
-                "PLUGIN_SYSTEM_AVAILABLE is True but PluginRegistry is None"
-            )
+            assert obj is not None, "PLUGIN_SYSTEM_AVAILABLE is True but PluginRegistry is None"
         else:
-            assert obj is None, (
-                "PLUGIN_SYSTEM_AVAILABLE is False but PluginRegistry is not None"
-            )
+            assert obj is None, "PLUGIN_SYSTEM_AVAILABLE is False but PluginRegistry is not None"
 
     @pytest.mark.contract
     def test_research_api_flag_consistency(self, transformations_pkg):
@@ -1728,16 +1667,30 @@ class TestContractNullFallbackCompleteness:
             pytest.skip("graph_transforms is available — cannot test fallbacks")
 
         null_expected = [
-            "TransformRegistry", "TransformComposer", "TransformValidator",
-            "DynamicTransformDiscovery", "ConfigurationBridge",
-            "TransformErrorRecovery", "ValidationLevel", "ValidationScope",
-            "TransformInfo", "TransformDependency", "TransformCompatibility",
-            "GraphTransforms", "get_graph_transforms", "get_transform_info",
-            "validate_v3_configuration", "validate_comprehensive",
-            "get_configuration_format_help", "export_metrics",
-            "optimize_performance", "get_milia_setups",
-            "perform_system_health_check", "get_validation_report_text",
-            "discover_custom_transforms", "register_all_custom_transforms",
+            "TransformRegistry",
+            "TransformComposer",
+            "TransformValidator",
+            "DynamicTransformDiscovery",
+            "ConfigurationBridge",
+            "TransformErrorRecovery",
+            "ValidationLevel",
+            "ValidationScope",
+            "TransformInfo",
+            "TransformDependency",
+            "TransformCompatibility",
+            "GraphTransforms",
+            "get_graph_transforms",
+            "get_transform_info",
+            "validate_v3_configuration",
+            "validate_comprehensive",
+            "get_configuration_format_help",
+            "export_metrics",
+            "optimize_performance",
+            "get_milia_setups",
+            "perform_system_health_check",
+            "get_validation_report_text",
+            "discover_custom_transforms",
+            "register_all_custom_transforms",
         ]
         for name in null_expected:
             obj = getattr(transformations_pkg, name)
@@ -1756,9 +1709,12 @@ class TestContractNullFallbackCompleteness:
             pytest.skip("custom_transforms is available — cannot test fallbacks")
 
         null_expected = [
-            "CustomTransformBase", "MolecularTransformBase",
-            "QuantumTransformBase", "TransformMetadata",
-            "NormalizeVibrationalModes", "FilterByDMCUncertainty",
+            "CustomTransformBase",
+            "MolecularTransformBase",
+            "QuantumTransformBase",
+            "TransformMetadata",
+            "NormalizeVibrationalModes",
+            "FilterByDMCUncertainty",
             "ScaleMullikenCharges",
         ]
         for name in null_expected:
@@ -1776,8 +1732,7 @@ class TestContractNullFallbackCompleteness:
         for name in exception_expected:
             obj = getattr(transformations_pkg, name)
             assert obj is Exception, (
-                f"'{name}' should be Exception when CUSTOM_TRANSFORMS_AVAILABLE is False, "
-                f"got {obj}"
+                f"'{name}' should be Exception when CUSTOM_TRANSFORMS_AVAILABLE is False, got {obj}"
             )
 
     @pytest.mark.contract
@@ -1790,8 +1745,10 @@ class TestContractNullFallbackCompleteness:
             pytest.skip("plugin_system is available — cannot test fallbacks")
 
         null_expected = [
-            "PluginMetadata", "PluginRegistry",
-            "PluginValidator", "TransformDeclaration",
+            "PluginMetadata",
+            "PluginRegistry",
+            "PluginValidator",
+            "TransformDeclaration",
         ]
         for name in null_expected:
             obj = getattr(transformations_pkg, name)
@@ -1801,14 +1758,15 @@ class TestContractNullFallbackCompleteness:
             )
 
         exception_expected = [
-            "PluginError", "PluginValidationError",
-            "PluginSecurityError", "PluginDependencyError",
+            "PluginError",
+            "PluginValidationError",
+            "PluginSecurityError",
+            "PluginDependencyError",
         ]
         for name in exception_expected:
             obj = getattr(transformations_pkg, name)
             assert obj is Exception, (
-                f"'{name}' should be Exception when PLUGIN_SYSTEM_AVAILABLE is False, "
-                f"got {obj}"
+                f"'{name}' should be Exception when PLUGIN_SYSTEM_AVAILABLE is False, got {obj}"
             )
 
     @pytest.mark.contract
@@ -1821,11 +1779,16 @@ class TestContractNullFallbackCompleteness:
             pytest.skip("research_api is available — cannot test fallbacks")
 
         null_expected = [
-            "ExperimentConfiguration", "AblationStudyBuilder",
-            "ParameterSweepBuilder", "ComparativeStudyBuilder",
-            "ExperimentRunner", "create_ablation_study",
-            "create_parameter_sweep", "create_comparative_study",
-            "load_experiments_from_config", "get_experiment",
+            "ExperimentConfiguration",
+            "AblationStudyBuilder",
+            "ParameterSweepBuilder",
+            "ComparativeStudyBuilder",
+            "ExperimentRunner",
+            "create_ablation_study",
+            "create_parameter_sweep",
+            "create_comparative_study",
+            "load_experiments_from_config",
+            "get_experiment",
             "list_available_experiments",
         ]
         for name in null_expected:

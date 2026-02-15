@@ -1,6 +1,6 @@
 # MILIA Pipeline: Adding New Datasets - Implementation Blueprint
 
-**Version:** 2.12.0 
+**Version:** 2.12.0
 **Based on:** MILIA Dataset Architecture Refactoring Plan v2.2.0 (Phase 8-4 Complete) + Handler Module Refactoring v1.2.0 (Phase 7 Migration Complete) + Circular Import Resolution v1.0.0 + QDπ Charged Molecule Support v1.0.0 + Dynamic Discovery Pattern v1.0.0 + Feature Tier Support v1.0.0 + YAML Splitting Architecture v1.1.0 (Full Colocation)
 **Architecture:** Protocol + ABC + Explicit Registry + Preprocessing Subsystem + Modular Handler System + Lazy Import Pattern + Dynamic Auto-Discovery + Tier-Aware Validation + YAML Splitting (Single-file/Split-file Configuration Modes with Full Colocation)
 **Evidence-Based:** All instructions derived from actual refactored source code analysis
@@ -164,7 +164,7 @@ The most important decision when adding a new dataset is choosing the molecule c
 def get_molecule_creation_strategy(cls) -> str:
     """
     DFT datasets use identifier_coordinate_based strategy.
-    
+
     DFT molecular data contains InChI identifiers which encode molecular
     connectivity and bonding. These are parsed to create the molecular graph,
     then QM-optimized coordinates are assigned to preserve exact 3D geometry.
@@ -176,7 +176,7 @@ def get_molecule_creation_strategy(cls) -> str:
 def get_molecule_creation_strategy(cls) -> str:
     """
     Wavefunction datasets use coordinate_based strategy.
-    
+
     CRITICAL: Unlike DFT/DMC, Wavefunction compound IDs are NOT parseable
     chemical identifiers. Molecular connectivity must be inferred directly
     from 3D atomic coordinates using rdDetermineBonds algorithm.
@@ -293,7 +293,7 @@ When you add a new dataset, the **`identifier_keys` ORDER** that determines whic
 ```
 YourDataset.schema.identifier_keys = (('inchi', 'inchi'), ('smiles', 'smiles'))
                     ↓
-config_accessors.get_identifier_keys('YourDataset') 
+config_accessors.get_identifier_keys('YourDataset')
                     ↓
     → queries registry → returns YourDataset class
                     ↓
@@ -304,7 +304,7 @@ molecule_converter_core.py → iterates through keys → uses first available id
 
 #### Common Mistake
 
-❌ **WRONG:** Editing `YourDatasetHandler.get_identifier_keys()` in handler class  
+❌ **WRONG:** Editing `YourDatasetHandler.get_identifier_keys()` in handler class
 ✅ **CORRECT:** Setting `identifier_keys` tuple order in `YourDataset.schema` in `your_dataset.py`
 
 **Evidence from QM9 Implementation:**
@@ -322,16 +322,16 @@ def __init_subclass__(cls, **kwargs):
     # Skip validation for abstract subclasses
     if ABC in cls.__bases__:
         return
-    
+
     # Validate required class attributes exist
     required_attrs = ['metadata', 'schema', 'features', 'config_key']
     missing = [attr for attr in required_attrs if not hasattr(cls, attr)]
-    
+
     if missing:
         raise TypeError(
             f"Dataset class '{cls.__name__}' missing required class attributes: {missing}"
         )
-    
+
     # Validate attribute types
     if not isinstance(cls.metadata, DatasetMetadata):
         raise TypeError(...)
@@ -458,7 +458,7 @@ from milia_pipeline.datasets.registry import register
 class YourDatasetDataset(BaseDataset):
     """
     YourDataset dataset implementation.
-    
+
     [Detailed docstring describing:
     - What this dataset contains
     - Source/reference for the data
@@ -466,11 +466,11 @@ class YourDatasetDataset(BaseDataset):
     - Molecule creation strategy rationale
     - Any special processing requirements]
     """
-    
+
     # =========================================================================
     # REQUIRED: Metadata Definition
     # =========================================================================
-    
+
     metadata = DatasetMetadata(
         name="YourDataset",                    # UNIQUE identifier (used in registry)
         version="1.0.0",                       # Semantic version
@@ -478,38 +478,38 @@ class YourDatasetDataset(BaseDataset):
         author="Your Name or Organization",    # Optional
         license="License identifier",          # Optional (e.g., "CC0", "MIT")
     )
-    
+
     # =========================================================================
     # REQUIRED: Schema Definition
     # =========================================================================
-    
+
     schema = DatasetSchema(
         # Properties that MUST be present in every molecule
         required_properties=('atoms', 'coordinates', 'energy'),
-        
+
         # Properties that MAY be present
         optional_properties=('dipole', 'forces', 'gap'),
-        
+
         # Identifier key mappings: (npz_key, identifier_type)
         # ⚠️ CRITICAL: Order matters! First available identifier will be used.
         # Always put InChI FIRST when both InChI and SMILES are available.
         # InChI encodes complete H information; SMILES may have implicit H issues.
         # Use empty tuple () if no identifiers available.
         identifier_keys=(('inchi', 'inchi'), ('smiles', 'smiles')),
-        
+
         # Coordinate units in source data
         # Options: 'angstrom', 'bohr'
         coordinate_units='angstrom',
-        
+
         # Energy units in source data
         # Options: 'hartree', 'eV', 'kcal/mol', 'kJ/mol'
         energy_units='hartree',
     )
-    
+
     # =========================================================================
     # REQUIRED: Feature Support Definition
     # =========================================================================
-    
+
     features = DatasetFeatures(
         vibrational_analysis=False,    # Frequency/vibration data
         uncertainty_handling=False,     # Statistical uncertainties (std)
@@ -520,46 +520,46 @@ class YourDatasetDataset(BaseDataset):
         homo_lumo_gap=False,            # HOMO-LUMO gap
         mo_energies=False,              # MO energies
     )
-    
+
     # =========================================================================
     # REQUIRED: Configuration Key
     # =========================================================================
-    
+
     config_key = "your_dataset_config"  # Key in config file (configs/datasets/your_dataset.yaml or config.yaml)
-    
+
     # =========================================================================
     # OPTIONAL: Custom Handler Class
     # =========================================================================
-    
+
     # Uncomment and set if you have a custom handler class:
     # handler_class = YourDatasetHandler
-    
+
     # =========================================================================
     # REQUIRED: Abstract Method Implementations
     # =========================================================================
-    
+
     @classmethod
     def get_required_properties(cls) -> List[str]:
         """Return list of required properties for this dataset."""
         return list(cls.schema.required_properties)
-    
+
     @classmethod
     def get_feature_support(cls) -> Dict[str, bool]:
         """Return feature support dictionary for this dataset."""
         return cls.features.to_dict()
-    
+
     @classmethod
     def get_molecule_creation_strategy(cls) -> str:
         """
         Return the molecule creation strategy for this dataset.
-        
+
         Options:
         - 'identifier_coordinate_based': Use parseable identifiers (InChI, SMILES)
           for molecular connectivity, assign 3D coordinates from data
-        
-        - 'coordinate_based': Infer molecular connectivity from 3D atomic 
+
+        - 'coordinate_based': Infer molecular connectivity from 3D atomic
           coordinates using rdDetermineBonds algorithm
-        
+
         Returns:
             str: 'identifier_coordinate_based' or 'coordinate_based'
         """
@@ -618,19 +618,19 @@ Create a new file: `configs/datasets/your_dataset.yaml`
 your_dataset_config:
   # Filename for the raw .npz dataset file
   raw_npz_filename: your_dataset.npz
-  
+
   # URL to download the raw dataset file (optional)
   raw_data_download_url: https://example.com/your_dataset.npz
-  
+
   # Add any dataset-specific configuration options here
   # Examples from existing datasets:
-  
+
   # For datasets with uncertainty (like DMC):
   # uncertainty_handling:
   #   uncertainty_field_name: std
   #   use_for_loss_weighting: true
   #   max_uncertainty_threshold: null
-  
+
   # For datasets with preprocessing (like Wavefunction):
   # processing_config:
   #   feature_tier: standard
@@ -649,24 +649,24 @@ data_config:
     YourDataset:
       # YourDataset Property Selection
       # Reference: Author et al., Journal Name, Year
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         - energy          # Primary energy target
         # Add other scalar targets as needed
-      
+
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
         - charges         # Atomic charges for node features
         # - forces        # Uncomment if training force fields
-      
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include:
         - dipole          # Molecular dipole moment
-      
+
       # Variable-length graph properties
       variable_len_graph_properties_to_include: []
-      
+
       # Dataset-specific settings
       # Calculate atomization energy from total energy
       calculate_atomization_energy_from: energy
@@ -686,7 +686,7 @@ property_availability:
     # DOI: your-doi-here
     # Level of theory: Method/Basis set
     # Coordinate units: Angstrom | Energy units: Hartree
-    
+
     molecular_identifiers:
       - compounds
       - inchi
@@ -716,19 +716,19 @@ Add a new section matching your `config_key`:
 your_dataset_config:
   # Filename for the raw .npz dataset file
   raw_npz_filename: your_dataset.npz
-  
+
   # URL to download the raw dataset file (optional)
   raw_data_download_url: https://example.com/your_dataset.npz
-  
+
   # Add any dataset-specific configuration options here
   # Examples from existing datasets:
-  
+
   # For datasets with uncertainty (like DMC):
   # uncertainty_handling:
   #   uncertainty_field_name: std
   #   use_for_loss_weighting: true
   #   max_uncertainty_threshold: null
-  
+
   # For datasets with preprocessing (like Wavefunction):
   # processing_config:
   #   feature_tier: standard
@@ -796,46 +796,46 @@ The `property_availability` section documents all properties available in your d
 ```yaml
 property_availability:
   # ... existing entries (DFT, DMC, Wavefunction, QM9, ANI1X, etc.) ...
-  
+
   YourDataset:
     # Dataset header comment with reference information
     # Reference: Author et al., Journal Name, Year
     # DOI: your-doi-here
     # Level of theory: Method/Basis set
     # Coordinate units: Angstrom | Energy units: Hartree
-    
+
     # Molecular identifiers (keys used to identify molecules)
     molecular_identifiers:
       - compounds       # Compound identifiers
       - inchi           # InChI string (if available)
       # - smiles        # SMILES string (if available)
-    
+
     # Atomic structure properties (always required)
     atomic_structure:
       - atoms           # Atomic numbers/symbols
       - coordinates     # Cartesian coordinates
-    
+
     # Scalar graph-level properties (single values per molecule)
     scalar_graph_targets:
       - energy          # Total energy (primary target)
       # Add other scalar properties from your NPZ
-    
+
     # Node-level (atomic) properties (per-atom values)
     node_features:
       - charges         # Atomic charges (if available)
       # - forces        # Atomic forces (if available)
-    
+
     # Fixed-size vector graph properties (e.g., 3D vectors)
     vector_graph_properties:
       - dipole          # Molecular dipole (if available)
-    
+
     # Variable-length graph properties
     variable_len_graph_properties: []  # Add if applicable
-    
+
     # Metadata fields (non-target information)
     metadata_fields:
       - _metadata       # Preprocessing metadata
-    
+
     # Uncertainty fields (for stochastic methods like DMC)
     uncertainty_fields: []  # Add if applicable (e.g., std for DMC)
 ```
@@ -861,28 +861,28 @@ The `data_config.property_selection` section specifies which properties from the
 data_config:
   property_selection:
     # ... existing entries (DFT, DMC, Wavefunction, QM9, ANI1X, etc.) ...
-    
+
     YourDataset:
       # YourDataset Property Selection
       # Reference: Author et al., Journal Name, Year
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         - energy          # Primary energy target
         # Add other scalar targets as needed
-      
+
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
         - charges         # Atomic charges for node features
         # - forces        # Uncomment if training force fields
-      
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include:
         - dipole          # Molecular dipole moment
-      
+
       # Variable-length graph properties
       variable_len_graph_properties_to_include: []
-      
+
       # Dataset-specific settings
       # Calculate atomization energy from total energy
       calculate_atomization_energy_from: energy
@@ -1063,18 +1063,18 @@ from milia_pipeline.datasets.registry import register
 class ExampleDFTDataset(BaseDataset):
     """
     Example DFT-like dataset with standard properties.
-    
+
     Uses identifier_coordinate_based strategy since InChI/SMILES
     identifiers are available for molecular connectivity.
     """
-    
+
     metadata = DatasetMetadata(
         name="ExampleDFT",
         version="1.0.0",
         description="Example DFT dataset with standard properties",
         author="Example Author",
     )
-    
+
     schema = DatasetSchema(
         required_properties=('Etot', 'atoms', 'coordinates'),
         optional_properties=('dipole', 'gap', 'forces', 'charges'),
@@ -1082,7 +1082,7 @@ class ExampleDFTDataset(BaseDataset):
         coordinate_units='angstrom',
         energy_units='hartree',
     )
-    
+
     features = DatasetFeatures(
         vibrational_analysis=False,
         uncertainty_handling=False,
@@ -1093,17 +1093,17 @@ class ExampleDFTDataset(BaseDataset):
         homo_lumo_gap=True,
         mo_energies=False,
     )
-    
+
     config_key = "example_dft_config"
-    
+
     @classmethod
     def get_required_properties(cls) -> List[str]:
         return list(cls.schema.required_properties)
-    
+
     @classmethod
     def get_feature_support(cls) -> Dict[str, bool]:
         return cls.features.to_dict()
-    
+
     @classmethod
     def get_molecule_creation_strategy(cls) -> str:
         return 'identifier_coordinate_based'
@@ -1135,18 +1135,18 @@ from milia_pipeline.datasets.registry import register
 class ExampleMCDataset(BaseDataset):
     """
     Example Monte Carlo dataset with uncertainty handling.
-    
+
     Includes statistical uncertainties (std field) for energy predictions.
     Uses uncertainty-aware processing and loss weighting.
     """
-    
+
     metadata = DatasetMetadata(
         name="ExampleMC",
         version="1.0.0",
         description="Example Monte Carlo dataset with uncertainties",
         author="Example Author",
     )
-    
+
     schema = DatasetSchema(
         required_properties=('Etot', 'std', 'atoms', 'coordinates'),  # Note: 'std' required
         optional_properties=('mc_stats', 'correlation_data'),
@@ -1154,7 +1154,7 @@ class ExampleMCDataset(BaseDataset):
         coordinate_units='angstrom',
         energy_units='hartree',
     )
-    
+
     features = DatasetFeatures(
         vibrational_analysis=False,
         uncertainty_handling=True,  # CRITICAL: Enable uncertainty handling
@@ -1165,17 +1165,17 @@ class ExampleMCDataset(BaseDataset):
         homo_lumo_gap=False,
         mo_energies=False,
     )
-    
+
     config_key = "example_mc_config"
-    
+
     @classmethod
     def get_required_properties(cls) -> List[str]:
         return list(cls.schema.required_properties)
-    
+
     @classmethod
     def get_feature_support(cls) -> Dict[str, bool]:
         return cls.features.to_dict()
-    
+
     @classmethod
     def get_molecule_creation_strategy(cls) -> str:
         return 'identifier_coordinate_based'
@@ -1209,21 +1209,21 @@ from milia_pipeline.datasets.registry import register
 class ExampleWFDataset(BaseDataset):
     """
     Example wavefunction dataset with orbital analysis.
-    
+
     CRITICAL DIFFERENCES FROM DFT-LIKE DATASETS:
     1. Uses 'coordinate_based' strategy (compound IDs are NOT parseable)
     2. Coordinates are in Bohr (automatic conversion to Angstrom)
     3. Molecular charge calculated from n_electrons if available
     4. Molecular connectivity inferred from 3D geometry via rdDetermineBonds
     """
-    
+
     metadata = DatasetMetadata(
         name="ExampleWF",
         version="1.0.0",
         description="Example wavefunction dataset with orbital analysis",
         author="Example Author",
     )
-    
+
     schema = DatasetSchema(
         required_properties=('atoms', 'coordinates', 'compounds'),  # Note: compounds is label
         optional_properties=('mo_energies', 'mo_occupations', 'homo_lumo_gap_eV',
@@ -1232,7 +1232,7 @@ class ExampleWFDataset(BaseDataset):
         coordinate_units='bohr',  # CRITICAL: Bohr units
         energy_units='eV',
     )
-    
+
     features = DatasetFeatures(
         vibrational_analysis=False,
         uncertainty_handling=False,
@@ -1243,22 +1243,22 @@ class ExampleWFDataset(BaseDataset):
         homo_lumo_gap=True,      # Enable HOMO-LUMO
         mo_energies=True,        # Enable MO energies
     )
-    
+
     config_key = "example_wf_config"
-    
+
     @classmethod
     def get_required_properties(cls) -> List[str]:
         return list(cls.schema.required_properties)
-    
+
     @classmethod
     def get_feature_support(cls) -> Dict[str, bool]:
         return cls.features.to_dict()
-    
+
     @classmethod
     def get_molecule_creation_strategy(cls) -> str:
         """
         Uses coordinate_based strategy.
-        
+
         Compound IDs are labels (e.g., 'H2O_001') that cannot be parsed
         for molecular connectivity. The rdDetermineBonds algorithm
         infers bonds from 3D atomic coordinates.
@@ -1289,29 +1289,29 @@ from milia_pipeline.datasets.registry import register
 @register
 class MinimalDataset(BaseDataset):
     """Minimal dataset implementation with required elements only."""
-    
+
     metadata = DatasetMetadata(
         name="Minimal",
         version="1.0.0",
         description="Minimal dataset for testing",
     )
-    
+
     schema = DatasetSchema(
         required_properties=('atoms', 'coordinates'),
     )
-    
+
     features = DatasetFeatures()  # All defaults (False)
-    
+
     config_key = "minimal_config"
-    
+
     @classmethod
     def get_required_properties(cls) -> List[str]:
         return list(cls.schema.required_properties)
-    
+
     @classmethod
     def get_feature_support(cls) -> Dict[str, bool]:
         return cls.features.to_dict()
-    
+
     @classmethod
     def get_molecule_creation_strategy(cls) -> str:
         return 'coordinate_based'  # Safe default
@@ -1412,8 +1412,8 @@ from typing import Dict, List, Any, Optional, Tuple
 from torch_geometric.data import Data
 
 from milia_pipeline.config.config_containers import (
-    DatasetConfig, 
-    FilterConfig, 
+    DatasetConfig,
+    FilterConfig,
     ProcessingConfig
 )
 from milia_pipeline.config.validators import (
@@ -1445,10 +1445,10 @@ class YourDatasetHandler(DatasetHandler):
     Handler for YourDataset with exception integration and
     transformation system support.
     """
-    
+
     def get_dataset_type(self) -> str:
         return "YourDataset"  # Must match dataset_type in config file
-    
+
     # Implement all 11 required methods from DatasetHandler ABC
     # See existing handlers (dft.py, ani1x.py) for reference implementations
     ...
@@ -1494,13 +1494,13 @@ class YourDataset(BaseDataset):
     schema = DatasetSchema(...)
     features = DatasetFeatures(...)
     config_key = "your_dataset_config"
-    
+
     # NOTE: handler_class is intentionally NOT set here.
     # YourDatasetHandler is registered via @register_handler decorator and
     # discovered dynamically through the HandlerRegistry by create_dataset_handler().
     # Setting handler_class = None (default from BaseDataset) is correct.
     # We override create_handler() to use lazy import to avoid circular dependency.
-    
+
     @classmethod
     def create_handler(
         cls,
@@ -1512,17 +1512,17 @@ class YourDataset(BaseDataset):
     ):
         """
         Factory method to create YourDatasetHandler instance.
-        
+
         Uses lazy import to avoid circular dependency between
         datasets/implementations/your_dataset.py and handlers/implementations/your_dataset.py.
-        
+
         This pattern breaks the circular import chain by importing inside the method,
         so the import only happens at runtime when create_handler() is called,
         after all modules are fully loaded.
         """
         # Lazy import to break circular dependency
         from milia_pipeline.handlers.implementations.your_dataset import YourDatasetHandler
-        
+
         return YourDatasetHandler(
             dataset_config,
             filter_config,
@@ -1623,7 +1623,7 @@ HANDLER_COORDINATE_UNITS: Dict[str, str] = {
 # ANI-1x has NO parseable identifiers - uses coordinate_based strategy
 'ANI1x': []  # Empty list for HANDLER_IDENTIFIER_KEYS
 
-# ANI-1x uses 'energy' not 'Etot' 
+# ANI-1x uses 'energy' not 'Etot'
 'ANI1x': ['energy', 'atoms', 'coordinates']  # For HANDLER_REQUIRED_PROPERTIES
 ```
 
@@ -1765,51 +1765,51 @@ Your preprocessor must inherit from `BasePreprocessor` and implement two abstrac
 class BasePreprocessor(ABC):
     """
     Abstract base class for dataset preprocessors.
-    
+
     Preprocessors handle one-time transformation of raw data files
     into the .npz format expected by miliaDataset.
     """
-    
+
     def __init__(self, config: Dict[str, Any], logger: logging.Logger):
         """Initialize with configuration and logger."""
         self.config = config
         self.logger = logger
         self._validate_config()  # Called automatically
-    
+
     @abstractmethod
     def _validate_config(self) -> None:
         """
         Validate preprocessor-specific configuration.
-        
+
         YOU MUST IMPLEMENT: Check that all required config keys exist
         and have valid values.
-        
+
         Raises:
             ConfigurationError: If configuration is invalid
         """
         pass
-    
+
     @abstractmethod
     def preprocess(self) -> Path:
         """
         Execute preprocessing logic.
-        
+
         YOU MUST IMPLEMENT: The actual data transformation logic.
-        
+
         Returns:
             Path to generated .npz file
-            
+
         Raises:
             DataProcessingError: If preprocessing fails
         """
         pass
-    
+
     def run(self) -> Path:
         """
         Execute full preprocessing pipeline with validation.
-        
+
         DO NOT OVERRIDE: This method calls preprocess() and validates output.
-        
+
         Returns:
             Path to validated .npz output file
         """
@@ -1817,13 +1817,13 @@ class BasePreprocessor(ABC):
         output_path = self.preprocess()
         self._validate_output(output_path)
         return output_path
-    
+
     def _validate_output(self, output_path: Path) -> None:
         """
         Validate generated .npz file structure.
-        
+
         Checks for required keys: 'compounds', 'metadata'
-        
+
         You may override to add dataset-specific validation.
         """
         # ... validation logic ...
@@ -1859,7 +1859,7 @@ from milia_pipeline.preprocessing.utils.npz_builders import build_npz
 class YourDatasetPreprocessor(BasePreprocessor):
     """
     Preprocessor for YourDataset.
-    
+
     Pipeline:
     ---------
     1. [Describe step 1 - e.g., Extract files from archive]
@@ -1867,31 +1867,31 @@ class YourDatasetPreprocessor(BasePreprocessor):
     3. [Describe step 3 - e.g., Transform to NPZ-compatible arrays]
     4. [Describe step 4 - e.g., Build NPZ file]
     5. [Describe step 5 - e.g., Cleanup temporary files]
-    
+
     Configuration:
     --------------
     Required keys:
         - raw_data_path: Path to source data (file or directory)
         - output_npz_path: Path for output .npz file
-        
+
     Optional keys:
         - num_molecules: Limit number of molecules (None = all)
         - cleanup_temp: Remove temporary files after processing (default: True)
         - [Add your dataset-specific options]
     """
-    
+
     def _validate_config(self) -> None:
         """Validate YourDataset-specific configuration."""
         # Check required keys
         required_keys = ['raw_data_path', 'output_npz_path']
         missing = [k for k in required_keys if k not in self.config]
-        
+
         if missing:
             raise ConfigurationError(
                 f"Missing required configuration keys: {missing}",
                 config_key=', '.join(missing)
             )
-        
+
         # Validate paths exist
         raw_path = Path(self.config['raw_data_path'])
         if not raw_path.exists():
@@ -1900,16 +1900,16 @@ class YourDatasetPreprocessor(BasePreprocessor):
                 config_key='raw_data_path',
                 actual_value=str(raw_path)
             )
-        
+
         # Add dataset-specific validation here
         # Example: validate feature_tier, num_molecules, etc.
-        
+
         self.logger.debug("Configuration validation passed")
-    
+
     def preprocess(self) -> Path:
         """
         Execute YourDataset preprocessing pipeline.
-        
+
         Returns:
             Path to generated .npz file
         """
@@ -1917,15 +1917,15 @@ class YourDatasetPreprocessor(BasePreprocessor):
         output_npz = Path(self.config['output_npz_path'])
         num_molecules = self.config.get('num_molecules', None)
         cleanup_temp = self.config.get('cleanup_temp', True)
-        
+
         # Check if output already exists (skip if so)
         if output_npz.exists():
             self.logger.info(f"Output already exists: {output_npz}")
             self.logger.info("Skipping preprocessing - delete file to regenerate")
             return output_npz
-        
+
         temp_dir = None
-        
+
         try:
             # ============================================================
             # STEP 1: Extract/Load Source Data
@@ -1937,11 +1937,11 @@ class YourDatasetPreprocessor(BasePreprocessor):
             #   - Download from URL: use requests
             # ============================================================
             self.logger.info("STEP 1: Loading source data")
-            
+
             # YOUR IMPLEMENTATION HERE
             # Example for archive:
             # temp_dir = extract_from_targz(raw_path, max_files=num_molecules)
-            
+
             # ============================================================
             # STEP 2: Parse Source Format
             # ============================================================
@@ -1949,14 +1949,14 @@ class YourDatasetPreprocessor(BasePreprocessor):
             # You may need to create a custom parser in utils/
             # ============================================================
             self.logger.info("STEP 2: Parsing source format")
-            
+
             # YOUR IMPLEMENTATION HERE
             # Example:
             # features, parse_metadata = parse_your_format(
             #     source_dir=temp_dir,
             #     options=self.config.get('parsing_options', {})
             # )
-            
+
             # Placeholder - replace with actual parsing
             features = {
                 'compounds': [],  # List of molecule identifiers
@@ -1965,12 +1965,12 @@ class YourDatasetPreprocessor(BasePreprocessor):
                 # Add your dataset-specific features
             }
             parse_metadata = {}
-            
+
             # ============================================================
             # STEP 3: Build NPZ File
             # ============================================================
             self.logger.info("STEP 3: Building NPZ file")
-            
+
             # Prepare metadata
             npz_metadata = {
                 'version': '1.0',
@@ -1979,7 +1979,7 @@ class YourDatasetPreprocessor(BasePreprocessor):
                 'preprocessing_version': '1.0',
                 **parse_metadata
             }
-            
+
             # Use the standard NPZ builder
             build_npz(
                 features=features,
@@ -1987,7 +1987,7 @@ class YourDatasetPreprocessor(BasePreprocessor):
                 output_path=output_npz,
                 logger=self.logger
             )
-            
+
             # ============================================================
             # STEP 4: Cleanup
             # ============================================================
@@ -1995,10 +1995,10 @@ class YourDatasetPreprocessor(BasePreprocessor):
                 self.logger.info("STEP 4: Cleaning up temporary files")
                 shutil.rmtree(temp_dir)
                 self.logger.info(f"Removed: {temp_dir}")
-            
+
             self.logger.info("PREPROCESSING COMPLETE")
             return output_npz
-            
+
         except Exception as e:
             # Cleanup on error
             if cleanup_temp and temp_dir and Path(temp_dir).exists():
@@ -2006,7 +2006,7 @@ class YourDatasetPreprocessor(BasePreprocessor):
                     shutil.rmtree(temp_dir)
                 except Exception:
                     pass
-            
+
             raise DataProcessingError(
                 f"YourDataset preprocessing failed: {e}",
                 operation="your_dataset_preprocessing"
@@ -2046,13 +2046,13 @@ def extract_from_targz(
 ) -> Path:
     """
     Extract files from tar.gz archive using streaming (memory-efficient).
-    
+
     Args:
         tar_path: Path to .tar.gz archive
         max_files: Maximum number of files to extract (None = all)
         file_extension: Only extract files with this extension
         temp_dir: Directory for extraction (None = system temp)
-        
+
     Returns:
         Path to extraction directory containing extracted files
     """
@@ -2082,7 +2082,7 @@ def build_npz(
 ) -> None:
     """
     Build compressed .npz file from features and metadata.
-    
+
     Args:
         features: Dictionary mapping feature names to numpy arrays
                   REQUIRED keys: 'compounds', 'atoms', 'coordinates'
@@ -2097,10 +2097,10 @@ def validate_npz_structure(
 ) -> Dict[str, Any]:
     """
     Validate .npz file structure and return summary.
-    
+
     Args:
         npz_path: Path to .npz file to validate
-        
+
     Returns:
         Dictionary with validation results and file summary
     """
@@ -2137,11 +2137,11 @@ build_npz(features, metadata, Path('output/dataset.npz'))
 ```
 
 > ⚠️ **WARNING: Object Array Storage Requires Handler Normalization**
-> 
+>
 > When storing ragged arrays (different sizes per molecule) with `dtype=object` as shown above,
-> your handler's `process_property_value()` method MUST convert to native dtypes before core 
+> your handler's `process_property_value()` method MUST convert to native dtypes before core
 > pipeline validation. Without this, `np.isfinite()` and `torch.tensor()` will fail.
-> 
+>
 > See `ANI1xDatasetHandler.process_property_value()` in `handlers/implementations/ani1x.py` for the reference
 > implementation, and Section 7.2 for detailed guidance.
 
@@ -2173,9 +2173,9 @@ def parse_your_format_files(
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     """
     Parse your format files and extract features.
-    
+
     YOU MUST IMPLEMENT THIS BASED ON YOUR FORMAT.
-    
+
     Returns:
         Tuple of (features_dict, metadata_dict)
     """
@@ -2189,7 +2189,7 @@ Based on real implementation experience (including QM9), these are the most comm
 
 #### Pitfall 1: Wrong `identifier_keys` Order
 
-**Symptom:** 
+**Symptom:**
 ```
 HandlerValidationError: Atom count mismatch between SMILES and QM coordinates
 SMILES: 1, QM coords: 5
@@ -2228,12 +2228,12 @@ The handler's `get_identifier_keys()` method reads FROM the Dataset class schema
 
 #### Pitfall 3: Missing Registry Registration
 
-**Symptom:** 
+**Symptom:**
 ```
 HandlerNotAvailableError: Handler type 'YourDataset' is not supported
 ```
 
-**Cause:** 
+**Cause:**
 - Missing `@register` decorator on Dataset class
 - Missing import in `datasets/implementations/__init__.py`
 
@@ -2285,13 +2285,13 @@ identifier_keys=(('actual_inchi_key', 'inchi'), ('actual_smiles_key', 'smiles'))
 
 #### Pitfall 6: Object Array Dtype Issues from Preprocessor
 
-**Symptom:** 
+**Symptom:**
 - `TypeError: ufunc 'isfinite' not supported for the input types`
 - `can't convert np.ndarray of type numpy.object_`
 
 **Cause:** Preprocessors storing ragged arrays (different sizes per molecule) with `dtype=object` causes downstream validation and tensor conversion failures.
 
-**Why It Fails:** 
+**Why It Fails:**
 1. `np.isfinite()` in `validators.py` cannot operate on object arrays
 2. `torch.tensor()` in handler's `_ensure_tensor()` cannot convert object arrays
 
@@ -2307,7 +2307,7 @@ identifier_keys=(('actual_inchi_key', 'inchi'), ('actual_smiles_key', 'smiles'))
 
 #### Pitfall 7: Hardcoded Neutral Charge for Datasets with Charged Molecules
 
-**Symptom:** 
+**Symptom:**
 - `ValueError: Final molecular charge (0) does not match input (-1); could not find valid bond ordering`
 - `ValueError: Valence of atom X is Y, which is larger than the allowed maximum`
 
@@ -2315,7 +2315,7 @@ identifier_keys=(('actual_inchi_key', 'inchi'), ('actual_smiles_key', 'smiles'))
 
 **Why It Fails:** The `rdDetermineBonds.DetermineBonds(mol, charge=molecular_charge)` algorithm uses the charge parameter to correctly determine bond orders. A sulfate ion (SO₄²⁻) or protonated amine (R-NH₃⁺) will fail bond order determination if charge=0 is passed.
 
-**Solution:** 
+**Solution:**
 1. **Preprocessing:** Store molecular charge in NPZ during preprocessing (inferred from structure or source metadata)
 2. **Handler:** Read charge from NPZ in `get_molecular_charge()` instead of returning constant 0
 
@@ -2335,7 +2335,7 @@ def get_molecular_charge(self, raw_properties_dict, atomic_numbers, mol_identifi
 
 #### Pitfall 8: Non-Standard HDF5 Format Key Names
 
-**Symptom:** 
+**Symptom:**
 - `Skipping {formula}: no 'elements' key found`
 - 0 conformers extracted from HDF5 file
 
@@ -2346,7 +2346,7 @@ def get_molecular_charge(self, raw_properties_dict, atomic_numbers, mol_identifi
 - DeePMD-kit format: `type_map.raw`, `type.raw`, `set.XXX/coord.npy`, `set.XXX/energy.npy`
 - ASE format: `atomic_numbers`, `positions`, `energy`
 
-**Solution:** 
+**Solution:**
 1. **Always verify** HDF5 structure BEFORE writing preprocessor
 2. **Use official documentation** for the dataset's declared format
 3. **Test with h5dump or h5py** to inspect actual key names
@@ -2386,21 +2386,21 @@ your_dataset_config:
   # Standard dataset config
   raw_npz_filename: your_dataset.npz  # Output from preprocessing
   raw_data_download_url: null  # Optional URL for raw data
-  
+
   # Preprocessing configuration
   preprocessing:
     # Required: Path to source data
     raw_data_path: raw/your_source_data.tar.gz
-    
+
     # Required: Output NPZ path
     output_npz_path: processed/your_dataset.npz
-    
+
     # Optional: Limit number of molecules
     num_molecules: null  # null = process all
-    
+
     # Optional: Cleanup temporary files
     cleanup_temp: true
-    
+
     # Dataset-specific options
     # Add your own options here based on your preprocessor's needs
     feature_tier: standard  # Example from WavefunctionPreprocessor
@@ -2435,21 +2435,21 @@ your_dataset_config:
   # Standard dataset config
   raw_npz_filename: your_dataset.npz  # Output from preprocessing
   raw_data_download_url: null  # Optional URL for raw data
-  
+
   # Preprocessing configuration
   preprocessing:
     # Required: Path to source data
     raw_data_path: raw/your_source_data.tar.gz
-    
+
     # Required: Output NPZ path
     output_npz_path: processed/your_dataset.npz
-    
+
     # Optional: Limit number of molecules
     num_molecules: null  # null = process all
-    
+
     # Optional: Cleanup temporary files
     cleanup_temp: true
-    
+
     # Dataset-specific options
     # Add your own options here based on your preprocessor's needs
     feature_tier: standard  # Example from WavefunctionPreprocessor
@@ -2958,7 +2958,7 @@ schema = DatasetSchema(
         'Qmulliken',                # Mulliken partial charges
         'freqs',                     # Vibrational frequencies
     ),
-    # ⚠️ CRITICAL LESSON: SMILES MUST NOT be the first 
+    # ⚠️ CRITICAL LESSON: SMILES MUST NOT be the first
     # Original implementation had SMILES first → Almost fails
     # After fix with InChI first → 100% success rate
     identifier_keys=(('inchi', 'inchi'), ('smiles', 'smiles')),
@@ -3114,8 +3114,8 @@ self.config = {
 
 ## Document Information
 
-**Version:** 2.10.0  
-**Created:** Based on systematic analysis of MILIA refactored source code  
+**Version:** 2.10.0
+**Created:** Based on systematic analysis of MILIA refactored source code
 **Updated:** 2026-01-29 - Feature Tier Support: Added guidance for datasets with tiered feature extraction (e.g., basic/standard/complete)
 
 **Source Files Analyzed - Dataset Module:**
@@ -3123,7 +3123,7 @@ self.config = {
 - `registry.py` (175 lines) - DatasetRegistry, @register decorator
 - `protocols.py` (115 lines) - DatasetHandlerProtocol (11 methods)
 - `dft.py` (109 lines) - DFTDataset reference implementation
-- `dmc.py` (115 lines) - DMCDataset reference implementation  
+- `dmc.py` (115 lines) - DMCDataset reference implementation
 - `wavefunction.py` (137 lines) - WavefunctionDataset reference implementation
 - `qm9.py` (195 lines) - QM9Dataset reference implementation
 - `ani1x.py` (180 lines) - ANI1xDataset reference implementation (NEW)

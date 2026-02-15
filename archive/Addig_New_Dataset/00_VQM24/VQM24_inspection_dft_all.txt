@@ -21,7 +21,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: ['SH2_0/conformer_1', 'BrH1_0/conformer_1', 'ClH1_0/conformer_1', 'SiH4_0/conformer_1', 'OH2_0/conformer_1']...
 
-  Key: 'atoms' 
+  Key: 'atoms'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -29,7 +29,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [array([16,  1,  1], dtype=int32), array([35,  1], dtype=int32), array([17,  1], dtype=int32), array([14,  1,  1,  1,  1], dtype=int32), array([8, 1, 1], dtype=int32)]...
 
-  Key: 'freqs'   
+  Key: 'freqs'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -41,7 +41,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
        2252.5038+0.j]), array([1669.153 +0.j, 3851.61  +0.j, 3956.8914+0.j, 1669.153 +0.j,
        3851.61  +0.j, 3956.8914+0.j])]...
 
-  Key: 'vibmodes'   
+  Key: 'vibmodes'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -159,7 +159,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
         [ 0.55, -0.  , -0.44],
         [ 0.55,  0.  ,  0.44]]])]...
 
-  Key: 'zpves'   
+  Key: 'zpves'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -167,7 +167,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [0.01533593, 0.00616517, 0.00685733, 0.0311749, 0.02159169]...
 
-  Key: 'U0'   
+  Key: 'U0'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -175,7 +175,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [-399.37392, -2574.65263229, -460.79869078, -291.83764101, -76.37903538]...
 
-  Key: 'U298'   
+  Key: 'U298'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -183,7 +183,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [-399.37107085, -2574.6502718, -460.79633032, -291.83457116, -76.37620041]...
 
-  Key: 'H' 
+  Key: 'H'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -191,7 +191,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [-399.37012667, -2574.64932761, -460.79538613, -291.83362698, -76.37525622]...
 
-  Key: 'S' 
+  Key: 'S'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -199,7 +199,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [0.07836468, 0.07556271, 0.07109479, 0.08585002, 0.07189093]...
 
-  Key: 'G' 
+  Key: 'G'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (784875,)
@@ -223,7 +223,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [8.153, 6.956, 6.955, 10.233, 7.99]...
 
-  Key: 'coordinates' 
+  Key: 'coordinates'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -241,7 +241,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
        [ 7.53985306e-01,  0.00000000e+00, -5.33098487e-01],
        [-7.53985307e-01,  0.00000000e+00, -5.33098485e-01]])]...
 
-  Key: 'Vesp' 
+  Key: 'Vesp'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -250,7 +250,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Sample first 5 elements: [array([-59.21451974,  -1.00597411,  -1.00597411]), array([-175.76837655,   -0.94735577]), array([-64.40666238,  -0.93698744]), array([-49.25702209,  -1.09966689,  -1.09966686,  -1.09966714,
         -1.0996668 ]), array([-22.35171914,  -1.00730679,  -1.00730679])]...
 
-  Key: 'Qmulliken' 
+  Key: 'Qmulliken'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -258,7 +258,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [array([-0.18989,  0.09494,  0.09494]), array([-0.13606,  0.13606]), array([-0.17256,  0.17256]), array([ 0.21049, -0.05262, -0.05262, -0.05262, -0.05262]), array([-0.27419,  0.13709,  0.13709])]...
 
-  Key: 'dipole' 
+  Key: 'dipole'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -266,7 +266,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 784875
     Sample first 5 elements: [array([ 0.        , -0.        , -1.33243243]), array([ 0.        , -0.        , -1.08459387]), array([ 0.        ,  0.        , -1.39957037]), array([ 0.00000000e+00,  4.57514321e-06, -6.10019095e-06]), array([-0.        , -0.        , -1.97599266])]...
 
-  Key: 'quadrupole' 
+  Key: 'quadrupole'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -279,7 +279,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
         2.69006835e-07, -1.65065727e+01]), array([-4.26550446,  0.        , -0.        , -6.99429352,  0.        ,
        -5.64988357])]...
 
-  Key: 'octupole' 
+  Key: 'octupole'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -293,7 +293,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
         6.57735179e-02, -7.96219042e-03]), array([-0.        , -0.        , -0.95059419,  0.        , -0.        ,
         0.        , -0.        ,  0.09883598, -0.        , -0.18218915])]...
 
-  Key: 'hexadecapole' 
+  Key: 'hexadecapole'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)
@@ -315,7 +315,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
        -1.49253147,  0.        ,  0.        ,  0.        , -0.        ,
        -4.81703658,  0.        , -1.83985009,  0.        , -5.79376576])]...
 
-  Key: 'rots'   
+  Key: 'rots'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (784875,)

@@ -54,12 +54,12 @@ Markers:
     contract  — Interface/contract validation tests (§2)
 """
 
+import enum
 import importlib
 import inspect
+import logging
 import sys
 import types
-import enum
-import logging
 from pathlib import Path
 
 import pytest
@@ -78,6 +78,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def hpo_pkg():
     """
@@ -88,6 +89,7 @@ def hpo_pkg():
     """
     try:
         import milia_pipeline.models.hpo as hpo
+
         return hpo
     except ImportError as exc:
         pytest.fail(
@@ -138,19 +140,25 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_exists(self, hpo_pkg, attr):
         """Each metadata dunder is defined on the HPO package."""
         assert hasattr(hpo_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, hpo_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(hpo_pkg, attr)
@@ -162,9 +170,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = hpo_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -172,9 +178,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeCoreClassExports:
@@ -197,9 +201,7 @@ class TestSmokeCoreClassExports:
     def test_core_class_is_a_class(self, hpo_pkg, name):
         """Each core export is a class (not an instance or function)."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeConfigClassExports:
@@ -225,9 +227,7 @@ class TestSmokeConfigClassExports:
     def test_config_class_is_a_class(self, hpo_pkg, name):
         """Each configuration export is a class."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeConfigEnumExports:
@@ -252,9 +252,7 @@ class TestSmokeConfigEnumExports:
     def test_config_enum_is_a_class(self, hpo_pkg, name):
         """Each configuration enum is a class (enum type)."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeConvenienceFunctionExports:
@@ -313,9 +311,7 @@ class TestSmokeExceptionExports:
     def test_exception_is_a_class(self, hpo_pkg, name):
         """Each exception export is a class."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeBackendExports:
@@ -348,16 +344,13 @@ class TestSmokeBackendExports:
     @pytest.mark.smoke
     def test_optuna_available_flag_exists(self, hpo_pkg):
         """``OPTUNA_AVAILABLE`` flag is defined on the HPO package."""
-        assert hasattr(hpo_pkg, "OPTUNA_AVAILABLE"), (
-            "OPTUNA_AVAILABLE flag is missing"
-        )
+        assert hasattr(hpo_pkg, "OPTUNA_AVAILABLE"), "OPTUNA_AVAILABLE flag is missing"
 
     @pytest.mark.smoke
     def test_optuna_available_is_bool(self, hpo_pkg):
         """``OPTUNA_AVAILABLE`` is a boolean."""
         assert isinstance(hpo_pkg.OPTUNA_AVAILABLE, bool), (
-            f"OPTUNA_AVAILABLE should be bool, got "
-            f"{type(hpo_pkg.OPTUNA_AVAILABLE).__name__}"
+            f"OPTUNA_AVAILABLE should be bool, got {type(hpo_pkg.OPTUNA_AVAILABLE).__name__}"
         )
 
 
@@ -607,9 +600,7 @@ class TestSmokeAvailabilityFlags:
     def test_availability_flag_is_bool(self, hpo_pkg, flag):
         """Each availability flag is actually a bool."""
         value = getattr(hpo_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
     @pytest.mark.smoke
     def test_optuna_flags_consistent(self, hpo_pkg):
@@ -676,12 +667,9 @@ class TestSmokeModuleInitialization:
         """
         The HPO package defines a module-level ``logger`` attribute.
         """
-        assert hasattr(hpo_pkg, "logger"), (
-            "Module-level 'logger' attribute is missing"
-        )
+        assert hasattr(hpo_pkg, "logger"), "Module-level 'logger' attribute is missing"
         assert isinstance(hpo_pkg.logger, logging.Logger), (
-            f"'logger' should be a logging.Logger, got "
-            f"{type(hpo_pkg.logger).__name__}"
+            f"'logger' should be a logging.Logger, got {type(hpo_pkg.logger).__name__}"
         )
 
 
@@ -708,9 +696,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, hpo_pkg, all_names):
@@ -718,10 +704,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(hpo_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(hpo_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -729,13 +712,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -797,13 +775,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in hpo/__init__.py but not in __all__: "
@@ -836,6 +818,7 @@ class TestContractCoreClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -863,9 +846,7 @@ class TestContractConfigDataclassTypes:
     def test_config_is_class(self, hpo_pkg, name):
         """Each configuration is a class."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", FROZEN_DATACLASSES)
@@ -881,6 +862,7 @@ class TestContractConfigDataclassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -925,21 +907,14 @@ class TestContractEnumTypes:
         "ActivationType",
     ]
 
-    ALL_ENUMS = (
-        HPO_CONFIG_ENUMS
-        + ANALYSIS_ENUMS
-        + TRANSFER_ENUMS
-        + NAS_ENUMS
-    )
+    ALL_ENUMS = HPO_CONFIG_ENUMS + ANALYSIS_ENUMS + TRANSFER_ENUMS + NAS_ENUMS
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", ALL_ENUMS)
     def test_enum_is_class(self, hpo_pkg, name):
         """Each enum export is a class."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", ALL_ENUMS)
@@ -957,9 +932,7 @@ class TestContractEnumTypes:
         """Each enum has at least one member."""
         obj = getattr(hpo_pkg, name)
         members = list(obj)
-        assert len(members) > 0, (
-            f"'{name}' should have at least one member"
-        )
+        assert len(members) > 0, f"'{name}' should have at least one member"
 
 
 class TestContractEnumMemberCounts:
@@ -973,8 +946,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.ParamType)
         assert len(members) == 7, (
-            f"ParamType should have 7 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"ParamType should have 7 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -986,8 +958,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.PrunerType)
         assert len(members) == 7, (
-            f"PrunerType should have 7 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"PrunerType should have 7 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -998,8 +969,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.SamplerType)
         assert len(members) == 7, (
-            f"SamplerType should have 7 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"SamplerType should have 7 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -1021,8 +991,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.LayerType)
         assert len(members) == 7, (
-            f"LayerType should have 7 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"LayerType should have 7 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -1033,8 +1002,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.PoolingType)
         assert len(members) == 6, (
-            f"PoolingType should have 6 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"PoolingType should have 6 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -1057,8 +1025,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.ActivationType)
         assert len(members) == 7, (
-            f"ActivationType should have 7 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"ActivationType should have 7 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -1080,8 +1047,7 @@ class TestContractEnumMemberCounts:
         """
         members = list(hpo_pkg.ExportFormat)
         assert len(members) == 4, (
-            f"ExportFormat should have 4 members, got {len(members)}: "
-            f"{[m.name for m in members]}"
+            f"ExportFormat should have 4 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
@@ -1152,9 +1118,7 @@ class TestContractExceptionHierarchy:
     def test_exception_is_exception_subclass(self, hpo_pkg, name):
         """Each exception is a subclass of ``Exception``."""
         cls = getattr(hpo_pkg, name)
-        assert issubclass(cls, Exception), (
-            f"'{name}' should be a subclass of Exception"
-        )
+        assert issubclass(cls, Exception), f"'{name}' should be a subclass of Exception"
 
     @pytest.mark.contract
     def test_hpo_error_is_base(self, hpo_pkg):
@@ -1173,9 +1137,7 @@ class TestContractExceptionHierarchy:
         ]
         for name in derived:
             cls = getattr(hpo_pkg, name)
-            assert issubclass(cls, base), (
-                f"'{name}' should be a subclass of HPOError"
-            )
+            assert issubclass(cls, base), f"'{name}' should be a subclass of HPOError"
 
 
 class TestContractBackendProtocol:
@@ -1197,9 +1159,7 @@ class TestContractBackendProtocol:
         protocol = hpo_pkg.HPOBackendProtocol
         # runtime_checkable protocols have _is_runtime_protocol attribute
         is_runtime = getattr(protocol, "_is_runtime_protocol", False)
-        assert is_runtime, (
-            "HPOBackendProtocol should be @runtime_checkable"
-        )
+        assert is_runtime, "HPOBackendProtocol should be @runtime_checkable"
 
     @pytest.mark.contract
     def test_optuna_backend_is_class(self, hpo_pkg):
@@ -1214,34 +1174,26 @@ class TestContractConvenienceFunctionSignatures:
     def test_is_hpo_enabled_accepts_config(self, hpo_pkg):
         """``is_hpo_enabled`` accepts at least one parameter (config)."""
         sig = inspect.signature(hpo_pkg.is_hpo_enabled)
-        assert len(sig.parameters) >= 1, (
-            "is_hpo_enabled should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "is_hpo_enabled should accept at least one parameter"
 
     @pytest.mark.contract
     def test_create_hpo_manager_is_callable(self, hpo_pkg):
         """``create_hpo_manager`` is callable with parameters."""
         sig = inspect.signature(hpo_pkg.create_hpo_manager)
-        assert len(sig.parameters) >= 1, (
-            "create_hpo_manager should accept parameters"
-        )
+        assert len(sig.parameters) >= 1, "create_hpo_manager should accept parameters"
 
     @pytest.mark.contract
     def test_get_best_params_is_callable(self, hpo_pkg):
         """``get_best_params`` accepts at least one parameter."""
         sig = inspect.signature(hpo_pkg.get_best_params)
-        assert len(sig.parameters) >= 1, (
-            "get_best_params should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "get_best_params should accept at least one parameter"
 
     @pytest.mark.contract
     def test_infer_task_type_is_callable(self, hpo_pkg):
         """``infer_task_type`` is callable."""
         assert callable(hpo_pkg.infer_task_type)
         sig = inspect.signature(hpo_pkg.infer_task_type)
-        assert len(sig.parameters) >= 1, (
-            "infer_task_type should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "infer_task_type should accept at least one parameter"
 
     @pytest.mark.contract
     def test_is_hpo_enabled_is_function(self, hpo_pkg):
@@ -1278,9 +1230,7 @@ class TestContractHelperFunctionTypes:
     def test_helper_is_function(self, hpo_pkg, name):
         """Each helper is a function (not a class or bound method)."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractSearchSpaceFunctionSignatures:
@@ -1335,6 +1285,7 @@ class TestContractNASClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1355,6 +1306,7 @@ class TestContractNASClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1399,6 +1351,7 @@ class TestContractAnalysisClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1424,9 +1377,7 @@ class TestContractTransferClassTypes:
     def test_transfer_class_is_class(self, hpo_pkg, name):
         """Each transfer learning class is a class."""
         obj = getattr(hpo_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     def test_transfer_config_is_pydantic_basemodel(self, hpo_pkg):
@@ -1437,6 +1388,7 @@ class TestContractTransferClassTypes:
         cls = hpo_pkg.TransferConfig
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1457,6 +1409,7 @@ class TestContractTransferClassTypes:
         cls = hpo_pkg.MetaFeatureConfig
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1478,6 +1431,7 @@ class TestContractTransferClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1497,6 +1451,7 @@ class TestContractTransferClassTypes:
         cls = hpo_pkg.RegisteredStudyInfo
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1518,6 +1473,7 @@ class TestContractTransferClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -1537,8 +1493,7 @@ class TestContractGetHPOModuleInfoReturnType:
         """``get_hpo_module_info()`` returns a dict."""
         result = hpo_pkg.get_hpo_module_info()
         assert isinstance(result, dict), (
-            f"get_hpo_module_info() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_hpo_module_info() should return dict, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -1591,13 +1546,10 @@ class TestContractGetHPOModuleInfoReturnType:
         assert "subpackages" in result, "Missing 'subpackages' key"
         subpackages = result["subpackages"]
         assert isinstance(subpackages, list)
-        expected = {"backends", "callbacks", "search_spaces", "analysis",
-                    "transfer", "nas"}
+        expected = {"backends", "callbacks", "search_spaces", "analysis", "transfer", "nas"}
         actual = set(subpackages)
         missing = expected - actual
-        assert not missing, (
-            f"Missing subpackages: {missing}"
-        )
+        assert not missing, f"Missing subpackages: {missing}"
 
     @pytest.mark.contract
     def test_has_exports_key(self, hpo_pkg):
@@ -1616,15 +1568,20 @@ class TestContractGetHPOModuleInfoReturnType:
         # Verify expected component categories
         components = result["components"]
         expected_categories = {
-            "core", "configurations", "convenience_functions",
-            "exceptions", "backends", "callbacks", "search_spaces",
-            "analysis", "transfer", "nas",
+            "core",
+            "configurations",
+            "convenience_functions",
+            "exceptions",
+            "backends",
+            "callbacks",
+            "search_spaces",
+            "analysis",
+            "transfer",
+            "nas",
         }
         actual_categories = set(components.keys())
         missing = expected_categories - actual_categories
-        assert not missing, (
-            f"Missing component categories: {missing}"
-        )
+        assert not missing, f"Missing component categories: {missing}"
 
     @pytest.mark.contract
     def test_has_description_key(self, hpo_pkg):
@@ -1643,36 +1600,32 @@ class TestContractCheckHPODependenciesReturnType:
         """``check_hpo_dependencies()`` returns a dict."""
         result = hpo_pkg.check_hpo_dependencies()
         assert isinstance(result, dict), (
-            f"check_hpo_dependencies() should return dict, got "
-            f"{type(result).__name__}"
+            f"check_hpo_dependencies() should return dict, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("dep", [
-        "optuna",
-        "ray_tune",
-        "torch",
-        "torch_geometric",
-        "numpy",
-        "scikit_learn",
-    ])
+    @pytest.mark.parametrize(
+        "dep",
+        [
+            "optuna",
+            "ray_tune",
+            "torch",
+            "torch_geometric",
+            "numpy",
+            "scikit_learn",
+        ],
+    )
     def test_dependency_entry_has_expected_structure(self, hpo_pkg, dep):
         """Each dependency entry has 'available' (bool) and 'version' keys."""
         result = hpo_pkg.check_hpo_dependencies()
         assert dep in result, f"Missing dependency key: {dep}"
         entry = result[dep]
-        assert isinstance(entry, dict), (
-            f"Dependency '{dep}' entry should be a dict"
-        )
-        assert "available" in entry, (
-            f"Dependency '{dep}' missing 'available' key"
-        )
+        assert isinstance(entry, dict), f"Dependency '{dep}' entry should be a dict"
+        assert "available" in entry, f"Dependency '{dep}' missing 'available' key"
         assert isinstance(entry["available"], bool), (
             f"Dependency '{dep}' 'available' should be bool"
         )
-        assert "version" in entry, (
-            f"Dependency '{dep}' missing 'version' key"
-        )
+        assert "version" in entry, f"Dependency '{dep}' missing 'version' key"
         # version is a string when available, None otherwise
         if entry["available"]:
             assert isinstance(entry["version"], str), (
@@ -1711,11 +1664,13 @@ class TestContractCheckHPODependenciesReturnType:
         are all available.
         """
         result = hpo_pkg.check_hpo_dependencies()
-        expected = all([
-            result["optuna"]["available"],
-            result["torch"]["available"],
-            result["numpy"]["available"],
-        ])
+        expected = all(
+            [
+                result["optuna"]["available"],
+                result["torch"]["available"],
+                result["numpy"]["available"],
+            ]
+        )
         assert result["all_required_available"] == expected, (
             f"all_required_available ({result['all_required_available']}) "
             f"should equal all([optuna={result['optuna']['available']}, "
@@ -1730,11 +1685,13 @@ class TestContractCheckHPODependenciesReturnType:
         are all available.
         """
         result = hpo_pkg.check_hpo_dependencies()
-        expected = all([
-            result["torch"]["available"],
-            result["torch_geometric"]["available"],
-            result["optuna"]["available"],
-        ])
+        expected = all(
+            [
+                result["torch"]["available"],
+                result["torch_geometric"]["available"],
+                result["optuna"]["available"],
+            ]
+        )
         assert result["nas_available"] == expected, (
             f"nas_available ({result['nas_available']}) "
             f"should equal all([torch={result['torch']['available']}, "
@@ -1818,9 +1775,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1868,9 +1823,7 @@ class TestContractGetBackendSignature:
     def test_get_backend_accepts_name_param(self, hpo_pkg):
         """``get_backend`` accepts at least one parameter (backend name)."""
         sig = inspect.signature(hpo_pkg.get_backend)
-        assert len(sig.parameters) >= 1, (
-            "get_backend should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "get_backend should accept at least one parameter"
 
 
 class TestContractVersionConsistency:
@@ -1894,7 +1847,7 @@ class TestContractVersionConsistency:
         ``OPTUNA_AVAILABLE`` matches the value in ``get_hpo_module_info()``.
         """
         info = hpo_pkg.get_hpo_module_info()
-        assert hpo_pkg.OPTUNA_AVAILABLE == info["optuna_available"], (
+        assert info["optuna_available"] == hpo_pkg.OPTUNA_AVAILABLE, (
             f"OPTUNA_AVAILABLE ({hpo_pkg.OPTUNA_AVAILABLE}) does not match "
             f"get_hpo_module_info()['optuna_available'] "
             f"({info['optuna_available']})"

@@ -7,10 +7,10 @@
 # ─────────────────────────────────────────────────────────────────────────
 filter_config:
   # Common filters applied to both DFT and DMC datasets
-  
+
   # Maximum number of atoms allowed in a molecule
   max_atoms: 50
-  
+
   # Minimum number of atoms allowed in a molecule
   # min_atoms: 5 # Uncomment and set if needed
 

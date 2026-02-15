@@ -24,56 +24,52 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
 import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.base_handler import (
-    DatasetHandler,
-    handle_transform_errors,
-    _init_registry,
-    _get_available_handler_types,
-    _is_handler_type_registered,
-    get_registry_status,
-    create_dataset_handler,
-    validate_dataset_handler_compatibility,
-    filter_descriptors_by_handler_support,
-    verify_handler_abstraction,
-    get_handler_abstraction_summary,
-)
-
-from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerOperationError,
-    HandlerValidationError,
-    HandlerNotAvailableError,
-    HandlerCompatibilityError,
-    TransformConfigurationError,
-    TransformValidationError,
-    TransformCompositionError,
-    TransformHandlerIntegrationError,
-)
-
 import torch
 from torch_geometric.data import Data
 
+from milia_pipeline.exceptions import (
+    HandlerCompatibilityError,
+    HandlerConfigurationError,
+    HandlerNotAvailableError,
+    HandlerOperationError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
+    TransformCompositionError,
+    TransformConfigurationError,
+    TransformHandlerIntegrationError,
+    TransformValidationError,
+)
+from milia_pipeline.handlers.base_handler import (
+    DatasetHandler,
+    _get_available_handler_types,
+    _init_registry,
+    _is_handler_type_registered,
+    create_dataset_handler,
+    filter_descriptors_by_handler_support,
+    get_handler_abstraction_summary,
+    get_registry_status,
+    handle_transform_errors,
+    validate_dataset_handler_compatibility,
+    verify_handler_abstraction,
+)
 
 # ============================================================================
 # HELPER: Build a concrete DatasetHandler subclass for testing
 # ============================================================================
+
 
 def _make_mock_dataset_config(dataset_type="TEST"):
     """Create a mock DatasetConfig with required attributes."""
@@ -90,7 +86,9 @@ def _make_mock_filter_config():
 def _make_mock_processing_config(scalar_graph_targets=None):
     """Create a mock ProcessingConfig with required attributes."""
     mock = MagicMock()
-    mock.scalar_graph_targets = scalar_graph_targets if scalar_graph_targets is not None else ['energy']
+    mock.scalar_graph_targets = (
+        scalar_graph_targets if scalar_graph_targets is not None else ["energy"]
+    )
     return mock
 
 
@@ -119,18 +117,24 @@ def _build_concrete_handler_class(
     Implements all 12+4 abstract methods with sensible defaults.
     """
     _ds_type = dataset_type
-    _req_props = required_properties or ['energy', 'atoms', 'coordinates']
-    _id_keys = identifier_keys or [('inchi', 'inchi')]
+    _req_props = required_properties or ["energy", "atoms", "coordinates"]
+    _id_keys = identifier_keys or [("inchi", "inchi")]
     _struct_feat = supported_structural_features or {
-        'atom': ['degree', 'hybridization'], 'bond': ['bond_type'],
+        "atom": ["degree", "hybridization"],
+        "bond": ["bond_type"],
     }
     _strategy = molecule_creation_strategy
     _transform_recs = transform_recommendations or {
-        'recommended': ['NormalizeFeatures'], 'avoid': [], 'warnings': [],
+        "recommended": ["NormalizeFeatures"],
+        "avoid": [],
+        "warnings": [],
     }
     _desc = supported_descriptors or {
-        'categories': ['constitutional', 'topological'], 'excluded': [],
-        'recommended': ['MolWt'], 'requires_3d': False, 'requires_charges': False,
+        "categories": ["constitutional", "topological"],
+        "excluded": [],
+        "recommended": ["MolWt"],
+        "requires_3d": False,
+        "requires_charges": False,
     }
 
     def _get_dataset_type(self, _dt=_ds_type):
@@ -152,7 +156,7 @@ def _build_concrete_handler_class(
         return pyg_data
 
     def _get_processing_statistics(self, processed_molecules):
-        return {'count': len(processed_molecules)}
+        return {"count": len(processed_molecules)}
 
     def _get_supported_structural_features(self, _sf=_struct_feat):
         return dict(_sf)
@@ -182,30 +186,31 @@ def _build_concrete_handler_class(
         return []
 
     ns = {
-        'get_dataset_type': _get_dataset_type,
-        'validate_molecule_data': _validate_molecule_data,
-        'get_required_properties': _get_required_properties,
-        'get_identifier_keys': _get_identifier_keys,
-        'process_property_value': _process_property_value,
-        'enrich_pyg_data': _enrich_pyg_data,
-        'get_processing_statistics': _get_processing_statistics,
-        'get_supported_structural_features': _get_supported_structural_features,
-        'get_molecular_charge': _get_molecular_charge,
-        'get_molecule_creation_strategy': _get_molecule_creation_strategy,
-        'get_transform_recommendations': _get_transform_recommendations_method,
-        'get_supported_descriptors': _get_supported_descriptors,
-        '_get_dataset_suitable_transforms': _get_dataset_suitable_transforms,
-        '_validate_dataset_specific_transforms': _validate_dataset_specific_transforms,
-        '_check_transform_incompatibilities': _check_transform_incompatibilities,
-        '_get_transform_recommendations': _get_transform_recommendations_internal,
+        "get_dataset_type": _get_dataset_type,
+        "validate_molecule_data": _validate_molecule_data,
+        "get_required_properties": _get_required_properties,
+        "get_identifier_keys": _get_identifier_keys,
+        "process_property_value": _process_property_value,
+        "enrich_pyg_data": _enrich_pyg_data,
+        "get_processing_statistics": _get_processing_statistics,
+        "get_supported_structural_features": _get_supported_structural_features,
+        "get_molecular_charge": _get_molecular_charge,
+        "get_molecule_creation_strategy": _get_molecule_creation_strategy,
+        "get_transform_recommendations": _get_transform_recommendations_method,
+        "get_supported_descriptors": _get_supported_descriptors,
+        "_get_dataset_suitable_transforms": _get_dataset_suitable_transforms,
+        "_validate_dataset_specific_transforms": _validate_dataset_specific_transforms,
+        "_check_transform_incompatibilities": _check_transform_incompatibilities,
+        "_get_transform_recommendations": _get_transform_recommendations_internal,
     }
 
     cls = type(class_name, (DatasetHandler,), ns)
     return cls
 
 
-def _create_handler_instance(dataset_type="TEST", experimental_setup=None,
-                              scalar_graph_targets=None):
+def _create_handler_instance(
+    dataset_type="TEST", experimental_setup=None, scalar_graph_targets=None
+):
     """Create a fully instantiated concrete handler for testing."""
     handler_cls = _build_concrete_handler_class(dataset_type=dataset_type)
     return handler_cls(
@@ -221,6 +226,7 @@ def _create_handler_instance(dataset_type="TEST", experimental_setup=None,
 # GROUP 1: DatasetHandler ABC — Instantiation & __init__ (14 tests)
 # ============================================================================
 
+
 class TestDatasetHandlerInit(unittest.TestCase):
     """Test DatasetHandler construction, validation, and abstract method enforcement."""
 
@@ -228,8 +234,10 @@ class TestDatasetHandlerInit(unittest.TestCase):
         """DatasetHandler ABC cannot be instantiated directly."""
         with self.assertRaises(TypeError):
             DatasetHandler(
-                _make_mock_dataset_config(), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config(),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
     def test_concrete_instantiation_success(self):
@@ -268,8 +276,11 @@ class TestDatasetHandlerInit(unittest.TestCase):
         handler_cls = _build_concrete_handler_class(dataset_type="TEST")
         mock_logger = _make_mock_logger()
         handler_cls(
-            _make_mock_dataset_config("TEST"), _make_mock_filter_config(),
-            _make_mock_processing_config(), mock_logger, "my_experiment",
+            _make_mock_dataset_config("TEST"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            mock_logger,
+            "my_experiment",
         )
         info_calls = [str(c) for c in mock_logger.info.call_args_list]
         self.assertTrue(any("my_experiment" in c for c in info_calls))
@@ -279,8 +290,10 @@ class TestDatasetHandlerInit(unittest.TestCase):
         handler_cls = _build_concrete_handler_class(dataset_type="DFT")
         with self.assertRaises(HandlerConfigurationError):
             handler_cls(
-                _make_mock_dataset_config("DMC"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("DMC"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
     def test_missing_dataset_config_raises_error(self):
@@ -290,18 +303,26 @@ class TestDatasetHandlerInit(unittest.TestCase):
         mock_config.dataset_type = "TEST"
         mock_config.__bool__ = Mock(return_value=False)
         with self.assertRaises(HandlerConfigurationError):
-            handler_cls(mock_config, _make_mock_filter_config(),
-                        _make_mock_processing_config(), _make_mock_logger())
+            handler_cls(
+                mock_config,
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
+            )
 
     def test_missing_processing_config_raises_error(self):
         """Handler raises HandlerConfigurationError with falsy processing_config."""
         handler_cls = _build_concrete_handler_class(dataset_type="TEST")
         mock_proc = MagicMock()
-        mock_proc.scalar_graph_targets = ['energy']
+        mock_proc.scalar_graph_targets = ["energy"]
         mock_proc.__bool__ = Mock(return_value=False)
         with self.assertRaises(HandlerConfigurationError):
-            handler_cls(_make_mock_dataset_config("TEST"), _make_mock_filter_config(),
-                        mock_proc, _make_mock_logger())
+            handler_cls(
+                _make_mock_dataset_config("TEST"),
+                _make_mock_filter_config(),
+                mock_proc,
+                _make_mock_logger(),
+            )
 
     def test_missing_filter_config_raises_error(self):
         """Handler raises HandlerConfigurationError with falsy filter_config."""
@@ -309,18 +330,28 @@ class TestDatasetHandlerInit(unittest.TestCase):
         mock_filter = MagicMock()
         mock_filter.__bool__ = Mock(return_value=False)
         with self.assertRaises(HandlerConfigurationError):
-            handler_cls(_make_mock_dataset_config("TEST"), mock_filter,
-                        _make_mock_processing_config(), _make_mock_logger())
+            handler_cls(
+                _make_mock_dataset_config("TEST"),
+                mock_filter,
+                _make_mock_processing_config(),
+                _make_mock_logger(),
+            )
 
     def test_unexpected_init_error_wrapped_as_handler_config_error(self):
         """Unexpected error in __init__ is wrapped as HandlerConfigurationError."""
         handler_cls = _build_concrete_handler_class(dataset_type="TEST")
         original_validate = handler_cls._validate_handler_configuration
-        handler_cls._validate_handler_configuration = lambda self: (_ for _ in ()).throw(RuntimeError("boom"))
+        handler_cls._validate_handler_configuration = lambda self: (_ for _ in ()).throw(
+            RuntimeError("boom")
+        )
         try:
             with self.assertRaises(HandlerConfigurationError):
-                handler_cls(_make_mock_dataset_config("TEST"), _make_mock_filter_config(),
-                            _make_mock_processing_config(), _make_mock_logger())
+                handler_cls(
+                    _make_mock_dataset_config("TEST"),
+                    _make_mock_filter_config(),
+                    _make_mock_processing_config(),
+                    _make_mock_logger(),
+                )
         finally:
             handler_cls._validate_handler_configuration = original_validate
 
@@ -328,6 +359,7 @@ class TestDatasetHandlerInit(unittest.TestCase):
 # ============================================================================
 # GROUP 2: DatasetHandler Abstract Methods — Interface Verification (12 tests)
 # ============================================================================
+
 
 class TestDatasetHandlerAbstractMethods(unittest.TestCase):
     """Test that all abstract methods are present and callable."""
@@ -361,37 +393,39 @@ class TestDatasetHandlerAbstractMethods(unittest.TestCase):
         self.assertIsInstance(self.handler.enrich_pyg_data(pyg_data, {}, 0), Data)
 
     def test_get_processing_statistics(self):
-        result = self.handler.get_processing_statistics([{'mol': 1}, {'mol': 2}])
+        result = self.handler.get_processing_statistics([{"mol": 1}, {"mol": 2}])
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['count'], 2)
+        self.assertEqual(result["count"], 2)
 
     def test_get_supported_structural_features(self):
         result = self.handler.get_supported_structural_features()
-        self.assertIn('atom', result)
-        self.assertIn('bond', result)
+        self.assertIn("atom", result)
+        self.assertIn("bond", result)
 
     def test_get_molecular_charge(self):
         self.assertIsInstance(self.handler.get_molecular_charge({}, np.array([6, 8])), int)
 
     def test_get_molecule_creation_strategy(self):
-        self.assertIn(self.handler.get_molecule_creation_strategy(),
-                      ['identifier_coordinate_based', 'coordinate_based'])
+        self.assertIn(
+            self.handler.get_molecule_creation_strategy(),
+            ["identifier_coordinate_based", "coordinate_based"],
+        )
 
     def test_get_transform_recommendations(self):
         result = self.handler.get_transform_recommendations()
-        for key in ['recommended', 'avoid', 'warnings']:
+        for key in ["recommended", "avoid", "warnings"]:
             self.assertIn(key, result)
 
     def test_get_supported_descriptors(self):
-        self.assertIn('categories', self.handler.get_supported_descriptors())
+        self.assertIn("categories", self.handler.get_supported_descriptors())
 
 
 # ============================================================================
 # GROUP 3: _extract_charge_from_inchi Utility (8 tests)
 # ============================================================================
 
-class TestExtractChargeFromInchi(unittest.TestCase):
 
+class TestExtractChargeFromInchi(unittest.TestCase):
     def setUp(self):
         self.handler = _create_handler_instance()
 
@@ -399,10 +433,14 @@ class TestExtractChargeFromInchi(unittest.TestCase):
         self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/h1-2H2"), 0)
 
     def test_positive_charge(self):
-        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/h1-2H2/q+1"), 1)
+        self.assertEqual(
+            self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/h1-2H2/q+1"), 1
+        )
 
     def test_negative_charge(self):
-        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/h1-2H2/q-2"), -2)
+        self.assertEqual(
+            self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/h1-2H2/q-2"), -2
+        )
 
     def test_empty_string(self):
         self.assertEqual(self.handler._extract_charge_from_inchi(""), 0)
@@ -424,8 +462,8 @@ class TestExtractChargeFromInchi(unittest.TestCase):
 # GROUP 4: _is_valid_property Utility (9 tests)
 # ============================================================================
 
-class TestIsValidProperty(unittest.TestCase):
 
+class TestIsValidProperty(unittest.TestCase):
     def setUp(self):
         self.handler = _create_handler_instance()
 
@@ -461,8 +499,8 @@ class TestIsValidProperty(unittest.TestCase):
 # GROUP 5: _ensure_tensor Utility (16 tests)
 # ============================================================================
 
-class TestEnsureTensor(unittest.TestCase):
 
+class TestEnsureTensor(unittest.TestCase):
     def setUp(self):
         self.handler = _create_handler_instance()
 
@@ -541,8 +579,8 @@ class TestEnsureTensor(unittest.TestCase):
 # GROUP 6: validate_configuration (7 tests)
 # ============================================================================
 
-class TestValidateConfiguration(unittest.TestCase):
 
+class TestValidateConfiguration(unittest.TestCase):
     def test_valid_configuration_no_error(self):
         _create_handler_instance().validate_configuration()
 
@@ -582,28 +620,28 @@ class TestValidateConfiguration(unittest.TestCase):
 # GROUP 7: Experimental Setup Support (6 tests)
 # ============================================================================
 
-class TestExperimentalSetupSupport(unittest.TestCase):
 
+class TestExperimentalSetupSupport(unittest.TestCase):
     def test_get_experimental_setup_info_with_setup(self):
         handler = _create_handler_instance(experimental_setup="baseline_v2")
         info = handler.get_experimental_setup_info()
-        self.assertEqual(info['experimental_setup'], "baseline_v2")
-        self.assertTrue(info['has_setup'])
+        self.assertEqual(info["experimental_setup"], "baseline_v2")
+        self.assertTrue(info["has_setup"])
 
     def test_get_experimental_setup_info_without_setup(self):
         info = _create_handler_instance().get_experimental_setup_info()
-        self.assertIsNone(info['experimental_setup'])
-        self.assertFalse(info['has_setup'])
+        self.assertIsNone(info["experimental_setup"])
+        self.assertFalse(info["has_setup"])
 
     def test_log_with_setup_context_with_setup(self):
         handler = _create_handler_instance(experimental_setup="exp1")
-        handler._log_with_setup_context('info', "Test message")
+        handler._log_with_setup_context("info", "Test message")
         logged_msg = handler.logger.info.call_args[0][0]
         self.assertIn("[Setup: exp1]", logged_msg)
 
     def test_log_with_setup_context_without_setup(self):
         handler = _create_handler_instance()
-        handler._log_with_setup_context('warning', "Raw message")
+        handler._log_with_setup_context("warning", "Raw message")
         logged_msg = handler.logger.warning.call_args[0][0]
         self.assertEqual(logged_msg, "Raw message")
 
@@ -614,7 +652,7 @@ class TestExperimentalSetupSupport(unittest.TestCase):
 
     def test_log_with_setup_context_debug_level(self):
         handler = _create_handler_instance()
-        handler._log_with_setup_context('debug', "Debug msg")
+        handler._log_with_setup_context("debug", "Debug msg")
         handler.logger.debug.assert_called_once()
 
 
@@ -622,122 +660,181 @@ class TestExperimentalSetupSupport(unittest.TestCase):
 # GROUP 8: validate_transform_compatibility (10 tests)
 # ============================================================================
 
-class TestValidateTransformCompatibility(unittest.TestCase):
 
+class TestValidateTransformCompatibility(unittest.TestCase):
     def setUp(self):
         self.handler = _create_handler_instance()
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=['NormalizeFeatures'])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch(
+        "milia_pipeline.handlers.base_handler.list_available_transforms",
+        return_value=["NormalizeFeatures"],
+    )
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_none_transform_returns_warning(self, mock_vc, mock_gti, mock_lat):
         result = self.handler.validate_transform_compatibility(None)
-        self.assertTrue(result['compatible'])
-        self.assertTrue(any("No transforms" in w for w in result['warnings']))
+        self.assertTrue(result["compatible"])
+        self.assertTrue(any("No transforms" in w for w in result["warnings"]))
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=['NormalizeFeatures'])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch(
+        "milia_pipeline.handlers.base_handler.list_available_transforms",
+        return_value=["NormalizeFeatures"],
+    )
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_valid_transforms_compatible(self, mock_vc, mock_gti, mock_lat):
         class NormalizeFeatures:
             pass
+
         seq = MagicMock()
         seq.transforms = [NormalizeFeatures()]
-        self.assertTrue(self.handler.validate_transform_compatibility(seq)['compatible'])
+        self.assertTrue(self.handler.validate_transform_compatibility(seq)["compatible"])
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=['NormalizeFeatures'])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch(
+        "milia_pipeline.handlers.base_handler.list_available_transforms",
+        return_value=["NormalizeFeatures"],
+    )
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_unrecognized_transform_warning(self, mock_vc, mock_gti, mock_lat):
         class CustomUnknown:
             pass
+
         seq = MagicMock()
         seq.transforms = [CustomUnknown()]
         result = self.handler.validate_transform_compatibility(seq)
-        self.assertTrue(any("Unrecognized" in w for w in result['warnings']))
+        self.assertTrue(any("Unrecognized" in w for w in result["warnings"]))
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=[])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_result_contains_dataset_type(self, mock_vc, mock_gti, mock_lat):
-        self.assertEqual(self.handler.validate_transform_compatibility(None)['dataset_type'], "TEST")
+        self.assertEqual(
+            self.handler.validate_transform_compatibility(None)["dataset_type"], "TEST"
+        )
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=[])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_result_contains_experimental_setup(self, mock_vc, mock_gti, mock_lat):
         handler = _create_handler_instance(experimental_setup="my_setup")
-        self.assertEqual(handler.validate_transform_compatibility(None)['experimental_setup'], "my_setup")
+        self.assertEqual(
+            handler.validate_transform_compatibility(None)["experimental_setup"], "my_setup"
+        )
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=[])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_override_experimental_setup(self, mock_vc, mock_gti, mock_lat):
         handler = _create_handler_instance(experimental_setup="handler_setup")
         result = handler.validate_transform_compatibility(None, experimental_setup="override")
-        self.assertEqual(result['experimental_setup'], "override")
+        self.assertEqual(result["experimental_setup"], "override")
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=['T1'])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value={'name': 'T1'})
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': False, 'errors': ['bad param']})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=["T1"])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value={"name": "T1"})
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": False, "errors": ["bad param"]},
+    )
     def test_parameter_issues_populated(self, mock_vc, mock_gti, mock_lat):
         class T1:
             param1 = 5
+
         seq = MagicMock()
         seq.transforms = [T1()]
         result = self.handler.validate_transform_compatibility(seq)
-        self.assertTrue(len(result['parameter_issues']) > 0)
+        self.assertTrue(len(result["parameter_issues"]) > 0)
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=[])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value=None)
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': True, 'errors': []})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
     def test_result_structure_keys(self, mock_vc, mock_gti, mock_lat):
         result = self.handler.validate_transform_compatibility(None)
-        expected = {'compatible', 'warnings', 'recommendations', 'parameter_issues',
-                    'available_alternatives', 'dataset_type', 'experimental_setup'}
+        expected = {
+            "compatible",
+            "warnings",
+            "recommendations",
+            "parameter_issues",
+            "available_alternatives",
+            "dataset_type",
+            "experimental_setup",
+        }
         self.assertTrue(expected.issubset(set(result.keys())))
 
     def test_critical_error_raises_integration_error(self):
         handler = _create_handler_instance()
         handler._validate_dataset_specific_transforms = Mock(side_effect=RuntimeError("crash"))
+
         class T:
             pass
+
         seq = MagicMock()
         seq.transforms = [T()]
-        with patch('milia_pipeline.handlers.base_handler.list_available_transforms', side_effect=RuntimeError("boom")):
-            with self.assertRaises(TransformHandlerIntegrationError):
-                handler.validate_transform_compatibility(seq)
+        with (
+            patch(
+                "milia_pipeline.handlers.base_handler.list_available_transforms",
+                side_effect=RuntimeError("boom"),
+            ),
+            self.assertRaises(TransformHandlerIntegrationError),
+        ):
+            handler.validate_transform_compatibility(seq)
 
-    @patch('milia_pipeline.handlers.base_handler.list_available_transforms', return_value=[])
-    @patch('milia_pipeline.handlers.base_handler.get_transform_info', return_value={'name': 'test'})
-    @patch('milia_pipeline.handlers.base_handler.validate_comprehensive', return_value={'valid': False, 'errors': ['issue']})
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value={"name": "test"})
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": False, "errors": ["issue"]},
+    )
     def test_many_parameter_issues_escalated(self, mock_vc, mock_gti, mock_lat):
         handler = _create_handler_instance()
         transforms = []
         for i in range(5):
             # Use real classes instead of MagicMock to avoid __class__/__dict__ conflicts
-            cls = type(f"T{i}", (), {'p': i})
+            cls = type(f"T{i}", (), {"p": i})
             transforms.append(cls())
         seq = MagicMock()
         seq.transforms = transforms
         result = handler.validate_transform_compatibility(seq)
-        self.assertTrue(any("Multiple parameter issues" in w for w in result['warnings']))
+        self.assertTrue(any("Multiple parameter issues" in w for w in result["warnings"]))
 
 
 # ============================================================================
 # GROUP 9: handle_transform_errors Decorator (8 tests)
 # ============================================================================
 
-class TestHandleTransformErrorsDecorator(unittest.TestCase):
 
+class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def _make_handler_with_decorated_method(self, method_body):
         """Helper: creates handler with a @handle_transform_errors decorated method."""
         handler_cls = _build_concrete_handler_class(dataset_type="TEST")
         decorated = handle_transform_errors("test_op")(method_body)
         handler_cls.test_method = decorated
         return handler_cls(
-            _make_mock_dataset_config("TEST"), _make_mock_filter_config(),
-            _make_mock_processing_config(), _make_mock_logger(),
+            _make_mock_dataset_config("TEST"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            _make_mock_logger(),
         )
 
     def test_success_passes_through(self):
@@ -747,6 +844,7 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_transform_configuration_error_wrapped(self):
         def body(self):
             raise TransformConfigurationError(message="Bad config", config_key="k")
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(TransformHandlerIntegrationError):
             instance.test_method()
@@ -754,6 +852,7 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_transform_validation_error_wrapped(self):
         def body(self):
             raise TransformValidationError(message="Bad", transform_name="TestTransform")
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(TransformHandlerIntegrationError):
             instance.test_method()
@@ -761,6 +860,7 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_transform_composition_error_wrapped(self):
         def body(self):
             raise TransformCompositionError(message="Compose failed")
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(TransformHandlerIntegrationError):
             instance.test_method()
@@ -768,13 +868,17 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_handler_error_reraises_unwrapped(self):
         def body(self):
             raise HandlerOperationError(message="op fail", handler_type="TEST", operation="op")
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(HandlerOperationError):
             instance.test_method()
 
     def test_property_enrichment_error_reraises_unwrapped(self):
         def body(self):
-            raise PropertyEnrichmentError(molecule_index=0, inchi="N/A", property_name="e", reason="bad", detail="detail")
+            raise PropertyEnrichmentError(
+                molecule_index=0, inchi="N/A", property_name="e", reason="bad", detail="detail"
+            )
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(PropertyEnrichmentError):
             instance.test_method()
@@ -782,6 +886,7 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_molecule_processing_error_reraises_unwrapped(self):
         def body(self):
             raise MoleculeProcessingError(message="mol fail", molecule_index=0)
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(MoleculeProcessingError):
             instance.test_method()
@@ -789,6 +894,7 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
     def test_unexpected_error_wrapped_as_handler_operation(self):
         def body(self):
             raise RuntimeError("unexpected boom")
+
         instance = self._make_handler_with_decorated_method(body)
         with self.assertRaises(HandlerOperationError):
             instance.test_method()
@@ -798,10 +904,11 @@ class TestHandleTransformErrorsDecorator(unittest.TestCase):
 # GROUP 10: Registry Functions (12 tests)
 # ============================================================================
 
-class TestRegistryFunctions(unittest.TestCase):
 
+class TestRegistryFunctions(unittest.TestCase):
     def _reset_registry_state(self):
         import milia_pipeline.handlers.base_handler as bh
+
         bh._REGISTRY_INITIALIZED = False
         bh._REGISTRY_AVAILABLE = False
         bh._REGISTRY_IMPORT_ERROR = None
@@ -812,91 +919,94 @@ class TestRegistryFunctions(unittest.TestCase):
     def tearDown(self):
         self._reset_registry_state()
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
     def test_init_registry_already_initialized(self):
         self.assertTrue(_init_registry())
 
     def test_init_registry_import_error_returns_false(self):
         self._reset_registry_state()
-        with patch.dict('sys.modules', {'milia_pipeline.datasets.registry': None}):
+        with patch.dict("sys.modules", {"milia_pipeline.datasets.registry": None}):
             import milia_pipeline.handlers.base_handler as bh
+
             bh._REGISTRY_INITIALIZED = False
             result = _init_registry()
             self.assertIsInstance(result, bool)
 
     def test_get_registry_status_returns_dict(self):
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
             import milia_pipeline.handlers.base_handler as bh
+
             bh._REGISTRY_INITIALIZED = True
             bh._REGISTRY_AVAILABLE = False
             bh._REGISTRY_IMPORT_ERROR = "test error"
             result = get_registry_status()
-            for key in ['initialized', 'available', 'import_error']:
+            for key in ["initialized", "available", "import_error"]:
                 self.assertIn(key, result)
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_list_all')
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_list_all")
     def test_get_available_types_from_registry(self, mock_list_all):
-        mock_list_all.return_value = ['DFT', 'DMC']
-        self.assertEqual(_get_available_handler_types(), ['DFT', 'DMC'])
+        mock_list_all.return_value = ["DFT", "DMC"]
+        self.assertEqual(_get_available_handler_types(), ["DFT", "DMC"])
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_is_registered')
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_is_registered")
     def test_is_handler_type_registered_true(self, mock_is_reg):
         mock_is_reg.return_value = True
         self.assertTrue(_is_handler_type_registered("DFT"))
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_is_registered')
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_is_registered")
     def test_is_handler_type_registered_false(self, mock_is_reg):
         mock_is_reg.return_value = False
         self.assertFalse(_is_handler_type_registered("NONEXISTENT"))
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', False)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", False)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
     def test_get_available_types_dynamic_fallback(self):
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
             self.assertIsInstance(_get_available_handler_types(), list)
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_list_all')
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_list_all")
     def test_get_available_types_registry_exception_fallback(self, mock_list_all):
         mock_list_all.side_effect = RuntimeError("broken")
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
             self.assertIsInstance(_get_available_handler_types(), list)
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_is_registered')
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_is_registered")
     def test_is_handler_type_registered_exception_fallback(self, mock_is_reg):
         mock_is_reg.side_effect = RuntimeError("broken")
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
             self.assertIsInstance(_is_handler_type_registered("DFT"), bool)
 
     def test_get_registry_status_includes_available_types(self):
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
             import milia_pipeline.handlers.base_handler as bh
+
             bh._REGISTRY_INITIALIZED = True
             bh._REGISTRY_AVAILABLE = False
-            self.assertIn('available_types', get_registry_status())
+            self.assertIn("available_types", get_registry_status())
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', False)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_IMPORT_ERROR', "some error")
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", False)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_IMPORT_ERROR", "some error")
     def test_get_registry_status_includes_import_error(self):
-        with patch('milia_pipeline.handlers.base_handler._init_registry'):
-            self.assertEqual(get_registry_status()['import_error'], "some error")
+        with patch("milia_pipeline.handlers.base_handler._init_registry"):
+            self.assertEqual(get_registry_status()["import_error"], "some error")
 
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_list_all', return_value=['DFT'])
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_INITIALIZED", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_list_all", return_value=["DFT"])
     def test_is_handler_type_registered_fallback_to_available(self, mock_list):
-        with patch('milia_pipeline.handlers.base_handler._registry_is_registered', None):
+        with patch("milia_pipeline.handlers.base_handler._registry_is_registered", None):
             self.assertTrue(_is_handler_type_registered("DFT"))
 
 
@@ -904,10 +1014,11 @@ class TestRegistryFunctions(unittest.TestCase):
 # GROUP 11: create_dataset_handler Factory (10 tests)
 # ============================================================================
 
-class TestCreateDatasetHandler(unittest.TestCase):
 
+class TestCreateDatasetHandler(unittest.TestCase):
     def tearDown(self):
         import milia_pipeline.handlers.base_handler as bh
+
         bh._REGISTRY_INITIALIZED = False
         bh._REGISTRY_AVAILABLE = False
         bh._REGISTRY_IMPORT_ERROR = None
@@ -915,122 +1026,150 @@ class TestCreateDatasetHandler(unittest.TestCase):
         bh._registry_get = None
         bh._registry_is_registered = None
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_registry_based_creation(self, mock_get, mock_init):
         mock_ds = MagicMock()
         mock_ds.create_handler.return_value = MagicMock(spec=DatasetHandler)
         mock_get.return_value = mock_ds
         result = create_dataset_handler(
-            _make_mock_dataset_config("DFT"), _make_mock_filter_config(),
-            _make_mock_processing_config(), _make_mock_logger(),
+            _make_mock_dataset_config("DFT"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            _make_mock_logger(),
         )
         mock_ds.create_handler.assert_called_once()
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_registry_not_found_raises(self, mock_get, mock_init):
         mock_get.side_effect = KeyError("not registered")
         with self.assertRaises(HandlerNotAvailableError):
             create_dataset_handler(
-                _make_mock_dataset_config("UNKNOWN"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("UNKNOWN"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=False)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', False)
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=False)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", False)
     def test_dynamic_fallback_nonexistent(self, mock_init):
         with self.assertRaises((HandlerNotAvailableError, ImportError)):
             create_dataset_handler(
-                _make_mock_dataset_config("NONEXISTENT"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("NONEXISTENT"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_experimental_setup_forwarded(self, mock_get, mock_init):
         mock_ds = MagicMock()
         mock_ds.create_handler.return_value = MagicMock(spec=DatasetHandler)
         mock_get.return_value = mock_ds
         create_dataset_handler(
-            _make_mock_dataset_config("DFT"), _make_mock_filter_config(),
-            _make_mock_processing_config(), _make_mock_logger(), "test_exp",
+            _make_mock_dataset_config("DFT"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            _make_mock_logger(),
+            "test_exp",
         )
         self.assertEqual(mock_ds.create_handler.call_args[0][4], "test_exp")
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_handler_error_reraises(self, mock_get, mock_init):
         mock_get.side_effect = HandlerConfigurationError(message="err", handler_type="DFT")
         with self.assertRaises(HandlerConfigurationError):
             create_dataset_handler(
-                _make_mock_dataset_config("DFT"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("DFT"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_unexpected_error_wrapped(self, mock_get, mock_init):
         mock_get.side_effect = TypeError("unexpected")
         with self.assertRaises((HandlerNotAvailableError, TypeError)):
             create_dataset_handler(
-                _make_mock_dataset_config("DFT"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("DFT"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=False)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', False)
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=False)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", False)
     def test_dynamic_fallback_class_not_found(self, mock_init):
         with self.assertRaises(HandlerNotAvailableError):
             create_dataset_handler(
-                _make_mock_dataset_config("DOESNOTEXIST"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("DOESNOTEXIST"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_all_five_args_forwarded(self, mock_get, mock_init):
         mock_ds = MagicMock()
         mock_ds.create_handler.return_value = MagicMock(spec=DatasetHandler)
         mock_get.return_value = mock_ds
-        dc, fc, pc, lg = (_make_mock_dataset_config("DFT"), _make_mock_filter_config(),
-                          _make_mock_processing_config(), _make_mock_logger())
+        dc, fc, pc, lg = (
+            _make_mock_dataset_config("DFT"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            _make_mock_logger(),
+        )
         create_dataset_handler(dc, fc, pc, lg, "exp")
         args = mock_ds.create_handler.call_args[0]
         self.assertEqual(len(args), 5)
         self.assertEqual(args[0], dc)
         self.assertEqual(args[4], "exp")
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_handler_not_available_error_includes_type(self, mock_get, mock_init):
         mock_get.side_effect = KeyError("not found in registry")
-        with patch('milia_pipeline.handlers.base_handler._get_available_handler_types', return_value=['DFT']):
+        with patch(
+            "milia_pipeline.handlers.base_handler._get_available_handler_types",
+            return_value=["DFT"],
+        ):
             with self.assertRaises(HandlerNotAvailableError) as ctx:
                 create_dataset_handler(
-                    _make_mock_dataset_config("MISSING"), _make_mock_filter_config(),
-                    _make_mock_processing_config(), _make_mock_logger(),
+                    _make_mock_dataset_config("MISSING"),
+                    _make_mock_filter_config(),
+                    _make_mock_processing_config(),
+                    _make_mock_logger(),
                 )
             self.assertIn("MISSING", str(ctx.exception))
 
-    @patch('milia_pipeline.handlers.base_handler._init_registry', return_value=True)
-    @patch('milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE', True)
-    @patch('milia_pipeline.handlers.base_handler._registry_get')
+    @patch("milia_pipeline.handlers.base_handler._init_registry", return_value=True)
+    @patch("milia_pipeline.handlers.base_handler._REGISTRY_AVAILABLE", True)
+    @patch("milia_pipeline.handlers.base_handler._registry_get")
     def test_handler_not_available_error_reraises(self, mock_get, mock_init):
         mock_get.side_effect = HandlerNotAvailableError(
-            message="not available", requested_dataset_type="X", available_types=['A'],
+            message="not available",
+            requested_dataset_type="X",
+            available_types=["A"],
         )
         with self.assertRaises(HandlerNotAvailableError):
             create_dataset_handler(
-                _make_mock_dataset_config("X"), _make_mock_filter_config(),
-                _make_mock_processing_config(), _make_mock_logger(),
+                _make_mock_dataset_config("X"),
+                _make_mock_filter_config(),
+                _make_mock_processing_config(),
+                _make_mock_logger(),
             )
 
 
@@ -1038,8 +1177,8 @@ class TestCreateDatasetHandler(unittest.TestCase):
 # GROUP 12: validate_dataset_handler_compatibility (6 tests)
 # ============================================================================
 
-class TestValidateDatasetHandlerCompatibility(unittest.TestCase):
 
+class TestValidateDatasetHandlerCompatibility(unittest.TestCase):
     def test_matching_types_passes(self):
         handler = _create_handler_instance(dataset_type="TEST")
         validate_dataset_handler_compatibility(handler, _make_mock_dataset_config("TEST"))
@@ -1058,7 +1197,8 @@ class TestValidateDatasetHandlerCompatibility(unittest.TestCase):
     def test_handler_error_reraises(self):
         handler = _create_handler_instance(dataset_type="TEST")
         handler.validate_configuration = MagicMock(
-            side_effect=HandlerConfigurationError(message="bad", handler_type="TEST"))
+            side_effect=HandlerConfigurationError(message="bad", handler_type="TEST")
+        )
         with self.assertRaises(HandlerConfigurationError):
             validate_dataset_handler_compatibility(handler, _make_mock_dataset_config("TEST"))
 
@@ -1079,8 +1219,8 @@ class TestValidateDatasetHandlerCompatibility(unittest.TestCase):
 # GROUP 13: filter_descriptors_by_handler_support (8 tests)
 # ============================================================================
 
-class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
 
+class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
     def _make_registry(self, desc_meta=None):
         reg = MagicMock()
         desc_meta = desc_meta or {}
@@ -1098,13 +1238,15 @@ class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
     def test_supported_descriptor(self):
         handler = _create_handler_instance()
         s, u = filter_descriptors_by_handler_support(
-            handler, ["MolWt"], self._make_registry({"MolWt": self._make_meta("constitutional")}))
+            handler, ["MolWt"], self._make_registry({"MolWt": self._make_meta("constitutional")})
+        )
         self.assertIn("MolWt", s)
 
     def test_unsupported_category(self):
         handler = _create_handler_instance()
         s, u = filter_descriptors_by_handler_support(
-            handler, ["Geom"], self._make_registry({"Geom": self._make_meta("geometric")}))
+            handler, ["Geom"], self._make_registry({"Geom": self._make_meta("geometric")})
+        )
         self.assertIn("Geom", u)
 
     def test_unknown_descriptor(self):
@@ -1115,26 +1257,40 @@ class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
     def test_excluded_descriptor(self):
         cls = _build_concrete_handler_class(
             dataset_type="TEST",
-            supported_descriptors={'categories': ['constitutional'], 'excluded': ['Bad'],
-                                   'recommended': [], 'requires_3d': False, 'requires_charges': False})
-        handler = cls(_make_mock_dataset_config("TEST"), _make_mock_filter_config(),
-                      _make_mock_processing_config(), _make_mock_logger())
+            supported_descriptors={
+                "categories": ["constitutional"],
+                "excluded": ["Bad"],
+                "recommended": [],
+                "requires_3d": False,
+                "requires_charges": False,
+            },
+        )
+        handler = cls(
+            _make_mock_dataset_config("TEST"),
+            _make_mock_filter_config(),
+            _make_mock_processing_config(),
+            _make_mock_logger(),
+        )
         s, u = filter_descriptors_by_handler_support(
-            handler, ["Bad"], self._make_registry({"Bad": self._make_meta("constitutional")}))
+            handler, ["Bad"], self._make_registry({"Bad": self._make_meta("constitutional")})
+        )
         self.assertIn("Bad", u)
 
     def test_empty_requested(self):
         s, u = filter_descriptors_by_handler_support(
-            _create_handler_instance(), [], self._make_registry({}))
+            _create_handler_instance(), [], self._make_registry({})
+        )
         self.assertEqual(s, [])
         self.assertEqual(u, [])
 
     def test_mixed_descriptors(self):
         handler = _create_handler_instance()
-        reg = self._make_registry({
-            "MolWt": self._make_meta("constitutional"),
-            "Geom": self._make_meta("geometric"),
-        })
+        reg = self._make_registry(
+            {
+                "MolWt": self._make_meta("constitutional"),
+                "Geom": self._make_meta("geometric"),
+            }
+        )
         s, u = filter_descriptors_by_handler_support(handler, ["MolWt", "Geom", "Missing"], reg)
         self.assertIn("MolWt", s)
         self.assertIn("Geom", u)
@@ -1146,12 +1302,14 @@ class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
         m.category = None
         m.requires_3d = False
         s, u = filter_descriptors_by_handler_support(
-            handler, ["Desc"], self._make_registry({"Desc": m}))
+            handler, ["Desc"], self._make_registry({"Desc": m})
+        )
         self.assertIn("Desc", s)
 
     def test_returns_tuple_of_two_lists(self):
         result = filter_descriptors_by_handler_support(
-            _create_handler_instance(), [], self._make_registry({}))
+            _create_handler_instance(), [], self._make_registry({})
+        )
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)
 
@@ -1160,19 +1318,24 @@ class TestFilterDescriptorsByHandlerSupport(unittest.TestCase):
 # GROUP 14: verify_handler_abstraction & get_handler_abstraction_summary (6 tests)
 # ============================================================================
 
-class TestVerifyHandlerAbstractionAndSummary(unittest.TestCase):
 
+class TestVerifyHandlerAbstractionAndSummary(unittest.TestCase):
     def test_verify_returns_dict(self):
         self.assertIsInstance(verify_handler_abstraction(), dict)
 
     def test_verify_has_core_keys(self):
         result = verify_handler_abstraction()
-        for key in ['organic_fix_applied', 'abstraction_complete', 'handler_classes', 'registry_integration']:
+        for key in [
+            "organic_fix_applied",
+            "abstraction_complete",
+            "handler_classes",
+            "registry_integration",
+        ]:
             self.assertIn(key, result)
 
     def test_verify_registry_integration_keys(self):
-        reg = verify_handler_abstraction()['registry_integration']
-        for key in ['registry_initialized', 'registry_available', 'phase_6_complete']:
+        reg = verify_handler_abstraction()["registry_integration"]
+        for key in ["registry_initialized", "registry_available", "phase_6_complete"]:
             self.assertIn(key, reg)
 
     def test_summary_returns_dict(self):
@@ -1180,28 +1343,28 @@ class TestVerifyHandlerAbstractionAndSummary(unittest.TestCase):
 
     def test_summary_has_objectives(self):
         result = get_handler_abstraction_summary()
-        self.assertIn('objectives_achieved', result)
-        self.assertTrue(len(result['objectives_achieved']) > 0)
+        self.assertIn("objectives_achieved", result)
+        self.assertTrue(len(result["objectives_achieved"]) > 0)
 
     def test_summary_has_phase_info(self):
         result = get_handler_abstraction_summary()
-        self.assertIn('phase_6_registry_integration', result)
-        self.assertIn('phase_7_migration', result)
+        self.assertIn("phase_6_registry_integration", result)
+        self.assertIn("phase_7_migration", result)
 
 
 # ============================================================================
 # GROUP 15: get_common_required_properties (3 tests)
 # ============================================================================
 
-class TestGetCommonRequiredProperties(unittest.TestCase):
 
+class TestGetCommonRequiredProperties(unittest.TestCase):
     def test_returns_list(self):
         result = _create_handler_instance().get_common_required_properties()
         self.assertIsInstance(result, list)
 
     def test_fallback_contains_basics(self):
         handler = _create_handler_instance()
-        with patch.dict('sys.modules', {'milia_pipeline.config.config_accessors': None}):
+        with patch.dict("sys.modules", {"milia_pipeline.config.config_accessors": None}):
             try:
                 result = handler.get_common_required_properties()
                 self.assertIsInstance(result, list)
@@ -1210,7 +1373,7 @@ class TestGetCommonRequiredProperties(unittest.TestCase):
 
     def test_method_exists_on_handler(self):
         handler = _create_handler_instance()
-        self.assertTrue(hasattr(handler, 'get_common_required_properties'))
+        self.assertTrue(hasattr(handler, "get_common_required_properties"))
         self.assertTrue(callable(handler.get_common_required_properties))
 
 
@@ -1218,8 +1381,8 @@ class TestGetCommonRequiredProperties(unittest.TestCase):
 # GROUP 16: Edge Cases and Boundary Conditions (8 tests)
 # ============================================================================
 
-class TestEdgeCasesAndBoundary(unittest.TestCase):
 
+class TestEdgeCasesAndBoundary(unittest.TestCase):
     def test_handler_with_empty_string_experimental_setup(self):
         self.assertEqual(_create_handler_instance(experimental_setup="").experimental_setup, "")
 
@@ -1256,28 +1419,29 @@ class TestEdgeCasesAndBoundary(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDatasetHandlerInit,                    # GROUP 1:  14 tests
-        TestDatasetHandlerAbstractMethods,         # GROUP 2:  12 tests
-        TestExtractChargeFromInchi,                # GROUP 3:   8 tests
-        TestIsValidProperty,                       # GROUP 4:   9 tests
-        TestEnsureTensor,                          # GROUP 5:  16 tests
-        TestValidateConfiguration,                 # GROUP 6:   7 tests
-        TestExperimentalSetupSupport,              # GROUP 7:   6 tests
-        TestValidateTransformCompatibility,        # GROUP 8:  10 tests
-        TestHandleTransformErrorsDecorator,        # GROUP 9:   8 tests
-        TestRegistryFunctions,                     # GROUP 10: 12 tests
-        TestCreateDatasetHandler,                  # GROUP 11: 10 tests
-        TestValidateDatasetHandlerCompatibility,   # GROUP 12:  6 tests
-        TestFilterDescriptorsByHandlerSupport,     # GROUP 13:  8 tests
-        TestVerifyHandlerAbstractionAndSummary,    # GROUP 14:  6 tests
-        TestGetCommonRequiredProperties,           # GROUP 15:  3 tests
-        TestEdgeCasesAndBoundary,                  # GROUP 16:  8 tests
+        TestDatasetHandlerInit,  # GROUP 1:  14 tests
+        TestDatasetHandlerAbstractMethods,  # GROUP 2:  12 tests
+        TestExtractChargeFromInchi,  # GROUP 3:   8 tests
+        TestIsValidProperty,  # GROUP 4:   9 tests
+        TestEnsureTensor,  # GROUP 5:  16 tests
+        TestValidateConfiguration,  # GROUP 6:   7 tests
+        TestExperimentalSetupSupport,  # GROUP 7:   6 tests
+        TestValidateTransformCompatibility,  # GROUP 8:  10 tests
+        TestHandleTransformErrorsDecorator,  # GROUP 9:   8 tests
+        TestRegistryFunctions,  # GROUP 10: 12 tests
+        TestCreateDatasetHandler,  # GROUP 11: 10 tests
+        TestValidateDatasetHandlerCompatibility,  # GROUP 12:  6 tests
+        TestFilterDescriptorsByHandlerSupport,  # GROUP 13:  8 tests
+        TestVerifyHandlerAbstractionAndSummary,  # GROUP 14:  6 tests
+        TestGetCommonRequiredProperties,  # GROUP 15:  3 tests
+        TestEdgeCasesAndBoundary,  # GROUP 16:  8 tests
     ]
 
     for test_class in test_classes:

@@ -3,12 +3,12 @@
 """
 Molecular Structural Feature Extraction for PyTorch Geometric
 
-This module provides functionality to extract and encode structural features from RDKit 
-molecule objects and integrate them into PyTorch Geometric Data objects for graph neural 
+This module provides functionality to extract and encode structural features from RDKit
+molecule objects and integrate them into PyTorch Geometric Data objects for graph neural
 network applications.
 
 Key Features:
-- Atom-level features: degree, hybridization, valence, aromaticity, ring membership, 
+- Atom-level features: degree, hybridization, valence, aromaticity, ring membership,
   partial charges, chirality, and connectivity patterns
 - Bond-level features: bond type, conjugation, aromaticity, ring membership, stereochemistry,
   and 3D geometric properties (bond lengths) for QM-optimized structures
@@ -34,20 +34,25 @@ Dependencies:
 """
 
 import logging
-import torch
-import numpy as np
 import math
-from rdkit import Chem
-from rdkit.Chem import HybridizationType, BondType, rdPartialCharges
-from torch_geometric.data import Data
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Any
 
-from milia_pipeline.exceptions import MoleculeProcessingError, StructuralFeatureError, PyGDataCreationError
+import numpy as np
+import torch
+from rdkit import Chem
+from rdkit.Chem import BondType, HybridizationType, rdPartialCharges
+from torch_geometric.data import Data
+
+from milia_pipeline.exceptions import (
+    MoleculeProcessingError,
+    PyGDataCreationError,
+    StructuralFeatureError,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def _one_hot_encoding(value, choices: List) -> List[int]:
+def _one_hot_encoding(value, choices: list) -> list[int]:
     """
     Generates a one-hot encoding for a given value based on a list of choices.
 
@@ -70,12 +75,12 @@ def _one_hot_encoding(value, choices: List) -> List[int]:
 
 
 # --- Preprocessing Functions for milia Integration ---
-def _ensure_conformer_and_charges(mol: Chem.Mol, 
-                                 coordinates: Optional[np.ndarray] = None,
-                                 mulliken_charges: Optional[np.ndarray] = None) -> None:
+def _ensure_conformer_and_charges(
+    mol: Chem.Mol, coordinates: np.ndarray | None = None, mulliken_charges: np.ndarray | None = None
+) -> None:
     """
     Ensures molecule has conformer data and charges for milia integration.
-    
+
     Args:
         mol: RDKit molecule
         coordinates: QM-optimized coordinates from milia (shape: [n_atoms, 3])
@@ -87,12 +92,12 @@ def _ensure_conformer_and_charges(mol: Chem.Mol,
         for i, (x, y, z) in enumerate(coordinates):
             conf.SetAtomPosition(i, (float(x), float(y), float(z)))
         mol.AddConformer(conf)
-    
+
     # Add Mulliken charges if available (preferred over Gasteiger for milia)
     if mulliken_charges is not None and len(mulliken_charges) == mol.GetNumAtoms():
         for i, charge in enumerate(mulliken_charges):
             atom = mol.GetAtomWithIdx(i)
-            atom.SetDoubleProp('_MullikenCharge', float(charge))
+            atom.SetDoubleProp("_MullikenCharge", float(charge))
     else:
         # Fallback to Gasteiger charges
         try:
@@ -114,6 +119,7 @@ def _get_atom_degree(atom: Chem.Atom) -> int:
     """
     return atom.GetDegree()
 
+
 def _get_atom_total_degree(atom: Chem.Atom) -> int:
     """
     Returns the total number of bonds to an atom (including implicit/explicit Hs).
@@ -126,7 +132,8 @@ def _get_atom_total_degree(atom: Chem.Atom) -> int:
     """
     return atom.GetTotalDegree()
 
-def _get_atom_hybridization_feature(atom: Chem.Atom) -> List[int]:
+
+def _get_atom_hybridization_feature(atom: Chem.Atom) -> list[int]:
     """
     Returns a one-hot encoding of the atom's hybridization state.
 
@@ -144,9 +151,10 @@ def _get_atom_hybridization_feature(atom: Chem.Atom) -> List[int]:
         HybridizationType.SP3,
         HybridizationType.SP3D,
         HybridizationType.SP3D2,
-        HybridizationType.UNSPECIFIED # Handle cases where hybridization isn't clearly defined
+        HybridizationType.UNSPECIFIED,  # Handle cases where hybridization isn't clearly defined
     ]
     return _one_hot_encoding(atom.GetHybridization(), hybridization_choices)
+
 
 def _get_atom_total_valence(atom: Chem.Atom) -> int:
     """
@@ -160,6 +168,7 @@ def _get_atom_total_valence(atom: Chem.Atom) -> int:
     """
     return atom.GetTotalValence()
 
+
 def _is_atom_aromatic(atom: Chem.Atom) -> int:
     """
     Checks if the atom is aromatic.
@@ -171,6 +180,7 @@ def _is_atom_aromatic(atom: Chem.Atom) -> int:
         int: 1 if the atom is aromatic, 0 otherwise.
     """
     return int(atom.GetIsAromatic())
+
 
 def _is_atom_in_ring(atom: Chem.Atom) -> int:
     """
@@ -188,19 +198,19 @@ def _is_atom_in_ring(atom: Chem.Atom) -> int:
 def _get_atom_partial_charge(atom: Chem.Atom) -> float:
     """
     Returns the partial charge of the atom (Gasteiger charges).
-    
+
     Args:
         atom (Chem.Atom): The RDKit atom object.
-    
+
     Returns:
         float: The partial charge, or raises exception if invalid.
-    
+
     Note:
-        Requires Chem.rdPartialCharges.ComputeGasteigerCharges(mol) 
+        Requires Chem.rdPartialCharges.ComputeGasteigerCharges(mol)
         to be called on the molecule first.
     """
-    if atom.HasProp('_GasteigerCharge'):
-        charge = atom.GetDoubleProp('_GasteigerCharge')
+    if atom.HasProp("_GasteigerCharge"):
+        charge = atom.GetDoubleProp("_GasteigerCharge")
         # Raise exception if invalid - will trigger feature exclusion
         if math.isnan(charge) or math.isinf(charge):
             raise ValueError(f"Invalid partial charge (NaN/Inf) for atom {atom.GetIdx()}")
@@ -211,53 +221,53 @@ def _get_atom_partial_charge(atom: Chem.Atom) -> float:
 def _get_atom_mulliken_charge(atom: Chem.Atom) -> float:
     """
     Returns precomputed Mulliken charge if available (preferred for milia).
-    
+
     Args:
         atom (Chem.Atom): The RDKit atom object.
-    
+
     Returns:
         float: The Mulliken charge, or 0.0 if not available.
     """
-    if atom.HasProp('_MullikenCharge'):
-        return atom.GetDoubleProp('_MullikenCharge')
+    if atom.HasProp("_MullikenCharge"):
+        return atom.GetDoubleProp("_MullikenCharge")
     return 0.0
 
 
 def _get_num_aromatic_bonds_to_atom(atom: Chem.Atom) -> int:
     """
     Returns the number of aromatic bonds connected to this atom.
-    
+
     Args:
         atom (Chem.Atom): The RDKit atom object.
-    
+
     Returns:
         int: Number of aromatic bonds connected to the atom.
-    """  
+    """
     return sum(1 for bond in atom.GetBonds() if bond.GetIsAromatic())
 
 
-def _get_atom_chirality_feature(atom: Chem.Atom) -> List[int]:
+def _get_atom_chirality_feature(atom: Chem.Atom) -> list[int]:
     """
     Returns a one-hot encoding of the atom's chirality.
     Important for pharmaceutical applications.
-    
+
     Args:
         atom (Chem.Atom): The RDKit atom object.
-    
+
     Returns:
         List[int]: A one-hot encoded list representing chirality type.
     """
     chirality_choices = [
-        Chem.ChiralType.CHI_UNSPECIFIED,     # No chirality
-        Chem.ChiralType.CHI_TETRAHEDRAL_CW,  # R configuration  
-        Chem.ChiralType.CHI_TETRAHEDRAL_CCW, # S configuration
-        Chem.ChiralType.CHI_OTHER            # Other chirality types
+        Chem.ChiralType.CHI_UNSPECIFIED,  # No chirality
+        Chem.ChiralType.CHI_TETRAHEDRAL_CW,  # R configuration
+        Chem.ChiralType.CHI_TETRAHEDRAL_CCW,  # S configuration
+        Chem.ChiralType.CHI_OTHER,  # Other chirality types
     ]
     return _one_hot_encoding(atom.GetChiralTag(), chirality_choices)
 
 
 # --- Bond Feature Calculation Functions ---
-def _get_bond_type_feature(bond: Chem.Bond) -> List[int]:
+def _get_bond_type_feature(bond: Chem.Bond) -> list[int]:
     """
     Returns a one-hot encoding of the bond's type.
 
@@ -272,9 +282,10 @@ def _get_bond_type_feature(bond: Chem.Bond) -> List[int]:
         BondType.SINGLE,
         BondType.DOUBLE,
         BondType.TRIPLE,
-        BondType.AROMATIC # Aromatic bonds are often treated as a separate type
+        BondType.AROMATIC,  # Aromatic bonds are often treated as a separate type
     ]
     return _one_hot_encoding(bond.GetBondType(), bond_type_choices)
+
 
 def _is_bond_conjugated(bond: Chem.Bond) -> int:
     """
@@ -288,6 +299,7 @@ def _is_bond_conjugated(bond: Chem.Bond) -> int:
     """
     return int(bond.GetIsConjugated())
 
+
 def _is_bond_aromatic(bond: Chem.Bond) -> int:
     """
     Checks if the bond is aromatic.
@@ -299,6 +311,7 @@ def _is_bond_aromatic(bond: Chem.Bond) -> int:
         int: 1 if the bond is aromatic, 0 otherwise.
     """
     return int(bond.GetIsAromatic())
+
 
 def _is_bond_in_any_ring(bond: Chem.Bond) -> int:
     """
@@ -312,87 +325,91 @@ def _is_bond_in_any_ring(bond: Chem.Bond) -> int:
     """
     return int(bond.IsInRing())
 
-def _get_bond_stereo_feature(bond: Chem.Bond) -> List[int]:
+
+def _get_bond_stereo_feature(bond: Chem.Bond) -> list[int]:
     """
     Returns a one-hot encoding of the bond's stereochemistry.
-    
+
     Args:
         bond (Chem.Bond): The RDKit bond object.
-    
+
     Returns:
         List[int]: A one-hot encoded list representing bond stereochemistry.
     """
     stereo_choices = [
         Chem.BondStereo.STEREONONE,  # No stereochemistry
-        Chem.BondStereo.STEREOANY,   # Unknown stereochemistry  
-        Chem.BondStereo.STEREOZ,     # Z (cis) stereochemistry
-        Chem.BondStereo.STEREOE      # E (trans) stereochemistry
+        Chem.BondStereo.STEREOANY,  # Unknown stereochemistry
+        Chem.BondStereo.STEREOZ,  # Z (cis) stereochemistry
+        Chem.BondStereo.STEREOE,  # E (trans) stereochemistry
     ]
     return _one_hot_encoding(bond.GetStereo(), stereo_choices)
+
 
 def _get_bond_length_3d(bond: Chem.Bond, conformer_id: int = 0) -> float:
     """
     Returns the 3D bond length using QM-optimized coordinates.
     Perfect for milia dataset with precomputed 3D structures.
-    
+
     Args:
         bond (Chem.Bond): The RDKit bond object.
         conformer_id (int): ID of the conformer to use. Defaults to 0.
-    
+
     Returns:
         float: Bond length in Angstroms, or 0.0 if coordinates unavailable.
     """
     mol = bond.GetOwningMol()
-    
+
     # Check if conformer exists
     if mol.GetNumConformers() == 0:
         return 0.0  # No conformer available
-    
+
     try:
         conf = mol.GetConformer(conformer_id)
         atom1_idx = bond.GetBeginAtomIdx()
         atom2_idx = bond.GetEndAtomIdx()
-        
+
         pos1 = conf.GetAtomPosition(atom1_idx)
         pos2 = conf.GetAtomPosition(atom2_idx)
-        
+
         # Calculate Euclidean distance
         dx = pos1.x - pos2.x
         dy = pos1.y - pos2.y
         dz = pos1.z - pos2.z
-        
-        return math.sqrt(dx*dx + dy*dy + dz*dz)
-        
+
+        return math.sqrt(dx * dx + dy * dy + dz * dz)
+
     except Exception:
         return 0.0  # Default for missing conformer data
 
-def _get_bond_length_binned(bond: Chem.Bond, conformer_id: int = 0, 
-                           bin_edges: Optional[List[float]] = None) -> List[int]:
+
+def _get_bond_length_binned(
+    bond: Chem.Bond, conformer_id: int = 0, bin_edges: list[float] | None = None
+) -> list[int]:
     """
     Returns binned bond length as one-hot encoding.
     Useful for capturing bond length ranges in a discrete manner.
-    
+
     Args:
         bond (Chem.Bond): The RDKit bond object.
         conformer_id (int): ID of the conformer to use. Defaults to 0.
         bin_edges (Optional[List[float]]): Bin edges for length discretization.
-    
+
     Returns:
         List[int]: One-hot encoded bond length bin.
     """
     if bin_edges is None:
         # Default bins for common bond lengths (in Angstroms)
-        bin_edges = [0.0, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, float('inf')]
-    
+        bin_edges = [0.0, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, float("inf")]
+
     bond_length = _get_bond_length_3d(bond, conformer_id)
-    
+
     # Find appropriate bin
     for i, edge in enumerate(bin_edges[1:], 1):
         if bond_length <= edge:
             bin_vector = [0] * (len(bin_edges) - 1)
-            bin_vector[i-1] = 1
+            bin_vector[i - 1] = 1
             return bin_vector
-    
+
     # Default to last bin if nothing matches
     bin_vector = [0] * (len(bin_edges) - 1)
     bin_vector[-1] = 1
@@ -400,8 +417,12 @@ def _get_bond_length_binned(bond: Chem.Bond, conformer_id: int = 0,
 
 
 # --- Aggregation functions for atom and bond features ---
-def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List[str],
-                                     molecule_index: Optional[int] = None, inchi: Optional[str] = None) -> torch.Tensor: 
+def _calculate_atom_features_tensor(
+    rdkit_mol: Chem.Mol,
+    selected_features: list[str],
+    molecule_index: int | None = None,
+    inchi: str | None = None,
+) -> torch.Tensor:
     """
     Calculates atom features based on a list of selected feature names and returns them as a PyTorch tensor.
 
@@ -409,7 +430,7 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
         rdkit_mol (Chem.Mol): The RDKit molecule object.
         selected_features (List[str]): A list of string names for the atom features to calculate.
         molecule_index (Optional[int]): The index of the molecule in the dataset, for error context. Defaults to None.
-        inchi (Optional[str]): The InChI string of the molecule, for error context. Defaults to None. 
+        inchi (Optional[str]): The InChI string of the molecule, for error context. Defaults to None.
 
     Returns:
         torch.Tensor: A tensor of atom features, where each row corresponds to an atom
@@ -421,9 +442,15 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
                                 if an error occurs during an RDKit atom feature calculation,
                                 or if the final tensor conversion fails.
     """
-#---
-def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List[str],
-                                     molecule_index: Optional[int] = None, inchi: Optional[str] = None) -> torch.Tensor: 
+
+
+# ---
+def _calculate_atom_features_tensor(
+    rdkit_mol: Chem.Mol,
+    selected_features: list[str],
+    molecule_index: int | None = None,
+    inchi: str | None = None,
+) -> torch.Tensor:
     """
     Calculates atom features based on a list of selected feature names and returns them as a PyTorch tensor.
 
@@ -431,7 +458,7 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
         rdkit_mol (Chem.Mol): The RDKit molecule object.
         selected_features (List[str]): A list of string names for the atom features to calculate.
         molecule_index (Optional[int]): The index of the molecule in the dataset, for error context. Defaults to None.
-        inchi (Optional[str]): The InChI string of the molecule, for error context. Defaults to None. 
+        inchi (Optional[str]): The InChI string of the molecule, for error context. Defaults to None.
 
     Returns:
         torch.Tensor: A tensor of atom features, where each row corresponds to an atom
@@ -446,7 +473,7 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
     # Ensure Gasteiger charges are computed if partial_charge is requested
     if "partial_charge" in selected_features:
         first_atom = rdkit_mol.GetAtomWithIdx(0) if rdkit_mol.GetNumAtoms() > 0 else None
-        if first_atom and not first_atom.HasProp('_GasteigerCharge'):
+        if first_atom and not first_atom.HasProp("_GasteigerCharge"):
             try:
                 rdPartialCharges.ComputeGasteigerCharges(rdkit_mol)
             except Exception as e:
@@ -457,9 +484,9 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
                     feature_type="atom",
                     feature_name="partial_charge",
                     reason="Gasteiger charge computation failed.",
-                    detail=str(e)
+                    detail=str(e),
                 ) from e
-    
+
     atom_feature_map = {
         "degree": _get_atom_degree,
         "total_degree": _get_atom_total_degree,
@@ -480,38 +507,42 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
             if feature_name in atom_feature_map:
                 try:
                     feature_value = atom_feature_map[feature_name](atom)
-                    
+
                     if isinstance(feature_value, list):
                         atom_feature_vector.extend(feature_value)
                     else:
                         atom_feature_vector.append(feature_value)
-                    
+
                 except Exception as e:
                     # Catch errors from RDKit atom methods
                     raise StructuralFeatureError(
                         message=f"Error calculating '{feature_name}' for atom {i}.",
                         molecule_index=molecule_index,
-                        inchi=inchi, 
+                        inchi=inchi,
                         feature_type="atom",
                         feature_name=feature_name,
                         reason=f"Failed to retrieve feature value for atom {i}.",
-                        detail=str(e)
+                        detail=str(e),
                     ) from e
 
             else:
                 # If an unknown feature is requested, we raise an error with suggestions
                 available = list(atom_feature_map.keys())
-                suggestions = [f for f in available if feature_name.lower() in f.lower() or f.lower() in feature_name.lower()]
+                suggestions = [
+                    f
+                    for f in available
+                    if feature_name.lower() in f.lower() or f.lower() in feature_name.lower()
+                ]
                 suggestion_text = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-                
+
                 raise StructuralFeatureError(
                     message=f"Unsupported atom feature requested: '{feature_name}'.{suggestion_text}",
                     molecule_index=molecule_index,
-                    inchi=inchi, 
+                    inchi=inchi,
                     feature_type="atom",
                     feature_name=feature_name,
                     reason="Invalid feature configuration.",
-                    detail=f"Available atom features: {', '.join(available)}"
+                    detail=f"Available atom features: {', '.join(available)}",
                 )
 
         features_list.append(atom_feature_vector)
@@ -530,16 +561,21 @@ def _calculate_atom_features_tensor(rdkit_mol: Chem.Mol, selected_features: List
         raise StructuralFeatureError(
             message="Failed to convert atom features to a PyTorch tensor.",
             molecule_index=molecule_index,
-            inchi=inchi, 
+            inchi=inchi,
             feature_type="atom",
             reason="Inconsistent feature vector lengths or invalid data.",
-            detail=str(e)
+            detail=str(e),
         ) from e
 
 
-def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.Tensor, selected_features: List[str],
-                                     molecule_index: Optional[int] = None, inchi: Optional[str] = None, 
-                                     logger_instance: Optional[logging.Logger] = None) -> torch.Tensor:
+def _calculate_bond_features_tensor(
+    rdkit_mol: Chem.Mol,
+    pyg_edge_index: torch.Tensor,
+    selected_features: list[str],
+    molecule_index: int | None = None,
+    inchi: str | None = None,
+    logger_instance: logging.Logger | None = None,
+) -> torch.Tensor:
     """
     Calculates bond features based on a list of selected feature names and returns them as a PyTorch tensor.
     Ensures features align with the provided PyTorch Geometric edge_index (bidirectional).
@@ -585,24 +621,28 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
             feature_type="bond",
             reason="Missing conformer data for 3D features",
             detail="Features 'bond_length' and 'bond_length_binned' require 3D coordinates. "
-                   "Ensure _ensure_conformer_and_charges() was called with coordinates."
+            "Ensure _ensure_conformer_and_charges() was called with coordinates.",
         )
 
     # Validate selected features first before processing
     for feature_name in selected_features:
         if feature_name not in bond_feature_map:
             available = list(bond_feature_map.keys())
-            suggestions = [f for f in available if feature_name.lower() in f.lower() or f.lower() in feature_name.lower()]
+            suggestions = [
+                f
+                for f in available
+                if feature_name.lower() in f.lower() or f.lower() in feature_name.lower()
+            ]
             suggestion_text = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-            
+
             raise StructuralFeatureError(
                 message=f"Unsupported bond feature requested: '{feature_name}'.{suggestion_text}",
                 molecule_index=molecule_index,
-                inchi=inchi, 
+                inchi=inchi,
                 feature_type="bond",
                 feature_name=feature_name,
                 reason="Invalid feature configuration.",
-                detail=f"Available bond features: {', '.join(available)}"
+                detail=f"Available bond features: {', '.join(available)}",
             )
 
     # Determine the length of a single bond feature vector for padding
@@ -612,48 +652,56 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
             # A dummy bond to get feature length. Ensure its creation is robust.
             dummy_mol = Chem.MolFromSmiles("C-C")
             if dummy_mol is None or dummy_mol.GetNumBonds() == 0:
-                raise ValueError("Could not create dummy molecule for bond feature length determination.")
-            
+                raise ValueError(
+                    "Could not create dummy molecule for bond feature length determination."
+                )
+
             # Add conformer to dummy if 3D features are requested
-            requires_3d = any(feat in selected_features for feat in ["bond_length", "bond_length_binned"])
+            requires_3d = any(
+                feat in selected_features for feat in ["bond_length", "bond_length_binned"]
+            )
             if requires_3d:
                 conf = Chem.Conformer(2)
                 conf.SetAtomPosition(0, (0.0, 0.0, 0.0))
                 conf.SetAtomPosition(1, (1.5, 0.0, 0.0))
                 dummy_mol.AddConformer(conf)
-            
+
             dummy_bond = dummy_mol.GetBondWithIdx(0)
-            
+
             for feature_name in selected_features:
                 val = bond_feature_map[feature_name](dummy_bond)
                 single_bond_feature_length += len(val) if isinstance(val, list) else 1
-            
+
                 if single_bond_feature_length == 0:
                     if logger_instance:
-                        logger_instance.warning(f"[{molecule_index}, '{inchi}'] No valid bond features selected or they have 0 length. Defaulting to 1 for dummy feature length.")
+                        logger_instance.warning(
+                            f"[{molecule_index}, '{inchi}'] No valid bond features selected or they have 0 length. Defaulting to 1 for dummy feature length."
+                        )
                     else:
-                        logger.warning(f"[{molecule_index}, '{inchi}'] No valid bond features selected or they have 0 length. Defaulting to 1 for dummy feature length.")
-                    single_bond_feature_length = 1 
+                        logger.warning(
+                            f"[{molecule_index}, '{inchi}'] No valid bond features selected or they have 0 length. Defaulting to 1 for dummy feature length."
+                        )
+                    single_bond_feature_length = 1
 
         except Exception as e:
             raise StructuralFeatureError(
                 message="Failed to determine expected bond feature vector length.",
                 molecule_index=molecule_index,
-                inchi=inchi, 
+                inchi=inchi,
                 feature_type="bond",
                 reason="Error during dummy bond processing or feature map lookup.",
-                detail=str(e)
+                detail=str(e),
             ) from e
-    else: # No bond features selected
-        single_bond_feature_length = 0 # No features means 0 length
+    else:  # No bond features selected
+        single_bond_feature_length = 0  # No features means 0 length
 
     # Create a mapping from RDKit bond (represented by sorted atom indices) to its features
-    rdkit_bond_features_dict: Dict[Tuple[int, int], List[float]] = {}
-    
+    rdkit_bond_features_dict: dict[tuple[int, int], list[float]] = {}
+
     for i, bond in enumerate(rdkit_mol.GetBonds()):
         u = bond.GetBeginAtomIdx()
         v = bond.GetEndAtomIdx()
-        
+
         bond_feature_vector = []
         for feature_name in selected_features:
             try:
@@ -672,7 +720,7 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
                         feature_type="bond",
                         feature_name=feature_name,
                         reason="No conformer available for 3D bond feature computation.",
-                        detail=str(e)
+                        detail=str(e),
                     ) from e
                 raise
             except Exception as e:
@@ -680,19 +728,23 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
                 raise StructuralFeatureError(
                     message=f"Error calculating '{feature_name}' for bond between atoms {u}-{v}.",
                     molecule_index=molecule_index,
-                    inchi=inchi, 
+                    inchi=inchi,
                     feature_type="bond",
                     feature_name=feature_name,
                     reason=f"Failed to retrieve feature value for bond {i}.",
-                    detail=str(e)
+                    detail=str(e),
                 ) from e
-        
+
         # Ensure the feature vector has consistent length, even if some features were skipped
-        bond_feature_vector_padded = bond_feature_vector + [0] * (single_bond_feature_length - len(bond_feature_vector))
-        
+        bond_feature_vector_padded = bond_feature_vector + [0] * (
+            single_bond_feature_length - len(bond_feature_vector)
+        )
+
         # Store features for both directions for easy lookup
         rdkit_bond_features_dict[(u, v)] = bond_feature_vector_padded
-        rdkit_bond_features_dict[(v, u)] = bond_feature_vector_padded # For reverse direction in PyG
+        rdkit_bond_features_dict[(v, u)] = (
+            bond_feature_vector_padded  # For reverse direction in PyG
+        )
 
     # Validate edge_index exists
     if pyg_edge_index is None:
@@ -702,9 +754,9 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
             inchi=inchi,
             feature_type="bond",
             reason="Missing edge_index in PyG Data object",
-            detail="Bond features require edge_index to map bonds to edges."
+            detail="Bond features require edge_index to map bonds to edges.",
         )
-   
+
     # Now, construct the PyG edge_attr tensor using pyg_edge_index
     num_edges = pyg_edge_index.size(1)
 
@@ -725,7 +777,7 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
                 inchi=inchi,
                 feature_type="bond",
                 reason="PyG requires bidirectional edges for undirected graphs.",
-                detail="Ensure edge_index contains both (u,v) and (v,u) for each bond."
+                detail="Ensure edge_index contains both (u,v) and (v,u) for each bond.",
             )
 
     edge_features_list = []
@@ -734,9 +786,13 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
         features = rdkit_bond_features_dict.get((u, v))
         if features is None:
             if logger_instance:
-                logger_instance.warning(f"[{molecule_index}, '{inchi}'] No RDKit bond found for PyG edge ({u}, {v}). Assigning zeros to features.")
+                logger_instance.warning(
+                    f"[{molecule_index}, '{inchi}'] No RDKit bond found for PyG edge ({u}, {v}). Assigning zeros to features."
+                )
             else:
-                logger.warning(f"[{molecule_index}, '{inchi}'] No RDKit bond found for PyG edge ({u}, {v}). Assigning zeros to features.")
+                logger.warning(
+                    f"[{molecule_index}, '{inchi}'] No RDKit bond found for PyG edge ({u}, {v}). Assigning zeros to features."
+                )
             edge_features_list.append([0] * single_bond_feature_length)
         else:
             edge_features_list.append(features)
@@ -747,32 +803,44 @@ def _calculate_bond_features_tensor(rdkit_mol: Chem.Mol, pyg_edge_index: torch.T
         raise StructuralFeatureError(
             message="Failed to convert bond features to a PyTorch tensor.",
             molecule_index=molecule_index,
-            inchi=inchi, 
+            inchi=inchi,
             feature_type="bond",
             reason="Inconsistent feature vector lengths or invalid data.",
-            detail=str(e)
+            detail=str(e),
         ) from e
 
 
 # --- Helper function to get available features ---
-def get_available_features() -> Dict[str, List[str]]:
+def get_available_features() -> dict[str, list[str]]:
     """
     Returns a dictionary of all available atom and bond features.
-    
+
     Returns:
-        Dict[str, List[str]]: Dictionary with 'atom' and 'bond' keys containing 
+        Dict[str, List[str]]: Dictionary with 'atom' and 'bond' keys containing
                              lists of available feature names.
     """
     return {
         "atom": [
-            "degree", "total_degree", "hybridization", "total_valence", 
-            "is_aromatic", "is_in_ring", "partial_charge", "mulliken_charge",
-            "num_aromatic_bonds", "chirality"
+            "degree",
+            "total_degree",
+            "hybridization",
+            "total_valence",
+            "is_aromatic",
+            "is_in_ring",
+            "partial_charge",
+            "mulliken_charge",
+            "num_aromatic_bonds",
+            "chirality",
         ],
         "bond": [
-            "bond_type", "is_conjugated", "is_aromatic", "is_in_any_ring",
-            "stereo", "bond_length", "bond_length_binned"
-        ]
+            "bond_type",
+            "is_conjugated",
+            "is_aromatic",
+            "is_in_any_ring",
+            "stereo",
+            "bond_length",
+            "bond_length_binned",
+        ],
     }
 
 
@@ -780,12 +848,12 @@ def get_available_features() -> Dict[str, List[str]]:
 def add_structural_features(
     rdkit_mol: Chem.Mol,
     pyg_data: Data,
-    feature_config: Optional[Dict[str, Any]], 
+    feature_config: dict[str, Any] | None,
     logger: logging.Logger,
-    molecule_index: Optional[int] = None,
-    inchi: Optional[str] = None,
-    coordinates: Optional[np.ndarray] = None,
-    mulliken_charges: Optional[np.ndarray] = None
+    molecule_index: int | None = None,
+    inchi: str | None = None,
+    coordinates: np.ndarray | None = None,
+    mulliken_charges: np.ndarray | None = None,
 ) -> Data:
     """
     Adds atom-level (pyg_data.x) and bond-level (pyg_data.edge_attr) structural features
@@ -804,7 +872,7 @@ def add_structural_features(
         logger (logging.Logger): A logger instance for logging informational messages and warnings.
         molecule_index (Optional[int]): The index of the molecule in the dataset. Used for detailed error reporting.
                                         Defaults to None.
-        inchi (Optional[str]): The InChI string of the molecule. Used for detailed error reporting. 
+        inchi (Optional[str]): The InChI string of the molecule. Used for detailed error reporting.
                                Defaults to None.
         coordinates (Optional[np.ndarray]): QM-optimized 3D coordinates for milia integration.
                                            Shape: [n_atoms, 3]. Defaults to None.
@@ -827,25 +895,27 @@ def add_structural_features(
     if feature_config is None:
         logger.info(f"No structural features configured. Skipping for molecule {molecule_index}.")
         return pyg_data
-    
-    log_prefix = f"[Mol Index: {molecule_index}, InChI: '{inchi}']" if molecule_index is not None else "" 
+
+    log_prefix = (
+        f"[Mol Index: {molecule_index}, InChI: '{inchi}']" if molecule_index is not None else ""
+    )
 
     # Validate inputs
     if rdkit_mol is None:
         raise MoleculeProcessingError(
             message="RDKit molecule object is None.",
             molecule_index=molecule_index,
-            inchi=inchi, 
+            inchi=inchi,
             reason="Input 'rdkit_mol' is invalid.",
-            detail="Cannot extract structural features from a non-existent molecule."
+            detail="Cannot extract structural features from a non-existent molecule.",
         )
     if pyg_data is None:
         raise PyGDataCreationError(
             message="PyTorch Geometric Data object is None.",
             molecule_index=molecule_index,
-            inchi=inchi, 
+            inchi=inchi,
             reason="Input 'pyg_data' is invalid.",
-            detail="Cannot add structural features to a non-existent PyG Data object."
+            detail="Cannot add structural features to a non-existent PyG Data object.",
         )
 
     # Ensure conformer and charges are available for milia integration
@@ -861,39 +931,61 @@ def add_structural_features(
         # Calculate and assign atom features (pyg_data.x)
         if selected_atom_features:
             if rdkit_mol.GetNumAtoms() == 0:
-                logger.warning(f"{log_prefix} RDKit molecule has no atoms. Atom features will be empty.")
+                logger.warning(
+                    f"{log_prefix} RDKit molecule has no atoms. Atom features will be empty."
+                )
                 try:
                     dummy_mol_for_dim = Chem.MolFromSmiles("C")
                     if dummy_mol_for_dim and dummy_mol_for_dim.GetNumAtoms() > 0:
                         # Call with no context for dummy to avoid recursive context passing
-                        dummy_x = _calculate_atom_features_tensor(dummy_mol_for_dim, selected_atom_features)
+                        dummy_x = _calculate_atom_features_tensor(
+                            dummy_mol_for_dim, selected_atom_features
+                        )
                         atom_feature_dim = dummy_x.shape[1] if dummy_x.numel() > 0 else 0
                     else:
                         atom_feature_dim = 0
-                        logger.warning(f"{log_prefix} Could not determine atom feature dimension from dummy molecule. Setting dimension to 0.")
+                        logger.warning(
+                            f"{log_prefix} Could not determine atom feature dimension from dummy molecule. Setting dimension to 0."
+                        )
                     pyg_data.x = torch.empty(0, atom_feature_dim, dtype=torch.float)
                 except Exception as e:
                     raise StructuralFeatureError(
                         message="Failed to determine atom feature dimension for empty molecule.",
                         molecule_index=molecule_index,
-                        inchi=inchi, 
+                        inchi=inchi,
                         feature_type="atom",
                         reason="Could not get feature dimension from dummy atom for empty molecule.",
-                        detail=str(e)
+                        detail=str(e),
                     ) from e
             else:
-                pyg_data.x = _calculate_atom_features_tensor(rdkit_mol, selected_atom_features,
-                                                               molecule_index=molecule_index, inchi=inchi) 
+                pyg_data.x = _calculate_atom_features_tensor(
+                    rdkit_mol, selected_atom_features, molecule_index=molecule_index, inchi=inchi
+                )
         else:
-            logger.info(f"{log_prefix} No atom features configured to be added. Setting pyg_data.x to None.")
+            logger.info(
+                f"{log_prefix} No atom features configured to be added. Setting pyg_data.x to None."
+            )
             pyg_data.x = None
 
         # Calculate and assign bond features (pyg_data.edge_attr)
-        if selected_bond_features and hasattr(pyg_data, 'edge_index') and pyg_data.edge_index is not None and pyg_data.edge_index.size(1) > 0:
-            pyg_data.edge_attr = _calculate_bond_features_tensor(rdkit_mol, pyg_data.edge_index, selected_bond_features,
-                                                                 molecule_index=molecule_index, inchi=inchi, logger_instance=logger) 
+        if (
+            selected_bond_features
+            and hasattr(pyg_data, "edge_index")
+            and pyg_data.edge_index is not None
+            and pyg_data.edge_index.size(1) > 0
+        ):
+            pyg_data.edge_attr = _calculate_bond_features_tensor(
+                rdkit_mol,
+                pyg_data.edge_index,
+                selected_bond_features,
+                molecule_index=molecule_index,
+                inchi=inchi,
+                logger_instance=logger,
+            )
         else:
-            logger.info(f"{log_prefix} No bond features configured, no edge_index present, or no edges. Setting pyg_data.edge_attr to None.")
+            logger.info(
+                f"{log_prefix} No bond features configured, no edge_index present, or no edges. Setting pyg_data.edge_attr to None."
+            )
             pyg_data.edge_attr = None
 
     except StructuralFeatureError:
@@ -905,9 +997,9 @@ def add_structural_features(
         raise StructuralFeatureError(
             message="An unexpected error occurred while adding structural features.",
             molecule_index=molecule_index,
-            inchi=inchi, 
+            inchi=inchi,
             reason="Unhandled exception during feature computation.",
-            detail=str(e)
+            detail=str(e),
         ) from e
 
     return pyg_data

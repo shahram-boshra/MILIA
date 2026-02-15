@@ -63,9 +63,9 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
 
 import pytest
@@ -84,6 +84,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def mol_pkg():
     """
@@ -94,6 +95,7 @@ def mol_pkg():
     """
     try:
         import milia_pipeline.molecules as mol
+
         return mol
     except ImportError as exc:
         pytest.fail(
@@ -152,9 +154,7 @@ class TestSmokeMetadataAttributes:
     def test_version_attribute_is_string(self, mol_pkg):
         """``__version__`` is a non-empty string."""
         value = mol_pkg.__version__
-        assert isinstance(value, str), (
-            f"__version__ should be str, got {type(value)}"
-        )
+        assert isinstance(value, str), f"__version__ should be str, got {type(value)}"
         assert len(value) > 0, "__version__ should be non-empty"
 
     @pytest.mark.smoke
@@ -162,9 +162,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = mol_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -172,9 +170,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeCoreClassExports:
@@ -197,9 +193,7 @@ class TestSmokeCoreClassExports:
     def test_core_class_is_a_class(self, mol_pkg, name):
         """Each core class export is a class (not an instance or function)."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeConversionFunctionExports:
@@ -316,9 +310,7 @@ class TestSmokeHandlerOnlyFunctionExports:
     def test_handler_only_function_exists(self, mol_pkg, name):
         """Each handler-only function is present and non-None."""
         obj = getattr(mol_pkg, name, None)
-        assert obj is not None, (
-            f"Handler-only function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Handler-only function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", HANDLER_ONLY_FUNCTIONS)
@@ -394,9 +386,7 @@ class TestSmokeFilteringValidationExports:
     def test_filter_validation_utility_exists(self, mol_pkg, name):
         """Each filtering validation/utility function is present and non-None."""
         obj = getattr(mol_pkg, name, None)
-        assert obj is not None, (
-            f"Filter validation/utility '{name}' is None or missing"
-        )
+        assert obj is not None, f"Filter validation/utility '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", FILTER_VALIDATION_FUNCTIONS + FILTER_UTILITY_FUNCTIONS)
@@ -421,9 +411,7 @@ class TestSmokeDiagnosticsFunctionExports:
     def test_diagnostics_function_exists(self, mol_pkg, name):
         """Each diagnostics function is present and non-None."""
         obj = getattr(mol_pkg, name, None)
-        assert obj is not None, (
-            f"Diagnostics function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Diagnostics function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DIAGNOSTICS_FUNCTIONS)
@@ -456,9 +444,7 @@ class TestSmokeRegistryStatusFlags:
     def test_registry_bool_flag_is_bool(self, mol_pkg, flag):
         """Each registry boolean status flag is actually a bool."""
         value = getattr(mol_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("flag", ERROR_FLAGS)
@@ -488,9 +474,7 @@ class TestSmokeRegistryInitFunctions:
     def test_init_registry_function_exists(self, mol_pkg, name):
         """Each registry init function is present and non-None."""
         obj = getattr(mol_pkg, name, None)
-        assert obj is not None, (
-            f"Registry init function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Registry init function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", INIT_FUNCTIONS)
@@ -515,9 +499,7 @@ class TestSmokePhase6InternalRegistryExports:
     @pytest.mark.parametrize("name", PHASE6_INTERNAL_EXPORTS)
     def test_phase6_internal_export_exists(self, mol_pkg, name):
         """Each Phase 6 internal registry export is present."""
-        assert hasattr(mol_pkg, name), (
-            f"Phase 6 internal export '{name}' is missing"
-        )
+        assert hasattr(mol_pkg, name), f"Phase 6 internal export '{name}' is missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", PHASE6_INTERNAL_EXPORTS)
@@ -560,9 +542,7 @@ class TestSmokeModuleInitialization:
 
         The ``__init__.py`` creates ``_logger = logging.getLogger(__name__)``.
         """
-        assert hasattr(mol_pkg, "_logger"), (
-            "_logger attribute is missing from molecules package"
-        )
+        assert hasattr(mol_pkg, "_logger"), "_logger attribute is missing from molecules package"
 
     @pytest.mark.smoke
     def test_logger_is_logger_instance(self, mol_pkg):
@@ -598,9 +578,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, mol_pkg, all_names):
@@ -608,10 +586,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(mol_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(mol_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -619,13 +594,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -682,13 +652,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in molecules/__init__.py but not in __all__: "
@@ -711,8 +685,7 @@ class TestContractCoreClassTypes:
     def test_molecule_filter_is_class(self, mol_pkg):
         """``MoleculeFilter`` is a class."""
         assert inspect.isclass(mol_pkg.MoleculeFilter), (
-            f"MoleculeFilter should be a class, got "
-            f"{type(mol_pkg.MoleculeFilter).__name__}"
+            f"MoleculeFilter should be a class, got {type(mol_pkg.MoleculeFilter).__name__}"
         )
 
 
@@ -730,18 +703,14 @@ class TestContractConversionFunctionSignatures:
     def test_conversion_is_function(self, mol_pkg, name):
         """Each conversion export is a function (not a class or unbound method)."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", CONVERSION_FUNCTIONS)
     def test_conversion_function_has_parameters(self, mol_pkg, name):
         """Each conversion function accepts at least one parameter."""
         sig = inspect.signature(getattr(mol_pkg, name))
-        assert len(sig.parameters) >= 1, (
-            f"'{name}' should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, f"'{name}' should accept at least one parameter"
 
 
 class TestContractValidationFunctionTypes:
@@ -758,9 +727,7 @@ class TestContractValidationFunctionTypes:
     def test_validation_is_function(self, mol_pkg, name):
         """Each validation export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractEnrichmentFunctionTypes:
@@ -781,9 +748,7 @@ class TestContractEnrichmentFunctionTypes:
     def test_enrichment_is_function(self, mol_pkg, name):
         """Each enrichment export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractHandlerOnlyFunctionTypes:
@@ -801,18 +766,14 @@ class TestContractHandlerOnlyFunctionTypes:
     def test_handler_only_is_function(self, mol_pkg, name):
         """Each handler-only export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", HANDLER_ONLY_FUNCTIONS)
     def test_handler_only_function_has_parameters(self, mol_pkg, name):
         """Each handler-only function accepts at least one parameter."""
         sig = inspect.signature(getattr(mol_pkg, name))
-        assert len(sig.parameters) >= 1, (
-            f"'{name}' should accept at least one parameter (handler)"
-        )
+        assert len(sig.parameters) >= 1, f"'{name}' should accept at least one parameter (handler)"
 
 
 class TestContractFilteringFactoryFunctions:
@@ -828,9 +789,7 @@ class TestContractFilteringFactoryFunctions:
     def test_factory_is_function(self, mol_pkg, name):
         """Each factory export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractFilteringCoreFunctions:
@@ -848,18 +807,14 @@ class TestContractFilteringCoreFunctions:
     def test_core_filter_is_function(self, mol_pkg, name):
         """Each core filtering export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", CORE_FILTER_FUNCTIONS)
     def test_core_filter_function_has_parameters(self, mol_pkg, name):
         """Each core filter function accepts at least one parameter."""
         sig = inspect.signature(getattr(mol_pkg, name))
-        assert len(sig.parameters) >= 1, (
-            f"'{name}' should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, f"'{name}' should accept at least one parameter"
 
 
 class TestContractFilteringValidationFunctions:
@@ -875,9 +830,7 @@ class TestContractFilteringValidationFunctions:
     def test_filter_validation_is_function(self, mol_pkg, name):
         """Each filter validation export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractFilteringUtilityFunctions:
@@ -893,9 +846,7 @@ class TestContractFilteringUtilityFunctions:
     def test_filter_utility_is_function(self, mol_pkg, name):
         """Each filter utility export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractFeatureFunctionTypes:
@@ -911,9 +862,7 @@ class TestContractFeatureFunctionTypes:
     def test_feature_is_function(self, mol_pkg, name):
         """Each structural feature export is a function."""
         obj = getattr(mol_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractRegistryStatusReportingFunctions:
@@ -1025,9 +974,7 @@ class TestContractGetFilterRegistryStatusKeys:
             "mo_energies",
         }
         missing = expected_features - features
-        assert not missing, (
-            f"Expected features missing from features_available: {sorted(missing)}"
-        )
+        assert not missing, f"Expected features missing from features_available: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_filter_registry_status_has_import_error(self, mol_pkg):
@@ -1052,8 +999,7 @@ class TestContractRegistryFlagsConsistency:
 
         if available:
             assert error is None, (
-                f"_FILTER_REGISTRY_AVAILABLE is True but "
-                f"_FILTER_REGISTRY_IMPORT_ERROR is '{error}'"
+                f"_FILTER_REGISTRY_AVAILABLE is True but _FILTER_REGISTRY_IMPORT_ERROR is '{error}'"
             )
 
     @pytest.mark.contract
@@ -1194,9 +1140,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1226,8 +1170,7 @@ class TestContractValidatorRegistryStatusReturnType:
         """``get_validator_registry_status()`` returns a dict."""
         result = mol_pkg.get_validator_registry_status()
         assert isinstance(result, dict), (
-            f"get_validator_registry_status() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_validator_registry_status() should return dict, got {type(result).__name__}"
         )
 
 
@@ -1239,8 +1182,7 @@ class TestContractEnricherRegistryStatusReturnType:
         """``get_enricher_registry_status()`` returns a dict."""
         result = mol_pkg.get_enricher_registry_status()
         assert isinstance(result, dict), (
-            f"get_enricher_registry_status() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_enricher_registry_status() should return dict, got {type(result).__name__}"
         )
 
 
@@ -1252,8 +1194,7 @@ class TestContractPropertyEnrichmentRegistryStatusReturnType:
         """``get_registry_integration_status()`` returns a dict."""
         result = mol_pkg.get_registry_integration_status()
         assert isinstance(result, dict), (
-            f"get_registry_integration_status() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_registry_integration_status() should return dict, got {type(result).__name__}"
         )
 
 
@@ -1267,8 +1208,7 @@ class TestContractFilterGetAvailableDatasetTypesReturnType:
         mol_pkg._filter_init_registry()
         result = mol_pkg._filter_get_available_dataset_types()
         assert isinstance(result, list), (
-            f"_filter_get_available_dataset_types() should return list, got "
-            f"{type(result).__name__}"
+            f"_filter_get_available_dataset_types() should return list, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -1306,12 +1246,9 @@ class TestContractFilterIsDatasetTypeRegisteredReturnType:
         unknown dataset type.
         """
         mol_pkg._filter_init_registry()
-        result = mol_pkg._filter_is_dataset_type_registered(
-            "NONEXISTENT_DATASET_TYPE_XYZ"
-        )
+        result = mol_pkg._filter_is_dataset_type_registered("NONEXISTENT_DATASET_TYPE_XYZ")
         assert result is False, (
-            "_filter_is_dataset_type_registered('NONEXISTENT_DATASET_TYPE_XYZ') "
-            "should return False"
+            "_filter_is_dataset_type_registered('NONEXISTENT_DATASET_TYPE_XYZ') should return False"
         )
 
 
@@ -1331,9 +1268,7 @@ class TestContractMoleculeDataConverterInterface:
             f"MoleculeDataConverter should have method '{method_name}'"
         )
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"MoleculeDataConverter.{method_name} should be callable"
-        )
+        assert callable(method), f"MoleculeDataConverter.{method_name} should be callable"
 
 
 class TestContractMoleculeFilterInterface:
@@ -1348,13 +1283,9 @@ class TestContractMoleculeFilterInterface:
     def test_filter_has_expected_method(self, mol_pkg, method_name):
         """MoleculeFilter exposes expected method(s)."""
         cls = mol_pkg.MoleculeFilter
-        assert hasattr(cls, method_name), (
-            f"MoleculeFilter should have method '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"MoleculeFilter should have method '{method_name}'"
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"MoleculeFilter.{method_name} should be callable"
-        )
+        assert callable(method), f"MoleculeFilter.{method_name} should be callable"
 
 
 class TestContractVersionContract:
@@ -1377,6 +1308,5 @@ class TestContractVersionContract:
         version = mol_pkg.__version__
         parts = version.split(".")
         assert len(parts) == 3, (
-            f"Expected 3 version components (MAJOR.MINOR.PATCH), "
-            f"got {len(parts)} in '{version}'"
+            f"Expected 3 version components (MAJOR.MINOR.PATCH), got {len(parts)} in '{version}'"
         )

@@ -56,15 +56,12 @@ Verified against exception signatures (from exceptions.py):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
 import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -75,17 +72,15 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.qdpi import (
-    QDPiDatasetHandler,
-    QDPI_SUPPORTED_ELEMENTS,
-)
 from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
     DatasetSpecificHandlerError,
+    HandlerValidationError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
+)
+from milia_pipeline.handlers.implementations.qdpi import (
+    QDPI_SUPPORTED_ELEMENTS,
+    QDPiDatasetHandler,
 )
 
 # Import constants from the same location qdpi.py uses (milia_pipeline.config.config_constants)
@@ -94,19 +89,19 @@ try:
     from milia_pipeline.config.config_constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
 except ImportError:
     ATOMIC_ENERGIES_HARTREE = {
-        1: -0.500273,     # H
-        3: -7.478060,     # Li
-        6: -37.846772,    # C
-        7: -54.583861,    # N
-        8: -75.064579,    # O
-        9: -99.733509,    # F
+        1: -0.500273,  # H
+        3: -7.478060,  # Li
+        6: -37.846772,  # C
+        7: -54.583861,  # N
+        8: -75.064579,  # O
+        9: -99.733509,  # F
         11: -162.254553,  # Na
         15: -341.258600,  # P
         16: -398.100442,  # S
         17: -460.148990,  # Cl
         19: -599.764957,  # K
-        35: -2573.437350, # Br
-        53: -6918.076370, # I
+        35: -2573.437350,  # Br
+        53: -6918.076370,  # I
     }
     HAR2EV = 27.211386245988
 
@@ -114,6 +109,7 @@ except ImportError:
 # ============================================================================
 # HELPERS: Build realistic config mocks for QDPiDatasetHandler
 # ============================================================================
+
 
 def _make_dataset_config(**overrides):
     """
@@ -125,9 +121,7 @@ def _make_dataset_config(**overrides):
     """
     cfg = Mock(spec_set=["dataset_type", "npz_file_path", "dataset_name"])
     cfg.dataset_type = overrides.get("dataset_type", "QDPi")
-    cfg.npz_file_path = overrides.get(
-        "npz_file_path", "~/Chem_Data/MILIA_PyG_Dataset/raw/qdpi.npz"
-    )
+    cfg.npz_file_path = overrides.get("npz_file_path", "~/Chem_Data/MILIA_PyG_Dataset/raw/qdpi.npz")
     cfg.dataset_name = overrides.get("dataset_name", "QDPi")
     return cfg
 
@@ -140,7 +134,7 @@ def _make_filter_config(**overrides):
     """
     cfg = Mock(spec_set=["max_atoms", "allowed_elements", "min_atoms"])
     cfg.max_atoms = overrides.get("max_atoms", 63)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     cfg.min_atoms = overrides.get("min_atoms", 1)
     return cfg
 
@@ -161,14 +155,16 @@ def _make_processing_config(**overrides):
     - calculate_atomization_energy_from: 'energy' (Hartree basis)
     - atomization_energy_key_name: 'atomization_energy'
     """
-    cfg = Mock(spec_set=[
-        "scalar_graph_targets",
-        "node_features",
-        "vector_graph_properties",
-        "variable_len_graph_properties",
-        "calculate_atomization_energy_from",
-        "atomization_energy_key_name",
-    ])
+    cfg = Mock(
+        spec_set=[
+            "scalar_graph_targets",
+            "node_features",
+            "vector_graph_properties",
+            "variable_len_graph_properties",
+            "calculate_atomization_energy_from",
+            "atomization_energy_key_name",
+        ]
+    )
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["energy"])
     cfg.node_features = overrides.get("node_features", ["atoms"])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
@@ -193,7 +189,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.qdpi"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = QDPiDatasetHandler(
         dataset_config=dataset_config,
@@ -252,8 +248,7 @@ def _make_raw_properties(**overrides):
             "coordinates", np.random.randn(num_atoms, 3).astype(np.float64)
         ),
     }
-    for key in ["forces", "molecular_charge", "charge", "charge_type",
-                "formula", "subset"]:
+    for key in ["forces", "molecular_charge", "charge", "charge_type", "formula", "subset"]:
         if key in overrides:
             props[key] = overrides[key]
     return props
@@ -262,6 +257,7 @@ def _make_raw_properties(**overrides):
 # ============================================================================
 # GROUP 1: QDPiDatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetHandlerIdentity(unittest.TestCase):
     """Test QDPiDatasetHandler identity, registration, and basic attributes."""
@@ -286,6 +282,7 @@ class TestQDPiDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """QDPiDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(QDPiDatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -294,8 +291,10 @@ class TestQDPiDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = QDPiDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -310,6 +309,7 @@ class TestQDPiDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: QDPI_SUPPORTED_ELEMENTS constant (3 tests)
 # ============================================================================
+
 
 class TestQDPiSupportedElements(unittest.TestCase):
     """Test QDPI_SUPPORTED_ELEMENTS constant correctness."""
@@ -332,31 +332,26 @@ class TestQDPiSupportedElements(unittest.TestCase):
 # GROUP 3: get_molecular_charge — multi-strategy charge resolution (14 tests)
 # ============================================================================
 
+
 class TestGetMolecularCharge(unittest.TestCase):
     """Test QDπ molecular charge — supports BOTH neutral AND charged molecules."""
 
     def test_strategy1_molecular_charge_key(self):
         """Strategy 1: Returns charge from 'molecular_charge' key."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"molecular_charge": 1}, np.array([11]), "NaCl"
-        )
+        charge = handler.get_molecular_charge({"molecular_charge": 1}, np.array([11]), "NaCl")
         self.assertEqual(charge, 1)
 
     def test_strategy1_negative_charge(self):
         """Strategy 1: Handles negative charge from 'molecular_charge'."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"molecular_charge": -1}, np.array([17]), "Cl-"
-        )
+        charge = handler.get_molecular_charge({"molecular_charge": -1}, np.array([17]), "Cl-")
         self.assertEqual(charge, -1)
 
     def test_strategy1_zero_charge(self):
         """Strategy 1: Handles zero (neutral) from 'molecular_charge'."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"molecular_charge": 0}, np.array([6, 1, 8]), "CH3OH"
-        )
+        charge = handler.get_molecular_charge({"molecular_charge": 0}, np.array([6, 1, 8]), "CH3OH")
         self.assertEqual(charge, 0)
 
     def test_strategy1_numpy_scalar(self):
@@ -386,17 +381,13 @@ class TestGetMolecularCharge(unittest.TestCase):
     def test_strategy2_charge_key(self):
         """Strategy 2: Returns charge from 'charge' key when 'molecular_charge' absent."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"charge": -2}, np.array([8, 8]), "O2^2-"
-        )
+        charge = handler.get_molecular_charge({"charge": -2}, np.array([8, 8]), "O2^2-")
         self.assertEqual(charge, -2)
 
     def test_strategy2_invalid_charge_falls_through(self):
         """Strategy 2: Invalid 'charge' value falls through."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"charge": "bad"}, np.array([6, 1, 8]), "test"
-        )
+        charge = handler.get_molecular_charge({"charge": "bad"}, np.array([6, 1, 8]), "test")
         self.assertEqual(charge, 0)
 
     def test_strategy3_charge_type_neutral(self):
@@ -410,17 +401,13 @@ class TestGetMolecularCharge(unittest.TestCase):
     def test_strategy3_charge_type_charged_calls_infer(self):
         """Strategy 3: charge_type='charged' triggers element inference."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"charge_type": "charged"}, np.array([11]), "Na+"
-        )
+        charge = handler.get_molecular_charge({"charge_type": "charged"}, np.array([11]), "Na+")
         self.assertEqual(charge, 1)
 
     def test_strategy4_default_zero(self):
         """Strategy 4: No charge info at all defaults to 0 (neutral)."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {}, np.array([6, 1, 8]), "unknown"
-        )
+        charge = handler.get_molecular_charge({}, np.array([6, 1, 8]), "unknown")
         self.assertEqual(charge, 0)
 
     def test_returns_int_type(self):
@@ -434,9 +421,7 @@ class TestGetMolecularCharge(unittest.TestCase):
     def test_strategy1_float_converted_to_int(self):
         """Strategy 1: Float molecular_charge is converted to int."""
         handler = _make_handler()
-        charge = handler.get_molecular_charge(
-            {"molecular_charge": 1.0}, np.array([11]), "Na+"
-        )
+        charge = handler.get_molecular_charge({"molecular_charge": 1.0}, np.array([11]), "Na+")
         self.assertEqual(charge, 1)
         self.assertIsInstance(charge, int)
 
@@ -451,6 +436,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # ============================================================================
 # GROUP 4: _infer_charge_from_elements (13 tests)
 # ============================================================================
+
 
 class TestInferChargeFromElements(unittest.TestCase):
     """Test QDπ charge inference heuristic from atomic composition."""
@@ -526,6 +512,7 @@ class TestInferChargeFromElements(unittest.TestCase):
 # GROUP 5: get_required_properties (5 tests)
 # ============================================================================
 
+
 class TestGetRequiredProperties(unittest.TestCase):
     """Test QDπ required properties assembly."""
 
@@ -568,6 +555,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # ============================================================================
 # GROUP 6: validate_molecule_data (12 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeData(unittest.TestCase):
     """Test QDπ molecule validation with exception handling."""
@@ -669,12 +657,15 @@ class TestValidateMoleculeData(unittest.TestCase):
         """Unexpected exceptions wrap into DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=RuntimeError("unexpected boom"),
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=RuntimeError("unexpected boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, 0, "test")
+            handler.validate_molecule_data(props, 0, "test")
 
     def test_molecule_processing_error_wrapped(self):
         """MoleculeProcessingError wraps into DatasetSpecificHandlerError."""
@@ -690,6 +681,7 @@ class TestValidateMoleculeData(unittest.TestCase):
 # ============================================================================
 # GROUP 7: process_property_value — atoms (6 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueAtoms(unittest.TestCase):
     """Test QDπ atoms dtype normalization."""
@@ -736,6 +728,7 @@ class TestProcessPropertyValueAtoms(unittest.TestCase):
 # GROUP 8: process_property_value — coordinates (5 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueCoordinates(unittest.TestCase):
     """Test QDπ coordinates dtype normalization."""
 
@@ -774,6 +767,7 @@ class TestProcessPropertyValueCoordinates(unittest.TestCase):
 # ============================================================================
 # GROUP 9: process_property_value — forces (7 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueForces(unittest.TestCase):
     """Test QDπ forces dtype normalization and validation."""
@@ -822,6 +816,7 @@ class TestProcessPropertyValueForces(unittest.TestCase):
 # GROUP 10: process_property_value — energy (6 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueEnergy(unittest.TestCase):
     """Test QDπ energy handling."""
 
@@ -848,7 +843,9 @@ class TestProcessPropertyValueEnergy(unittest.TestCase):
 
     def test_numpy_scalar_passthrough(self):
         handler = _make_handler()
-        self.assertAlmostEqual(handler.process_property_value("energy", np.float64(-76.3), 0), -76.3)
+        self.assertAlmostEqual(
+            handler.process_property_value("energy", np.float64(-76.3), 0), -76.3
+        )
 
     def test_none_energy_returns_none(self):
         handler = _make_handler()
@@ -858,6 +855,7 @@ class TestProcessPropertyValueEnergy(unittest.TestCase):
 # ============================================================================
 # GROUP 11: process_property_value — molecular_charge / charge (5 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueCharge(unittest.TestCase):
     """Test QDπ charge property processing."""
@@ -893,6 +891,7 @@ class TestProcessPropertyValueCharge(unittest.TestCase):
 # GROUP 12: process_property_value — other/edge cases (5 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueOther(unittest.TestCase):
     """Test QDπ property processing for unrecognized keys and edge cases."""
 
@@ -906,7 +905,9 @@ class TestProcessPropertyValueOther(unittest.TestCase):
 
     def test_dataset_specific_error_reraised(self):
         handler = _make_handler()
-        err = DatasetSpecificHandlerError(dataset_type="QDPi", message="test error", operation="test_op")
+        err = DatasetSpecificHandlerError(
+            dataset_type="QDPi", message="test error", operation="test_op"
+        )
         with patch("numpy.asarray", side_effect=err):
             with self.assertRaises(DatasetSpecificHandlerError):
                 handler.process_property_value("atoms", [1, 2], 0)
@@ -928,6 +929,7 @@ class TestProcessPropertyValueOther(unittest.TestCase):
 # ============================================================================
 # GROUP 13: _is_valid_property (5 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test QDπ property validity checker."""
@@ -951,6 +953,7 @@ class TestIsValidProperty(unittest.TestCase):
 # ============================================================================
 # GROUP 14: _ensure_tensor (8 tests)
 # ============================================================================
+
 
 class TestEnsureTensor(unittest.TestCase):
     """Test QDπ tensor conversion utility."""
@@ -1012,6 +1015,7 @@ class TestEnsureTensor(unittest.TestCase):
 # GROUP 15: enrich_pyg_data — orchestration (10 tests)
 # ============================================================================
 
+
 class TestEnrichPygData(unittest.TestCase):
     """Test QDπ PyG data enrichment orchestration."""
 
@@ -1039,12 +1043,16 @@ class TestEnrichPygData(unittest.TestCase):
         handler = _make_handler()
         coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=np.float64)
         data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, coordinates=coords), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, coordinates=coords), 0, "test"
+        )
         self.assertEqual(result.pos.shape, (3, 3))
 
     def test_energy_set_as_y(self):
         handler = _make_handler()
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
+        )
         self.assertTrue(hasattr(result, "y"))
         self.assertIsInstance(result.y, torch.Tensor)
 
@@ -1052,22 +1060,30 @@ class TestEnrichPygData(unittest.TestCase):
         handler = _make_handler()
         forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0], [-0.1, 0.2, -0.3]], dtype=np.float32)
         data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=3), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=3), 0, "test"
+        )
         self.assertTrue(hasattr(result, "forces"))
 
     def test_molecular_charge_added(self):
         handler = _make_handler()
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3, molecular_charge=1), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3, molecular_charge=1), 0, "test"
+        )
         self.assertEqual(result.molecular_charge.item(), 1)
 
     def test_formula_stored(self):
         handler = _make_handler()
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3, formula="CH3OH"), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3, formula="CH3OH"), 0, "test"
+        )
         self.assertEqual(result.formula, "CH3OH")
 
     def test_subset_stored(self):
         handler = _make_handler()
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3, subset="SPICE"), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3, subset="SPICE"), 0, "test"
+        )
         self.assertEqual(result.subset, "SPICE")
 
     def test_unexpected_error_wrapped(self):
@@ -1082,19 +1098,21 @@ class TestEnrichPygData(unittest.TestCase):
         props = _make_raw_properties(energy=-76.3)
         # Patch _ensure_tensor to raise unexpected error during energy assignment
         original_ensure = handler._ensure_tensor
+
         def failing_ensure(value, dtype, prop_name, mol_idx, ident):
             if prop_name == "energy":
                 raise RuntimeError("unexpected boom")
             return original_ensure(value, dtype, prop_name, mol_idx, ident)
+
         with patch.object(handler, "_ensure_tensor", side_effect=failing_ensure):
             with self.assertRaises(DatasetSpecificHandlerError):
                 handler.enrich_pyg_data(data, props, 0, "test")
 
 
-
 # ============================================================================
 # GROUP 16: enrich_pyg_data — scalar targets via enrich_pyg_data (8 tests)
 # ============================================================================
+
 
 class TestEnrichScalarTargets(unittest.TestCase):
     """Test QDπ scalar target addition via enrich_pyg_data.
@@ -1129,7 +1147,9 @@ class TestEnrichScalarTargets(unittest.TestCase):
         """
         handler = _make_handler()
         data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=np.array(-76.3)), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=np.array(-76.3)), 0, "test"
+        )
         self.assertAlmostEqual(result.y.item(), -76.3, places=3)
 
     def test_none_energy_no_y(self):
@@ -1148,7 +1168,9 @@ class TestEnrichScalarTargets(unittest.TestCase):
         n = 3
         forces = np.array([[0.1, -0.2, 0.3]] * n, dtype=np.float32)
         data = _make_pyg_data(num_atoms=n)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test"
+        )
         self.assertEqual(result.forces.shape, (n, 3))
 
     def test_forces_mismatched_shape_not_added(self):
@@ -1157,9 +1179,13 @@ class TestEnrichScalarTargets(unittest.TestCase):
         # 2 force vectors for 3-node molecule
         forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0]], dtype=np.float32)
         data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, forces=forces), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, forces=forces), 0, "test"
+        )
         # Forces should NOT be set due to shape mismatch
-        self.assertFalse(hasattr(result, "forces") and result.forces is not None and result.forces.shape[0] == 3)
+        self.assertFalse(
+            hasattr(result, "forces") and result.forces is not None and result.forces.shape[0] == 3
+        )
 
     def test_default_charge_zero_when_absent(self):
         """Default molecular_charge is 0 when no charge info present."""
@@ -1174,8 +1200,11 @@ class TestEnrichScalarTargets(unittest.TestCase):
         data = _make_pyg_data()
         props = _make_raw_properties(energy=-76.3)
         err = PropertyEnrichmentError(
-            molecule_index=0, inchi="test", property_name="energy",
-            reason="test error", detail="test"
+            molecule_index=0,
+            inchi="test",
+            property_name="energy",
+            reason="test error",
+            detail="test",
         )
         with patch.object(handler, "_ensure_tensor", side_effect=err):
             with self.assertRaises(PropertyEnrichmentError):
@@ -1186,6 +1215,7 @@ class TestEnrichScalarTargets(unittest.TestCase):
 # GROUP 17: enrich_pyg_data — forces via enrichment (4 tests)
 # ============================================================================
 
+
 class TestEnrichForces(unittest.TestCase):
     """Test QDπ forces addition via enrich_pyg_data."""
 
@@ -1194,7 +1224,9 @@ class TestEnrichForces(unittest.TestCase):
         handler = _make_handler()
         forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0]], dtype=np.float32)
         data = _make_pyg_data(num_atoms=2)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=2), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=2), 0, "test"
+        )
         self.assertTrue(hasattr(result, "forces"))
         self.assertEqual(result.forces.dtype, torch.float32)
 
@@ -1212,7 +1244,9 @@ class TestEnrichForces(unittest.TestCase):
         n = 3
         forces = np.random.randn(n, 3).astype(np.float32)
         data = _make_pyg_data(num_atoms=n)
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test"
+        )
         self.assertEqual(result.forces.shape, (n, 3))
 
     def test_none_forces_not_added(self):
@@ -1228,6 +1262,7 @@ class TestEnrichForces(unittest.TestCase):
 # ============================================================================
 # GROUP 18: enrich_pyg_data — charge and metadata via enrichment (5 tests)
 # ============================================================================
+
 
 class TestEnrichChargeAndMetadata(unittest.TestCase):
     """Test QDπ charge and metadata enrichment via enrich_pyg_data."""
@@ -1251,7 +1286,9 @@ class TestEnrichChargeAndMetadata(unittest.TestCase):
     def test_formula_not_stored_when_absent(self):
         """Formula is not stored when not in raw properties."""
         handler = _make_handler()
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
+        )
         self.assertFalse(hasattr(result, "formula") and result.formula is not None)
 
     def test_subset_stored_as_string(self):
@@ -1265,7 +1302,9 @@ class TestEnrichChargeAndMetadata(unittest.TestCase):
     def test_multiple_metadata_fields_stored(self):
         """Multiple metadata fields (formula, subset, charge) all stored."""
         handler = _make_handler()
-        props = _make_raw_properties(energy=-76.3, formula="NaCl", subset="SPICE", molecular_charge=1)
+        props = _make_raw_properties(
+            energy=-76.3, formula="NaCl", subset="SPICE", molecular_charge=1
+        )
         result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "test")
         self.assertEqual(result.formula, "NaCl")
         self.assertEqual(result.subset, "SPICE")
@@ -1275,6 +1314,7 @@ class TestEnrichChargeAndMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 19: Atomization energy via enrich_pyg_data (6 tests)
 # ============================================================================
+
 
 class TestAtomizationEnergy(unittest.TestCase):
     """Test QDπ atomization energy calculation via enrich_pyg_data.
@@ -1286,18 +1326,25 @@ class TestAtomizationEnergy(unittest.TestCase):
 
     def test_no_atomization_configured(self):
         """No atomization energy when not configured."""
-        pc = _make_processing_config(calculate_atomization_energy_from="", atomization_energy_key_name="")
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="", atomization_energy_key_name=""
+        )
         handler = _make_handler(processing_config=pc)
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
+        )
         self.assertFalse(hasattr(result, "atomization_energy"))
 
     def test_atomization_energy_for_hydrogen(self):
         """Atomization energy computed correctly for single H atom."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy", atomization_energy_key_name="atomization_energy")
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="energy",
+            atomization_energy_key_name="atomization_energy",
+        )
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_H is not None and HAR2EV is not None:
             result = handler.enrich_pyg_data(data, props, 0, "test")
             if hasattr(result, "atomization_energy"):
@@ -1306,12 +1353,15 @@ class TestAtomizationEnergy(unittest.TestCase):
 
     def test_atomization_water_like(self):
         """Atomization energy for water-like molecule (O + 2H)."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy", atomization_energy_key_name="atomization_energy")
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="energy",
+            atomization_energy_key_name="atomization_energy",
+        )
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
         props = _make_raw_properties(energy=-76.3)
-        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8, None)
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8)
+        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_O is not None and atomic_H is not None and HAR2EV is not None:
             result = handler.enrich_pyg_data(data, props, 0, "test")
             if hasattr(result, "atomization_energy"):
@@ -1331,11 +1381,14 @@ class TestAtomizationEnergy(unittest.TestCase):
 
     def test_qdpi_sodium_atomization(self):
         """Atomization energy with QDπ-specific element Na (Z=11)."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy", atomization_energy_key_name="atomization_energy")
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="energy",
+            atomization_energy_key_name="atomization_energy",
+        )
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([11], dtype=torch.long))
         props = _make_raw_properties(energy=-162.0, num_atoms=1, atoms=np.array([11]))
-        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11, None)
+        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11)
         if atomic_Na is not None and HAR2EV is not None:
             result = handler.enrich_pyg_data(data, props, 0, "test")
             if hasattr(result, "atomization_energy"):
@@ -1344,7 +1397,10 @@ class TestAtomizationEnergy(unittest.TestCase):
     @patch("milia_pipeline.handlers.implementations.qdpi.HAR2EV", None)
     def test_missing_har2ev_no_atomization(self):
         """When HAR2EV constant is None, atomization energy is not computed."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy", atomization_energy_key_name="atomization_energy")
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="energy",
+            atomization_energy_key_name="atomization_energy",
+        )
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
@@ -1356,6 +1412,7 @@ class TestAtomizationEnergy(unittest.TestCase):
 # ============================================================================
 # GROUP 20: get_processing_statistics (7 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test QDπ processing statistics generation."""
@@ -1378,7 +1435,12 @@ class TestGetProcessingStatistics(unittest.TestCase):
 
     def test_counts_neutral_vs_charged(self):
         handler = _make_handler()
-        mols = [{"molecular_charge": 0}, {"molecular_charge": 1}, {"molecular_charge": -1}, {"charge": 0}]
+        mols = [
+            {"molecular_charge": 0},
+            {"molecular_charge": 1},
+            {"molecular_charge": -1},
+            {"charge": 0},
+        ]
         stats = handler.get_processing_statistics(mols)
         self.assertEqual(stats["neutral_count"], 2)
         self.assertEqual(stats["charged_count"], 2)
@@ -1404,6 +1466,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # GROUP 21: get_supported_structural_features (3 tests)
 # ============================================================================
 
+
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test QDπ supported structural features."""
 
@@ -1427,6 +1490,7 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # GROUP 22: get_supported_descriptors (4 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test QDπ supported descriptors."""
 
@@ -1446,6 +1510,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # ============================================================================
 # GROUP 23: Transform recommendations and validation (10 tests)
 # ============================================================================
+
 
 class TestTransformRecommendationsAndValidation(unittest.TestCase):
     """Test QDπ transform system: recommendations, suitable, validation."""
@@ -1472,7 +1537,9 @@ class TestTransformRecommendationsAndValidation(unittest.TestCase):
 
     def test_validate_dataset_specific_no_geometric_warns(self):
         warnings = _make_handler()._validate_dataset_specific_transforms(["GCNNorm"])
-        self.assertTrue(any("geometric augmentation" in w.lower() or "RandomRotate" in w for w in warnings))
+        self.assertTrue(
+            any("geometric augmentation" in w.lower() or "RandomRotate" in w for w in warnings)
+        )
 
     def test_validate_dataset_specific_with_geometric_no_warn(self):
         warnings = _make_handler()._validate_dataset_specific_transforms(["RandomRotate"])
@@ -1490,7 +1557,9 @@ class TestTransformRecommendationsAndValidation(unittest.TestCase):
         self.assertTrue(any("edge attribute" in w.lower() for w in warnings))
 
     def test_check_transform_incompatibilities_empty(self):
-        self.assertEqual(_make_handler()._check_transform_incompatibilities(["RandomRotate", "GCNNorm"]), [])
+        self.assertEqual(
+            _make_handler()._check_transform_incompatibilities(["RandomRotate", "GCNNorm"]), []
+        )
 
     def test_get_transform_recommendations_method(self):
         recs = _make_handler()._get_transform_recommendations(["GCNNorm"])
@@ -1500,6 +1569,7 @@ class TestTransformRecommendationsAndValidation(unittest.TestCase):
 # ============================================================================
 # GROUP 24: Suitable transforms detail coverage (4 tests)
 # ============================================================================
+
 
 class TestSuitableTransformsDetail(unittest.TestCase):
     """Test _get_dataset_suitable_transforms with different available transforms."""
@@ -1533,6 +1603,7 @@ class TestSuitableTransformsDetail(unittest.TestCase):
 # GROUP 25: _get_transform_recommendations detail (4 tests)
 # ============================================================================
 
+
 class TestGetTransformRecommendationsDetail(unittest.TestCase):
     """Test _get_transform_recommendations with various transform combinations."""
 
@@ -1563,6 +1634,7 @@ class TestGetTransformRecommendationsDetail(unittest.TestCase):
 # GROUP 26: Integration — full pipeline flow (5 tests)
 # ============================================================================
 
+
 class TestQDPiIntegrationFlow(unittest.TestCase):
     """Integration-level tests for the full QDπ handler flow."""
 
@@ -1584,7 +1656,9 @@ class TestQDPiIntegrationFlow(unittest.TestCase):
         atoms_obj = np.array([6, 1, 8], dtype=object)
         coords_obj = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=object)
         self.assertEqual(handler.process_property_value("atoms", atoms_obj, 0).dtype, np.int64)
-        self.assertEqual(handler.process_property_value("coordinates", coords_obj, 0).dtype, np.float64)
+        self.assertEqual(
+            handler.process_property_value("coordinates", coords_obj, 0).dtype, np.float64
+        )
 
     def test_charged_molecule_pipeline(self):
         """Charged molecule (Na+) processes through full pipeline."""
@@ -1635,6 +1709,7 @@ class TestQDPiIntegrationFlow(unittest.TestCase):
 # GROUP 27: Edge cases and error boundary tests (5 tests)
 # ============================================================================
 
+
 class TestQDPiEdgeCases(unittest.TestCase):
     """Edge cases and boundary condition tests."""
 
@@ -1666,7 +1741,9 @@ class TestQDPiEdgeCases(unittest.TestCase):
             atomization_energy_key_name="",
         )
         handler = _make_handler(processing_config=pc)
-        result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test")
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
+        )
         self.assertFalse(hasattr(result, "atomization_energy"))
 
     def test_coordinate_count_mismatch_logs_warning(self):
@@ -1686,6 +1763,7 @@ class TestQDPiEdgeCases(unittest.TestCase):
 # ============================================================================
 # GROUP 28: QDπ-specific element coverage (4 tests)
 # ============================================================================
+
 
 class TestQDPiElementSpecific(unittest.TestCase):
     """Test QDπ-specific element characteristics."""
@@ -1718,7 +1796,7 @@ class TestQDPiElementSpecific(unittest.TestCase):
         # Na atom (Z=11)
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([11], dtype=torch.long))
         props = _make_raw_properties(energy=-162.0, num_atoms=1, atoms=np.array([11]))
-        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11, None)
+        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11)
         if atomic_Na is not None and HAR2EV is not None:
             result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
             self.assertIsNotNone(result)

@@ -35,32 +35,27 @@ Evidence sources:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.ani1ccx import ANI1ccxDataset
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
 )
+from milia_pipeline.datasets.implementations.ani1ccx import ANI1ccxDataset
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from ani1ccx.py source
@@ -77,39 +72,39 @@ EXPECTED_METADATA_AUTHOR = "Smith, Nebgen, Lubbers, Isayev, Roitberg"
 EXPECTED_METADATA_LICENSE = "CC0"
 
 # ANI-1ccx uses 'ccsd_energy' as its primary energy target (mapped from ccsd(t)_cbs.energy)
-EXPECTED_REQUIRED_PROPERTIES = ('ccsd_energy', 'atoms', 'coordinates')
+EXPECTED_REQUIRED_PROPERTIES = ("ccsd_energy", "atoms", "coordinates")
 EXPECTED_OPTIONAL_PROPERTIES = (
-    'dft_energy',            # wb97x_dz.energy (Hartree) - for comparison
-    'forces',                # wb97x_dz.forces (Hartree/Angstrom)
-    'hirshfeld_charges',     # wb97x_dz.hirshfeld_charges (e)
-    'cm5_charges',           # wb97x_dz.cm5_charges (e)
-    'dipole',                # wb97x_dz.dipole (Debye)
-    'molecule_id',           # Molecule group identifier from HDF5
+    "dft_energy",  # wb97x_dz.energy (Hartree) - for comparison
+    "forces",  # wb97x_dz.forces (Hartree/Angstrom)
+    "hirshfeld_charges",  # wb97x_dz.hirshfeld_charges (e)
+    "cm5_charges",  # wb97x_dz.cm5_charges (e)
+    "dipole",  # wb97x_dz.dipole (Debye)
+    "molecule_id",  # Molecule group identifier from HDF5
 )
 # CRITICAL: ANI-1ccx has NO parseable chemical identifiers — empty tuple
 EXPECTED_IDENTIFIER_KEYS = ()
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": False,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "ani1ccx_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -119,6 +114,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: ANI1ccxDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetClassIdentity(unittest.TestCase):
     """Verify ANI1ccxDataset is a proper BaseDataset subclass with correct identity."""
@@ -168,6 +164,7 @@ class TestANI1ccxDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: ANI1ccxDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetRegistration(unittest.TestCase):
     """Verify ANI1ccxDataset is registered via @register decorator."""
 
@@ -188,6 +185,7 @@ class TestANI1ccxDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class.
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("ANI1ccx")
         self.assertIs(retrieved, ANI1ccxDataset)
 
@@ -197,6 +195,7 @@ class TestANI1ccxDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names.
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("ANI1ccx", all_names)
 
@@ -205,9 +204,7 @@ class TestANI1ccxDatasetRegistration(unittest.TestCase):
 
         Evidence: ani1ccx.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[ANI1ccxDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[ANI1ccxDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -223,6 +220,7 @@ class TestANI1ccxDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: ANI1ccxDataset.metadata — DatasetMetadata (7 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetMetadata(unittest.TestCase):
     """Verify ANI1ccxDataset.metadata is a correctly configured DatasetMetadata.
@@ -274,6 +272,7 @@ class TestANI1ccxDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: ANI1ccxDataset.schema — DatasetSchema (9 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetSchema(unittest.TestCase):
     """Verify ANI1ccxDataset.schema is a correctly configured DatasetSchema.
@@ -352,7 +351,7 @@ class TestANI1ccxDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            ANI1ccxDataset.schema.required_properties = ('modified',)
+            ANI1ccxDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -370,6 +369,7 @@ class TestANI1ccxDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: ANI1ccxDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetFeatures(unittest.TestCase):
     """Verify ANI1ccxDataset.features is a correctly configured DatasetFeatures.
@@ -452,6 +452,7 @@ class TestANI1ccxDatasetFeatures(unittest.TestCase):
 # GROUP 6: ANI1ccxDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetConfigKey(unittest.TestCase):
     """Verify ANI1ccxDataset.config_key is correctly set.
 
@@ -471,6 +472,7 @@ class TestANI1ccxDatasetConfigKey(unittest.TestCase):
 # GROUP 7: ANI1ccxDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetGetRequiredProperties(unittest.TestCase):
     """Verify ANI1ccxDataset.get_required_properties() classmethod.
 
@@ -483,7 +485,7 @@ class TestANI1ccxDatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = ANI1ccxDataset.__dict__.get('get_required_properties')
+        descriptor = ANI1ccxDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -525,6 +527,7 @@ class TestANI1ccxDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: ANI1ccxDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetGetFeatureSupport(unittest.TestCase):
     """Verify ANI1ccxDataset.get_feature_support() classmethod.
 
@@ -534,7 +537,7 @@ class TestANI1ccxDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = ANI1ccxDataset.__dict__.get('get_feature_support')
+        descriptor = ANI1ccxDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -581,6 +584,7 @@ class TestANI1ccxDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: ANI1ccxDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify ANI1ccxDataset.get_molecule_creation_strategy() classmethod.
 
@@ -590,7 +594,7 @@ class TestANI1ccxDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = ANI1ccxDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = ANI1ccxDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -613,7 +617,7 @@ class TestANI1ccxDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(ANI1ccxDataset, 'get_molecule_creation_strategy')
+        method = ANI1ccxDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -621,6 +625,7 @@ class TestANI1ccxDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: ANI1ccxDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
     """Verify ANI1ccxDataset.create_handler() factory method with lazy import.
@@ -632,7 +637,7 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = ANI1ccxDataset.__dict__.get('create_handler')
+        descriptor = ANI1ccxDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -647,13 +652,19 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = ANI1ccxDataset.__dict__['create_handler'].__func__
+        unbound_func = ANI1ccxDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -662,7 +673,7 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
         Evidence: ani1ccx.py create_handler signature: experimental_setup=None.
         """
         sig = inspect.signature(ANI1ccxDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -682,11 +693,11 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockANI1ccxDatasetHandler')
+            mock_handler_cls = Mock(name="MockANI1ccxDatasetHandler")
             mock_module = MagicMock()
             mock_module.ANI1ccxDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.ani1ccx'
+            handler_mod_key = "milia_pipeline.handlers.implementations.ani1ccx"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -721,11 +732,11 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 
         Evidence: ani1ccx.py create_handler() return ANI1ccxDatasetHandler(...).
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -749,7 +760,7 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 
         Evidence: ani1ccx.py: return ANI1ccxDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = ANI1ccxDataset.create_handler(
@@ -762,7 +773,7 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring mentioning lazy import."""
-        method = getattr(ANI1ccxDataset, 'create_handler')
+        method = ANI1ccxDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -770,6 +781,7 @@ class TestANI1ccxDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: ANI1ccxDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify ANI1ccxDataset.handler_class is None (default from BaseDataset).
@@ -807,6 +819,7 @@ class TestANI1ccxDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: ANI1ccxDataset — Method Signatures and Return Annotations (6 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -817,35 +830,35 @@ class TestANI1ccxDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -853,6 +866,7 @@ class TestANI1ccxDatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 13: ANI1ccxDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
     """Verify each ANI1ccxDataset method has a non-empty docstring."""
@@ -863,11 +877,10 @@ class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(ANI1ccxDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
@@ -877,7 +890,7 @@ class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
         Evidence: ani1ccx.py get_required_properties docstring mentions
         'ccsd(t)_cbs.energy' → 'ccsd_energy' mapping.
         """
-        method = getattr(ANI1ccxDataset, 'get_required_properties')
+        method = ANI1ccxDataset.get_required_properties
         doc = method.__doc__
         self.assertIn("ccsd_energy", doc)
 
@@ -886,7 +899,7 @@ class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: ani1ccx.py get_feature_support docstring lists available features.
         """
-        method = getattr(ANI1ccxDataset, 'get_feature_support')
+        method = ANI1ccxDataset.get_feature_support
         doc = method.__doc__
         self.assertIn("vibrational_analysis", doc)
 
@@ -896,7 +909,7 @@ class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
         Evidence: ani1ccx.py get_molecule_creation_strategy docstring explains why
         coordinate_based is used (no parseable identifiers in HDF5).
         """
-        method = getattr(ANI1ccxDataset, 'get_molecule_creation_strategy')
+        method = ANI1ccxDataset.get_molecule_creation_strategy
         doc = method.__doc__
         self.assertIn("coordinate_based", doc)
 
@@ -905,18 +918,21 @@ class TestANI1ccxDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: ANI1ccxDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the ani1ccx implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The ani1ccx.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.ani1ccx as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_ani1ccx_dataset(self):
         """ANI1ccxDataset is importable from the implementations.ani1ccx module."""
         import milia_pipeline.datasets.implementations.ani1ccx as mod
+
         self.assertTrue(hasattr(mod, "ANI1ccxDataset"))
         self.assertIs(mod.ANI1ccxDataset, ANI1ccxDataset)
 
@@ -925,9 +941,7 @@ class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: ani1ccx.py imports from milia_pipeline.datasets.base.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.ani1ccx']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.ani1ccx"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -939,9 +953,7 @@ class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: ani1ccx.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.ani1ccx']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.ani1ccx"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -955,9 +967,7 @@ class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.ani1ccx']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.ani1ccx"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -968,10 +978,12 @@ class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -995,6 +1007,7 @@ class TestANI1ccxDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: ANI1ccxDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestANI1ccxDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with ANI-1ccx.
 
@@ -1013,14 +1026,14 @@ class TestANI1ccxDatasetFeaturesIntegration(unittest.TestCase):
         ANI-1ccx specific: atomization_energy is the only enabled feature.
         Can compute from ccsd(t)_cbs.energy.
         """
-        self.assertTrue(ANI1ccxDataset.features.supports('atomization_energy'))
+        self.assertTrue(ANI1ccxDataset.features.supports("atomization_energy"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         ANI-1ccx specific: no vibrational frequencies available.
         """
-        self.assertFalse(ANI1ccxDataset.features.supports('vibrational_analysis'))
+        self.assertFalse(ANI1ccxDataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -1031,6 +1044,7 @@ class TestANI1ccxDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: ANI1ccxDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -1062,6 +1076,7 @@ class TestANI1ccxDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: ANI1ccxDataset — Edge Cases and Robustness (6 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of ANI1ccxDataset."""
@@ -1107,10 +1122,10 @@ class TestANI1ccxDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockANI1ccxDatasetHandler')
+            mock_handler_cls = Mock(name="MockANI1ccxDatasetHandler")
             mock_module = MagicMock()
             mock_module.ANI1ccxDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.ani1ccx'
+            handler_mod_key = "milia_pipeline.handlers.implementations.ani1ccx"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1138,10 +1153,10 @@ class TestANI1ccxDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. ANI1ccxDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', ANI1ccxDataset.__dict__)
-        self.assertIn('schema', ANI1ccxDataset.__dict__)
-        self.assertIn('features', ANI1ccxDataset.__dict__)
-        self.assertIn('config_key', ANI1ccxDataset.__dict__)
+        self.assertIn("metadata", ANI1ccxDataset.__dict__)
+        self.assertIn("schema", ANI1ccxDataset.__dict__)
+        self.assertIn("features", ANI1ccxDataset.__dict__)
+        self.assertIn("config_key", ANI1ccxDataset.__dict__)
 
     def test_strategy_is_not_identifier_based(self):
         """get_molecule_creation_strategy() does NOT return 'identifier_coordinate_based'.
@@ -1150,13 +1165,14 @@ class TestANI1ccxDatasetEdgeCases(unittest.TestCase):
         ANI-1ccx uses 'coordinate_based' because it has no chemical identifiers.
         """
         result = ANI1ccxDataset.get_molecule_creation_strategy()
-        self.assertNotEqual(result, 'identifier_coordinate_based')
-        self.assertEqual(result, 'coordinate_based')
+        self.assertNotEqual(result, "identifier_coordinate_based")
+        self.assertEqual(result, "coordinate_based")
 
 
 # ============================================================================
 # GROUP 18: ANI1ccxDataset — ANI-1ccx vs ANI-1x Differentiation (7 tests)
 # ============================================================================
+
 
 class TestANI1ccxVsANI1xDifferentiation(unittest.TestCase):
     """Verify ANI-1ccx is correctly differentiated from ANI-1x.
@@ -1189,8 +1205,8 @@ class TestANI1ccxVsANI1xDifferentiation(unittest.TestCase):
         ANI-1ccx maps ccsd(t)_cbs.energy → 'ccsd_energy'.
         """
         required = ANI1ccxDataset.get_required_properties()
-        self.assertIn('ccsd_energy', required)
-        self.assertNotIn('energy', required)
+        self.assertIn("ccsd_energy", required)
+        self.assertNotIn("energy", required)
 
     def test_optional_properties_include_dft_energy(self):
         """ANI-1ccx has 'dft_energy' as optional (DFT energy for comparison).
@@ -1199,7 +1215,7 @@ class TestANI1ccxVsANI1xDifferentiation(unittest.TestCase):
         In ANI-1ccx, it becomes the optional 'dft_energy' for comparison purposes.
         """
         optional = ANI1ccxDataset.schema.optional_properties
-        self.assertIn('dft_energy', optional)
+        self.assertIn("dft_energy", optional)
 
     def test_same_molecule_creation_strategy_as_ani1x(self):
         """ANI-1ccx uses the same coordinate_based strategy as ANI-1x.
@@ -1208,7 +1224,7 @@ class TestANI1ccxVsANI1xDifferentiation(unittest.TestCase):
         """
         self.assertEqual(
             ANI1ccxDataset.get_molecule_creation_strategy(),
-            'coordinate_based',
+            "coordinate_based",
         )
 
     def test_same_identifier_keys_as_ani1x(self):
@@ -1230,30 +1246,31 @@ class TestANI1ccxVsANI1xDifferentiation(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestANI1ccxDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestANI1ccxDatasetRegistration,                  # GROUP 2:  5 tests
-        TestANI1ccxDatasetMetadata,                      # GROUP 3:  7 tests
-        TestANI1ccxDatasetSchema,                        # GROUP 4:  9 tests
-        TestANI1ccxDatasetFeatures,                      # GROUP 5: 10 tests
-        TestANI1ccxDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestANI1ccxDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestANI1ccxDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestANI1ccxDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestANI1ccxDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestANI1ccxDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestANI1ccxDatasetMethodSignatures,              # GROUP 12: 6 tests
-        TestANI1ccxDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestANI1ccxDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestANI1ccxDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestANI1ccxDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestANI1ccxDatasetEdgeCases,                     # GROUP 17: 6 tests
-        TestANI1ccxVsANI1xDifferentiation,              # GROUP 18: 7 tests
+        TestANI1ccxDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestANI1ccxDatasetRegistration,  # GROUP 2:  5 tests
+        TestANI1ccxDatasetMetadata,  # GROUP 3:  7 tests
+        TestANI1ccxDatasetSchema,  # GROUP 4:  9 tests
+        TestANI1ccxDatasetFeatures,  # GROUP 5: 10 tests
+        TestANI1ccxDatasetConfigKey,  # GROUP 6:  2 tests
+        TestANI1ccxDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestANI1ccxDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestANI1ccxDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestANI1ccxDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestANI1ccxDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestANI1ccxDatasetMethodSignatures,  # GROUP 12: 6 tests
+        TestANI1ccxDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestANI1ccxDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestANI1ccxDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestANI1ccxDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestANI1ccxDatasetEdgeCases,  # GROUP 17: 6 tests
+        TestANI1ccxVsANI1xDifferentiation,  # GROUP 18: 7 tests
     ]
 
     for test_class in test_classes:

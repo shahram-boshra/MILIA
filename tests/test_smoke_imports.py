@@ -136,17 +136,10 @@ class TestSmokeImports:
         try:
             mod = importlib.import_module(package_name)
         except ImportError as exc:
-            pytest.fail(
-                f"ImportError when importing '{package_name}': {exc}"
-            )
+            pytest.fail(f"ImportError when importing '{package_name}': {exc}")
         except Exception as exc:
-            pytest.fail(
-                f"Unexpected {type(exc).__name__} when importing "
-                f"'{package_name}': {exc}"
-            )
-        assert mod is not None, (
-            f"importlib.import_module('{package_name}') returned None"
-        )
+            pytest.fail(f"Unexpected {type(exc).__name__} when importing '{package_name}': {exc}")
+        assert mod is not None, f"importlib.import_module('{package_name}') returned None"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("package_name", _ALL_PACKAGES)
@@ -157,8 +150,7 @@ class TestSmokeImports:
         """
         mod = importlib.import_module(package_name)
         assert isinstance(mod, types.ModuleType), (
-            f"'{package_name}' imported as {type(mod).__name__}, "
-            f"expected types.ModuleType"
+            f"'{package_name}' imported as {type(mod).__name__}, expected types.ModuleType"
         )
 
     @pytest.mark.smoke
@@ -184,8 +176,7 @@ class TestSmokeImports:
         """
         mod = importlib.import_module(package_name)
         assert mod.__name__ == package_name, (
-            f"Expected __name__ == '{package_name}', "
-            f"got '{mod.__name__}'"
+            f"Expected __name__ == '{package_name}', got '{mod.__name__}'"
         )
 
     @pytest.mark.smoke

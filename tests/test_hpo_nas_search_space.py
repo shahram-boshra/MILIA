@@ -31,28 +31,29 @@ project_root = Path(__file__).parent.parent.absolute()
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-import pytest
-from typing import Dict, Any, Optional, List, Tuple
-from unittest.mock import patch, MagicMock
 from enum import Enum
+from typing import Any
+from unittest.mock import patch
+
+import pytest
 
 # Import pydantic for type checking and validation error handling
 from pydantic import BaseModel, ValidationError
-
 
 # =============================================================================
 # HELPER FUNCTIONS FOR PYDANTIC MODEL CHECKS
 # =============================================================================
 
+
 def is_pydantic_model(cls: type) -> bool:
     """
     Check if a class is a Pydantic BaseModel subclass.
-    
+
     This replaces the dataclasses.is_dataclass() check for Pydantic V2 models.
-    
+
     Args:
         cls: The class to check.
-        
+
     Returns:
         True if cls is a subclass of pydantic.BaseModel, False otherwise.
     """
@@ -65,43 +66,45 @@ def is_pydantic_model(cls: type) -> bool:
 def is_frozen_pydantic_model(cls: type) -> bool:
     """
     Check if a Pydantic BaseModel is configured as frozen (immutable).
-    
+
     Args:
         cls: The class to check.
-        
+
     Returns:
         True if cls is a frozen Pydantic BaseModel, False otherwise.
     """
     if not is_pydantic_model(cls):
         return False
     # Check model_config for frozen setting
-    model_config = getattr(cls, 'model_config', {})
+    model_config = getattr(cls, "model_config", {})
     if isinstance(model_config, dict):
-        return model_config.get('frozen', False)
+        return model_config.get("frozen", False)
     # For ConfigDict style
-    return getattr(model_config, 'frozen', False)
+    return getattr(model_config, "frozen", False)
 
 
 # =============================================================================
 # MOCK CLASSES FOR EXCEPTIONS (Consolidated - Single Definition)
 # =============================================================================
 
+
 class MockSearchSpaceError(Exception):
     """
     Mock SearchSpaceError for testing.
-    
+
     Mirrors the actual SearchSpaceError from milia_pipeline.exceptions
     with all required attributes for validation testing.
     """
+
     def __init__(
         self,
         message: str,
-        parameter_name: Optional[str] = None,
-        parameter_config: Optional[Dict[str, Any]] = None,
-        study_name: Optional[str] = None,
-        trial_number: Optional[int] = None,
-        details: Optional[str] = None,
-        **kwargs
+        parameter_name: str | None = None,
+        parameter_config: dict[str, Any] | None = None,
+        study_name: str | None = None,
+        trial_number: int | None = None,
+        details: str | None = None,
+        **kwargs,
     ):
         super().__init__(message)
         self.message = message
@@ -124,18 +127,19 @@ class MockSearchSpaceError(Exception):
 class MockConfigurationError(Exception):
     """
     Mock ConfigurationError for testing.
-    
+
     Mirrors the actual ConfigurationError from milia_pipeline.exceptions
     with all required attributes for validation testing.
     """
+
     def __init__(
         self,
         message: str,
-        config_key: Optional[str] = None,
+        config_key: str | None = None,
         actual_value: Any = None,
         expected_value: Any = None,
-        details: Optional[str] = None,
-        **kwargs
+        details: str | None = None,
+        **kwargs,
     ):
         super().__init__(message)
         self.message = message
@@ -162,6 +166,7 @@ class MockConfigurationError(Exception):
 # TEST FIXTURES (Consolidated - Single Definition)
 # =============================================================================
 
+
 @pytest.fixture
 def mock_search_space_error():
     """Provide MockSearchSpaceError class for patching."""
@@ -177,6 +182,7 @@ def mock_configuration_error():
 # =============================================================================
 # LAYERTYPE ENUM TESTS - VALUE VERIFICATION
 # =============================================================================
+
 
 class TestLayerTypeEnumValues:
     """Test LayerType enum value definitions."""
@@ -227,6 +233,7 @@ class TestLayerTypeEnumValues:
 # =============================================================================
 # LAYERTYPE ENUM TESTS - ENUM BEHAVIOR
 # =============================================================================
+
 
 class TestLayerTypeEnumBehavior:
     """Test LayerType enum behaviors and properties."""
@@ -334,6 +341,7 @@ class TestLayerTypeEnumBehavior:
 # LAYERTYPE ENUM TESTS - ATTENTION LAYER IDENTIFICATION
 # =============================================================================
 
+
 class TestLayerTypeAttentionLayers:
     """Test identifying attention-based layer types."""
 
@@ -391,6 +399,7 @@ class TestLayerTypeAttentionLayers:
 # POOLINGTYPE ENUM TESTS - VALUE VERIFICATION
 # =============================================================================
 
+
 class TestPoolingTypeEnumValues:
     """Test PoolingType enum value definitions."""
 
@@ -434,6 +443,7 @@ class TestPoolingTypeEnumValues:
 # =============================================================================
 # POOLINGTYPE ENUM TESTS - ENUM BEHAVIOR
 # =============================================================================
+
 
 class TestPoolingTypeEnumBehavior:
     """Test PoolingType enum behaviors and properties."""
@@ -521,6 +531,7 @@ class TestPoolingTypeEnumBehavior:
 # AGGREGATIONTYPE ENUM TESTS - VALUE VERIFICATION
 # =============================================================================
 
+
 class TestAggregationTypeEnumValues:
     """Test AggregationType enum value definitions."""
 
@@ -558,6 +569,7 @@ class TestAggregationTypeEnumValues:
 # =============================================================================
 # AGGREGATIONTYPE ENUM TESTS - ENUM BEHAVIOR
 # =============================================================================
+
 
 class TestAggregationTypeEnumBehavior:
     """Test AggregationType enum behaviors and properties."""
@@ -644,6 +656,7 @@ class TestAggregationTypeEnumBehavior:
 # ACTIVATIONTYPE ENUM TESTS - VALUE VERIFICATION
 # =============================================================================
 
+
 class TestActivationTypeEnumValues:
     """Test ActivationType enum value definitions."""
 
@@ -693,6 +706,7 @@ class TestActivationTypeEnumValues:
 # =============================================================================
 # ACTIVATIONTYPE ENUM TESTS - ENUM BEHAVIOR
 # =============================================================================
+
 
 class TestActivationTypeEnumBehavior:
     """Test ActivationType enum behaviors and properties."""
@@ -781,6 +795,7 @@ class TestActivationTypeEnumBehavior:
 # ENUM CROSS-TYPE TESTS
 # =============================================================================
 
+
 class TestEnumCrossTypeComparisons:
     """Test comparisons and interactions across different enum types."""
 
@@ -793,14 +808,14 @@ class TestEnumCrossTypeComparisons:
 
     def test_pooling_type_not_equal_aggregation_type(self):
         """Test PoolingType and AggregationType members are not equal."""
-        from milia_pipeline.models.hpo.nas.search_space import PoolingType, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, PoolingType
 
         # MEAN exists in both but should not be equal
         assert PoolingType.MEAN != AggregationType.MEAN
 
     def test_aggregation_type_not_equal_activation_type(self):
         """Test AggregationType and ActivationType are different enums."""
-        from milia_pipeline.models.hpo.nas.search_space import AggregationType, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, AggregationType
 
         # Different enums should not be equal
         for agg in AggregationType:
@@ -810,7 +825,10 @@ class TestEnumCrossTypeComparisons:
     def test_all_enum_types_have_unique_identity(self):
         """Test all enum types maintain their unique identity."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            LayerType, PoolingType, AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            LayerType,
+            PoolingType,
         )
 
         assert LayerType is not PoolingType
@@ -821,7 +839,10 @@ class TestEnumCrossTypeComparisons:
     def test_enums_can_be_used_together_in_dict(self):
         """Test different enum types can be used together as dict keys."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            LayerType, PoolingType, AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            LayerType,
+            PoolingType,
         )
 
         config = {
@@ -839,7 +860,10 @@ class TestEnumCrossTypeComparisons:
     def test_enums_can_be_stored_in_mixed_list(self):
         """Test different enum types can be stored in same list."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            LayerType, PoolingType, AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            LayerType,
+            PoolingType,
         )
 
         mixed_list = [
@@ -859,6 +883,7 @@ class TestEnumCrossTypeComparisons:
 # =============================================================================
 # MODULE EXPORTS TESTS FOR ENUMS
 # =============================================================================
+
 
 class TestEnumModuleExports:
     """Test enum classes are properly exported from module."""
@@ -890,10 +915,10 @@ class TestEnumModuleExports:
     def test_can_import_all_enums_from_module(self):
         """Test all enums can be imported directly from module."""
         from milia_pipeline.models.hpo.nas.search_space import (
+            ActivationType,
+            AggregationType,
             LayerType,
             PoolingType,
-            AggregationType,
-            ActivationType,
         )
 
         assert LayerType is not None
@@ -905,6 +930,7 @@ class TestEnumModuleExports:
 # =============================================================================
 # ENUM STRING REPRESENTATION TESTS
 # =============================================================================
+
 
 class TestEnumStringRepresentations:
     """Test string representations of enum members."""
@@ -956,14 +982,17 @@ class TestEnumStringRepresentations:
         str_result = str(PoolingType.MEAN)
         assert "MEAN" in str_result
 
+
 # =============================================================================
 # LAYERCONFIG TEST FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def sample_gcn_layer_data():
     """Provide sample data for GCN layer configuration."""
     from milia_pipeline.models.hpo.nas.search_space import LayerType
+
     return {
         "type": LayerType.GCN,
         "hidden_channels": 64,
@@ -974,6 +1003,7 @@ def sample_gcn_layer_data():
 def sample_gat_layer_data():
     """Provide sample data for GAT layer configuration."""
     from milia_pipeline.models.hpo.nas.search_space import LayerType
+
     return {
         "type": LayerType.GAT,
         "hidden_channels": 64,
@@ -1002,10 +1032,11 @@ def sample_layer_dict():
 # LAYERCONFIG INITIALIZATION TESTS
 # =============================================================================
 
+
 class TestLayerConfigInitialization:
     """Test LayerConfig initialization."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_minimal_init(self):
         """Test LayerConfig with minimal required parameters."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1018,7 +1049,7 @@ class TestLayerConfigInitialization:
         assert config.type == LayerType.GCN
         assert config.hidden_channels == 64
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_full_init(self):
         """Test LayerConfig with all parameters."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1041,7 +1072,7 @@ class TestLayerConfigInitialization:
         assert config.batch_norm is True
         assert config.residual is True
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_default_heads(self):
         """Test LayerConfig default heads is 1."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1053,7 +1084,7 @@ class TestLayerConfigInitialization:
 
         assert config.heads == 1
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_default_dropout(self):
         """Test LayerConfig default dropout is 0.0."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1065,7 +1096,7 @@ class TestLayerConfigInitialization:
 
         assert config.dropout == 0.0
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_default_activation(self):
         """Test LayerConfig default activation is 'relu'."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1077,7 +1108,7 @@ class TestLayerConfigInitialization:
 
         assert config.activation == "relu"
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_default_batch_norm(self):
         """Test LayerConfig default batch_norm is True."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1089,7 +1120,7 @@ class TestLayerConfigInitialization:
 
         assert config.batch_norm is True
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_default_residual(self):
         """Test LayerConfig default residual is False."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1106,9 +1137,10 @@ class TestLayerConfigInitialization:
 # LAYERCONFIG PYDANTIC MODEL PROPERTIES TESTS
 # =============================================================================
 
+
 class TestLayerConfigPydanticModelProperties:
     """Test LayerConfig Pydantic BaseModel properties.
-    
+
     Note: LayerConfig is a Pydantic V2 BaseModel with frozen=True,
     not a dataclass. Modifying attributes raises pydantic.ValidationError.
     """
@@ -1188,10 +1220,11 @@ class TestLayerConfigPydanticModelProperties:
 # LAYERCONFIG VALIDATION TESTS
 # =============================================================================
 
+
 class TestLayerConfigValidation:
     """Test LayerConfig __post_init__ validation."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_zero_hidden_channels(self):
         """Test LayerConfig rejects hidden_channels = 0."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1202,9 +1235,12 @@ class TestLayerConfigValidation:
                 hidden_channels=0,
             )
 
-        assert "hidden_channels" in str(exc_info.value).lower() or "positive" in str(exc_info.value).lower()
+        assert (
+            "hidden_channels" in str(exc_info.value).lower()
+            or "positive" in str(exc_info.value).lower()
+        )
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_negative_hidden_channels(self):
         """Test LayerConfig rejects negative hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1215,9 +1251,12 @@ class TestLayerConfigValidation:
                 hidden_channels=-64,
             )
 
-        assert "hidden_channels" in str(exc_info.value).lower() or "positive" in str(exc_info.value).lower()
+        assert (
+            "hidden_channels" in str(exc_info.value).lower()
+            or "positive" in str(exc_info.value).lower()
+        )
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_zero_heads(self):
         """Test LayerConfig rejects heads = 0."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1231,7 +1270,7 @@ class TestLayerConfigValidation:
 
         assert "heads" in str(exc_info.value).lower() or "1" in str(exc_info.value)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_negative_heads(self):
         """Test LayerConfig rejects negative heads."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1245,7 +1284,7 @@ class TestLayerConfigValidation:
 
         assert "heads" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_negative_dropout(self):
         """Test LayerConfig rejects negative dropout."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1259,7 +1298,7 @@ class TestLayerConfigValidation:
 
         assert "dropout" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_rejects_dropout_greater_than_one(self):
         """Test LayerConfig rejects dropout > 1.0."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1273,7 +1312,7 @@ class TestLayerConfigValidation:
 
         assert "dropout" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_accepts_dropout_zero(self):
         """Test LayerConfig accepts dropout = 0.0 (boundary)."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1286,7 +1325,7 @@ class TestLayerConfigValidation:
 
         assert config.dropout == 0.0
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_accepts_dropout_one(self):
         """Test LayerConfig accepts dropout = 1.0 (boundary)."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1299,7 +1338,7 @@ class TestLayerConfigValidation:
 
         assert config.dropout == 1.0
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_accepts_heads_one(self):
         """Test LayerConfig accepts heads = 1 (boundary)."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1312,7 +1351,7 @@ class TestLayerConfigValidation:
 
         assert config.heads == 1
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_accepts_large_heads(self):
         """Test LayerConfig accepts large heads value."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1325,7 +1364,7 @@ class TestLayerConfigValidation:
 
         assert config.heads == 16
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_accepts_large_hidden_channels(self):
         """Test LayerConfig accepts large hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1342,10 +1381,11 @@ class TestLayerConfigValidation:
 # LAYERCONFIG VALIDATION ERROR ATTRIBUTES TESTS
 # =============================================================================
 
+
 class TestLayerConfigValidationErrorAttributes:
     """Test LayerConfig validation error attributes."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_hidden_channels_error_has_config_key(self):
         """Test hidden_channels error includes config_key."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1357,10 +1397,10 @@ class TestLayerConfigValidationErrorAttributes:
             )
 
         error = exc_info.value
-        if hasattr(error, 'config_key'):
+        if hasattr(error, "config_key"):
             assert "hidden_channels" in error.config_key
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_hidden_channels_error_has_actual_value(self):
         """Test hidden_channels error includes actual_value."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1372,10 +1412,10 @@ class TestLayerConfigValidationErrorAttributes:
             )
 
         error = exc_info.value
-        if hasattr(error, 'actual_value'):
+        if hasattr(error, "actual_value"):
             assert error.actual_value == -100
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_heads_error_has_config_key(self):
         """Test heads error includes config_key."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1388,10 +1428,10 @@ class TestLayerConfigValidationErrorAttributes:
             )
 
         error = exc_info.value
-        if hasattr(error, 'config_key'):
+        if hasattr(error, "config_key"):
             assert "heads" in error.config_key
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_dropout_error_has_config_key(self):
         """Test dropout error includes config_key."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1404,7 +1444,7 @@ class TestLayerConfigValidationErrorAttributes:
             )
 
         error = exc_info.value
-        if hasattr(error, 'config_key'):
+        if hasattr(error, "config_key"):
             assert "dropout" in error.config_key
 
 
@@ -1412,10 +1452,11 @@ class TestLayerConfigValidationErrorAttributes:
 # LAYERCONFIG TO_DICT METHOD TESTS
 # =============================================================================
 
+
 class TestLayerConfigToDict:
     """Test LayerConfig.to_dict() method."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_returns_dict(self):
         """Test to_dict returns a dictionary."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1429,7 +1470,7 @@ class TestLayerConfigToDict:
 
         assert isinstance(result, dict)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_type_as_string(self):
         """Test to_dict converts type to string value."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1441,10 +1482,10 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['type'] == "gat"
-        assert isinstance(result['type'], str)
+        assert result["type"] == "gat"
+        assert isinstance(result["type"], str)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_hidden_channels(self):
         """Test to_dict contains hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1456,9 +1497,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['hidden_channels'] == 128
+        assert result["hidden_channels"] == 128
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_heads(self):
         """Test to_dict contains heads."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1471,9 +1512,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['heads'] == 8
+        assert result["heads"] == 8
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_dropout(self):
         """Test to_dict contains dropout."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1486,9 +1527,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['dropout'] == 0.3
+        assert result["dropout"] == 0.3
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_activation(self):
         """Test to_dict contains activation."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1501,9 +1542,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['activation'] == "gelu"
+        assert result["activation"] == "gelu"
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_batch_norm(self):
         """Test to_dict contains batch_norm."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1516,9 +1557,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['batch_norm'] is False
+        assert result["batch_norm"] is False
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_residual(self):
         """Test to_dict contains residual."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1531,9 +1572,9 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        assert result['residual'] is True
+        assert result["residual"] is True
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_contains_all_seven_keys(self):
         """Test to_dict contains all seven expected keys."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1545,11 +1586,18 @@ class TestLayerConfigToDict:
 
         result = config.to_dict()
 
-        expected_keys = {'type', 'hidden_channels', 'heads', 'dropout', 
-                        'activation', 'batch_norm', 'residual'}
+        expected_keys = {
+            "type",
+            "hidden_channels",
+            "heads",
+            "dropout",
+            "activation",
+            "batch_norm",
+            "residual",
+        }
         assert set(result.keys()) == expected_keys
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_to_dict_full_example(self):
         """Test to_dict with full configuration."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1567,13 +1615,13 @@ class TestLayerConfigToDict:
         result = config.to_dict()
 
         assert result == {
-            'type': 'transformer',
-            'hidden_channels': 256,
-            'heads': 8,
-            'dropout': 0.1,
-            'activation': 'gelu',
-            'batch_norm': True,
-            'residual': True,
+            "type": "transformer",
+            "hidden_channels": 256,
+            "heads": 8,
+            "dropout": 0.1,
+            "activation": "gelu",
+            "batch_norm": True,
+            "residual": True,
         }
 
 
@@ -1581,31 +1629,32 @@ class TestLayerConfigToDict:
 # LAYERCONFIG FROM_DICT CLASS METHOD TESTS
 # =============================================================================
 
+
 class TestLayerConfigFromDict:
     """Test LayerConfig.from_dict() class method."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_returns_layer_config(self):
         """Test from_dict returns LayerConfig instance."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
+            "type": "gcn",
+            "hidden_channels": 64,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert isinstance(result, LayerConfig)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_converts_string_type(self):
         """Test from_dict converts string type to LayerType enum."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
 
         config_dict = {
-            'type': 'gat',
-            'hidden_channels': 64,
+            "type": "gat",
+            "hidden_channels": 64,
         }
 
         result = LayerConfig.from_dict(config_dict)
@@ -1613,110 +1662,110 @@ class TestLayerConfigFromDict:
         assert result.type == LayerType.GAT
         assert isinstance(result.type, LayerType)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_preserves_layer_type_enum(self):
         """Test from_dict preserves LayerType enum if already enum."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
 
         config_dict = {
-            'type': LayerType.SAGE,
-            'hidden_channels': 128,
+            "type": LayerType.SAGE,
+            "hidden_channels": 128,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.type == LayerType.SAGE
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_hidden_channels(self):
         """Test from_dict sets hidden_channels correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 256,
+            "type": "gcn",
+            "hidden_channels": 256,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.hidden_channels == 256
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_heads(self):
         """Test from_dict sets heads correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gat',
-            'hidden_channels': 64,
-            'heads': 4,
+            "type": "gat",
+            "hidden_channels": 64,
+            "heads": 4,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.heads == 4
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_dropout(self):
         """Test from_dict sets dropout correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
-            'dropout': 0.5,
+            "type": "gcn",
+            "hidden_channels": 64,
+            "dropout": 0.5,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.dropout == 0.5
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_activation(self):
         """Test from_dict sets activation correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
-            'activation': 'elu',
+            "type": "gcn",
+            "hidden_channels": 64,
+            "activation": "elu",
         }
 
         result = LayerConfig.from_dict(config_dict)
 
-        assert result.activation == 'elu'
+        assert result.activation == "elu"
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_batch_norm(self):
         """Test from_dict sets batch_norm correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
-            'batch_norm': False,
+            "type": "gcn",
+            "hidden_channels": 64,
+            "batch_norm": False,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.batch_norm is False
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_sets_residual(self):
         """Test from_dict sets residual correctly."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
-            'residual': True,
+            "type": "gcn",
+            "hidden_channels": 64,
+            "residual": True,
         }
 
         result = LayerConfig.from_dict(config_dict)
 
         assert result.residual is True
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_full_roundtrip(self):
         """Test to_dict -> from_dict roundtrip."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1726,7 +1775,7 @@ class TestLayerConfigFromDict:
             hidden_channels=128,
             heads=4,
             dropout=0.2,
-            activation='gelu',
+            activation="gelu",
             batch_norm=True,
             residual=True,
         )
@@ -1742,32 +1791,33 @@ class TestLayerConfigFromDict:
         assert restored.batch_norm == original.batch_norm
         assert restored.residual == original.residual
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_from_dict_does_not_modify_input(self):
         """Test from_dict does not modify input dictionary."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig
 
         config_dict = {
-            'type': 'gcn',
-            'hidden_channels': 64,
+            "type": "gcn",
+            "hidden_channels": 64,
         }
 
         original_dict = config_dict.copy()
         LayerConfig.from_dict(config_dict)
 
         # Original dict keys should be unchanged
-        assert 'type' in config_dict
-        assert 'hidden_channels' in config_dict
+        assert "type" in config_dict
+        assert "hidden_channels" in config_dict
 
 
 # =============================================================================
 # LAYERCONFIG EQUALITY AND HASHING TESTS
 # =============================================================================
 
+
 class TestLayerConfigEqualityAndHashing:
     """Test LayerConfig equality and hashing behavior."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_equal_same_values(self):
         """Test LayerConfigs with same values are equal."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1788,7 +1838,7 @@ class TestLayerConfigEqualityAndHashing:
 
         assert config1 == config2
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_not_equal_different_type(self):
         """Test LayerConfigs with different types are not equal."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1805,7 +1855,7 @@ class TestLayerConfigEqualityAndHashing:
 
         assert config1 != config2
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_not_equal_different_channels(self):
         """Test LayerConfigs with different hidden_channels are not equal."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1822,7 +1872,7 @@ class TestLayerConfigEqualityAndHashing:
 
         assert config1 != config2
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_hashable(self):
         """Test LayerConfig is hashable (can be used in sets/dicts)."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1836,7 +1886,7 @@ class TestLayerConfigEqualityAndHashing:
         hash_value = hash(config)
         assert isinstance(hash_value, int)
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_in_set(self):
         """Test LayerConfig can be added to set."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1850,7 +1900,7 @@ class TestLayerConfigEqualityAndHashing:
         # config1 and config3 should be deduplicated
         assert len(config_set) == 2
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_as_dict_key(self):
         """Test LayerConfig can be used as dictionary key."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1866,10 +1916,11 @@ class TestLayerConfigEqualityAndHashing:
 # LAYERCONFIG WITH ALL LAYER TYPES TESTS
 # =============================================================================
 
+
 class TestLayerConfigAllLayerTypes:
     """Test LayerConfig with all LayerType values."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_gcn(self):
         """Test LayerConfig with GCN type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1877,7 +1928,7 @@ class TestLayerConfigAllLayerTypes:
         config = LayerConfig(type=LayerType.GCN, hidden_channels=64)
         assert config.type == LayerType.GCN
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_gat(self):
         """Test LayerConfig with GAT type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1886,7 +1937,7 @@ class TestLayerConfigAllLayerTypes:
         assert config.type == LayerType.GAT
         assert config.heads == 4
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_sage(self):
         """Test LayerConfig with SAGE type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1894,7 +1945,7 @@ class TestLayerConfigAllLayerTypes:
         config = LayerConfig(type=LayerType.SAGE, hidden_channels=64)
         assert config.type == LayerType.SAGE
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_gin(self):
         """Test LayerConfig with GIN type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1902,7 +1953,7 @@ class TestLayerConfigAllLayerTypes:
         config = LayerConfig(type=LayerType.GIN, hidden_channels=64)
         assert config.type == LayerType.GIN
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_gatv2(self):
         """Test LayerConfig with GATV2 type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1911,7 +1962,7 @@ class TestLayerConfigAllLayerTypes:
         assert config.type == LayerType.GATV2
         assert config.heads == 8
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_transformer(self):
         """Test LayerConfig with TRANSFORMER type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1920,7 +1971,7 @@ class TestLayerConfigAllLayerTypes:
         assert config.type == LayerType.TRANSFORMER
         assert config.heads == 16
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_with_pna(self):
         """Test LayerConfig with PNA type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1932,6 +1983,7 @@ class TestLayerConfigAllLayerTypes:
 # =============================================================================
 # LAYERCONFIG MODULE EXPORT TESTS
 # =============================================================================
+
 
 class TestLayerConfigModuleExport:
     """Test LayerConfig module export."""
@@ -1953,10 +2005,11 @@ class TestLayerConfigModuleExport:
 # LAYERCONFIG REPR AND STR TESTS
 # =============================================================================
 
+
 class TestLayerConfigRepresentation:
     """Test LayerConfig repr and str methods."""
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_repr_includes_class_name(self):
         """Test LayerConfig repr includes class name."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1966,7 +2019,7 @@ class TestLayerConfigRepresentation:
 
         assert "LayerConfig" in repr_str
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_repr_includes_type(self):
         """Test LayerConfig repr includes type."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1976,7 +2029,7 @@ class TestLayerConfigRepresentation:
 
         assert "GAT" in repr_str or "gat" in repr_str.lower()
 
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_repr_includes_hidden_channels(self):
         """Test LayerConfig repr includes hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import LayerConfig, LayerType
@@ -1991,23 +2044,24 @@ class TestLayerConfigRepresentation:
 # GNNARCHITECTURESPACE TEST FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def sample_arch_space_dict():
     """Provide sample architecture space as dictionary."""
     return {
-        'min_layers': 2,
-        'max_layers': 6,
-        'layer_types': ['gcn', 'gat'],
-        'hidden_channels': [64, 128, 256],
-        'heads': [1, 2, 4],
-        'dropout_range': (0.0, 0.5),
-        'allow_skip_connections': True,
-        'allow_dense_connections': False,
-        'allow_mixed_layers': True,
-        'pooling_types': ['mean', 'attention'],
-        'aggregation_types': ['mean', 'sum'],
-        'activation_types': ['relu', 'gelu'],
-        'batch_norm_options': [True, False],
+        "min_layers": 2,
+        "max_layers": 6,
+        "layer_types": ["gcn", "gat"],
+        "hidden_channels": [64, 128, 256],
+        "heads": [1, 2, 4],
+        "dropout_range": (0.0, 0.5),
+        "allow_skip_connections": True,
+        "allow_dense_connections": False,
+        "allow_mixed_layers": True,
+        "pooling_types": ["mean", "attention"],
+        "aggregation_types": ["mean", "sum"],
+        "activation_types": ["relu", "gelu"],
+        "batch_norm_options": [True, False],
     }
 
 
@@ -2015,14 +2069,14 @@ def sample_arch_space_dict():
 def minimal_arch_space_dict():
     """Provide minimal valid architecture space as dictionary."""
     return {
-        'min_layers': 1,
-        'max_layers': 2,
-        'layer_types': ['gcn'],
-        'hidden_channels': [64],
-        'heads': [1],
-        'dropout_range': (0.0, 0.3),
-        'pooling_types': ['mean'],
-        'aggregation_types': ['mean'],
+        "min_layers": 1,
+        "max_layers": 2,
+        "layer_types": ["gcn"],
+        "hidden_channels": [64],
+        "heads": [1],
+        "dropout_range": (0.0, 0.3),
+        "pooling_types": ["mean"],
+        "aggregation_types": ["mean"],
     }
 
 
@@ -2030,10 +2084,11 @@ def minimal_arch_space_dict():
 # GNNARCHITECTURESPACE INITIALIZATION TESTS - DEFAULT VALUES
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceDefaultValues:
     """Test GNNArchitectureSpace default initialization values."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_min_layers(self):
         """Test default min_layers is 2."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2042,7 +2097,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.min_layers == 2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_max_layers(self):
         """Test default max_layers is 8."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2051,7 +2106,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.max_layers == 8
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_layer_types(self):
         """Test default layer_types contains GCN, GAT, SAGE."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2063,7 +2118,7 @@ class TestGNNArchitectureSpaceDefaultValues:
         assert LayerType.SAGE in space.layer_types
         assert len(space.layer_types) == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_hidden_channels(self):
         """Test default hidden_channels is [32, 64, 128, 256]."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2072,7 +2127,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.hidden_channels == [32, 64, 128, 256]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_heads(self):
         """Test default heads is [1, 2, 4, 8]."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2081,7 +2136,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.heads == [1, 2, 4, 8]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_dropout_range(self):
         """Test default dropout_range is (0.0, 0.6)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2090,7 +2145,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.dropout_range == (0.0, 0.6)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_allow_skip_connections(self):
         """Test default allow_skip_connections is True."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2099,7 +2154,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.allow_skip_connections is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_allow_dense_connections(self):
         """Test default allow_dense_connections is False."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2108,7 +2163,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.allow_dense_connections is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_allow_mixed_layers(self):
         """Test default allow_mixed_layers is True."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2117,7 +2172,7 @@ class TestGNNArchitectureSpaceDefaultValues:
 
         assert space.allow_mixed_layers is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_pooling_types(self):
         """Test default pooling_types contains MEAN, ATTENTION."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
@@ -2128,10 +2183,10 @@ class TestGNNArchitectureSpaceDefaultValues:
         assert PoolingType.ATTENTION in space.pooling_types
         assert len(space.pooling_types) == 2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_aggregation_types(self):
         """Test default aggregation_types contains MEAN, SUM."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace()
 
@@ -2139,10 +2194,10 @@ class TestGNNArchitectureSpaceDefaultValues:
         assert AggregationType.SUM in space.aggregation_types
         assert len(space.aggregation_types) == 2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_activation_types(self):
         """Test default activation_types contains RELU, GELU, ELU."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace()
 
@@ -2151,7 +2206,7 @@ class TestGNNArchitectureSpaceDefaultValues:
         assert ActivationType.ELU in space.activation_types
         assert len(space.activation_types) == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_default_batch_norm_options(self):
         """Test default batch_norm_options is [True, False]."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2165,10 +2220,11 @@ class TestGNNArchitectureSpaceDefaultValues:
 # GNNARCHITECTURESPACE INITIALIZATION TESTS - CUSTOM VALUES
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceCustomValues:
     """Test GNNArchitectureSpace with custom initialization values."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_min_max_layers(self):
         """Test custom min_layers and max_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2178,18 +2234,16 @@ class TestGNNArchitectureSpaceCustomValues:
         assert space.min_layers == 3
         assert space.max_layers == 10
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_layer_types(self):
         """Test custom layer_types."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
 
-        space = GNNArchitectureSpace(
-            layer_types=[LayerType.GIN, LayerType.PNA]
-        )
+        space = GNNArchitectureSpace(layer_types=[LayerType.GIN, LayerType.PNA])
 
         assert space.layer_types == [LayerType.GIN, LayerType.PNA]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_hidden_channels(self):
         """Test custom hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2198,7 +2252,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.hidden_channels == [128, 256, 512, 1024]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_heads(self):
         """Test custom heads."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2207,7 +2261,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.heads == [2, 4, 8, 16]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_dropout_range(self):
         """Test custom dropout_range."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2216,7 +2270,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.dropout_range == (0.1, 0.4)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_allow_skip_connections_false(self):
         """Test allow_skip_connections set to False."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2225,7 +2279,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.allow_skip_connections is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_allow_dense_connections_true(self):
         """Test allow_dense_connections set to True."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2234,7 +2288,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.allow_dense_connections is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_allow_mixed_layers_false(self):
         """Test allow_mixed_layers set to False."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2243,7 +2297,7 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.allow_mixed_layers is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_pooling_types(self):
         """Test custom pooling_types."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
@@ -2254,10 +2308,10 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.pooling_types == [PoolingType.MAX, PoolingType.SUM, PoolingType.TOPK]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_aggregation_types(self):
         """Test custom aggregation_types."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(
             aggregation_types=[AggregationType.MULTI, AggregationType.LSTM]
@@ -2265,18 +2319,16 @@ class TestGNNArchitectureSpaceCustomValues:
 
         assert space.aggregation_types == [AggregationType.MULTI, AggregationType.LSTM]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_activation_types(self):
         """Test custom activation_types."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
-        space = GNNArchitectureSpace(
-            activation_types=[ActivationType.SILU, ActivationType.PRELU]
-        )
+        space = GNNArchitectureSpace(activation_types=[ActivationType.SILU, ActivationType.PRELU])
 
         assert space.activation_types == [ActivationType.SILU, ActivationType.PRELU]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_custom_batch_norm_options(self):
         """Test custom batch_norm_options."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2290,9 +2342,10 @@ class TestGNNArchitectureSpaceCustomValues:
 # GNNARCHITECTURESPACE PYDANTIC MODEL PROPERTIES TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpacePydanticModelProperties:
     """Test GNNArchitectureSpace Pydantic BaseModel properties.
-    
+
     Note: GNNArchitectureSpace is a mutable Pydantic V2 BaseModel,
     not a dataclass or frozen model. Attributes can be modified after creation.
     """
@@ -2337,10 +2390,11 @@ class TestGNNArchitectureSpacePydanticModelProperties:
 # GNNARCHITECTURESPACE VALIDATION TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceValidation:
     """Test GNNArchitectureSpace __post_init__ validation."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_min_layers_zero(self):
         """Test rejects min_layers = 0."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2350,7 +2404,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "min_layers" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_min_layers_negative(self):
         """Test rejects negative min_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2360,7 +2414,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "min_layers" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_max_layers_less_than_min(self):
         """Test rejects max_layers < min_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2368,9 +2422,12 @@ class TestGNNArchitectureSpaceValidation:
         with pytest.raises(Exception) as exc_info:
             GNNArchitectureSpace(min_layers=5, max_layers=3)
 
-        assert "max_layers" in str(exc_info.value).lower() or "min_layers" in str(exc_info.value).lower()
+        assert (
+            "max_layers" in str(exc_info.value).lower()
+            or "min_layers" in str(exc_info.value).lower()
+        )
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_accepts_min_layers_equal_max_layers(self):
         """Test accepts min_layers == max_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2380,7 +2437,7 @@ class TestGNNArchitectureSpaceValidation:
         assert space.min_layers == 3
         assert space.max_layers == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_empty_layer_types(self):
         """Test rejects empty layer_types list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2390,7 +2447,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "layer_types" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_empty_hidden_channels(self):
         """Test rejects empty hidden_channels list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2400,7 +2457,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "hidden_channels" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_zero_hidden_channels(self):
         """Test rejects hidden_channels containing zero."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2410,7 +2467,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "hidden_channels" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_negative_hidden_channels(self):
         """Test rejects hidden_channels containing negative value."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2420,7 +2477,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "hidden_channels" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_empty_heads(self):
         """Test rejects empty heads list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2430,7 +2487,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "heads" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_zero_heads(self):
         """Test rejects heads containing zero."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2440,7 +2497,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "heads" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_negative_heads(self):
         """Test rejects heads containing negative value."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2450,7 +2507,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "heads" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_invalid_dropout_range_length(self):
         """Test rejects dropout_range with wrong length."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2460,7 +2517,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "dropout_range" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_dropout_range_min_greater_than_max(self):
         """Test rejects dropout_range where min > max."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2470,7 +2527,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "dropout_range" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_dropout_range_negative_min(self):
         """Test rejects dropout_range with negative min."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2480,7 +2537,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "dropout_range" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_dropout_range_max_greater_than_one(self):
         """Test rejects dropout_range with max > 1."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2490,7 +2547,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "dropout_range" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_accepts_dropout_range_full_zero_to_one(self):
         """Test accepts dropout_range (0.0, 1.0)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2499,7 +2556,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert space.dropout_range == (0.0, 1.0)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_accepts_dropout_range_zero_only(self):
         """Test accepts dropout_range (0.0, 0.0)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2508,7 +2565,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert space.dropout_range == (0.0, 0.0)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_empty_pooling_types(self):
         """Test rejects empty pooling_types list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2518,7 +2575,7 @@ class TestGNNArchitectureSpaceValidation:
 
         assert "pooling_types" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_rejects_empty_aggregation_types(self):
         """Test rejects empty aggregation_types list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2533,10 +2590,11 @@ class TestGNNArchitectureSpaceValidation:
 # GNNARCHITECTURESPACE TO_DICT METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceToDict:
     """Test GNNArchitectureSpace.to_dict() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_returns_dict(self):
         """Test to_dict returns a dictionary."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2546,7 +2604,7 @@ class TestGNNArchitectureSpaceToDict:
 
         assert isinstance(result, dict)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_min_layers(self):
         """Test to_dict contains min_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2554,9 +2612,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(min_layers=3)
         result = space.to_dict()
 
-        assert result['min_layers'] == 3
+        assert result["min_layers"] == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_max_layers(self):
         """Test to_dict contains max_layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2564,9 +2622,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(max_layers=10)
         result = space.to_dict()
 
-        assert result['max_layers'] == 10
+        assert result["max_layers"] == 10
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_layer_types_as_strings(self):
         """Test to_dict converts layer_types to string values."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2574,10 +2632,10 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(layer_types=[LayerType.GCN, LayerType.GAT])
         result = space.to_dict()
 
-        assert result['layer_types'] == ['gcn', 'gat']
-        assert all(isinstance(lt, str) for lt in result['layer_types'])
+        assert result["layer_types"] == ["gcn", "gat"]
+        assert all(isinstance(lt, str) for lt in result["layer_types"])
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_hidden_channels(self):
         """Test to_dict contains hidden_channels."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2585,9 +2643,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(hidden_channels=[128, 256])
         result = space.to_dict()
 
-        assert result['hidden_channels'] == [128, 256]
+        assert result["hidden_channels"] == [128, 256]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_heads(self):
         """Test to_dict contains heads."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2595,9 +2653,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(heads=[2, 4, 8])
         result = space.to_dict()
 
-        assert result['heads'] == [2, 4, 8]
+        assert result["heads"] == [2, 4, 8]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_dropout_range(self):
         """Test to_dict contains dropout_range as tuple."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2605,9 +2663,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(dropout_range=(0.1, 0.5))
         result = space.to_dict()
 
-        assert result['dropout_range'] == (0.1, 0.5)
+        assert result["dropout_range"] == (0.1, 0.5)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_boolean_options(self):
         """Test to_dict contains boolean options."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2619,11 +2677,11 @@ class TestGNNArchitectureSpaceToDict:
         )
         result = space.to_dict()
 
-        assert result['allow_skip_connections'] is True
-        assert result['allow_dense_connections'] is False
-        assert result['allow_mixed_layers'] is True
+        assert result["allow_skip_connections"] is True
+        assert result["allow_dense_connections"] is False
+        assert result["allow_mixed_layers"] is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_pooling_types_as_strings(self):
         """Test to_dict converts pooling_types to string values."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
@@ -2631,29 +2689,29 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(pooling_types=[PoolingType.MEAN, PoolingType.MAX])
         result = space.to_dict()
 
-        assert result['pooling_types'] == ['mean', 'max']
+        assert result["pooling_types"] == ["mean", "max"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_aggregation_types_as_strings(self):
         """Test to_dict converts aggregation_types to string values."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(aggregation_types=[AggregationType.SUM])
         result = space.to_dict()
 
-        assert result['aggregation_types'] == ['sum']
+        assert result["aggregation_types"] == ["sum"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_activation_types_as_strings(self):
         """Test to_dict converts activation_types to string values."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(activation_types=[ActivationType.RELU, ActivationType.GELU])
         result = space.to_dict()
 
-        assert result['activation_types'] == ['relu', 'gelu']
+        assert result["activation_types"] == ["relu", "gelu"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_contains_batch_norm_options(self):
         """Test to_dict contains batch_norm_options."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2661,9 +2719,9 @@ class TestGNNArchitectureSpaceToDict:
         space = GNNArchitectureSpace(batch_norm_options=[True])
         result = space.to_dict()
 
-        assert result['batch_norm_options'] == [True]
+        assert result["batch_norm_options"] == [True]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_dict_has_all_expected_keys(self):
         """Test to_dict has all 13 expected keys."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2672,10 +2730,19 @@ class TestGNNArchitectureSpaceToDict:
         result = space.to_dict()
 
         expected_keys = {
-            'min_layers', 'max_layers', 'layer_types', 'hidden_channels',
-            'heads', 'dropout_range', 'allow_skip_connections',
-            'allow_dense_connections', 'allow_mixed_layers', 'pooling_types',
-            'aggregation_types', 'activation_types', 'batch_norm_options'
+            "min_layers",
+            "max_layers",
+            "layer_types",
+            "hidden_channels",
+            "heads",
+            "dropout_range",
+            "allow_skip_connections",
+            "allow_dense_connections",
+            "allow_mixed_layers",
+            "pooling_types",
+            "aggregation_types",
+            "activation_types",
+            "batch_norm_options",
         }
         assert set(result.keys()) == expected_keys
 
@@ -2684,101 +2751,106 @@ class TestGNNArchitectureSpaceToDict:
 # GNNARCHITECTURESPACE FROM_DICT CLASS METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceFromDict:
     """Test GNNArchitectureSpace.from_dict() class method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_returns_gnn_architecture_space(self):
         """Test from_dict returns GNNArchitectureSpace instance."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
 
         config_dict = {
-            'min_layers': 2,
-            'max_layers': 6,
-            'layer_types': ['gcn', 'gat'],
-            'hidden_channels': [64, 128],
-            'heads': [1, 2],
-            'dropout_range': [0.0, 0.5],
-            'pooling_types': ['mean'],
-            'aggregation_types': ['mean'],
+            "min_layers": 2,
+            "max_layers": 6,
+            "layer_types": ["gcn", "gat"],
+            "hidden_channels": [64, 128],
+            "heads": [1, 2],
+            "dropout_range": [0.0, 0.5],
+            "pooling_types": ["mean"],
+            "aggregation_types": ["mean"],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert isinstance(result, GNNArchitectureSpace)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_converts_layer_types_strings(self):
         """Test from_dict converts layer_types strings to enums."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
 
         config_dict = {
-            'layer_types': ['gcn', 'gat', 'sage'],
+            "layer_types": ["gcn", "gat", "sage"],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert result.layer_types == [LayerType.GCN, LayerType.GAT, LayerType.SAGE]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_preserves_layer_type_enums(self):
         """Test from_dict preserves LayerType enums."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
 
         config_dict = {
-            'layer_types': [LayerType.GIN, LayerType.PNA],
+            "layer_types": [LayerType.GIN, LayerType.PNA],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert result.layer_types == [LayerType.GIN, LayerType.PNA]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_converts_pooling_types_strings(self):
         """Test from_dict converts pooling_types strings to enums."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
 
         config_dict = {
-            'pooling_types': ['mean', 'max', 'attention'],
+            "pooling_types": ["mean", "max", "attention"],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert result.pooling_types == [PoolingType.MEAN, PoolingType.MAX, PoolingType.ATTENTION]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_converts_aggregation_types_strings(self):
         """Test from_dict converts aggregation_types strings to enums."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         config_dict = {
-            'aggregation_types': ['sum', 'multi'],
+            "aggregation_types": ["sum", "multi"],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert result.aggregation_types == [AggregationType.SUM, AggregationType.MULTI]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_converts_activation_types_strings(self):
         """Test from_dict converts activation_types strings to enums."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         config_dict = {
-            'activation_types': ['relu', 'silu', 'tanh'],
+            "activation_types": ["relu", "silu", "tanh"],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
-        assert result.activation_types == [ActivationType.RELU, ActivationType.SILU, ActivationType.TANH]
+        assert result.activation_types == [
+            ActivationType.RELU,
+            ActivationType.SILU,
+            ActivationType.TANH,
+        ]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_converts_list_dropout_range_to_tuple(self):
         """Test from_dict converts list dropout_range to tuple."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
 
         config_dict = {
-            'dropout_range': [0.1, 0.4],
+            "dropout_range": [0.1, 0.4],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
@@ -2786,29 +2858,29 @@ class TestGNNArchitectureSpaceFromDict:
         assert result.dropout_range == (0.1, 0.4)
         assert isinstance(result.dropout_range, tuple)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_preserves_tuple_dropout_range(self):
         """Test from_dict preserves tuple dropout_range."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
 
         config_dict = {
-            'dropout_range': (0.0, 0.3),
+            "dropout_range": (0.0, 0.3),
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
 
         assert result.dropout_range == (0.0, 0.3)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_sets_integer_fields(self):
         """Test from_dict sets integer fields correctly."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
 
         config_dict = {
-            'min_layers': 3,
-            'max_layers': 7,
-            'hidden_channels': [128, 256, 512],
-            'heads': [2, 4, 8, 16],
+            "min_layers": 3,
+            "max_layers": 7,
+            "hidden_channels": [128, 256, 512],
+            "heads": [2, 4, 8, 16],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
@@ -2818,16 +2890,16 @@ class TestGNNArchitectureSpaceFromDict:
         assert result.hidden_channels == [128, 256, 512]
         assert result.heads == [2, 4, 8, 16]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_sets_boolean_fields(self):
         """Test from_dict sets boolean fields correctly."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
 
         config_dict = {
-            'allow_skip_connections': False,
-            'allow_dense_connections': True,
-            'allow_mixed_layers': False,
-            'batch_norm_options': [False],
+            "allow_skip_connections": False,
+            "allow_dense_connections": True,
+            "allow_mixed_layers": False,
+            "batch_norm_options": [False],
         }
 
         result = GNNArchitectureSpace.from_dict(config_dict)
@@ -2837,12 +2909,15 @@ class TestGNNArchitectureSpaceFromDict:
         assert result.allow_mixed_layers is False
         assert result.batch_norm_options == [False]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_from_dict_to_dict_roundtrip(self):
         """Test to_dict -> from_dict roundtrip."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            GNNArchitectureSpace, LayerType, PoolingType, 
-            AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            GNNArchitectureSpace,
+            LayerType,
+            PoolingType,
         )
 
         original = GNNArchitectureSpace(
@@ -2883,10 +2958,11 @@ class TestGNNArchitectureSpaceFromDict:
 # GNNARCHITECTURESPACE GET_ATTENTION_LAYER_TYPES METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceGetAttentionLayerTypes:
     """Test GNNArchitectureSpace.get_attention_layer_types() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_returns_list(self):
         """Test get_attention_layer_types returns a list."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2896,7 +2972,7 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
 
         assert isinstance(result, list)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_with_gat(self):
         """Test get_attention_layer_types returns GAT when present."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2907,7 +2983,7 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
         assert LayerType.GAT in result
         assert LayerType.GCN not in result
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_with_gatv2(self):
         """Test get_attention_layer_types returns GATV2 when present."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2918,7 +2994,7 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
         assert LayerType.GATV2 in result
         assert LayerType.SAGE not in result
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_with_transformer(self):
         """Test get_attention_layer_types returns TRANSFORMER when present."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2929,7 +3005,7 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
         assert LayerType.TRANSFORMER in result
         assert LayerType.GIN not in result
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_multiple_attention_layers(self):
         """Test get_attention_layer_types with multiple attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2944,19 +3020,17 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
         assert LayerType.TRANSFORMER in result
         assert len(result) == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_no_attention_layers(self):
         """Test get_attention_layer_types returns empty list when no attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
 
-        space = GNNArchitectureSpace(
-            layer_types=[LayerType.GCN, LayerType.SAGE, LayerType.GIN]
-        )
+        space = GNNArchitectureSpace(layer_types=[LayerType.GCN, LayerType.SAGE, LayerType.GIN])
         result = space.get_attention_layer_types()
 
         assert result == []
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_attention_layer_types_preserves_order(self):
         """Test get_attention_layer_types preserves layer order."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2974,10 +3048,11 @@ class TestGNNArchitectureSpaceGetAttentionLayerTypes:
 # GNNARCHITECTURESPACE HAS_ATTENTION_LAYERS METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceHasAttentionLayers:
     """Test GNNArchitectureSpace.has_attention_layers() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_returns_bool(self):
         """Test has_attention_layers returns a boolean."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -2987,7 +3062,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 
         assert isinstance(result, bool)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_true_with_gat(self):
         """Test has_attention_layers returns True with GAT."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -2997,7 +3072,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 
         assert result is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_true_with_gatv2(self):
         """Test has_attention_layers returns True with GATV2."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3007,7 +3082,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 
         assert result is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_true_with_transformer(self):
         """Test has_attention_layers returns True with TRANSFORMER."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3017,7 +3092,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 
         assert result is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_false_with_no_attention(self):
         """Test has_attention_layers returns False with no attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3029,7 +3104,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 
         assert result is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_has_attention_layers_default_space(self):
         """Test has_attention_layers on default space (includes GAT)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3044,6 +3119,7 @@ class TestGNNArchitectureSpaceHasAttentionLayers:
 # =============================================================================
 # GNNARCHITECTURESPACE MODULE EXPORT TESTS
 # =============================================================================
+
 
 class TestGNNArchitectureSpaceModuleExport:
     """Test GNNArchitectureSpace module export."""
@@ -3061,7 +3137,6 @@ class TestGNNArchitectureSpaceModuleExport:
         assert GNNArchitectureSpace is not None
 
 
-
 # =============================================================================
 # PART 4: ADVANCED METHODS, FACTORY FUNCTIONS, AND INTEGRATION TESTS
 # =============================================================================
@@ -3070,12 +3145,18 @@ class TestGNNArchitectureSpaceModuleExport:
 # ADVANCED TESTS FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def attention_only_space():
     """Create space with only attention layers."""
     from milia_pipeline.models.hpo.nas.search_space import (
-        GNNArchitectureSpace, LayerType, PoolingType, AggregationType, ActivationType
+        ActivationType,
+        AggregationType,
+        GNNArchitectureSpace,
+        LayerType,
+        PoolingType,
     )
+
     return GNNArchitectureSpace(
         min_layers=2,
         max_layers=4,
@@ -3092,8 +3173,13 @@ def attention_only_space():
 def non_attention_space():
     """Create space with no attention layers."""
     from milia_pipeline.models.hpo.nas.search_space import (
-        GNNArchitectureSpace, LayerType, PoolingType, AggregationType, ActivationType
+        ActivationType,
+        AggregationType,
+        GNNArchitectureSpace,
+        LayerType,
+        PoolingType,
     )
+
     return GNNArchitectureSpace(
         min_layers=2,
         max_layers=4,
@@ -3110,10 +3196,11 @@ def non_attention_space():
 # GNNARCHITECTURESPACE TO_OPTUNA_SEARCH_SPACE METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceToOptunaSearchSpace:
     """Test GNNArchitectureSpace.to_optuna_search_space() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_returns_dict(self):
         """Test to_optuna_search_space returns a dictionary."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3123,7 +3210,7 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
 
         assert isinstance(result, dict)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_has_architecture_key(self):
         """Test to_optuna_search_space has 'architecture' key."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3131,9 +3218,9 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace()
         result = space.to_optuna_search_space()
 
-        assert 'architecture' in result
+        assert "architecture" in result
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_num_layers(self):
         """Test to_optuna_search_space contains num_layers config."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3141,12 +3228,12 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(min_layers=2, max_layers=6)
         result = space.to_optuna_search_space()
 
-        assert 'num_layers' in result['architecture']
-        assert result['architecture']['num_layers']['type'] == 'int'
-        assert result['architecture']['num_layers']['low'] == 2
-        assert result['architecture']['num_layers']['high'] == 6
+        assert "num_layers" in result["architecture"]
+        assert result["architecture"]["num_layers"]["type"] == "int"
+        assert result["architecture"]["num_layers"]["low"] == 2
+        assert result["architecture"]["num_layers"]["high"] == 6
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_hidden_channels(self):
         """Test to_optuna_search_space contains hidden_channels config."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3154,11 +3241,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(hidden_channels=[64, 128, 256])
         result = space.to_optuna_search_space()
 
-        assert 'hidden_channels' in result['architecture']
-        assert result['architecture']['hidden_channels']['type'] == 'categorical'
-        assert result['architecture']['hidden_channels']['choices'] == [64, 128, 256]
+        assert "hidden_channels" in result["architecture"]
+        assert result["architecture"]["hidden_channels"]["type"] == "categorical"
+        assert result["architecture"]["hidden_channels"]["choices"] == [64, 128, 256]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_pooling(self):
         """Test to_optuna_search_space contains pooling config."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
@@ -3166,11 +3253,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(pooling_types=[PoolingType.MEAN, PoolingType.MAX])
         result = space.to_optuna_search_space()
 
-        assert 'pooling' in result['architecture']
-        assert result['architecture']['pooling']['type'] == 'categorical'
-        assert result['architecture']['pooling']['choices'] == ['mean', 'max']
+        assert "pooling" in result["architecture"]
+        assert result["architecture"]["pooling"]["type"] == "categorical"
+        assert result["architecture"]["pooling"]["choices"] == ["mean", "max"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_dropout(self):
         """Test to_optuna_search_space contains dropout config."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3178,36 +3265,36 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(dropout_range=(0.1, 0.5))
         result = space.to_optuna_search_space()
 
-        assert 'dropout' in result['architecture']
-        assert result['architecture']['dropout']['type'] == 'float'
-        assert result['architecture']['dropout']['low'] == 0.1
-        assert result['architecture']['dropout']['high'] == 0.5
+        assert "dropout" in result["architecture"]
+        assert result["architecture"]["dropout"]["type"] == "float"
+        assert result["architecture"]["dropout"]["low"] == 0.1
+        assert result["architecture"]["dropout"]["high"] == 0.5
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_aggregation(self):
         """Test to_optuna_search_space contains aggregation config."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(aggregation_types=[AggregationType.MEAN, AggregationType.SUM])
         result = space.to_optuna_search_space()
 
-        assert 'aggregation' in result['architecture']
-        assert result['architecture']['aggregation']['type'] == 'categorical'
-        assert result['architecture']['aggregation']['choices'] == ['mean', 'sum']
+        assert "aggregation" in result["architecture"]
+        assert result["architecture"]["aggregation"]["type"] == "categorical"
+        assert result["architecture"]["aggregation"]["choices"] == ["mean", "sum"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_activation(self):
         """Test to_optuna_search_space contains activation config."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(activation_types=[ActivationType.RELU, ActivationType.GELU])
         result = space.to_optuna_search_space()
 
-        assert 'activation' in result['architecture']
-        assert result['architecture']['activation']['type'] == 'categorical'
-        assert result['architecture']['activation']['choices'] == ['relu', 'gelu']
+        assert "activation" in result["architecture"]
+        assert result["architecture"]["activation"]["type"] == "categorical"
+        assert result["architecture"]["activation"]["choices"] == ["relu", "gelu"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_batch_norm(self):
         """Test to_optuna_search_space contains batch_norm config."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3215,11 +3302,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(batch_norm_options=[True, False])
         result = space.to_optuna_search_space()
 
-        assert 'batch_norm' in result['architecture']
-        assert result['architecture']['batch_norm']['type'] == 'categorical'
-        assert result['architecture']['batch_norm']['choices'] == [True, False]
+        assert "batch_norm" in result["architecture"]
+        assert result["architecture"]["batch_norm"]["type"] == "categorical"
+        assert result["architecture"]["batch_norm"]["choices"] == [True, False]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_skip_connections_when_allowed(self):
         """Test to_optuna_search_space includes skip connections when allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3227,11 +3314,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(allow_skip_connections=True)
         result = space.to_optuna_search_space()
 
-        assert 'use_skip_connections' in result['architecture']
-        assert result['architecture']['use_skip_connections']['type'] == 'categorical'
-        assert result['architecture']['use_skip_connections']['choices'] == [True, False]
+        assert "use_skip_connections" in result["architecture"]
+        assert result["architecture"]["use_skip_connections"]["type"] == "categorical"
+        assert result["architecture"]["use_skip_connections"]["choices"] == [True, False]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_skip_connections_when_not_allowed(self):
         """Test to_optuna_search_space excludes skip connections when not allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3239,9 +3326,9 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(allow_skip_connections=False)
         result = space.to_optuna_search_space()
 
-        assert 'use_skip_connections' not in result['architecture']
+        assert "use_skip_connections" not in result["architecture"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_dense_connections_when_allowed(self):
         """Test to_optuna_search_space includes dense connections when allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3249,11 +3336,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(allow_dense_connections=True)
         result = space.to_optuna_search_space()
 
-        assert 'use_dense_connections' in result['architecture']
-        assert result['architecture']['use_dense_connections']['type'] == 'categorical'
-        assert result['architecture']['use_dense_connections']['choices'] == [True, False]
+        assert "use_dense_connections" in result["architecture"]
+        assert result["architecture"]["use_dense_connections"]["type"] == "categorical"
+        assert result["architecture"]["use_dense_connections"]["choices"] == [True, False]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_dense_connections_when_not_allowed(self):
         """Test to_optuna_search_space excludes dense connections when not allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3261,9 +3348,9 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         space = GNNArchitectureSpace(allow_dense_connections=False)
         result = space.to_optuna_search_space()
 
-        assert 'use_dense_connections' not in result['architecture']
+        assert "use_dense_connections" not in result["architecture"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_mixed_layers_per_layer_type(self):
         """Test to_optuna_search_space creates per-layer type when mixed layers allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3276,12 +3363,12 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         result = space.to_optuna_search_space()
 
         # Should have layer_0_type, layer_1_type, layer_2_type
-        assert 'layer_0_type' in result['architecture']
-        assert 'layer_1_type' in result['architecture']
-        assert 'layer_2_type' in result['architecture']
-        assert result['architecture']['layer_0_type']['choices'] == ['gcn', 'gat']
+        assert "layer_0_type" in result["architecture"]
+        assert "layer_1_type" in result["architecture"]
+        assert "layer_2_type" in result["architecture"]
+        assert result["architecture"]["layer_0_type"]["choices"] == ["gcn", "gat"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_mixed_layers_per_layer_heads(self):
         """Test to_optuna_search_space creates per-layer heads when mixed with attention."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3295,11 +3382,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         result = space.to_optuna_search_space()
 
         # Should have layer_0_heads, layer_1_heads (because GAT is present)
-        assert 'layer_0_heads' in result['architecture']
-        assert 'layer_1_heads' in result['architecture']
-        assert result['architecture']['layer_0_heads']['choices'] == [2, 4]
+        assert "layer_0_heads" in result["architecture"]
+        assert "layer_1_heads" in result["architecture"]
+        assert result["architecture"]["layer_0_heads"]["choices"] == [2, 4]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_no_mixed_layers_single_type(self):
         """Test to_optuna_search_space creates single layer_type when mixed not allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3312,11 +3399,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         result = space.to_optuna_search_space()
 
         # Should have single layer_type, not per-layer
-        assert 'layer_type' in result['architecture']
-        assert 'layer_0_type' not in result['architecture']
-        assert result['architecture']['layer_type']['choices'] == ['gcn', 'gat']
+        assert "layer_type" in result["architecture"]
+        assert "layer_0_type" not in result["architecture"]
+        assert result["architecture"]["layer_type"]["choices"] == ["gcn", "gat"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_no_mixed_layers_single_heads(self):
         """Test to_optuna_search_space creates single heads when mixed not allowed."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3330,11 +3417,11 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         result = space.to_optuna_search_space()
 
         # Should have single heads, not per-layer
-        assert 'heads' in result['architecture']
-        assert 'layer_0_heads' not in result['architecture']
-        assert result['architecture']['heads']['choices'] == [2, 4, 8]
+        assert "heads" in result["architecture"]
+        assert "layer_0_heads" not in result["architecture"]
+        assert result["architecture"]["heads"]["choices"] == [2, 4, 8]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_to_optuna_search_space_no_heads_without_attention_layers(self):
         """Test to_optuna_search_space excludes heads when no attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3345,17 +3432,18 @@ class TestGNNArchitectureSpaceToOptunaSearchSpace:
         )
         result = space.to_optuna_search_space()
 
-        assert 'heads' not in result['architecture']
+        assert "heads" not in result["architecture"]
 
 
 # =============================================================================
 # GNNARCHITECTURESPACE GET_SEARCH_DIMENSIONS METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceGetSearchDimensions:
     """Test GNNArchitectureSpace.get_search_dimensions() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_returns_int(self):
         """Test get_search_dimensions returns an integer."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3365,7 +3453,7 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
 
         assert isinstance(result, int)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_positive(self):
         """Test get_search_dimensions returns positive value."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3375,7 +3463,7 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
 
         assert result > 0
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_base_count(self):
         """Test get_search_dimensions has at least base dimensions (7)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3392,7 +3480,7 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
         # Base is 7 dimensions
         assert result >= 7
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_increases_with_skip_connections(self):
         """Test get_search_dimensions increases with skip connections."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3415,7 +3503,7 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
 
         assert dims_with > dims_without
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_increases_with_dense_connections(self):
         """Test get_search_dimensions increases with dense connections."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3438,7 +3526,7 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
 
         assert dims_with > dims_without
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_search_dimensions_increases_with_mixed_layers(self):
         """Test get_search_dimensions increases significantly with mixed layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3469,10 +3557,11 @@ class TestGNNArchitectureSpaceGetSearchDimensions:
 # GNNARCHITECTURESPACE ESTIMATE_SEARCH_SPACE_SIZE METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
     """Test GNNArchitectureSpace.estimate_search_space_size() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_returns_int(self):
         """Test estimate_search_space_size returns an integer."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3482,7 +3571,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
 
         assert isinstance(result, int)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_positive(self):
         """Test estimate_search_space_size returns positive value."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3492,12 +3581,15 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
 
         assert result > 0
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_minimal_space(self):
         """Test estimate_search_space_size for minimal space."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            GNNArchitectureSpace, LayerType, PoolingType, 
-            AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            GNNArchitectureSpace,
+            LayerType,
+            PoolingType,
         )
 
         space = GNNArchitectureSpace(
@@ -3520,7 +3612,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
         assert result > 0
         assert result < 1000
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_increases_with_layers(self):
         """Test estimate_search_space_size increases with more layer options."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3533,7 +3625,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
 
         assert size_large > size_small
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_increases_with_hidden_channels(self):
         """Test estimate_search_space_size increases with more hidden channel options."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3546,7 +3638,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
 
         assert size_large > size_small
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_doubles_with_skip_connections(self):
         """Test estimate_search_space_size approximately doubles with skip connections."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3566,7 +3658,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
         # Should roughly double
         assert size_with == size_without * 2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_doubles_with_dense_connections(self):
         """Test estimate_search_space_size approximately doubles with dense connections."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3586,7 +3678,7 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
         # Should roughly double
         assert size_with == size_without * 2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_estimate_search_space_size_explodes_with_mixed_layers(self):
         """Test estimate_search_space_size grows exponentially with mixed layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3613,11 +3705,12 @@ class TestGNNArchitectureSpaceEstimateSearchSpaceSize:
 # GNNARCHITECTURESPACE CREATE_DEFAULT_LAYER_CONFIG METHOD TESTS
 # =============================================================================
 
+
 class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
     """Test GNNArchitectureSpace.create_default_layer_config() method."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_returns_layer_config(self):
         """Test create_default_layer_config returns LayerConfig instance."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerConfig
@@ -3627,8 +3720,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert isinstance(result, LayerConfig)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_uses_first_layer_type(self):
         """Test create_default_layer_config uses first layer type."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3638,8 +3731,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.type == LayerType.SAGE
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_uses_first_hidden_channels(self):
         """Test create_default_layer_config uses first hidden channels."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3649,8 +3742,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.hidden_channels == 128
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_uses_first_dropout(self):
         """Test create_default_layer_config uses first dropout value (min)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3660,19 +3753,19 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.dropout == 0.2
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_uses_first_activation(self):
         """Test create_default_layer_config uses first activation type."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         space = GNNArchitectureSpace(activation_types=[ActivationType.GELU, ActivationType.RELU])
         result = space.create_default_layer_config()
 
-        assert result.activation == 'gelu'
+        assert result.activation == "gelu"
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_uses_first_batch_norm(self):
         """Test create_default_layer_config uses first batch_norm option."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3682,8 +3775,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.batch_norm is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_respects_skip_connections(self):
         """Test create_default_layer_config sets residual based on skip connections."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3697,8 +3790,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
         assert result_with.residual is True
         assert result_without.residual is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_override_layer_type(self):
         """Test create_default_layer_config allows layer_type override."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3708,8 +3801,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.type == LayerType.GAT
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_override_hidden_channels(self):
         """Test create_default_layer_config allows hidden_channels override."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -3719,8 +3812,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.hidden_channels == 256
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_attention_layer_gets_heads(self):
         """Test create_default_layer_config sets heads for attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3733,8 +3826,8 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 
         assert result.heads == 2  # First in heads list
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_config_non_attention_layer_gets_heads_1(self):
         """Test create_default_layer_config sets heads=1 for non-attention layers."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -3752,21 +3845,23 @@ class TestGNNArchitectureSpaceCreateDefaultLayerConfig:
 # CREATE_GNN_SEARCH_SPACE FACTORY FUNCTION TESTS
 # =============================================================================
 
+
 class TestCreateGNNSearchSpaceFactory:
     """Test create_gnn_search_space() factory function."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_returns_gnn_architecture_space(self):
         """Test create_gnn_search_space returns GNNArchitectureSpace."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            create_gnn_search_space, GNNArchitectureSpace
+            GNNArchitectureSpace,
+            create_gnn_search_space,
         )
 
         result = create_gnn_search_space()
 
         assert isinstance(result, GNNArchitectureSpace)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_no_args_default(self):
         """Test create_gnn_search_space with no args returns default space."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
@@ -3776,80 +3871,84 @@ class TestCreateGNNSearchSpaceFactory:
         assert result.min_layers == 2
         assert result.max_layers == 8
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_gcn_preset(self):
         """Test create_gnn_search_space with 'gcn' model_type."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import LayerType, create_gnn_search_space
 
-        result = create_gnn_search_space(model_type='gcn')
+        result = create_gnn_search_space(model_type="gcn")
 
         assert result.layer_types == [LayerType.GCN]
         assert result.allow_mixed_layers is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_gat_preset(self):
         """Test create_gnn_search_space with 'gat' model_type."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import LayerType, create_gnn_search_space
 
-        result = create_gnn_search_space(model_type='gat')
+        result = create_gnn_search_space(model_type="gat")
 
         assert LayerType.GAT in result.layer_types
         assert LayerType.GATV2 in result.layer_types
         assert result.heads == [1, 2, 4, 8]
         assert result.allow_mixed_layers is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_sage_preset(self):
         """Test create_gnn_search_space with 'sage' model_type."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            create_gnn_search_space, LayerType, AggregationType
+            AggregationType,
+            LayerType,
+            create_gnn_search_space,
         )
 
-        result = create_gnn_search_space(model_type='sage')
+        result = create_gnn_search_space(model_type="sage")
 
         assert result.layer_types == [LayerType.SAGE]
         assert AggregationType.MEAN in result.aggregation_types
         assert AggregationType.MAX in result.aggregation_types
         assert AggregationType.LSTM in result.aggregation_types
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_gin_preset(self):
         """Test create_gnn_search_space with 'gin' model_type."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import LayerType, create_gnn_search_space
 
-        result = create_gnn_search_space(model_type='gin')
+        result = create_gnn_search_space(model_type="gin")
 
         assert result.layer_types == [LayerType.GIN]
         assert result.allow_mixed_layers is False
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_transformer_preset(self):
         """Test create_gnn_search_space with 'transformer' model_type."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import LayerType, create_gnn_search_space
 
-        result = create_gnn_search_space(model_type='transformer')
+        result = create_gnn_search_space(model_type="transformer")
 
         assert result.layer_types == [LayerType.TRANSFORMER]
         assert result.heads == [2, 4, 8, 16]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_pna_preset(self):
         """Test create_gnn_search_space with 'pna' model_type."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            create_gnn_search_space, LayerType, AggregationType
+            AggregationType,
+            LayerType,
+            create_gnn_search_space,
         )
 
-        result = create_gnn_search_space(model_type='pna')
+        result = create_gnn_search_space(model_type="pna")
 
         assert result.layer_types == [LayerType.PNA]
         assert result.aggregation_types == [AggregationType.MULTI]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_mixed_preset(self):
         """Test create_gnn_search_space with 'mixed' model_type."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import LayerType, create_gnn_search_space
 
-        result = create_gnn_search_space(model_type='mixed')
+        result = create_gnn_search_space(model_type="mixed")
 
         assert LayerType.GCN in result.layer_types
         assert LayerType.GAT in result.layer_types
@@ -3857,28 +3956,28 @@ class TestCreateGNNSearchSpaceFactory:
         assert LayerType.GIN in result.layer_types
         assert result.allow_mixed_layers is True
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_invalid_model_type(self):
         """Test create_gnn_search_space raises error for invalid model_type."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
 
         with pytest.raises(ValueError) as exc_info:
-            create_gnn_search_space(model_type='invalid_model')
+            create_gnn_search_space(model_type="invalid_model")
 
-        assert 'invalid_model' in str(exc_info.value).lower()
+        assert "invalid_model" in str(exc_info.value).lower()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_case_insensitive(self):
         """Test create_gnn_search_space is case-insensitive."""
-        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space, LayerType
+        from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
 
-        result_lower = create_gnn_search_space(model_type='gcn')
-        result_upper = create_gnn_search_space(model_type='GCN')
-        result_mixed = create_gnn_search_space(model_type='GcN')
+        result_lower = create_gnn_search_space(model_type="gcn")
+        result_upper = create_gnn_search_space(model_type="GCN")
+        result_mixed = create_gnn_search_space(model_type="GcN")
 
         assert result_lower.layer_types == result_upper.layer_types == result_mixed.layer_types
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_custom_kwargs(self):
         """Test create_gnn_search_space accepts custom kwargs."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
@@ -3893,13 +3992,13 @@ class TestCreateGNNSearchSpaceFactory:
         assert result.max_layers == 6
         assert result.hidden_channels == [128, 256]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_create_gnn_search_space_preset_with_overrides(self):
         """Test create_gnn_search_space preset with kwargs overrides."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
 
         result = create_gnn_search_space(
-            model_type='gcn',
+            model_type="gcn",
             min_layers=4,
             max_layers=10,
         )
@@ -3913,21 +4012,23 @@ class TestCreateGNNSearchSpaceFactory:
 # GET_DEFAULT_GNN_SEARCH_SPACE FACTORY FUNCTION TESTS
 # =============================================================================
 
+
 class TestGetDefaultGNNSearchSpaceFactory:
     """Test get_default_gnn_search_space() factory function."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_default_gnn_search_space_returns_gnn_architecture_space(self):
         """Test get_default_gnn_search_space returns GNNArchitectureSpace."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            get_default_gnn_search_space, GNNArchitectureSpace
+            GNNArchitectureSpace,
+            get_default_gnn_search_space,
         )
 
         result = get_default_gnn_search_space()
 
         assert isinstance(result, GNNArchitectureSpace)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_default_gnn_search_space_default_values(self):
         """Test get_default_gnn_search_space has expected default values."""
         from milia_pipeline.models.hpo.nas.search_space import get_default_gnn_search_space
@@ -3938,7 +4039,7 @@ class TestGetDefaultGNNSearchSpaceFactory:
         assert result.max_layers == 8
         assert result.hidden_channels == [32, 64, 128, 256]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_get_default_gnn_search_space_returns_new_instance(self):
         """Test get_default_gnn_search_space returns new instance each time."""
         from milia_pipeline.models.hpo.nas.search_space import get_default_gnn_search_space
@@ -3955,6 +4056,7 @@ class TestGetDefaultGNNSearchSpaceFactory:
 # MODULE EXPORTS TESTS
 # =============================================================================
 
+
 class TestModuleExports:
     """Test module-level exports."""
 
@@ -3963,14 +4065,14 @@ class TestModuleExports:
         from milia_pipeline.models.hpo.nas import search_space
 
         expected_exports = [
-            'LayerType',
-            'PoolingType',
-            'AggregationType',
-            'ActivationType',
-            'LayerConfig',
-            'GNNArchitectureSpace',
-            'create_gnn_search_space',
-            'get_default_gnn_search_space',
+            "LayerType",
+            "PoolingType",
+            "AggregationType",
+            "ActivationType",
+            "LayerConfig",
+            "GNNArchitectureSpace",
+            "create_gnn_search_space",
+            "get_default_gnn_search_space",
         ]
 
         for export in expected_exports:
@@ -3978,37 +4080,43 @@ class TestModuleExports:
 
     def test_module_version(self):
         """Test module has version attribute with valid semantic version format."""
-        from milia_pipeline.models.hpo.nas import search_space
         import re
 
-        assert hasattr(search_space, '__version__')
+        from milia_pipeline.models.hpo.nas import search_space
+
+        assert hasattr(search_space, "__version__")
         # Check for valid semantic version format (e.g., '1.0.0', '1.1.0', '2.0.0-beta')
-        version_pattern = r'^\d+\.\d+\.\d+(-[\w.]+)?$'
-        assert re.match(version_pattern, search_space.__version__), \
+        version_pattern = r"^\d+\.\d+\.\d+(-[\w.]+)?$"
+        assert re.match(version_pattern, search_space.__version__), (
             f"Version '{search_space.__version__}' does not match semantic version format"
+        )
 
     def test_module_author(self):
         """Test module has author attribute."""
         from milia_pipeline.models.hpo.nas import search_space
 
-        assert hasattr(search_space, '__author__')
-        assert search_space.__author__ == 'Milia Team'
+        assert hasattr(search_space, "__author__")
+        assert search_space.__author__ == "Milia Team"
 
 
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
 
+
 class TestIntegrationScenarios:
     """Test comprehensive integration scenarios."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_full_workflow_create_serialize_deserialize(self):
         """Test complete workflow: create, serialize, deserialize."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            GNNArchitectureSpace, LayerType, PoolingType,
-            AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            GNNArchitectureSpace,
+            LayerType,
+            PoolingType,
         )
 
         # Create custom space
@@ -4040,44 +4148,42 @@ class TestIntegrationScenarios:
         assert restored.layer_types == original.layer_types
         assert restored.has_attention_layers() == original.has_attention_layers()
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_factory_to_optuna_workflow(self):
         """Test factory creation to Optuna conversion workflow."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
 
         # Create using factory
-        space = create_gnn_search_space(model_type='gat')
+        space = create_gnn_search_space(model_type="gat")
 
         # Convert to Optuna format
         optuna_space = space.to_optuna_search_space()
 
         # Verify Optuna space structure
-        assert 'architecture' in optuna_space
-        assert 'num_layers' in optuna_space['architecture']
-        assert 'hidden_channels' in optuna_space['architecture']
-        assert optuna_space['architecture']['num_layers']['type'] == 'int'
+        assert "architecture" in optuna_space
+        assert "num_layers" in optuna_space["architecture"]
+        assert "hidden_channels" in optuna_space["architecture"]
+        assert optuna_space["architecture"]["num_layers"]["type"] == "int"
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_create_default_layer_from_factory_space(self):
         """Test creating default layer config from factory-created space."""
-        from milia_pipeline.models.hpo.nas.search_space import (
-            create_gnn_search_space, LayerConfig
-        )
+        from milia_pipeline.models.hpo.nas.search_space import LayerConfig, create_gnn_search_space
 
         # Create space using factory
-        space = create_gnn_search_space(model_type='transformer')
+        space = create_gnn_search_space(model_type="transformer")
 
         # Create default layer
         layer = space.create_default_layer_config()
 
         # Verify
         assert isinstance(layer, LayerConfig)
-        assert layer.type.value == 'transformer'
+        assert layer.type.value == "transformer"
         assert layer.heads >= 1
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_search_space_metrics(self):
         """Test getting search space metrics."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -4096,12 +4202,13 @@ class TestIntegrationScenarios:
         assert isinstance(has_attention, bool)
         assert isinstance(attention_types, list)
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
-    @patch('milia_pipeline.exceptions.ConfigurationError', MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
     def test_layer_config_from_space_to_dict_roundtrip(self):
         """Test LayerConfig created from space survives dict roundtrip."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            GNNArchitectureSpace, LayerConfig, LayerType
+            GNNArchitectureSpace,
+            LayerConfig,
         )
 
         space = GNNArchitectureSpace()
@@ -4116,12 +4223,12 @@ class TestIntegrationScenarios:
         assert restored_layer.heads == original_layer.heads
         assert restored_layer.dropout == original_layer.dropout
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_multiple_presets_comparison(self):
         """Test comparing metrics across different presets."""
         from milia_pipeline.models.hpo.nas.search_space import create_gnn_search_space
 
-        presets = ['gcn', 'gat', 'sage', 'gin', 'transformer', 'pna', 'mixed']
+        presets = ["gcn", "gat", "sage", "gin", "transformer", "pna", "mixed"]
         spaces = {preset: create_gnn_search_space(model_type=preset) for preset in presets}
 
         # All should be valid GNNArchitectureSpace instances
@@ -4136,10 +4243,11 @@ class TestIntegrationScenarios:
 # EDGE CASES TESTS
 # =============================================================================
 
+
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_single_layer_space(self):
         """Test space with single layer (min==max)."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -4150,15 +4258,18 @@ class TestEdgeCases:
         assert space.max_layers == 3
 
         optuna_space = space.to_optuna_search_space()
-        assert optuna_space['architecture']['num_layers']['low'] == 3
-        assert optuna_space['architecture']['num_layers']['high'] == 3
+        assert optuna_space["architecture"]["num_layers"]["low"] == 3
+        assert optuna_space["architecture"]["num_layers"]["high"] == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_single_option_categorical(self):
         """Test space with single option in categorical fields."""
         from milia_pipeline.models.hpo.nas.search_space import (
-            GNNArchitectureSpace, LayerType, PoolingType, 
-            AggregationType, ActivationType
+            ActivationType,
+            AggregationType,
+            GNNArchitectureSpace,
+            LayerType,
+            PoolingType,
         )
 
         space = GNNArchitectureSpace(
@@ -4173,10 +4284,10 @@ class TestEdgeCases:
 
         optuna_space = space.to_optuna_search_space()
 
-        assert optuna_space['architecture']['hidden_channels']['choices'] == [64]
-        assert optuna_space['architecture']['pooling']['choices'] == ['mean']
+        assert optuna_space["architecture"]["hidden_channels"]["choices"] == [64]
+        assert optuna_space["architecture"]["pooling"]["choices"] == ["mean"]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_large_max_layers(self):
         """Test space with large max_layers value."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -4186,7 +4297,7 @@ class TestEdgeCases:
         assert space.max_layers == 100
         assert space.estimate_search_space_size() > 0
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_large_hidden_channels(self):
         """Test space with large hidden_channels values."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -4195,7 +4306,7 @@ class TestEdgeCases:
 
         assert space.hidden_channels == [1024, 2048, 4096]
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_zero_dropout_range(self):
         """Test space with zero dropout range."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
@@ -4205,10 +4316,10 @@ class TestEdgeCases:
         assert space.dropout_range == (0.0, 0.0)
 
         optuna_space = space.to_optuna_search_space()
-        assert optuna_space['architecture']['dropout']['low'] == 0.0
-        assert optuna_space['architecture']['dropout']['high'] == 0.0
+        assert optuna_space["architecture"]["dropout"]["low"] == 0.0
+        assert optuna_space["architecture"]["dropout"]["high"] == 0.0
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_all_layer_types(self):
         """Test space with all layer types."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, LayerType
@@ -4220,7 +4331,7 @@ class TestEdgeCases:
         assert space.has_attention_layers() is True
         assert len(space.get_attention_layer_types()) == 3
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_all_pooling_types(self):
         """Test space with all pooling types."""
         from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, PoolingType
@@ -4230,20 +4341,20 @@ class TestEdgeCases:
 
         assert len(space.pooling_types) == 6
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_all_aggregation_types(self):
         """Test space with all aggregation types."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, AggregationType
+        from milia_pipeline.models.hpo.nas.search_space import AggregationType, GNNArchitectureSpace
 
         all_types = list(AggregationType)
         space = GNNArchitectureSpace(aggregation_types=all_types)
 
         assert len(space.aggregation_types) == 5
 
-    @patch('milia_pipeline.exceptions.SearchSpaceError', MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     def test_all_activation_types(self):
         """Test space with all activation types."""
-        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace, ActivationType
+        from milia_pipeline.models.hpo.nas.search_space import ActivationType, GNNArchitectureSpace
 
         all_types = list(ActivationType)
         space = GNNArchitectureSpace(activation_types=all_types)

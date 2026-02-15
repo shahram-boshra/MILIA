@@ -82,22 +82,22 @@ from rdkit import Chem
 def calculate_my_descriptor(mol):
     '''
     Calculate my custom descriptor.
-    
+
     Args:
         mol: RDKit Mol object
-    
+
     Returns:
         float: Descriptor value
     '''
     try:
         # Your calculation here
         value = 0.0
-        
+
         # Example: count aromatic atoms
         for atom in mol.GetAtoms():
             if atom.GetIsAromatic():
                 value += 1.0
-        
+
         return value
     except Exception as e:
         # Return NaN on error

@@ -18,7 +18,7 @@ descriptors:
     requires_3d: false
     requires_charges: false
     version: "1.0.0"
-  
+
   - name: "HeteroatomRatio"
     function_name: "calculate_heteroatom_ratio"
     module_path: "descriptors"
@@ -27,7 +27,7 @@ descriptors:
     requires_3d: false
     requires_charges: false
     version: "1.0.0"
-  
+
   - name: "ChainLength"
     function_name: "calculate_chain_length"
     module_path: "descriptors"

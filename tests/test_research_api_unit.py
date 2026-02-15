@@ -53,53 +53,47 @@ Updated: Production-ready test coverage
 """
 
 import sys
-import os
 from pathlib import Path
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch, mock_open, call, PropertyMock
-from typing import Dict, List, Any, Optional
+import json
 from collections import defaultdict
 from datetime import datetime
-import json
-import logging
-import itertools
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 import yaml
-
-# Import the module under test
-from milia_pipeline.transformations.research_api import (
-    # Core classes
-    ExperimentConfiguration,
-    AblationStudyBuilder,
-    ParameterSweepBuilder,
-    ComparativeStudyBuilder,
-    ExperimentRunner,
-
-    # Convenience functions
-    create_ablation_study,
-    create_parameter_sweep,
-    create_comparative_study,
-
-    # Configuration loaders
-    load_experiments_from_config,
-    get_experiment,
-    list_available_experiments,
-)
 
 from milia_pipeline.config.config_containers import TransformSpec
 from milia_pipeline.exceptions import ConfigurationError
 
+# Import the module under test
+from milia_pipeline.transformations.research_api import (
+    AblationStudyBuilder,
+    ComparativeStudyBuilder,
+    # Core classes
+    ExperimentConfiguration,
+    ExperimentRunner,
+    ParameterSweepBuilder,
+    # Convenience functions
+    create_ablation_study,
+    create_comparative_study,
+    create_parameter_sweep,
+    get_experiment,
+    list_available_experiments,
+    # Configuration loaders
+    load_experiments_from_config,
+)
 
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def sample_transform_specs():
@@ -133,8 +127,16 @@ def sample_ablations():
 def sample_parameter_sweeps():
     """Sample parameter sweep variants."""
     return [
-        {"name": "sweep_0_p=0.1", "transforms": ["AddSelfLoops", {"name": "DropEdge", "p": 0.1}], "parameters": {"p": 0.1}},
-        {"name": "sweep_1_p=0.3", "transforms": ["AddSelfLoops", {"name": "DropEdge", "p": 0.3}], "parameters": {"p": 0.3}},
+        {
+            "name": "sweep_0_p=0.1",
+            "transforms": ["AddSelfLoops", {"name": "DropEdge", "p": 0.1}],
+            "parameters": {"p": 0.1},
+        },
+        {
+            "name": "sweep_1_p=0.3",
+            "transforms": ["AddSelfLoops", {"name": "DropEdge", "p": 0.3}],
+            "parameters": {"p": 0.3},
+        },
     ]
 
 
@@ -266,6 +268,7 @@ def sample_experiment_dict():
 # =============================================================================
 # EXPERIMENT CONFIGURATION TESTS
 # =============================================================================
+
 
 class TestExperimentConfiguration:
     """Test suite for ExperimentConfiguration Pydantic model."""
@@ -445,7 +448,7 @@ class TestExperimentConfiguration:
         sample_experiment_config.save_to_yaml(yaml_path)
         assert yaml_path.exists()
 
-        with open(yaml_path, "r") as f:
+        with open(yaml_path) as f:
             loaded = yaml.safe_load(f)
         assert loaded["name"] == "test_ablation"
         assert loaded["num_runs"] == 3
@@ -544,6 +547,7 @@ class TestExperimentConfiguration:
 # =============================================================================
 # ABLATION STUDY BUILDER TESTS
 # =============================================================================
+
 
 class TestAblationStudyBuilder:
     """Test suite for AblationStudyBuilder fluent API."""
@@ -731,6 +735,7 @@ class TestAblationStudyBuilder:
 # PARAMETER SWEEP BUILDER TESTS
 # =============================================================================
 
+
 class TestParameterSweepBuilder:
     """Test suite for ParameterSweepBuilder fluent API."""
 
@@ -857,15 +862,21 @@ class TestParameterSweepBuilder:
 
     def test_generate_combinations_multi_param(self):
         """Test _generate_combinations with multiple parameters (Cartesian product)."""
-        combos = ParameterSweepBuilder._generate_combinations({
-            "p": [0.1, 0.2],
-            "k": [1, 2, 3],
-        })
+        combos = ParameterSweepBuilder._generate_combinations(
+            {
+                "p": [0.1, 0.2],
+                "k": [1, 2, 3],
+            }
+        )
         assert len(combos) == 6  # 2 * 3
         # Check all combinations are present
         expected = [
-            {"p": 0.1, "k": 1}, {"p": 0.1, "k": 2}, {"p": 0.1, "k": 3},
-            {"p": 0.2, "k": 1}, {"p": 0.2, "k": 2}, {"p": 0.2, "k": 3},
+            {"p": 0.1, "k": 1},
+            {"p": 0.1, "k": 2},
+            {"p": 0.1, "k": 3},
+            {"p": 0.2, "k": 1},
+            {"p": 0.2, "k": 2},
+            {"p": 0.2, "k": 3},
         ]
         for exp in expected:
             assert exp in combos
@@ -899,6 +910,7 @@ class TestParameterSweepBuilder:
 # =============================================================================
 # COMPARATIVE STUDY BUILDER TESTS
 # =============================================================================
+
 
 class TestComparativeStudyBuilder:
     """Test suite for ComparativeStudyBuilder fluent API."""
@@ -1009,6 +1021,7 @@ class TestComparativeStudyBuilder:
 # EXPERIMENT RUNNER TESTS
 # =============================================================================
 
+
 class TestExperimentRunner:
     """Test suite for ExperimentRunner."""
 
@@ -1085,7 +1098,9 @@ class TestExperimentRunner:
             evaluator=mock_evaluator,
             num_runs=1,
         )
-        num_variants = len(experiment_runner.config.ablations) + len(experiment_runner.config.parameter_sweeps)
+        num_variants = len(experiment_runner.config.ablations) + len(
+            experiment_runner.config.parameter_sweeps
+        )
         assert mock_dataset_loader.call_count == num_variants * 1
 
     def test_run_experiment_seed_incremented(
@@ -1243,7 +1258,12 @@ class TestExperimentRunner:
     def test_save_results_json(self, experiment_runner):
         """Test _save_results creates JSON files."""
         experiment_runner.results["test"] = [
-            {"run": 0, "variant": "test", "eval_metrics": {"mae": 0.1}, "train_metrics": {"loss": 0.5}},
+            {
+                "run": 0,
+                "variant": "test",
+                "eval_metrics": {"mae": 0.1},
+                "train_metrics": {"loss": 0.5},
+            },
         ]
         summary = experiment_runner._analyze_results()
         experiment_runner._save_results(summary)
@@ -1257,8 +1277,18 @@ class TestExperimentRunner:
     def test_save_results_csv(self, experiment_runner):
         """Test _save_results_csv creates CSV with correct columns."""
         experiment_runner.results["v1"] = [
-            {"run": 0, "variant": "v1", "eval_metrics": {"mae": 0.1, "rmse": 0.2}, "train_metrics": {"loss": 0.5}},
-            {"run": 1, "variant": "v1", "eval_metrics": {"mae": 0.15, "rmse": 0.25}, "train_metrics": {"loss": 0.4}},
+            {
+                "run": 0,
+                "variant": "v1",
+                "eval_metrics": {"mae": 0.1, "rmse": 0.2},
+                "train_metrics": {"loss": 0.5},
+            },
+            {
+                "run": 1,
+                "variant": "v1",
+                "eval_metrics": {"mae": 0.15, "rmse": 0.25},
+                "train_metrics": {"loss": 0.4},
+            },
         ]
 
         csv_path = experiment_runner.output_dir / "test.csv"
@@ -1328,8 +1358,16 @@ class TestExperimentRunner:
             "experiment": "test",
             "timestamp": datetime.now().isoformat(),
             "variants": {
-                "v1": {"status": "success", "num_runs": 1, "failed_runs": 0,
-                        "mean": 0.1, "std": 0.0, "min": 0.1, "max": 0.1, "median": 0.1},
+                "v1": {
+                    "status": "success",
+                    "num_runs": 1,
+                    "failed_runs": 0,
+                    "mean": 0.1,
+                    "std": 0.0,
+                    "min": 0.1,
+                    "max": 0.1,
+                    "median": 0.1,
+                },
             },
             "hypothesis": None,
             "expected_outcome": None,
@@ -1346,6 +1384,7 @@ class TestExperimentRunner:
 # =============================================================================
 # CONVENIENCE FUNCTIONS TESTS
 # =============================================================================
+
 
 class TestConvenienceFunctions:
     """Test suite for convenience functions."""
@@ -1455,6 +1494,7 @@ class TestConvenienceFunctions:
 # =============================================================================
 # CONFIGURATION LOADING TESTS
 # =============================================================================
+
 
 class TestConfigurationLoading:
     """Test suite for configuration loading functions."""
@@ -1614,6 +1654,7 @@ class TestConfigurationLoading:
 # MODULE EXPORTS TESTS
 # =============================================================================
 
+
 class TestModuleExports:
     """Test that all expected classes and functions are exported."""
 
@@ -1649,6 +1690,7 @@ class TestModuleExports:
 # =============================================================================
 # EDGE CASES AND BOUNDARY CONDITIONS
 # =============================================================================
+
 
 class TestEdgeCases:
     """Test suite for edge cases and boundary conditions."""

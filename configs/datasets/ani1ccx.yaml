@@ -33,7 +33,7 @@ ani1ccx_config:
 
 # ────────────────────────────────────────────────────
 # ANI1CCX Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     ANI1CCX:
@@ -41,25 +41,25 @@ data_config:
       # Reference: Smith et al., Scientific Data 7, 134 (2020)
       # Level of theory: CCSD(T)/CBS (primary), ωB97x/6-31G* (secondary)
       # CRITICAL: ANI-1ccx is a ~500k conformer subset of ANI-1x with CC energies
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         - ccsd_energy     # CCSD(T)/CBS coupled-cluster energy (Hartree) - PRIMARY TARGET
         # - dft_energy    # ωB97x/6-31G* DFT energy (Hartree) - uncomment for comparison
-      
+
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
         - hirshfeld_charges   # Hirshfeld atomic charges (e) - recommended for charge features
         # - cm5_charges       # CM5 atomic charges (e) - alternative charge scheme
         # - forces            # Atomic forces (Hartree/Angstrom) - for force-field training
-      
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include:
         - dipole          # Molecular dipole moment (Debye)
-      
+
       # Variable-length graph properties
       variable_len_graph_properties_to_include: []
-      
+
       # ANI1CCX-specific settings
       # Calculate atomization energy from coupled-cluster energy (higher accuracy than DFT)
       calculate_atomization_energy_from: ccsd_energy
@@ -69,7 +69,7 @@ data_config:
 
 # ────────────────────────────────────────────────────
 # ANI1CCX Property Availability Matrix
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 property_availability:
   ANI1CCX:
     molecular_identifiers:

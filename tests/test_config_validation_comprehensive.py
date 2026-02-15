@@ -55,15 +55,11 @@ Launch from project root: /app/milia/
     pytest tests/test_config_validation_comprehensive.py -v
 """
 
-import sys
-import os
 import copy
-import tempfile
-import shutil
-import logging
-from pathlib import Path
-from typing import Dict, Any, List
-from unittest.mock import patch, MagicMock
+import os
+import sys
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -71,7 +67,7 @@ import yaml
 # ---------------------------------------------------------------------------
 # Add the project root to Python path FIRST
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -86,6 +82,7 @@ pytestmark = pytest.mark.contract
 # FIXTURES
 # ===========================================================================
 
+
 @pytest.fixture(autouse=True)
 def _clear_config_cache():
     """Clear config cache before and after each test to prevent cross-contamination.
@@ -94,12 +91,14 @@ def _clear_config_cache():
     """
     try:
         from milia_pipeline.config.config_loader import clear_config_cache
+
         clear_config_cache()
     except ImportError:
         pass
     yield
     try:
         from milia_pipeline.config.config_loader import clear_config_cache
+
         clear_config_cache()
     except ImportError:
         pass
@@ -120,7 +119,7 @@ def tmp_config_dir(tmp_path):
 
 
 @pytest.fixture
-def minimal_valid_config() -> Dict[str, Any]:
+def minimal_valid_config() -> dict[str, Any]:
     """A minimal configuration dictionary that exercises the happy path.
 
     Keys chosen from config_loader.py lines 796-802 (basic structure check)
@@ -128,24 +127,18 @@ def minimal_valid_config() -> Dict[str, Any]:
     """
     return {
         "dataset_type": "DFT",
-        "global_paths": {
-            "working_root_dir": "/tmp/test_milia"
-        },
+        "global_paths": {"working_root_dir": "/tmp/test_milia"},
         "transformations": {
             "experimental_setups": {
                 "baseline": {
                     "description": "Minimal baseline",
-                    "transforms": [
-                        {"name": "AddSelfLoops", "kwargs": {}, "enabled": True}
-                    ]
+                    "transforms": [{"name": "AddSelfLoops", "kwargs": {}, "enabled": True}],
                 }
             },
             "default_setup": "baseline",
-            "validation": {"enabled": True, "strict_mode": False}
+            "validation": {"enabled": True, "strict_mode": False},
         },
-        "data_config": {
-            "common_settings": {"chunk_size": 500}
-        }
+        "data_config": {"common_settings": {"chunk_size": 500}},
     }
 
 
@@ -174,6 +167,7 @@ class TestYAMLSchemaValidator:
 
     def _get_validator(self):
         from milia_pipeline.config.config_schemas import YAMLSchemaValidator
+
         return YAMLSchemaValidator()
 
     # ----- Happy path -----
@@ -198,10 +192,8 @@ class TestYAMLSchemaValidator:
         """
         config = {
             "transformations": {
-                "standard_transforms": [
-                    {"name": "AddSelfLoops", "kwargs": {}}
-                ],
-                "default_setup": "baseline"
+                "standard_transforms": [{"name": "AddSelfLoops", "kwargs": {}}],
+                "default_setup": "baseline",
             }
         }
         validator = self._get_validator()
@@ -214,13 +206,10 @@ class TestYAMLSchemaValidator:
         config = {
             "transformations": {
                 "experimental_setups": {
-                    "exp1": {
-                        "description": "Test",
-                        "transforms": [{"name": "T1"}]
-                    }
+                    "exp1": {"description": "Test", "transforms": [{"name": "T1"}]}
                 },
                 "standard_transforms": [{"name": "AddSelfLoops"}],
-                "default_setup": "exp1"
+                "default_setup": "exp1",
             }
         }
         validator = self._get_validator()
@@ -295,12 +284,7 @@ class TestYAMLSchemaValidator:
 
         Evidence: config_schemas.py lines 1220-1222.
         """
-        config = {
-            "transformations": {
-                "experimental_setups": {},
-                "default_setup": "baseline"
-            }
-        }
+        config = {"transformations": {"experimental_setups": {}, "default_setup": "baseline"}}
         validator = self._get_validator()
         result = validator.validate_config(config)
         assert result["valid"] is False
@@ -316,18 +300,13 @@ class TestYAMLSchemaValidator:
 
         config = {
             "transformations": {
-                "experimental_setups": {
-                    "baseline": {
-                        "transforms": [{"name": "T1"}]
-                    }
-                }
+                "experimental_setups": {"baseline": {"transforms": [{"name": "T1"}]}}
                 # NOTE: default_setup intentionally omitted
             }
         }
         validator = self._get_validator()
         result = validator.validate_config(
-            config,
-            validation_config=ValidationConfig(strict_mode=True)
+            config, validation_config=ValidationConfig(strict_mode=True)
         )
         assert result["valid"] is False or any(
             "default_setup" in e.lower() for e in result["errors"]
@@ -347,6 +326,7 @@ class TestValidationConfig:
 
     def test_defaults(self):
         from milia_pipeline.config.config_schemas import ValidationConfig
+
         vc = ValidationConfig()
         assert vc.strict_mode is False
         assert vc.warn_on_unknown is True
@@ -356,6 +336,7 @@ class TestValidationConfig:
 
     def test_override_strict_mode(self):
         from milia_pipeline.config.config_schemas import ValidationConfig
+
         vc = ValidationConfig(strict_mode=True)
         assert vc.strict_mode is True
 
@@ -374,19 +355,16 @@ class TestTransformationSchema:
 
     def test_valid_with_experimental_setups(self):
         from milia_pipeline.config.config_schemas import TransformationSchema
+
         ts = TransformationSchema(
-            experimental_setups={
-                "baseline": [{"name": "AddSelfLoops"}]
-            },
-            default_setup="baseline"
+            experimental_setups={"baseline": [{"name": "AddSelfLoops"}]}, default_setup="baseline"
         )
         assert ts.default_setup == "baseline"
 
     def test_valid_with_standard_transforms_only(self):
         from milia_pipeline.config.config_schemas import TransformationSchema
-        ts = TransformationSchema(
-            standard_transforms=[{"name": "AddSelfLoops"}]
-        )
+
+        ts = TransformationSchema(standard_transforms=[{"name": "AddSelfLoops"}])
         assert ts.standard_transforms is not None
 
     def test_invalid_no_transforms_source(self):
@@ -394,8 +372,10 @@ class TestTransformationSchema:
 
         Evidence: config_schemas.py lines 366-370.
         """
-        from milia_pipeline.config.config_schemas import TransformationSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import TransformationSchema
+
         with pytest.raises(PydanticValidationError):
             TransformationSchema(experimental_setups={}, standard_transforms=None)
 
@@ -404,12 +384,13 @@ class TestTransformationSchema:
 
         Evidence: config_schemas.py lines 381-384.
         """
-        from milia_pipeline.config.config_schemas import TransformationSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import TransformationSchema
+
         with pytest.raises(PydanticValidationError):
             TransformationSchema(
-                experimental_setups={"baseline": [{"name": "T1"}]},
-                default_setup="nonexistent"
+                experimental_setups={"baseline": [{"name": "T1"}]}, default_setup="nonexistent"
             )
 
 
@@ -426,6 +407,7 @@ class TestPluginConfigSchema:
 
     def test_defaults(self):
         from milia_pipeline.config.config_schemas import PluginConfigSchema
+
         pcs = PluginConfigSchema()
         assert pcs.enabled is False
         assert pcs.auto_discover is True
@@ -433,8 +415,10 @@ class TestPluginConfigSchema:
         assert pcs.max_plugins == 50
 
     def test_invalid_validation_level(self):
-        from milia_pipeline.config.config_schemas import PluginConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import PluginConfigSchema
+
         with pytest.raises(PydanticValidationError):
             PluginConfigSchema(validation_level="INVALID")
 
@@ -443,8 +427,10 @@ class TestPluginConfigSchema:
 
         Evidence: config_schemas.py lines 427-434.
         """
-        from milia_pipeline.config.config_schemas import PluginConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import PluginConfigSchema
+
         with pytest.raises(PydanticValidationError):
             PluginConfigSchema(max_plugins=0)
         with pytest.raises(PydanticValidationError):
@@ -452,6 +438,7 @@ class TestPluginConfigSchema:
 
     def test_to_dict_round_trip(self):
         from milia_pipeline.config.config_schemas import PluginConfigSchema
+
         pcs = PluginConfigSchema(enabled=True, plugin_paths=["./plugins"])
         d = pcs.to_dict()
         restored = PluginConfigSchema.from_dict(d)
@@ -472,6 +459,7 @@ class TestDescriptorConfigSchema:
 
     def test_defaults(self):
         from milia_pipeline.config.config_schemas import DescriptorConfigSchema
+
         dcs = DescriptorConfigSchema()
         assert dcs.enabled is True
         assert dcs.cache_descriptors is True
@@ -480,14 +468,18 @@ class TestDescriptorConfigSchema:
         assert dcs.num_workers == 1
 
     def test_invalid_error_handling(self):
-        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
+
         with pytest.raises(PydanticValidationError):
             DescriptorConfigSchema(error_handling="crash")
 
     def test_invalid_validation_mode(self):
-        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
+
         with pytest.raises(PydanticValidationError):
             DescriptorConfigSchema(validation_mode="turbo")
 
@@ -496,8 +488,10 @@ class TestDescriptorConfigSchema:
 
         Evidence: config_schemas.py lines 1017-1031.
         """
-        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import DescriptorConfigSchema
+
         with pytest.raises(PydanticValidationError):
             DescriptorConfigSchema(default_categories=["nonexistent_category"])
 
@@ -507,6 +501,7 @@ class TestDescriptorConfigSchema:
         Evidence: config_schemas.py lines 1033-1042.
         """
         from milia_pipeline.config.config_schemas import DescriptorConfigSchema
+
         dcs = DescriptorConfigSchema(parallel_computation=True, num_workers=1)
         assert dcs.num_workers == 2
 
@@ -524,18 +519,22 @@ class TestWavefunctionProcessingConfigSchema:
 
     def test_default_tier(self):
         from milia_pipeline.config.config_schemas import WavefunctionProcessingConfigSchema
+
         wcs = WavefunctionProcessingConfigSchema()
         assert wcs.feature_tier == "standard"
 
     def test_valid_tiers(self):
         from milia_pipeline.config.config_schemas import WavefunctionProcessingConfigSchema
+
         for tier in ("basic", "standard", "complete"):
             wcs = WavefunctionProcessingConfigSchema(feature_tier=tier)
             assert wcs.feature_tier == tier
 
     def test_invalid_tier(self):
-        from milia_pipeline.config.config_schemas import WavefunctionProcessingConfigSchema
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_schemas import WavefunctionProcessingConfigSchema
+
         with pytest.raises(PydanticValidationError):
             WavefunctionProcessingConfigSchema(feature_tier="ultra")
 
@@ -552,23 +551,19 @@ class TestValidateWithPydanticModel:
     """
 
     def test_valid_data_returns_valid_result(self):
-        from milia_pipeline.config.validators import validate_with_pydantic_model
         from milia_pipeline.config.config_schemas import ValidationConfig
+        from milia_pipeline.config.validators import validate_with_pydantic_model
 
-        result = validate_with_pydantic_model(
-            {"strict_mode": True}, ValidationConfig
-        )
+        result = validate_with_pydantic_model({"strict_mode": True}, ValidationConfig)
         assert result.is_valid is True
         validated = result.get_validated_data()
         assert validated.strict_mode is True
 
     def test_invalid_data_returns_errors(self):
-        from milia_pipeline.config.validators import validate_with_pydantic_model
         from milia_pipeline.config.config_schemas import PluginConfigSchema
+        from milia_pipeline.config.validators import validate_with_pydantic_model
 
-        result = validate_with_pydantic_model(
-            {"validation_level": "BAD_LEVEL"}, PluginConfigSchema
-        )
+        result = validate_with_pydantic_model({"validation_level": "BAD_LEVEL"}, PluginConfigSchema)
         assert result.is_valid is False
         assert len(result.errors) > 0
 
@@ -577,8 +572,8 @@ class TestValidateWithPydanticModel:
 
         Evidence: validators.py lines 871-872.
         """
-        from milia_pipeline.config.validators import validate_with_pydantic_model
         from milia_pipeline.config.config_schemas import ValidationConfig
+        from milia_pipeline.config.validators import validate_with_pydantic_model
 
         is_valid, errors = validate_with_pydantic_model(
             {"strict_mode": False}, ValidationConfig, return_wrapper=False
@@ -600,6 +595,7 @@ class TestValidationResult:
 
     def test_valid_result_allows_data_access(self):
         from milia_pipeline.config.validators import ValidationResult
+
         result = ValidationResult(is_valid=True, errors=[], data={"key": "val"})
         assert result.is_valid is True
         assert result.get_validated_data() == {"key": "val"}
@@ -607,6 +603,7 @@ class TestValidationResult:
     def test_invalid_result_raises_on_data_access(self):
         from milia_pipeline.config.validators import ValidationResult
         from milia_pipeline.exceptions import ValidationError
+
         result = ValidationResult(is_valid=False, errors=["bad value"])
         assert result.is_valid is False
         with pytest.raises(ValidationError):
@@ -619,6 +616,7 @@ class TestValidationResult:
         """
         from milia_pipeline.config.validators import ValidationResult
         from milia_pipeline.exceptions import ValidationError
+
         result = ValidationResult(is_valid=True, errors=[], data="x")
         with pytest.raises(ValidationError, match="must be checked"):
             result.get_validated_data()
@@ -640,10 +638,10 @@ class TestDatasetConfig:
     def test_valid_dataset_config(self):
         """Valid DatasetConfig creation using mock for registry gate."""
         with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=True
+            "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=True
         ):
             from milia_pipeline.config.config_containers import DatasetConfig
+
             dc = DatasetConfig(dataset_type="DFT")
             assert dc.dataset_type == "DFT"
             assert dc.is_uncertainty_enabled is False
@@ -654,15 +652,19 @@ class TestDatasetConfig:
 
         Evidence: config_containers.py lines 316-323.
         """
-        with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=False
-        ), patch(
-            "milia_pipeline.config.config_containers._get_valid_dataset_types",
-            return_value=["DFT", "DMC"]
+        with (
+            patch(
+                "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=False
+            ),
+            patch(
+                "milia_pipeline.config.config_containers._get_valid_dataset_types",
+                return_value=["DFT", "DMC"],
+            ),
         ):
-            from milia_pipeline.config.config_containers import DatasetConfig
             from pydantic import ValidationError as PydanticValidationError
+
+            from milia_pipeline.config.config_containers import DatasetConfig
+
             with pytest.raises(PydanticValidationError):
                 DatasetConfig(dataset_type="NONEXISTENT")
 
@@ -672,10 +674,10 @@ class TestDatasetConfig:
         Evidence: config_containers.py line 294 — ``class DatasetConfig(BaseModel, frozen=True)``
         """
         with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=True
+            "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=True
         ):
             from milia_pipeline.config.config_containers import DatasetConfig
+
             dc = DatasetConfig(dataset_type="DFT")
             with pytest.raises(Exception):  # Pydantic frozen model raises ValidationError
                 dc.dataset_type = "DMC"
@@ -686,13 +688,12 @@ class TestDatasetConfig:
         Evidence: config_containers.py lines 325-345 — model_validator set_computed_fields_and_defaults.
         """
         with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=True
+            "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=True
         ):
             from milia_pipeline.config.config_containers import DatasetConfig
+
             dc = DatasetConfig(
-                dataset_type="DMC",
-                uncertainty_config={"use_for_loss_weighting": True}
+                dataset_type="DMC", uncertainty_config={"use_for_loss_weighting": True}
             )
             assert dc.is_uncertainty_enabled is True
 
@@ -705,6 +706,7 @@ class TestFilterConfig:
 
     def test_defaults(self):
         from milia_pipeline.config.config_containers import FilterConfig
+
         fc = FilterConfig()
         assert fc.max_atoms is None
         assert fc.min_atoms is None
@@ -715,6 +717,7 @@ class TestFilterConfig:
         Evidence: config_containers.py lines 521-523.
         """
         from milia_pipeline.config.config_containers import FilterConfig
+
         fc = FilterConfig(max_atoms=5, min_atoms=10)
         is_valid, errors = fc.validate_filter_config()
         assert is_valid is False
@@ -726,6 +729,7 @@ class TestFilterConfig:
         Evidence: config_containers.py lines 525-526.
         """
         from milia_pipeline.config.config_containers import FilterConfig
+
         fc = FilterConfig(min_atoms=-1)
         is_valid, errors = fc.validate_filter_config()
         assert is_valid is False
@@ -739,6 +743,7 @@ class TestProcessingConfig:
 
     def test_valid_processing_config(self):
         from milia_pipeline.config.config_containers import ProcessingConfig
+
         pc = ProcessingConfig(scalar_graph_targets=["Etot"])
         assert pc.scalar_graph_targets == ["Etot"]
         assert pc.test_molecule_limit is None
@@ -749,6 +754,7 @@ class TestProcessingConfig:
         Evidence: config_containers.py lines 757-760.
         """
         from milia_pipeline.config.config_containers import ProcessingConfig
+
         pc = ProcessingConfig(scalar_graph_targets=["Etot", "valid"])
         is_valid, errors = pc.validate_processing_config()
         assert is_valid is True
@@ -759,6 +765,7 @@ class TestProcessingConfig:
         Evidence: config_containers.py lines 774-776.
         """
         from milia_pipeline.config.config_containers import ProcessingConfig
+
         pc = ProcessingConfig(scalar_graph_targets=["Etot"], test_molecule_limit=-5)
         is_valid, errors = pc.validate_processing_config()
         assert is_valid is False
@@ -773,10 +780,10 @@ class TestHandlerConfig:
 
     def test_valid_handler_config(self):
         with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=True
+            "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=True
         ):
             from milia_pipeline.config.config_containers import HandlerConfig
+
             hc = HandlerConfig(handler_type="DFT")
             assert hc.handler_type == "DFT"
             assert hc.migration_mode is False
@@ -786,15 +793,19 @@ class TestHandlerConfig:
 
         Evidence: config_containers.py lines 813-820.
         """
-        with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=False
-        ), patch(
-            "milia_pipeline.config.config_containers._get_valid_dataset_types",
-            return_value=["DFT", "DMC"]
+        with (
+            patch(
+                "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=False
+            ),
+            patch(
+                "milia_pipeline.config.config_containers._get_valid_dataset_types",
+                return_value=["DFT", "DMC"],
+            ),
         ):
-            from milia_pipeline.config.config_containers import HandlerConfig
             from pydantic import ValidationError as PydanticValidationError
+
+            from milia_pipeline.config.config_containers import HandlerConfig
+
             with pytest.raises(PydanticValidationError):
                 HandlerConfig(handler_type="NONEXISTENT")
 
@@ -807,17 +818,15 @@ class TestStructuralFeaturesConfig:
 
     def test_valid_config(self):
         from milia_pipeline.config.config_containers import StructuralFeaturesConfig
-        sfc = StructuralFeaturesConfig(
-            atom_features=["atomic_number"],
-            bond_features=["bond_type"]
-        )
+
+        sfc = StructuralFeaturesConfig(atom_features=["atomic_number"], bond_features=["bond_type"])
         assert sfc.atom_features == ["atomic_number"]
 
     def test_validate_feature_config_valid(self):
         from milia_pipeline.config.config_containers import StructuralFeaturesConfig
+
         sfc = StructuralFeaturesConfig(
-            atom_features=["atomic_number", "mass"],
-            bond_features=["bond_type"]
+            atom_features=["atomic_number", "mass"], bond_features=["bond_type"]
         )
         is_valid, errors = sfc.validate_feature_config()
         assert is_valid is True
@@ -831,6 +840,7 @@ class TestTransformSpec:
 
     def test_valid_transform_spec(self):
         from milia_pipeline.config.config_containers import TransformSpec
+
         ts = TransformSpec(name="AddSelfLoops")
         assert ts.name == "AddSelfLoops"
         assert ts.enabled is True
@@ -840,8 +850,10 @@ class TestTransformSpec:
 
         Evidence: config_containers.py lines 897-907 — field_validator for 'name'.
         """
-        from milia_pipeline.config.config_containers import TransformSpec
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_containers import TransformSpec
+
         with pytest.raises(PydanticValidationError):
             TransformSpec(name="")
 
@@ -859,9 +871,8 @@ class TestDatasetMetadata:
 
     def test_valid_metadata(self):
         from milia_pipeline.datasets.base import DatasetMetadata
-        md = DatasetMetadata(
-            name="TestDS", version="1.0.0", description="A test dataset"
-        )
+
+        md = DatasetMetadata(name="TestDS", version="1.0.0", description="A test dataset")
         assert md.name == "TestDS"
         assert md.author is None
 
@@ -871,21 +882,25 @@ class TestDatasetMetadata:
         Evidence: base.py lines 51-52 — __post_init__ validation.
         """
         from milia_pipeline.datasets.base import DatasetMetadata
+
         with pytest.raises((ValueError, Exception)):
             DatasetMetadata(name="", version="1.0.0", description="Desc")
 
     def test_empty_version_raises(self):
         from milia_pipeline.datasets.base import DatasetMetadata
+
         with pytest.raises((ValueError, Exception)):
             DatasetMetadata(name="DS", version="", description="Desc")
 
     def test_empty_description_raises(self):
         from milia_pipeline.datasets.base import DatasetMetadata
+
         with pytest.raises((ValueError, Exception)):
             DatasetMetadata(name="DS", version="1.0.0", description="")
 
     def test_frozen_immutability(self):
         from milia_pipeline.datasets.base import DatasetMetadata
+
         md = DatasetMetadata(name="DS", version="1.0", description="Desc")
         with pytest.raises(Exception):
             md.name = "OtherDS"
@@ -899,6 +914,7 @@ class TestDatasetSchema:
 
     def test_valid_schema(self):
         from milia_pipeline.datasets.base import DatasetSchema
+
         ds = DatasetSchema(required_properties=("Etot", "atoms", "coordinates"))
         assert ds.coordinate_units == "angstrom"
         assert ds.energy_units == "hartree"
@@ -909,6 +925,7 @@ class TestDatasetSchema:
         Evidence: base.py lines 78-79.
         """
         from milia_pipeline.datasets.base import DatasetSchema
+
         with pytest.raises((ValueError, Exception)):
             DatasetSchema(required_properties=())
 
@@ -918,11 +935,9 @@ class TestDatasetSchema:
         Evidence: base.py lines 81-82.
         """
         from milia_pipeline.datasets.base import DatasetSchema
+
         with pytest.raises((ValueError, Exception)):
-            DatasetSchema(
-                required_properties=("atoms",),
-                coordinate_units="meters"
-            )
+            DatasetSchema(required_properties=("atoms",), coordinate_units="meters")
 
     def test_invalid_energy_units_raises(self):
         """Invalid energy_units raises ValueError.
@@ -930,14 +945,13 @@ class TestDatasetSchema:
         Evidence: base.py lines 84-85.
         """
         from milia_pipeline.datasets.base import DatasetSchema
+
         with pytest.raises((ValueError, Exception)):
-            DatasetSchema(
-                required_properties=("atoms",),
-                energy_units="calories"
-            )
+            DatasetSchema(required_properties=("atoms",), energy_units="calories")
 
     def test_valid_energy_units_set(self):
         from milia_pipeline.datasets.base import DatasetSchema
+
         for unit in ("hartree", "eV", "kcal/mol", "kJ/mol"):
             ds = DatasetSchema(required_properties=("atoms",), energy_units=unit)
             assert ds.energy_units == unit
@@ -951,12 +965,14 @@ class TestDatasetFeatures:
 
     def test_defaults_all_false(self):
         from milia_pipeline.datasets.base import DatasetFeatures
+
         df = DatasetFeatures()
         d = df.to_dict()
         assert all(v is False for v in d.values())
 
     def test_supports_method(self):
         from milia_pipeline.datasets.base import DatasetFeatures
+
         df = DatasetFeatures(vibrational_analysis=True, homo_lumo_gap=True)
         assert df.supports("vibrational_analysis") is True
         assert df.supports("homo_lumo_gap") is True
@@ -965,12 +981,18 @@ class TestDatasetFeatures:
 
     def test_to_dict_keys(self):
         from milia_pipeline.datasets.base import DatasetFeatures
+
         df = DatasetFeatures()
         d = df.to_dict()
         expected_keys = {
-            "vibrational_analysis", "uncertainty_handling", "atomization_energy",
-            "rotational_constants", "frequency_analysis", "orbital_analysis",
-            "homo_lumo_gap", "mo_energies"
+            "vibrational_analysis",
+            "uncertainty_handling",
+            "atomization_energy",
+            "rotational_constants",
+            "frequency_analysis",
+            "orbital_analysis",
+            "homo_lumo_gap",
+            "mo_energies",
         }
         assert set(d.keys()) == expected_keys
 
@@ -991,10 +1013,8 @@ class TestConfigBridgeModels:
 
     def test_model_selection_valid(self):
         from milia_pipeline.models.utils.config_bridge import ModelSelectionConfig
-        ms = ModelSelectionConfig(
-            task_type="graph_regression",
-            model_name="GCN"
-        )
+
+        ms = ModelSelectionConfig(task_type="graph_regression", model_name="GCN")
         assert ms.task_type == "graph_regression"
         assert ms.model_name == "GCN"
 
@@ -1003,14 +1023,18 @@ class TestConfigBridgeModels:
 
         Evidence: config_bridge.py lines 209-223.
         """
-        from milia_pipeline.models.utils.config_bridge import ModelSelectionConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import ModelSelectionConfig
+
         with pytest.raises(PydanticValidationError):
             ModelSelectionConfig(task_type="invalid_task", model_name="GCN")
 
     def test_model_selection_empty_model_name(self):
-        from milia_pipeline.models.utils.config_bridge import ModelSelectionConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import ModelSelectionConfig
+
         with pytest.raises(PydanticValidationError):
             ModelSelectionConfig(task_type="graph_regression", model_name="")
 
@@ -1018,6 +1042,7 @@ class TestConfigBridgeModels:
 
     def test_data_split_valid_defaults(self):
         from milia_pipeline.models.utils.config_bridge import DataSplitConfig
+
         ds = DataSplitConfig()
         assert ds.train_ratio + ds.val_ratio + ds.test_ratio == pytest.approx(1.0)
 
@@ -1026,14 +1051,18 @@ class TestConfigBridgeModels:
 
         Evidence: config_bridge.py lines 262-273.
         """
-        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
+
         with pytest.raises(PydanticValidationError):
             DataSplitConfig(train_ratio=0.5, val_ratio=0.5, test_ratio=0.5)
 
     def test_data_split_invalid_method(self):
-        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
+
         with pytest.raises(PydanticValidationError):
             DataSplitConfig(method="bogus_method")
 
@@ -1041,12 +1070,15 @@ class TestConfigBridgeModels:
 
     def test_loss_config_valid(self):
         from milia_pipeline.models.utils.config_bridge import LossConfig
+
         lc = LossConfig(name="mse")
         assert lc.name == "mse"
 
     def test_loss_config_invalid_name(self):
-        from milia_pipeline.models.utils.config_bridge import LossConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import LossConfig
+
         with pytest.raises(PydanticValidationError):
             LossConfig(name="nonexistent_loss")
 
@@ -1054,12 +1086,15 @@ class TestConfigBridgeModels:
 
     def test_optimizer_config_valid(self):
         from milia_pipeline.models.utils.config_bridge import OptimizerConfig
+
         oc = OptimizerConfig(name="adam")
         assert oc.name == "adam"
 
     def test_optimizer_config_invalid_name(self):
-        from milia_pipeline.models.utils.config_bridge import OptimizerConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import OptimizerConfig
+
         with pytest.raises(PydanticValidationError):
             OptimizerConfig(name="nonexistent_optimizer")
 
@@ -1067,12 +1102,15 @@ class TestConfigBridgeModels:
 
     def test_scheduler_config_valid(self):
         from milia_pipeline.models.utils.config_bridge import SchedulerConfig
+
         sc = SchedulerConfig(name="reduce_on_plateau", enabled=True)
         assert sc.name == "reduce_on_plateau"
 
     def test_scheduler_config_invalid_name_when_enabled(self):
-        from milia_pipeline.models.utils.config_bridge import SchedulerConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import SchedulerConfig
+
         with pytest.raises(PydanticValidationError):
             SchedulerConfig(name="bad_scheduler", enabled=True)
 
@@ -1080,12 +1118,15 @@ class TestConfigBridgeModels:
 
     def test_device_config_valid(self):
         from milia_pipeline.models.utils.config_bridge import DeviceConfig
+
         dc = DeviceConfig(type="auto")
         assert dc.type == "auto"
 
     def test_device_config_invalid_type(self):
-        from milia_pipeline.models.utils.config_bridge import DeviceConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DeviceConfig
+
         with pytest.raises(PydanticValidationError):
             DeviceConfig(type="quantum")
 
@@ -1093,12 +1134,15 @@ class TestConfigBridgeModels:
 
     def test_memory_config_valid(self):
         from milia_pipeline.models.utils.config_bridge import MemoryConfig
+
         mc = MemoryConfig(mixed_precision="bf16")
         assert mc.mixed_precision == "bf16"
 
     def test_memory_config_invalid_precision(self):
-        from milia_pipeline.models.utils.config_bridge import MemoryConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import MemoryConfig
+
         with pytest.raises(PydanticValidationError):
             MemoryConfig(mixed_precision="fp128")
 
@@ -1110,6 +1154,7 @@ class TestConfigBridgeModels:
         Evidence: config_bridge.py lines 404-417.
         """
         from milia_pipeline.models.utils.config_bridge import TrainingConfig
+
         tc = TrainingConfig()
         assert tc.data_split.method == "random"
         assert tc.loss.name == "mse"
@@ -1119,6 +1164,7 @@ class TestConfigBridgeModels:
 
     def test_evaluation_config_defaults(self):
         from milia_pipeline.models.utils.config_bridge import EvaluationConfig
+
         ec = EvaluationConfig()
         assert "mse" in ec.metrics
         assert ec.test_after_training is True
@@ -1131,12 +1177,15 @@ class TestConfigBridgeModels:
         Evidence: config_bridge.py lines 488-500.
         """
         from milia_pipeline.models.utils.config_bridge import DistributedConfig
+
         dc = DistributedConfig(enabled=False, strategy="whatever")
         assert dc.enabled is False
 
     def test_distributed_config_enabled_invalid_strategy(self):
-        from milia_pipeline.models.utils.config_bridge import DistributedConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DistributedConfig
+
         with pytest.raises(PydanticValidationError):
             DistributedConfig(enabled=True, strategy="invalid_strat")
 
@@ -1144,12 +1193,15 @@ class TestConfigBridgeModels:
 
     def test_deployment_config_disabled_accepts_any_strategy(self):
         from milia_pipeline.models.utils.config_bridge import DeploymentConfig
+
         dc = DeploymentConfig(enabled=False, strategy="whatever")
         assert dc.enabled is False
 
     def test_deployment_config_enabled_invalid_strategy(self):
-        from milia_pipeline.models.utils.config_bridge import DeploymentConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DeploymentConfig
+
         with pytest.raises(PydanticValidationError):
             DeploymentConfig(enabled=True, strategy="magic_deploy")
 
@@ -1157,6 +1209,7 @@ class TestConfigBridgeModels:
 
     def test_acceleration_config_defaults(self):
         from milia_pipeline.models.utils.config_bridge import AccelerationConfig
+
         ac = AccelerationConfig()
         assert ac.enabled is False
         assert ac.device.type == "auto"
@@ -1165,6 +1218,7 @@ class TestConfigBridgeModels:
 
     def test_plugins_config_defaults(self):
         from milia_pipeline.models.utils.config_bridge import PluginsConfig
+
         pc = PluginsConfig()
         assert pc.enabled is True
         assert pc.auto_discover is True
@@ -1183,26 +1237,34 @@ class TestConfigBridgeEnums:
 
     def test_task_type_enum_values(self):
         from milia_pipeline.models.utils.config_bridge import TaskType
+
         assert len(TaskType) == 6
         assert TaskType.GRAPH_REGRESSION.value == "graph_regression"
 
     def test_loss_function_enum_values(self):
         from milia_pipeline.models.utils.config_bridge import LossFunction
+
         assert LossFunction.MSE.value == "mse"
         assert LossFunction.FOCAL.value == "focal"
 
     def test_optimizer_type_enum_values(self):
         from milia_pipeline.models.utils.config_bridge import OptimizerType
+
         assert OptimizerType.ADAM.value == "adam"
 
     def test_scheduler_type_enum_values(self):
         from milia_pipeline.models.utils.config_bridge import SchedulerType
+
         assert SchedulerType.REDUCE_ON_PLATEAU.value == "reduce_on_plateau"
 
     def test_hpo_enums(self):
         from milia_pipeline.models.utils.config_bridge import (
-            HPOParamType, HPOPrunerType, HPOSamplerType, HPODirection
+            HPODirection,
+            HPOParamType,
+            HPOPrunerType,
+            HPOSamplerType,
         )
+
         assert HPOParamType.FLOAT.value == "float"
         assert HPOPrunerType.MEDIAN.value == "median"
         assert HPOSamplerType.TPE.value == "tpe"
@@ -1222,6 +1284,7 @@ class TestDeepMergeConfigs:
 
     def test_simple_override(self):
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         base = {"a": 1, "b": 2}
         override = {"b": 3, "c": 4}
         merged = _deep_merge_configs(base, override)
@@ -1229,6 +1292,7 @@ class TestDeepMergeConfigs:
 
     def test_recursive_dict_merge(self):
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         base = {"nested": {"x": 1, "y": 2}}
         override = {"nested": {"y": 99, "z": 100}}
         merged = _deep_merge_configs(base, override)
@@ -1240,6 +1304,7 @@ class TestDeepMergeConfigs:
         Evidence: config_loader.py lines 551-553.
         """
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         base = {"items": [1, 2, 3]}
         override = {"items": [4, 5]}
         merged = _deep_merge_configs(base, override)
@@ -1251,6 +1316,7 @@ class TestDeepMergeConfigs:
         Evidence: config_loader.py line 541 — deepcopy of base.
         """
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         base = {"a": {"b": 1}}
         override = {"a": {"c": 2}}
         base_copy = copy.deepcopy(base)
@@ -1259,11 +1325,13 @@ class TestDeepMergeConfigs:
 
     def test_empty_base(self):
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         merged = _deep_merge_configs({}, {"a": 1})
         assert merged == {"a": 1}
 
     def test_empty_override(self):
         from milia_pipeline.config.config_loader import _deep_merge_configs
+
         merged = _deep_merge_configs({"a": 1}, {})
         assert merged == {"a": 1}
 
@@ -1285,6 +1353,7 @@ class TestYAMLSplittingDiscovery:
         Evidence: config_loader.py lines 429-431.
         """
         from milia_pipeline.config.config_loader import _discover_config_files
+
         f = tmp_path / "config.yaml"
         f.write_text("dataset_type: DFT\n")
         is_split, files = _discover_config_files(str(f))
@@ -1297,6 +1366,7 @@ class TestYAMLSplittingDiscovery:
         Evidence: config_loader.py lines 434-436.
         """
         from milia_pipeline.config.config_loader import _discover_config_files
+
         # Create a YAML file so the directory isn't empty
         (tmp_config_dir / "main.yaml").write_text("dataset_type: DFT\n")
         is_split, files = _discover_config_files(str(tmp_config_dir))
@@ -1309,6 +1379,7 @@ class TestYAMLSplittingDiscovery:
         Evidence: config_loader.py lines 474-506.
         """
         from milia_pipeline.config.config_loader import _collect_yaml_files
+
         (tmp_config_dir / "main.yaml").write_text("a: 1\n")
         (tmp_config_dir / "zzz.yaml").write_text("b: 2\n")
         (tmp_config_dir / "aaa.yaml").write_text("c: 3\n")
@@ -1329,6 +1400,7 @@ class TestYAMLSplittingDiscovery:
         Evidence: config_loader.py lines 445-446.
         """
         from milia_pipeline.config.config_loader import _discover_config_files
+
         is_split, files = _discover_config_files(str(tmp_path / "missing.yaml"))
         assert is_split is False
 
@@ -1346,6 +1418,7 @@ class TestLoadAndMergeYamlFiles:
 
     def test_single_file_merge(self, tmp_path):
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
+
         f = tmp_path / "test.yaml"
         f.write_text("key1: value1\nkey2: value2\n")
         result = _load_and_merge_yaml_files([f])
@@ -1353,6 +1426,7 @@ class TestLoadAndMergeYamlFiles:
 
     def test_multi_file_merge_order(self, tmp_path):
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
+
         f1 = tmp_path / "base.yaml"
         f2 = tmp_path / "override.yaml"
         f1.write_text("a: 1\nb: 2\n")
@@ -1366,6 +1440,7 @@ class TestLoadAndMergeYamlFiles:
         Evidence: config_loader.py lines 589-590.
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
+
         f1 = tmp_path / "real.yaml"
         f1.write_text("key: val\n")
         f2 = tmp_path / "empty.yaml"
@@ -1380,6 +1455,7 @@ class TestLoadAndMergeYamlFiles:
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
         from milia_pipeline.exceptions import ConfigurationError
+
         with pytest.raises(ConfigurationError, match="No configuration files"):
             _load_and_merge_yaml_files([])
 
@@ -1390,6 +1466,7 @@ class TestLoadAndMergeYamlFiles:
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
         from milia_pipeline.exceptions import ConfigurationError
+
         bad = tmp_path / "bad.yaml"
         bad.write_text("key: [unclosed bracket\n")
         with pytest.raises(ConfigurationError):
@@ -1402,6 +1479,7 @@ class TestLoadAndMergeYamlFiles:
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
         from milia_pipeline.exceptions import ConfigurationError
+
         f = tmp_path / "list.yaml"
         f.write_text("- item1\n- item2\n")
         with pytest.raises(ConfigurationError, match="dictionary"):
@@ -1422,10 +1500,9 @@ class TestLoadConfig:
     def test_load_single_file_valid(self, minimal_valid_config_yaml):
         """Single-file mode loads and returns a dict."""
         from milia_pipeline.config.config_loader import load_config
+
         config = load_config(
-            config_path=minimal_valid_config_yaml,
-            enable_enhancement=False,
-            force_reload=True
+            config_path=minimal_valid_config_yaml, enable_enhancement=False, force_reload=True
         )
         assert isinstance(config, dict)
         assert "dataset_type" in config
@@ -1437,11 +1514,9 @@ class TestLoadConfig:
         """
         from milia_pipeline.config.config_loader import load_config
         from milia_pipeline.exceptions import ConfigurationError
+
         with pytest.raises(ConfigurationError, match="not found"):
-            load_config(
-                config_path=str(tmp_path / "nonexistent.yaml"),
-                force_reload=True
-            )
+            load_config(config_path=str(tmp_path / "nonexistent.yaml"), force_reload=True)
 
     def test_load_empty_file_raises(self, tmp_path):
         """Loading an empty YAML file raises ConfigurationError.
@@ -1450,6 +1525,7 @@ class TestLoadConfig:
         """
         from milia_pipeline.config.config_loader import load_config
         from milia_pipeline.exceptions import ConfigurationError
+
         empty = tmp_path / "empty.yaml"
         empty.write_text("")
         with pytest.raises(ConfigurationError):
@@ -1462,6 +1538,7 @@ class TestLoadConfig:
         """
         from milia_pipeline.config.config_loader import load_config
         from milia_pipeline.exceptions import ConfigurationError
+
         f = tmp_path / "list_root.yaml"
         f.write_text("- a\n- b\n")
         with pytest.raises(ConfigurationError, match="dictionary"):
@@ -1474,18 +1551,12 @@ class TestLoadConfig:
         (tmp_config_dir / "main.yaml").write_text(
             "dataset_type: DFT\nglobal_paths:\n  working_root_dir: /tmp\n"
         )
-        (tmp_config_dir / "filter_config.yaml").write_text(
-            "filter_config:\n  max_atoms: 50\n"
-        )
+        (tmp_config_dir / "filter_config.yaml").write_text("filter_config:\n  max_atoms: 50\n")
         datasets_dir = tmp_config_dir / "datasets"
-        (datasets_dir / "dft.yaml").write_text(
-            "dft_config:\n  raw_npz_filename: DFT.npz\n"
-        )
+        (datasets_dir / "dft.yaml").write_text("dft_config:\n  raw_npz_filename: DFT.npz\n")
 
         config = load_config(
-            config_path=str(tmp_config_dir),
-            enable_enhancement=False,
-            force_reload=True
+            config_path=str(tmp_config_dir), enable_enhancement=False, force_reload=True
         )
         assert config["dataset_type"] == "DFT"
         assert "filter_config" in config
@@ -1497,29 +1568,23 @@ class TestLoadConfig:
         Evidence: config_loader.py lines 724-735.
         """
         from milia_pipeline.config.config_loader import load_config
+
         c1 = load_config(
-            config_path=minimal_valid_config_yaml,
-            enable_enhancement=False,
-            force_reload=True
+            config_path=minimal_valid_config_yaml, enable_enhancement=False, force_reload=True
         )
         c2 = load_config(
-            config_path=minimal_valid_config_yaml,
-            enable_enhancement=False,
-            force_reload=False
+            config_path=minimal_valid_config_yaml, enable_enhancement=False, force_reload=False
         )
         assert c1 is c2
 
     def test_force_reload_bypasses_cache(self, minimal_valid_config_yaml):
         from milia_pipeline.config.config_loader import load_config
+
         c1 = load_config(
-            config_path=minimal_valid_config_yaml,
-            enable_enhancement=False,
-            force_reload=True
+            config_path=minimal_valid_config_yaml, enable_enhancement=False, force_reload=True
         )
         c2 = load_config(
-            config_path=minimal_valid_config_yaml,
-            enable_enhancement=False,
-            force_reload=True
+            config_path=minimal_valid_config_yaml, enable_enhancement=False, force_reload=True
         )
         # Both are dicts with same content but force_reload reloads from disk
         assert c1 == c2
@@ -1539,15 +1604,19 @@ class TestErrorMessageQuality:
 
     def test_dataset_config_error_lists_valid_types(self):
         """DatasetConfig error for invalid type mentions valid options."""
-        with patch(
-            "milia_pipeline.config.config_containers._is_valid_dataset_type",
-            return_value=False
-        ), patch(
-            "milia_pipeline.config.config_containers._get_valid_dataset_types",
-            return_value=["DFT", "DMC", "QM9"]
+        with (
+            patch(
+                "milia_pipeline.config.config_containers._is_valid_dataset_type", return_value=False
+            ),
+            patch(
+                "milia_pipeline.config.config_containers._get_valid_dataset_types",
+                return_value=["DFT", "DMC", "QM9"],
+            ),
         ):
-            from milia_pipeline.config.config_containers import DatasetConfig
             from pydantic import ValidationError as PydanticValidationError
+
+            from milia_pipeline.config.config_containers import DatasetConfig
+
             with pytest.raises(PydanticValidationError) as exc_info:
                 DatasetConfig(dataset_type="INVALID_TYPE")
             error_text = str(exc_info.value)
@@ -1555,16 +1624,20 @@ class TestErrorMessageQuality:
             assert any(t in error_text for t in ["DFT", "DMC", "QM9"])
 
     def test_loss_config_error_lists_valid_losses(self):
-        from milia_pipeline.models.utils.config_bridge import LossConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import LossConfig
+
         with pytest.raises(PydanticValidationError) as exc_info:
             LossConfig(name="invalid_loss")
         error_text = str(exc_info.value)
         assert "mse" in error_text or "mae" in error_text
 
     def test_split_ratios_error_mentions_sum(self):
-        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.models.utils.config_bridge import DataSplitConfig
+
         with pytest.raises(PydanticValidationError) as exc_info:
             DataSplitConfig(train_ratio=0.9, val_ratio=0.9, test_ratio=0.9)
         error_text = str(exc_info.value)

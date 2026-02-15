@@ -22,16 +22,15 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock
 import inspect
+import sys
+import unittest
+from pathlib import Path
 from typing import (
-    Protocol, runtime_checkable, Dict, List, Any, Optional,
-    get_type_hints,
+    Any,
+    Protocol,
 )
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
@@ -42,15 +41,15 @@ import numpy as np
 from torch_geometric.data import Data
 
 from milia_pipeline.datasets.protocols import (
-    DatasetHandlerProtocol,
     DatasetConverterProtocol,
+    DatasetHandlerProtocol,
     DatasetValidatorProtocol,
 )
-
 
 # ============================================================================
 # HELPER: Test implementation classes for structural subtyping verification
 # ============================================================================
+
 
 class _FullHandler:
     """A class implementing ALL 11 DatasetHandlerProtocol methods."""
@@ -60,13 +59,13 @@ class _FullHandler:
 
     def validate_molecule_data(
         self,
-        raw_properties_dict: Dict[str, Any],
+        raw_properties_dict: dict[str, Any],
         molecule_index: int,
         identifier: str = "N/A",
     ) -> None:
         pass
 
-    def get_required_properties(self) -> List[str]:
+    def get_required_properties(self) -> list[str]:
         return ["energy"]
 
     def process_property_value(
@@ -81,35 +80,35 @@ class _FullHandler:
     def enrich_pyg_data(
         self,
         pyg_data: Data,
-        raw_properties_dict: Dict[str, Any],
+        raw_properties_dict: dict[str, Any],
         molecule_index: int,
         identifier: str = "N/A",
     ) -> Data:
         return pyg_data
 
     def get_processing_statistics(
-        self, processed_molecules: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, processed_molecules: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         return {}
 
-    def get_supported_structural_features(self) -> Dict[str, List[str]]:
+    def get_supported_structural_features(self) -> dict[str, list[str]]:
         return {}
 
     def get_molecular_charge(
         self,
-        raw_properties_dict: Dict[str, Any],
+        raw_properties_dict: dict[str, Any],
         atomic_numbers: np.ndarray,
-        mol_identifier: Optional[str] = None,
+        mol_identifier: str | None = None,
     ) -> int:
         return 0
 
     def get_molecule_creation_strategy(self) -> str:
         return "coordinate_based"
 
-    def get_transform_recommendations(self) -> Dict[str, List[str]]:
+    def get_transform_recommendations(self) -> dict[str, list[str]]:
         return {}
 
-    def get_supported_descriptors(self) -> Dict[str, List[str]]:
+    def get_supported_descriptors(self) -> dict[str, list[str]]:
         return {}
 
 
@@ -126,15 +125,16 @@ class _FullConverter:
 class _FullValidator:
     """A class implementing ALL DatasetValidatorProtocol methods."""
 
-    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         return data
 
-    def get_validation_rules(self) -> Dict[str, Any]:
+    def get_validation_rules(self) -> dict[str, Any]:
         return {}
 
 
 class _EmptyClass:
     """A class implementing NONE of the protocol methods."""
+
     pass
 
 
@@ -170,6 +170,7 @@ VALIDATOR_METHOD_NAMES = [
 # ============================================================================
 # GROUP 1: DatasetHandlerProtocol — Type Identity and Metaclass (8 tests)
 # ============================================================================
+
 
 class TestDatasetHandlerProtocolTypeIdentity(unittest.TestCase):
     """Verify DatasetHandlerProtocol is a proper runtime_checkable Protocol."""
@@ -229,6 +230,7 @@ class TestDatasetHandlerProtocolTypeIdentity(unittest.TestCase):
 # GROUP 2: DatasetHandlerProtocol — Method Signatures (11 tests)
 # ============================================================================
 
+
 class TestDatasetHandlerProtocolSignatures(unittest.TestCase):
     """Verify method signatures match the protocol definition."""
 
@@ -256,9 +258,7 @@ class TestDatasetHandlerProtocolSignatures(unittest.TestCase):
         """validate_molecule_data has self + 3 params (1 with default)."""
         sig = self._get_sig("validate_molecule_data")
         params = list(sig.parameters.keys())
-        self.assertEqual(
-            params, ["self", "raw_properties_dict", "molecule_index", "identifier"]
-        )
+        self.assertEqual(params, ["self", "raw_properties_dict", "molecule_index", "identifier"])
 
     def test_validate_molecule_data_identifier_default(self):
         """validate_molecule_data 'identifier' has default 'N/A'."""
@@ -278,9 +278,7 @@ class TestDatasetHandlerProtocolSignatures(unittest.TestCase):
         """process_property_value has self + 4 params."""
         sig = self._get_sig("process_property_value")
         params = list(sig.parameters.keys())
-        self.assertEqual(
-            params, ["self", "key", "value", "molecule_index", "identifier"]
-        )
+        self.assertEqual(params, ["self", "key", "value", "molecule_index", "identifier"])
 
     def test_process_property_value_identifier_default(self):
         """process_property_value 'identifier' has default 'N/A'."""
@@ -324,6 +322,7 @@ class TestDatasetHandlerProtocolSignatures(unittest.TestCase):
 # GROUP 3: DatasetHandlerProtocol — isinstance / issubclass (12 tests)
 # ============================================================================
 
+
 class TestDatasetHandlerProtocolStructuralSubtyping(unittest.TestCase):
     """Verify runtime_checkable isinstance/issubclass for handler protocol."""
 
@@ -366,17 +365,42 @@ class TestDatasetHandlerProtocolStructuralSubtyping(unittest.TestCase):
         """A class explicitly inheriting the protocol passes isinstance."""
 
         class ExplicitHandler(DatasetHandlerProtocol):
-            def get_dataset_type(self): return "x"
-            def validate_molecule_data(self, raw_properties_dict, molecule_index, identifier="N/A"): pass
-            def get_required_properties(self): return []
-            def process_property_value(self, key, value, molecule_index, identifier="N/A"): return value
-            def enrich_pyg_data(self, pyg_data, raw_properties_dict, molecule_index, identifier="N/A"): return pyg_data
-            def get_processing_statistics(self, processed_molecules): return {}
-            def get_supported_structural_features(self): return {}
-            def get_molecular_charge(self, raw_properties_dict, atomic_numbers, mol_identifier=None): return 0
-            def get_molecule_creation_strategy(self): return "coordinate_based"
-            def get_transform_recommendations(self): return {}
-            def get_supported_descriptors(self): return {}
+            def get_dataset_type(self):
+                return "x"
+
+            def validate_molecule_data(self, raw_properties_dict, molecule_index, identifier="N/A"):
+                pass
+
+            def get_required_properties(self):
+                return []
+
+            def process_property_value(self, key, value, molecule_index, identifier="N/A"):
+                return value
+
+            def enrich_pyg_data(
+                self, pyg_data, raw_properties_dict, molecule_index, identifier="N/A"
+            ):
+                return pyg_data
+
+            def get_processing_statistics(self, processed_molecules):
+                return {}
+
+            def get_supported_structural_features(self):
+                return {}
+
+            def get_molecular_charge(
+                self, raw_properties_dict, atomic_numbers, mol_identifier=None
+            ):
+                return 0
+
+            def get_molecule_creation_strategy(self):
+                return "coordinate_based"
+
+            def get_transform_recommendations(self):
+                return {}
+
+            def get_supported_descriptors(self):
+                return {}
 
         handler = ExplicitHandler()
         self.assertIsInstance(handler, DatasetHandlerProtocol)
@@ -428,6 +452,7 @@ class TestDatasetHandlerProtocolStructuralSubtyping(unittest.TestCase):
 # GROUP 4: DatasetConverterProtocol — Type Identity and Signatures (8 tests)
 # ============================================================================
 
+
 class TestDatasetConverterProtocolIdentity(unittest.TestCase):
     """Verify DatasetConverterProtocol is a proper runtime_checkable Protocol."""
 
@@ -437,15 +462,11 @@ class TestDatasetConverterProtocolIdentity(unittest.TestCase):
 
     def test_is_runtime_checkable(self):
         """DatasetConverterProtocol is decorated with @runtime_checkable."""
-        self.assertTrue(
-            getattr(DatasetConverterProtocol, "_is_runtime_protocol", False)
-        )
+        self.assertTrue(getattr(DatasetConverterProtocol, "_is_runtime_protocol", False))
 
     def test_has_correct_name(self):
         """Class name is 'DatasetConverterProtocol'."""
-        self.assertEqual(
-            DatasetConverterProtocol.__name__, "DatasetConverterProtocol"
-        )
+        self.assertEqual(DatasetConverterProtocol.__name__, "DatasetConverterProtocol")
 
     def test_has_docstring(self):
         """Protocol has a non-empty docstring."""
@@ -481,6 +502,7 @@ class TestDatasetConverterProtocolIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 5: DatasetConverterProtocol — isinstance / issubclass (7 tests)
 # ============================================================================
+
 
 class TestDatasetConverterProtocolStructuralSubtyping(unittest.TestCase):
     """Verify runtime_checkable isinstance/issubclass for converter protocol."""
@@ -532,6 +554,7 @@ class TestDatasetConverterProtocolStructuralSubtyping(unittest.TestCase):
 # GROUP 6: DatasetValidatorProtocol — Type Identity and Signatures (8 tests)
 # ============================================================================
 
+
 class TestDatasetValidatorProtocolIdentity(unittest.TestCase):
     """Verify DatasetValidatorProtocol is a proper runtime_checkable Protocol."""
 
@@ -541,15 +564,11 @@ class TestDatasetValidatorProtocolIdentity(unittest.TestCase):
 
     def test_is_runtime_checkable(self):
         """DatasetValidatorProtocol is decorated with @runtime_checkable."""
-        self.assertTrue(
-            getattr(DatasetValidatorProtocol, "_is_runtime_protocol", False)
-        )
+        self.assertTrue(getattr(DatasetValidatorProtocol, "_is_runtime_protocol", False))
 
     def test_has_correct_name(self):
         """Class name is 'DatasetValidatorProtocol'."""
-        self.assertEqual(
-            DatasetValidatorProtocol.__name__, "DatasetValidatorProtocol"
-        )
+        self.assertEqual(DatasetValidatorProtocol.__name__, "DatasetValidatorProtocol")
 
     def test_has_docstring(self):
         """Protocol has a non-empty docstring."""
@@ -579,12 +598,13 @@ class TestDatasetValidatorProtocolIdentity(unittest.TestCase):
     def test_get_validation_rules_return_annotation(self):
         """get_validation_rules return annotation is Dict[str, Any]."""
         sig = inspect.signature(DatasetValidatorProtocol.get_validation_rules)
-        self.assertEqual(sig.return_annotation, Dict[str, Any])
+        self.assertEqual(sig.return_annotation, dict[str, Any])
 
 
 # ============================================================================
 # GROUP 7: DatasetValidatorProtocol — isinstance / issubclass (7 tests)
 # ============================================================================
+
 
 class TestDatasetValidatorProtocolStructuralSubtyping(unittest.TestCase):
     """Verify runtime_checkable isinstance/issubclass for validator protocol."""
@@ -606,7 +626,7 @@ class TestDatasetValidatorProtocolStructuralSubtyping(unittest.TestCase):
         """A class with only get_validation_rules fails isinstance."""
 
         class OnlyRules:
-            def get_validation_rules(self) -> Dict[str, Any]:
+            def get_validation_rules(self) -> dict[str, Any]:
                 return {}
 
         self.assertNotIsInstance(OnlyRules(), DatasetValidatorProtocol)
@@ -615,7 +635,7 @@ class TestDatasetValidatorProtocolStructuralSubtyping(unittest.TestCase):
         """A class with only validate fails isinstance."""
 
         class OnlyValidate:
-            def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+            def validate(self, data: dict[str, Any]) -> dict[str, Any]:
                 return data
 
         self.assertNotIsInstance(OnlyValidate(), DatasetValidatorProtocol)
@@ -634,6 +654,7 @@ class TestDatasetValidatorProtocolStructuralSubtyping(unittest.TestCase):
 # ============================================================================
 # GROUP 8: Cross-Protocol Isolation (6 tests)
 # ============================================================================
+
 
 class TestCrossProtocolIsolation(unittest.TestCase):
     """Verify the three protocols are independent and non-overlapping."""
@@ -670,6 +691,7 @@ class TestCrossProtocolIsolation(unittest.TestCase):
 # GROUP 9: Multi-Protocol Compliance (5 tests)
 # ============================================================================
 
+
 class TestMultiProtocolCompliance(unittest.TestCase):
     """Verify that a class can satisfy multiple protocols simultaneously."""
 
@@ -691,10 +713,10 @@ class TestMultiProtocolCompliance(unittest.TestCase):
         """A class implementing both handler and validator methods satisfies both."""
 
         class HandlerAndValidator(_FullHandler):
-            def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+            def validate(self, data: dict[str, Any]) -> dict[str, Any]:
                 return data
 
-            def get_validation_rules(self) -> Dict[str, Any]:
+            def get_validation_rules(self) -> dict[str, Any]:
                 return {}
 
         obj = HandlerAndValidator()
@@ -711,10 +733,10 @@ class TestMultiProtocolCompliance(unittest.TestCase):
             def supports_format(self, format_type: str) -> bool:
                 return True
 
-            def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+            def validate(self, data: dict[str, Any]) -> dict[str, Any]:
                 return data
 
-            def get_validation_rules(self) -> Dict[str, Any]:
+            def get_validation_rules(self) -> dict[str, Any]:
                 return {}
 
         obj = UniversalImpl()
@@ -726,10 +748,10 @@ class TestMultiProtocolCompliance(unittest.TestCase):
         """A class implementing converter + validator but not handler."""
 
         class ConverterAndValidator(_FullConverter):
-            def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+            def validate(self, data: dict[str, Any]) -> dict[str, Any]:
                 return data
 
-            def get_validation_rules(self) -> Dict[str, Any]:
+            def get_validation_rules(self) -> dict[str, Any]:
                 return {}
 
         obj = ConverterAndValidator()
@@ -755,6 +777,7 @@ class TestMultiProtocolCompliance(unittest.TestCase):
 # GROUP 10: Handler Method Docstrings (11 tests)
 # ============================================================================
 
+
 class TestDatasetHandlerProtocolDocstrings(unittest.TestCase):
     """Verify each handler protocol method has a non-empty docstring."""
 
@@ -764,11 +787,10 @@ class TestDatasetHandlerProtocolDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(DatasetHandlerProtocol, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
@@ -776,6 +798,7 @@ class TestDatasetHandlerProtocolDocstrings(unittest.TestCase):
 # ============================================================================
 # GROUP 11: Protocol Method Return Type Annotations (8 tests)
 # ============================================================================
+
 
 class TestProtocolReturnAnnotations(unittest.TestCase):
     """Verify return type annotations are correctly defined on protocol methods."""
@@ -795,45 +818,35 @@ class TestProtocolReturnAnnotations(unittest.TestCase):
     def test_handler_validate_molecule_data_returns_none(self):
         """validate_molecule_data -> None."""
         self.assertIsNone(
-            self._get_return_annotation(
-                DatasetHandlerProtocol, "validate_molecule_data"
-            )
+            self._get_return_annotation(DatasetHandlerProtocol, "validate_molecule_data")
         )
 
     def test_handler_get_required_properties_returns_list_str(self):
         """get_required_properties -> List[str]."""
         self.assertEqual(
-            self._get_return_annotation(
-                DatasetHandlerProtocol, "get_required_properties"
-            ),
-            List[str],
+            self._get_return_annotation(DatasetHandlerProtocol, "get_required_properties"),
+            list[str],
         )
 
     def test_handler_get_molecular_charge_returns_int(self):
         """get_molecular_charge -> int."""
         self.assertIs(
-            self._get_return_annotation(
-                DatasetHandlerProtocol, "get_molecular_charge"
-            ),
+            self._get_return_annotation(DatasetHandlerProtocol, "get_molecular_charge"),
             int,
         )
 
     def test_handler_get_molecule_creation_strategy_returns_str(self):
         """get_molecule_creation_strategy -> str."""
         self.assertIs(
-            self._get_return_annotation(
-                DatasetHandlerProtocol, "get_molecule_creation_strategy"
-            ),
+            self._get_return_annotation(DatasetHandlerProtocol, "get_molecule_creation_strategy"),
             str,
         )
 
     def test_handler_get_processing_statistics_returns_dict(self):
         """get_processing_statistics -> Dict[str, Any]."""
         self.assertEqual(
-            self._get_return_annotation(
-                DatasetHandlerProtocol, "get_processing_statistics"
-            ),
-            Dict[str, Any],
+            self._get_return_annotation(DatasetHandlerProtocol, "get_processing_statistics"),
+            dict[str, Any],
         )
 
     def test_converter_convert_returns_data(self):
@@ -847,7 +860,7 @@ class TestProtocolReturnAnnotations(unittest.TestCase):
         """validate -> Dict[str, Any]."""
         self.assertEqual(
             self._get_return_annotation(DatasetValidatorProtocol, "validate"),
-            Dict[str, Any],
+            dict[str, Any],
         )
 
 
@@ -855,33 +868,39 @@ class TestProtocolReturnAnnotations(unittest.TestCase):
 # GROUP 12: Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestModuleImportsAndExports(unittest.TestCase):
     """Verify the protocols module exports the expected symbols."""
 
     def test_module_exports_handler_protocol(self):
         """DatasetHandlerProtocol is importable from protocols module."""
         import milia_pipeline.datasets.protocols as mod
+
         self.assertTrue(hasattr(mod, "DatasetHandlerProtocol"))
 
     def test_module_exports_converter_protocol(self):
         """DatasetConverterProtocol is importable from protocols module."""
         import milia_pipeline.datasets.protocols as mod
+
         self.assertTrue(hasattr(mod, "DatasetConverterProtocol"))
 
     def test_module_exports_validator_protocol(self):
         """DatasetValidatorProtocol is importable from protocols module."""
         import milia_pipeline.datasets.protocols as mod
+
         self.assertTrue(hasattr(mod, "DatasetValidatorProtocol"))
 
     def test_module_has_docstring(self):
         """The protocols module has a non-empty module docstring."""
         import milia_pipeline.datasets.protocols as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_uses_numpy_and_torch_geometric(self):
         """The module depends on numpy and torch_geometric.data.Data."""
         import milia_pipeline.datasets.protocols as mod
+
         # Verify that the module source imports these (evidence: line 12-13)
         source = inspect.getsource(mod)
         self.assertIn("import numpy", source)
@@ -891,6 +910,7 @@ class TestModuleImportsAndExports(unittest.TestCase):
 # ============================================================================
 # GROUP 13: Realistic Integration Patterns (6 tests)
 # ============================================================================
+
 
 class TestRealisticIntegrationPatterns(unittest.TestCase):
     """Test realistic usage patterns matching the MILIA pipeline architecture."""
@@ -949,6 +969,7 @@ class TestRealisticIntegrationPatterns(unittest.TestCase):
 # ============================================================================
 # GROUP 14: Edge Cases and Boundary Conditions (7 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
     """Test edge cases and boundary conditions for protocol compliance."""
@@ -1031,20 +1052,46 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
         """Methods inherited from a parent class satisfy protocol checks."""
 
         class BaseHandler:
-            def get_dataset_type(self): return "base"
-            def validate_molecule_data(self, raw_properties_dict, molecule_index, identifier="N/A"): pass
-            def get_required_properties(self): return []
-            def process_property_value(self, key, value, molecule_index, identifier="N/A"): return value
-            def enrich_pyg_data(self, pyg_data, raw_properties_dict, molecule_index, identifier="N/A"): return pyg_data
-            def get_processing_statistics(self, processed_molecules): return {}
-            def get_supported_structural_features(self): return {}
-            def get_molecular_charge(self, raw_properties_dict, atomic_numbers, mol_identifier=None): return 0
-            def get_molecule_creation_strategy(self): return "coordinate_based"
-            def get_transform_recommendations(self): return {}
-            def get_supported_descriptors(self): return {}
+            def get_dataset_type(self):
+                return "base"
+
+            def validate_molecule_data(self, raw_properties_dict, molecule_index, identifier="N/A"):
+                pass
+
+            def get_required_properties(self):
+                return []
+
+            def process_property_value(self, key, value, molecule_index, identifier="N/A"):
+                return value
+
+            def enrich_pyg_data(
+                self, pyg_data, raw_properties_dict, molecule_index, identifier="N/A"
+            ):
+                return pyg_data
+
+            def get_processing_statistics(self, processed_molecules):
+                return {}
+
+            def get_supported_structural_features(self):
+                return {}
+
+            def get_molecular_charge(
+                self, raw_properties_dict, atomic_numbers, mol_identifier=None
+            ):
+                return 0
+
+            def get_molecule_creation_strategy(self):
+                return "coordinate_based"
+
+            def get_transform_recommendations(self):
+                return {}
+
+            def get_supported_descriptors(self):
+                return {}
 
         class ChildHandler(BaseHandler):
             """Inherits all methods, adds nothing."""
+
             pass
 
         obj = ChildHandler()
@@ -1062,26 +1109,27 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDatasetHandlerProtocolTypeIdentity,          # GROUP 1:  8 tests
-        TestDatasetHandlerProtocolSignatures,             # GROUP 2: 11 tests
-        TestDatasetHandlerProtocolStructuralSubtyping,    # GROUP 3: 12 tests
-        TestDatasetConverterProtocolIdentity,             # GROUP 4:  8 tests
+        TestDatasetHandlerProtocolTypeIdentity,  # GROUP 1:  8 tests
+        TestDatasetHandlerProtocolSignatures,  # GROUP 2: 11 tests
+        TestDatasetHandlerProtocolStructuralSubtyping,  # GROUP 3: 12 tests
+        TestDatasetConverterProtocolIdentity,  # GROUP 4:  8 tests
         TestDatasetConverterProtocolStructuralSubtyping,  # GROUP 5:  7 tests
-        TestDatasetValidatorProtocolIdentity,             # GROUP 6:  8 tests
+        TestDatasetValidatorProtocolIdentity,  # GROUP 6:  8 tests
         TestDatasetValidatorProtocolStructuralSubtyping,  # GROUP 7:  7 tests
-        TestCrossProtocolIsolation,                       # GROUP 8:  6 tests
-        TestMultiProtocolCompliance,                      # GROUP 9:  5 tests
-        TestDatasetHandlerProtocolDocstrings,             # GROUP 10: 1 test (subTests)
-        TestProtocolReturnAnnotations,                    # GROUP 11: 8 tests
-        TestModuleImportsAndExports,                      # GROUP 12: 5 tests
-        TestRealisticIntegrationPatterns,                 # GROUP 13: 6 tests
-        TestEdgeCasesAndBoundaryConditions,               # GROUP 14: 7 tests
+        TestCrossProtocolIsolation,  # GROUP 8:  6 tests
+        TestMultiProtocolCompliance,  # GROUP 9:  5 tests
+        TestDatasetHandlerProtocolDocstrings,  # GROUP 10: 1 test (subTests)
+        TestProtocolReturnAnnotations,  # GROUP 11: 8 tests
+        TestModuleImportsAndExports,  # GROUP 12: 5 tests
+        TestRealisticIntegrationPatterns,  # GROUP 13: 6 tests
+        TestEdgeCasesAndBoundaryConditions,  # GROUP 14: 7 tests
     ]
 
     for test_class in test_classes:

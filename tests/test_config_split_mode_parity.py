@@ -29,16 +29,13 @@ Launch from project root:
     cd /app/milia && python -m pytest tests/test_config_split_mode_parity.py -v
 """
 
-import sys
-import os
 import copy
-import shutil
-import tempfile
-import textwrap
 import logging
+import os
+import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from unittest.mock import patch, MagicMock
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -66,9 +63,8 @@ logger = logging.getLogger(__name__)
 # Both single-file and split-file fixtures derive from it.
 # It includes every top-level key that the accessor functions read.
 
-MINIMAL_CONFIG: Dict[str, Any] = {
+MINIMAL_CONFIG: dict[str, Any] = {
     "dataset_type": "DFT",
-
     "dft_config": {
         "raw_npz_filename": "dft_data.npz",
         "raw_data_download_url": "https://example.com/dft.npz",
@@ -81,7 +77,6 @@ MINIMAL_CONFIG: Dict[str, Any] = {
             },
         },
     },
-
     "data_config": {
         "common_settings": {
             "test_molecule_limit": 10,
@@ -101,7 +96,6 @@ MINIMAL_CONFIG: Dict[str, Any] = {
             },
         },
     },
-
     "property_availability": {
         "DFT": {
             "Etot": True,
@@ -109,13 +103,11 @@ MINIMAL_CONFIG: Dict[str, Any] = {
             "dipole": False,
         },
     },
-
     "filter_config": {
         "max_atoms": 150,
         "min_atoms": 2,
         "heavy_atom_filter": {"enabled": True, "min_heavy_atoms": 1},
     },
-
     "structural_features": {
         "atom": ["atomic_number", "degree"],
         "bond": ["bond_type"],
@@ -127,7 +119,6 @@ MINIMAL_CONFIG: Dict[str, Any] = {
             },
         },
     },
-
     "transformations": {
         "default_setup": "baseline",
         "experimental_setups": {
@@ -144,13 +135,12 @@ MINIMAL_CONFIG: Dict[str, Any] = {
             {"name": "ToUndirected"},
         ],
     },
-
     "working_root_dir": "/tmp/milia_test",
     "base_dir": "/app/milia",
 }
 
 
-def _split_config_into_files(config: Dict[str, Any], target_dir: Path) -> None:
+def _split_config_into_files(config: dict[str, Any], target_dir: Path) -> None:
     """
     Split a monolithic config dict into the canonical configs/ directory layout.
 
@@ -168,7 +158,7 @@ def _split_config_into_files(config: Dict[str, Any], target_dir: Path) -> None:
     datasets_dir.mkdir(exist_ok=True)
 
     # ---- main.yaml ----------------------------------------------------------
-    main_yaml: Dict[str, Any] = {
+    main_yaml: dict[str, Any] = {
         "dataset_type": config["dataset_type"],
         "working_root_dir": config.get("working_root_dir", ""),
         "base_dir": config.get("base_dir", ""),
@@ -181,22 +171,31 @@ def _split_config_into_files(config: Dict[str, Any], target_dir: Path) -> None:
     _write_yaml(target_dir / "main.yaml", main_yaml)
 
     # ---- filter_config.yaml -------------------------------------------------
-    _write_yaml(target_dir / "filter_config.yaml", {
-        "filter_config": config["filter_config"],
-    })
+    _write_yaml(
+        target_dir / "filter_config.yaml",
+        {
+            "filter_config": config["filter_config"],
+        },
+    )
 
     # ---- structural_features.yaml -------------------------------------------
-    _write_yaml(target_dir / "structural_features.yaml", {
-        "structural_features": config["structural_features"],
-    })
+    _write_yaml(
+        target_dir / "structural_features.yaml",
+        {
+            "structural_features": config["structural_features"],
+        },
+    )
 
     # ---- transformations.yaml -----------------------------------------------
-    _write_yaml(target_dir / "transformations.yaml", {
-        "transformations": config["transformations"],
-    })
+    _write_yaml(
+        target_dir / "transformations.yaml",
+        {
+            "transformations": config["transformations"],
+        },
+    )
 
     # ---- datasets/dft.yaml  (colocated: config + property_selection + property_availability)
-    dft_yaml: Dict[str, Any] = {
+    dft_yaml: dict[str, Any] = {
         "dft_config": config["dft_config"],
         "data_config": {
             "property_selection": {
@@ -210,7 +209,7 @@ def _split_config_into_files(config: Dict[str, Any], target_dir: Path) -> None:
     _write_yaml(datasets_dir / "dft.yaml", dft_yaml)
 
 
-def _write_yaml(path: Path, data: Dict[str, Any]) -> None:
+def _write_yaml(path: Path, data: dict[str, Any]) -> None:
     """Write a dict as YAML to *path*."""
     with open(path, "w", encoding="utf-8") as fh:
         yaml.safe_dump(data, fh, default_flow_style=False, sort_keys=False)
@@ -249,6 +248,7 @@ def split_dir_config_path(tmp_workspace: Path) -> Path:
 # HELPER UTILITIES
 # ===========================================================================
 
+
 def _deep_sorted(obj):
     """
     Recursively sort dicts by key and lists of dicts for deterministic comparison.
@@ -273,7 +273,7 @@ def _load_both_modes(single_path: Path, split_path: Path, **kwargs):
 
     Clears the config cache between loads so the second call does a real load.
     """
-    from milia_pipeline.config.config_loader import load_config, clear_config_cache
+    from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
     # Disable enhancement/migration/validation to test raw merging parity
     defaults = dict(
@@ -296,16 +296,13 @@ def _load_both_modes(single_path: Path, split_path: Path, **kwargs):
 # 1. CORE PARITY — Deep equality of merged config dicts
 # ===========================================================================
 
+
 class TestDeepConfigParity:
     """Verify that single-file and split-file modes produce identical dicts."""
 
-    def test_merged_config_deep_equality(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_merged_config_deep_equality(self, single_file_config_path, split_dir_config_path):
         """Single-file and split-file load_config() produce deeply equal dicts."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert _deep_sorted(single_cfg) == _deep_sorted(split_cfg), (
             "Deep equality failed between single-file and split-file modes.\n"
@@ -313,13 +310,9 @@ class TestDeepConfigParity:
             f"Split  keys: {sorted(split_cfg.keys())}"
         )
 
-    def test_top_level_keys_identical(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_top_level_keys_identical(self, single_file_config_path, split_dir_config_path):
         """Both modes expose the same set of top-level configuration keys."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert set(single_cfg.keys()) == set(split_cfg.keys()), (
             f"Top-level key mismatch.\n"
@@ -327,78 +320,53 @@ class TestDeepConfigParity:
             f"Only in split : {set(split_cfg.keys()) - set(single_cfg.keys())}"
         )
 
-    def test_dataset_type_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_dataset_type_parity(self, single_file_config_path, split_dir_config_path):
         """dataset_type value is identical across both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert single_cfg["dataset_type"] == split_cfg["dataset_type"]
 
-    def test_nested_data_config_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_nested_data_config_parity(self, single_file_config_path, split_dir_config_path):
         """data_config (including nested property_selection) is identical."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
+
+        assert _deep_sorted(single_cfg["data_config"]) == _deep_sorted(split_cfg["data_config"]), (
+            "data_config diverged between single-file and split-file modes"
         )
 
-        assert _deep_sorted(single_cfg["data_config"]) == _deep_sorted(
-            split_cfg["data_config"]
-        ), "data_config diverged between single-file and split-file modes"
-
-    def test_property_availability_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_property_availability_parity(self, single_file_config_path, split_dir_config_path):
         """property_availability from colocated datasets/ YAML merges correctly."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
+
+        assert single_cfg["property_availability"] == split_cfg["property_availability"], (
+            "property_availability diverged between modes"
         )
 
-        assert (
-            single_cfg["property_availability"] == split_cfg["property_availability"]
-        ), "property_availability diverged between modes"
-
-    def test_transformations_section_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_transformations_section_parity(self, single_file_config_path, split_dir_config_path):
         """transformations section (setups, default_setup) is identical."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert _deep_sorted(single_cfg["transformations"]) == _deep_sorted(
             split_cfg["transformations"]
         ), "transformations section diverged between modes"
 
-    def test_filter_config_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_filter_config_parity(self, single_file_config_path, split_dir_config_path):
         """filter_config is identical across both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert single_cfg["filter_config"] == split_cfg["filter_config"]
 
-    def test_structural_features_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_structural_features_parity(self, single_file_config_path, split_dir_config_path):
         """structural_features section is identical across both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
-        assert (
-            single_cfg["structural_features"] == split_cfg["structural_features"]
-        )
+        assert single_cfg["structural_features"] == split_cfg["structural_features"]
 
 
 # ===========================================================================
 # 2. ACCESSOR CONSISTENCY — accessors produce same values for both modes
 # ===========================================================================
+
 
 class TestAccessorConsistency:
     """
@@ -412,7 +380,7 @@ class TestAccessorConsistency:
     """
 
     @staticmethod
-    def _accessor_under_mode(accessor_func, config_dict: Dict[str, Any], **kwargs):
+    def _accessor_under_mode(accessor_func, config_dict: dict[str, Any], **kwargs):
         """
         Call *accessor_func* with load_config() patched to return *config_dict*.
 
@@ -424,13 +392,9 @@ class TestAccessorConsistency:
         ):
             return accessor_func(**kwargs)
 
-    def test_get_dataset_type_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_get_dataset_type_parity(self, single_file_config_path, split_dir_config_path):
         """get_dataset_type() returns same value in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         # Patch registry validation to accept 'DFT' without real registry
         with patch(
@@ -446,13 +410,9 @@ class TestAccessorConsistency:
             f"get_dataset_type() diverged: {single_val!r} vs {split_val!r}"
         )
 
-    def test_get_filter_config_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_get_filter_config_parity(self, single_file_config_path, split_dir_config_path):
         """get_filter_config() returns same dict in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
         from milia_pipeline.config.config_accessors import get_filter_config
 
         single_val = self._accessor_under_mode(get_filter_config, single_cfg)
@@ -464,49 +424,29 @@ class TestAccessorConsistency:
         self, single_file_config_path, split_dir_config_path
     ):
         """get_structural_features_config() returns same dict in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
         from milia_pipeline.config.config_accessors import get_structural_features_config
 
-        single_val = self._accessor_under_mode(
-            get_structural_features_config, single_cfg
-        )
-        split_val = self._accessor_under_mode(
-            get_structural_features_config, split_cfg
-        )
+        single_val = self._accessor_under_mode(get_structural_features_config, single_cfg)
+        split_val = self._accessor_under_mode(get_structural_features_config, split_cfg)
 
-        assert single_val == split_val, (
-            "get_structural_features_config() diverged between modes"
-        )
+        assert single_val == split_val, "get_structural_features_config() diverged between modes"
 
     def test_get_transformations_config_parity(
         self, single_file_config_path, split_dir_config_path
     ):
         """get_transformations_config() returns same list in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
         from milia_pipeline.config.config_accessors import get_transformations_config
 
-        single_val = self._accessor_under_mode(
-            get_transformations_config, single_cfg
-        )
-        split_val = self._accessor_under_mode(
-            get_transformations_config, split_cfg
-        )
+        single_val = self._accessor_under_mode(get_transformations_config, single_cfg)
+        split_val = self._accessor_under_mode(get_transformations_config, split_cfg)
 
-        assert single_val == split_val, (
-            "get_transformations_config() diverged between modes"
-        )
+        assert single_val == split_val, "get_transformations_config() diverged between modes"
 
-    def test_get_property_availability_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_get_property_availability_parity(self, single_file_config_path, split_dir_config_path):
         """get_property_availability() returns same dict in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         with patch(
             "milia_pipeline.config.config_accessors._registry_list_all_safe",
@@ -514,24 +454,14 @@ class TestAccessorConsistency:
         ):
             from milia_pipeline.config.config_accessors import get_property_availability
 
-            single_val = self._accessor_under_mode(
-                get_property_availability, single_cfg
-            )
-            split_val = self._accessor_under_mode(
-                get_property_availability, split_cfg
-            )
+            single_val = self._accessor_under_mode(get_property_availability, single_cfg)
+            split_val = self._accessor_under_mode(get_property_availability, split_cfg)
 
-        assert single_val == split_val, (
-            "get_property_availability() diverged between modes"
-        )
+        assert single_val == split_val, "get_property_availability() diverged between modes"
 
-    def test_get_data_config_parity(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_get_data_config_parity(self, single_file_config_path, split_dir_config_path):
         """get_data_config() returns same merged dict in both modes."""
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         with patch(
             "milia_pipeline.config.config_accessors._registry_list_all_safe",
@@ -550,6 +480,7 @@ class TestAccessorConsistency:
 # ===========================================================================
 # 3. CONTAINER EQUALITY — Pydantic containers from both modes are equivalent
 # ===========================================================================
+
 
 class TestContainerEquality:
     """
@@ -643,6 +574,7 @@ class TestContainerEquality:
 # 4. INTERNAL FUNCTIONS — _discover, _collect, _deep_merge, _load_and_merge
 # ===========================================================================
 
+
 class TestInternalFunctions:
     """
     Test the internal YAML-splitting helper functions directly.
@@ -699,9 +631,7 @@ class TestInternalFunctions:
         files = _collect_yaml_files(configs_dir)
 
         assert len(files) > 0
-        assert files[0].name == "main.yaml", (
-            f"Expected main.yaml first, got {files[0].name}"
-        )
+        assert files[0].name == "main.yaml", f"Expected main.yaml first, got {files[0].name}"
 
     def test_collect_yaml_includes_dataset_subdir(self, tmp_workspace: Path):
         """Files from datasets/ subdirectory are included in the list."""
@@ -726,9 +656,7 @@ class TestInternalFunctions:
 
         assert files == []
 
-    def test_collect_yaml_root_files_sorted_alphabetically(
-        self, tmp_workspace: Path
-    ):
+    def test_collect_yaml_root_files_sorted_alphabetically(self, tmp_workspace: Path):
         """Root-level YAML files (excluding main.yaml) are sorted alphabetically."""
         from milia_pipeline.config.config_loader import _collect_yaml_files
 
@@ -738,15 +666,10 @@ class TestInternalFunctions:
         files = _collect_yaml_files(configs_dir)
 
         # Extract root-level files (not main.yaml, not in datasets/)
-        root_files = [
-            f for f in files
-            if f.name != "main.yaml" and "datasets" not in str(f)
-        ]
+        root_files = [f for f in files if f.name != "main.yaml" and "datasets" not in str(f)]
 
         root_names = [f.name for f in root_files]
-        assert root_names == sorted(root_names), (
-            f"Root files not sorted: {root_names}"
-        )
+        assert root_names == sorted(root_names), f"Root files not sorted: {root_names}"
 
     # --- _deep_merge_configs ---------------------------------------------------
 
@@ -894,6 +817,7 @@ class TestInternalFunctions:
 # 5. EDGE CASES — empty splits, missing main.yaml, colocated merging
 # ===========================================================================
 
+
 class TestEdgeCases:
     """Edge cases documented in Section 5.2 of MILIA_Test_Recommendations.md."""
 
@@ -903,7 +827,6 @@ class TestEdgeCases:
         (config.yaml inside configs/ would be picked up as a root-level file.)
         """
         from milia_pipeline.config.config_loader import (
-            _discover_config_files,
             _collect_yaml_files,
         )
 
@@ -921,7 +844,7 @@ class TestEdgeCases:
         Empty YAML files in the split directory are skipped without
         corrupting the merge result.
         """
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         configs_dir = tmp_workspace / "configs"
         _split_config_into_files(MINIMAL_CONFIG, configs_dir)
@@ -947,7 +870,7 @@ class TestEdgeCases:
         property_availability defined in datasets/dft.yaml merges correctly
         into the top-level config, exercising the colocated config pattern.
         """
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         configs_dir = tmp_workspace / "configs"
         _split_config_into_files(MINIMAL_CONFIG, configs_dir)
@@ -973,7 +896,7 @@ class TestEdgeCases:
         data_config.property_selection.DFT from datasets/dft.yaml merges
         with data_config.common_settings from main.yaml.
         """
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         configs_dir = tmp_workspace / "configs"
         _split_config_into_files(MINIMAL_CONFIG, configs_dir)
@@ -991,19 +914,18 @@ class TestEdgeCases:
         assert "common_settings" in config["data_config"]
         # property_selection.DFT should be present (from datasets/dft.yaml)
         assert "DFT" in config["data_config"]["property_selection"]
-        assert "scalar_graph_targets_to_include" in (
-            config["data_config"]["property_selection"]["DFT"]
+        assert (
+            "scalar_graph_targets_to_include"
+            in (config["data_config"]["property_selection"]["DFT"])
         )
         clear_config_cache()
 
-    def test_split_mode_preserves_transformations_experimental_setups(
-        self, tmp_workspace: Path
-    ):
+    def test_split_mode_preserves_transformations_experimental_setups(self, tmp_workspace: Path):
         """
         The experimental_setups structure survives the split-merge cycle intact,
         including nested kwargs dicts within transform lists.
         """
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         configs_dir = tmp_workspace / "configs"
         _split_config_into_files(MINIMAL_CONFIG, configs_dir)
@@ -1039,14 +961,13 @@ class TestEdgeCases:
 # 6. CACHE ISOLATION — config cache does not bleed between modes
 # ===========================================================================
 
+
 class TestCacheIsolation:
     """Verify that loading in one mode does not pollute subsequent loads."""
 
-    def test_cache_cleared_between_modes(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_cache_cleared_between_modes(self, single_file_config_path, split_dir_config_path):
         """Loading single-file, clearing cache, then split-file returns fresh data."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         load_kwargs = dict(
             enable_enhancement=False,
@@ -1055,13 +976,9 @@ class TestCacheIsolation:
             force_reload=True,
         )
 
-        single_cfg = load_config(
-            config_path=str(single_file_config_path), **load_kwargs
-        )
+        single_cfg = load_config(config_path=str(single_file_config_path), **load_kwargs)
         clear_config_cache()
-        split_cfg = load_config(
-            config_path=str(split_dir_config_path), **load_kwargs
-        )
+        split_cfg = load_config(config_path=str(split_dir_config_path), **load_kwargs)
 
         # Both should have identical content
         assert _deep_sorted(single_cfg) == _deep_sorted(split_cfg)
@@ -1069,7 +986,7 @@ class TestCacheIsolation:
 
     def test_force_reload_bypasses_cache(self, single_file_config_path):
         """force_reload=True always reloads from disk."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         load_kwargs = dict(
             enable_enhancement=False,
@@ -1077,12 +994,10 @@ class TestCacheIsolation:
             enable_validation=False,
         )
 
-        cfg1 = load_config(
-            config_path=str(single_file_config_path), **load_kwargs
-        )
+        cfg1 = load_config(config_path=str(single_file_config_path), **load_kwargs)
 
         # Modify the file on disk
-        with open(single_file_config_path, "r") as f:
+        with open(single_file_config_path) as f:
             content = yaml.safe_load(f)
         content["dataset_type"] = "MODIFIED"
         _write_yaml(single_file_config_path, content)
@@ -1103,6 +1018,7 @@ class TestCacheIsolation:
 # 7. REGRESSION — guards against regressions from retired Section 4.1
 # ===========================================================================
 
+
 class TestRegressionFromRetiredMigration:
     """
     Regression guards originally assigned to Section 4.1
@@ -1115,7 +1031,7 @@ class TestRegressionFromRetiredMigration:
 
     def test_load_config_single_mode_returns_dict(self, single_file_config_path):
         """load_config() in single-file mode returns a valid dict."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         config = load_config(
             config_path=str(single_file_config_path),
@@ -1131,7 +1047,7 @@ class TestRegressionFromRetiredMigration:
 
     def test_load_config_split_mode_returns_dict(self, split_dir_config_path):
         """load_config() in split-file mode returns a valid dict."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
 
         config = load_config(
             config_path=str(split_dir_config_path),
@@ -1152,9 +1068,7 @@ class TestRegressionFromRetiredMigration:
         The core regression guard: identical input data loaded via both modes
         produces identical effective configuration dictionaries.
         """
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert _deep_sorted(single_cfg) == _deep_sorted(split_cfg), (
             "REGRESSION: Single-file and split-file modes produce different configs!"
@@ -1167,29 +1081,21 @@ class TestRegressionFromRetiredMigration:
         dft_config (dataset-specific config) survives the split into
         datasets/dft.yaml and merges back identically.
         """
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         assert "dft_config" in single_cfg
         assert "dft_config" in split_cfg
         assert single_cfg["dft_config"] == split_cfg["dft_config"]
 
-    def test_no_data_loss_in_split_roundtrip(
-        self, single_file_config_path, split_dir_config_path
-    ):
+    def test_no_data_loss_in_split_roundtrip(self, single_file_config_path, split_dir_config_path):
         """
         Every key in the original single-file config is present after
         the split-file round-trip. No data is silently dropped.
         """
-        single_cfg, split_cfg = _load_both_modes(
-            single_file_config_path, split_dir_config_path
-        )
+        single_cfg, split_cfg = _load_both_modes(single_file_config_path, split_dir_config_path)
 
         for key in single_cfg:
-            assert key in split_cfg, (
-                f"REGRESSION: Key '{key}' missing from split-file config"
-            )
+            assert key in split_cfg, f"REGRESSION: Key '{key}' missing from split-file config"
 
 
 # ===========================================================================

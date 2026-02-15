@@ -39,16 +39,12 @@ Running:
     pytest tests/test_thread_safety_registries.py -v -m thread_safety
 """
 
-import sys
-import os
-import time
 import logging
+import os
+import sys
 import threading
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any, Optional, Type
-from unittest.mock import MagicMock, patch, PropertyMock
-from collections import Counter
+from typing import Any
 
 import pytest
 
@@ -75,6 +71,7 @@ STRESS_OPS = 100
 # Helper: Barrier-synchronised thread launcher
 # ===========================================================================
 
+
 def run_threads_with_barrier(target_fn, num_threads, *args, **kwargs):
     """
     Launch *num_threads* threads that all start simultaneously via a Barrier,
@@ -85,8 +82,8 @@ def run_threads_with_barrier(target_fn, num_threads, *args, **kwargs):
         errors   – list of (thread_index, exception) tuples
     """
     barrier = threading.Barrier(num_threads)
-    results: List[Any] = [None] * num_threads
-    errors: List[tuple] = []
+    results: list[Any] = [None] * num_threads
+    errors: list[tuple] = []
     lock = threading.Lock()
 
     def _wrapper(idx):
@@ -110,6 +107,7 @@ def run_threads_with_barrier(target_fn, num_threads, *args, **kwargs):
 # SECTION 1: DatasetRegistry Thread Safety
 # ===========================================================================
 
+
 class TestDatasetRegistryThreadSafety:
     """
     Thread-safety tests for milia_pipeline.datasets.registry.DatasetRegistry.
@@ -127,10 +125,13 @@ class TestDatasetRegistryThreadSafety:
     @pytest.fixture(autouse=True)
     def _setup(self):
         """Import DatasetRegistry and BaseDataset; build mock classes."""
-        from milia_pipeline.datasets.registry import DatasetRegistry
         from milia_pipeline.datasets.base import (
-            BaseDataset, DatasetMetadata, DatasetSchema, DatasetFeatures,
+            BaseDataset,
+            DatasetFeatures,
+            DatasetMetadata,
+            DatasetSchema,
         )
+        from milia_pipeline.datasets.registry import DatasetRegistry
 
         self.DatasetRegistry = DatasetRegistry
         self.BaseDataset = BaseDataset
@@ -161,7 +162,7 @@ class TestDatasetRegistryThreadSafety:
                 abstract_methods |= cls.__abstractmethods__
 
         # Build a namespace with stubs for every abstract method
-        ns: Dict[str, Any] = {}
+        ns: dict[str, Any] = {}
         for method_name in abstract_methods:
             ns[method_name] = lambda self, *a, **kw: None
 
@@ -201,8 +202,7 @@ class TestDatasetRegistryThreadSafety:
         """
         registry = self.registry
         classes = {
-            f"ConcDS_{i}": self._make_mock_dataset_class(f"ConcDS_{i}")
-            for i in range(NUM_THREADS)
+            f"ConcDS_{i}": self._make_mock_dataset_class(f"ConcDS_{i}") for i in range(NUM_THREADS)
         }
 
         def register_one(idx):
@@ -340,7 +340,7 @@ class TestDatasetRegistryThreadSafety:
         for i in range(5):
             registry.register(self._make_mock_dataset_class(f"ExistDS_{i}"))
 
-        results_map: Dict[int, List[bool]] = {}
+        results_map: dict[int, list[bool]] = {}
         lock = threading.Lock()
 
         def check(idx):
@@ -426,8 +426,7 @@ class TestDatasetRegistryThreadSafety:
         registry.add_on_change_callback(on_change)
 
         classes = {
-            f"CbDS_{i}": self._make_mock_dataset_class(f"CbDS_{i}")
-            for i in range(NUM_THREADS)
+            f"CbDS_{i}": self._make_mock_dataset_class(f"CbDS_{i}") for i in range(NUM_THREADS)
         }
 
         def register_one(idx):
@@ -500,7 +499,7 @@ class TestDatasetRegistryThreadSafety:
                     registry.get(name)
                     registry.list_all()
                     registry.is_registered(name)
-                except Exception as e:
+                except Exception:
                     with lock:
                         error_count["n"] += 1
                     raise
@@ -514,6 +513,7 @@ class TestDatasetRegistryThreadSafety:
 # SECTION 2: HandlerRegistry Thread Safety
 # ===========================================================================
 
+
 class TestHandlerRegistryThreadSafety:
     """
     Thread-safety tests for milia_pipeline.handlers.handler_registry.HandlerRegistry.
@@ -525,6 +525,7 @@ class TestHandlerRegistryThreadSafety:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from milia_pipeline.handlers.handler_registry import HandlerRegistry
+
         self.HandlerRegistry = HandlerRegistry
         self.registry = HandlerRegistry()
 
@@ -556,8 +557,7 @@ class TestHandlerRegistryThreadSafety:
         """20 threads register unique handlers concurrently."""
         registry = self.registry
         classes = {
-            f"HConc_{i}": self._make_mock_handler_class(f"HConc_{i}")
-            for i in range(NUM_THREADS)
+            f"HConc_{i}": self._make_mock_handler_class(f"HConc_{i}") for i in range(NUM_THREADS)
         }
 
         def register_one(idx):
@@ -687,8 +687,7 @@ class TestHandlerRegistryThreadSafety:
         registry.add_on_change_callback(on_change)
 
         classes = {
-            f"HCb_{i}": self._make_mock_handler_class(f"HCb_{i}")
-            for i in range(NUM_THREADS)
+            f"HCb_{i}": self._make_mock_handler_class(f"HCb_{i}") for i in range(NUM_THREADS)
         }
 
         def register_one(idx):
@@ -773,6 +772,7 @@ class TestHandlerRegistryThreadSafety:
 # ===========================================================================
 # SECTION 3: DescriptorRegistry Thread Safety (Singleton)
 # ===========================================================================
+
 
 class TestDescriptorRegistryThreadSafety:
     """
@@ -981,6 +981,7 @@ class TestDescriptorRegistryThreadSafety:
 # SECTION 4: ModelRegistry Thread Safety (Singleton)
 # ===========================================================================
 
+
 class TestModelRegistryThreadSafety:
     """
     Thread-safety tests for milia_pipeline.models.registry.model_registry.ModelRegistry.
@@ -1022,7 +1023,7 @@ class TestModelRegistryThreadSafety:
 
     def _make_dummy_metadata(self, name: str):
         """Create a ModelMetadata for the dummy model."""
-        from milia_pipeline.models.registry.model_registry import ModelMetadata, ModelCategory
+        from milia_pipeline.models.registry.model_registry import ModelCategory, ModelMetadata
 
         return ModelMetadata(
             name=name,
@@ -1204,7 +1205,9 @@ class TestModelRegistryThreadSafety:
             if idx < 10:
                 name = f"__TestNewReg_{idx}__"
                 registry.register_model(
-                    name, new_classes[name], new_metas[name],
+                    name,
+                    new_classes[name],
+                    new_metas[name],
                     plugin_name="thread_test",
                 )
             else:
@@ -1235,6 +1238,7 @@ class TestModelRegistryThreadSafety:
 # SECTION 5: LayerRegistry Thread Safety (Singleton)
 # ===========================================================================
 
+
 class TestLayerRegistryThreadSafety:
     """
     Thread-safety tests for milia_pipeline.models.builders.layer_registry.LayerRegistry.
@@ -1247,9 +1251,9 @@ class TestLayerRegistryThreadSafety:
     @pytest.fixture(autouse=True)
     def _setup_and_teardown(self):
         from milia_pipeline.models.builders.layer_registry import (
-            LayerRegistry,
             LayerCategory,
             LayerMetadata,
+            LayerRegistry,
         )
 
         self.LayerRegistry = LayerRegistry
@@ -1476,6 +1480,7 @@ class TestLayerRegistryThreadSafety:
 # SECTION 6: Cross-Registry Consistency Under Concurrency
 # ===========================================================================
 
+
 class TestCrossRegistryConsistencyThreadSafety:
     """
     Verify that concurrent reads across *multiple* registries do not
@@ -1550,6 +1555,7 @@ class TestCrossRegistryConsistencyThreadSafety:
 # SECTION 7: Edge Cases & Robustness
 # ===========================================================================
 
+
 class TestRegistryEdgeCasesThreadSafety:
     """
     Thread-safety edge cases that apply across registry types.
@@ -1557,10 +1563,13 @@ class TestRegistryEdgeCasesThreadSafety:
 
     @pytest.fixture(autouse=True)
     def _setup(self):
-        from milia_pipeline.datasets.registry import DatasetRegistry
         from milia_pipeline.datasets.base import (
-            BaseDataset, DatasetMetadata, DatasetSchema, DatasetFeatures,
+            BaseDataset,
+            DatasetFeatures,
+            DatasetMetadata,
+            DatasetSchema,
         )
+        from milia_pipeline.datasets.registry import DatasetRegistry
 
         self.DatasetRegistry = DatasetRegistry
         self.BaseDataset = BaseDataset
@@ -1575,7 +1584,7 @@ class TestRegistryEdgeCasesThreadSafety:
         for cls in base.__mro__:
             if hasattr(cls, "__abstractmethods__"):
                 abstract_methods |= cls.__abstractmethods__
-        ns: Dict[str, Any] = {}
+        ns: dict[str, Any] = {}
         for method_name in abstract_methods:
             ns[method_name] = lambda self, *a, **kw: None
         ns["metadata"] = self.DatasetMetadata(
@@ -1664,8 +1673,7 @@ class TestRegistryEdgeCasesThreadSafety:
         registry.add_on_change_callback(counting_callback)
 
         classes = {
-            f"RmCbDS_{i}": self._make_mock_dataset_class(f"RmCbDS_{i}")
-            for i in range(NUM_THREADS)
+            f"RmCbDS_{i}": self._make_mock_dataset_class(f"RmCbDS_{i}") for i in range(NUM_THREADS)
         }
 
         def worker(idx):
@@ -1716,8 +1724,7 @@ class TestRegistryEdgeCasesThreadSafety:
         """
         registry = self.DatasetRegistry()
         classes = {
-            f"TPE_DS_{i}": self._make_mock_dataset_class(f"TPE_DS_{i}")
-            for i in range(NUM_THREADS)
+            f"TPE_DS_{i}": self._make_mock_dataset_class(f"TPE_DS_{i}") for i in range(NUM_THREADS)
         }
 
         def register_and_verify(idx):

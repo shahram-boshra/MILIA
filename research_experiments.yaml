@@ -25,38 +25,38 @@ experiments:
   # Methodology: Systematic removal of individual transforms
   # Expected Outcome: Vibrational modes and charges most important
   # ===========================================================================
-  
+
   transform_ablation:
     name: "transform_ablation"
     description: "Systematic ablation study to determine transform importance for milia molecular property prediction"
-    
+
     # Baseline: Full milia-enhanced transform pipeline
     base_transforms:
       - name: "AddSelfLoops"
         kwargs: {}
         enabled: true
         description: "Add self-loops for message passing"
-      
+
       - name: "NormalizeVibrationalModes"
         kwargs:
           normalize_per_mode: true
           epsilon: 1.0e-8
         enabled: true
         description: "Normalize vibrational normal modes (milia-specific)"
-      
+
       - name: "ScaleMullikenCharges"
         kwargs:
           scale_factor: 1.0
           center: false
         enabled: true
         description: "Scale Mulliken atomic charges (milia-specific)"
-      
+
       - name: "GCNNorm"
         kwargs:
           add_self_loops: false  # Already added above
         enabled: true
         description: "GCN-style symmetric normalization"
-    
+
     # Ablation variants: Remove one transform at a time
     ablations:
       - name: "baseline"
@@ -68,7 +68,7 @@ experiments:
           - name: "ScaleMullikenCharges"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_self_loops"
         description: "Test importance of self-loops for message passing"
         transforms:
@@ -76,7 +76,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - name: "ScaleMullikenCharges"
           - name: "GCNNorm"
-      
+
       - name: "no_vibmodes"
         description: "Test importance of vibrational mode normalization"
         transforms:
@@ -84,7 +84,7 @@ experiments:
           - name: "ScaleMullikenCharges"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_charges"
         description: "Test importance of Mulliken charge scaling"
         transforms:
@@ -93,7 +93,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_normalization"
         description: "Test importance of graph normalization"
         transforms:
@@ -101,23 +101,23 @@ experiments:
           - name: "NormalizeVibrationalModes"
             kwargs: {normalize_per_mode: true}
           - name: "ScaleMullikenCharges"
-      
+
       - name: "minimal"
         description: "Minimal baseline with only structural transforms"
         transforms:
           - name: "AddSelfLoops"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-    
+
     # Execution settings
     num_runs: 5
     random_seed: 42
-    
+
     # Publication metadata
     hypothesis: "Vibrational mode normalization and Mulliken charge scaling are critical for milia; GCN normalization improves convergence but is less critical"
     expected_outcome: "Performance ranking: baseline > no_normalization > no_charges > no_vibmodes > minimal > no_self_loops"
     paper_reference: "Section 4.3: Ablation Studies - Transform Importance Analysis"
-    
+
     metadata:
       research_context: "milia molecular property prediction"
       dataset_type: "DFT"
@@ -132,18 +132,18 @@ experiments:
   # Methodology: Systematic variation of max_uncertainty parameter
   # Expected Outcome: U-shaped curve with minimum around 0.1 kcal/mol
   # ===========================================================================
-  
+
   uncertainty_threshold_sweep:
     name: "uncertainty_threshold_sweep"
     description: "Parameter sweep to find optimal DMC uncertainty filtering threshold for data quality"
-    
+
     base_transforms:
       - name: "AddSelfLoops"
       - name: "NormalizeVibrationalModes"
         kwargs: {normalize_per_mode: true}
       - name: "GCNNorm"
         kwargs: {add_self_loops: false}
-    
+
     # Parameter sweep configuration
     parameter_sweeps:
       - name: "sweep_0_max_uncertainty=0.01"
@@ -155,7 +155,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 0.01}
-      
+
       - name: "sweep_1_max_uncertainty=0.05"
         transforms:
           - "AddSelfLoops"
@@ -165,7 +165,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 0.05}
-      
+
       - name: "sweep_2_max_uncertainty=0.1"
         transforms:
           - "AddSelfLoops"
@@ -175,7 +175,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 0.1}
-      
+
       - name: "sweep_3_max_uncertainty=0.2"
         transforms:
           - "AddSelfLoops"
@@ -185,7 +185,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 0.2}
-      
+
       - name: "sweep_4_max_uncertainty=0.5"
         transforms:
           - "AddSelfLoops"
@@ -195,7 +195,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 0.5}
-      
+
       - name: "sweep_5_max_uncertainty=1.0"
         transforms:
           - "AddSelfLoops"
@@ -205,14 +205,14 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - "GCNNorm"
         parameters: {max_uncertainty: 1.0}
-    
+
     num_runs: 3
     random_seed: 42
-    
+
     hypothesis: "Strict uncertainty filtering (0.05-0.1 kcal/mol) improves model quality by removing noisy samples while maintaining sufficient training data"
     expected_outcome: "U-shaped performance curve with minimum validation MAE around 0.1 kcal/mol threshold; too strict removes useful data, too loose includes noise"
     paper_reference: "Section 4.4: Data Quality Analysis - DMC Uncertainty Impact"
-    
+
     metadata:
       research_context: "DMC data quality optimization"
       dataset_type: "DMC"
@@ -227,13 +227,13 @@ experiments:
   # Methodology: Head-to-head comparison of different approaches
   # Expected Outcome: GCN normalization provides best balance
   # ===========================================================================
-  
+
   normalization_comparison:
     name: "normalization_comparison"
     description: "Comparative study of normalization techniques for milia molecular graphs"
-    
+
     base_transforms: []  # Each approach defines its own sequence
-    
+
     # Comparative approaches
     ablations:  # Using ablations field for comparative variants
       - name: "gcn_norm"
@@ -242,33 +242,33 @@ experiments:
           - name: "AddSelfLoops"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_norm"
         description: "No normalization baseline"
         transforms:
           - name: "AddSelfLoops"
-      
+
       - name: "feature_scaling"
         description: "Feature scaling via charge normalization only"
         transforms:
           - name: "AddSelfLoops"
           - name: "ScaleMullikenCharges"
             kwargs: {scale_factor: 0.1, center: true}
-      
+
       - name: "normalize_features"
         description: "L2 feature normalization"
         transforms:
           - name: "AddSelfLoops"
           - name: "NormalizeFeatures"
             kwargs: {p: 2.0, dim: 1}
-    
+
     num_runs: 5
     random_seed: 42
-    
+
     hypothesis: "GCN-style symmetric normalization provides the best balance of prediction accuracy and training stability for milia molecular property prediction"
     expected_outcome: "Performance ranking: gcn_norm > feature_scaling > normalize_features > no_norm"
     paper_reference: "Section 4.2: Preprocessing Pipeline Comparison"
-    
+
     metadata:
       research_question: "Which normalization technique is most effective for milia quantum properties?"
       expected_best: "gcn_norm"
@@ -284,18 +284,18 @@ experiments:
   # Methodology: Systematic parameter sweep of dropout probability
   # Expected Outcome: Light dropout (0.1-0.2) improves generalization
   # ===========================================================================
-  
+
   edge_dropout_optimization:
     name: "edge_dropout_optimization"
     description: "Parameter sweep to find optimal DropEdge probability for milia regularization"
-    
+
     base_transforms:
       - name: "AddSelfLoops"
       - name: "GCNNorm"
         kwargs: {add_self_loops: false}
       - name: "NormalizeVibrationalModes"
         kwargs: {normalize_per_mode: true}
-    
+
     parameter_sweeps:
       - name: "sweep_0_p=0.0"
         transforms:
@@ -305,7 +305,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.0}
         parameters: {p: 0.0}
-      
+
       - name: "sweep_1_p=0.05"
         transforms:
           - "AddSelfLoops"
@@ -314,7 +314,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.05}
         parameters: {p: 0.05}
-      
+
       - name: "sweep_2_p=0.1"
         transforms:
           - "AddSelfLoops"
@@ -323,7 +323,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.1}
         parameters: {p: 0.1}
-      
+
       - name: "sweep_3_p=0.15"
         transforms:
           - "AddSelfLoops"
@@ -332,7 +332,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.15}
         parameters: {p: 0.15}
-      
+
       - name: "sweep_4_p=0.2"
         transforms:
           - "AddSelfLoops"
@@ -341,7 +341,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.2}
         parameters: {p: 0.2}
-      
+
       - name: "sweep_5_p=0.3"
         transforms:
           - "AddSelfLoops"
@@ -350,7 +350,7 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.3}
         parameters: {p: 0.3}
-      
+
       - name: "sweep_6_p=0.5"
         transforms:
           - "AddSelfLoops"
@@ -359,14 +359,14 @@ experiments:
           - name: "DropEdge"
             kwargs: {p: 0.5}
         parameters: {p: 0.5}
-    
+
     num_runs: 5
     random_seed: 42
-    
+
     hypothesis: "Moderate edge dropout (0.1-0.2) improves model generalization by preventing overfitting to specific graph connectivity patterns"
     expected_outcome: "Optimal dropout rate around p=0.15; performance degrades with p>0.3 due to excessive edge removal"
     paper_reference: "Section 4.5: Regularization Analysis - Edge Dropout Effects"
-    
+
     metadata:
       research_context: "Regularization and generalization"
       dataset_type: "DFT"
@@ -381,11 +381,11 @@ experiments:
   # Methodology: Ablation of different feature types
   # Expected Outcome: Vibrational modes most important
   # ===========================================================================
-  
+
   molecular_feature_importance:
     name: "molecular_feature_importance"
     description: "Ablation study to determine importance of different milia molecular features"
-    
+
     base_transforms:
       - name: "AddSelfLoops"
       - name: "NormalizeVibrationalModes"
@@ -394,7 +394,7 @@ experiments:
         kwargs: {scale_factor: 1.0}
       - name: "GCNNorm"
         kwargs: {add_self_loops: false}
-    
+
     ablations:
       - name: "all_features"
         description: "Full feature set (baseline)"
@@ -405,7 +405,7 @@ experiments:
           - "ScaleMullikenCharges"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_vibmodes"
         description: "Without vibrational modes"
         transforms:
@@ -413,7 +413,7 @@ experiments:
           - "ScaleMullikenCharges"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "no_charges"
         description: "Without Mulliken charges"
         transforms:
@@ -422,7 +422,7 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "charges_only"
         description: "Only Mulliken charges (no vibrational modes)"
         transforms:
@@ -430,7 +430,7 @@ experiments:
           - "ScaleMullikenCharges"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "vibmodes_only"
         description: "Only vibrational modes (no charges)"
         transforms:
@@ -439,21 +439,21 @@ experiments:
             kwargs: {normalize_per_mode: true}
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-      
+
       - name: "structural_only"
         description: "Only structural features (baseline)"
         transforms:
           - "AddSelfLoops"
           - name: "GCNNorm"
             kwargs: {add_self_loops: false}
-    
+
     num_runs: 5
     random_seed: 42
-    
+
     hypothesis: "All milia quantum features contribute to prediction accuracy; vibrational modes provide the most significant improvement"
     expected_outcome: "Performance ranking: all_features > no_charges > no_vibmodes > charges_only > vibmodes_only > structural_only"
     paper_reference: "Section 4.6: Feature Importance Analysis"
-    
+
     metadata:
       research_context: "Feature engineering and selection"
       dataset_type: "DFT"

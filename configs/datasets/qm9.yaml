@@ -17,18 +17,18 @@
 qm9_config:
   # Filename for the preprocessed .npz QM9 dataset file (OUTPUT after preprocessing)
   raw_npz_filename: qm9.npz
-  
+
   # Filename for the raw source archive (INPUT before preprocessing)
   # CRITICAL: Required for URLs that don't include the filename (e.g., Figshare API URLs)
   # This is the actual filename that will be downloaded and saved locally
   raw_source_filename: dsgdb9nsd.xyz.tar.bz2
-  
+
   # URL to download the raw QM9 archive (tar.bz2 format)
   # Source: Figshare - Quantum chemistry structures and properties of 134k molecules
   # Reference: Ramakrishnan et al., Scientific Data 1, 140022 (2014)
   # NOTE: Figshare uses API-style URLs that don't contain the filename
   raw_data_download_url: https://figshare.com/ndownloader/files/3195389
-  
+
   # QM9 processing configuration
   processing_config:
     # Preprocessing parameters (for automatic tar.bz2 → npz conversion)
@@ -36,10 +36,10 @@ qm9_config:
       # Number of molecules to preprocess (null = all 133,885 molecules)
       # Use integer for testing/limiting dataset size (e.g., 100, 1000, 10000)
       num_molecules: null
-      
+
       # Clean up temporary .xyz files after preprocessing
       cleanup_temp: true
-  
+
   # QM9 does not have uncertainty handling (DFT calculations are deterministic)
   uncertainty_handling:
     enabled: false
@@ -48,13 +48,13 @@ qm9_config:
 
 # ────────────────────────────────────────────────────
 # QM9 Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     QM9:
       # QM9 Dataset Property Selection
       # Reference: Ramakrishnan et al., Scientific Data 1, 140022 (2014)
-      
+
       # Scalar graph-level targets to be included in pyg_data.y
       scalar_graph_targets_to_include:
         # Primary energy targets (Hartree)
@@ -63,36 +63,36 @@ data_config:
         - H               # Enthalpy at 298.15K
         - G               # Free energy at 298.15K
         - zpve            # Zero point vibrational energy
-        
+
         # Electronic properties
         - homo            # HOMO energy (Hartree)
         - lumo            # LUMO energy (Hartree)
         - gap             # HOMO-LUMO gap (Hartree)
-        
+
         # Other properties
         - mu              # Dipole moment (Debye)
         - alpha           # Isotropic polarizability (Bohr³)
         - Cv              # Heat capacity (cal/(mol·K))
-        
+
         # Rotational constants (GHz)
         - A
         - B
         - C
-        
+
         # Electronic spatial extent
         - r2              # (Bohr²)
-      
+
       # Node-level features
       node_features_to_add:
         - Qmulliken       # Mulliken partial charges
-      
+
       # Vector graph properties
       vector_graph_properties_to_include: []
-      
+
       # Variable-length properties
       variable_len_graph_properties_to_include:
         - freqs           # Vibrational frequencies (cm⁻¹)
-      
+
       # QM9-specific settings
       # Calculate atomization energy from U0
       calculate_atomization_energy_from: U0
@@ -102,14 +102,14 @@ data_config:
 
 # ────────────────────────────────────────────────────
 # QM9 Property Availability Matrix
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 property_availability:
   QM9:
     # QM9 Dataset Property Availability (25 keys in qm9.npz)
     # Reference: Ramakrishnan et al., Scientific Data 1, 140022 (2014)
     # Contains 133,885 small organic molecules (CHONF, up to 9 heavy atoms)
     # Level of theory: B3LYP/6-31G(2df,p)
-    
+
     # Molecular identifiers (5 keys)
     molecular_identifiers:
       - compounds       # Compound identifiers (file names: dsgdb9nsd_XXXXXX)
@@ -117,12 +117,12 @@ property_availability:
       - smiles_relaxed  # SMILES string (relaxed geometry)
       - inchi           # InChI string (original from GDB-17)
       - inchi_relaxed   # InChI string (relaxed geometry)
-    
+
     # Atomic structure properties (2 keys)
     atomic_structure:
       - atoms           # Atomic numbers (C=6, H=1, O=8, N=7, F=9)
       - coordinates     # B3LYP/6-31G(2df,p) optimized coordinates (Angstrom)
-    
+
     # Scalar graph-level properties (15 keys)
     # All energies in Hartree, Cv in cal/(mol·K)
     scalar_graph_targets:
@@ -144,21 +144,21 @@ property_availability:
       - H               # Enthalpy at 298.15K (Hartree)
       - G               # Free energy at 298.15K (Hartree)
       - Cv              # Heat capacity at 298.15K (cal/(mol·K))
-    
+
     # Node-level (atomic) properties (1 key)
     node_features:
       - Qmulliken       # Mulliken partial charges (e)
-    
+
     # Fixed-size vector graph properties
     vector_graph_properties: []  # A, B, C stored as separate scalars, not as vector
-    
+
     # Variable-length graph properties (1 key)
     variable_len_graph_properties:
       - freqs           # Vibrational frequencies (cm⁻¹)
-    
+
     # Metadata fields (1 key)
     metadata_fields:
       - metadata        # Dataset metadata (object array)
-    
+
     # QM9 is DFT-based - no uncertainty fields
     uncertainty_fields: []

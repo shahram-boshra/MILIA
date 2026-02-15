@@ -9,9 +9,9 @@ Design decisions:
 - Cache invalidation: Callbacks notify consumers of registry changes
 """
 
-from typing import Dict, List, Type, Optional, Iterator, Callable
-from threading import RLock
 import logging
+from collections.abc import Callable, Iterator
+from threading import RLock
 
 from milia_pipeline.datasets.base import BaseDataset
 from milia_pipeline.exceptions import DatasetNotFoundError, DatasetRegistrationError
@@ -23,18 +23,18 @@ class DatasetRegistry:
     """
     Thread-safe registry for dataset types.
     """
-    
+
     def __init__(self):
         """Initialize empty registry with thread lock."""
-        self._datasets: Dict[str, Type[BaseDataset]] = {}
+        self._datasets: dict[str, type[BaseDataset]] = {}
         self._lock = RLock()
-        self._on_change_callbacks: List[Callable[[], None]] = []
-    
+        self._on_change_callbacks: list[Callable[[], None]] = []
+
     def add_on_change_callback(self, callback: Callable[[], None]) -> None:
         """Register a callback to be called when registry changes."""
         with self._lock:
             self._on_change_callbacks.append(callback)
-    
+
     def remove_on_change_callback(self, callback: Callable[[], None]) -> bool:
         """Remove a previously registered callback."""
         with self._lock:
@@ -43,7 +43,7 @@ class DatasetRegistry:
                 return True
             except ValueError:
                 return False
-    
+
     def _notify_change(self) -> None:
         """Notify all registered callbacks of registry change."""
         for callback in self._on_change_callbacks:
@@ -51,26 +51,26 @@ class DatasetRegistry:
                 callback()
             except Exception as e:
                 logger.warning(f"Registry change callback failed: {e}")
-    
-    def register(self, dataset_class: Type[BaseDataset]) -> None:
+
+    def register(self, dataset_class: type[BaseDataset]) -> None:
         """Register a dataset class."""
         if not isinstance(dataset_class, type):
             raise TypeError(f"Expected class, got {type(dataset_class).__name__}")
-        
+
         if not issubclass(dataset_class, BaseDataset):
             raise TypeError(
                 f"Dataset class must be subclass of BaseDataset, got {dataset_class.__name__}"
             )
-        
-        if hasattr(dataset_class, '__abstractmethods__') and dataset_class.__abstractmethods__:
+
+        if hasattr(dataset_class, "__abstractmethods__") and dataset_class.__abstractmethods__:
             raise DatasetRegistrationError(
                 message=f"Cannot register abstract class '{dataset_class.__name__}'",
                 dataset_name=dataset_class.__name__,
-                details=f"Missing implementations: {dataset_class.__abstractmethods__}"
+                details=f"Missing implementations: {dataset_class.__abstractmethods__}",
             )
-        
+
         name = dataset_class.metadata.name
-        
+
         with self._lock:
             if name in self._datasets:
                 existing = self._datasets[name]
@@ -79,16 +79,16 @@ class DatasetRegistry:
                         message=f"Dataset '{name}' already registered",
                         dataset_name=name,
                         conflicting_class=existing.__name__,
-                        details=f"Cannot register {dataset_class.__name__} with same name"
+                        details=f"Cannot register {dataset_class.__name__} with same name",
                     )
                 else:
                     logger.debug(f"Dataset '{name}' re-registered (same class)")
                     return
-            
+
             self._datasets[name] = dataset_class
             logger.info(f"Registered dataset: {name} ({dataset_class.__name__})")
             self._notify_change()
-    
+
     def unregister(self, name: str) -> bool:
         """Unregister a dataset by name. Returns True if found and removed."""
         with self._lock:
@@ -98,8 +98,8 @@ class DatasetRegistry:
                 self._notify_change()
                 return True
             return False
-    
-    def get(self, name: str) -> Type[BaseDataset]:
+
+    def get(self, name: str) -> type[BaseDataset]:
         """Get dataset class by name. Raises DatasetNotFoundError if not found."""
         with self._lock:
             if name not in self._datasets:
@@ -107,44 +107,44 @@ class DatasetRegistry:
                 raise DatasetNotFoundError(
                     message=f"Dataset '{name}' not registered",
                     dataset_name=name,
-                    available_datasets=available
+                    available_datasets=available,
                 )
             return self._datasets[name]
-    
-    def get_or_none(self, name: str) -> Optional[Type[BaseDataset]]:
+
+    def get_or_none(self, name: str) -> type[BaseDataset] | None:
         """Get dataset class by name, or None if not found."""
         with self._lock:
             return self._datasets.get(name)
-    
-    def list_all(self) -> List[str]:
+
+    def list_all(self) -> list[str]:
         """List all registered dataset names."""
         with self._lock:
             return list(self._datasets.keys())
-    
-    def list_all_classes(self) -> List[Type[BaseDataset]]:
+
+    def list_all_classes(self) -> list[type[BaseDataset]]:
         """List all registered dataset classes."""
         with self._lock:
             return list(self._datasets.values())
-    
+
     def is_registered(self, name: str) -> bool:
         """Check if dataset is registered."""
         with self._lock:
             return name in self._datasets
-    
+
     def __contains__(self, name: str) -> bool:
         """Support 'in' operator."""
         return self.is_registered(name)
-    
+
     def __iter__(self) -> Iterator[str]:
         """Iterate over registered dataset names."""
         with self._lock:
             return iter(list(self._datasets.keys()))
-    
+
     def __len__(self) -> int:
         """Return number of registered datasets."""
         with self._lock:
             return len(self._datasets)
-    
+
     def clear(self) -> None:
         """Clear all registrations (mainly for testing)."""
         with self._lock:
@@ -161,10 +161,10 @@ def get_default_registry() -> DatasetRegistry:
     return _default_registry
 
 
-def register(dataset_class: Type[BaseDataset]) -> Type[BaseDataset]:
+def register(dataset_class: type[BaseDataset]) -> type[BaseDataset]:
     """
     Register dataset class with default registry. Can be used as decorator.
-    
+
     Usage:
         @register
         class QM9Dataset(BaseDataset):
@@ -174,12 +174,12 @@ def register(dataset_class: Type[BaseDataset]) -> Type[BaseDataset]:
     return dataset_class
 
 
-def get(name: str) -> Type[BaseDataset]:
+def get(name: str) -> type[BaseDataset]:
     """Get dataset from default registry."""
     return _default_registry.get(name)
 
 
-def list_all() -> List[str]:
+def list_all() -> list[str]:
     """List all datasets in default registry."""
     return _default_registry.list_all()
 

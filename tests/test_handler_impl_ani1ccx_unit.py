@@ -33,15 +33,12 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
 import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -52,20 +49,18 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.ani1ccx import ANI1ccxDatasetHandler
 from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
     DatasetSpecificHandlerError,
+    HandlerValidationError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
 )
-
+from milia_pipeline.handlers.implementations.ani1ccx import ANI1ccxDatasetHandler
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for ANI1ccxDatasetHandler
 # ============================================================================
+
 
 def _make_dataset_config(**overrides):
     """Build a minimal mock DatasetConfig for ANI-1ccx handler tests."""
@@ -74,7 +69,7 @@ def _make_dataset_config(**overrides):
     cfg.root_dir = overrides.get("root_dir", "/tmp/test_data")
     cfg.raw_dir = overrides.get("raw_dir", "/tmp/test_data/raw")
     cfg.is_uncertainty_enabled = overrides.get("is_uncertainty_enabled", False)
-    cfg.uncertainty_config = overrides.get("uncertainty_config", None)
+    cfg.uncertainty_config = overrides.get("uncertainty_config")
     return cfg
 
 
@@ -83,7 +78,7 @@ def _make_filter_config(**overrides):
     cfg = Mock(name="FilterConfig")
     cfg.max_atoms = overrides.get("max_atoms", 100)
     cfg.min_atoms = overrides.get("min_atoms", 1)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     return cfg
 
 
@@ -94,9 +89,11 @@ def _make_processing_config(**overrides):
     cfg.node_features = overrides.get("node_features", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
-    cfg.common_required_properties = overrides.get("common_required_properties", ["atoms", "coordinates"])
-    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from", None)
-    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name", None)
+    cfg.common_required_properties = overrides.get(
+        "common_required_properties", ["atoms", "coordinates"]
+    )
+    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from")
+    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name")
     return cfg
 
 
@@ -106,7 +103,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.ani1ccx"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
     handler = ANI1ccxDatasetHandler(
         dataset_config=dataset_config,
         filter_config=filter_config,
@@ -145,7 +142,9 @@ def _make_raw_properties(**overrides):
     num_atoms = overrides.get("num_atoms", 5)
     props = {
         "atoms": overrides.get("atoms", np.array([6, 1, 1, 1, 1], dtype=np.int64)[:num_atoms]),
-        "coordinates": overrides.get("coordinates", np.random.randn(num_atoms, 3).astype(np.float64)),
+        "coordinates": overrides.get(
+            "coordinates", np.random.randn(num_atoms, 3).astype(np.float64)
+        ),
         "ccsd_energy": overrides.get("ccsd_energy", -40.518),
     }
     for key in ["dft_energy", "forces", "hirshfeld_charges", "cm5_charges", "dipole"]:
@@ -157,6 +156,7 @@ def _make_raw_properties(**overrides):
 # ============================================================================
 # GROUP 1: ANI1ccxDatasetHandler - Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestANI1ccxDatasetHandlerIdentity(unittest.TestCase):
     """Test ANI1ccxDatasetHandler identity, registration, and basic attributes."""
@@ -181,6 +181,7 @@ class TestANI1ccxDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """ANI1ccxDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(ANI1ccxDatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -189,8 +190,10 @@ class TestANI1ccxDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = ANI1ccxDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -205,6 +208,7 @@ class TestANI1ccxDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_required_properties (7 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test ANI-1ccx-specific required property determination."""
@@ -254,7 +258,8 @@ class TestGetRequiredProperties(unittest.TestCase):
     def test_returns_deduplicated_list(self):
         """Required properties list has no duplicates."""
         pc = _make_processing_config(
-            scalar_graph_targets=["ccsd_energy"], node_features=["atoms"],
+            scalar_graph_targets=["ccsd_energy"],
+            node_features=["atoms"],
             variable_len_graph_properties=["forces"],
             calculate_atomization_energy_from="ccsd_energy",
         )
@@ -266,6 +271,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # ============================================================================
 # GROUP 3: get_molecular_charge (5 tests)
 # ============================================================================
+
 
 class TestGetMolecularCharge(unittest.TestCase):
     """Test ANI-1ccx molecular charge (always neutral = 0)."""
@@ -285,7 +291,9 @@ class TestGetMolecularCharge(unittest.TestCase):
 
     def test_returns_zero_with_mol_identifier(self):
         handler = _make_handler()
-        self.assertEqual(handler.get_molecular_charge({}, np.array([6, 1, 1]), mol_identifier="id"), 0)
+        self.assertEqual(
+            handler.get_molecular_charge({}, np.array([6, 1, 1]), mol_identifier="id"), 0
+        )
 
     def test_returns_int_type(self):
         handler = _make_handler()
@@ -295,6 +303,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # ============================================================================
 # GROUP 4: validate_molecule_data - Success Paths (5 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeDataSuccess(unittest.TestCase):
     """Test ANI-1ccx molecule validation success paths."""
@@ -333,12 +342,15 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
         """Negative CC energy (normal Hartree) passes without warning."""
         mock_vs.return_value = None
         handler = _make_handler()
-        handler.validate_molecule_data(_make_raw_properties(ccsd_energy=-40.518), molecule_index=0, identifier="test")
+        handler.validate_molecule_data(
+            _make_raw_properties(ccsd_energy=-40.518), molecule_index=0, identifier="test"
+        )
 
 
 # ============================================================================
 # GROUP 5: validate_molecule_data - Error Paths (7 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeDataErrors(unittest.TestCase):
     """Test ANI-1ccx molecule validation error paths."""
@@ -369,30 +381,44 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
         for prop in ["ccsd_energy", "atoms", "coordinates"]:
             self.assertIn(prop, err_str)
 
-    @patch("milia_pipeline.handlers.implementations.ani1ccx.validate_molecular_structure",
-           side_effect=ValueError("Atom count mismatch"))
+    @patch(
+        "milia_pipeline.handlers.implementations.ani1ccx.validate_molecular_structure",
+        side_effect=ValueError("Atom count mismatch"),
+    )
     def test_structure_validation_failure(self, mock_v):
         handler = _make_handler()
         with self.assertRaises(DatasetSpecificHandlerError):
-            handler.validate_molecule_data(_make_raw_properties(), molecule_index=0, identifier="test")
+            handler.validate_molecule_data(
+                _make_raw_properties(), molecule_index=0, identifier="test"
+            )
 
     def test_molecule_processing_error_converted(self):
         handler = _make_handler()
-        with patch.object(handler, "_is_valid_property",
-                          side_effect=MoleculeProcessingError(message="fail", molecule_index=0)):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(_make_raw_properties(), molecule_index=0, identifier="test")
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=MoleculeProcessingError(message="fail", molecule_index=0),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.validate_molecule_data(
+                _make_raw_properties(), molecule_index=0, identifier="test"
+            )
 
     def test_unexpected_error_wraps(self):
         handler = _make_handler()
         with patch.object(handler, "_is_valid_property", side_effect=TypeError("boom")):
             with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(_make_raw_properties(), molecule_index=0, identifier="test")
+                handler.validate_molecule_data(
+                    _make_raw_properties(), molecule_index=0, identifier="test"
+                )
 
 
 # ============================================================================
 # GROUP 6: process_property_value - Atoms (6 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueAtoms(unittest.TestCase):
     """Test ANI-1ccx process_property_value for atoms key (dtype normalization)."""
@@ -435,6 +461,7 @@ class TestProcessPropertyValueAtoms(unittest.TestCase):
 # GROUP 7: process_property_value - Coordinates (5 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueCoordinates(unittest.TestCase):
     """Test ANI-1ccx process_property_value for coordinates key."""
 
@@ -451,7 +478,9 @@ class TestProcessPropertyValueCoordinates(unittest.TestCase):
     def test_coordinates_object_array_converted(self):
         handler = _make_handler()
         obj_arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=object)
-        self.assertEqual(handler.process_property_value("coordinates", obj_arr, 0).dtype, np.float64)
+        self.assertEqual(
+            handler.process_property_value("coordinates", obj_arr, 0).dtype, np.float64
+        )
 
     def test_coordinates_int_array_converted_to_float64(self):
         handler = _make_handler()
@@ -468,58 +497,92 @@ class TestProcessPropertyValueCoordinates(unittest.TestCase):
 # GROUP 8: process_property_value - Forces, Charges, Dipole (10 tests)
 # ============================================================================
 
+
 class TestProcessPropertyValueArrayProperties(unittest.TestCase):
     """Test ANI-1ccx process_property_value for forces, charges, dipole."""
 
     def test_forces_float32_passthrough(self):
         handler = _make_handler()
         arr = np.random.randn(5, 3).astype(np.float32)
-        self.assertTrue(np.issubdtype(handler.process_property_value("forces", arr, 0).dtype, np.floating))
+        self.assertTrue(
+            np.issubdtype(handler.process_property_value("forces", arr, 0).dtype, np.floating)
+        )
 
     def test_forces_object_array_converted(self):
         handler = _make_handler()
-        result = handler.process_property_value("forces", np.array([[0.1, 0.2, 0.3]], dtype=object), 0)
+        result = handler.process_property_value(
+            "forces", np.array([[0.1, 0.2, 0.3]], dtype=object), 0
+        )
         self.assertEqual(result.dtype, np.float32)
 
     def test_forces_with_nan_returns_none(self):
         handler = _make_handler()
-        self.assertIsNone(handler.process_property_value("forces", np.array([[float('nan'), 0.2, 0.3]], dtype=np.float32), 0))
+        self.assertIsNone(
+            handler.process_property_value(
+                "forces", np.array([[float("nan"), 0.2, 0.3]], dtype=np.float32), 0
+            )
+        )
 
     def test_forces_with_inf_returns_none(self):
         handler = _make_handler()
-        self.assertIsNone(handler.process_property_value("forces", np.array([[float('inf'), 0.2, 0.3]], dtype=np.float32), 0))
+        self.assertIsNone(
+            handler.process_property_value(
+                "forces", np.array([[float("inf"), 0.2, 0.3]], dtype=np.float32), 0
+            )
+        )
 
     def test_hirshfeld_charges_float32_passthrough(self):
         handler = _make_handler()
         arr = np.array([0.1, -0.2, 0.05], dtype=np.float32)
-        self.assertTrue(np.issubdtype(handler.process_property_value("hirshfeld_charges", arr, 0).dtype, np.floating))
+        self.assertTrue(
+            np.issubdtype(
+                handler.process_property_value("hirshfeld_charges", arr, 0).dtype, np.floating
+            )
+        )
 
     def test_hirshfeld_charges_non_finite_returns_none(self):
         handler = _make_handler()
-        self.assertIsNone(handler.process_property_value("hirshfeld_charges", np.array([float('nan'), 0.1], dtype=np.float32), 0))
+        self.assertIsNone(
+            handler.process_property_value(
+                "hirshfeld_charges", np.array([float("nan"), 0.1], dtype=np.float32), 0
+            )
+        )
 
     def test_cm5_charges_object_array_converted(self):
         handler = _make_handler()
-        result = handler.process_property_value("cm5_charges", np.array([0.1, -0.2, 0.05], dtype=object), 0)
+        result = handler.process_property_value(
+            "cm5_charges", np.array([0.1, -0.2, 0.05], dtype=object), 0
+        )
         self.assertEqual(result.dtype, np.float32)
 
     def test_cm5_charges_non_finite_returns_none(self):
         handler = _make_handler()
-        self.assertIsNone(handler.process_property_value("cm5_charges", np.array([float('inf'), 0.1], dtype=np.float32), 0))
+        self.assertIsNone(
+            handler.process_property_value(
+                "cm5_charges", np.array([float("inf"), 0.1], dtype=np.float32), 0
+            )
+        )
 
     def test_dipole_object_array_converted(self):
         handler = _make_handler()
-        result = handler.process_property_value("dipole", np.array([1.0, 2.0, 3.0], dtype=object), 0)
+        result = handler.process_property_value(
+            "dipole", np.array([1.0, 2.0, 3.0], dtype=object), 0
+        )
         self.assertEqual(result.dtype, np.float32)
 
     def test_dipole_non_finite_returns_none(self):
         handler = _make_handler()
-        self.assertIsNone(handler.process_property_value("dipole", np.array([float('nan'), 2.0, 3.0], dtype=np.float32), 0))
+        self.assertIsNone(
+            handler.process_property_value(
+                "dipole", np.array([float("nan"), 2.0, 3.0], dtype=np.float32), 0
+            )
+        )
 
 
 # ============================================================================
 # GROUP 9: process_property_value - ccsd_energy, dft_energy and Passthrough (9 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValueEnergy(unittest.TestCase):
     """Test ANI-1ccx process_property_value for ccsd_energy, dft_energy, and generic passthrough."""
@@ -562,7 +625,9 @@ class TestProcessPropertyValueEnergy(unittest.TestCase):
     def test_generic_property_passthrough(self):
         handler = _make_handler()
         arr = np.array([1.0, 2.0, 3.0])
-        np.testing.assert_array_equal(handler.process_property_value("some_other_prop", arr, 0), arr)
+        np.testing.assert_array_equal(
+            handler.process_property_value("some_other_prop", arr, 0), arr
+        )
 
     def test_none_value_passthrough(self):
         handler = _make_handler()
@@ -570,14 +635,20 @@ class TestProcessPropertyValueEnergy(unittest.TestCase):
 
     def test_unexpected_exception_wraps(self):
         handler = _make_handler()
-        with patch("milia_pipeline.handlers.implementations.ani1ccx.np.asarray", side_effect=RuntimeError("boom")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2, 3], 0)
+        with (
+            patch(
+                "milia_pipeline.handlers.implementations.ani1ccx.np.asarray",
+                side_effect=RuntimeError("boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2, 3], 0)
 
 
 # ============================================================================
 # GROUP 10: _is_valid_property (7 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test ANI-1ccx property validation (simple None/empty check)."""
@@ -608,6 +679,7 @@ class TestIsValidProperty(unittest.TestCase):
 # GROUP 11: _ensure_tensor (8 tests)
 # ============================================================================
 
+
 class TestEnsureTensor(unittest.TestCase):
     """Test tensor conversion utility (ANI-1ccx raises DatasetSpecificHandlerError)."""
 
@@ -635,7 +707,9 @@ class TestEnsureTensor(unittest.TestCase):
     def test_tensor_to_tensor(self):
         handler = _make_handler()
         t = torch.tensor([1.0, 2.0], dtype=torch.float64)
-        self.assertEqual(handler._ensure_tensor(t, torch.float32, "test", 0, "id").dtype, torch.float32)
+        self.assertEqual(
+            handler._ensure_tensor(t, torch.float32, "test", 0, "id").dtype, torch.float32
+        )
 
     def test_invalid_conversion_raises(self):
         handler = _make_handler()
@@ -657,6 +731,7 @@ class TestEnsureTensor(unittest.TestCase):
 # GROUP 12: _add_scalar_targets_internal (8 tests)
 # ============================================================================
 
+
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test ANI-1ccx scalar target addition to PyG data."""
 
@@ -671,7 +746,9 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_scalar_targets_internal(data, _make_raw_properties(ccsd_energy=-40.518), 0, "test")
+        handler._add_scalar_targets_internal(
+            data, _make_raw_properties(ccsd_energy=-40.518), 0, "test"
+        )
         self.assertIsNotNone(data.y)
         self.assertAlmostEqual(data.y[0].item(), -40.518, places=3)
 
@@ -679,7 +756,9 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_scalar_targets_internal(data, _make_raw_properties(ccsd_energy=np.array(-40.518)), 0, "test")
+        handler._add_scalar_targets_internal(
+            data, _make_raw_properties(ccsd_energy=np.array(-40.518)), 0, "test"
+        )
         self.assertAlmostEqual(data.y[0].item(), -40.518, places=3)
 
     def test_int_scalar_target(self):
@@ -701,14 +780,18 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, _make_raw_properties(ccsd_energy=np.array([-40.0, -50.0])), 0, "test")
+            handler._add_scalar_targets_internal(
+                data, _make_raw_properties(ccsd_energy=np.array([-40.0, -50.0])), 0, "test"
+            )
 
     def test_unsupported_type_raises(self):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, _make_raw_properties(ccsd_energy={"v": -40}), 0, "test")
+            handler._add_scalar_targets_internal(
+                data, _make_raw_properties(ccsd_energy={"v": -40}), 0, "test"
+            )
 
     def test_unexpected_exception_wraps(self):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
@@ -716,12 +799,15 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         data = _make_pyg_data()
         with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
             with self.assertRaises((DatasetSpecificHandlerError, PropertyEnrichmentError)):
-                handler._add_scalar_targets_internal(data, _make_raw_properties(ccsd_energy=-40.518), 0, "test")
+                handler._add_scalar_targets_internal(
+                    data, _make_raw_properties(ccsd_energy=-40.518), 0, "test"
+                )
 
 
 # ============================================================================
 # GROUP 13: _add_vector_properties_internal (6 tests)
 # ============================================================================
+
 
 class TestAddVectorPropertiesInternal(unittest.TestCase):
     """Test ANI-1ccx vector property (dipole) addition to PyG data."""
@@ -730,7 +816,12 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(vector_graph_properties=["dipole"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_vector_properties_internal(data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0], dtype=np.float32)), 0, "test")
+        handler._add_vector_properties_internal(
+            data,
+            _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0], dtype=np.float32)),
+            0,
+            "test",
+        )
         self.assertTrue(hasattr(data, "dipole"))
         self.assertEqual(data.dipole.shape[0], 3)
 
@@ -745,7 +836,9 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(vector_graph_properties=["dipole"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_vector_properties_internal(data, _make_raw_properties(dipole=[1.0, 2.0, 3.0]), 0, "test")
+        handler._add_vector_properties_internal(
+            data, _make_raw_properties(dipole=[1.0, 2.0, 3.0]), 0, "test"
+        )
         self.assertIsInstance(data.dipole, torch.Tensor)
 
     def test_non_1d_vector_raises(self):
@@ -753,7 +846,9 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         with self.assertRaises(PropertyEnrichmentError):
-            handler._add_vector_properties_internal(data, _make_raw_properties(dipole=np.array([[1.0, 2.0], [3.0, 4.0]])), 0, "test")
+            handler._add_vector_properties_internal(
+                data, _make_raw_properties(dipole=np.array([[1.0, 2.0], [3.0, 4.0]])), 0, "test"
+            )
 
     def test_unexpected_exception_wraps(self):
         pc = _make_processing_config(vector_graph_properties=["dipole"])
@@ -761,19 +856,24 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         data = _make_pyg_data()
         with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
             with self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)):
-                handler._add_vector_properties_internal(data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test")
+                handler._add_vector_properties_internal(
+                    data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test"
+                )
 
     def test_no_vector_properties_configured_is_noop(self):
         pc = _make_processing_config(vector_graph_properties=[])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_vector_properties_internal(data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test")
+        handler._add_vector_properties_internal(
+            data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test"
+        )
         self.assertFalse(hasattr(data, "dipole"))
 
 
 # ============================================================================
 # GROUP 14: _add_variable_length_properties_internal (7 tests)
 # ============================================================================
+
 
 class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
     """Test ANI-1ccx variable-length property (forces, charges) addition."""
@@ -782,14 +882,26 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(variable_len_graph_properties=["forces"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3)
-        handler._add_variable_length_properties_internal(data, _make_raw_properties(num_atoms=3, forces=np.random.randn(3, 3).astype(np.float32)), 0, "test")
+        handler._add_variable_length_properties_internal(
+            data,
+            _make_raw_properties(num_atoms=3, forces=np.random.randn(3, 3).astype(np.float32)),
+            0,
+            "test",
+        )
         self.assertTrue(hasattr(data, "forces"))
 
     def test_adds_hirshfeld_charges_when_configured(self):
         pc = _make_processing_config(variable_len_graph_properties=["hirshfeld_charges"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3)
-        handler._add_variable_length_properties_internal(data, _make_raw_properties(num_atoms=3, hirshfeld_charges=np.array([0.1, -0.2, 0.1], dtype=np.float32)), 0, "test")
+        handler._add_variable_length_properties_internal(
+            data,
+            _make_raw_properties(
+                num_atoms=3, hirshfeld_charges=np.array([0.1, -0.2, 0.1], dtype=np.float32)
+            ),
+            0,
+            "test",
+        )
         self.assertTrue(hasattr(data, "hirshfeld_charges"))
 
     def test_skips_when_absent(self):
@@ -803,14 +915,20 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(variable_len_graph_properties=[])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        handler._add_variable_length_properties_internal(data, _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)), 0, "test")
+        handler._add_variable_length_properties_internal(
+            data, _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)), 0, "test"
+        )
         self.assertFalse(hasattr(data, "forces"))
 
     def test_multiple_properties_added(self):
         pc = _make_processing_config(variable_len_graph_properties=["forces", "hirshfeld_charges"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3)
-        props = _make_raw_properties(num_atoms=3, forces=np.random.randn(3, 3).astype(np.float32), hirshfeld_charges=np.array([0.1, -0.2, 0.1], dtype=np.float32))
+        props = _make_raw_properties(
+            num_atoms=3,
+            forces=np.random.randn(3, 3).astype(np.float32),
+            hirshfeld_charges=np.array([0.1, -0.2, 0.1], dtype=np.float32),
+        )
         handler._add_variable_length_properties_internal(data, props, 0, "test")
         self.assertTrue(hasattr(data, "forces"))
         self.assertTrue(hasattr(data, "hirshfeld_charges"))
@@ -819,9 +937,22 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(variable_len_graph_properties=["forces"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        with patch.object(handler, "_ensure_tensor", side_effect=PropertyEnrichmentError(molecule_index=0, inchi="t", property_name="forces", reason="t", detail="t")):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_variable_length_properties_internal(data, _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)), 0, "test")
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=PropertyEnrichmentError(
+                    molecule_index=0, inchi="t", property_name="forces", reason="t", detail="t"
+                ),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
+        ):
+            handler._add_variable_length_properties_internal(
+                data,
+                _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)),
+                0,
+                "test",
+            )
 
     def test_unexpected_exception_wraps(self):
         pc = _make_processing_config(variable_len_graph_properties=["forces"])
@@ -829,12 +960,18 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         data = _make_pyg_data()
         with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
             with self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)):
-                handler._add_variable_length_properties_internal(data, _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)), 0, "test")
+                handler._add_variable_length_properties_internal(
+                    data,
+                    _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)),
+                    0,
+                    "test",
+                )
 
 
 # ============================================================================
 # GROUP 15: _calculate_atomization_energy_internal (9 tests)
 # ============================================================================
+
 
 class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
     """Test ANI-1ccx atomization energy calculation (Hartree to eV, using ccsd_energy)."""
@@ -842,46 +979,66 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
     def test_returns_none_when_not_configured(self):
         pc = _make_processing_config(calculate_atomization_energy_from=None)
         handler = _make_handler(processing_config=pc)
-        self.assertIsNone(handler._calculate_atomization_energy_internal({}, _make_pyg_data(), 0, "test"))
+        self.assertIsNone(
+            handler._calculate_atomization_energy_internal({}, _make_pyg_data(), 0, "test")
+        )
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", 27.2114)
-    @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {6: -37.846, 1: -0.500})
+    @patch(
+        "milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE",
+        {6: -37.846, 1: -0.500},
+    )
     def test_calculates_atomization_energy(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3, z=torch.tensor([6, 1, 1], dtype=torch.long))
-        result = handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test")
+        result = handler._calculate_atomization_energy_internal(
+            {"ccsd_energy": -40.0}, data, 0, "test"
+        )
         expected = (-40.0 - (-37.846 + -0.500 + -0.500)) * 27.2114
         self.assertAlmostEqual(result, expected, places=3)
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", 27.2114)
-    @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {6: -37.846, 1: -0.500})
+    @patch(
+        "milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE",
+        {6: -37.846, 1: -0.500},
+    )
     def test_handles_numpy_scalar_energy(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=2, z=torch.tensor([6, 1], dtype=torch.long))
-        result = handler._calculate_atomization_energy_internal({"ccsd_energy": np.array(-40.0)}, data, 0, "test")
+        result = handler._calculate_atomization_energy_internal(
+            {"ccsd_energy": np.array(-40.0)}, data, 0, "test"
+        )
         self.assertIsNotNone(result)
         self.assertIsInstance(result, float)
 
     def test_returns_none_when_base_energy_missing(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
-        self.assertIsNone(handler._calculate_atomization_energy_internal({}, _make_pyg_data(), 0, "test"))
+        self.assertIsNone(
+            handler._calculate_atomization_energy_internal({}, _make_pyg_data(), 0, "test")
+        )
 
     def test_returns_none_when_z_missing(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = Data()
         data.z = None
-        self.assertIsNone(handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test"))
+        self.assertIsNone(
+            handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test")
+        )
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", None)
     @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {})
     def test_returns_none_when_har2ev_is_none(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
-        self.assertIsNone(handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, _make_pyg_data(), 0, "test"))
+        self.assertIsNone(
+            handler._calculate_atomization_energy_internal(
+                {"ccsd_energy": -40.0}, _make_pyg_data(), 0, "test"
+            )
+        )
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", 27.2114)
     @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {6: -37.846})
@@ -889,34 +1046,49 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=2, z=torch.tensor([6, 1], dtype=torch.long))
-        self.assertIsNone(handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test"))
+        self.assertIsNone(
+            handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test")
+        )
 
     def test_returns_none_on_exception(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         with patch.object(data.z, "tolist", side_effect=RuntimeError("boom")):
-            self.assertIsNone(handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test"))
+            self.assertIsNone(
+                handler._calculate_atomization_energy_internal(
+                    {"ccsd_energy": -40.0}, data, 0, "test"
+                )
+            )
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", 27.2114)
-    @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {6: -37.846, 1: -0.500})
+    @patch(
+        "milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE",
+        {6: -37.846, 1: -0.500},
+    )
     def test_returns_float(self):
         pc = _make_processing_config(calculate_atomization_energy_from="ccsd_energy")
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=2, z=torch.tensor([6, 1], dtype=torch.long))
-        self.assertIsInstance(handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test"), float)
+        self.assertIsInstance(
+            handler._calculate_atomization_energy_internal({"ccsd_energy": -40.0}, data, 0, "test"),
+            float,
+        )
 
 
 # ============================================================================
 # GROUP 16: enrich_pyg_data (8 tests)
 # ============================================================================
 
+
 class TestEnrichPygData(unittest.TestCase):
     """Test ANI-1ccx PyG data enrichment orchestration."""
 
     def test_returns_data_object(self):
         handler = _make_handler()
-        self.assertIsInstance(handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test"), Data)
+        self.assertIsInstance(
+            handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test"), Data
+        )
 
     def test_sets_dataset_type(self):
         handler = _make_handler()
@@ -953,21 +1125,33 @@ class TestEnrichPygData(unittest.TestCase):
 
     def test_enrichment_error_wraps(self):
         handler = _make_handler()
-        with patch.object(handler, "_add_scalar_targets_internal", side_effect=RuntimeError("unexpected")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test")
+        with (
+            patch.object(
+                handler, "_add_scalar_targets_internal", side_effect=RuntimeError("unexpected")
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test")
 
     def test_property_enrichment_error_propagates(self):
         handler = _make_handler()
-        with patch.object(handler, "_add_scalar_targets_internal",
-                          side_effect=PropertyEnrichmentError(molecule_index=0, inchi="t", property_name="e", reason="t", detail="t")):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test")
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=PropertyEnrichmentError(
+                    molecule_index=0, inchi="t", property_name="e", reason="t", detail="t"
+                ),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
+        ):
+            handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test")
 
 
 # ============================================================================
 # GROUP 17: get_processing_statistics (7 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test ANI-1ccx processing statistics generation."""
@@ -980,23 +1164,31 @@ class TestGetProcessingStatistics(unittest.TestCase):
         self.assertIn("primary_energy", stats)
 
     def test_total_processed_count(self):
-        self.assertEqual(_make_handler().get_processing_statistics([{}, {}, {}])["total_processed"], 3)
+        self.assertEqual(
+            _make_handler().get_processing_statistics([{}, {}, {}])["total_processed"], 3
+        )
 
     def test_empty_list_returns_basic_stats(self):
         self.assertEqual(_make_handler().get_processing_statistics([])["total_processed"], 0)
 
     def test_counts_molecules_with_forces(self):
         molecules = [{"forces": np.array([1.0])}, {"forces": None}, {"forces": np.array([2.0])}]
-        self.assertEqual(_make_handler().get_processing_statistics(molecules)["molecules_with_forces"], 2)
+        self.assertEqual(
+            _make_handler().get_processing_statistics(molecules)["molecules_with_forces"], 2
+        )
 
     def test_counts_molecules_with_charges(self):
         molecules = [{"hirshfeld_charges": np.array([0.1])}, {"cm5_charges": np.array([0.2])}, {}]
-        self.assertEqual(_make_handler().get_processing_statistics(molecules)["molecules_with_charges"], 2)
+        self.assertEqual(
+            _make_handler().get_processing_statistics(molecules)["molecules_with_charges"], 2
+        )
 
     def test_counts_molecules_with_dft_energy(self):
         """ANI-1ccx stats track molecules that have dft_energy (optional secondary)."""
         molecules = [{"dft_energy": -39.0}, {"dft_energy": None}, {"dft_energy": -38.5}]
-        self.assertEqual(_make_handler().get_processing_statistics(molecules)["molecules_with_dft_energy"], 2)
+        self.assertEqual(
+            _make_handler().get_processing_statistics(molecules)["molecules_with_dft_energy"], 2
+        )
 
     def test_experimental_setup_in_stats(self):
         handler = _make_handler(experimental_setup="augmented")
@@ -1008,6 +1200,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # ============================================================================
 # GROUP 18: get_transform_recommendations (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendations(unittest.TestCase):
     """Test ANI-1ccx-specific transform recommendations."""
@@ -1038,6 +1231,7 @@ class TestGetTransformRecommendations(unittest.TestCase):
 # GROUP 19: get_supported_descriptors (5 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test ANI-1ccx-specific descriptor support reporting."""
 
@@ -1059,13 +1253,21 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 
     def test_includes_all_descriptor_categories(self):
         cats = _make_handler().get_supported_descriptors()["categories"]
-        for c in ["constitutional", "topological", "electronic", "geometric", "drug_likeness", "fragments"]:
+        for c in [
+            "constitutional",
+            "topological",
+            "electronic",
+            "geometric",
+            "drug_likeness",
+            "fragments",
+        ]:
             self.assertIn(c, cats)
 
 
 # ============================================================================
 # GROUP 20: get_supported_structural_features (5 tests)
 # ============================================================================
+
 
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test ANI-1ccx-specific structural feature support."""
@@ -1098,20 +1300,27 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # GROUP 21: Transform Validation Helpers (8 tests)
 # ============================================================================
 
+
 class TestTransformValidationHelpers(unittest.TestCase):
     """Test ANI-1ccx transform validation helper methods."""
 
     def test_validate_no_geometric_warning(self):
-        warnings = _make_handler()._validate_dataset_specific_transforms(["GCNNorm", "AddSelfLoops"])
+        warnings = _make_handler()._validate_dataset_specific_transforms(
+            ["GCNNorm", "AddSelfLoops"]
+        )
         self.assertTrue(any("geometric augmentation" in w for w in warnings))
 
     def test_validate_with_geometric_no_warning(self):
-        warnings = _make_handler()._validate_dataset_specific_transforms(["RandomRotate", "GCNNorm"])
+        warnings = _make_handler()._validate_dataset_specific_transforms(
+            ["RandomRotate", "GCNNorm"]
+        )
         self.assertFalse(any("without geometric augmentation" in w for w in warnings))
 
     def test_forces_with_random_rotate_warns(self):
         pc = _make_processing_config(variable_len_graph_properties=["forces"])
-        warnings = _make_handler(processing_config=pc)._validate_dataset_specific_transforms(["RandomRotate"])
+        warnings = _make_handler(processing_config=pc)._validate_dataset_specific_transforms(
+            ["RandomRotate"]
+        )
         self.assertTrue(any("force rotation" in w for w in warnings))
 
     def test_distance_transform_warning(self):
@@ -1120,7 +1329,9 @@ class TestTransformValidationHelpers(unittest.TestCase):
 
     def test_check_virtualnode_with_charges_incompatible(self):
         pc = _make_processing_config(node_features=["hirshfeld_charges"])
-        errors = _make_handler(processing_config=pc)._check_transform_incompatibilities(["VirtualNode"])
+        errors = _make_handler(processing_config=pc)._check_transform_incompatibilities(
+            ["VirtualNode"]
+        )
         self.assertTrue(any("VirtualNode" in e for e in errors))
 
     def test_check_no_incompatibilities(self):
@@ -1140,26 +1351,35 @@ class TestTransformValidationHelpers(unittest.TestCase):
 # GROUP 22: _get_dataset_suitable_transforms (5 tests)
 # ============================================================================
 
+
 class TestGetDatasetSuitableTransforms(unittest.TestCase):
     """Test ANI-1ccx dataset-suitable transform filtering."""
 
     def test_filters_geometric_transforms(self):
-        suitable = _make_handler()._get_dataset_suitable_transforms({"RandomRotate": Mock(), "RandomTranslate": Mock(), "FakeTransform": Mock()})
+        suitable = _make_handler()._get_dataset_suitable_transforms(
+            {"RandomRotate": Mock(), "RandomTranslate": Mock(), "FakeTransform": Mock()}
+        )
         self.assertIn("RandomRotate", suitable)
         self.assertNotIn("FakeTransform", suitable)
 
     def test_filters_normalization_transforms(self):
-        suitable = _make_handler()._get_dataset_suitable_transforms({"GCNNorm": Mock(), "NormalizeFeatures": Mock()})
+        suitable = _make_handler()._get_dataset_suitable_transforms(
+            {"GCNNorm": Mock(), "NormalizeFeatures": Mock()}
+        )
         self.assertIn("GCNNorm", suitable)
         self.assertIn("NormalizeFeatures", suitable)
 
     def test_filters_structure_transforms(self):
-        suitable = _make_handler()._get_dataset_suitable_transforms({"AddSelfLoops": Mock(), "ToUndirected": Mock()})
+        suitable = _make_handler()._get_dataset_suitable_transforms(
+            {"AddSelfLoops": Mock(), "ToUndirected": Mock()}
+        )
         self.assertIn("AddSelfLoops", suitable)
         self.assertIn("ToUndirected", suitable)
 
     def test_filters_edge_feature_transforms(self):
-        suitable = _make_handler()._get_dataset_suitable_transforms({"Distance": Mock(), "Cartesian": Mock()})
+        suitable = _make_handler()._get_dataset_suitable_transforms(
+            {"Distance": Mock(), "Cartesian": Mock()}
+        )
         self.assertIn("Distance", suitable)
         self.assertIn("Cartesian", suitable)
 
@@ -1171,14 +1391,18 @@ class TestGetDatasetSuitableTransforms(unittest.TestCase):
 # GROUP 23: Edge Cases and Integration (8 tests)
 # ============================================================================
 
+
 class TestEdgeCasesAndIntegration(unittest.TestCase):
     """Test edge cases and cross-method integration."""
 
     def test_handler_with_all_configs(self):
         pc = _make_processing_config(
-            scalar_graph_targets=["ccsd_energy"], node_features=["hirshfeld_charges"],
-            vector_graph_properties=["dipole"], variable_len_graph_properties=["forces", "cm5_charges"],
-            calculate_atomization_energy_from="ccsd_energy", atomization_energy_key_name="atomization_energy_eV",
+            scalar_graph_targets=["ccsd_energy"],
+            node_features=["hirshfeld_charges"],
+            vector_graph_properties=["dipole"],
+            variable_len_graph_properties=["forces", "cm5_charges"],
+            calculate_atomization_energy_from="ccsd_energy",
+            atomization_energy_key_name="atomization_energy_eV",
         )
         self.assertEqual(_make_handler(processing_config=pc).get_dataset_type(), "ANI1ccx")
 
@@ -1186,45 +1410,79 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3, z=torch.tensor([6, 1, 1], dtype=torch.long))
-        result = handler.enrich_pyg_data(data, _make_raw_properties(num_atoms=3, ccsd_energy=-40.518), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(num_atoms=3, ccsd_energy=-40.518), 0, "test"
+        )
         self.assertTrue(hasattr(result, "y"))
 
     def test_multiple_enrichments_independent(self):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
-        r1 = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(ccsd_energy=-40.518), 0, "t1")
-        r2 = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(ccsd_energy=-76.123), 1, "t2")
+        r1 = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(ccsd_energy=-40.518), 0, "t1"
+        )
+        r2 = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(ccsd_energy=-76.123), 1, "t2"
+        )
         self.assertNotEqual(r1.y[0].item(), r2.y[0].item())
 
     def test_process_property_unexpected_exception_wrapped(self):
         handler = _make_handler()
-        with patch("milia_pipeline.handlers.implementations.ani1ccx.np.asarray", side_effect=RuntimeError("boom")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2, 3], 0)
+        with (
+            patch(
+                "milia_pipeline.handlers.implementations.ani1ccx.np.asarray",
+                side_effect=RuntimeError("boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2, 3], 0)
 
     def test_handler_validation_error_reraise(self):
         handler = _make_handler()
         with self.assertRaises(HandlerValidationError):
-            handler.validate_molecule_data(_make_raw_properties(ccsd_energy=None, atoms=None, coordinates=None), molecule_index=0)
+            handler.validate_molecule_data(
+                _make_raw_properties(ccsd_energy=None, atoms=None, coordinates=None),
+                molecule_index=0,
+            )
 
     def test_dataset_specific_handler_error_reraise(self):
         handler = _make_handler()
-        with patch("milia_pipeline.handlers.implementations.ani1ccx.validate_molecular_structure", side_effect=ValueError("bad")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(_make_raw_properties(), molecule_index=0, identifier="test")
+        with (
+            patch(
+                "milia_pipeline.handlers.implementations.ani1ccx.validate_molecular_structure",
+                side_effect=ValueError("bad"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.validate_molecule_data(
+                _make_raw_properties(), molecule_index=0, identifier="test"
+            )
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.HAR2EV", 27.2114)
-    @patch("milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE", {6: -37.846, 1: -0.500})
+    @patch(
+        "milia_pipeline.handlers.implementations.ani1ccx.ATOMIC_ENERGIES_HARTREE",
+        {6: -37.846, 1: -0.500},
+    )
     def test_full_enrichment_with_atomization_energy(self):
-        pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"], calculate_atomization_energy_from="ccsd_energy", atomization_energy_key_name="atomization_energy_eV")
+        pc = _make_processing_config(
+            scalar_graph_targets=["ccsd_energy"],
+            calculate_atomization_energy_from="ccsd_energy",
+            atomization_energy_key_name="atomization_energy_eV",
+        )
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3, z=torch.tensor([6, 1, 1], dtype=torch.long))
-        result = handler.enrich_pyg_data(data, _make_raw_properties(num_atoms=3, ccsd_energy=-40.0), 0, "test")
+        result = handler.enrich_pyg_data(
+            data, _make_raw_properties(num_atoms=3, ccsd_energy=-40.0), 0, "test"
+        )
         self.assertTrue(hasattr(result, "atomization_energy_eV"))
         self.assertIsInstance(result.atomization_energy_eV, torch.Tensor)
 
     def test_enrichment_skips_atomization_when_not_configured(self):
-        pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"], calculate_atomization_energy_from=None, atomization_energy_key_name=None)
+        pc = _make_processing_config(
+            scalar_graph_targets=["ccsd_energy"],
+            calculate_atomization_energy_from=None,
+            atomization_energy_key_name=None,
+        )
         handler = _make_handler(processing_config=pc)
         result = handler.enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "test")
         self.assertFalse(hasattr(result, "atomization_energy_eV"))
@@ -1233,6 +1491,7 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 24: _get_transform_recommendations (private helper) (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendationsPrivate(unittest.TestCase):
     """Test ANI-1ccx private _get_transform_recommendations helper."""
@@ -1250,10 +1509,7 @@ class TestGetTransformRecommendationsPrivate(unittest.TestCase):
             ["GCNNorm", "AddSelfLoops", "NormalizeFeatures", "RandomRotate", "Distance"]
         )
         # Should have no or minimal recommendations since everything is present
-        self.assertTrue(
-            len(recs) == 0 or
-            not any("GCNNorm" in r for r in recs)
-        )
+        self.assertTrue(len(recs) == 0 or not any("GCNNorm" in r for r in recs))
 
     def test_selfloops_recommendation_before_gcnnorm(self):
         recs = _make_handler()._get_transform_recommendations(["GCNNorm"])
@@ -1269,35 +1525,36 @@ class TestGetTransformRecommendationsPrivate(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
     test_classes = [
-        TestANI1ccxDatasetHandlerIdentity,               # GROUP 1:    6 tests
-        TestGetRequiredProperties,                         # GROUP 2:    7 tests
-        TestGetMolecularCharge,                            # GROUP 3:    5 tests
-        TestValidateMoleculeDataSuccess,                   # GROUP 4:    5 tests
-        TestValidateMoleculeDataErrors,                    # GROUP 5:    7 tests
-        TestProcessPropertyValueAtoms,                     # GROUP 6:    6 tests
-        TestProcessPropertyValueCoordinates,               # GROUP 7:    5 tests
-        TestProcessPropertyValueArrayProperties,           # GROUP 8:   10 tests
-        TestProcessPropertyValueEnergy,                    # GROUP 9:   10 tests
-        TestIsValidProperty,                               # GROUP 10:   7 tests
-        TestEnsureTensor,                                  # GROUP 11:   8 tests
-        TestAddScalarTargetsInternal,                      # GROUP 12:   8 tests
-        TestAddVectorPropertiesInternal,                   # GROUP 13:   6 tests
-        TestAddVariableLengthPropertiesInternal,           # GROUP 14:   7 tests
-        TestCalculateAtomizationEnergyInternal,            # GROUP 15:   9 tests
-        TestEnrichPygData,                                 # GROUP 16:   8 tests
-        TestGetProcessingStatistics,                       # GROUP 17:   7 tests
-        TestGetTransformRecommendations,                   # GROUP 18:   5 tests
-        TestGetSupportedDescriptors,                       # GROUP 19:   5 tests
-        TestGetSupportedStructuralFeatures,                # GROUP 20:   5 tests
-        TestTransformValidationHelpers,                    # GROUP 21:   8 tests
-        TestGetDatasetSuitableTransforms,                  # GROUP 22:   5 tests
-        TestEdgeCasesAndIntegration,                       # GROUP 23:   8 tests
-        TestGetTransformRecommendationsPrivate,            # GROUP 24:   5 tests
+        TestANI1ccxDatasetHandlerIdentity,  # GROUP 1:    6 tests
+        TestGetRequiredProperties,  # GROUP 2:    7 tests
+        TestGetMolecularCharge,  # GROUP 3:    5 tests
+        TestValidateMoleculeDataSuccess,  # GROUP 4:    5 tests
+        TestValidateMoleculeDataErrors,  # GROUP 5:    7 tests
+        TestProcessPropertyValueAtoms,  # GROUP 6:    6 tests
+        TestProcessPropertyValueCoordinates,  # GROUP 7:    5 tests
+        TestProcessPropertyValueArrayProperties,  # GROUP 8:   10 tests
+        TestProcessPropertyValueEnergy,  # GROUP 9:   10 tests
+        TestIsValidProperty,  # GROUP 10:   7 tests
+        TestEnsureTensor,  # GROUP 11:   8 tests
+        TestAddScalarTargetsInternal,  # GROUP 12:   8 tests
+        TestAddVectorPropertiesInternal,  # GROUP 13:   6 tests
+        TestAddVariableLengthPropertiesInternal,  # GROUP 14:   7 tests
+        TestCalculateAtomizationEnergyInternal,  # GROUP 15:   9 tests
+        TestEnrichPygData,  # GROUP 16:   8 tests
+        TestGetProcessingStatistics,  # GROUP 17:   7 tests
+        TestGetTransformRecommendations,  # GROUP 18:   5 tests
+        TestGetSupportedDescriptors,  # GROUP 19:   5 tests
+        TestGetSupportedStructuralFeatures,  # GROUP 20:   5 tests
+        TestTransformValidationHelpers,  # GROUP 21:   8 tests
+        TestGetDatasetSuitableTransforms,  # GROUP 22:   5 tests
+        TestEdgeCasesAndIntegration,  # GROUP 23:   8 tests
+        TestGetTransformRecommendationsPrivate,  # GROUP 24:   5 tests
     ]
     for test_class in test_classes:
         suite.addTests(loader.loadTestsFromTestCase(test_class))

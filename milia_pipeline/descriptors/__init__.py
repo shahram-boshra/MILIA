@@ -22,10 +22,10 @@ Basic usage for descriptor calculation:
 
     >>> from milia_pipeline.descriptors import DescriptorCalculator
     >>> from rdkit import Chem
-    >>> 
+    >>>
     >>> # Initialize calculator
     >>> calculator = DescriptorCalculator()
-    >>> 
+    >>>
     >>> # Calculate descriptors for a molecule
     >>> mol = Chem.MolFromSmiles("CCO")
     >>> result = calculator.calculate_batch(mol, ["MolWt", "TPSA", "LogP"])
@@ -76,19 +76,19 @@ Available Categories
 --------------------
 - **Constitutional**: Basic molecular properties (35 descriptors)
   Examples: MolWt, NumHDonors, NumHAcceptors, TPSA, LogP
-  
+
 - **Topological**: Graph-based descriptors (350+ descriptors)
   Examples: BertzCT, Chi indices, VSA descriptors, Kappa indices
-  
+
 - **Electronic**: Electronic properties (8 descriptors)
   Examples: MaxPartialCharge, MinPartialCharge, MaxAbsPartialCharge
-  
+
 - **Geometric**: 3D structure descriptors (10 descriptors)
   Examples: RadiusOfGyration, Asphericity, Eccentricity, SpherocityIndex
-  
+
 - **Drug-likeness**: Druglikeness metrics (4 descriptors)
   Examples: QED, SPS (Synthetic Pathway Score)
-  
+
 - **Fragments**: Functional group counts (85 descriptors)
   Examples: fr_alkyl_halide, fr_amine, fr_benzene, fr_ester
 
@@ -98,14 +98,14 @@ Usage Examples
 Example 1: Calculate specific descriptors
     >>> from milia_pipeline.descriptors import DescriptorCalculator
     >>> from rdkit import Chem
-    >>> 
+    >>>
     >>> calculator = DescriptorCalculator()
     >>> mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")  # Aspirin
-    >>> 
+    >>>
     >>> # Calculate specific descriptors
     >>> descriptors = ["MolWt", "TPSA", "NumHDonors", "NumHAcceptors"]
     >>> result = calculator.calculate_batch(mol, descriptors, mol_identifier="aspirin")
-    >>> 
+    >>>
     >>> print(f"Successful: {result.successful}")
     >>> print(f"Failed: {result.failed}")
     >>> print(f"Time: {result.total_time:.3f}s")
@@ -117,15 +117,15 @@ Example 2: Calculate descriptors by category
     ...     get_category_descriptor_names
     ... )
     >>> from rdkit import Chem
-    >>> 
+    >>>
     >>> # Get all constitutional descriptors
     >>> constitutional_descs = get_category_descriptor_names(
     ...     DescriptorCategory.CONSTITUTIONAL
     ... )
-    >>> 
+    >>>
     >>> calculator = DescriptorCalculator()
     >>> mol = Chem.MolFromSmiles("CCO")
-    >>> 
+    >>>
     >>> result = calculator.calculate_batch(mol, constitutional_descs)
     >>> print(f"Calculated {len(result.successful)} constitutional descriptors")
 
@@ -135,14 +135,14 @@ Example 3: Filter descriptors by requirements
     ...     filter_by_requirements
     ... )
     >>> from rdkit import Chem
-    >>> 
+    >>>
     >>> mol = Chem.MolFromSmiles("CCO")
     >>> all_descriptors = ["MolWt", "TPSA", "RadiusOfGyration", "Asphericity"]
-    >>> 
+    >>>
     >>> # Filter based on what molecule has
     >>> validator = DescriptorValidator()
     >>> filtered = validator.filter_by_requirements(mol, all_descriptors)
-    >>> 
+    >>>
     >>> print(f"Valid: {filtered['valid']}")
     >>> print(f"Invalid: {filtered['invalid']}")
     >>> print(f"Has 3D: {filtered['molecule_has_3d']}")
@@ -155,24 +155,24 @@ Example 4: Integrate with PyTorch Geometric
     >>> from torch_geometric.data import Data
     >>> from rdkit import Chem
     >>> import torch
-    >>> 
+    >>>
     >>> # Create PyG Data object
     >>> x = torch.randn(5, 10)  # 5 atoms, 10 features each
     >>> edge_index = torch.tensor([[0, 1, 2, 3], [1, 2, 3, 4]])
     >>> data = Data(x=x, edge_index=edge_index)
-    >>> 
+    >>>
     >>> # Calculate descriptors
     >>> mol = Chem.MolFromSmiles("CCCCC")
     >>> calculator = DescriptorCalculator()
     >>> result = calculator.calculate_batch(mol, ["MolWt", "TPSA", "LogP"])
-    >>> 
+    >>>
     >>> # Add to PyG Data
     >>> data = add_descriptors_to_pyg_data(
     ...     data,
     ...     result.successful,
     ...     create_feature_vector=True
     ... )
-    >>> 
+    >>>
     >>> print(data.descriptor_features)  # Tensor of descriptor values
     >>> print(data.descriptor_names)     # List of descriptor names
 
@@ -182,7 +182,7 @@ Example 5: Load and use custom plugins
     ...     DescriptorCalculator
     ... )
     >>> from pathlib import Path
-    >>> 
+    >>>
     >>> # Discover plugins
     >>> plugin_loader = DescriptorPluginLoader()
     >>> plugin_paths = [Path("./plugins/descriptors")]
@@ -190,9 +190,9 @@ Example 5: Load and use custom plugins
     ...     paths=plugin_paths,
     ...     auto_validate=True
     ... )
-    >>> 
+    >>>
     >>> print(f"Discovered {len(discovered)} plugin(s)")
-    >>> 
+    >>>
     >>> # Use custom descriptors
     >>> calculator = DescriptorCalculator()
     >>> mol = Chem.MolFromSmiles("CCO")
@@ -201,17 +201,17 @@ Example 5: Load and use custom plugins
 Example 6: Batch processing with statistics
     >>> from milia_pipeline.descriptors import DescriptorCalculator
     >>> from rdkit import Chem
-    >>> 
+    >>>
     >>> calculator = DescriptorCalculator(enable_cache=True)
     >>> molecules = [
     ...     (Chem.MolFromSmiles("CCO"), "ethanol"),
     ...     (Chem.MolFromSmiles("CC(C)O"), "isopropanol"),
     ...     (Chem.MolFromSmiles("CCCO"), "propanol")
     ... ]
-    >>> 
+    >>>
     >>> descriptors = ["MolWt", "TPSA", "LogP"]
     >>> results = calculator.calculate_for_molecules(molecules, descriptors)
-    >>> 
+    >>>
     >>> # Get statistics
     >>> stats = calculator.get_statistics()
     >>> print(f"Total calculations: {stats['total_calculations']}")
@@ -235,12 +235,12 @@ through the config.yaml file:
         topological:
           - BertzCT
           - Chi0v
-      
+
       computation:
         enable_cache: true
         generate_conformers: true
         fallback_on_error: true
-      
+
       plugins:
         enabled: true
         plugin_paths:
@@ -305,73 +305,71 @@ __version__ = "1.0.0"
 # =============================================================================
 
 # Registry System
-from .descriptor_registry import (
-    DescriptorRegistry,
-    DescriptorRegistration,
-    registry,
-    get_descriptor,
-    has_descriptor,
-    list_descriptors,
-    auto_discover_rdkit,
+# Calculator
+from .descriptor_calculator import (
+    BatchCalculationResult,
+    CalculationResult,
+    DescriptorCalculator,
 )
 
 # Categories and Metadata
 from .descriptor_categories import (
+    ALL_DESCRIPTORS,
+    DESCRIPTOR_METADATA_MAP,
+    DESCRIPTORS_BY_CATEGORY,
     DescriptorCategory,
     DescriptorMetadata,
-    get_descriptors_by_category,
-    get_descriptor_metadata,
-    requires_3d_coordinates,
-    requires_partial_charges,
+    filter_descriptors_by_requirements,
     get_all_descriptor_names,
     get_category_descriptor_names,
-    filter_descriptors_by_requirements,
     get_descriptor_count_by_category,
+    get_descriptor_metadata,
+    get_descriptors_by_category,
+    requires_3d_coordinates,
+    requires_partial_charges,
     validate_descriptor_coverage,
-    DESCRIPTOR_METADATA_MAP,
-    ALL_DESCRIPTORS,
-    DESCRIPTORS_BY_CATEGORY,
 )
 
-# Calculator
-from .descriptor_calculator import (
-    DescriptorCalculator,
-    CalculationResult,
-    BatchCalculationResult,
+# Integration with PyTorch Geometric
+from .descriptor_integration import (
+    add_descriptors_to_pyg_data,
+    descriptors_to_tensor,
+    extract_descriptors_from_pyg_data,
+    get_descriptor_statistics,
+    merge_descriptors_with_features,
+    validate_descriptor_integration,
+)
+
+# Plugin System
+from .descriptor_plugin_system import (
+    DescriptorDeclaration,
+    DescriptorPluginLoader,
+    DescriptorPluginMetadata,
+    discover_plugins,
+    get_plugin_info,
+    list_plugins,
+    plugin_loader,
+    validate_plugin,
+)
+from .descriptor_registry import (
+    DescriptorRegistration,
+    DescriptorRegistry,
+    auto_discover_rdkit,
+    get_descriptor,
+    has_descriptor,
+    list_descriptors,
+    registry,
 )
 
 # Validator
 from .descriptor_validator import (
     DescriptorValidator,
     ValidationResult,
-    validate_value,
     check_requirements,
     filter_by_requirements,
+    validate_value,
     validator,
 )
-
-# Integration with PyTorch Geometric
-from .descriptor_integration import (
-    descriptors_to_tensor,
-    add_descriptors_to_pyg_data,
-    merge_descriptors_with_features,
-    extract_descriptors_from_pyg_data,
-    validate_descriptor_integration,
-    get_descriptor_statistics,
-)
-
-# Plugin System
-from .descriptor_plugin_system import (
-    DescriptorPluginLoader,
-    DescriptorPluginMetadata,
-    DescriptorDeclaration,
-    plugin_loader,
-    discover_plugins,
-    validate_plugin,
-    list_plugins,
-    get_plugin_info,
-)
-
 
 # =============================================================================
 # PUBLIC API DEFINITION
@@ -380,7 +378,6 @@ from .descriptor_plugin_system import (
 __all__ = [
     # Version
     "__version__",
-    
     # Registry System
     "DescriptorRegistry",
     "DescriptorRegistration",
@@ -389,7 +386,6 @@ __all__ = [
     "has_descriptor",
     "list_descriptors",
     "auto_discover_rdkit",
-    
     # Categories and Metadata
     "DescriptorCategory",
     "DescriptorMetadata",
@@ -405,12 +401,10 @@ __all__ = [
     "DESCRIPTOR_METADATA_MAP",
     "ALL_DESCRIPTORS",
     "DESCRIPTORS_BY_CATEGORY",
-    
     # Calculator
     "DescriptorCalculator",
     "CalculationResult",
     "BatchCalculationResult",
-    
     # Validator
     "DescriptorValidator",
     "ValidationResult",
@@ -418,7 +412,6 @@ __all__ = [
     "check_requirements",
     "filter_by_requirements",
     "validator",
-    
     # Integration
     "descriptors_to_tensor",
     "add_descriptors_to_pyg_data",
@@ -426,7 +419,6 @@ __all__ = [
     "extract_descriptors_from_pyg_data",
     "validate_descriptor_integration",
     "get_descriptor_statistics",
-    
     # Plugin System
     "DescriptorPluginLoader",
     "DescriptorPluginMetadata",

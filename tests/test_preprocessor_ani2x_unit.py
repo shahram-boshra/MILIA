@@ -47,34 +47,33 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
+import sys
 import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
 import numpy as np
-from typing import Dict, Any, List
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.ani2x import (
+    ANI2X_SUPPORTED_ELEMENTS,
     ANI2xPreprocessor,
     iter_data_buckets_ani2x,
-    ANI2X_SUPPORTED_ELEMENTS,
 )
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
-from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
-
 
 # ============================================================================
 # HELPERS: Build realistic config and mock objects
 # ============================================================================
+
 
 def _make_config(**overrides):
     """
@@ -85,16 +84,16 @@ def _make_config(**overrides):
     - Optional: 'num_molecules', 'property_keys'
     """
     config = {
-        'raw_archive_path': overrides.get(
-            'raw_archive_path', '/tmp/test_data/raw/ANI-2x-wB97X-631Gd.h5'),
-        'output_npz_path': overrides.get(
-            'output_npz_path', '/tmp/test_data/processed/ani2x.npz'),
+        "raw_archive_path": overrides.get(
+            "raw_archive_path", "/tmp/test_data/raw/ANI-2x-wB97X-631Gd.h5"
+        ),
+        "output_npz_path": overrides.get("output_npz_path", "/tmp/test_data/processed/ani2x.npz"),
     }
-    for key in ['num_molecules', 'property_keys']:
+    for key in ["num_molecules", "property_keys"]:
         if key in overrides:
             config[key] = overrides[key]
     for key in list(config.keys()):
-        if overrides.get(f'_remove_{key}', False):
+        if overrides.get(f"_remove_{key}", False):
             del config[key]
     return config
 
@@ -156,20 +155,20 @@ def _make_mock_features_and_metadata():
     mol_id_arr[1] = "H2O1"
 
     features = {
-        'atoms': atoms_arr,
-        'coordinates': coords_arr,
-        'energy': np.array([-40.5, -76.4], dtype=np.float64),
-        'molecule_id': mol_id_arr,
+        "atoms": atoms_arr,
+        "coordinates": coords_arr,
+        "energy": np.array([-40.5, -76.4], dtype=np.float64),
+        "molecule_id": mol_id_arr,
     }
 
     metadata = {
-        'total_conformers': 2,
-        'skipped_nan': 0,
-        'skipped_unknown_element': 0,
-        'mean_atoms': 4.0,
-        'max_atoms': 5,
-        'min_atoms': 3,
-        'properties_extracted': ['atoms', 'coordinates', 'energy', 'molecule_id'],
+        "total_conformers": 2,
+        "skipped_nan": 0,
+        "skipped_unknown_element": 0,
+        "mean_atoms": 4.0,
+        "max_atoms": 5,
+        "min_atoms": 3,
+        "properties_extracted": ["atoms", "coordinates", "energy", "molecule_id"],
     }
 
     return features, metadata
@@ -185,8 +184,7 @@ def _create_and_run_pipeline(config, mock_parse, mock_build, parse_return=None):
     """
     mock_parse.return_value = parse_return or _make_mock_features_and_metadata()
 
-    exists_fn = _path_exists_factory(
-        config['raw_archive_path'], config['output_npz_path'])
+    exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
 
     with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
         preprocessor = _make_preprocessor(config=config)
@@ -230,6 +228,7 @@ def _make_h5_mock_for_iter(mol_groups):
 # GROUP 1: ANI2xPreprocessor - Identity and Registration (6 tests)
 # ============================================================================
 
+
 class TestANI2xPreprocessorIdentity(unittest.TestCase):
     """Test ANI2xPreprocessor identity, registration, and basic attributes."""
 
@@ -270,6 +269,7 @@ class TestANI2xPreprocessorIdentity(unittest.TestCase):
 # GROUP 2: ANI2X_SUPPORTED_ELEMENTS Module Constant (4 tests)
 # ============================================================================
 
+
 class TestANI2xSupportedElements(unittest.TestCase):
     """Test the ANI2X_SUPPORTED_ELEMENTS module-level constant."""
 
@@ -307,6 +307,7 @@ class TestANI2xSupportedElements(unittest.TestCase):
 # GROUP 3: _validate_config - Success Paths (4 tests)
 # ============================================================================
 
+
 class TestValidateConfigSuccess(unittest.TestCase):
     """Test _validate_config success paths for valid configuration."""
 
@@ -323,20 +324,20 @@ class TestValidateConfigSuccess(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_property_keys(self, mock_exists):
         """Config with explicit property_keys passes validation."""
-        _make_preprocessor(config=_make_config(
-            property_keys=['energies', 'forces']))
+        _make_preprocessor(config=_make_config(property_keys=["energies", "forces"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_all_optional_keys(self, mock_exists):
         """Config with all optional keys passes validation."""
-        _make_preprocessor(config=_make_config(
-            num_molecules=500,
-            property_keys=['energies', 'forces']))
+        _make_preprocessor(
+            config=_make_config(num_molecules=500, property_keys=["energies", "forces"])
+        )
 
 
 # ============================================================================
 # GROUP 4: _validate_config - Missing Required Keys (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMissingKeys(unittest.TestCase):
     """Test _validate_config error paths for missing required configuration keys."""
@@ -371,6 +372,7 @@ class TestValidateConfigMissingKeys(unittest.TestCase):
 # GROUP 5: _validate_config - Path Validation (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigPathValidation(unittest.TestCase):
     """Test _validate_config error paths for invalid file paths."""
 
@@ -399,6 +401,7 @@ class TestValidateConfigPathValidation(unittest.TestCase):
 # GROUP 6: _validate_config - File Extension Validation (6 tests)
 # ============================================================================
 
+
 class TestValidateConfigExtension(unittest.TestCase):
     """Test _validate_config behavior for various file extensions.
 
@@ -409,14 +412,14 @@ class TestValidateConfigExtension(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_h5_extension_accepted(self, mock_exists):
         """Archive with .h5 extension passes validation without warning."""
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/ANI-2x-wB97X-631Gd.h5'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/ANI-2x-wB97X-631Gd.h5"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_hdf5_extension_accepted(self, mock_exists):
         """Archive with .hdf5 extension passes validation without warning."""
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/ANI-2x-wB97X-631Gd.hdf5'))
+        _make_preprocessor(
+            config=_make_config(raw_archive_path="/tmp/data/ANI-2x-wB97X-631Gd.hdf5")
+        )
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_tar_gz_extension_accepted(self, mock_exists):
@@ -424,8 +427,9 @@ class TestValidateConfigExtension(unittest.TestCase):
 
         Evidence: ani2x.py line 242.
         """
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/ANI-2x-wB97X-631Gd.tar.gz'))
+        _make_preprocessor(
+            config=_make_config(raw_archive_path="/tmp/data/ANI-2x-wB97X-631Gd.tar.gz")
+        )
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_tgz_extension_accepted(self, mock_exists):
@@ -433,8 +437,7 @@ class TestValidateConfigExtension(unittest.TestCase):
 
         Evidence: ani2x.py line 242.
         """
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/ANI-2x-wB97X-631Gd.tgz'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/ANI-2x-wB97X-631Gd.tgz"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_uppercase_h5_extension_accepted(self, mock_exists):
@@ -442,8 +445,7 @@ class TestValidateConfigExtension(unittest.TestCase):
 
         Evidence: ani2x.py line 243: str(archive_path).lower().endswith(ext)
         """
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/ANI-2x-wB97X-631Gd.H5'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/ANI-2x-wB97X-631Gd.H5"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_unrecognized_extension_logs_warning(self, mock_exists):
@@ -452,10 +454,10 @@ class TestValidateConfigExtension(unittest.TestCase):
         Evidence: ani2x.py lines 243-247 -- warns but proceeds.
         """
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/ani2x.dat'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/ani2x.dat"), logger=logger
+            )
             mock_warn.assert_called_once()
             self.assertIn("not recognized", mock_warn.call_args[0][0].lower())
 
@@ -463,6 +465,7 @@ class TestValidateConfigExtension(unittest.TestCase):
 # ============================================================================
 # GROUP 7: _validate_config - num_molecules Validation (5 tests)
 # ============================================================================
+
 
 class TestValidateConfigNumMolecules(unittest.TestCase):
     """Test _validate_config error paths for invalid num_molecules values."""
@@ -501,6 +504,7 @@ class TestValidateConfigNumMolecules(unittest.TestCase):
 # GROUP 8: preprocess - Output Already Exists (Early Return) (3 tests)
 # ============================================================================
 
+
 class TestPreprocessOutputExists(unittest.TestCase):
     """Test preprocess() early return when output .npz already exists."""
 
@@ -510,18 +514,18 @@ class TestPreprocessOutputExists(unittest.TestCase):
         config = _make_config()
         preprocessor = _make_preprocessor(config=config)
 
-        with patch.object(Path, 'stat') as mock_stat:
+        with patch.object(Path, "stat") as mock_stat:
             mock_stat.return_value = Mock(st_size=1024 * 1024 * 50)
             result = preprocessor.preprocess()
 
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_existing_output_skips_h5_parsing(self, mock_exists):
         """When output .npz exists, HDF5 parsing is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, '_parse_ani2x_h5') as mock_parse:
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
+            with patch.object(preprocessor, "_parse_ani2x_h5") as mock_parse:
                 preprocessor.preprocess()
         mock_parse.assert_not_called()
 
@@ -529,8 +533,8 @@ class TestPreprocessOutputExists(unittest.TestCase):
     def test_existing_output_skips_npz_build(self, mock_exists):
         """When output .npz exists, NPZ building is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, '_build_npz') as mock_build:
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
+            with patch.object(preprocessor, "_build_npz") as mock_build:
                 preprocessor.preprocess()
         mock_build.assert_not_called()
 
@@ -539,19 +543,20 @@ class TestPreprocessOutputExists(unittest.TestCase):
 # GROUP 9: preprocess - Full Pipeline Success (5 tests)
 # ============================================================================
 
+
 class TestPreprocessFullPipeline(unittest.TestCase):
     """Test preprocess() full pipeline execution with mocked dependencies."""
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_full_pipeline_returns_output_path(self, mock_parse, mock_build):
         """Full pipeline returns the configured output_npz_path."""
         config = _make_config()
         _, result = _create_and_run_pipeline(config, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_parse_called_with_h5_path(self, mock_parse, mock_build):
         """Step 2: _parse_ani2x_h5 called with correct HDF5 path.
 
@@ -562,114 +567,112 @@ class TestPreprocessFullPipeline(unittest.TestCase):
         _create_and_run_pipeline(config, mock_parse, mock_build)
         mock_parse.assert_called_once()
         call_kwargs = mock_parse.call_args.kwargs
-        self.assertEqual(call_kwargs.get('h5_path'), Path(config['raw_archive_path']))
+        self.assertEqual(call_kwargs.get("h5_path"), Path(config["raw_archive_path"]))
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_parse_called_with_property_keys(self, mock_parse, mock_build):
         """Step 2: _parse_ani2x_h5 called with correct property_keys."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_parse, mock_build)
         call_kwargs = mock_parse.call_args.kwargs
-        self.assertEqual(
-            call_kwargs.get('property_keys'),
-            ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS
-        )
+        self.assertEqual(call_kwargs.get("property_keys"), ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS)
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_parse_called_with_max_conformers(self, mock_parse, mock_build):
         """Step 2: num_molecules config passed as max_conformers."""
         config = _make_config(num_molecules=200)
         _create_and_run_pipeline(config, mock_parse, mock_build)
         call_kwargs = mock_parse.call_args.kwargs
-        self.assertEqual(call_kwargs.get('max_conformers'), 200)
+        self.assertEqual(call_kwargs.get("max_conformers"), 200)
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_build_npz_called_with_features_and_metadata(self, mock_parse, mock_build):
         """Step 3: _build_npz called with features from parse and comprehensive metadata."""
         features, parse_metadata = _make_mock_features_and_metadata()
         _create_and_run_pipeline(
-            _make_config(), mock_parse, mock_build,
-            parse_return=(features, parse_metadata))
+            _make_config(), mock_parse, mock_build, parse_return=(features, parse_metadata)
+        )
 
         mock_build.assert_called_once()
         kw = mock_build.call_args.kwargs
-        self.assertIs(kw.get('features'), features)
-        metadata = kw.get('metadata')
-        self.assertEqual(metadata.get('version'), '1.0')
-        self.assertEqual(metadata.get('dataset_name'), 'ANI2x')
+        self.assertIs(kw.get("features"), features)
+        metadata = kw.get("metadata")
+        self.assertEqual(metadata.get("version"), "1.0")
+        self.assertEqual(metadata.get("dataset_name"), "ANI2x")
 
 
 # ============================================================================
 # GROUP 10: preprocess - Error Wrapping (5 tests)
 # ============================================================================
 
+
 class TestPreprocessErrorWrapping(unittest.TestCase):
     """Test preprocess() wraps all exceptions in DataProcessingError."""
 
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_parse_error_wrapped(self, mock_parse):
         """Parsing RuntimeError wrapped in DataProcessingError."""
         config = _make_config()
         mock_parse.side_effect = RuntimeError("HDF5 corrupt")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIn("ANI-2x preprocessing failed", str(ctx.exception))
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_build_error_wrapped(self, mock_parse, mock_build):
         """_build_npz error wrapped in DataProcessingError."""
         config = _make_config()
         mock_parse.return_value = _make_mock_features_and_metadata()
-        mock_build.side_effect = IOError("Disk full")
+        mock_build.side_effect = OSError("Disk full")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
                 preprocessor.preprocess()
 
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_wrapped_error_preserves_cause(self, mock_parse):
         """DataProcessingError preserves original exception as __cause__."""
         config = _make_config()
         original_error = RuntimeError("Original error")
         mock_parse.side_effect = original_error
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIs(ctx.exception.__cause__, original_error)
 
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_wrapped_error_mentions_ani2x(self, mock_parse):
         """DataProcessingError message includes ANI-2x context."""
         config = _make_config()
         mock_parse.side_effect = RuntimeError("fail")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIn("ANI-2x", str(ctx.exception))
 
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_value_error_wrapped_as_data_processing_error(self, mock_parse):
         """ValueError (e.g., bad data shape) also wrapped in DataProcessingError."""
         config = _make_config()
         mock_parse.side_effect = ValueError("Invalid shape")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -680,195 +683,201 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
 # GROUP 11: preprocess - Metadata Construction (9 tests)
 # ============================================================================
 
+
 class TestPreprocessMetadata(unittest.TestCase):
     """Test preprocess() constructs correct metadata for NPZ.
 
     Evidence: ani2x.py lines 318-333.
     """
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_version(self, mock_parse, mock_build):
         """NPZ metadata includes version='1.0'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['version'], '1.0')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["version"], "1.0")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_dataset_name(self, mock_parse, mock_build):
         """NPZ metadata includes dataset_name='ANI2x'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['dataset_name'], 'ANI2x')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["dataset_name"], "ANI2x")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_parser(self, mock_parse, mock_build):
         """NPZ metadata includes parser='ANI2xPreprocessor'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['parser'], 'ANI2xPreprocessor')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["parser"], "ANI2xPreprocessor")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_source_url(self, mock_parse, mock_build):
         """NPZ metadata includes Zenodo source URL.
 
         Evidence: ani2x.py line 323.
         """
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        metadata = mock_build.call_args.kwargs['metadata']
+        metadata = mock_build.call_args.kwargs["metadata"]
         self.assertEqual(
-            metadata['source_url'],
-            'https://zenodo.org/records/10108942/files/ANI-2x-wB97X-631Gd.tar.gz')
+            metadata["source_url"],
+            "https://zenodo.org/records/10108942/files/ANI-2x-wB97X-631Gd.tar.gz",
+        )
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_coordinate_and_energy_units(self, mock_parse, mock_build):
         """NPZ metadata includes coordinate_units='angstrom' and energy_units='hartree'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['coordinate_units'], 'angstrom')
-        self.assertEqual(metadata['energy_units'], 'hartree')
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["coordinate_units"], "angstrom")
+        self.assertEqual(metadata["energy_units"], "hartree")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_force_units(self, mock_parse, mock_build):
         """NPZ metadata includes force_units='hartree/angstrom'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['force_units'], 'hartree/angstrom')
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["force_units"], "hartree/angstrom")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_includes_doi_and_reference(self, mock_parse, mock_build):
         """NPZ metadata includes DOI and reference to Devereux et al."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['doi'], '10.1021/acs.jctc.0c00121')
-        self.assertIn('Devereux', metadata['reference'])
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["doi"], "10.1021/acs.jctc.0c00121")
+        self.assertIn("Devereux", metadata["reference"])
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_merges_parse_metadata(self, mock_parse, mock_build):
         """NPZ metadata merges parse_metadata from _parse_ani2x_h5."""
-        pm = {'total_conformers': 42, 'skipped_nan': 3, 'skipped_unknown_element': 1,
-              'mean_atoms': 8.5, 'max_atoms': 15, 'min_atoms': 3,
-              'properties_extracted': ['atoms', 'coordinates', 'energy']}
-        _create_and_run_pipeline(
-            _make_config(), mock_parse, mock_build,
-            parse_return=({}, pm))
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['total_conformers'], 42)
-        self.assertEqual(metadata['skipped_nan'], 3)
-        self.assertEqual(metadata['skipped_unknown_element'], 1)
+        pm = {
+            "total_conformers": 42,
+            "skipped_nan": 3,
+            "skipped_unknown_element": 1,
+            "mean_atoms": 8.5,
+            "max_atoms": 15,
+            "min_atoms": 3,
+            "properties_extracted": ["atoms", "coordinates", "energy"],
+        }
+        _create_and_run_pipeline(_make_config(), mock_parse, mock_build, parse_return=({}, pm))
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["total_conformers"], 42)
+        self.assertEqual(metadata["skipped_nan"], 3)
+        self.assertEqual(metadata["skipped_unknown_element"], 1)
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_supported_elements(self, mock_parse, mock_build):
         """NPZ metadata includes supported_elements string."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['supported_elements'], 'H, C, N, O, S, F, Cl')
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["supported_elements"], "H, C, N, O, S, F, Cl")
 
 
 # ============================================================================
 # GROUP 12: preprocess - Default Values (5 tests)
 # ============================================================================
 
+
 class TestPreprocessDefaults(unittest.TestCase):
     """Test preprocess() uses correct defaults for optional config keys."""
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_default_num_molecules_is_none(self, mock_parse, mock_build):
         """Default num_molecules is None (extract all conformers)."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertIsNone(mock_parse.call_args.kwargs.get('max_conformers'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("max_conformers"))
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_default_property_keys(self, mock_parse, mock_build):
         """Default property_keys uses ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
         self.assertEqual(
-            mock_parse.call_args.kwargs.get('property_keys'),
-            ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS
+            mock_parse.call_args.kwargs.get("property_keys"),
+            ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS,
         )
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_custom_property_keys_passed_through(self, mock_parse, mock_build):
         """Custom property_keys config is passed to _parse_ani2x_h5."""
-        custom_keys = ['energies', 'forces']
+        custom_keys = ["energies", "forces"]
         config = _make_config(property_keys=custom_keys)
         _create_and_run_pipeline(config, mock_parse, mock_build)
-        self.assertEqual(
-            mock_parse.call_args.kwargs.get('property_keys'), custom_keys)
+        self.assertEqual(mock_parse.call_args.kwargs.get("property_keys"), custom_keys)
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_source_from_archive_name(self, mock_parse, mock_build):
         """Metadata 'source' field uses archive file name."""
         _create_and_run_pipeline(
-            _make_config(raw_archive_path='/data/raw/ANI-2x-wB97X-631Gd.h5'),
-            mock_parse, mock_build)
-        self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['source'], 'ANI-2x-wB97X-631Gd.h5')
+            _make_config(raw_archive_path="/data/raw/ANI-2x-wB97X-631Gd.h5"), mock_parse, mock_build
+        )
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["source"], "ANI-2x-wB97X-631Gd.h5")
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_default_num_molecules_none_passed_to_parser(self, mock_parse, mock_build):
         """Default num_molecules=None is passed to _parse_ani2x_h5 as max_conformers."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertIsNone(mock_parse.call_args.kwargs.get('max_conformers'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("max_conformers"))
 
 
 # ============================================================================
 # GROUP 13: preprocess - Pipeline Step Ordering (2 tests)
 # ============================================================================
 
+
 class TestPreprocessStepOrdering(unittest.TestCase):
     """Test preprocess() executes pipeline steps in correct order."""
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_steps_execute_in_order(self, mock_parse, mock_build):
         """Steps execute in order: parse_h5 -> build_npz."""
         config = _make_config()
         call_order = []
 
         def track_parse(**kw):
-            call_order.append('parse')
+            call_order.append("parse")
             return _make_mock_features_and_metadata()
 
         def track_build(**kw):
-            call_order.append('build')
+            call_order.append("build")
 
         mock_parse.side_effect = track_parse
         mock_build.side_effect = track_build
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             preprocessor.preprocess()
 
-        self.assertEqual(call_order, ['parse', 'build'])
+        self.assertEqual(call_order, ["parse", "build"])
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_build_receives_parse_output(self, mock_parse, mock_build):
         """Step 3 receives features and metadata from Step 2."""
         expected_features = {"atoms": np.array([6, 1], dtype=np.uint8)}
         expected_meta = {"total_conformers": 2}
         _create_and_run_pipeline(
-            _make_config(), mock_parse, mock_build,
-            parse_return=(expected_features, expected_meta))
-        self.assertIs(mock_build.call_args.kwargs.get('features'), expected_features)
+            _make_config(), mock_parse, mock_build, parse_return=(expected_features, expected_meta)
+        )
+        self.assertIs(mock_build.call_args.kwargs.get("features"), expected_features)
 
 
 # ============================================================================
 # GROUP 14: BasePreprocessor Integration - run() Method (5 tests)
 # ============================================================================
+
 
 class TestBasePreprocessorRunIntegration(unittest.TestCase):
     """Test ANI2xPreprocessor works with BasePreprocessor.run() method."""
@@ -880,17 +889,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         call_order = []
 
         def mock_preprocess():
-            call_order.append('preprocess')
+            call_order.append("preprocess")
             return Path("/tmp/test_output.npz")
 
         def mock_validate_output(path):
-            call_order.append('validate_output')
+            call_order.append("validate_output")
 
-        with patch.object(preprocessor, 'preprocess', side_effect=mock_preprocess):
-            with patch.object(preprocessor, '_validate_output', side_effect=mock_validate_output):
+        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
+            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
                 preprocessor.run()
 
-        self.assertEqual(call_order, ['preprocess', 'validate_output'])
+        self.assertEqual(call_order, ["preprocess", "validate_output"])
 
     def test_run_raises_on_invalid_config(self):
         """Construction raises ConfigurationError when config is invalid."""
@@ -901,9 +910,8 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
     def test_run_calls_preprocess(self, mock_exists):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, 'preprocess',
-                              wraps=preprocessor.preprocess) as mock_pp:
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
+            with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
                 try:
                     preprocessor.run()
                 except Exception:
@@ -912,16 +920,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
 
     def test_has_run_method_from_base(self):
         """ANI2xPreprocessor inherits run() from BasePreprocessor."""
-        self.assertTrue(hasattr(ANI2xPreprocessor, 'run'))
+        self.assertTrue(hasattr(ANI2xPreprocessor, "run"))
 
     def test_has_validate_output_from_base(self):
         """ANI2xPreprocessor inherits _validate_output() from BasePreprocessor."""
-        self.assertTrue(hasattr(ANI2xPreprocessor, '_validate_output'))
+        self.assertTrue(hasattr(ANI2xPreprocessor, "_validate_output"))
 
 
 # ============================================================================
 # GROUP 15: iter_data_buckets_ani2x - Module-Level Generator (12 tests)
 # ============================================================================
+
 
 class TestIterDataBucketsAni2x(unittest.TestCase):
     """Test iter_data_buckets_ani2x() module-level generator function.
@@ -939,92 +948,102 @@ class TestIterDataBucketsAni2x(unittest.TestCase):
 
         Evidence: ani2x.py lines 95-96 -- tries 'species' first (ANI-2x convention).
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'C1H4': {
-                'species': np.array([[6, 1, 1, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 5, 3).astype(np.float32),
-                'energies': np.array([-40.518], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "C1H4": {
+                    "species": np.array([[6, 1, 1, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 5, 3).astype(np.float32),
+                    "energies": np.array([-40.518], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(iter_data_buckets_ani2x("/fake/path.h5", keys=["energies"]))
 
         self.assertEqual(len(results), 1)
-        self.assertIn('atomic_numbers', results[0])
-        self.assertIn('coordinates', results[0])
-        self.assertIn('molecule_id', results[0])
-        self.assertIn('energies', results[0])
+        self.assertIn("atomic_numbers", results[0])
+        self.assertIn("coordinates", results[0])
+        self.assertIn("molecule_id", results[0])
+        self.assertIn("energies", results[0])
 
     def test_falls_back_to_atomic_numbers_key(self):
         """iter_data_buckets_ani2x falls back to 'atomic_numbers' if 'species' absent.
 
         Evidence: ani2x.py lines 97-98.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'C1H4': {
-                'atomic_numbers': np.array([[6, 1, 1, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 5, 3).astype(np.float32),
-                'energies': np.array([-40.518], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "C1H4": {
+                    "atomic_numbers": np.array([[6, 1, 1, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 5, 3).astype(np.float32),
+                    "energies": np.array([-40.518], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 1)
         np.testing.assert_array_equal(
-            results[0]['atomic_numbers'], np.array([6, 1, 1, 1, 1], dtype=np.uint8))
+            results[0]["atomic_numbers"], np.array([6, 1, 1, 1, 1], dtype=np.uint8)
+        )
 
     def test_skips_groups_without_species_or_atomic_numbers(self):
         """iter_data_buckets_ani2x skips groups without species/atomic_numbers key.
 
         Evidence: ani2x.py lines 99-101.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_valid': {
-                'species': np.array([[6, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
-            },
-            'mol_missing': {
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-76.0], dtype=np.float64),
-            },
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_valid": {
+                    "species": np.array([[6, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                },
+                "mol_missing": {
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-76.0], dtype=np.float64),
+                },
+            }
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['molecule_id'], 'mol_valid')
+        self.assertEqual(results[0]["molecule_id"], "mol_valid")
 
     def test_default_keys_is_energies(self):
         """iter_data_buckets_ani2x default keys is ['energies'].
 
         Evidence: ani2x.py lines 86-87.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-40.518], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-40.518], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 1)
-        self.assertIn('energies', results[0])
+        self.assertIn("energies", results[0])
 
     def test_filters_nan_conformers(self):
         """iter_data_buckets_ani2x skips conformers with NaN energy values."""
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1, 1, 1]] * 3, dtype=np.uint8),
-                'coordinates': np.random.randn(3, 4, 3).astype(np.float32),
-                'energies': np.array([-40.5, np.nan, -38.2], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1, 1, 1]] * 3, dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 4, 3).astype(np.float32),
+                    "energies": np.array([-40.5, np.nan, -38.2], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 2)
@@ -1034,97 +1053,108 @@ class TestIterDataBucketsAni2x(unittest.TestCase):
 
         Evidence: ani2x.py lines 149-152.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_padded': {
-                'species': np.array([[6, 1, 1, 0, 0]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 5, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_padded": {
+                    "species": np.array([[6, 1, 1, 0, 0]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 5, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(len(results[0]['atomic_numbers']), 3)
-        self.assertEqual(results[0]['coordinates'].shape[0], 3)
+        self.assertEqual(len(results[0]["atomic_numbers"]), 3)
+        self.assertEqual(results[0]["coordinates"].shape[0], 3)
 
     def test_molecule_id_set_from_group_name(self):
         """iter_data_buckets_ani2x sets molecule_id from HDF5 group name."""
-        mock_h5py = _make_h5_mock_for_iter({
-            'my_molecule_group': {
-                'species': np.array([[6, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 2, 3).astype(np.float32),
-                'energies': np.array([-10.0], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "my_molecule_group": {
+                    "species": np.array([[6, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 2, 3).astype(np.float32),
+                    "energies": np.array([-10.0], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
-        self.assertEqual(results[0]['molecule_id'], 'my_molecule_group')
+        self.assertEqual(results[0]["molecule_id"], "my_molecule_group")
 
     def test_handles_1d_atomic_numbers(self):
         """iter_data_buckets_ani2x handles 1D atomic_numbers (no Nc dim).
 
         Evidence: ani2x.py lines 144-147.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_1d': {
-                'species': np.array([6, 1, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(2, 3, 3).astype(np.float32),
-                'energies': np.array([-40.5, -40.6], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_1d": {
+                    "species": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3, 3).astype(np.float32),
+                    "energies": np.array([-40.5, -40.6], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 2)
         np.testing.assert_array_equal(
-            results[0]['atomic_numbers'], np.array([6, 1, 1], dtype=np.uint8))
+            results[0]["atomic_numbers"], np.array([6, 1, 1], dtype=np.uint8)
+        )
         np.testing.assert_array_equal(
-            results[1]['atomic_numbers'], np.array([6, 1, 1], dtype=np.uint8))
+            results[1]["atomic_numbers"], np.array([6, 1, 1], dtype=np.uint8)
+        )
 
     def test_multiple_molecule_groups(self):
         """iter_data_buckets_ani2x iterates over all molecular groups."""
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_A': {
-                'species': np.array([[6, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-10.0], dtype=np.float64),
-            },
-            'mol_B': {
-                'species': np.array([[8, 1, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-20.0], dtype=np.float64),
-            },
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_A": {
+                    "species": np.array([[6, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-10.0], dtype=np.float64),
+                },
+                "mol_B": {
+                    "species": np.array([[8, 1, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-20.0], dtype=np.float64),
+                },
+            }
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
             results = list(iter_data_buckets_ani2x("/fake/path.h5"))
 
         self.assertEqual(len(results), 2)
-        mol_ids = {r['molecule_id'] for r in results}
-        self.assertEqual(mol_ids, {'mol_A', 'mol_B'})
+        mol_ids = {r["molecule_id"] for r in results}
+        self.assertEqual(mol_ids, {"mol_A", "mol_B"})
 
     def test_per_atom_property_filtered_by_non_zero_mask(self):
         """Per-atom properties (forces) are filtered by same non_zero_mask.
 
         Evidence: ani2x.py lines 166-167.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'padded_mol': {
-                'species': np.array([[6, 1, 0]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 3, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
-                'forces': np.array(
-                    [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]],
-                    dtype=np.float32),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "padded_mol": {
+                    "species": np.array([[6, 1, 0]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 3, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                    "forces": np.array(
+                        [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]], dtype=np.float32
+                    ),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies', 'forces']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(iter_data_buckets_ani2x("/fake/path.h5", keys=["energies", "forces"]))
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['forces'].shape[0], 2)
+        self.assertEqual(results[0]["forces"].shape[0], 2)
 
     def test_nan_in_multidimensional_forces(self):
         """iter_data_buckets_ani2x detects NaN in multi-dimensional property arrays.
@@ -1134,17 +1164,18 @@ class TestIterDataBucketsAni2x(unittest.TestCase):
         forces_data = np.random.randn(2, 3, 3).astype(np.float32)
         forces_data[1, 0, 0] = np.nan
 
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1, 1]] * 2, dtype=np.uint8),
-                'coordinates': np.random.randn(2, 3, 3).astype(np.float32),
-                'energies': np.array([-40.5, -38.2], dtype=np.float64),
-                'forces': forces_data,
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1, 1]] * 2, dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3, 3).astype(np.float32),
+                    "energies": np.array([-40.5, -38.2], dtype=np.float64),
+                    "forces": forces_data,
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies', 'forces']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(iter_data_buckets_ani2x("/fake/path.h5", keys=["energies", "forces"]))
 
         self.assertEqual(len(results), 1)
 
@@ -1153,25 +1184,27 @@ class TestIterDataBucketsAni2x(unittest.TestCase):
 
         Evidence: ani2x.py line 116: 'forces': np.float32.
         """
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 2, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
-                'forces': np.array([[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 2, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                    "forces": np.array([[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies', 'forces']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(iter_data_buckets_ani2x("/fake/path.h5", keys=["energies", "forces"]))
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['forces'].dtype, np.float32)
+        self.assertEqual(results[0]["forces"].dtype, np.float32)
 
 
 # ============================================================================
 # GROUP 16: _parse_ani2x_h5 - Internal Method Logic (7 tests)
 # ============================================================================
+
 
 class TestParseAni2xH5(unittest.TestCase):
     """Test _parse_ani2x_h5 internal method for HDF5 parsing logic."""
@@ -1180,23 +1213,25 @@ class TestParseAni2xH5(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_parse_returns_features_and_metadata(self, mock_iter, mock_exists):
         """_parse_ani2x_h5 returns (features_dict, metadata_dict) tuple."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(3, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, metadata = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'],
-            max_conformers=None
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
         )
-        self.assertIn('atoms', features)
-        self.assertIn('coordinates', features)
-        self.assertIn('energy', features)
-        self.assertIn('molecule_id', features)
-        self.assertIn('total_conformers', metadata)
+        self.assertIn("atoms", features)
+        self.assertIn("coordinates", features)
+        self.assertIn("energy", features)
+        self.assertIn("molecule_id", features)
+        self.assertIn("total_conformers", metadata)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
@@ -1204,86 +1239,90 @@ class TestParseAni2xH5(unittest.TestCase):
         """_parse_ani2x_h5 stops after max_conformers."""
         conformers = []
         for i in range(5):
-            conformers.append({
-                'atomic_numbers': np.array([6, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(2, 3).astype(np.float32),
-                'molecule_id': f'mol_{i}',
-                'energies': np.float64(-40.0 + i),
-            })
+            conformers.append(
+                {
+                    "atomic_numbers": np.array([6, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3).astype(np.float32),
+                    "molecule_id": f"mol_{i}",
+                    "energies": np.float64(-40.0 + i),
+                }
+            )
         mock_iter.return_value = iter(conformers)
         preprocessor = _make_preprocessor()
         features, metadata = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'],
-            max_conformers=2
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=2
         )
-        self.assertEqual(metadata['total_conformers'], 2)
-        self.assertEqual(len(features['energy']), 2)
+        self.assertEqual(metadata["total_conformers"], 2)
+        self.assertEqual(len(features["energy"]), 2)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_parse_preserves_uint8_atom_dtype(self, mock_iter, mock_exists):
         """_parse_ani2x_h5 preserves uint8 dtype for atomic numbers."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(3, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'],
-            max_conformers=None
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
         )
-        self.assertEqual(features['atoms'][0].dtype, np.uint8)
+        self.assertEqual(features["atoms"][0].dtype, np.uint8)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_parse_stores_optional_forces(self, mock_iter, mock_exists):
         """_parse_ani2x_h5 stores forces when present in conformer data."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(2, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-            'forces': np.random.randn(2, 3).astype(np.float32),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                    "forces": np.random.randn(2, 3).astype(np.float32),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies', 'forces'],
-            max_conformers=None
+            h5_path=Path("/fake/path.h5"), property_keys=["energies", "forces"], max_conformers=None
         )
-        self.assertIn('forces', features)
+        self.assertIn("forces", features)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_parse_metadata_atom_statistics(self, mock_iter, mock_exists):
         """_parse_ani2x_h5 computes correct atom statistics in metadata."""
-        mock_iter.return_value = iter([
-            {
-                'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(3, 3).astype(np.float32),
-                'molecule_id': 'mol_A',
-                'energies': np.float64(-40.5),
-            },
-            {
-                'atomic_numbers': np.array([8, 1, 1, 1, 1, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(6, 3).astype(np.float32),
-                'molecule_id': 'mol_B',
-                'energies': np.float64(-76.4),
-            },
-        ])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                },
+                {
+                    "atomic_numbers": np.array([8, 1, 1, 1, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(6, 3).astype(np.float32),
+                    "molecule_id": "mol_B",
+                    "energies": np.float64(-76.4),
+                },
+            ]
+        )
         preprocessor = _make_preprocessor()
         _, metadata = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'],
-            max_conformers=None
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
         )
-        self.assertEqual(metadata['min_atoms'], 3)
-        self.assertEqual(metadata['max_atoms'], 6)
-        self.assertAlmostEqual(metadata['mean_atoms'], 4.5)
+        self.assertEqual(metadata["min_atoms"], 3)
+        self.assertEqual(metadata["max_atoms"], 6)
+        self.assertAlmostEqual(metadata["mean_atoms"], 4.5)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
@@ -1292,49 +1331,54 @@ class TestParseAni2xH5(unittest.TestCase):
 
         Element 35 (Bromine) is NOT in {1, 6, 7, 8, 9, 16, 17}.
         """
-        mock_iter.return_value = iter([
-            {
-                'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(3, 3).astype(np.float32),
-                'molecule_id': 'mol_valid',
-                'energies': np.float64(-40.5),
-            },
-            {
-                'atomic_numbers': np.array([35, 1, 1], dtype=np.uint8),
-                'coordinates': np.random.randn(3, 3).astype(np.float32),
-                'molecule_id': 'mol_unsupported',
-                'energies': np.float64(-50.0),
-            },
-        ])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_valid",
+                    "energies": np.float64(-40.5),
+                },
+                {
+                    "atomic_numbers": np.array([35, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_unsupported",
+                    "energies": np.float64(-50.0),
+                },
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, metadata = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'],
-            max_conformers=None
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
         )
-        self.assertEqual(metadata['total_conformers'], 1)
-        self.assertEqual(metadata['skipped_unknown_element'], 1)
+        self.assertEqual(metadata["total_conformers"], 1)
+        self.assertEqual(metadata["skipped_unknown_element"], 1)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_parse_energy_stored_as_float64(self, mock_iter, mock_exists):
         """Energy values stored as float64 in features['energy']."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(2, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'], max_conformers=None)
-        self.assertEqual(features['energy'].dtype, np.float64)
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
+        )
+        self.assertEqual(features["energy"].dtype, np.float64)
 
 
 # ============================================================================
 # GROUP 17: _build_npz - Internal Method Logic (4 tests)
 # ============================================================================
+
 
 class TestBuildNpz(unittest.TestCase):
     """Test _build_npz internal method for NPZ file construction."""
@@ -1358,7 +1402,7 @@ class TestBuildNpz(unittest.TestCase):
             output_path = Path(tmpdir) / "test_output.npz"
             preprocessor._build_npz(features=features, metadata=metadata, output_path=output_path)
             loaded = np.load(str(output_path), allow_pickle=True)
-            self.assertIn('_metadata', loaded.files)
+            self.assertIn("_metadata", loaded.files)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_build_npz_creates_parent_directory(self, mock_exists):
@@ -1387,30 +1431,31 @@ class TestBuildNpz(unittest.TestCase):
 # GROUP 18: DEFAULT_PROPERTY_KEYS Class Attribute (4 tests)
 # ============================================================================
 
+
 class TestDefaultPropertyKeys(unittest.TestCase):
     """Test ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS class attribute."""
 
     def test_default_property_keys_exists(self):
         """ANI2xPreprocessor has DEFAULT_PROPERTY_KEYS class attribute."""
-        self.assertTrue(hasattr(ANI2xPreprocessor, 'DEFAULT_PROPERTY_KEYS'))
+        self.assertTrue(hasattr(ANI2xPreprocessor, "DEFAULT_PROPERTY_KEYS"))
 
     def test_default_property_keys_contains_energies(self):
         """DEFAULT_PROPERTY_KEYS includes 'energies'."""
-        self.assertIn('energies', ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS)
+        self.assertIn("energies", ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS)
 
     def test_default_property_keys_contains_forces(self):
         """DEFAULT_PROPERTY_KEYS includes 'forces'."""
-        self.assertIn('forces', ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS)
+        self.assertIn("forces", ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS)
 
     def test_default_property_keys_is_list(self):
         """DEFAULT_PROPERTY_KEYS is a list."""
         self.assertIsInstance(ANI2xPreprocessor.DEFAULT_PROPERTY_KEYS, list)
 
 
-
 # ============================================================================
 # GROUP 19: _get_h5_path - HDF5 Extraction Logic (5 tests)
 # ============================================================================
+
 
 class TestGetH5Path(unittest.TestCase):
     """Test _get_h5_path method for HDF5 file resolution.
@@ -1455,7 +1500,7 @@ class TestGetH5Path(unittest.TestCase):
             mock_tar.getmembers.return_value = [mock_member]
 
             archive_path = Path("/data/raw/ANI-2x-wB97X-631Gd.tar.gz")
-            expected_h5 = archive_path.parent / 'ani2x_extracted' / mock_member.name
+            expected_h5 = archive_path.parent / "ani2x_extracted" / mock_member.name
 
             with patch("tarfile.open", return_value=mock_tar):
                 with patch("pathlib.Path.mkdir"):
@@ -1481,16 +1526,16 @@ class TestGetH5Path(unittest.TestCase):
 
         archive_path = Path("/data/raw/ANI-2x-wB97X-631Gd.tar.gz")
 
-        with patch("tarfile.open", return_value=mock_tar):
-            with patch("pathlib.Path.mkdir"):
-                with self.assertRaises(DataProcessingError) as ctx:
-                    preprocessor._get_h5_path(archive_path)
+        with patch("tarfile.open", return_value=mock_tar), patch("pathlib.Path.mkdir"):
+            with self.assertRaises(DataProcessingError) as ctx:
+                preprocessor._get_h5_path(archive_path)
         self.assertIn("No HDF5 file found", str(ctx.exception))
 
 
 # ============================================================================
 # GROUP 20: _parse_ani2x_h5 - Object Array Construction (3 tests)
 # ============================================================================
+
 
 class TestParseObjectArrayConstruction(unittest.TestCase):
     """Test _parse_ani2x_h5 builds object arrays correctly for ragged data.
@@ -1503,54 +1548,67 @@ class TestParseObjectArrayConstruction(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_atoms_array_is_object_dtype(self, mock_iter, mock_exists):
         """features['atoms'] is object dtype for ragged arrays."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(3, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'], max_conformers=None)
-        self.assertEqual(features['atoms'].dtype, object)
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
+        )
+        self.assertEqual(features["atoms"].dtype, object)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_coordinates_array_is_object_dtype(self, mock_iter, mock_exists):
         """features['coordinates'] is object dtype for ragged arrays."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(3, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'], max_conformers=None)
-        self.assertEqual(features['coordinates'].dtype, object)
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
+        )
+        self.assertEqual(features["coordinates"].dtype, object)
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
     def test_inner_atom_dtype_preserved_as_uint8(self, mock_iter, mock_exists):
         """Inner arrays in features['atoms'] preserve uint8 dtype."""
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(3, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-            'energies': np.float64(-40.5),
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(3, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                    "energies": np.float64(-40.5),
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'], max_conformers=None)
-        self.assertEqual(features['atoms'][0].dtype, np.uint8)
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
+        )
+        self.assertEqual(features["atoms"][0].dtype, np.uint8)
 
 
 # ============================================================================
 # GROUP 21: Edge Cases and Robustness (7 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndRobustness(unittest.TestCase):
     """Test edge cases and robustness scenarios."""
@@ -1565,39 +1623,36 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         """num_molecules=1 is the minimum valid value."""
         _make_preprocessor(config=_make_config(num_molecules=1))
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_preprocess_with_all_config_options(self, mock_parse, mock_build):
         """Pipeline works with all optional config options specified."""
-        config = _make_config(
-            num_molecules=50,
-            property_keys=['energies', 'forces'])
+        config = _make_config(num_molecules=50, property_keys=["energies", "forces"])
         _, result = _create_and_run_pipeline(config, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_config_with_extra_unknown_keys_still_valid(self, mock_exists):
         """Config with extra unknown keys does not cause validation errors."""
         config = _make_config()
-        config['extra_key'] = 'extra_value'
+        config["extra_key"] = "extra_value"
         _make_preprocessor(config=config)
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_file_format(self, mock_parse, mock_build):
         """Metadata includes file_format='.h5 (HDF5 ANI-2x format)'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
         self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['file_format'],
-            '.h5 (HDF5 ANI-2x format)')
+            mock_build.call_args.kwargs["metadata"]["file_format"], ".h5 (HDF5 ANI-2x format)"
+        )
 
-    @patch.object(ANI2xPreprocessor, '_build_npz')
-    @patch.object(ANI2xPreprocessor, '_parse_ani2x_h5')
+    @patch.object(ANI2xPreprocessor, "_build_npz")
+    @patch.object(ANI2xPreprocessor, "_parse_ani2x_h5")
     def test_metadata_preprocessing_version(self, mock_parse, mock_build):
         """Metadata includes preprocessing_version='1.0'."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['preprocessing_version'], '1.0')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["preprocessing_version"], "1.0")
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani2x.iter_data_buckets_ani2x")
@@ -1606,21 +1661,26 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
 
         Evidence: ani2x.py lines 454-455.
         """
-        mock_iter.return_value = iter([{
-            'atomic_numbers': np.array([6, 1], dtype=np.uint8),
-            'coordinates': np.random.randn(2, 3).astype(np.float32),
-            'molecule_id': 'mol_A',
-        }])
+        mock_iter.return_value = iter(
+            [
+                {
+                    "atomic_numbers": np.array([6, 1], dtype=np.uint8),
+                    "coordinates": np.random.randn(2, 3).astype(np.float32),
+                    "molecule_id": "mol_A",
+                }
+            ]
+        )
         preprocessor = _make_preprocessor()
         features, _ = preprocessor._parse_ani2x_h5(
-            h5_path=Path("/fake/path.h5"),
-            property_keys=['energies'], max_conformers=None)
-        self.assertTrue(np.isnan(features['energy'][0]))
+            h5_path=Path("/fake/path.h5"), property_keys=["energies"], max_conformers=None
+        )
+        self.assertTrue(np.isnan(features["energy"][0]))
 
 
 # ============================================================================
 # GROUP 22: iter_data_buckets_ani2x - Unknown Property Dtype (2 tests)
 # ============================================================================
+
 
 class TestIterUnknownPropertyDtype(unittest.TestCase):
     """Test iter_data_buckets_ani2x handles unknown properties gracefully.
@@ -1630,41 +1690,48 @@ class TestIterUnknownPropertyDtype(unittest.TestCase):
 
     def test_unknown_property_preserved(self):
         """Properties not in property_dtypes dict are still extracted."""
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 2, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
-                'custom_prop': np.array([42], dtype=np.int32),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 2, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                    "custom_prop": np.array([42], dtype=np.int32),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies', 'custom_prop']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(
+                iter_data_buckets_ani2x("/fake/path.h5", keys=["energies", "custom_prop"])
+            )
 
         self.assertEqual(len(results), 1)
-        self.assertIn('custom_prop', results[0])
+        self.assertIn("custom_prop", results[0])
 
     def test_missing_requested_property_skipped(self):
         """Properties requested but not present in group are silently skipped."""
-        mock_h5py = _make_h5_mock_for_iter({
-            'mol_a': {
-                'species': np.array([[6, 1]], dtype=np.uint8),
-                'coordinates': np.random.randn(1, 2, 3).astype(np.float32),
-                'energies': np.array([-40.5], dtype=np.float64),
+        mock_h5py = _make_h5_mock_for_iter(
+            {
+                "mol_a": {
+                    "species": np.array([[6, 1]], dtype=np.uint8),
+                    "coordinates": np.random.randn(1, 2, 3).astype(np.float32),
+                    "energies": np.array([-40.5], dtype=np.float64),
+                }
             }
-        })
-        with patch.dict('sys.modules', {'h5py': mock_h5py}):
-            results = list(iter_data_buckets_ani2x(
-                "/fake/path.h5", keys=['energies', 'nonexistent_prop']))
+        )
+        with patch.dict("sys.modules", {"h5py": mock_h5py}):
+            results = list(
+                iter_data_buckets_ani2x("/fake/path.h5", keys=["energies", "nonexistent_prop"])
+            )
 
         self.assertEqual(len(results), 1)
-        self.assertNotIn('nonexistent_prop', results[0])
+        self.assertNotIn("nonexistent_prop", results[0])
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1672,28 +1739,28 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestANI2xPreprocessorIdentity,        # GROUP 1:   6 tests
-        TestANI2xSupportedElements,            # GROUP 2:   4 tests
-        TestValidateConfigSuccess,             # GROUP 3:   4 tests
-        TestValidateConfigMissingKeys,         # GROUP 4:   4 tests
-        TestValidateConfigPathValidation,      # GROUP 5:   3 tests
-        TestValidateConfigExtension,           # GROUP 6:   6 tests
-        TestValidateConfigNumMolecules,        # GROUP 7:   5 tests
-        TestPreprocessOutputExists,            # GROUP 8:   3 tests
-        TestPreprocessFullPipeline,            # GROUP 9:   5 tests
-        TestPreprocessErrorWrapping,           # GROUP 10:  5 tests
-        TestPreprocessMetadata,                # GROUP 11:  9 tests
-        TestPreprocessDefaults,                # GROUP 12:  5 tests
-        TestPreprocessStepOrdering,            # GROUP 13:  2 tests
-        TestBasePreprocessorRunIntegration,    # GROUP 14:  5 tests
-        TestIterDataBucketsAni2x,              # GROUP 15: 12 tests
-        TestParseAni2xH5,                      # GROUP 16:  7 tests
-        TestBuildNpz,                          # GROUP 17:  4 tests
-        TestDefaultPropertyKeys,               # GROUP 18:  4 tests
-        TestGetH5Path,                         # GROUP 19:  5 tests
-        TestParseObjectArrayConstruction,      # GROUP 20:  3 tests
-        TestEdgeCasesAndRobustness,            # GROUP 21:  7 tests
-        TestIterUnknownPropertyDtype,          # GROUP 22:  2 tests
+        TestANI2xPreprocessorIdentity,  # GROUP 1:   6 tests
+        TestANI2xSupportedElements,  # GROUP 2:   4 tests
+        TestValidateConfigSuccess,  # GROUP 3:   4 tests
+        TestValidateConfigMissingKeys,  # GROUP 4:   4 tests
+        TestValidateConfigPathValidation,  # GROUP 5:   3 tests
+        TestValidateConfigExtension,  # GROUP 6:   6 tests
+        TestValidateConfigNumMolecules,  # GROUP 7:   5 tests
+        TestPreprocessOutputExists,  # GROUP 8:   3 tests
+        TestPreprocessFullPipeline,  # GROUP 9:   5 tests
+        TestPreprocessErrorWrapping,  # GROUP 10:  5 tests
+        TestPreprocessMetadata,  # GROUP 11:  9 tests
+        TestPreprocessDefaults,  # GROUP 12:  5 tests
+        TestPreprocessStepOrdering,  # GROUP 13:  2 tests
+        TestBasePreprocessorRunIntegration,  # GROUP 14:  5 tests
+        TestIterDataBucketsAni2x,  # GROUP 15: 12 tests
+        TestParseAni2xH5,  # GROUP 16:  7 tests
+        TestBuildNpz,  # GROUP 17:  4 tests
+        TestDefaultPropertyKeys,  # GROUP 18:  4 tests
+        TestGetH5Path,  # GROUP 19:  5 tests
+        TestParseObjectArrayConstruction,  # GROUP 20:  3 tests
+        TestEdgeCasesAndRobustness,  # GROUP 21:  7 tests
+        TestIterUnknownPropertyDtype,  # GROUP 22:  2 tests
     ]
 
     for test_class in test_classes:

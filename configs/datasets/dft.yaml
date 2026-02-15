@@ -21,7 +21,7 @@ dft_config:
 
 # ────────────────────────────────────────────────────
 # DFT Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     DFT:
@@ -49,7 +49,7 @@ data_config:
       variable_len_graph_properties_to_include:
         - freqs
         - vibmodes
-      
+
       # DFT-specific settings
       # The key from which to calculate atomization energy
       calculate_atomization_energy_from: Etot
@@ -101,6 +101,3 @@ property_availability:
     - freqs
     - vibmodes
     uncertainty_fields: []
-
-
-

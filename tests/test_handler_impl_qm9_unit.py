@@ -31,15 +31,11 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
-import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -50,29 +46,27 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.qm9 import QM9DatasetHandler
-from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
-    DatasetSpecificHandlerError,
-)
 from milia_pipeline.config.config_constants import (
     ATOMIC_ENERGIES_HARTREE,
     HAR2EV,
 )
-
+from milia_pipeline.exceptions import (
+    DatasetSpecificHandlerError,
+    HandlerValidationError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
+)
+from milia_pipeline.handlers.implementations.qm9 import QM9DatasetHandler
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for QM9DatasetHandler
 # ============================================================================
 
+
 def _make_dataset_config(**overrides):
     """
     Build a minimal mock DatasetConfig for QM9 handler tests.
-    
+
     Based on project structure: DatasetConfig is a Pydantic frozen BaseModel.
     The handler accesses dataset_config attributes but primarily relies on
     processing_config for property lists.
@@ -87,20 +81,20 @@ def _make_dataset_config(**overrides):
 def _make_filter_config(**overrides):
     """
     Build a minimal mock FilterConfig for QM9 handler tests.
-    
+
     Based on project structure: FilterConfig is a Pydantic frozen BaseModel.
     """
     cfg = Mock(name="FilterConfig")
     cfg.max_atoms = overrides.get("max_atoms", 100)
     cfg.min_atoms = overrides.get("min_atoms", 1)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     return cfg
 
 
 def _make_processing_config(**overrides):
     """
     Build a minimal mock ProcessingConfig for QM9 handler tests.
-    
+
     Based on project structure: ProcessingConfig is a Pydantic frozen BaseModel.
     The QM9 handler uses:
     - scalar_graph_targets: List[str]
@@ -116,16 +110,18 @@ def _make_processing_config(**overrides):
     cfg.node_features = overrides.get("node_features", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
-    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from", None)
-    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name", None)
-    cfg.common_required_properties = overrides.get("common_required_properties", ["atoms", "coordinates"])
+    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from")
+    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name")
+    cfg.common_required_properties = overrides.get(
+        "common_required_properties", ["atoms", "coordinates"]
+    )
     return cfg
 
 
 def _make_handler(**overrides):
     """
     Build a QM9DatasetHandler instance with configurable mocked configs.
-    
+
     Based on DatasetHandler ABC constructor signature:
     __init__(dataset_config, filter_config, processing_config, logger, experimental_setup=None)
     """
@@ -133,7 +129,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.qm9"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = QM9DatasetHandler(
         dataset_config=dataset_config,
@@ -148,7 +144,7 @@ def _make_handler(**overrides):
 def _make_pyg_data(**overrides):
     """
     Build a minimal PyG Data object for QM9 enrichment tests.
-    
+
     QM9 molecules typically have:
     - z: atomic numbers tensor (CHONF, up to 9 heavy atoms)
     - pos: 3D coordinates tensor (B3LYP-optimized)
@@ -180,7 +176,7 @@ def _make_pyg_data(**overrides):
 def _make_raw_properties(**overrides):
     """
     Build a realistic raw_properties_dict for QM9 molecule tests.
-    
+
     QM9 NPZ files contain: U0, U, H, G, zpve, homo, lumo, gap, mu, alpha,
     Cv, A, B, C, r2, atoms, coordinates, inchi, smiles, freqs, Qmulliken, etc.
     """
@@ -188,13 +184,33 @@ def _make_raw_properties(**overrides):
     props = {
         "U0": overrides.get("U0", -76.3),
         "atoms": overrides.get("atoms", np.array([6, 1, 1])[:num_atoms]),
-        "coordinates": overrides.get("coordinates", np.random.randn(num_atoms, 3).astype(np.float32)),
+        "coordinates": overrides.get(
+            "coordinates", np.random.randn(num_atoms, 3).astype(np.float32)
+        ),
         "inchi": overrides.get("inchi", "InChI=1S/CH2/c1-2/h1-2H"),
     }
     # Optionally add extra properties
-    for key in ["smiles", "inchi_relaxed", "freqs", "Qmulliken", "U", "H", "G",
-                 "zpve", "homo", "lumo", "gap", "mu", "alpha", "Cv",
-                 "A", "B", "C", "r2", "dipole"]:
+    for key in [
+        "smiles",
+        "inchi_relaxed",
+        "freqs",
+        "Qmulliken",
+        "U",
+        "H",
+        "G",
+        "zpve",
+        "homo",
+        "lumo",
+        "gap",
+        "mu",
+        "alpha",
+        "Cv",
+        "A",
+        "B",
+        "C",
+        "r2",
+        "dipole",
+    ]:
         if key in overrides:
             props[key] = overrides[key]
     return props
@@ -203,6 +219,7 @@ def _make_raw_properties(**overrides):
 # ============================================================================
 # GROUP 1: QM9DatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestQM9DatasetHandlerIdentity(unittest.TestCase):
     """Test QM9DatasetHandler identity, registration, and basic attributes."""
@@ -229,6 +246,7 @@ class TestQM9DatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """QM9DatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(QM9DatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -237,8 +255,10 @@ class TestQM9DatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = QM9DatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -253,6 +273,7 @@ class TestQM9DatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_required_properties (7 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test QM9-specific required property determination."""
@@ -315,6 +336,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # GROUP 3: get_molecular_charge (7 tests)
 # ============================================================================
 
+
 class TestGetMolecularCharge(unittest.TestCase):
     """Test QM9-specific molecular charge extraction from InChI."""
 
@@ -372,6 +394,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # GROUP 4: validate_molecule_data — Success Paths (5 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataSuccess(unittest.TestCase):
     """Test QM9 molecule validation success paths."""
 
@@ -423,6 +446,7 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
 # GROUP 5: validate_molecule_data — Error Paths (7 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataErrors(unittest.TestCase):
     """Test QM9 molecule validation error paths."""
 
@@ -460,8 +484,10 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
         self.assertIn("atoms", str(ctx.exception))
         self.assertIn("coordinates", str(ctx.exception))
 
-    @patch("milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
-           side_effect=ValueError("Atom count mismatch"))
+    @patch(
+        "milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
+        side_effect=ValueError("Atom count mismatch"),
+    )
     def test_structure_validation_failure_raises_qm9_handler_error(self, mock_validate):
         """Structure validation failure wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -488,6 +514,7 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
 # GROUP 6: validate_molecule_data — Exception Wrapping (4 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataExceptionWrapping(unittest.TestCase):
     """Test QM9 molecule validation exception re-raise and wrapping behavior."""
 
@@ -498,9 +525,10 @@ class TestValidateMoleculeDataExceptionWrapping(unittest.TestCase):
         with self.assertRaises(HandlerValidationError):
             handler.validate_molecule_data(props, molecule_index=0)
 
-    @patch("milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
-           side_effect=MoleculeProcessingError(
-               message="mol error", molecule_index=0))
+    @patch(
+        "milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
+        side_effect=MoleculeProcessingError(message="mol error", molecule_index=0),
+    )
     def test_molecule_processing_error_wrapped(self, mock_validate):
         """MoleculeProcessingError wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -508,8 +536,10 @@ class TestValidateMoleculeDataExceptionWrapping(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
-    @patch("milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
-           side_effect=RuntimeError("unexpected"))
+    @patch(
+        "milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
+        side_effect=RuntimeError("unexpected"),
+    )
     def test_unexpected_exception_wrapped(self, mock_validate):
         """Unexpected exceptions wrap into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -517,8 +547,10 @@ class TestValidateMoleculeDataExceptionWrapping(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
-    @patch("milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
-           side_effect=ValueError("struct error"))
+    @patch(
+        "milia_pipeline.handlers.implementations.qm9.validate_molecular_structure",
+        side_effect=ValueError("struct error"),
+    )
     def test_dataset_specific_handler_error_has_qm9_type(self, mock_validate):
         """Wrapped error has dataset_type='QM9'."""
         handler = _make_handler()
@@ -531,6 +563,7 @@ class TestValidateMoleculeDataExceptionWrapping(unittest.TestCase):
 # ============================================================================
 # GROUP 7: process_property_value (8 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValue(unittest.TestCase):
     """Test QM9-specific property value processing."""
@@ -583,17 +616,20 @@ class TestProcessPropertyValue(unittest.TestCase):
     def test_unexpected_exception_wrapped_in_qm9_handler_error(self):
         """Unexpected exceptions during processing are wrapped in DatasetSpecificHandlerError."""
         handler = _make_handler()
-        with patch(
-            "milia_pipeline.handlers.implementations.qm9.is_value_valid_and_not_nan",
-            side_effect=RuntimeError("boom"),
+        with (
+            patch(
+                "milia_pipeline.handlers.implementations.qm9.is_value_valid_and_not_nan",
+                side_effect=RuntimeError("boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("freqs", np.array([1.0]), 0)
+            handler.process_property_value("freqs", np.array([1.0]), 0)
 
 
 # ============================================================================
 # GROUP 8: _is_valid_property (7 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test QM9-specific property validation."""
@@ -637,6 +673,7 @@ class TestIsValidProperty(unittest.TestCase):
 # ============================================================================
 # GROUP 9: _ensure_tensor (7 tests)
 # ============================================================================
+
 
 class TestEnsureTensor(unittest.TestCase):
     """Test QM9 tensor conversion utility."""
@@ -691,6 +728,7 @@ class TestEnsureTensor(unittest.TestCase):
 # ============================================================================
 # GROUP 10: _add_scalar_targets_internal (9 tests)
 # ============================================================================
+
 
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test QM9 scalar target addition to PyG data."""
@@ -781,6 +819,7 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 11: _calculate_atomization_energy_internal (8 tests)
 # ============================================================================
+
 
 class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
     """Test QM9 atomization energy calculation with unit safety."""
@@ -893,6 +932,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 # GROUP 12: _add_vector_properties_internal (6 tests)
 # ============================================================================
 
+
 class TestAddVectorPropertiesInternal(unittest.TestCase):
     """Test QM9 vector property addition (dipole, etc.)."""
 
@@ -961,6 +1001,7 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
 # GROUP 13: _add_variable_length_properties_internal (5 tests)
 # ============================================================================
 
+
 class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
     """Test QM9 variable-length property addition."""
 
@@ -1007,17 +1048,21 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         props = _make_raw_properties(Qmulliken=np.array([0.1, -0.05, -0.05], dtype=np.float32))
         # Force _ensure_tensor to raise a non-PropertyEnrichmentError,
         # which the inner except Exception handler wraps into PropertyEnrichmentError
-        with patch.object(
-            handler, "_ensure_tensor",
-            side_effect=RuntimeError("tensor conversion boom"),
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=RuntimeError("tensor conversion boom"),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
         ):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_variable_length_properties_internal(data, props, 0, "test")
+            handler._add_variable_length_properties_internal(data, props, 0, "test")
 
 
 # ============================================================================
 # GROUP 14: enrich_pyg_data (8 tests)
 # ============================================================================
+
 
 class TestEnrichPygData(unittest.TestCase):
     """Test QM9 PyG data enrichment orchestration."""
@@ -1093,17 +1138,21 @@ class TestEnrichPygData(unittest.TestCase):
         """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
         data = _make_pyg_data()
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=RuntimeError("unexpected"),
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
 
 # ============================================================================
 # GROUP 15: enrich_pyg_data — num_nodes handling (4 tests)
 # ============================================================================
+
 
 class TestEnrichPygDataNumNodes(unittest.TestCase):
     """Test QM9 enrichment num_nodes auto-detection."""
@@ -1147,6 +1196,7 @@ class TestEnrichPygDataNumNodes(unittest.TestCase):
 # ============================================================================
 # GROUP 16: get_transform_recommendations (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendations(unittest.TestCase):
     """Test QM9-specific transform recommendations."""
@@ -1193,6 +1243,7 @@ class TestGetTransformRecommendations(unittest.TestCase):
 # GROUP 17: get_supported_descriptors (4 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test QM9-specific descriptor support reporting."""
 
@@ -1207,7 +1258,14 @@ class TestGetSupportedDescriptors(unittest.TestCase):
         """QM9 supports all 6 descriptor categories."""
         handler = _make_handler()
         desc = handler.get_supported_descriptors()
-        expected = {"constitutional", "topological", "electronic", "geometric", "drug_likeness", "fragments"}
+        expected = {
+            "constitutional",
+            "topological",
+            "electronic",
+            "geometric",
+            "drug_likeness",
+            "fragments",
+        }
         self.assertEqual(set(desc["categories"]), expected)
 
     def test_no_exclusions(self):
@@ -1227,6 +1285,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # ============================================================================
 # GROUP 18: get_supported_structural_features (5 tests)
 # ============================================================================
+
 
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test QM9-specific structural feature support."""
@@ -1270,6 +1329,7 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # GROUP 19: Transform Validation Helpers (8 tests)
 # ============================================================================
 
+
 class TestTransformValidationHelpers(unittest.TestCase):
     """Test QM9-specific transform validation methods."""
 
@@ -1290,7 +1350,9 @@ class TestTransformValidationHelpers(unittest.TestCase):
         pc = _make_processing_config(variable_len_graph_properties=["freqs"])
         handler = _make_handler(processing_config=pc)
         warnings = handler._validate_dataset_specific_transforms(["RandomRotate"])
-        self.assertTrue(any("vibrational" in w.lower() or "spectral" in w.lower() for w in warnings))
+        self.assertTrue(
+            any("vibrational" in w.lower() or "spectral" in w.lower() for w in warnings)
+        )
 
     def test_distance_cartesian_transform_warnings(self):
         """Distance/Cartesian transforms trigger edge attribute warning."""
@@ -1321,8 +1383,11 @@ class TestTransformValidationHelpers(unittest.TestCase):
         """_get_dataset_suitable_transforms returns intersection with available."""
         handler = _make_handler()
         available = {
-            "RandomRotate": None, "GCNNorm": None, "AddSelfLoops": None,
-            "DropEdge": None, "SomeOtherTransform": None
+            "RandomRotate": None,
+            "GCNNorm": None,
+            "AddSelfLoops": None,
+            "DropEdge": None,
+            "SomeOtherTransform": None,
         }
         suitable = handler._get_dataset_suitable_transforms(available)
         self.assertIn("RandomRotate", suitable)
@@ -1333,6 +1398,7 @@ class TestTransformValidationHelpers(unittest.TestCase):
 # ============================================================================
 # GROUP 20: _get_transform_recommendations (detailed) (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendationsDetailed(unittest.TestCase):
     """Test QM9-specific _get_transform_recommendations method in detail."""
@@ -1364,13 +1430,16 @@ class TestGetTransformRecommendationsDetailed(unittest.TestCase):
     def test_no_norm_recommendation_when_already_present(self):
         """No GCNNorm recommendation when normalization already present."""
         handler = _make_handler()
-        recs = handler._get_transform_recommendations(["GCNNorm", "AddSelfLoops", "DropEdge", "RandomRotate"])
+        recs = handler._get_transform_recommendations(
+            ["GCNNorm", "AddSelfLoops", "DropEdge", "RandomRotate"]
+        )
         self.assertFalse(any("Consider adding GCNNorm" in r for r in recs))
 
 
 # ============================================================================
 # GROUP 21: get_processing_statistics (5 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test QM9 processing statistics generation."""
@@ -1417,6 +1486,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # ============================================================================
 # GROUP 22: Edge Cases and Integration (6 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndIntegration(unittest.TestCase):
     """Test edge cases and integration scenarios."""
@@ -1483,34 +1553,35 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestQM9DatasetHandlerIdentity,              # GROUP 1:   6 tests
-        TestGetRequiredProperties,                    # GROUP 2:   7 tests
-        TestGetMolecularCharge,                       # GROUP 3:   7 tests
-        TestValidateMoleculeDataSuccess,              # GROUP 4:   5 tests
-        TestValidateMoleculeDataErrors,               # GROUP 5:   7 tests
-        TestValidateMoleculeDataExceptionWrapping,    # GROUP 6:   4 tests
-        TestProcessPropertyValue,                     # GROUP 7:   8 tests
-        TestIsValidProperty,                          # GROUP 8:   7 tests
-        TestEnsureTensor,                             # GROUP 9:   7 tests
-        TestAddScalarTargetsInternal,                 # GROUP 10:  9 tests
-        TestCalculateAtomizationEnergyInternal,       # GROUP 11:  8 tests
-        TestAddVectorPropertiesInternal,              # GROUP 12:  6 tests
-        TestAddVariableLengthPropertiesInternal,      # GROUP 13:  5 tests
-        TestEnrichPygData,                            # GROUP 14:  8 tests
-        TestEnrichPygDataNumNodes,                    # GROUP 15:  4 tests
-        TestGetTransformRecommendations,              # GROUP 16:  5 tests
-        TestGetSupportedDescriptors,                  # GROUP 17:  4 tests
-        TestGetSupportedStructuralFeatures,           # GROUP 18:  5 tests
-        TestTransformValidationHelpers,               # GROUP 19:  8 tests
-        TestGetTransformRecommendationsDetailed,      # GROUP 20:  5 tests
-        TestGetProcessingStatistics,                  # GROUP 21:  5 tests
-        TestEdgeCasesAndIntegration,                  # GROUP 22:  6 tests
+        TestQM9DatasetHandlerIdentity,  # GROUP 1:   6 tests
+        TestGetRequiredProperties,  # GROUP 2:   7 tests
+        TestGetMolecularCharge,  # GROUP 3:   7 tests
+        TestValidateMoleculeDataSuccess,  # GROUP 4:   5 tests
+        TestValidateMoleculeDataErrors,  # GROUP 5:   7 tests
+        TestValidateMoleculeDataExceptionWrapping,  # GROUP 6:   4 tests
+        TestProcessPropertyValue,  # GROUP 7:   8 tests
+        TestIsValidProperty,  # GROUP 8:   7 tests
+        TestEnsureTensor,  # GROUP 9:   7 tests
+        TestAddScalarTargetsInternal,  # GROUP 10:  9 tests
+        TestCalculateAtomizationEnergyInternal,  # GROUP 11:  8 tests
+        TestAddVectorPropertiesInternal,  # GROUP 12:  6 tests
+        TestAddVariableLengthPropertiesInternal,  # GROUP 13:  5 tests
+        TestEnrichPygData,  # GROUP 14:  8 tests
+        TestEnrichPygDataNumNodes,  # GROUP 15:  4 tests
+        TestGetTransformRecommendations,  # GROUP 16:  5 tests
+        TestGetSupportedDescriptors,  # GROUP 17:  4 tests
+        TestGetSupportedStructuralFeatures,  # GROUP 18:  5 tests
+        TestTransformValidationHelpers,  # GROUP 19:  8 tests
+        TestGetTransformRecommendationsDetailed,  # GROUP 20:  5 tests
+        TestGetProcessingStatistics,  # GROUP 21:  5 tests
+        TestEdgeCasesAndIntegration,  # GROUP 22:  6 tests
     ]
 
     for test_class in test_classes:

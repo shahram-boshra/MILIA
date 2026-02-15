@@ -41,15 +41,14 @@ Execution:
     pytest tests/test_contract_dataset_handler_protocol.py -v -m contract
 """
 
-import sys
-import os
 import inspect
 import logging
-from typing import Dict, List, Any, Optional
-from unittest.mock import MagicMock, patch, PropertyMock
+import os
+import sys
+from unittest.mock import MagicMock
 
-import pytest
 import numpy as np
+import pytest
 
 # ---------------------------------------------------------------------------
 # Path setup — ensure project root is importable
@@ -62,24 +61,20 @@ if PROJECT_ROOT not in sys.path:
 # ---------------------------------------------------------------------------
 # Imports from MILIA project
 # ---------------------------------------------------------------------------
-from milia_pipeline.datasets.protocols import (
-    DatasetHandlerProtocol,
-    DatasetConverterProtocol,
-    DatasetValidatorProtocol,
-)
-from milia_pipeline.handlers.handler_registry import (
-    HandlerRegistry,
-    get_default_registry,
-    register_handler,
-    HandlerRegistrationError,
-    HandlerNotFoundError,
-)
-
 # Import all handler implementations to trigger @register_handler decorators.
 # The implementations/__init__.py performs dynamic discovery, but explicit
 # import guarantees all handlers are registered before parameterisation.
 import milia_pipeline.handlers.implementations  # noqa: F401
-
+from milia_pipeline.datasets.protocols import (
+    DatasetConverterProtocol,
+    DatasetHandlerProtocol,
+    DatasetValidatorProtocol,
+)
+from milia_pipeline.handlers.handler_registry import (
+    HandlerNotFoundError,
+    HandlerRegistry,
+    get_default_registry,
+)
 
 # ---------------------------------------------------------------------------
 # Constants derived from evidence
@@ -87,7 +82,7 @@ import milia_pipeline.handlers.implementations  # noqa: F401
 
 # All 10 handler classes and their expected dataset_type strings.
 # Source: grep of @register_handler + get_dataset_type() across all 10 files.
-EXPECTED_HANDLERS: Dict[str, str] = {
+EXPECTED_HANDLERS: dict[str, str] = {
     "DFT": "DFTDatasetHandler",
     "DMC": "DMCDatasetHandler",
     "Wavefunction": "WavefunctionDatasetHandler",
@@ -101,7 +96,7 @@ EXPECTED_HANDLERS: Dict[str, str] = {
 }
 
 # The 11 protocol methods from DatasetHandlerProtocol (protocols.py).
-PROTOCOL_METHODS: List[str] = [
+PROTOCOL_METHODS: list[str] = [
     "get_dataset_type",
     "validate_molecule_data",
     "get_required_properties",
@@ -126,6 +121,7 @@ pytestmark = pytest.mark.contract
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_mock_processing_config():
     """
@@ -248,7 +244,8 @@ def all_handler_instances(default_registry, mock_logger):
 # Helper: Collect handler classes from registry for parametrize
 # ---------------------------------------------------------------------------
 
-def _get_registered_handler_names() -> List[str]:
+
+def _get_registered_handler_names() -> list[str]:
     """
     Collect all handler names from the default registry.
 
@@ -268,6 +265,7 @@ REGISTERED_HANDLER_NAMES = _get_registered_handler_names()
 # TEST CLASS 1: Registry Population Verification
 # ============================================================================
 
+
 class TestRegistryPopulation:
     """Verify the handler registry is correctly populated with all 10 handlers."""
 
@@ -283,8 +281,7 @@ class TestRegistryPopulation:
         expected = set(EXPECTED_HANDLERS.keys())
         missing = expected - registered
         assert not missing, (
-            f"Expected handlers missing from registry: {missing}. "
-            f"Registered: {sorted(registered)}"
+            f"Expected handlers missing from registry: {missing}. Registered: {sorted(registered)}"
         )
 
     def test_no_unexpected_handlers(self, default_registry):
@@ -308,8 +305,7 @@ class TestRegistryPopulation:
         """Registry should contain at least 10 handlers (the known set)."""
         count = len(default_registry)
         assert count >= 10, (
-            f"Expected at least 10 handlers, found {count}: "
-            f"{default_registry.list_all()}"
+            f"Expected at least 10 handlers, found {count}: {default_registry.list_all()}"
         )
 
     def test_registry_info_structure(self, default_registry):
@@ -328,6 +324,7 @@ class TestRegistryPopulation:
 # ============================================================================
 # TEST CLASS 2: Structural Contract — Method Existence
 # ============================================================================
+
 
 class TestStructuralContract:
     """
@@ -357,8 +354,7 @@ class TestStructuralContract:
         handler_class = default_registry.get(handler_name)
         abstract_methods = getattr(handler_class, "__abstractmethods__", frozenset())
         assert not abstract_methods, (
-            f"Handler '{handler_name}' has unimplemented abstract methods: "
-            f"{abstract_methods}"
+            f"Handler '{handler_name}' has unimplemented abstract methods: {abstract_methods}"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -383,6 +379,7 @@ class TestStructuralContract:
 # TEST CLASS 3: Behavioral Contract — Return Types
 # ============================================================================
 
+
 class TestBehavioralContract:
     """
     Call each protocol method on live handler instances and verify return types.
@@ -403,9 +400,7 @@ class TestBehavioralContract:
         assert isinstance(result, str), (
             f"{handler_name}.get_dataset_type() returned {type(result)}, expected str"
         )
-        assert len(result) > 0, (
-            f"{handler_name}.get_dataset_type() returned empty string"
-        )
+        assert len(result) > 0, f"{handler_name}.get_dataset_type() returned empty string"
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
     def test_get_dataset_type_matches_registry_name(
@@ -441,8 +436,7 @@ class TestBehavioralContract:
         handler = _instantiate_handler(handler_class, handler_name, mock_logger)
         result = handler.get_required_properties()
         assert isinstance(result, list), (
-            f"{handler_name}.get_required_properties() returned {type(result)}, "
-            f"expected list"
+            f"{handler_name}.get_required_properties() returned {type(result)}, expected list"
         )
         for item in result:
             assert isinstance(item, str), (
@@ -451,9 +445,7 @@ class TestBehavioralContract:
             )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
-    def test_get_required_properties_non_empty(
-        self, handler_name, default_registry, mock_logger
-    ):
+    def test_get_required_properties_non_empty(self, handler_name, default_registry, mock_logger):
         """Every handler should require at least one property."""
         handler_class = default_registry.get(handler_name)
         handler = _instantiate_handler(handler_class, handler_name, mock_logger)
@@ -473,8 +465,7 @@ class TestBehavioralContract:
         result = handler.get_required_properties()
         duplicates = [p for p in result if result.count(p) > 1]
         assert not duplicates, (
-            f"{handler_name}.get_required_properties() contains duplicates: "
-            f"{set(duplicates)}"
+            f"{handler_name}.get_required_properties() contains duplicates: {set(duplicates)}"
         )
 
     # ------------------------------------------------------------------
@@ -489,8 +480,7 @@ class TestBehavioralContract:
         handler = _instantiate_handler(handler_class, handler_name, mock_logger)
         result = handler.get_molecule_creation_strategy()
         assert isinstance(result, str), (
-            f"{handler_name}.get_molecule_creation_strategy() returned "
-            f"{type(result)}, expected str"
+            f"{handler_name}.get_molecule_creation_strategy() returned {type(result)}, expected str"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -524,8 +514,7 @@ class TestBehavioralContract:
         handler = _instantiate_handler(handler_class, handler_name, mock_logger)
         result = handler.get_transform_recommendations()
         assert isinstance(result, dict), (
-            f"{handler_name}.get_transform_recommendations() returned "
-            f"{type(result)}, expected dict"
+            f"{handler_name}.get_transform_recommendations() returned {type(result)}, expected dict"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -630,8 +619,7 @@ class TestBehavioralContract:
         handler = _instantiate_handler(handler_class, handler_name, mock_logger)
         result = handler.get_supported_descriptors()
         assert isinstance(result, dict), (
-            f"{handler_name}.get_supported_descriptors() returned "
-            f"{type(result)}, expected dict"
+            f"{handler_name}.get_supported_descriptors() returned {type(result)}, expected dict"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -660,9 +648,7 @@ class TestBehavioralContract:
     # 7. get_molecular_charge() -> int
     # ------------------------------------------------------------------
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
-    def test_get_molecular_charge_returns_int(
-        self, handler_name, default_registry, mock_logger
-    ):
+    def test_get_molecular_charge_returns_int(self, handler_name, default_registry, mock_logger):
         """
         get_molecular_charge() must return an int when given minimal valid input.
 
@@ -677,8 +663,7 @@ class TestBehavioralContract:
         atomic_numbers = np.array([6, 1, 1, 1, 1])  # Methane-like
         result = handler.get_molecular_charge(raw_props, atomic_numbers)
         assert isinstance(result, int), (
-            f"{handler_name}.get_molecular_charge() returned {type(result)}, "
-            f"expected int"
+            f"{handler_name}.get_molecular_charge() returned {type(result)}, expected int"
         )
 
     # ------------------------------------------------------------------
@@ -694,8 +679,7 @@ class TestBehavioralContract:
         # Pass empty list of processed molecules
         result = handler.get_processing_statistics([])
         assert isinstance(result, dict), (
-            f"{handler_name}.get_processing_statistics() returned "
-            f"{type(result)}, expected dict"
+            f"{handler_name}.get_processing_statistics() returned {type(result)}, expected dict"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -751,6 +735,7 @@ class TestBehavioralContract:
 # TEST CLASS 4: Protocol Conformance (isinstance checks)
 # ============================================================================
 
+
 class TestProtocolConformance:
     """
     Verify runtime_checkable protocol isinstance() conformance.
@@ -760,9 +745,7 @@ class TestProtocolConformance:
     """
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
-    def test_handler_instance_satisfies_protocol(
-        self, handler_name, default_registry, mock_logger
-    ):
+    def test_handler_instance_satisfies_protocol(self, handler_name, default_registry, mock_logger):
         """
         isinstance(handler_instance, DatasetHandlerProtocol) must be True.
 
@@ -778,9 +761,7 @@ class TestProtocolConformance:
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
-    def test_handler_class_satisfies_protocol_structurally(
-        self, handler_name, default_registry
-    ):
+    def test_handler_class_satisfies_protocol_structurally(self, handler_name, default_registry):
         """
         The handler class itself should have all protocol methods.
 
@@ -791,14 +772,14 @@ class TestProtocolConformance:
         handler_class = default_registry.get(handler_name)
         for method_name in PROTOCOL_METHODS:
             assert hasattr(handler_class, method_name), (
-                f"Handler class '{handler_class.__name__}' missing "
-                f"protocol method '{method_name}'"
+                f"Handler class '{handler_class.__name__}' missing protocol method '{method_name}'"
             )
 
 
 # ============================================================================
 # TEST CLASS 5: Method Signature Contract
 # ============================================================================
+
 
 class TestMethodSignatures:
     """
@@ -814,10 +795,7 @@ class TestMethodSignatures:
         handler_class = default_registry.get(handler_name)
         sig = inspect.signature(handler_class.get_dataset_type)
         # Filter out 'self'
-        params = [
-            p for p in sig.parameters.values()
-            if p.name != "self"
-        ]
+        params = [p for p in sig.parameters.values() if p.name != "self"]
         assert len(params) == 0, (
             f"{handler_name}.get_dataset_type() has unexpected parameters: "
             f"{[p.name for p in params]}"
@@ -830,17 +808,13 @@ class TestMethodSignatures:
         """
         handler_class = default_registry.get(handler_name)
         sig = inspect.signature(handler_class.validate_molecule_data)
-        param_names = [
-            p.name for p in sig.parameters.values() if p.name != "self"
-        ]
+        param_names = [p.name for p in sig.parameters.values() if p.name != "self"]
         # Must have at least raw_properties_dict and molecule_index
         assert "raw_properties_dict" in param_names, (
-            f"{handler_name}.validate_molecule_data() missing "
-            f"'raw_properties_dict' parameter"
+            f"{handler_name}.validate_molecule_data() missing 'raw_properties_dict' parameter"
         )
         assert "molecule_index" in param_names, (
-            f"{handler_name}.validate_molecule_data() missing "
-            f"'molecule_index' parameter"
+            f"{handler_name}.validate_molecule_data() missing 'molecule_index' parameter"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -850,16 +824,12 @@ class TestMethodSignatures:
         """
         handler_class = default_registry.get(handler_name)
         sig = inspect.signature(handler_class.get_molecular_charge)
-        param_names = [
-            p.name for p in sig.parameters.values() if p.name != "self"
-        ]
+        param_names = [p.name for p in sig.parameters.values() if p.name != "self"]
         assert "raw_properties_dict" in param_names, (
-            f"{handler_name}.get_molecular_charge() missing "
-            f"'raw_properties_dict' parameter"
+            f"{handler_name}.get_molecular_charge() missing 'raw_properties_dict' parameter"
         )
         assert "atomic_numbers" in param_names, (
-            f"{handler_name}.get_molecular_charge() missing "
-            f"'atomic_numbers' parameter"
+            f"{handler_name}.get_molecular_charge() missing 'atomic_numbers' parameter"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -869,15 +839,12 @@ class TestMethodSignatures:
         """
         handler_class = default_registry.get(handler_name)
         sig = inspect.signature(handler_class.enrich_pyg_data)
-        param_names = [
-            p.name for p in sig.parameters.values() if p.name != "self"
-        ]
+        param_names = [p.name for p in sig.parameters.values() if p.name != "self"]
         assert "pyg_data" in param_names, (
             f"{handler_name}.enrich_pyg_data() missing 'pyg_data' parameter"
         )
         assert "raw_properties_dict" in param_names, (
-            f"{handler_name}.enrich_pyg_data() missing "
-            f"'raw_properties_dict' parameter"
+            f"{handler_name}.enrich_pyg_data() missing 'raw_properties_dict' parameter"
         )
 
     @pytest.mark.parametrize("handler_name", REGISTERED_HANDLER_NAMES)
@@ -887,9 +854,7 @@ class TestMethodSignatures:
         """
         handler_class = default_registry.get(handler_name)
         sig = inspect.signature(handler_class.process_property_value)
-        param_names = [
-            p.name for p in sig.parameters.values() if p.name != "self"
-        ]
+        param_names = [p.name for p in sig.parameters.values() if p.name != "self"]
         assert "key" in param_names, (
             f"{handler_name}.process_property_value() missing 'key' parameter"
         )
@@ -902,14 +867,13 @@ class TestMethodSignatures:
 # TEST CLASS 6: Cross-Handler Consistency
 # ============================================================================
 
+
 class TestCrossHandlerConsistency:
     """
     Verify that all handlers behave consistently for shared contract properties.
     """
 
-    def test_all_handlers_return_unique_dataset_types(
-        self, all_handler_instances
-    ):
+    def test_all_handlers_return_unique_dataset_types(self, all_handler_instances):
         """No two handlers should return the same dataset_type string."""
         type_to_handler = {}
         for name, handler in all_handler_instances.items():
@@ -921,33 +885,23 @@ class TestCrossHandlerConsistency:
                 )
             type_to_handler[dtype] = name
 
-    def test_all_handlers_have_non_empty_structural_features(
-        self, all_handler_instances
-    ):
+    def test_all_handlers_have_non_empty_structural_features(self, all_handler_instances):
         """Every handler must support at least some structural features."""
         for name, handler in all_handler_instances.items():
             features = handler.get_supported_structural_features()
             atom_features = features.get("atom", [])
             bond_features = features.get("bond", [])
             total = len(atom_features) + len(bond_features)
-            assert total > 0, (
-                f"Handler '{name}' has zero supported structural features"
-            )
+            assert total > 0, f"Handler '{name}' has zero supported structural features"
 
-    def test_all_handlers_have_at_least_one_descriptor_category(
-        self, all_handler_instances
-    ):
+    def test_all_handlers_have_at_least_one_descriptor_category(self, all_handler_instances):
         """Every handler should support at least one descriptor category."""
         for name, handler in all_handler_instances.items():
             descriptors = handler.get_supported_descriptors()
             categories = descriptors.get("categories", [])
-            assert len(categories) > 0, (
-                f"Handler '{name}' has zero descriptor categories"
-            )
+            assert len(categories) > 0, f"Handler '{name}' has zero descriptor categories"
 
-    def test_creation_strategy_consistency_within_handler(
-        self, all_handler_instances
-    ):
+    def test_creation_strategy_consistency_within_handler(self, all_handler_instances):
         """Calling get_molecule_creation_strategy() twice returns same value."""
         for name, handler in all_handler_instances.items():
             first_call = handler.get_molecule_creation_strategy()
@@ -957,9 +911,7 @@ class TestCrossHandlerConsistency:
                 f"'{first_call}' vs '{second_call}'"
             )
 
-    def test_molecular_charge_default_for_empty_data(
-        self, all_handler_instances
-    ):
+    def test_molecular_charge_default_for_empty_data(self, all_handler_instances):
         """
         Given empty raw_properties_dict, all handlers should return an int
         without raising an exception. Most handlers default to 0 (neutral).
@@ -969,8 +921,7 @@ class TestCrossHandlerConsistency:
             try:
                 charge = handler.get_molecular_charge({}, atomic_numbers)
                 assert isinstance(charge, int), (
-                    f"Handler '{name}' returned non-int charge: "
-                    f"{type(charge)}"
+                    f"Handler '{name}' returned non-int charge: {type(charge)}"
                 )
             except Exception as e:
                 pytest.fail(
@@ -978,9 +929,7 @@ class TestCrossHandlerConsistency:
                     f"empty raw_properties_dict: {e}"
                 )
 
-    def test_processing_statistics_with_sample_data(
-        self, all_handler_instances
-    ):
+    def test_processing_statistics_with_sample_data(self, all_handler_instances):
         """
         get_processing_statistics() should handle a list with one minimal
         molecule dict without raising an exception.
@@ -1000,8 +949,7 @@ class TestCrossHandlerConsistency:
                 )
                 count_key = found_keys.pop()
                 assert stats[count_key] == 1, (
-                    f"Handler '{name}' reported wrong {count_key}: "
-                    f"{stats[count_key]}"
+                    f"Handler '{name}' reported wrong {count_key}: {stats[count_key]}"
                 )
             except Exception as e:
                 pytest.fail(
@@ -1013,6 +961,7 @@ class TestCrossHandlerConsistency:
 # ============================================================================
 # TEST CLASS 7: Isolated Registry Tests (non-global)
 # ============================================================================
+
 
 class TestIsolatedRegistry:
     """
@@ -1104,9 +1053,7 @@ class TestIsolatedRegistry:
         handler_class = global_reg.get(some_name)
 
         registry.register(handler_class)
-        assert len(callback_calls) == 1, (
-            "Change callback was not invoked on register()"
-        )
+        assert len(callback_calls) == 1, "Change callback was not invoked on register()"
 
     def test_remove_on_change_callback(self):
         """Removed callbacks should no longer fire."""
@@ -1128,6 +1075,7 @@ class TestIsolatedRegistry:
 # ============================================================================
 # TEST CLASS 8: Converter and Validator Protocols (Smoke)
 # ============================================================================
+
 
 class TestAuxiliaryProtocols:
     """
@@ -1165,12 +1113,12 @@ class TestAuxiliaryProtocols:
         class IncompleteHandler:
             def get_dataset_type(self):
                 return "test"
+
             # Missing 10 other methods
 
         obj = IncompleteHandler()
         # runtime_checkable checks for method existence — this should fail
         # because many required methods are missing
         assert not isinstance(obj, DatasetHandlerProtocol), (
-            "Object with only get_dataset_type() should not satisfy the "
-            "full DatasetHandlerProtocol"
+            "Object with only get_dataset_type() should not satisfy the full DatasetHandlerProtocol"
         )

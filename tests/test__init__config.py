@@ -54,9 +54,7 @@ import importlib
 import inspect
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -74,6 +72,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def config_pkg():
     """
@@ -84,11 +83,11 @@ def config_pkg():
     """
     try:
         import milia_pipeline.config as cfg
+
         return cfg
     except ImportError as exc:
         pytest.fail(
-            f"milia_pipeline.config could not be imported — smoke test "
-            f"precondition violated: {exc}"
+            f"milia_pipeline.config could not be imported — smoke test precondition violated: {exc}"
         )
 
 
@@ -134,21 +133,27 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_exists(self, config_pkg, attr):
         """Each metadata dunder is defined on the config package."""
         assert hasattr(config_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, config_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(config_pkg, attr)
@@ -160,9 +165,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = config_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -170,38 +173,39 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeConfigLoaderExports:
     """§1.2 — Core configuration loading exports are accessible."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("name", [
-        "load_config",
-        "get_config_stats",
-        "clear_config_cache",
-        "get_global_config_state",
-        "set_global_config_state",
-        "is_config_loaded",
-        "get_config_load_time",
-        "get_config_hash",
-        "load_config_with_validation",
-        "reload_config",
-        "validate_config_file",
-        "get_config_statistics",
-        "create_example_config",
-        "migrate_legacy_config",
-        "load_transformation_config",
-        "get_validation_report",
-        "get_migration_report",
-        "check_migration_status",
-        "recommend_validation_level",
-        "get_transformation_feature_status",
-        "print_transformation_status",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "load_config",
+            "get_config_stats",
+            "clear_config_cache",
+            "get_global_config_state",
+            "set_global_config_state",
+            "is_config_loaded",
+            "get_config_load_time",
+            "get_config_hash",
+            "load_config_with_validation",
+            "reload_config",
+            "validate_config_file",
+            "get_config_statistics",
+            "create_example_config",
+            "migrate_legacy_config",
+            "load_transformation_config",
+            "get_validation_report",
+            "get_migration_report",
+            "check_migration_status",
+            "recommend_validation_level",
+            "get_transformation_feature_status",
+            "print_transformation_status",
+        ],
+    )
     def test_config_loader_export_is_importable(self, config_pkg, name):
         """Each config loader export resolves to a non-None object."""
         obj = getattr(config_pkg, name, None)
@@ -236,9 +240,7 @@ class TestSmokeContainerClassExports:
     def test_container_class_is_a_class(self, config_pkg, name):
         """Each container export is a class (not an instance or function)."""
         obj = getattr(config_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeContainerFactoryExports:
@@ -546,35 +548,39 @@ class TestSmokeRegistryStatusFlags:
         assert hasattr(config_pkg, flag), f"Flag '{flag}' is missing"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_REGISTRY_AVAILABLE",
-        "_CACHE_INVALIDATION_REGISTERED",
-        "_REGISTRY_INITIALIZED",
-        "_CONTAINERS_REGISTRY_AVAILABLE",
-        "_ACCESSORS_REGISTRY_AVAILABLE",
-        "_ACCESSORS_REGISTRY_INITIALIZED",
-        "_LOADER_REGISTRY_AVAILABLE",
-        "_LOADER_REGISTRY_INITIALIZED",
-        "_VALIDATORS_REGISTRY_AVAILABLE",
-        "_VALIDATORS_REGISTRY_INITIALIZED",
-        "_REFINING_REGISTRY_AVAILABLE",
-        "_REFINING_REGISTRY_INITIALIZED",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_REGISTRY_AVAILABLE",
+            "_CACHE_INVALIDATION_REGISTERED",
+            "_REGISTRY_INITIALIZED",
+            "_CONTAINERS_REGISTRY_AVAILABLE",
+            "_ACCESSORS_REGISTRY_AVAILABLE",
+            "_ACCESSORS_REGISTRY_INITIALIZED",
+            "_LOADER_REGISTRY_AVAILABLE",
+            "_LOADER_REGISTRY_INITIALIZED",
+            "_VALIDATORS_REGISTRY_AVAILABLE",
+            "_VALIDATORS_REGISTRY_INITIALIZED",
+            "_REFINING_REGISTRY_AVAILABLE",
+            "_REFINING_REGISTRY_INITIALIZED",
+        ],
+    )
     def test_registry_bool_flag_is_bool(self, config_pkg, flag):
         """Each registry boolean status flag is actually a bool."""
         value = getattr(config_pkg, flag)
-        assert isinstance(value, bool), (
-            f"Flag '{flag}' should be bool, got {type(value).__name__}"
-        )
+        assert isinstance(value, bool), f"Flag '{flag}' should be bool, got {type(value).__name__}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("flag", [
-        "_REGISTRY_IMPORT_ERROR",
-        "_ACCESSORS_REGISTRY_IMPORT_ERROR",
-        "_LOADER_REGISTRY_IMPORT_ERROR",
-        "_VALIDATORS_REGISTRY_IMPORT_ERROR",
-        "_REFINING_REGISTRY_IMPORT_ERROR",
-    ])
+    @pytest.mark.parametrize(
+        "flag",
+        [
+            "_REGISTRY_IMPORT_ERROR",
+            "_ACCESSORS_REGISTRY_IMPORT_ERROR",
+            "_LOADER_REGISTRY_IMPORT_ERROR",
+            "_VALIDATORS_REGISTRY_IMPORT_ERROR",
+            "_REFINING_REGISTRY_IMPORT_ERROR",
+        ],
+    )
     def test_registry_import_error_flag_is_str_or_none(self, config_pkg, flag):
         """Each import error flag is either None or a string."""
         value = getattr(config_pkg, flag)
@@ -756,7 +762,7 @@ class TestSmokeModuleInitialization:
         # We just verify the attribute is not a logging module reference.
         if hasattr(config_pkg, "logging"):
             # If present, it should NOT be the logging module
-            obj = getattr(config_pkg, "logging")
+            obj = config_pkg.logging
             assert not isinstance(obj, types.ModuleType) or obj.__name__ != "logging", (
                 "The 'logging' module should be cleaned from namespace after init"
             )
@@ -905,10 +911,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(config_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(config_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -916,13 +919,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -973,13 +971,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in config/__init__.py but not in __all__: "
@@ -1008,9 +1010,7 @@ class TestContractContainerClassTypes:
     def test_container_is_class(self, config_pkg, name):
         """Each container is a class."""
         obj = getattr(config_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", PYDANTIC_CONTAINERS)
@@ -1025,6 +1025,7 @@ class TestContractContainerClassTypes:
         cls = getattr(config_pkg, name)
         try:
             from pydantic import BaseModel
+
             is_pydantic_model = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic_model = False
@@ -1036,8 +1037,7 @@ class TestContractContainerClassTypes:
         is_stdlib_dc = hasattr(cls, "__dataclass_fields__")
 
         assert is_pydantic_model or is_pydantic_dc or is_stdlib_dc, (
-            f"'{name}' should be a Pydantic BaseModel, Pydantic dataclass, "
-            f"or stdlib dataclass"
+            f"'{name}' should be a Pydantic BaseModel, Pydantic dataclass, or stdlib dataclass"
         )
 
 
@@ -1068,18 +1068,14 @@ class TestContractSchemaClassTypes:
     def test_schema_is_class(self, config_pkg, name):
         """Each schema export is a class."""
         obj = getattr(config_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", VALIDATOR_CLASSES)
     def test_validator_is_class(self, config_pkg, name):
         """Each validator export is a class."""
         obj = getattr(config_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     def test_config_migration_is_class(self, config_pkg):
@@ -1128,17 +1124,13 @@ class TestContractConfigLoaderFunctionSignatures:
         sig = inspect.signature(config_pkg.load_config)
         param_names = set(sig.parameters.keys())
         # load_config should accept a config_path or similar
-        assert len(param_names) >= 1, (
-            "load_config should accept at least one parameter"
-        )
+        assert len(param_names) >= 1, "load_config should accept at least one parameter"
 
     @pytest.mark.contract
     def test_load_config_with_validation_is_callable(self, config_pkg):
         """``load_config_with_validation`` is callable with params."""
         sig = inspect.signature(config_pkg.load_config_with_validation)
-        assert len(sig.parameters) >= 1, (
-            "load_config_with_validation should accept parameters"
-        )
+        assert len(sig.parameters) >= 1, "load_config_with_validation should accept parameters"
 
     @pytest.mark.contract
     def test_clear_config_cache_is_function(self, config_pkg):
@@ -1175,9 +1167,7 @@ class TestContractAccessorFunctionSignatures:
     def test_accessor_is_function(self, config_pkg, name):
         """Each accessor is a function (not a class or unbound method)."""
         obj = getattr(config_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"
 
 
 class TestContractPhaseAliasNonCollision:
@@ -1363,9 +1353,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1434,8 +1422,7 @@ class TestContractDatasetConstantsTypes:
         """
         obj = getattr(config_pkg, name)
         assert isinstance(obj, (str, property)), (
-            f"{name} should be str or property, got "
-            f"{type(obj).__name__}"
+            f"{name} should be str or property, got {type(obj).__name__}"
         )
 
     @pytest.mark.contract
@@ -1772,17 +1759,14 @@ class TestContractPhase5InternalHelpers:
         """``_get_default_dataset_type()`` returns a string."""
         result = config_pkg._get_default_dataset_type()
         assert isinstance(result, str), (
-            f"_get_default_dataset_type() should return str, got "
-            f"{type(result).__name__}"
+            f"_get_default_dataset_type() should return str, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
     def test_get_default_dataset_type_is_nonempty(self, config_pkg):
         """``_get_default_dataset_type()`` returns a non-empty string."""
         result = config_pkg._get_default_dataset_type()
-        assert len(result) > 0, (
-            "_get_default_dataset_type() should return a non-empty string"
-        )
+        assert len(result) > 0, "_get_default_dataset_type() should return a non-empty string"
 
 
 class TestContractGetConfigHashReturnType:
@@ -1796,8 +1780,7 @@ class TestContractGetConfigHashReturnType:
         """
         result = config_pkg.get_config_hash()
         assert result is None or isinstance(result, str), (
-            f"get_config_hash() should return str or None, got "
-            f"{type(result).__name__}"
+            f"get_config_hash() should return str or None, got {type(result).__name__}"
         )
 
 
@@ -1818,8 +1801,7 @@ class TestContractConfigLoaderRegistryFlags:
         if available:
             # If available, the error should be None
             assert error is None, (
-                f"_LOADER_REGISTRY_AVAILABLE is True but "
-                f"_LOADER_REGISTRY_IMPORT_ERROR is '{error}'"
+                f"_LOADER_REGISTRY_AVAILABLE is True but _LOADER_REGISTRY_IMPORT_ERROR is '{error}'"
             )
 
     @pytest.mark.contract

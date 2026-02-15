@@ -64,11 +64,10 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -86,6 +85,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def accel_pkg():
     """
@@ -97,6 +97,7 @@ def accel_pkg():
     """
     try:
         import milia_pipeline.models.acceleration as accel
+
         return accel
     except ImportError as exc:
         pytest.fail(
@@ -109,8 +110,7 @@ def accel_pkg():
 def all_names(accel_pkg):
     """Return the ``__all__`` list from the acceleration package."""
     assert hasattr(accel_pkg, "__all__"), (
-        "milia_pipeline.models.acceleration.__all__ is missing — "
-        "contract violation"
+        "milia_pipeline.models.acceleration.__all__ is missing — contract violation"
     )
     return list(accel_pkg.__all__)
 
@@ -148,21 +148,27 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_exists(self, accel_pkg, attr):
         """Each metadata dunder is defined on the acceleration package."""
         assert hasattr(accel_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__description__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__description__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, accel_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(accel_pkg, attr)
@@ -174,9 +180,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = accel_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -184,9 +188,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
     def test_version_value(self, accel_pkg):
@@ -226,18 +228,14 @@ class TestSmokeDeviceManagerExports:
     def test_device_manager_class_is_a_class(self, accel_pkg, name):
         """Each device manager export is a class (not an instance or function)."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DEVICE_MANAGER_FUNCTIONS)
     def test_device_manager_function_exists(self, accel_pkg, name):
         """Each device manager function is present and non-None."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Device manager function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Device manager function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DEVICE_MANAGER_FUNCTIONS)
@@ -272,18 +270,14 @@ class TestSmokeMemoryOptimizationExports:
     def test_memory_class_is_a_class(self, accel_pkg, name):
         """Each memory optimization export is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", MEMORY_FUNCTIONS)
     def test_memory_function_exists(self, accel_pkg, name):
         """Each memory optimization function is present and non-None."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Memory function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Memory function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", MEMORY_FUNCTIONS)
@@ -319,18 +313,14 @@ class TestSmokeComputationOptimizationExports:
     def test_computation_class_is_a_class(self, accel_pkg, name):
         """Each computation optimization export is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", COMPUTATION_FUNCTIONS)
     def test_computation_function_exists(self, accel_pkg, name):
         """Each computation optimization function is present and non-None."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Computation function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Computation function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", COMPUTATION_FUNCTIONS)
@@ -362,27 +352,21 @@ class TestSmokeDistributedStrategiesExports:
     def test_distributed_class_exists(self, accel_pkg, name):
         """Each distributed strategies class is importable."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Distributed class '{name}' is None or missing"
-        )
+        assert obj is not None, f"Distributed class '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DISTRIBUTED_CLASSES)
     def test_distributed_class_is_a_class(self, accel_pkg, name):
         """Each distributed strategies export is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DISTRIBUTED_FUNCTIONS)
     def test_distributed_function_exists(self, accel_pkg, name):
         """Each distributed strategies function is present and non-None."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Distributed function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Distributed function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", DISTRIBUTED_FUNCTIONS)
@@ -422,9 +406,7 @@ class TestSmokeConvenienceFunctionExports:
     def test_convenience_function_exists(self, accel_pkg, name):
         """Each convenience function is present and non-None."""
         obj = getattr(accel_pkg, name, None)
-        assert obj is not None, (
-            f"Convenience function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Convenience function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", CONVENIENCE_FUNCTIONS)
@@ -458,18 +440,14 @@ class TestSmokeExceptionClassExports:
     def test_exception_class_is_a_class(self, accel_pkg, name):
         """Each exception export is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", EXCEPTION_CLASSES)
     def test_exception_class_is_subclass_of_exception(self, accel_pkg, name):
         """Each exception class inherits from the built-in Exception."""
         obj = getattr(accel_pkg, name)
-        assert issubclass(obj, Exception), (
-            f"'{name}' should be a subclass of Exception"
-        )
+        assert issubclass(obj, Exception), f"'{name}' should be a subclass of Exception"
 
 
 class TestSmokeModuleInitialization:
@@ -518,9 +496,7 @@ class TestSmokeModuleInitialization:
         """
         assert hasattr(accel_pkg, "_capabilities")
         caps = accel_pkg._capabilities
-        assert isinstance(caps, dict), (
-            f"_capabilities should be dict, got {type(caps).__name__}"
-        )
+        assert isinstance(caps, dict), f"_capabilities should be dict, got {type(caps).__name__}"
 
     @pytest.mark.smoke
     def test_capabilities_has_expected_keys(self, accel_pkg):
@@ -541,8 +517,7 @@ class TestSmokeModuleInitialization:
         }
         for key in expected_keys:
             assert key in caps, (
-                f"_capabilities missing expected key '{key}'. "
-                f"Available keys: {sorted(caps.keys())}"
+                f"_capabilities missing expected key '{key}'. Available keys: {sorted(caps.keys())}"
             )
 
     @pytest.mark.smoke
@@ -550,8 +525,7 @@ class TestSmokeModuleInitialization:
         """``_capabilities['cuda_available']`` is a boolean."""
         caps = accel_pkg._capabilities
         assert isinstance(caps["cuda_available"], bool), (
-            f"cuda_available should be bool, got "
-            f"{type(caps['cuda_available']).__name__}"
+            f"cuda_available should be bool, got {type(caps['cuda_available']).__name__}"
         )
 
     @pytest.mark.smoke
@@ -559,8 +533,7 @@ class TestSmokeModuleInitialization:
         """``_capabilities['mps_available']`` is a boolean."""
         caps = accel_pkg._capabilities
         assert isinstance(caps["mps_available"], bool), (
-            f"mps_available should be bool, got "
-            f"{type(caps['mps_available']).__name__}"
+            f"mps_available should be bool, got {type(caps['mps_available']).__name__}"
         )
 
     @pytest.mark.smoke
@@ -568,8 +541,7 @@ class TestSmokeModuleInitialization:
         """``_capabilities['tpu_available']`` is a boolean."""
         caps = accel_pkg._capabilities
         assert isinstance(caps["tpu_available"], bool), (
-            f"tpu_available should be bool, got "
-            f"{type(caps['tpu_available']).__name__}"
+            f"tpu_available should be bool, got {type(caps['tpu_available']).__name__}"
         )
 
     @pytest.mark.smoke
@@ -577,8 +549,7 @@ class TestSmokeModuleInitialization:
         """``_capabilities['cuda_device_count']`` is an integer."""
         caps = accel_pkg._capabilities
         assert isinstance(caps["cuda_device_count"], int), (
-            f"cuda_device_count should be int, got "
-            f"{type(caps['cuda_device_count']).__name__}"
+            f"cuda_device_count should be int, got {type(caps['cuda_device_count']).__name__}"
         )
 
 
@@ -605,9 +576,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, accel_pkg, all_names):
@@ -615,25 +584,16 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(accel_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(accel_pkg, name)]
         assert not unresolvable, (
-            f"Names in __all__ that are not defined on the module: "
-            f"{unresolvable}"
+            f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
 
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -691,13 +651,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in acceleration/__init__.py but not "
@@ -721,9 +685,7 @@ class TestContractManagerClassTypes:
     def test_manager_is_class(self, accel_pkg, name):
         """Each manager export is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractConfigurationClassTypes:
@@ -746,9 +708,7 @@ class TestContractConfigurationClassTypes:
     def test_config_is_class(self, accel_pkg, name):
         """Each configuration class is a class."""
         obj = getattr(accel_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", DATACLASS_CONFIGS)
@@ -767,6 +727,7 @@ class TestContractConfigurationClassTypes:
         # Check for Pydantic BaseModel
         try:
             from pydantic import BaseModel
+
             is_pydantic_model = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic_model = False
@@ -775,8 +736,7 @@ class TestContractConfigurationClassTypes:
         is_pydantic_dc = hasattr(cls, "__pydantic_fields__")
 
         assert is_stdlib_dc or is_pydantic_model or is_pydantic_dc, (
-            f"'{name}' should be a dataclass, Pydantic BaseModel, or "
-            f"Pydantic dataclass"
+            f"'{name}' should be a dataclass, Pydantic BaseModel, or Pydantic dataclass"
         )
 
     @pytest.mark.contract
@@ -789,9 +749,7 @@ class TestContractConfigurationClassTypes:
         ``to_dict(): Configuration serialization``.
         """
         cls = getattr(accel_pkg, name)
-        assert hasattr(cls, "to_dict"), (
-            f"'{name}' should have a 'to_dict' method for serialization"
-        )
+        assert hasattr(cls, "to_dict"), f"'{name}' should have a 'to_dict' method for serialization"
 
     @pytest.mark.contract
     def test_device_info_is_pydantic_or_dataclass(self, accel_pkg):
@@ -806,6 +764,7 @@ class TestContractConfigurationClassTypes:
 
         try:
             from pydantic import BaseModel
+
             is_pydantic = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic = False
@@ -814,8 +773,7 @@ class TestContractConfigurationClassTypes:
         is_pydantic_dc = hasattr(cls, "__pydantic_fields__")
 
         assert is_pydantic or is_stdlib_dc or is_pydantic_dc, (
-            "DeviceInfo should be a Pydantic BaseModel, dataclass, "
-            "or Pydantic dataclass"
+            "DeviceInfo should be a Pydantic BaseModel, dataclass, or Pydantic dataclass"
         )
 
 
@@ -836,9 +794,8 @@ class TestContractEnumClassTypes:
         CPU, CUDA, MPS, TPU, AUTO.
         """
         import enum
-        assert issubclass(accel_pkg.DeviceType, enum.Enum), (
-            "DeviceType should be an Enum subclass"
-        )
+
+        assert issubclass(accel_pkg.DeviceType, enum.Enum), "DeviceType should be an Enum subclass"
 
     @pytest.mark.contract
     def test_device_type_has_expected_members(self, accel_pkg):
@@ -870,6 +827,7 @@ class TestContractEnumClassTypes:
         NONE, DP, DDP, FSDP, DEEPSPEED, HOROVOD.
         """
         import enum
+
         assert issubclass(accel_pkg.DistributedStrategy, enum.Enum), (
             "DistributedStrategy should be an Enum subclass"
         )
@@ -904,6 +862,7 @@ class TestContractEnumClassTypes:
         GLOO, NCCL, MPI, AUTO.
         """
         import enum
+
         assert issubclass(accel_pkg.DistributedBackend, enum.Enum), (
             "DistributedBackend should be an Enum subclass"
         )
@@ -950,30 +909,22 @@ class TestContractExceptionHierarchy:
     @pytest.mark.contract
     def test_device_not_available_error_inherits_hardware_error(self, accel_pkg):
         """``DeviceNotAvailableError`` inherits from ``HardwareError``."""
-        assert issubclass(
-            accel_pkg.DeviceNotAvailableError, accel_pkg.HardwareError
-        )
+        assert issubclass(accel_pkg.DeviceNotAvailableError, accel_pkg.HardwareError)
 
     @pytest.mark.contract
     def test_vqm_memory_error_inherits_hardware_error(self, accel_pkg):
         """``VQMMemoryError`` inherits from ``HardwareError``."""
-        assert issubclass(
-            accel_pkg.VQMMemoryError, accel_pkg.HardwareError
-        )
+        assert issubclass(accel_pkg.VQMMemoryError, accel_pkg.HardwareError)
 
     @pytest.mark.contract
     def test_optimization_error_inherits_hardware_error(self, accel_pkg):
         """``OptimizationError`` inherits from ``HardwareError``."""
-        assert issubclass(
-            accel_pkg.OptimizationError, accel_pkg.HardwareError
-        )
+        assert issubclass(accel_pkg.OptimizationError, accel_pkg.HardwareError)
 
     @pytest.mark.contract
     def test_distributed_error_inherits_hardware_error(self, accel_pkg):
         """``DistributedError`` inherits from ``HardwareError``."""
-        assert issubclass(
-            accel_pkg.DistributedError, accel_pkg.HardwareError
-        )
+        assert issubclass(accel_pkg.DistributedError, accel_pkg.HardwareError)
 
     @pytest.mark.contract
     def test_exception_classes_are_instantiable(self, accel_pkg):
@@ -1068,8 +1019,7 @@ class TestContractAccelerationManagerSignature:
             if name == "self":
                 continue
             assert param.default is not inspect.Parameter.empty, (
-                f"AccelerationManager.__init__ parameter '{name}' "
-                f"should have a default value"
+                f"AccelerationManager.__init__ parameter '{name}' should have a default value"
             )
 
     @pytest.mark.contract
@@ -1303,8 +1253,7 @@ class TestContractDeviceManagerFunctionSignatures:
         """
         result = accel_pkg.get_device_capabilities()
         assert isinstance(result, dict), (
-            f"get_device_capabilities() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_device_capabilities() should return dict, got {type(result).__name__}"
         )
 
 
@@ -1355,8 +1304,7 @@ class TestContractDistributedFunctionReturnTypes:
         """``is_distributed_available()`` returns a bool."""
         result = accel_pkg.is_distributed_available()
         assert isinstance(result, bool), (
-            f"is_distributed_available() should return bool, got "
-            f"{type(result).__name__}"
+            f"is_distributed_available() should return bool, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
@@ -1364,42 +1312,33 @@ class TestContractDistributedFunctionReturnTypes:
         """``get_world_size()`` returns an int."""
         result = accel_pkg.get_world_size()
         assert isinstance(result, int), (
-            f"get_world_size() should return int, got "
-            f"{type(result).__name__}"
+            f"get_world_size() should return int, got {type(result).__name__}"
         )
 
     @pytest.mark.contract
     def test_get_world_size_is_positive(self, accel_pkg):
         """``get_world_size()`` returns a positive integer (at least 1)."""
         result = accel_pkg.get_world_size()
-        assert result >= 1, (
-            f"get_world_size() should return >= 1, got {result}"
-        )
+        assert result >= 1, f"get_world_size() should return >= 1, got {result}"
 
     @pytest.mark.contract
     def test_get_rank_returns_int(self, accel_pkg):
         """``get_rank()`` returns an int."""
         result = accel_pkg.get_rank()
-        assert isinstance(result, int), (
-            f"get_rank() should return int, got "
-            f"{type(result).__name__}"
-        )
+        assert isinstance(result, int), f"get_rank() should return int, got {type(result).__name__}"
 
     @pytest.mark.contract
     def test_get_rank_is_non_negative(self, accel_pkg):
         """``get_rank()`` returns a non-negative integer (>= 0)."""
         result = accel_pkg.get_rank()
-        assert result >= 0, (
-            f"get_rank() should return >= 0, got {result}"
-        )
+        assert result >= 0, f"get_rank() should return >= 0, got {result}"
 
     @pytest.mark.contract
     def test_is_main_process_returns_bool(self, accel_pkg):
         """``is_main_process()`` returns a bool."""
         result = accel_pkg.is_main_process()
         assert isinstance(result, bool), (
-            f"is_main_process() should return bool, got "
-            f"{type(result).__name__}"
+            f"is_main_process() should return bool, got {type(result).__name__}"
         )
 
 
@@ -1418,14 +1357,12 @@ class TestContractPublicAPISurface:
         "__version__",
         "__author__",
         "__description__",
-
         # Core Managers
         "AccelerationManager",
         "DeviceManager",
         "MemoryOptimizer",
         "ComputationOptimizer",
         "DistributedManager",
-
         # Configuration Classes
         "DeviceInfo",
         "DeviceType",
@@ -1434,34 +1371,28 @@ class TestContractPublicAPISurface:
         "DistributedConfig",
         "DistributedStrategy",
         "DistributedBackend",
-
         # Device Management Functions
         "get_default_device",
         "list_available_devices",
         "get_device_capabilities",
-
         # Memory Optimization Functions
         "get_memory_efficient_settings",
         "estimate_model_memory",
-
         # Computation Optimization Functions
         "get_optimal_settings",
         "auto_optimize_model",
         "optimize_inference",
-
         # Distributed Training Functions
         "is_distributed_available",
         "get_world_size",
         "get_rank",
         "is_main_process",
-
         # Convenience Functions
         "auto_optimize_for_training",
         "auto_optimize_for_inference",
         "get_recommended_settings",
         "create_acceleration_manager",
         "benchmark_accelerations",
-
         # Exceptions
         "ModelError",
         "HardwareError",
@@ -1476,9 +1407,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):

@@ -29,21 +29,14 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import sys
-import os
-import copy
-import math
 import logging
-import tempfile
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+import sys
 from collections import defaultdict
-from unittest.mock import patch, MagicMock, PropertyMock, Mock
-from datetime import datetime
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
-import numpy as np
 
 # Pytest marker: all tests in this module are regression tests
 pytestmark = pytest.mark.regression
@@ -61,6 +54,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # FIXTURES — Synthetic Data, Configs, and Mock Objects
 # =============================================================================
+
 
 @pytest.fixture
 def sample_structural_features_config_atom_only():
@@ -112,12 +106,21 @@ def full_structural_features_config():
     """Structural features config with all available features."""
     return {
         "atom": [
-            "degree", "total_degree", "hybridization", "total_valence",
-            "is_aromatic", "is_in_ring", "partial_charge",
-            "num_aromatic_bonds", "chirality",
+            "degree",
+            "total_degree",
+            "hybridization",
+            "total_valence",
+            "is_aromatic",
+            "is_in_ring",
+            "partial_charge",
+            "num_aromatic_bonds",
+            "chirality",
         ],
         "bond": [
-            "bond_type", "is_conjugated", "is_aromatic", "is_in_any_ring",
+            "bond_type",
+            "is_conjugated",
+            "is_aromatic",
+            "is_in_any_ring",
             "stereo",
         ],
     }
@@ -181,15 +184,12 @@ def synthetic_pyg_data():
     x = torch.tensor([[6.0], [6.0], [8.0]], dtype=torch.float)
     # Edges: fully connected bidirectional for 3 atoms
     edge_index = torch.tensor(
-        [[0, 0, 1, 1, 2, 2],
-         [1, 2, 0, 2, 0, 1]],
+        [[0, 0, 1, 1, 2, 2], [1, 2, 0, 2, 0, 1]],
         dtype=torch.long,
     )
     # Positions (3D coordinates)
     pos = torch.tensor(
-        [[0.0, 0.0, 0.0],
-         [1.54, 0.0, 0.0],
-         [2.31, 0.97, 0.0]],
+        [[0.0, 0.0, 0.0], [1.54, 0.0, 0.0], [2.31, 0.97, 0.0]],
         dtype=torch.float,
     )
 
@@ -228,10 +228,13 @@ def mock_trainer(tmp_path, sample_structural_features_config_atom_and_bond):
     trainer.scheduler = None
 
     # Metrics history as defaultdict (as used by Trainer)
-    trainer.metrics_history = defaultdict(list, {
-        "train_loss": [0.5, 0.3, 0.2, 0.15, 0.1],
-        "val_loss": [0.6, 0.4, 0.25, 0.18, 0.12],
-    })
+    trainer.metrics_history = defaultdict(
+        list,
+        {
+            "train_loss": [0.5, 0.3, 0.2, 0.15, 0.1],
+            "val_loss": [0.6, 0.4, 0.25, 0.18, 0.12],
+        },
+    )
 
     # model_info with structural_features_config — the key payload for FIX 17
     trainer.model_info = {
@@ -260,6 +263,7 @@ def checkpoint_dir(tmp_path):
 # CLASS 1: ModelCheckpoint saves structural_features_config (callbacks.py)
 # =============================================================================
 
+
 class TestModelCheckpointSavesStructuralFeaturesConfig:
     """
     Verify ModelCheckpoint._save_checkpoint() persists structural_features_config
@@ -278,13 +282,9 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
         mc._save_checkpoint(mock_trainer, ckpt_path, epoch=5, score=0.12)
 
         checkpoint = torch.load(ckpt_path, weights_only=False)
-        assert "data_info" in checkpoint, (
-            "Checkpoint missing 'data_info' key — FIX 17 regression"
-        )
+        assert "data_info" in checkpoint, "Checkpoint missing 'data_info' key — FIX 17 regression"
 
-    def test_data_info_contains_structural_features_config(
-        self, mock_trainer, checkpoint_dir
-    ):
+    def test_data_info_contains_structural_features_config(self, mock_trainer, checkpoint_dir):
         """data_info must contain 'structural_features_config' sub-key."""
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -334,8 +334,7 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
         saved_atom = checkpoint["data_info"]["structural_features_config"]["atom"]
         expected_atom = mock_trainer.model_info["structural_features_config"]["atom"]
         assert saved_atom == expected_atom, (
-            f"Atom features order/content changed.\n"
-            f"Expected: {expected_atom}\nGot: {saved_atom}"
+            f"Atom features order/content changed.\nExpected: {expected_atom}\nGot: {saved_atom}"
         )
 
     def test_structural_features_config_bond_list_preserved_exactly(
@@ -352,13 +351,10 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
         saved_bond = checkpoint["data_info"]["structural_features_config"]["bond"]
         expected_bond = mock_trainer.model_info["structural_features_config"]["bond"]
         assert saved_bond == expected_bond, (
-            f"Bond features order/content changed.\n"
-            f"Expected: {expected_bond}\nGot: {saved_bond}"
+            f"Bond features order/content changed.\nExpected: {expected_bond}\nGot: {saved_bond}"
         )
 
-    def test_data_info_contains_edge_feature_flags(
-        self, mock_trainer, checkpoint_dir
-    ):
+    def test_data_info_contains_edge_feature_flags(self, mock_trainer, checkpoint_dir):
         """data_info must also contain requires_edge_features and uses_edge_features."""
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -383,9 +379,7 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
         assert "version_info" in checkpoint
         assert checkpoint["version_info"]["checkpoint_format_version"] == "2.0"
 
-    def test_empty_structural_config_when_model_info_missing(
-        self, checkpoint_dir
-    ):
+    def test_empty_structural_config_when_model_info_missing(self, checkpoint_dir):
         """When trainer has no model_info, structural_features_config defaults to {}."""
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -409,9 +403,7 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
         data_info = checkpoint["data_info"]
         assert data_info["structural_features_config"] == {}
 
-    def test_empty_structural_config_when_model_info_is_empty_dict(
-        self, checkpoint_dir
-    ):
+    def test_empty_structural_config_when_model_info_is_empty_dict(self, checkpoint_dir):
         """When trainer.model_info is empty dict, structural_features_config defaults to {}."""
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -440,18 +432,14 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
 
         mc = ModelCheckpoint(dirpath=checkpoint_dir, monitor="val_loss", mode="min")
         best_path = checkpoint_dir / "best.pt"
-        mc._save_checkpoint(
-            mock_trainer, best_path, epoch=5, score=0.12, is_best=True
-        )
+        mc._save_checkpoint(mock_trainer, best_path, epoch=5, score=0.12, is_best=True)
 
         checkpoint = torch.load(best_path, weights_only=False)
         assert "data_info" in checkpoint
         assert "structural_features_config" in checkpoint["data_info"]
         assert checkpoint["is_best"] is True
 
-    def test_hyper_parameters_also_saved_alongside_data_info(
-        self, mock_trainer, checkpoint_dir
-    ):
+    def test_hyper_parameters_also_saved_alongside_data_info(self, mock_trainer, checkpoint_dir):
         """hyper_parameters section coexists with data_info in the same checkpoint."""
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -470,6 +458,7 @@ class TestModelCheckpointSavesStructuralFeaturesConfig:
 # =============================================================================
 # CLASS 2: Predictor.structural_features_config property (predictor.py)
 # =============================================================================
+
 
 class TestPredictorStructuralFeaturesConfigProperty:
     """
@@ -613,6 +602,7 @@ class TestPredictorStructuralFeaturesConfigProperty:
 # CLASS 3: convert_to_pyg with structural_features_config (data_converter.py)
 # =============================================================================
 
+
 class TestConvertToPygWithStructuralFeaturesConfig:
     """
     Verify convert_to_pyg() applies structural_features_config via
@@ -623,19 +613,18 @@ class TestConvertToPygWithStructuralFeaturesConfig:
 
     def test_convert_to_pyg_accepts_structural_features_config_parameter(self):
         """convert_to_pyg() must accept structural_features_config keyword arg."""
+        import inspect
+
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
         )
-        import inspect
 
         sig = inspect.signature(convert_to_pyg)
         assert "structural_features_config" in sig.parameters, (
             "convert_to_pyg() missing 'structural_features_config' parameter — FIX 20 regression"
         )
 
-    def test_pyg_data_passthrough_without_structural_config(
-        self, synthetic_pyg_data
-    ):
+    def test_pyg_data_passthrough_without_structural_config(self, synthetic_pyg_data):
         """PyG Data passthrough should work when structural_features_config is None."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
@@ -721,6 +710,7 @@ class TestConvertToPygWithStructuralFeaturesConfig:
 # CLASS 4: _apply_structural_features_if_available (data_converter.py)
 # =============================================================================
 
+
 class TestApplyStructuralFeaturesIfAvailable:
     """
     Verify _apply_structural_features_if_available() correctly:
@@ -730,9 +720,7 @@ class TestApplyStructuralFeaturesIfAvailable:
     4. Returns original data on failure (graceful fallback)
     """
 
-    def test_returns_original_data_when_config_is_none(
-        self, synthetic_pyg_data
-    ):
+    def test_returns_original_data_when_config_is_none(self, synthetic_pyg_data):
         """Must return original data unchanged when config is None."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             _apply_structural_features_if_available,
@@ -754,9 +742,7 @@ class TestApplyStructuralFeaturesIfAvailable:
         )
         assert result is synthetic_pyg_data
 
-    @patch(
-        "milia_pipeline.molecules.mol_structural_features.add_structural_features"
-    )
+    @patch("milia_pipeline.molecules.mol_structural_features.add_structural_features")
     def test_calls_add_structural_features_with_correct_config(
         self,
         mock_add_features,
@@ -778,9 +764,16 @@ class TestApplyStructuralFeaturesIfAvailable:
         mock_add_features.assert_called_once()
         call_kwargs = mock_add_features.call_args
         # Verify feature_config argument
-        assert call_kwargs.kwargs.get("feature_config") == sample_structural_features_config_atom_and_bond or \
-               call_kwargs[1].get("feature_config") == sample_structural_features_config_atom_and_bond or \
-               (len(call_kwargs[0]) >= 3 and call_kwargs[0][2] == sample_structural_features_config_atom_and_bond)
+        assert (
+            call_kwargs.kwargs.get("feature_config")
+            == sample_structural_features_config_atom_and_bond
+            or call_kwargs[1].get("feature_config")
+            == sample_structural_features_config_atom_and_bond
+            or (
+                len(call_kwargs[0]) >= 3
+                and call_kwargs[0][2] == sample_structural_features_config_atom_and_bond
+            )
+        )
 
     def test_returns_original_data_when_no_smiles_or_inchi(
         self,
@@ -829,6 +822,7 @@ class TestApplyStructuralFeaturesIfAvailable:
 # CLASS 5: 3D Conformer Detection (data_converter.py)
 # =============================================================================
 
+
 class TestRequires3dConformer:
     """
     Verify _requires_3d_conformer() correctly identifies configs that need
@@ -853,9 +847,7 @@ class TestRequires3dConformer:
 
         assert _requires_3d_conformer(sample_structural_features_config_atom_and_bond) is False
 
-    def test_returns_true_for_bond_length_feature(
-        self, sample_structural_features_config_with_3d
-    ):
+    def test_returns_true_for_bond_length_feature(self, sample_structural_features_config_with_3d):
         """Config with 'bond_length' in bond features must return True."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             _requires_3d_conformer,
@@ -873,9 +865,7 @@ class TestRequires3dConformer:
 
         assert _requires_3d_conformer(sample_structural_features_config_with_3d_binned) is True
 
-    def test_returns_false_for_empty_bond_list(
-        self, sample_structural_features_config_atom_only
-    ):
+    def test_returns_false_for_empty_bond_list(self, sample_structural_features_config_atom_only):
         """Config with empty bond feature list should return False."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             _requires_3d_conformer,
@@ -904,6 +894,7 @@ class TestRequires3dConformer:
 # =============================================================================
 # CLASS 6: get_available_features (mol_structural_features.py)
 # =============================================================================
+
 
 class TestGetAvailableFeatures:
     """
@@ -982,6 +973,7 @@ class TestGetAvailableFeatures:
 # CLASS 7: End-to-End Featurization Chain Consistency
 # =============================================================================
 
+
 class TestEndToEndFeaturizationChain:
     """
     End-to-end regression test: Simulate the full chain from checkpoint save
@@ -1029,7 +1021,9 @@ class TestEndToEndFeaturizationChain:
         )
 
         # The final property must match the original training config
-        assert predictor.structural_features_config == sample_structural_features_config_atom_and_bond
+        assert (
+            predictor.structural_features_config == sample_structural_features_config_atom_and_bond
+        )
 
     def test_config_survives_multiple_checkpoint_saves(
         self,
@@ -1045,13 +1039,9 @@ class TestEndToEndFeaturizationChain:
         configs_from_checkpoints = []
         for epoch in range(5):
             ckpt_path = checkpoint_dir / f"epoch_{epoch}.pt"
-            mc._save_checkpoint(
-                mock_trainer, ckpt_path, epoch=epoch, score=0.5 - epoch * 0.1
-            )
+            mc._save_checkpoint(mock_trainer, ckpt_path, epoch=epoch, score=0.5 - epoch * 0.1)
             checkpoint = torch.load(ckpt_path, weights_only=False)
-            configs_from_checkpoints.append(
-                checkpoint["data_info"]["structural_features_config"]
-            )
+            configs_from_checkpoints.append(checkpoint["data_info"]["structural_features_config"])
 
         # All 5 checkpoints must have identical structural_features_config
         for i, config in enumerate(configs_from_checkpoints):
@@ -1087,6 +1077,7 @@ class TestEndToEndFeaturizationChain:
 # =============================================================================
 # CLASS 8: DataConverterRegistry integration with structural_features_config
 # =============================================================================
+
 
 class TestDataConverterRegistryIntegration:
     """
@@ -1142,9 +1133,7 @@ class TestDataConverterRegistryIntegration:
         assert result.x is not None
         assert result.edge_index is not None
 
-    def test_pyg_data_converter_passthrough_preserves_smiles(
-        self, synthetic_pyg_data
-    ):
+    def test_pyg_data_converter_passthrough_preserves_smiles(self, synthetic_pyg_data):
         """PyG Data passthrough must preserve smiles attribute for later feature extraction."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
@@ -1159,6 +1148,7 @@ class TestDataConverterRegistryIntegration:
 # CLASS 9: Structural Features Config Validation Helpers
 # =============================================================================
 
+
 class TestStructuralFeaturesConfigValidation:
     """
     Verify that configs used in tests reference only valid feature names
@@ -1172,6 +1162,7 @@ class TestStructuralFeaturesConfigValidation:
         from milia_pipeline.molecules.mol_structural_features import (
             get_available_features,
         )
+
         return get_available_features()
 
     def test_atom_only_config_uses_valid_features(
@@ -1228,6 +1219,7 @@ class TestStructuralFeaturesConfigValidation:
 # CLASS 10: Checkpoint data_info Structure Integrity
 # =============================================================================
 
+
 class TestCheckpointDataInfoStructureIntegrity:
     """
     Verify the complete data_info structure within checkpoints maintains
@@ -1253,8 +1245,7 @@ class TestCheckpointDataInfoStructureIntegrity:
             "structural_features_config",
         }
         assert set(data_info.keys()) == expected_keys, (
-            f"data_info keys mismatch.\n"
-            f"Expected: {expected_keys}\nGot: {set(data_info.keys())}"
+            f"data_info keys mismatch.\nExpected: {expected_keys}\nGot: {set(data_info.keys())}"
         )
 
     def test_requires_edge_features_is_bool(self, mock_trainer, checkpoint_dir):
@@ -1288,6 +1279,4 @@ class TestCheckpointDataInfoStructureIntegrity:
         mc._save_checkpoint(mock_trainer, ckpt_path, epoch=0, score=1.0)
 
         checkpoint = torch.load(ckpt_path, weights_only=False)
-        assert isinstance(
-            checkpoint["data_info"]["structural_features_config"], dict
-        )
+        assert isinstance(checkpoint["data_info"]["structural_features_config"], dict)

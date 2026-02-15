@@ -49,77 +49,68 @@ Key Test Areas:
 """
 
 import sys
-import os
 from pathlib import Path
 
 # CRITICAL: Add project root to Python path FIRST
-project_root = Path('/app/milia')
+project_root = Path("/app/milia")
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 # Suppress warnings
 import warnings
-warnings.filterwarnings('ignore', category=UserWarning)
+
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Standard library imports
-import unittest
-from unittest.mock import Mock, MagicMock, patch, call, PropertyMock
 import logging
-import hashlib
-import functools
-from datetime import datetime
-from typing import Dict, Any, Optional, List
-from io import StringIO
+import unittest
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 # Import the module under test
 import milia_pipeline.logging_config as logging_config
+from milia_pipeline.exceptions import (
+    ExperimentalSetupError,
+    HandlerError,
+    LoggingConfigurationError,
+    MigrationError,
+    TransformCompositionError,
+    TransformConfigurationError,
+    TransformValidationError,
+)
 from milia_pipeline.logging_config import (
     HandlerLoggerAdapter,
     MigrationLoggerAdapter,
     TransformLoggerAdapter,
-    setup_logging,
+    configure_debug_logging_for_handlers,
+    configure_debug_logging_for_transforms,
+    create_experimental_setup_hash,
     create_handler_logger,
     create_migration_logger,
     create_transform_logger,
-    log_handler_operation,
-    log_migration_step,
-    log_transform_operation,
-    log_handler_performance,
-    log_transform_performance,
+    disable_verbose_third_party_logging,
     get_handler_logger_by_type,
     get_migration_logger_by_phase,
     get_transform_logger_by_operation,
     log_exception_with_context,
-    log_experimental_setup_switch,
-    log_transform_validation_results,
-    log_transform_composition_summary,
-    configure_debug_logging_for_handlers,
-    configure_debug_logging_for_transforms,
-    disable_verbose_third_party_logging,
-    create_experimental_setup_hash,
     log_experimental_setup_summary,
+    log_experimental_setup_switch,
+    log_handler_operation,
+    log_handler_performance,
+    log_migration_step,
+    log_transform_composition_summary,
+    log_transform_operation,
+    log_transform_performance,
+    log_transform_validation_results,
     setup_basic_logging,
+    setup_logging,
 )
-
-from milia_pipeline.exceptions import (
-    LoggingConfigurationError,
-    BaseProjectError,
-    HandlerError,
-    HandlerOperationError,
-    MigrationError,
-    HandlerValidationError,
-    TransformConfigurationError,
-    TransformValidationError,
-    TransformCompositionError,
-    ExperimentalSetupError,
-)
-
 
 # ==============================================================================
 # PYTEST FIXTURE: AUTOMATIC LOGGER CLEANUP
 # ==============================================================================
+
 
 @pytest.fixture(autouse=True)
 def cleanup_loggers():
@@ -134,34 +125,34 @@ def cleanup_loggers():
     the logging_config module creates or touches, both before and after each test.
     """
     logger_names_to_clean = [
-        'milia_pipeline.logging_config',
-        'logging_config',
-        'rdkit',
-        'matplotlib',
-        'PIL',
-        'urllib3',
-        'requests',
-        'torch',
-        'torch_geometric',
-        'numpy',
-        'scipy',
-        'handler.dft',
-        'handler.dmc',
-        'handler.generic',
-        'migration.phase_6F',
-        'migration.phase_6G',
-        'migration.phase_6H',
-        'migration.phase_6I',
-        'migration.phase_6J',
-        'migration.phase_6f',
-        'migration.phase_6g',
-        'migration.phase_6h',
-        'migration.phase_6i',
-        'migration.phase_6j',
-        'transform.registry',
-        'transform.validation',
-        'transform.composition',
-        'transform.experimental',
+        "milia_pipeline.logging_config",
+        "logging_config",
+        "rdkit",
+        "matplotlib",
+        "PIL",
+        "urllib3",
+        "requests",
+        "torch",
+        "torch_geometric",
+        "numpy",
+        "scipy",
+        "handler.dft",
+        "handler.dmc",
+        "handler.generic",
+        "migration.phase_6F",
+        "migration.phase_6G",
+        "migration.phase_6H",
+        "migration.phase_6I",
+        "migration.phase_6J",
+        "migration.phase_6f",
+        "migration.phase_6g",
+        "migration.phase_6h",
+        "migration.phase_6i",
+        "migration.phase_6j",
+        "transform.registry",
+        "transform.validation",
+        "transform.composition",
+        "transform.experimental",
     ]
 
     # Pre-test cleanup
@@ -176,7 +167,9 @@ def cleanup_loggers():
         # error path calls logger.error(), Python's callHandlers() walks c.parent
         # and hits the Mock, crashing on c.handlers. Fix: use the logging Manager
         # to resolve the correct parent from the logger name hierarchy.
-        logger.parent = logger.manager.getLogger(name.rsplit('.', 1)[0]) if '.' in name else logging.getLogger()
+        logger.parent = (
+            logger.manager.getLogger(name.rsplit(".", 1)[0]) if "." in name else logging.getLogger()
+        )
 
     # Ensure all loggers have at least a NullHandler so that logging calls
     # inside decorators (error paths) don't crash when walking the parent
@@ -199,7 +192,9 @@ def cleanup_loggers():
         logger.handlers.clear()
         logger.setLevel(logging.WARNING)
         # Reset parent to natural hierarchy parent (same as pre-test)
-        logger.parent = logger.manager.getLogger(name.rsplit('.', 1)[0]) if '.' in name else logging.getLogger()
+        logger.parent = (
+            logger.manager.getLogger(name.rsplit(".", 1)[0]) if "." in name else logging.getLogger()
+        )
 
     root_logger.handlers = original_root_handlers
     root_logger.level = original_root_level
@@ -208,6 +203,7 @@ def cleanup_loggers():
 # ==============================================================================
 # TEST AREA 1: HandlerLoggerAdapter
 # ==============================================================================
+
 
 class TestHandlerLoggerAdapter(unittest.TestCase):
     """Tests for HandlerLoggerAdapter initialization and process method."""
@@ -222,20 +218,20 @@ class TestHandlerLoggerAdapter(unittest.TestCase):
         """Test basic initialization with handler_type and no extra context."""
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DFT")
         self.assertEqual(adapter.handler_type, "DFT")
-        self.assertEqual(adapter.extra['handler_type'], "DFT")
+        self.assertEqual(adapter.extra["handler_type"], "DFT")
 
     def test_init_with_extra_context(self):
         """Test initialization with additional extra context."""
-        extra = {'batch_id': 'batch_001', 'run_id': 'run_42'}
+        extra = {"batch_id": "batch_001", "run_id": "run_42"}
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DMC", extra=extra)
         self.assertEqual(adapter.handler_type, "DMC")
-        self.assertEqual(adapter.extra['batch_id'], 'batch_001')
-        self.assertEqual(adapter.extra['run_id'], 'run_42')
+        self.assertEqual(adapter.extra["batch_id"], "batch_001")
+        self.assertEqual(adapter.extra["run_id"], "run_42")
 
     def test_init_extra_none(self):
         """Test initialization when extra is explicitly None."""
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="GENERIC", extra=None)
-        self.assertEqual(adapter.extra, {'handler_type': 'GENERIC'})
+        self.assertEqual(adapter.extra, {"handler_type": "GENERIC"})
 
     def test_process_basic_message(self):
         """Test process adds handler prefix to message."""
@@ -246,32 +242,33 @@ class TestHandlerLoggerAdapter(unittest.TestCase):
     def test_process_with_molecule_index_in_kwargs(self):
         """Test process adds molecule context when molecule_index is in kwargs."""
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DMC")
-        processed_msg, _ = adapter.process("Validation failed", {'molecule_index': 42})
+        processed_msg, _ = adapter.process("Validation failed", {"molecule_index": 42})
         self.assertEqual(processed_msg, "[Mol:42] [DMC] Validation failed")
 
     def test_process_without_molecule_index(self):
         """Test process does not add molecule context when molecule_index is absent."""
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DFT")
-        processed_msg, _ = adapter.process("Batch complete", {'other_key': 'value'})
+        processed_msg, _ = adapter.process("Batch complete", {"other_key": "value"})
         self.assertEqual(processed_msg, "[DFT] Batch complete")
 
     def test_process_returns_kwargs_unchanged(self):
         """Test process returns kwargs unmodified."""
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DFT")
-        original_kwargs = {'molecule_index': 5, 'extra_data': 'test'}
+        original_kwargs = {"molecule_index": 5, "extra_data": "test"}
         _, returned_kwargs = adapter.process("test", original_kwargs)
         self.assertIs(returned_kwargs, original_kwargs)
 
     def test_extra_context_update_behavior(self):
         """Test that extra dict update follows dict.update() semantics (last write wins)."""
-        extra = {'handler_type': 'OVERRIDDEN_VALUE'}
+        extra = {"handler_type": "OVERRIDDEN_VALUE"}
         adapter = HandlerLoggerAdapter(self.mock_logger, handler_type="DFT", extra=extra)
-        self.assertEqual(adapter.extra['handler_type'], 'OVERRIDDEN_VALUE')
+        self.assertEqual(adapter.extra["handler_type"], "OVERRIDDEN_VALUE")
 
 
 # ==============================================================================
 # TEST AREA 2: MigrationLoggerAdapter
 # ==============================================================================
+
 
 class TestMigrationLoggerAdapter(unittest.TestCase):
     """Tests for MigrationLoggerAdapter initialization and process method."""
@@ -285,19 +282,19 @@ class TestMigrationLoggerAdapter(unittest.TestCase):
         """Test basic initialization with migration_phase."""
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6F")
         self.assertEqual(adapter.migration_phase, "6F")
-        self.assertEqual(adapter.extra['migration_phase'], "6F")
+        self.assertEqual(adapter.extra["migration_phase"], "6F")
 
     def test_init_with_extra_context(self):
         """Test initialization with additional extra context."""
-        extra = {'module': 'property_enrichment.py'}
+        extra = {"module": "property_enrichment.py"}
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6G", extra=extra)
         self.assertEqual(adapter.migration_phase, "6G")
-        self.assertEqual(adapter.extra['module'], 'property_enrichment.py')
+        self.assertEqual(adapter.extra["module"], "property_enrichment.py")
 
     def test_init_extra_none(self):
         """Test initialization when extra is explicitly None."""
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6H", extra=None)
-        self.assertEqual(adapter.extra, {'migration_phase': '6H'})
+        self.assertEqual(adapter.extra, {"migration_phase": "6H"})
 
     def test_process_basic_message(self):
         """Test process adds migration prefix to message."""
@@ -308,19 +305,19 @@ class TestMigrationLoggerAdapter(unittest.TestCase):
     def test_process_with_migration_step_in_kwargs(self):
         """Test process adds step context when migration_step is in kwargs."""
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6G")
-        processed_msg, _ = adapter.process("Executing step", {'migration_step': 'validate_schema'})
+        processed_msg, _ = adapter.process("Executing step", {"migration_step": "validate_schema"})
         self.assertEqual(processed_msg, "[Step:validate_schema] [Migration-6G] Executing step")
 
     def test_process_without_migration_step(self):
         """Test process does not add step context when migration_step is absent."""
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6I")
-        processed_msg, _ = adapter.process("Phase complete", {'other': 'data'})
+        processed_msg, _ = adapter.process("Phase complete", {"other": "data"})
         self.assertEqual(processed_msg, "[Migration-6I] Phase complete")
 
     def test_process_returns_kwargs_unchanged(self):
         """Test process returns kwargs unmodified."""
         adapter = MigrationLoggerAdapter(self.mock_logger, migration_phase="6J")
-        original_kwargs = {'migration_step': 'rollback', 'detail': 'test'}
+        original_kwargs = {"migration_step": "rollback", "detail": "test"}
         _, returned_kwargs = adapter.process("test", original_kwargs)
         self.assertIs(returned_kwargs, original_kwargs)
 
@@ -328,6 +325,7 @@ class TestMigrationLoggerAdapter(unittest.TestCase):
 # ==============================================================================
 # TEST AREA 3: TransformLoggerAdapter
 # ==============================================================================
+
 
 class TestTransformLoggerAdapter(unittest.TestCase):
     """Tests for TransformLoggerAdapter initialization and process method."""
@@ -348,13 +346,13 @@ class TestTransformLoggerAdapter(unittest.TestCase):
         """Test initialization with experimental_setup."""
         adapter = TransformLoggerAdapter(self.mock_logger, experimental_setup="baseline")
         self.assertEqual(adapter.experimental_setup, "baseline")
-        self.assertEqual(adapter.extra['experimental_setup'], "baseline")
+        self.assertEqual(adapter.extra["experimental_setup"], "baseline")
 
     def test_init_with_transform_context(self):
         """Test initialization with transform_context."""
         adapter = TransformLoggerAdapter(self.mock_logger, transform_context="validation")
         self.assertEqual(adapter.transform_context, "validation")
-        self.assertEqual(adapter.extra['transform_context'], "validation")
+        self.assertEqual(adapter.extra["transform_context"], "validation")
 
     def test_init_with_both_setup_and_context(self):
         """Test initialization with both experimental_setup and transform_context."""
@@ -366,12 +364,12 @@ class TestTransformLoggerAdapter(unittest.TestCase):
 
     def test_init_with_extra_context(self):
         """Test initialization with additional extra context."""
-        extra = {'config_source': 'yaml', 'version': '1.0'}
+        extra = {"config_source": "yaml", "version": "1.0"}
         adapter = TransformLoggerAdapter(
             self.mock_logger, experimental_setup="baseline", extra=extra
         )
-        self.assertEqual(adapter.extra['experimental_setup'], "baseline")
-        self.assertEqual(adapter.extra['config_source'], 'yaml')
+        self.assertEqual(adapter.extra["experimental_setup"], "baseline")
+        self.assertEqual(adapter.extra["config_source"], "yaml")
 
     def test_process_with_experimental_setup_only(self):
         """Test process adds setup prefix when only experimental_setup is set."""
@@ -396,7 +394,7 @@ class TestTransformLoggerAdapter(unittest.TestCase):
     def test_process_with_transform_name_in_kwargs(self):
         """Test process adds transform name when present in kwargs."""
         adapter = TransformLoggerAdapter(self.mock_logger, experimental_setup="baseline")
-        processed_msg, _ = adapter.process("Processing", {'transform_name': 'AddSelfLoops'})
+        processed_msg, _ = adapter.process("Processing", {"transform_name": "AddSelfLoops"})
         self.assertEqual(processed_msg, "[Setup:baseline|Transform:AddSelfLoops] Processing")
 
     def test_process_with_all_prefix_parts(self):
@@ -404,10 +402,9 @@ class TestTransformLoggerAdapter(unittest.TestCase):
         adapter = TransformLoggerAdapter(
             self.mock_logger, experimental_setup="augmented", transform_context="validation"
         )
-        processed_msg, _ = adapter.process("Validating", {'transform_name': 'RandomRotate'})
+        processed_msg, _ = adapter.process("Validating", {"transform_name": "RandomRotate"})
         self.assertEqual(
-            processed_msg,
-            "[Setup:augmented|Context:validation|Transform:RandomRotate] Validating"
+            processed_msg, "[Setup:augmented|Context:validation|Transform:RandomRotate] Validating"
         )
 
     def test_process_no_prefix_parts(self):
@@ -419,7 +416,7 @@ class TestTransformLoggerAdapter(unittest.TestCase):
     def test_process_returns_kwargs_unchanged(self):
         """Test process returns kwargs unmodified."""
         adapter = TransformLoggerAdapter(self.mock_logger)
-        original_kwargs = {'transform_name': 'GCNNorm', 'extra': 'data'}
+        original_kwargs = {"transform_name": "GCNNorm", "extra": "data"}
         _, returned_kwargs = adapter.process("test", original_kwargs)
         self.assertIs(returned_kwargs, original_kwargs)
 
@@ -428,30 +425,31 @@ class TestTransformLoggerAdapter(unittest.TestCase):
 # TEST AREA 4: setup_logging()
 # ==============================================================================
 
+
 class TestSetupLogging(unittest.TestCase):
     """Tests for the setup_logging() function."""
 
     def setUp(self):
-        logger_name = 'milia_pipeline.logging_config'
+        logger_name = "milia_pipeline.logging_config"
         logger = logging.getLogger(logger_name)
         logger.handlers.clear()
 
     def tearDown(self):
-        logger_name = 'milia_pipeline.logging_config'
+        logger_name = "milia_pipeline.logging_config"
         logger = logging.getLogger(logger_name)
         logger.handlers.clear()
 
-    @patch('milia_pipeline.logging_config._setup_transform_loggers')
-    @patch('milia_pipeline.logging_config._setup_migration_loggers')
-    @patch('milia_pipeline.logging_config._setup_handler_loggers')
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._setup_transform_loggers")
+    @patch("milia_pipeline.logging_config._setup_migration_loggers")
+    @patch("milia_pipeline.logging_config._setup_handler_loggers")
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_default_parameters(
         self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with default parameters enables all logging."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging()
         self.assertIsInstance(logger, logging.Logger)
         mock_third_party.assert_called_once()
@@ -459,108 +457,108 @@ class TestSetupLogging(unittest.TestCase):
         mock_migration.assert_called_once_with(logger)
         mock_transform.assert_called_once_with(logger)
 
-    @patch('milia_pipeline.logging_config._setup_transform_loggers')
-    @patch('milia_pipeline.logging_config._setup_migration_loggers')
-    @patch('milia_pipeline.logging_config._setup_handler_loggers')
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._setup_transform_loggers")
+    @patch("milia_pipeline.logging_config._setup_migration_loggers")
+    @patch("milia_pipeline.logging_config._setup_handler_loggers")
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_handler_logging(
         self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with handler logging disabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_handler_logging=False)
         mock_handler.assert_not_called()
         mock_migration.assert_called_once()
         mock_transform.assert_called_once()
 
-    @patch('milia_pipeline.logging_config._setup_transform_loggers')
-    @patch('milia_pipeline.logging_config._setup_migration_loggers')
-    @patch('milia_pipeline.logging_config._setup_handler_loggers')
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._setup_transform_loggers")
+    @patch("milia_pipeline.logging_config._setup_migration_loggers")
+    @patch("milia_pipeline.logging_config._setup_handler_loggers")
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_migration_logging(
         self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with migration logging disabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_migration_logging=False)
         mock_handler.assert_called_once()
         mock_migration.assert_not_called()
         mock_transform.assert_called_once()
 
-    @patch('milia_pipeline.logging_config._setup_transform_loggers')
-    @patch('milia_pipeline.logging_config._setup_migration_loggers')
-    @patch('milia_pipeline.logging_config._setup_handler_loggers')
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._setup_transform_loggers")
+    @patch("milia_pipeline.logging_config._setup_migration_loggers")
+    @patch("milia_pipeline.logging_config._setup_handler_loggers")
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_transform_logging(
         self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with transform logging disabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_transform_logging=False)
         mock_handler.assert_called_once()
         mock_migration.assert_called_once()
         mock_transform.assert_not_called()
 
-    @patch('milia_pipeline.logging_config._setup_transform_loggers')
-    @patch('milia_pipeline.logging_config._setup_migration_loggers')
-    @patch('milia_pipeline.logging_config._setup_handler_loggers')
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._setup_transform_loggers")
+    @patch("milia_pipeline.logging_config._setup_migration_loggers")
+    @patch("milia_pipeline.logging_config._setup_handler_loggers")
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_all_disabled(
         self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with all enhanced logging disabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(
             enable_handler_logging=False,
             enable_migration_logging=False,
-            enable_transform_logging=False
+            enable_transform_logging=False,
         )
         mock_handler.assert_not_called()
         mock_migration.assert_not_called()
         mock_transform.assert_not_called()
         mock_third_party.assert_called_once()
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_log_level_debug(self, mock_inspect, mock_third_party):
         """Test setup_logging sets DEBUG level correctly."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="DEBUG")
         self.assertEqual(logger.level, logging.DEBUG)
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_log_level_warning(self, mock_inspect, mock_third_party):
         """Test setup_logging sets WARNING level correctly."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="WARNING")
         self.assertEqual(logger.level, logging.WARNING)
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_log_level_case_insensitive(self, mock_inspect, mock_third_party):
         """Test setup_logging handles case-insensitive log level strings."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="error")
         self.assertEqual(logger.level, logging.ERROR)
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_no_handler_duplication(self, mock_inspect, mock_third_party):
         """Test setup_logging does not duplicate handlers on multiple calls."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger1 = setup_logging()
         handler_count_first = len(logger1.handlers)
         logger2 = setup_logging()
@@ -568,45 +566,47 @@ class TestSetupLogging(unittest.TestCase):
         self.assertEqual(handler_count_first, handler_count_second)
         self.assertIs(logger1, logger2)
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_file_handler_oserror_raises(self, mock_inspect, mock_third_party):
         """Test setup_logging raises LoggingConfigurationError on file handler OSError."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/nonexistent/deeply/nested/path/test_script.py'
+        mock_inspect.getfile.return_value = "/nonexistent/deeply/nested/path/test_script.py"
         with self.assertRaises(LoggingConfigurationError):
             setup_logging()
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_enhanced_formatter_when_enabled(self, mock_inspect, mock_third_party):
         """Test enhanced formatter is used when any logging enhancement is enabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(enable_handler_logging=True)
         for handler in logger.handlers:
             if handler.formatter:
                 fmt = handler.formatter._fmt
-                self.assertIn('%(name)s', fmt)
-                self.assertIn('%(lineno)d', fmt)
+                self.assertIn("%(name)s", fmt)
+                self.assertIn("%(lineno)d", fmt)
                 break
 
-    @patch('milia_pipeline.logging_config._configure_third_party_loggers')
-    @patch('milia_pipeline.logging_config.inspect')
-    def test_setup_logging_standard_formatter_when_all_disabled(self, mock_inspect, mock_third_party):
+    @patch("milia_pipeline.logging_config._configure_third_party_loggers")
+    @patch("milia_pipeline.logging_config.inspect")
+    def test_setup_logging_standard_formatter_when_all_disabled(
+        self, mock_inspect, mock_third_party
+    ):
         """Test standard formatter is used when all enhancements are disabled."""
         mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = '/tmp/test_script.py'
+        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(
             enable_handler_logging=False,
             enable_migration_logging=False,
-            enable_transform_logging=False
+            enable_transform_logging=False,
         )
         for handler in logger.handlers:
             if handler.formatter:
                 fmt = handler.formatter._fmt
-                self.assertNotIn('%(name)s', fmt)
-                self.assertNotIn('%(lineno)d', fmt)
+                self.assertNotIn("%(name)s", fmt)
+                self.assertNotIn("%(lineno)d", fmt)
                 break
 
 
@@ -614,19 +614,20 @@ class TestSetupLogging(unittest.TestCase):
 # TEST AREAS 5-8: Internal setup functions
 # ==============================================================================
 
+
 class TestConfigureThirdPartyLoggers(unittest.TestCase):
     """Tests for _configure_third_party_loggers() internal function."""
 
     def test_rdkit_logger_set_to_error(self):
         """Test RDKit logger is set to ERROR level."""
         logging_config._configure_third_party_loggers()
-        rdkit_logger = logging.getLogger('rdkit')
+        rdkit_logger = logging.getLogger("rdkit")
         self.assertEqual(rdkit_logger.level, logging.ERROR)
 
     def test_verbose_loggers_set_to_warning(self):
         """Test verbose third-party loggers are set to WARNING level."""
         logging_config._configure_third_party_loggers()
-        expected = ['matplotlib', 'PIL', 'urllib3', 'requests', 'torch', 'torch_geometric']
+        expected = ["matplotlib", "PIL", "urllib3", "requests", "torch", "torch_geometric"]
         for logger_name in expected:
             logger = logging.getLogger(logger_name)
             self.assertEqual(logger.level, logging.WARNING, f"'{logger_name}' should be WARNING")
@@ -640,7 +641,7 @@ class TestSetupHandlerLoggers(unittest.TestCase):
         base_logger = MagicMock(spec=logging.Logger)
         base_logger.level = logging.INFO
         logging_config._setup_handler_loggers(base_logger)
-        for handler_type in ['dft', 'dmc', 'generic']:
+        for handler_type in ["dft", "dmc", "generic"]:
             logger = logging.getLogger(f"handler.{handler_type}")
             self.assertEqual(logger.level, base_logger.level)
             self.assertTrue(logger.propagate)
@@ -650,7 +651,7 @@ class TestSetupHandlerLoggers(unittest.TestCase):
         base_logger = MagicMock(spec=logging.Logger)
         base_logger.level = logging.DEBUG
         logging_config._setup_handler_loggers(base_logger)
-        for handler_type in ['dft', 'dmc', 'generic']:
+        for handler_type in ["dft", "dmc", "generic"]:
             logger = logging.getLogger(f"handler.{handler_type}")
             self.assertEqual(logger.level, logging.DEBUG)
 
@@ -663,7 +664,7 @@ class TestSetupMigrationLoggers(unittest.TestCase):
         base_logger = MagicMock(spec=logging.Logger)
         base_logger.level = logging.INFO
         logging_config._setup_migration_loggers(base_logger)
-        for phase in ['6F', '6G', '6H', '6I', '6J']:
+        for phase in ["6F", "6G", "6H", "6I", "6J"]:
             logger = logging.getLogger(f"migration.phase_{phase}")
             self.assertEqual(logger.level, base_logger.level)
             self.assertTrue(logger.propagate)
@@ -677,7 +678,7 @@ class TestSetupTransformLoggers(unittest.TestCase):
         base_logger = MagicMock(spec=logging.Logger)
         base_logger.level = logging.INFO
         logging_config._setup_transform_loggers(base_logger)
-        for operation in ['registry', 'validation', 'composition', 'experimental']:
+        for operation in ["registry", "validation", "composition", "experimental"]:
             logger = logging.getLogger(f"transform.{operation}")
             self.assertEqual(logger.level, base_logger.level)
             self.assertTrue(logger.propagate)
@@ -686,6 +687,7 @@ class TestSetupTransformLoggers(unittest.TestCase):
 # ==============================================================================
 # TEST AREAS 9-11: Factory functions
 # ==============================================================================
+
 
 class TestCreateHandlerLogger(unittest.TestCase):
     """Tests for create_handler_logger() factory function."""
@@ -701,9 +703,9 @@ class TestCreateHandlerLogger(unittest.TestCase):
         self.assertIs(adapter.logger, custom_logger)
 
     def test_create_with_extra_context(self):
-        extra = {'batch_id': 'batch_001'}
+        extra = {"batch_id": "batch_001"}
         adapter = create_handler_logger("DFT", extra_context=extra)
-        self.assertEqual(adapter.extra['batch_id'], 'batch_001')
+        self.assertEqual(adapter.extra["batch_id"], "batch_001")
 
     def test_default_base_logger_name(self):
         adapter = create_handler_logger("DFT")
@@ -724,9 +726,9 @@ class TestCreateMigrationLogger(unittest.TestCase):
         self.assertIs(adapter.logger, custom_logger)
 
     def test_create_with_extra_context(self):
-        extra = {'module': 'property_enrichment.py'}
+        extra = {"module": "property_enrichment.py"}
         adapter = create_migration_logger("6F", extra_context=extra)
-        self.assertEqual(adapter.extra['module'], 'property_enrichment.py')
+        self.assertEqual(adapter.extra["module"], "property_enrichment.py")
 
     def test_default_base_logger_name(self):
         adapter = create_migration_logger("6H")
@@ -772,14 +774,15 @@ class TestCreateTransformLogger(unittest.TestCase):
         self.assertIs(adapter.logger, custom_logger)
 
     def test_create_with_extra_context(self):
-        extra = {'config_source': 'yaml'}
+        extra = {"config_source": "yaml"}
         adapter = create_transform_logger(experimental_setup="baseline", extra_context=extra)
-        self.assertEqual(adapter.extra['config_source'], 'yaml')
+        self.assertEqual(adapter.extra["config_source"], "yaml")
 
 
 # ==============================================================================
 # TEST AREAS 12-14: Decorators
 # ==============================================================================
+
 
 class TestLogHandlerOperationDecorator(unittest.TestCase):
     """Tests for log_handler_operation() decorator."""
@@ -798,6 +801,7 @@ class TestLogHandlerOperationDecorator(unittest.TestCase):
         @log_handler_operation("test_op")
         def my_special_function(self_arg):
             pass
+
         self.assertEqual(my_special_function.__name__, "my_special_function")
 
     def test_decorator_handler_error_reraises(self):
@@ -837,6 +841,7 @@ class TestLogHandlerOperationDecorator(unittest.TestCase):
         @log_handler_operation("test_op")
         def my_func():
             return "ok"
+
         self.assertEqual(my_func(), "ok")
 
 
@@ -847,18 +852,21 @@ class TestLogMigrationStepDecorator(unittest.TestCase):
         @log_migration_step("test_step", "6F")
         def migrate_func():
             return "migration_result"
+
         self.assertEqual(migrate_func(), "migration_result")
 
     def test_decorator_preserves_function_name(self):
         @log_migration_step("test_step", "6G")
         def my_migration():
             pass
+
         self.assertEqual(my_migration.__name__, "my_migration")
 
     def test_decorator_migration_error_reraises(self):
         @log_migration_step("failing_step", "6H")
         def failing_migration():
             raise MigrationError(message="migration failed", migration_phase="6H")
+
         with self.assertRaises(MigrationError):
             failing_migration()
 
@@ -866,6 +874,7 @@ class TestLogMigrationStepDecorator(unittest.TestCase):
         @log_migration_step("test_step", "6I")
         def failing_migration():
             raise RuntimeError("unexpected")
+
         with self.assertRaises(RuntimeError):
             failing_migration()
 
@@ -877,25 +886,31 @@ class TestLogTransformOperationDecorator(unittest.TestCase):
         @log_transform_operation("validate_params", transform_context="validation")
         def validate_func():
             return "validated"
+
         self.assertEqual(validate_func(), "validated")
 
     def test_decorator_preserves_function_name(self):
         @log_transform_operation("compose", transform_context="composition")
         def compose_transforms():
             pass
+
         self.assertEqual(compose_transforms.__name__, "compose_transforms")
 
     def test_decorator_transform_config_error_reraises(self):
         @log_transform_operation("configure", transform_context="validation")
         def failing_func():
             raise TransformConfigurationError(message="config error")
+
         with self.assertRaises(TransformConfigurationError):
             failing_func()
 
     def test_decorator_transform_validation_error_reraises(self):
         @log_transform_operation("validate", transform_context="validation")
         def failing_func():
-            raise TransformValidationError(message="validation error", transform_name="TestTransform")
+            raise TransformValidationError(
+                message="validation error", transform_name="TestTransform"
+            )
+
         with self.assertRaises(TransformValidationError):
             failing_func()
 
@@ -903,6 +918,7 @@ class TestLogTransformOperationDecorator(unittest.TestCase):
         @log_transform_operation("compose", transform_context="composition")
         def failing_func():
             raise TransformCompositionError(message="composition error")
+
         with self.assertRaises(TransformCompositionError):
             failing_func()
 
@@ -910,6 +926,7 @@ class TestLogTransformOperationDecorator(unittest.TestCase):
         @log_transform_operation("setup", transform_context="experimental")
         def failing_func():
             raise ExperimentalSetupError(message="setup error")
+
         with self.assertRaises(ExperimentalSetupError):
             failing_func()
 
@@ -917,6 +934,7 @@ class TestLogTransformOperationDecorator(unittest.TestCase):
         @log_transform_operation("test_op")
         def failing_func():
             raise TypeError("unexpected")
+
         with self.assertRaises(TypeError):
             failing_func()
 
@@ -924,12 +942,14 @@ class TestLogTransformOperationDecorator(unittest.TestCase):
         @log_transform_operation("test_op")
         def my_func(experimental_setup=None):
             return "ok"
+
         self.assertEqual(my_func(experimental_setup="baseline"), "ok")
 
 
 # ==============================================================================
 # TEST AREAS 15-16: Performance logging
 # ==============================================================================
+
 
 class TestLogHandlerPerformance(unittest.TestCase):
     """Tests for log_handler_performance() function."""
@@ -953,8 +973,7 @@ class TestLogHandlerPerformance(unittest.TestCase):
     def test_performance_logging_with_additional_metrics(self):
         mock_logger = MagicMock()
         log_handler_performance(
-            mock_logger, "process", 50, 25.0,
-            additional_metrics={"memory_used_mb": 128.5}
+            mock_logger, "process", 50, 25.0, additional_metrics={"memory_used_mb": 128.5}
         )
         call_msg = mock_logger.info.call_args[0][0]
         self.assertIn("memory_used_mb=128.5", call_msg)
@@ -1023,6 +1042,7 @@ class TestLogTransformPerformance(unittest.TestCase):
 # TEST AREAS 17-19: Logger retrieval functions
 # ==============================================================================
 
+
 class TestLoggerRetrievalFunctions(unittest.TestCase):
     """Tests for logger retrieval functions."""
 
@@ -1060,13 +1080,14 @@ class TestLoggerRetrievalFunctions(unittest.TestCase):
 # TEST AREA 20: log_exception_with_context()
 # ==============================================================================
 
+
 class TestLogExceptionWithContext(unittest.TestCase):
     """Tests for log_exception_with_context() function."""
 
     def test_basic_exception_logging(self):
         mock_logger = MagicMock()
         exc = ValueError("test error")
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "test_operation")
         mock_logger.error.assert_called_once()
         call_msg = mock_logger.error.call_args[0][0]
@@ -1076,8 +1097,8 @@ class TestLogExceptionWithContext(unittest.TestCase):
     def test_exception_with_context_dict(self):
         mock_logger = MagicMock()
         exc = ValueError("test error")
-        context = {'molecule_index': 42, 'handler_type': 'DFT'}
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        context = {"molecule_index": 42, "handler_type": "DFT"}
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "validation", context=context)
         call_msg = mock_logger.error.call_args[0][0]
         self.assertIn("molecule_index=42", call_msg)
@@ -1088,7 +1109,7 @@ class TestLogExceptionWithContext(unittest.TestCase):
         exc = HandlerError(message="handler failure")
         exc.handler_type = "DFT"
         exc.handler_operation = "validate"
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "handler_op")
         call_msg = mock_logger.error.call_args[0][0]
         self.assertIn("handler_type=DFT", call_msg)
@@ -1100,7 +1121,7 @@ class TestLogExceptionWithContext(unittest.TestCase):
         exc.experimental_setup = "baseline"
         exc.config_source = "yaml"
         exc.transform_name = "AddSelfLoops"
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "transform_op")
         call_msg = mock_logger.error.call_args[0][0]
         self.assertIn("experimental_setup=baseline", call_msg)
@@ -1111,7 +1132,7 @@ class TestLogExceptionWithContext(unittest.TestCase):
         mock_logger = MagicMock()
         exc = ValueError("test")
         exc.molecule_index = 99
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "process")
         call_msg = mock_logger.error.call_args[0][0]
         self.assertIn("molecule_index=99", call_msg)
@@ -1120,7 +1141,9 @@ class TestLogExceptionWithContext(unittest.TestCase):
         mock_logger = MagicMock()
         exc = ValueError("test")
         suggestions = ["Try reconfiguring the handler", "Check input data"]
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=suggestions):
+        with patch(
+            "milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=suggestions
+        ):
             log_exception_with_context(mock_logger, exc, "operation")
         mock_logger.error.assert_called_once()
         mock_logger.info.assert_called_once()
@@ -1130,7 +1153,7 @@ class TestLogExceptionWithContext(unittest.TestCase):
     def test_no_recovery_suggestions_no_info_log(self):
         mock_logger = MagicMock()
         exc = ValueError("test")
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "operation")
         mock_logger.error.assert_called_once()
         mock_logger.info.assert_not_called()
@@ -1139,6 +1162,7 @@ class TestLogExceptionWithContext(unittest.TestCase):
 # ==============================================================================
 # TEST AREA 21: log_experimental_setup_switch()
 # ==============================================================================
+
 
 class TestLogExperimentalSetupSwitch(unittest.TestCase):
     """Tests for log_experimental_setup_switch() function."""
@@ -1184,12 +1208,13 @@ class TestLogExperimentalSetupSwitch(unittest.TestCase):
 # TEST AREA 22: log_transform_validation_results()
 # ==============================================================================
 
+
 class TestLogTransformValidationResults(unittest.TestCase):
     """Tests for log_transform_validation_results() function."""
 
     def test_valid_results_no_warnings(self):
         mock_logger = MagicMock()
-        results = {'valid': True, 'warnings': [], 'errors': []}
+        results = {"valid": True, "warnings": [], "errors": []}
         log_transform_validation_results(mock_logger, "AddSelfLoops", results)
         mock_logger.info.assert_called_once()
         call_msg = mock_logger.info.call_args[0][0]
@@ -1198,14 +1223,14 @@ class TestLogTransformValidationResults(unittest.TestCase):
 
     def test_valid_results_with_warnings(self):
         mock_logger = MagicMock()
-        results = {'valid': True, 'warnings': ['Parameter X may cause issues'], 'errors': []}
+        results = {"valid": True, "warnings": ["Parameter X may cause issues"], "errors": []}
         log_transform_validation_results(mock_logger, "RandomRotate", results)
         mock_logger.info.assert_called_once()
         mock_logger.warning.assert_called()
 
     def test_invalid_results_with_errors(self):
         mock_logger = MagicMock()
-        results = {'valid': False, 'warnings': [], 'errors': ['Missing param', 'Invalid type']}
+        results = {"valid": False, "warnings": [], "errors": ["Missing param", "Invalid type"]}
         log_transform_validation_results(mock_logger, "BadTransform", results)
         mock_logger.error.assert_called()
         error_calls = [c[0][0] for c in mock_logger.error.call_args_list]
@@ -1213,14 +1238,16 @@ class TestLogTransformValidationResults(unittest.TestCase):
 
     def test_with_experimental_setup_prefix(self):
         mock_logger = MagicMock()
-        results = {'valid': True, 'warnings': [], 'errors': []}
-        log_transform_validation_results(mock_logger, "AddSelfLoops", results, experimental_setup="baseline")
+        results = {"valid": True, "warnings": [], "errors": []}
+        log_transform_validation_results(
+            mock_logger, "AddSelfLoops", results, experimental_setup="baseline"
+        )
         call_msg = mock_logger.info.call_args[0][0]
         self.assertIn("[Setup:baseline]", call_msg)
 
     def test_without_experimental_setup_prefix(self):
         mock_logger = MagicMock()
-        results = {'valid': True, 'warnings': [], 'errors': []}
+        results = {"valid": True, "warnings": [], "errors": []}
         log_transform_validation_results(mock_logger, "AddSelfLoops", results)
         call_msg = mock_logger.info.call_args[0][0]
         self.assertNotIn("[Setup:", call_msg)
@@ -1230,14 +1257,18 @@ class TestLogTransformValidationResults(unittest.TestCase):
 # TEST AREA 23: log_transform_composition_summary()
 # ==============================================================================
 
+
 class TestLogTransformCompositionSummary(unittest.TestCase):
     """Tests for log_transform_composition_summary() function."""
 
     def test_basic_composition_summary(self):
         mock_logger = MagicMock()
         results = {
-            'transform_count': 5, 'composition_time': 0.023, 'cache_hit': True,
-            'warnings': [], 'transform_sequence': ['AddSelfLoops', 'ToUndirected']
+            "transform_count": 5,
+            "composition_time": 0.023,
+            "cache_hit": True,
+            "warnings": [],
+            "transform_sequence": ["AddSelfLoops", "ToUndirected"],
         }
         log_transform_composition_summary(mock_logger, results)
         info_msg = mock_logger.info.call_args_list[0][0][0]
@@ -1247,8 +1278,11 @@ class TestLogTransformCompositionSummary(unittest.TestCase):
     def test_composition_summary_cache_miss(self):
         mock_logger = MagicMock()
         results = {
-            'transform_count': 3, 'composition_time': 0.05, 'cache_hit': False,
-            'warnings': [], 'transform_sequence': []
+            "transform_count": 3,
+            "composition_time": 0.05,
+            "cache_hit": False,
+            "warnings": [],
+            "transform_sequence": [],
         }
         log_transform_composition_summary(mock_logger, results)
         info_msg = mock_logger.info.call_args_list[0][0][0]
@@ -1257,9 +1291,11 @@ class TestLogTransformCompositionSummary(unittest.TestCase):
     def test_composition_summary_with_warnings(self):
         mock_logger = MagicMock()
         results = {
-            'transform_count': 5, 'composition_time': 0.023, 'cache_hit': True,
-            'warnings': ['ToUndirected appears multiple times'],
-            'transform_sequence': ['AddSelfLoops', 'ToUndirected']
+            "transform_count": 5,
+            "composition_time": 0.023,
+            "cache_hit": True,
+            "warnings": ["ToUndirected appears multiple times"],
+            "transform_sequence": ["AddSelfLoops", "ToUndirected"],
         }
         log_transform_composition_summary(mock_logger, results)
         mock_logger.warning.assert_called_once()
@@ -1267,8 +1303,11 @@ class TestLogTransformCompositionSummary(unittest.TestCase):
     def test_composition_summary_with_experimental_setup(self):
         mock_logger = MagicMock()
         results = {
-            'transform_count': 2, 'composition_time': 0.01, 'cache_hit': False,
-            'warnings': [], 'transform_sequence': ['AddSelfLoops']
+            "transform_count": 2,
+            "composition_time": 0.01,
+            "cache_hit": False,
+            "warnings": [],
+            "transform_sequence": ["AddSelfLoops"],
         }
         log_transform_composition_summary(mock_logger, results, experimental_setup="baseline")
         info_msg = mock_logger.info.call_args_list[0][0][0]
@@ -1284,18 +1323,19 @@ class TestLogTransformCompositionSummary(unittest.TestCase):
 # TEST AREAS 24-26: Debug configuration and third-party silencing
 # ==============================================================================
 
+
 class TestConfigureDebugLoggingForHandlers(unittest.TestCase):
     """Tests for configure_debug_logging_for_handlers() function."""
 
     def test_handler_loggers_set_to_debug(self):
         configure_debug_logging_for_handlers()
-        for name in ['handler.dft', 'handler.dmc', 'handler.generic']:
+        for name in ["handler.dft", "handler.dmc", "handler.generic"]:
             logger = logging.getLogger(name)
             self.assertEqual(logger.level, logging.DEBUG)
 
     def test_migration_loggers_set_to_debug(self):
         configure_debug_logging_for_handlers()
-        for phase in ['6f', '6g', '6h', '6i', '6j']:
+        for phase in ["6f", "6g", "6h", "6i", "6j"]:
             logger = logging.getLogger(f"migration.phase_{phase}")
             self.assertEqual(logger.level, logging.DEBUG)
 
@@ -1305,7 +1345,7 @@ class TestConfigureDebugLoggingForTransforms(unittest.TestCase):
 
     def test_transform_loggers_set_to_debug(self):
         configure_debug_logging_for_transforms()
-        for op in ['registry', 'validation', 'composition', 'experimental']:
+        for op in ["registry", "validation", "composition", "experimental"]:
             logger = logging.getLogger(f"transform.{op}")
             self.assertEqual(logger.level, logging.DEBUG)
 
@@ -1315,48 +1355,66 @@ class TestDisableVerboseThirdPartyLogging(unittest.TestCase):
 
     def test_rdkit_set_to_error(self):
         disable_verbose_third_party_logging()
-        self.assertEqual(logging.getLogger('rdkit').level, logging.ERROR)
+        self.assertEqual(logging.getLogger("rdkit").level, logging.ERROR)
 
     def test_science_libraries_set_to_warning(self):
         disable_verbose_third_party_logging()
-        for name in ['matplotlib', 'PIL', 'urllib3', 'requests', 'torch', 'torch_geometric', 'numpy', 'scipy']:
-            self.assertEqual(logging.getLogger(name).level, logging.WARNING, f"'{name}' should be WARNING")
+        for name in [
+            "matplotlib",
+            "PIL",
+            "urllib3",
+            "requests",
+            "torch",
+            "torch_geometric",
+            "numpy",
+            "scipy",
+        ]:
+            self.assertEqual(
+                logging.getLogger(name).level, logging.WARNING, f"'{name}' should be WARNING"
+            )
 
 
 # ==============================================================================
 # TEST AREA 27: create_experimental_setup_hash()
 # ==============================================================================
 
+
 class TestCreateExperimentalSetupHash(unittest.TestCase):
     """Tests for create_experimental_setup_hash() function."""
 
     def test_basic_hash_generation(self):
-        config = [{'name': 'AddSelfLoops'}, {'name': 'ToUndirected'}]
+        config = [{"name": "AddSelfLoops"}, {"name": "ToUndirected"}]
         hash_val = create_experimental_setup_hash(config)
         self.assertIsInstance(hash_val, str)
         self.assertEqual(len(hash_val), 12)
 
     def test_hash_is_deterministic(self):
-        config = [{'name': 'AddSelfLoops'}, {'name': 'RandomRotate', 'kwargs': {'degrees': 180}}]
-        self.assertEqual(create_experimental_setup_hash(config), create_experimental_setup_hash(config))
+        config = [{"name": "AddSelfLoops"}, {"name": "RandomRotate", "kwargs": {"degrees": 180}}]
+        self.assertEqual(
+            create_experimental_setup_hash(config), create_experimental_setup_hash(config)
+        )
 
     def test_different_configs_different_hashes(self):
-        config1 = [{'name': 'AddSelfLoops'}]
-        config2 = [{'name': 'ToUndirected'}]
-        self.assertNotEqual(create_experimental_setup_hash(config1), create_experimental_setup_hash(config2))
+        config1 = [{"name": "AddSelfLoops"}]
+        config2 = [{"name": "ToUndirected"}]
+        self.assertNotEqual(
+            create_experimental_setup_hash(config1), create_experimental_setup_hash(config2)
+        )
 
     def test_order_independent_hashing(self):
         """Test hash is independent of spec order (sorted internally)."""
-        config1 = [{'name': 'AddSelfLoops'}, {'name': 'ToUndirected'}]
-        config2 = [{'name': 'ToUndirected'}, {'name': 'AddSelfLoops'}]
-        self.assertEqual(create_experimental_setup_hash(config1), create_experimental_setup_hash(config2))
+        config1 = [{"name": "AddSelfLoops"}, {"name": "ToUndirected"}]
+        config2 = [{"name": "ToUndirected"}, {"name": "AddSelfLoops"}]
+        self.assertEqual(
+            create_experimental_setup_hash(config1), create_experimental_setup_hash(config2)
+        )
 
     def test_hash_with_kwargs(self):
-        config_no_kwargs = [{'name': 'RandomRotate'}]
-        config_with_kwargs = [{'name': 'RandomRotate', 'kwargs': {'degrees': 180}}]
+        config_no_kwargs = [{"name": "RandomRotate"}]
+        config_with_kwargs = [{"name": "RandomRotate", "kwargs": {"degrees": 180}}]
         self.assertNotEqual(
             create_experimental_setup_hash(config_no_kwargs),
-            create_experimental_setup_hash(config_with_kwargs)
+            create_experimental_setup_hash(config_with_kwargs),
         )
 
     def test_hash_empty_config(self):
@@ -1365,7 +1423,7 @@ class TestCreateExperimentalSetupHash(unittest.TestCase):
         self.assertEqual(len(hash_val), 12)
 
     def test_hash_is_hexadecimal(self):
-        hash_val = create_experimental_setup_hash([{'name': 'AddSelfLoops'}])
+        hash_val = create_experimental_setup_hash([{"name": "AddSelfLoops"}])
         int(hash_val, 16)  # Raises ValueError if not valid hex
 
 
@@ -1373,12 +1431,13 @@ class TestCreateExperimentalSetupHash(unittest.TestCase):
 # TEST AREA 28: log_experimental_setup_summary()
 # ==============================================================================
 
+
 class TestLogExperimentalSetupSummary(unittest.TestCase):
     """Tests for log_experimental_setup_summary() function."""
 
     def test_basic_summary_logging(self):
         mock_logger = MagicMock()
-        config = [{'name': 'AddSelfLoops'}, {'name': 'ToUndirected'}]
+        config = [{"name": "AddSelfLoops"}, {"name": "ToUndirected"}]
         log_experimental_setup_summary(mock_logger, "baseline", config)
         info_calls = [c[0][0] for c in mock_logger.info.call_args_list]
         self.assertTrue(any("baseline" in msg for msg in info_calls))
@@ -1386,38 +1445,40 @@ class TestLogExperimentalSetupSummary(unittest.TestCase):
 
     def test_summary_with_validation_passed(self):
         mock_logger = MagicMock()
-        config = [{'name': 'AddSelfLoops'}]
-        validation = {'valid': True, 'warnings': [], 'errors': []}
-        log_experimental_setup_summary(mock_logger, "baseline", config, validation_results=validation)
+        config = [{"name": "AddSelfLoops"}]
+        validation = {"valid": True, "warnings": [], "errors": []}
+        log_experimental_setup_summary(
+            mock_logger, "baseline", config, validation_results=validation
+        )
         info_calls = [c[0][0] for c in mock_logger.info.call_args_list]
         self.assertTrue(any("PASSED" in msg for msg in info_calls))
 
     def test_summary_with_validation_failed(self):
         mock_logger = MagicMock()
-        config = [{'name': 'BadTransform'}]
-        validation = {'valid': False, 'warnings': ['W1'], 'errors': ['E1', 'E2']}
+        config = [{"name": "BadTransform"}]
+        validation = {"valid": False, "warnings": ["W1"], "errors": ["E1", "E2"]}
         log_experimental_setup_summary(mock_logger, "broken", config, validation_results=validation)
         mock_logger.warning.assert_called()
         mock_logger.error.assert_called()
 
     def test_summary_without_validation(self):
         mock_logger = MagicMock()
-        config = [{'name': 'AddSelfLoops'}]
+        config = [{"name": "AddSelfLoops"}]
         log_experimental_setup_summary(mock_logger, "baseline", config)
         mock_logger.warning.assert_not_called()
         mock_logger.error.assert_not_called()
 
     def test_summary_logs_transform_sequence(self):
         mock_logger = MagicMock()
-        config = [{'name': 'AddSelfLoops'}, {'name': 'ToUndirected'}, {'name': 'GCNNorm'}]
+        config = [{"name": "AddSelfLoops"}, {"name": "ToUndirected"}, {"name": "GCNNorm"}]
         log_experimental_setup_summary(mock_logger, "test", config)
         info_calls = [c[0][0] for c in mock_logger.info.call_args_list]
         self.assertTrue(any("AddSelfLoops" in msg and "ToUndirected" in msg for msg in info_calls))
 
     def test_summary_truncates_warnings_to_three(self):
         mock_logger = MagicMock()
-        config = [{'name': 'Test'}]
-        validation = {'valid': False, 'warnings': ['W1', 'W2', 'W3', 'W4', 'W5'], 'errors': []}
+        config = [{"name": "Test"}]
+        validation = {"valid": False, "warnings": ["W1", "W2", "W3", "W4", "W5"], "errors": []}
         log_experimental_setup_summary(mock_logger, "test", config, validation_results=validation)
         warning_calls = mock_logger.warning.call_args_list
         # 1 FAILED warning + 3 individual warnings (first 3 of 5)
@@ -1425,8 +1486,8 @@ class TestLogExperimentalSetupSummary(unittest.TestCase):
 
     def test_summary_truncates_errors_to_three(self):
         mock_logger = MagicMock()
-        config = [{'name': 'Test'}]
-        validation = {'valid': False, 'warnings': [], 'errors': ['E1', 'E2', 'E3', 'E4', 'E5']}
+        config = [{"name": "Test"}]
+        validation = {"valid": False, "warnings": [], "errors": ["E1", "E2", "E3", "E4", "E5"]}
         log_experimental_setup_summary(mock_logger, "test", config, validation_results=validation)
         error_calls = mock_logger.error.call_args_list
         # "Validation errors: 5" + 3 individual errors
@@ -1437,20 +1498,21 @@ class TestLogExperimentalSetupSummary(unittest.TestCase):
 # TEST AREA 29: setup_basic_logging() backward compatibility
 # ==============================================================================
 
+
 class TestSetupBasicLogging(unittest.TestCase):
     """Tests for setup_basic_logging() backward compatibility function."""
 
-    @patch('milia_pipeline.logging_config.setup_logging')
+    @patch("milia_pipeline.logging_config.setup_logging")
     def test_calls_setup_logging_with_all_disabled(self, mock_setup):
         mock_setup.return_value = MagicMock(spec=logging.Logger)
         setup_basic_logging()
         mock_setup.assert_called_once_with(
             enable_handler_logging=False,
             enable_migration_logging=False,
-            enable_transform_logging=False
+            enable_transform_logging=False,
         )
 
-    @patch('milia_pipeline.logging_config.setup_logging')
+    @patch("milia_pipeline.logging_config.setup_logging")
     def test_returns_logger(self, mock_setup):
         expected_logger = MagicMock(spec=logging.Logger)
         mock_setup.return_value = expected_logger
@@ -1460,6 +1522,7 @@ class TestSetupBasicLogging(unittest.TestCase):
 # ==============================================================================
 # TEST AREA 30: Edge cases and boundary conditions
 # ==============================================================================
+
 
 class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
     """Tests for edge cases and boundary conditions across all functions."""
@@ -1504,13 +1567,13 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
         self.assertIn("execution_time_sec=0.001", call_msg)
 
     def test_experimental_setup_hash_config_missing_name(self):
-        config = [{'kwargs': {'degrees': 180}}]
+        config = [{"kwargs": {"degrees": 180}}]
         hash_val = create_experimental_setup_hash(config)
         self.assertIsInstance(hash_val, str)
         self.assertEqual(len(hash_val), 12)
 
     def test_experimental_setup_hash_config_missing_kwargs(self):
-        config = [{'name': 'AddSelfLoops'}]
+        config = [{"name": "AddSelfLoops"}]
         hash_val = create_experimental_setup_hash(config)
         self.assertIsInstance(hash_val, str)
         self.assertEqual(len(hash_val), 12)
@@ -1518,18 +1581,18 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
     def test_log_exception_with_context_none_context(self):
         mock_logger = MagicMock()
         exc = ValueError("test")
-        with patch('milia_pipeline.exceptions.get_exception_recovery_suggestions', return_value=[]):
+        with patch("milia_pipeline.exceptions.get_exception_recovery_suggestions", return_value=[]):
             log_exception_with_context(mock_logger, exc, "op", context=None)
         mock_logger.error.assert_called_once()
 
     def test_composition_summary_missing_keys(self):
         mock_logger = MagicMock()
-        log_transform_composition_summary(mock_logger, {'transform_count': 0})
+        log_transform_composition_summary(mock_logger, {"transform_count": 0})
         mock_logger.info.assert_called()
 
     def test_setup_summary_unknown_transform_names(self):
         mock_logger = MagicMock()
-        config = [{'kwargs': {'param': 1}}, {}]
+        config = [{"kwargs": {"param": 1}}, {}]
         log_experimental_setup_summary(mock_logger, "test", config)
         info_calls = [c[0][0] for c in mock_logger.info.call_args_list]
         self.assertTrue(any("unknown" in msg for msg in info_calls))
@@ -1548,18 +1611,20 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
         @log_transform_operation("test_op", transform_context="validation")
         def my_func(transform_name=None):
             return transform_name
+
         self.assertEqual(my_func(transform_name="AddSelfLoops"), "AddSelfLoops")
 
     def test_transform_operation_decorator_extracts_name_kwarg(self):
         @log_transform_operation("test_op", transform_context="validation")
         def my_func(name=None):
             return name
+
         self.assertEqual(my_func(name="GCNNorm"), "GCNNorm")
 
     def test_validation_results_empty_valid_key(self):
         """Test log_transform_validation_results when 'valid' key is missing."""
         mock_logger = MagicMock()
-        results = {'warnings': [], 'errors': []}
+        results = {"warnings": [], "errors": []}
         log_transform_validation_results(mock_logger, "Test", results)
         mock_logger.error.assert_called()
 
@@ -1580,6 +1645,7 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
 # MODULE TEARDOWN
 # ==============================================================================
 
+
 def teardown_module():
     """
     Clean up any injected mocks at module teardown.
@@ -1591,8 +1657,8 @@ def teardown_module():
     sys.modules injection to avoid pollution in the first place.
     """
     mocks_to_remove = [
-        'milia_pipeline.logging_config',
-        'milia_pipeline.exceptions',
+        "milia_pipeline.logging_config",
+        "milia_pipeline.exceptions",
     ]
     for mock_module in mocks_to_remove:
         sys.modules.pop(mock_module, None)
@@ -1602,7 +1668,7 @@ def teardown_module():
 # MAIN TEST EXECUTION
 # ==============================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
@@ -1655,34 +1721,34 @@ if __name__ == '__main__':
     print("\nTEST AREA COVERAGE:")
     print("-" * 70)
     test_areas = [
-        ('TestHandlerLoggerAdapter', 'HandlerLoggerAdapter init & process'),
-        ('TestMigrationLoggerAdapter', 'MigrationLoggerAdapter init & process'),
-        ('TestTransformLoggerAdapter', 'TransformLoggerAdapter init & process'),
-        ('TestSetupLogging', 'setup_logging() configuration'),
-        ('TestConfigureThirdPartyLoggers', '_configure_third_party_loggers()'),
-        ('TestSetupHandlerLoggers', '_setup_handler_loggers()'),
-        ('TestSetupMigrationLoggers', '_setup_migration_loggers()'),
-        ('TestSetupTransformLoggers', '_setup_transform_loggers()'),
-        ('TestCreateHandlerLogger', 'create_handler_logger() factory'),
-        ('TestCreateMigrationLogger', 'create_migration_logger() factory'),
-        ('TestCreateTransformLogger', 'create_transform_logger() factory'),
-        ('TestLogHandlerOperationDecorator', 'log_handler_operation() decorator'),
-        ('TestLogMigrationStepDecorator', 'log_migration_step() decorator'),
-        ('TestLogTransformOperationDecorator', 'log_transform_operation() decorator'),
-        ('TestLogHandlerPerformance', 'log_handler_performance()'),
-        ('TestLogTransformPerformance', 'log_transform_performance()'),
-        ('TestLoggerRetrievalFunctions', 'Logger retrieval functions'),
-        ('TestLogExceptionWithContext', 'log_exception_with_context()'),
-        ('TestLogExperimentalSetupSwitch', 'log_experimental_setup_switch()'),
-        ('TestLogTransformValidationResults', 'log_transform_validation_results()'),
-        ('TestLogTransformCompositionSummary', 'log_transform_composition_summary()'),
-        ('TestConfigureDebugLoggingForHandlers', 'configure_debug_logging_for_handlers()'),
-        ('TestConfigureDebugLoggingForTransforms', 'configure_debug_logging_for_transforms()'),
-        ('TestDisableVerboseThirdPartyLogging', 'disable_verbose_third_party_logging()'),
-        ('TestCreateExperimentalSetupHash', 'create_experimental_setup_hash()'),
-        ('TestLogExperimentalSetupSummary', 'log_experimental_setup_summary()'),
-        ('TestSetupBasicLogging', 'setup_basic_logging() backward compat'),
-        ('TestEdgeCasesAndBoundaryConditions', 'Edge cases & boundary conditions'),
+        ("TestHandlerLoggerAdapter", "HandlerLoggerAdapter init & process"),
+        ("TestMigrationLoggerAdapter", "MigrationLoggerAdapter init & process"),
+        ("TestTransformLoggerAdapter", "TransformLoggerAdapter init & process"),
+        ("TestSetupLogging", "setup_logging() configuration"),
+        ("TestConfigureThirdPartyLoggers", "_configure_third_party_loggers()"),
+        ("TestSetupHandlerLoggers", "_setup_handler_loggers()"),
+        ("TestSetupMigrationLoggers", "_setup_migration_loggers()"),
+        ("TestSetupTransformLoggers", "_setup_transform_loggers()"),
+        ("TestCreateHandlerLogger", "create_handler_logger() factory"),
+        ("TestCreateMigrationLogger", "create_migration_logger() factory"),
+        ("TestCreateTransformLogger", "create_transform_logger() factory"),
+        ("TestLogHandlerOperationDecorator", "log_handler_operation() decorator"),
+        ("TestLogMigrationStepDecorator", "log_migration_step() decorator"),
+        ("TestLogTransformOperationDecorator", "log_transform_operation() decorator"),
+        ("TestLogHandlerPerformance", "log_handler_performance()"),
+        ("TestLogTransformPerformance", "log_transform_performance()"),
+        ("TestLoggerRetrievalFunctions", "Logger retrieval functions"),
+        ("TestLogExceptionWithContext", "log_exception_with_context()"),
+        ("TestLogExperimentalSetupSwitch", "log_experimental_setup_switch()"),
+        ("TestLogTransformValidationResults", "log_transform_validation_results()"),
+        ("TestLogTransformCompositionSummary", "log_transform_composition_summary()"),
+        ("TestConfigureDebugLoggingForHandlers", "configure_debug_logging_for_handlers()"),
+        ("TestConfigureDebugLoggingForTransforms", "configure_debug_logging_for_transforms()"),
+        ("TestDisableVerboseThirdPartyLogging", "disable_verbose_third_party_logging()"),
+        ("TestCreateExperimentalSetupHash", "create_experimental_setup_hash()"),
+        ("TestLogExperimentalSetupSummary", "log_experimental_setup_summary()"),
+        ("TestSetupBasicLogging", "setup_basic_logging() backward compat"),
+        ("TestEdgeCasesAndBoundaryConditions", "Edge cases & boundary conditions"),
     ]
     print(f"Test Classes: {len(test_areas)}")
     for cls_name, description in test_areas:

@@ -9,11 +9,11 @@ Version: 1.0.0
 """
 
 from .checkpoint_manager import (
-    CheckpointManager,
     CHECKPOINT_FORMAT_VERSION,
+    CheckpointManager,
 )
 
 __all__ = [
-    'CheckpointManager',
-    'CHECKPOINT_FORMAT_VERSION',
+    "CheckpointManager",
+    "CHECKPOINT_FORMAT_VERSION",
 ]

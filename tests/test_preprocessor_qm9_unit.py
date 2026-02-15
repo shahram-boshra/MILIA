@@ -32,30 +32,26 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import shutil
-import tempfile
-from typing import Dict, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.preprocessing.preprocessors.qm9 import QM9Preprocessor
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
-from milia_pipeline.preprocessing.registry import PreprocessorRegistry
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
-
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
+from milia_pipeline.preprocessing.preprocessors.qm9 import QM9Preprocessor
+from milia_pipeline.preprocessing.registry import PreprocessorRegistry
 
 # ============================================================================
 # HELPERS: Build realistic config and mock objects
 # ============================================================================
+
 
 def _make_config(**overrides):
     """
@@ -66,16 +62,18 @@ def _make_config(**overrides):
     - Optional: 'num_molecules', 'cleanup_temp'
     """
     config = {
-        'raw_archive_path': overrides.get('raw_archive_path', '/tmp/test_data/raw/dsgdb9nsd.xyz.tar.bz2'),
-        'output_npz_path': overrides.get('output_npz_path', '/tmp/test_data/processed/qm9.npz'),
+        "raw_archive_path": overrides.get(
+            "raw_archive_path", "/tmp/test_data/raw/dsgdb9nsd.xyz.tar.bz2"
+        ),
+        "output_npz_path": overrides.get("output_npz_path", "/tmp/test_data/processed/qm9.npz"),
     }
     # Only add optional keys if explicitly provided
-    for key in ['num_molecules', 'cleanup_temp']:
+    for key in ["num_molecules", "cleanup_temp"]:
         if key in overrides:
             config[key] = overrides[key]
     # Allow removing required keys for error path testing
     for key in list(config.keys()):
-        if overrides.get(f'_remove_{key}', False):
+        if overrides.get(f"_remove_{key}", False):
             del config[key]
     return config
 
@@ -126,8 +124,15 @@ def _path_exists_factory(archive_path_str, output_path_str, temp_dir=None):
     return exists_side_effect
 
 
-def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
-                              mock_rmtree, extract_return=None, parse_return=None):
+def _create_and_run_pipeline(
+    config,
+    mock_extract,
+    mock_parse,
+    mock_build,
+    mock_rmtree,
+    extract_return=None,
+    parse_return=None,
+):
     """
     Helper: create preprocessor with proper Path.exists handling and run preprocess.
 
@@ -140,7 +145,8 @@ def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
     mock_parse.return_value = parse_return or ({}, {})
 
     exists_fn = _path_exists_factory(
-        config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        config["raw_archive_path"], config["output_npz_path"], temp_dir
+    )
 
     with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
         preprocessor = _make_preprocessor(config=config)
@@ -152,6 +158,7 @@ def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
 # ============================================================================
 # GROUP 1: QM9Preprocessor — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestQM9PreprocessorIdentity(unittest.TestCase):
     """Test QM9Preprocessor identity, registration, and basic attributes."""
@@ -193,6 +200,7 @@ class TestQM9PreprocessorIdentity(unittest.TestCase):
 # GROUP 2: _validate_config — Success Paths (4 tests)
 # ============================================================================
 
+
 class TestValidateConfigSuccess(unittest.TestCase):
     """Test _validate_config success paths for valid configuration."""
 
@@ -220,6 +228,7 @@ class TestValidateConfigSuccess(unittest.TestCase):
 # ============================================================================
 # GROUP 3: _validate_config — Missing Required Keys (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMissingKeys(unittest.TestCase):
     """Test _validate_config error paths for missing required configuration keys."""
@@ -254,6 +263,7 @@ class TestValidateConfigMissingKeys(unittest.TestCase):
 # GROUP 4: _validate_config — Path Validation (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigPathValidation(unittest.TestCase):
     """Test _validate_config error paths for invalid file paths."""
 
@@ -282,35 +292,33 @@ class TestValidateConfigPathValidation(unittest.TestCase):
 # GROUP 5: _validate_config — Archive Extension Validation (4 tests)
 # ============================================================================
 
+
 class TestValidateConfigArchiveExtension(unittest.TestCase):
     """Test _validate_config behavior for various archive extensions."""
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_tar_bz2_extension_accepted(self, mock_exists):
         """Archive with .tar.bz2 extension passes validation without warning."""
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/archive.tar.bz2'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/archive.tar.bz2"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_tar_gz_extension_accepted(self, mock_exists):
         """Archive with .tar.gz extension passes validation without warning."""
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/archive.tar.gz'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/archive.tar.gz"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_tbz2_extension_accepted(self, mock_exists):
         """Archive with .tbz2 extension passes validation without warning."""
-        _make_preprocessor(config=_make_config(
-            raw_archive_path='/tmp/data/archive.tbz2'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/archive.tbz2"))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_unrecognized_extension_logs_warning(self, mock_exists):
         """Unrecognized archive extension logs warning but does not raise."""
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/archive.zip'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/archive.zip"), logger=logger
+            )
             mock_warn.assert_called_once()
             self.assertIn("not recognized", mock_warn.call_args[0][0].lower())
 
@@ -318,6 +326,7 @@ class TestValidateConfigArchiveExtension(unittest.TestCase):
 # ============================================================================
 # GROUP 6: _validate_config — num_molecules Validation (5 tests)
 # ============================================================================
+
 
 class TestValidateConfigNumMolecules(unittest.TestCase):
     """Test _validate_config error paths for invalid num_molecules values."""
@@ -356,6 +365,7 @@ class TestValidateConfigNumMolecules(unittest.TestCase):
 # GROUP 7: preprocess — Output Already Exists (Early Return) (4 tests)
 # ============================================================================
 
+
 class TestPreprocessOutputExists(unittest.TestCase):
     """Test preprocess() early return when output .npz already exists."""
 
@@ -365,18 +375,18 @@ class TestPreprocessOutputExists(unittest.TestCase):
         config = _make_config()
         preprocessor = _make_preprocessor(config=config)
 
-        with patch.object(Path, 'stat') as mock_stat:
+        with patch.object(Path, "stat") as mock_stat:
             mock_stat.return_value = Mock(st_size=1024 * 1024 * 50)
             result = preprocessor.preprocess()
 
-        self.assertEqual(result, Path(config['output_npz_path']))
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     def test_existing_output_skips_extraction(self, mock_extract, mock_exists):
         """When output .npz exists, extraction is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
             preprocessor.preprocess()
         mock_extract.assert_not_called()
 
@@ -385,7 +395,7 @@ class TestPreprocessOutputExists(unittest.TestCase):
     def test_existing_output_skips_parsing(self, mock_parse, mock_exists):
         """When output .npz exists, parsing is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
             preprocessor.preprocess()
         mock_parse.assert_not_called()
 
@@ -394,7 +404,7 @@ class TestPreprocessOutputExists(unittest.TestCase):
     def test_existing_output_skips_npz_build(self, mock_build, mock_exists):
         """When output .npz exists, NPZ building is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
             preprocessor.preprocess()
         mock_build.assert_not_called()
 
@@ -403,6 +413,7 @@ class TestPreprocessOutputExists(unittest.TestCase):
 # GROUP 8: preprocess — Full Pipeline Success (7 tests)
 # ============================================================================
 
+
 class TestPreprocessFullPipeline(unittest.TestCase):
     """Test preprocess() full pipeline execution with mocked dependencies."""
 
@@ -410,97 +421,116 @@ class TestPreprocessFullPipeline(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_full_pipeline_returns_output_path(self, mock_rmtree, mock_extract,
-                                                mock_parse, mock_build):
+    def test_full_pipeline_returns_output_path(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Full pipeline returns the configured output_npz_path."""
         config = _make_config()
         _, result = _create_and_run_pipeline(
-            config, mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(result, Path(config['output_npz_path']))
+            config, mock_extract, mock_parse, mock_build, mock_rmtree
+        )
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_extract_called_with_archive_path(self, mock_rmtree, mock_extract,
-                                               mock_parse, mock_build):
+    def test_extract_called_with_archive_path(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Step 1: extract_from_archive called with correct archive_path."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build, mock_rmtree)
         mock_extract.assert_called_once()
         call_kwargs = mock_extract.call_args.kwargs
-        self.assertEqual(call_kwargs.get('archive_path'), Path(config['raw_archive_path']))
+        self.assertEqual(call_kwargs.get("archive_path"), Path(config["raw_archive_path"]))
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_extract_called_with_xyz_extension(self, mock_rmtree, mock_extract,
-                                                mock_parse, mock_build):
+    def test_extract_called_with_xyz_extension(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Step 1: extract_from_archive called with file_extension='.xyz'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_extract.call_args.kwargs.get('file_extension'), '.xyz')
+        self.assertEqual(mock_extract.call_args.kwargs.get("file_extension"), ".xyz")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_extract_passes_num_molecules_as_max_files(self, mock_rmtree, mock_extract,
-                                                         mock_parse, mock_build):
+    def test_extract_passes_num_molecules_as_max_files(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Step 1: num_molecules is passed as max_files to extract_from_archive."""
         _create_and_run_pipeline(
-            _make_config(num_molecules=50), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_extract.call_args.kwargs.get('max_files'), 50)
+            _make_config(num_molecules=50), mock_extract, mock_parse, mock_build, mock_rmtree
+        )
+        self.assertEqual(mock_extract.call_args.kwargs.get("max_files"), 50)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_parse_called_with_temp_dir(self, mock_rmtree, mock_extract,
-                                         mock_parse, mock_build):
+    def test_parse_called_with_temp_dir(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Step 2: parse_qm9_xyz_files called with extracted temp directory."""
         temp_dir = Path("/tmp/test_extract_unique")
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build, mock_rmtree,
-            extract_return=temp_dir)
-        self.assertEqual(mock_parse.call_args.kwargs.get('xyz_dir'), temp_dir)
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            mock_rmtree,
+            extract_return=temp_dir,
+        )
+        self.assertEqual(mock_parse.call_args.kwargs.get("xyz_dir"), temp_dir)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_parse_called_with_max_molecules(self, mock_rmtree, mock_extract,
-                                               mock_parse, mock_build):
+    def test_parse_called_with_max_molecules(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Step 2: parse_qm9_xyz_files called with correct max_molecules."""
         _create_and_run_pipeline(
-            _make_config(num_molecules=200), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_parse.call_args.kwargs.get('max_molecules'), 200)
+            _make_config(num_molecules=200), mock_extract, mock_parse, mock_build, mock_rmtree
+        )
+        self.assertEqual(mock_parse.call_args.kwargs.get("max_molecules"), 200)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_build_npz_called_with_features_and_metadata(self, mock_rmtree, mock_extract,
-                                                           mock_parse, mock_build):
+    def test_build_npz_called_with_features_and_metadata(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Step 3: build_npz called with features and comprehensive metadata."""
         features = {"atoms": ["C", "H"]}
         parse_metadata = {"num_molecules": 2}
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build,
-            mock_rmtree, parse_return=(features, parse_metadata))
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            mock_rmtree,
+            parse_return=(features, parse_metadata),
+        )
 
         mock_build.assert_called_once()
         kw = mock_build.call_args.kwargs
-        self.assertIs(kw.get('features'), features)
-        metadata = kw.get('metadata')
-        self.assertEqual(metadata.get('version'), '1.0')
-        self.assertEqual(metadata.get('dataset_name'), 'QM9')
-        self.assertEqual(metadata.get('num_molecules'), 2)
+        self.assertIs(kw.get("features"), features)
+        metadata = kw.get("metadata")
+        self.assertEqual(metadata.get("version"), "1.0")
+        self.assertEqual(metadata.get("dataset_name"), "QM9")
+        self.assertEqual(metadata.get("num_molecules"), 2)
 
 
 # ============================================================================
 # GROUP 9: preprocess — Cleanup Behavior (6 tests)
 # ============================================================================
+
 
 class TestPreprocessCleanup(unittest.TestCase):
     """Test preprocess() cleanup behavior on success and error."""
@@ -509,37 +539,38 @@ class TestPreprocessCleanup(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_cleanup_on_success_when_enabled(self, mock_rmtree, mock_extract,
-                                               mock_parse, mock_build):
+    def test_cleanup_on_success_when_enabled(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Temp dir cleaned up on success when cleanup_temp=True (default)."""
         config = _make_config()
         temp_dir = Path("/tmp/test_extract")
-        _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
-                                  mock_rmtree, extract_return=temp_dir)
+        _create_and_run_pipeline(
+            config, mock_extract, mock_parse, mock_build, mock_rmtree, extract_return=temp_dir
+        )
         mock_rmtree.assert_called_once_with(temp_dir)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_no_cleanup_when_disabled(self, mock_rmtree, mock_extract,
-                                        mock_parse, mock_build):
+    def test_no_cleanup_when_disabled(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Temp dir NOT cleaned up when cleanup_temp=False."""
         _create_and_run_pipeline(
-            _make_config(cleanup_temp=False), mock_extract, mock_parse, mock_build, mock_rmtree)
+            _make_config(cleanup_temp=False), mock_extract, mock_parse, mock_build, mock_rmtree
+        )
         mock_rmtree.assert_not_called()
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_cleanup_on_extraction_error(self, mock_rmtree, mock_extract,
-                                           mock_parse, mock_build):
+    def test_cleanup_on_extraction_error(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """No cleanup attempted when extraction fails (temp_dir is None)."""
         config = _make_config()
         mock_extract.side_effect = RuntimeError("Extraction failed")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -551,15 +582,16 @@ class TestPreprocessCleanup(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_cleanup_on_parse_error(self, mock_rmtree, mock_extract,
-                                      mock_parse, mock_build):
+    def test_cleanup_on_parse_error(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Temp dir cleaned up when parsing fails and cleanup_temp=True."""
         config = _make_config()
         temp_dir = Path("/tmp/test_extract")
         mock_extract.return_value = temp_dir
         mock_parse.side_effect = RuntimeError("Parse failed")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -571,8 +603,7 @@ class TestPreprocessCleanup(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_cleanup_on_build_npz_error(self, mock_rmtree, mock_extract,
-                                          mock_parse, mock_build):
+    def test_cleanup_on_build_npz_error(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Temp dir cleaned up when build_npz fails and cleanup_temp=True."""
         config = _make_config()
         temp_dir = Path("/tmp/test_extract")
@@ -580,7 +611,9 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_parse.return_value = ({}, {})
         mock_build.side_effect = RuntimeError("Build failed")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -592,8 +625,9 @@ class TestPreprocessCleanup(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_cleanup_failure_does_not_mask_original_error(self, mock_rmtree, mock_extract,
-                                                            mock_parse, mock_build):
+    def test_cleanup_failure_does_not_mask_original_error(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """If cleanup itself fails during error handling, original error is still raised."""
         config = _make_config()
         temp_dir = Path("/tmp/test_extract")
@@ -601,7 +635,9 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_parse.side_effect = RuntimeError("Parse failed")
         mock_rmtree.side_effect = OSError("Cleanup failed")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -615,6 +651,7 @@ class TestPreprocessCleanup(unittest.TestCase):
 # GROUP 10: preprocess — Error Wrapping (5 tests)
 # ============================================================================
 
+
 class TestPreprocessErrorWrapping(unittest.TestCase):
     """Test preprocess() wraps all exceptions in DataProcessingError."""
 
@@ -625,7 +662,7 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         config = _make_config()
         mock_extract.side_effect = RuntimeError("Archive corrupt")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -643,7 +680,9 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         mock_extract.return_value = temp_dir
         mock_parse.side_effect = ValueError("Invalid XYZ format")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -659,9 +698,11 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         temp_dir = Path("/tmp/test_extract")
         mock_extract.return_value = temp_dir
         mock_parse.return_value = ({}, {})
-        mock_build.side_effect = IOError("Disk full")
+        mock_build.side_effect = OSError("Disk full")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError):
@@ -675,7 +716,7 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         original_error = RuntimeError("Original error")
         mock_extract.side_effect = original_error
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -689,7 +730,7 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         config = _make_config()
         mock_extract.side_effect = RuntimeError("fail")
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -701,6 +742,7 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
 # GROUP 11: preprocess — Metadata Construction (7 tests)
 # ============================================================================
 
+
 class TestPreprocessMetadata(unittest.TestCase):
     """Test preprocess() constructs correct metadata for NPZ."""
 
@@ -711,16 +753,18 @@ class TestPreprocessMetadata(unittest.TestCase):
     def test_metadata_includes_version(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """NPZ metadata includes version='1.0'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['version'], '1.0')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["version"], "1.0")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_includes_dataset_name(self, mock_rmtree, mock_extract, mock_parse, mock_build):
+    def test_metadata_includes_dataset_name(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """NPZ metadata includes dataset_name='QM9'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['dataset_name'], 'QM9')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["dataset_name"], "QM9")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -729,7 +773,7 @@ class TestPreprocessMetadata(unittest.TestCase):
     def test_metadata_includes_parser(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """NPZ metadata includes parser='qm9_xyz_parser'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['parser'], 'qm9_xyz_parser')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["parser"], "qm9_xyz_parser")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -738,51 +782,56 @@ class TestPreprocessMetadata(unittest.TestCase):
     def test_metadata_includes_source_url(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """NPZ metadata includes Figshare source URL."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['source_url'], 'https://figshare.com/ndownloader/files/3195389')
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["source_url"], "https://figshare.com/ndownloader/files/3195389")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_includes_coordinate_and_energy_units(self, mock_rmtree, mock_extract,
-                                                             mock_parse, mock_build):
+    def test_metadata_includes_coordinate_and_energy_units(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """NPZ metadata includes coordinate_units='angstrom' and energy_units='hartree'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['coordinate_units'], 'angstrom')
-        self.assertEqual(metadata['energy_units'], 'hartree')
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["coordinate_units"], "angstrom")
+        self.assertEqual(metadata["energy_units"], "hartree")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_includes_doi_and_reference(self, mock_rmtree, mock_extract,
-                                                    mock_parse, mock_build):
+    def test_metadata_includes_doi_and_reference(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """NPZ metadata includes DOI and reference."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['doi'], '10.1038/sdata.2014.22')
-        self.assertIn('Ramakrishnan', metadata['reference'])
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["doi"], "10.1038/sdata.2014.22")
+        self.assertIn("Ramakrishnan", metadata["reference"])
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_merges_parse_metadata(self, mock_rmtree, mock_extract, mock_parse, mock_build):
+    def test_metadata_merges_parse_metadata(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """NPZ metadata merges parse_metadata from parse_qm9_xyz_files."""
         pm = {"num_molecules_parsed": 42, "num_skipped": 3}
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build, mock_rmtree,
-            parse_return=({}, pm))
-        metadata = mock_build.call_args.kwargs['metadata']
-        self.assertEqual(metadata['num_molecules_parsed'], 42)
-        self.assertEqual(metadata['num_skipped'], 3)
+            _make_config(), mock_extract, mock_parse, mock_build, mock_rmtree, parse_return=({}, pm)
+        )
+        metadata = mock_build.call_args.kwargs["metadata"]
+        self.assertEqual(metadata["num_molecules_parsed"], 42)
+        self.assertEqual(metadata["num_skipped"], 3)
 
 
 # ============================================================================
 # GROUP 12: preprocess — Default Values (4 tests)
 # ============================================================================
+
 
 class TestPreprocessDefaults(unittest.TestCase):
     """Test preprocess() uses correct defaults for optional config keys."""
@@ -794,7 +843,7 @@ class TestPreprocessDefaults(unittest.TestCase):
     def test_default_num_molecules_is_none(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Default num_molecules is None (extract all)."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertIsNone(mock_extract.call_args.kwargs.get('max_files'))
+        self.assertIsNone(mock_extract.call_args.kwargs.get("max_files"))
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -809,27 +858,35 @@ class TestPreprocessDefaults(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_source_from_archive_name(self, mock_rmtree, mock_extract, mock_parse, mock_build):
+    def test_metadata_source_from_archive_name(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Metadata 'source' field uses archive file name."""
         _create_and_run_pipeline(
-            _make_config(raw_archive_path='/data/raw/dsgdb9nsd.xyz.tar.bz2'),
-            mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs['metadata']['source'], 'dsgdb9nsd.xyz.tar.bz2')
+            _make_config(raw_archive_path="/data/raw/dsgdb9nsd.xyz.tar.bz2"),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            mock_rmtree,
+        )
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["source"], "dsgdb9nsd.xyz.tar.bz2")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_default_num_molecules_none_passed_to_parser(self, mock_rmtree, mock_extract,
-                                                           mock_parse, mock_build):
+    def test_default_num_molecules_none_passed_to_parser(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Default num_molecules=None is passed to parse_qm9_xyz_files as max_molecules."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertIsNone(mock_parse.call_args.kwargs.get('max_molecules'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("max_molecules"))
 
 
 # ============================================================================
 # GROUP 13: preprocess — Pipeline Step Ordering (3 tests)
 # ============================================================================
+
 
 class TestPreprocessStepOrdering(unittest.TestCase):
     """Test preprocess() executes pipeline steps in correct order."""
@@ -845,27 +902,32 @@ class TestPreprocessStepOrdering(unittest.TestCase):
         temp_dir = Path("/tmp/test_extract")
 
         def track_extract(**kw):
-            call_order.append('extract')
+            call_order.append("extract")
             return temp_dir
+
         def track_parse(**kw):
-            call_order.append('parse')
+            call_order.append("parse")
             return ({}, {})
+
         def track_build(**kw):
-            call_order.append('build')
+            call_order.append("build")
+
         def track_rmtree(path):
-            call_order.append('cleanup')
+            call_order.append("cleanup")
 
         mock_extract.side_effect = track_extract
         mock_parse.side_effect = track_parse
         mock_build.side_effect = track_build
         mock_rmtree.side_effect = track_rmtree
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             preprocessor.preprocess()
 
-        self.assertEqual(call_order, ['extract', 'parse', 'build', 'cleanup'])
+        self.assertEqual(call_order, ["extract", "parse", "build", "cleanup"])
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -875,9 +937,14 @@ class TestPreprocessStepOrdering(unittest.TestCase):
         """Step 2 receives the temp directory returned by Step 1."""
         expected_dir = Path("/tmp/unique_extract_dir_12345")
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build, mock_rmtree,
-            extract_return=expected_dir)
-        self.assertEqual(mock_parse.call_args.kwargs.get('xyz_dir'), expected_dir)
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            mock_rmtree,
+            extract_return=expected_dir,
+        )
+        self.assertEqual(mock_parse.call_args.kwargs.get("xyz_dir"), expected_dir)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -887,14 +954,20 @@ class TestPreprocessStepOrdering(unittest.TestCase):
         """Step 3 receives features and metadata from Step 2."""
         expected_features = {"atomic_numbers": [6, 1, 1]}
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build, mock_rmtree,
-            parse_return=(expected_features, {"count": 3}))
-        self.assertIs(mock_build.call_args.kwargs.get('features'), expected_features)
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            mock_rmtree,
+            parse_return=(expected_features, {"count": 3}),
+        )
+        self.assertIs(mock_build.call_args.kwargs.get("features"), expected_features)
 
 
 # ============================================================================
 # GROUP 14: BasePreprocessor Integration — run() Method (5 tests)
 # ============================================================================
+
 
 class TestBasePreprocessorRunIntegration(unittest.TestCase):
     """Test QM9Preprocessor works with BasePreprocessor.run() method."""
@@ -911,17 +984,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         call_order = []
 
         def mock_preprocess():
-            call_order.append('preprocess')
+            call_order.append("preprocess")
             return Path("/tmp/test_output.npz")
 
         def mock_validate_output(path):
-            call_order.append('validate_output')
+            call_order.append("validate_output")
 
-        with patch.object(preprocessor, 'preprocess', side_effect=mock_preprocess):
-            with patch.object(preprocessor, '_validate_output', side_effect=mock_validate_output):
+        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
+            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
                 preprocessor.run()
 
-        self.assertEqual(call_order, ['preprocess', 'validate_output'])
+        self.assertEqual(call_order, ["preprocess", "validate_output"])
 
     def test_run_raises_on_invalid_config(self):
         """Construction raises ConfigurationError when config is invalid."""
@@ -932,9 +1005,8 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
     def test_run_calls_preprocess(self, mock_exists):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, 'stat', return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, 'preprocess',
-                              wraps=preprocessor.preprocess) as mock_pp:
+        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
+            with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
                 try:
                     preprocessor.run()
                 except Exception:
@@ -943,16 +1015,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
 
     def test_has_run_method_from_base(self):
         """QM9Preprocessor inherits run() from BasePreprocessor."""
-        self.assertTrue(hasattr(QM9Preprocessor, 'run'))
+        self.assertTrue(hasattr(QM9Preprocessor, "run"))
 
     def test_has_validate_output_from_base(self):
         """QM9Preprocessor inherits _validate_output() from BasePreprocessor."""
-        self.assertTrue(hasattr(QM9Preprocessor, '_validate_output'))
+        self.assertTrue(hasattr(QM9Preprocessor, "_validate_output"))
 
 
 # ============================================================================
 # GROUP 15: Edge Cases and Robustness (7 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndRobustness(unittest.TestCase):
     """Test edge cases and robustness scenarios."""
@@ -971,43 +1044,44 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_preprocess_with_all_config_options(self, mock_rmtree, mock_extract,
-                                                   mock_parse, mock_build):
+    def test_preprocess_with_all_config_options(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Pipeline works with all optional config options specified."""
         config = _make_config(num_molecules=50, cleanup_temp=False)
         _, result = _create_and_run_pipeline(
-            config, mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(result, Path(config['output_npz_path']))
+            config, mock_extract, mock_parse, mock_build, mock_rmtree
+        )
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_config_with_extra_unknown_keys_still_valid(self, mock_exists):
         """Config with extra unknown keys does not cause validation errors."""
         config = _make_config()
-        config['extra_key'] = 'extra_value'
+        config["extra_key"] = "extra_value"
         _make_preprocessor(config=config)
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_file_format_is_xyz(self, mock_rmtree, mock_extract,
-                                           mock_parse, mock_build):
+    def test_metadata_file_format_is_xyz(self, mock_rmtree, mock_extract, mock_parse, mock_build):
         """Metadata includes file_format='.xyz (extended QM9 format)'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
         self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['file_format'],
-            '.xyz (extended QM9 format)')
+            mock_build.call_args.kwargs["metadata"]["file_format"], ".xyz (extended QM9 format)"
+        )
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
-    def test_metadata_preprocessing_version(self, mock_rmtree, mock_extract,
-                                               mock_parse, mock_build):
+    def test_metadata_preprocessing_version(
+        self, mock_rmtree, mock_extract, mock_parse, mock_build
+    ):
         """Metadata includes preprocessing_version='1.0'."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(
-            mock_build.call_args.kwargs['metadata']['preprocessing_version'], '1.0')
+        self.assertEqual(mock_build.call_args.kwargs["metadata"]["preprocessing_version"], "1.0")
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -1020,17 +1094,20 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         mock_extract.return_value = temp_dir
         mock_parse.return_value = ({}, {})
 
-        exists_fn = _path_exists_factory(config['raw_archive_path'], config['output_npz_path'], temp_dir)
+        exists_fn = _path_exists_factory(
+            config["raw_archive_path"], config["output_npz_path"], temp_dir
+        )
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             preprocessor.preprocess()
 
-        self.assertIs(mock_parse.call_args.kwargs.get('logger'), preprocessor.logger)
+        self.assertIs(mock_parse.call_args.kwargs.get("logger"), preprocessor.logger)
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1038,21 +1115,21 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestQM9PreprocessorIdentity,          # GROUP 1:   6 tests
-        TestValidateConfigSuccess,             # GROUP 2:   4 tests
-        TestValidateConfigMissingKeys,         # GROUP 3:   4 tests
-        TestValidateConfigPathValidation,      # GROUP 4:   3 tests
-        TestValidateConfigArchiveExtension,    # GROUP 5:   4 tests
-        TestValidateConfigNumMolecules,        # GROUP 6:   5 tests
-        TestPreprocessOutputExists,            # GROUP 7:   4 tests
-        TestPreprocessFullPipeline,            # GROUP 8:   7 tests
-        TestPreprocessCleanup,                 # GROUP 9:   6 tests
-        TestPreprocessErrorWrapping,           # GROUP 10:  5 tests
-        TestPreprocessMetadata,                # GROUP 11:  7 tests
-        TestPreprocessDefaults,                # GROUP 12:  4 tests
-        TestPreprocessStepOrdering,            # GROUP 13:  3 tests
-        TestBasePreprocessorRunIntegration,    # GROUP 14:  5 tests
-        TestEdgeCasesAndRobustness,            # GROUP 15:  7 tests
+        TestQM9PreprocessorIdentity,  # GROUP 1:   6 tests
+        TestValidateConfigSuccess,  # GROUP 2:   4 tests
+        TestValidateConfigMissingKeys,  # GROUP 3:   4 tests
+        TestValidateConfigPathValidation,  # GROUP 4:   3 tests
+        TestValidateConfigArchiveExtension,  # GROUP 5:   4 tests
+        TestValidateConfigNumMolecules,  # GROUP 6:   5 tests
+        TestPreprocessOutputExists,  # GROUP 7:   4 tests
+        TestPreprocessFullPipeline,  # GROUP 8:   7 tests
+        TestPreprocessCleanup,  # GROUP 9:   6 tests
+        TestPreprocessErrorWrapping,  # GROUP 10:  5 tests
+        TestPreprocessMetadata,  # GROUP 11:  7 tests
+        TestPreprocessDefaults,  # GROUP 12:  4 tests
+        TestPreprocessStepOrdering,  # GROUP 13:  3 tests
+        TestBasePreprocessorRunIntegration,  # GROUP 14:  5 tests
+        TestEdgeCasesAndRobustness,  # GROUP 15:  7 tests
     ]
 
     for test_class in test_classes:

@@ -54,7 +54,7 @@ logger = logging.getLogger("milia_Main.PluginSystem")
 _lock = threading.Lock()
 
 # Dynamic discovery caches
-_discovered_subplugins: Optional[Dict[str, Any]] = None
+_discovered_subplugins: dict[str, Any] | None = None
 _discovery_attempted: bool = False
 
 
@@ -62,7 +62,8 @@ _discovery_attempted: bool = False
 # Dynamic Sub-Plugin Discovery
 # ──────────────────────────────────────────────────────────────────────
 
-def _discover_subplugins() -> Dict[str, Any]:
+
+def _discover_subplugins() -> dict[str, Any]:
     """
     Dynamically discover all importable sub-plugin packages under this directory.
 
@@ -111,7 +112,7 @@ def _discover_subplugins() -> Dict[str, Any]:
         return _discovered_subplugins
 
 
-def _get_subplugin_module(name: str) -> Optional[Any]:
+def _get_subplugin_module(name: str) -> Any | None:
     """
     Lazily import and cache a sub-plugin module by name.
 
@@ -154,6 +155,7 @@ def _get_subplugin_module(name: str) -> Optional[Any]:
 # Module-level __getattr__ for lazy sub-plugin access
 # ──────────────────────────────────────────────────────────────────────
 
+
 def __getattr__(name: str) -> Any:
     """
     Enable lazy attribute access to sub-plugin packages.
@@ -194,7 +196,8 @@ def __getattr__(name: str) -> Any:
 # Unified Plugin Management API
 # ──────────────────────────────────────────────────────────────────────
 
-def list_subplugins() -> List[str]:
+
+def list_subplugins() -> list[str]:
     """
     List all discovered plugin sub-packages.
 
@@ -208,7 +211,7 @@ def list_subplugins() -> List[str]:
     return sorted(_discover_subplugins().keys())
 
 
-def get_subplugin_info(name: str) -> Optional[Dict[str, Any]]:
+def get_subplugin_info(name: str) -> dict[str, Any] | None:
     """
     Get information about a specific sub-plugin.
 
@@ -226,20 +229,20 @@ def get_subplugin_info(name: str) -> Optional[Dict[str, Any]]:
         return None
 
     # Prefer get_plugin_info() — present in pyg_augmentation and extensible
-    if hasattr(module, 'get_plugin_info'):
+    if hasattr(module, "get_plugin_info"):
         try:
             return module.get_plugin_info()
         except Exception as e:
             logger.warning(f"get_plugin_info() failed for '{name}': {e}")
 
     # Fallback to PLUGIN_METADATA dict — present in both pyg_augmentation and myplugins
-    if hasattr(module, 'PLUGIN_METADATA'):
-        return {'metadata': dict(module.PLUGIN_METADATA)}
+    if hasattr(module, "PLUGIN_METADATA"):
+        return {"metadata": dict(module.PLUGIN_METADATA)}
 
-    return {'metadata': {'name': name, 'status': 'loaded'}}
+    return {"metadata": {"name": name, "status": "loaded"}}
 
 
-def get_all_plugin_info() -> Dict[str, Dict[str, Any]]:
+def get_all_plugin_info() -> dict[str, dict[str, Any]]:
     """
     Get information about all discovered sub-plugins.
 
@@ -271,7 +274,7 @@ def enable_subplugin(name: str) -> bool:
         logger.error(f"Cannot enable sub-plugin '{name}': not found or not loadable")
         return False
 
-    if hasattr(module, 'enable_plugin'):
+    if hasattr(module, "enable_plugin"):
         try:
             return module.enable_plugin()
         except Exception as e:
@@ -299,7 +302,7 @@ def disable_subplugin(name: str) -> bool:
         logger.warning(f"Cannot disable sub-plugin '{name}': not found or not loadable")
         return False
 
-    if hasattr(module, 'disable_plugin'):
+    if hasattr(module, "disable_plugin"):
         try:
             return module.disable_plugin()
         except Exception as e:
@@ -310,7 +313,7 @@ def disable_subplugin(name: str) -> bool:
     return True
 
 
-def get_subplugin_transforms(name: str) -> List[str]:
+def get_subplugin_transforms(name: str) -> list[str]:
     """
     List available transforms from a specific sub-plugin.
 
@@ -328,14 +331,14 @@ def get_subplugin_transforms(name: str) -> List[str]:
         return []
 
     # pyg_augmentation uses list_transforms()
-    if hasattr(module, 'list_transforms'):
+    if hasattr(module, "list_transforms"):
         try:
             return module.list_transforms()
         except Exception as e:
             logger.warning(f"list_transforms() failed for '{name}': {e}")
 
     # myplugins uses list_available_transforms()
-    if hasattr(module, 'list_available_transforms'):
+    if hasattr(module, "list_available_transforms"):
         try:
             return module.list_available_transforms()
         except Exception as e:
@@ -344,7 +347,7 @@ def get_subplugin_transforms(name: str) -> List[str]:
     return []
 
 
-def get_transform(name: str, transform_name: str) -> Optional[Type]:
+def get_transform(name: str, transform_name: str) -> type | None:
     """
     Get a specific transform class from a sub-plugin.
 
@@ -361,13 +364,11 @@ def get_transform(name: str, transform_name: str) -> Optional[Type]:
     if module is None:
         return None
 
-    if hasattr(module, 'get_transform'):
+    if hasattr(module, "get_transform"):
         try:
             return module.get_transform(transform_name)
         except Exception as e:
-            logger.warning(
-                f"get_transform('{transform_name}') failed for '{name}': {e}"
-            )
+            logger.warning(f"get_transform('{transform_name}') failed for '{name}': {e}")
 
     # Fallback: try direct attribute access (consistent with __getattr__ in myplugins)
     try:
@@ -402,7 +403,7 @@ def get_descriptor_plugins_directory() -> Path:
     return Path(__file__).parent / "descriptors"
 
 
-def get_system_status() -> Dict[str, Any]:
+def get_system_status() -> dict[str, Any]:
     """
     Get comprehensive status of the plugins sub-package.
 
@@ -417,18 +418,18 @@ def get_system_status() -> Dict[str, Any]:
         if info is not None:
             plugin_info[name] = info
         else:
-            plugin_info[name] = {'status': 'discovered_but_not_loadable'}
+            plugin_info[name] = {"status": "discovered_but_not_loadable"}
 
     return {
-        'version': __version__,
-        'plugins_directory': str(get_plugins_directory()),
-        'descriptor_plugins_directory': str(get_descriptor_plugins_directory()),
-        'discovery': {
-            'attempted': _discovery_attempted,
-            'subplugins_found': len(subplugins),
-            'subplugin_names': sorted(subplugins.keys()),
+        "version": __version__,
+        "plugins_directory": str(get_plugins_directory()),
+        "descriptor_plugins_directory": str(get_descriptor_plugins_directory()),
+        "discovery": {
+            "attempted": _discovery_attempted,
+            "subplugins_found": len(subplugins),
+            "subplugin_names": sorted(subplugins.keys()),
         },
-        'subplugins': plugin_info,
+        "subplugins": plugin_info,
     }
 
 
@@ -438,26 +439,21 @@ def get_system_status() -> Dict[str, Any]:
 
 __all__ = [
     # Metadata
-    '__version__',
-    '__author__',
-
+    "__version__",
+    "__author__",
     # Discovery
-    'list_subplugins',
-    'get_subplugin_info',
-    'get_all_plugin_info',
-
+    "list_subplugins",
+    "get_subplugin_info",
+    "get_all_plugin_info",
     # Plugin lifecycle
-    'enable_subplugin',
-    'disable_subplugin',
-
+    "enable_subplugin",
+    "disable_subplugin",
     # Transform access
-    'get_subplugin_transforms',
-    'get_transform',
-
+    "get_subplugin_transforms",
+    "get_transform",
     # Directory paths
-    'get_plugins_directory',
-    'get_descriptor_plugins_directory',
-
+    "get_plugins_directory",
+    "get_descriptor_plugins_directory",
     # System status
-    'get_system_status',
+    "get_system_status",
 ]

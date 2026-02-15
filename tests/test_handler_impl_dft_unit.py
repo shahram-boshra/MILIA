@@ -28,15 +28,11 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
-import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -47,29 +43,27 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.dft import DFTDatasetHandler
-from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
-    DatasetSpecificHandlerError,
-)
 from milia_pipeline.config.config_constants import (
     ATOMIC_ENERGIES_HARTREE,
     HAR2EV,
 )
-
+from milia_pipeline.exceptions import (
+    DatasetSpecificHandlerError,
+    HandlerConfigurationError,
+    HandlerValidationError,
+    PropertyEnrichmentError,
+)
+from milia_pipeline.handlers.implementations.dft import DFTDatasetHandler
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for DFTDatasetHandler
 # ============================================================================
 
+
 def _make_dataset_config(**overrides):
     """
     Build a minimal mock DatasetConfig for DFT handler tests.
-    
+
     Based on project structure: DatasetConfig is a Pydantic frozen BaseModel.
     The handler accesses dataset_config attributes but primarily relies on
     processing_config for property lists.
@@ -84,20 +78,20 @@ def _make_dataset_config(**overrides):
 def _make_filter_config(**overrides):
     """
     Build a minimal mock FilterConfig for DFT handler tests.
-    
+
     Based on project structure: FilterConfig is a Pydantic frozen BaseModel.
     """
     cfg = Mock(name="FilterConfig")
     cfg.max_atoms = overrides.get("max_atoms", 100)
     cfg.min_atoms = overrides.get("min_atoms", 1)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     return cfg
 
 
 def _make_processing_config(**overrides):
     """
     Build a minimal mock ProcessingConfig for DFT handler tests.
-    
+
     Based on project structure: ProcessingConfig is a Pydantic frozen BaseModel.
     The DFT handler heavily uses:
     - scalar_graph_targets: List[str]
@@ -114,17 +108,19 @@ def _make_processing_config(**overrides):
     cfg.node_features = overrides.get("node_features", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
-    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from", None)
-    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name", None)
-    cfg.vibration_refinement = overrides.get("vibration_refinement", None)
-    cfg.common_required_properties = overrides.get("common_required_properties", ["atoms", "coordinates"])
+    cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from")
+    cfg.atomization_energy_key_name = overrides.get("atomization_energy_key_name")
+    cfg.vibration_refinement = overrides.get("vibration_refinement")
+    cfg.common_required_properties = overrides.get(
+        "common_required_properties", ["atoms", "coordinates"]
+    )
     return cfg
 
 
 def _make_handler(**overrides):
     """
     Build a DFTDatasetHandler instance with configurable mocked configs.
-    
+
     Based on DatasetHandler ABC constructor signature:
     __init__(dataset_config, filter_config, processing_config, logger, experimental_setup=None)
     """
@@ -132,7 +128,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.dft"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = DFTDatasetHandler(
         dataset_config=dataset_config,
@@ -147,7 +143,7 @@ def _make_handler(**overrides):
 def _make_pyg_data(**overrides):
     """
     Build a minimal PyG Data object for DFT enrichment tests.
-    
+
     DFT molecules typically have:
     - z: atomic numbers tensor
     - pos: 3D coordinates tensor
@@ -157,12 +153,12 @@ def _make_pyg_data(**overrides):
     num_atoms = overrides.get("num_atoms", 3)
     z = overrides.get("z", torch.tensor([6, 1, 1], dtype=torch.long)[:num_atoms])
     pos = overrides.get("pos", torch.randn(num_atoms, 3, dtype=torch.float32))
-    
+
     data = Data()
     data.z = z
     data.pos = pos
     data.num_nodes = num_atoms
-    
+
     # Add edge_index if provided
     if "edge_index" in overrides:
         data.edge_index = overrides["edge_index"]
@@ -179,7 +175,7 @@ def _make_pyg_data(**overrides):
 def _make_raw_properties(**overrides):
     """
     Build a realistic raw_properties_dict for DFT molecule tests.
-    
+
     DFT NPZ files contain: Etot, U0, zpves, atoms, coordinates, inchi,
     graphs (SMILES), freqs, vibmodes, Qmulliken, rots, gap, dipole, etc.
     """
@@ -189,12 +185,24 @@ def _make_raw_properties(**overrides):
         "U0": overrides.get("U0", -76.3),
         "zpves": overrides.get("zpves", 0.05),
         "atoms": overrides.get("atoms", np.array([6, 1, 1])[:num_atoms]),
-        "coordinates": overrides.get("coordinates", np.random.randn(num_atoms, 3).astype(np.float32)),
+        "coordinates": overrides.get(
+            "coordinates", np.random.randn(num_atoms, 3).astype(np.float32)
+        ),
         "inchi": overrides.get("inchi", "InChI=1S/CH2/c1-2/h1-2H"),
     }
     # Optionally add extra properties
-    for key in ["graphs", "freqs", "vibmodes", "Qmulliken", "rots", "gap",
-                 "dipole", "H", "G", "Cv"]:
+    for key in [
+        "graphs",
+        "freqs",
+        "vibmodes",
+        "Qmulliken",
+        "rots",
+        "gap",
+        "dipole",
+        "H",
+        "G",
+        "Cv",
+    ]:
         if key in overrides:
             props[key] = overrides[key]
     return props
@@ -203,6 +211,7 @@ def _make_raw_properties(**overrides):
 # ============================================================================
 # GROUP 1: DFTDatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestDFTDatasetHandlerIdentity(unittest.TestCase):
     """Test DFTDatasetHandler identity, registration, and basic attributes."""
@@ -229,6 +238,7 @@ class TestDFTDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """DFTDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(DFTDatasetHandler, DatasetHandler))
 
     def test_class_level_tracking_variables_exist(self):
@@ -242,8 +252,10 @@ class TestDFTDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = DFTDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -253,6 +265,7 @@ class TestDFTDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_required_properties (7 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test DFT-specific required property determination."""
@@ -314,6 +327,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # GROUP 3: get_molecular_charge (6 tests)
 # ============================================================================
 
+
 class TestGetMolecularCharge(unittest.TestCase):
     """Test DFT-specific molecular charge extraction from InChI."""
 
@@ -365,6 +379,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # GROUP 4: validate_molecule_data — Success Paths (5 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataSuccess(unittest.TestCase):
     """Test DFT molecule validation success paths."""
 
@@ -402,8 +417,7 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
         mock_validate_struct.return_value = None
         handler = _make_handler()
         props = _make_raw_properties(
-            freqs=np.array([1000.0, 2000.0]),
-            vibmodes=np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+            freqs=np.array([1000.0, 2000.0]), vibmodes=np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
         )
         handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
@@ -419,6 +433,7 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
 # ============================================================================
 # GROUP 5: validate_molecule_data — Error Paths (7 tests)
 # ============================================================================
+
 
 class TestValidateMoleculeDataErrors(unittest.TestCase):
     """Test DFT molecule validation error paths."""
@@ -457,8 +472,10 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
         self.assertIn("atoms", str(ctx.exception))
         self.assertIn("coordinates", str(ctx.exception))
 
-    @patch("milia_pipeline.handlers.implementations.dft.validate_molecular_structure",
-           side_effect=ValueError("Atom count mismatch"))
+    @patch(
+        "milia_pipeline.handlers.implementations.dft.validate_molecular_structure",
+        side_effect=ValueError("Atom count mismatch"),
+    )
     def test_structure_validation_failure_raises_dft_handler_error(self, mock_validate):
         """Structure validation failure wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -484,6 +501,7 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
 # ============================================================================
 # GROUP 6: process_property_value (8 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValue(unittest.TestCase):
     """Test DFT-specific property value processing."""
@@ -536,17 +554,20 @@ class TestProcessPropertyValue(unittest.TestCase):
         """Unexpected exceptions during processing are wrapped in DatasetSpecificHandlerError."""
         handler = _make_handler()
         # Trigger an unexpected exception by patching is_value_valid_and_not_nan
-        with patch(
-            "milia_pipeline.handlers.implementations.dft.is_value_valid_and_not_nan",
-            side_effect=RuntimeError("boom"),
+        with (
+            patch(
+                "milia_pipeline.handlers.implementations.dft.is_value_valid_and_not_nan",
+                side_effect=RuntimeError("boom"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("freqs", np.array([1.0]), 0)
+            handler.process_property_value("freqs", np.array([1.0]), 0)
 
 
 # ============================================================================
 # GROUP 7: get_transform_recommendations (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendations(unittest.TestCase):
     """Test DFT-specific transform recommendations."""
@@ -594,6 +615,7 @@ class TestGetTransformRecommendations(unittest.TestCase):
 # GROUP 8: get_supported_descriptors (4 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test DFT-specific descriptor support reporting."""
 
@@ -608,7 +630,14 @@ class TestGetSupportedDescriptors(unittest.TestCase):
         """DFT supports all 6 descriptor categories."""
         handler = _make_handler()
         desc = handler.get_supported_descriptors()
-        expected = {"constitutional", "topological", "electronic", "geometric", "drug_likeness", "fragments"}
+        expected = {
+            "constitutional",
+            "topological",
+            "electronic",
+            "geometric",
+            "drug_likeness",
+            "fragments",
+        }
         self.assertEqual(set(desc["categories"]), expected)
 
     def test_no_exclusions(self):
@@ -628,6 +657,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # ============================================================================
 # GROUP 9: get_supported_structural_features (5 tests)
 # ============================================================================
+
 
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test DFT-specific structural feature support."""
@@ -670,6 +700,7 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # ============================================================================
 # GROUP 10: _is_valid_property (7 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test DFT-specific property validation."""
@@ -714,6 +745,7 @@ class TestIsValidProperty(unittest.TestCase):
 # GROUP 11: _validate_vibrational_data (5 tests)
 # ============================================================================
 
+
 class TestValidateVibrationalData(unittest.TestCase):
     """Test DFT vibrational data validation (deferred to refinement)."""
 
@@ -728,8 +760,7 @@ class TestValidateVibrationalData(unittest.TestCase):
         """Present vibrational data triggers debug log, not error."""
         handler = _make_handler()
         props = _make_raw_properties(
-            freqs=np.array([1000.0, 2000.0]),
-            vibmodes=np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
+            freqs=np.array([1000.0, 2000.0]), vibmodes=np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])
         )
         handler._validate_vibrational_data(props, 0, "test")
 
@@ -749,15 +780,17 @@ class TestValidateVibrationalData(unittest.TestCase):
     def test_exception_during_validation_is_caught(self):
         """Exceptions during vibrational validation are caught and logged as warning."""
         handler = _make_handler()
+
         # Create a dict-like that raises on .get('vibmodes') access, which triggers
         # the except Exception handler at line 1213 of dft.py.
         # (hasattr checks attribute existence, not callability — so __len__ raising
         # RuntimeError still passes hasattr in Python 3.10.)
         class ExplodingDict(dict):
             def get(self, key, default=None):
-                if key == 'vibmodes':
+                if key == "vibmodes":
                     raise RuntimeError("vibmodes exploded")
                 return super().get(key, default)
+
         props = ExplodingDict(freqs=np.array([1.0]))
         with self.assertLogs("test.dft", level="WARNING"):
             handler._validate_vibrational_data(props, 0, "test")
@@ -766,6 +799,7 @@ class TestValidateVibrationalData(unittest.TestCase):
 # ============================================================================
 # GROUP 12: _add_scalar_targets_internal (9 tests)
 # ============================================================================
+
 
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test DFT scalar target addition to PyG data."""
@@ -857,6 +891,7 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
 # GROUP 13: _calculate_atomization_energy_internal (8 tests)
 # ============================================================================
 
+
 class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
     """Test DFT atomization energy calculation with unit safety."""
 
@@ -894,17 +929,17 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         """Atomization energy is computed in Hartree then converted to eV."""
         pc = _make_processing_config(calculate_atomization_energy_from="Etot")
         handler = _make_handler(processing_config=pc)
-        
+
         # Use hydrogen atom (Z=1) for simple arithmetic
         data = _make_pyg_data(
             num_atoms=1,
             z=torch.tensor([1], dtype=torch.long),
         )
-        
+
         # Set base energy in Hartree
         base_energy = -0.5  # Hartree
         props = _make_raw_properties(Etot=base_energy)
-        
+
         atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1, None)
         if atomic_energy_h is not None and HAR2EV is not None:
             expected_eV = (base_energy - atomic_energy_h) * HAR2EV
@@ -916,7 +951,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         """When atomic energy for an element is missing, returns None."""
         pc = _make_processing_config(calculate_atomization_energy_from="Etot")
         handler = _make_handler(processing_config=pc)
-        
+
         # Use element 999 (nonexistent)
         data = _make_pyg_data(
             num_atoms=1,
@@ -967,6 +1002,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 14: _add_vector_properties_internal (6 tests)
 # ============================================================================
+
 
 class TestAddVectorPropertiesInternal(unittest.TestCase):
     """Test DFT vector property addition (rots, dipole, etc.)."""
@@ -1033,6 +1069,7 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
 # GROUP 15: _add_variable_length_properties_internal (5 tests)
 # ============================================================================
 
+
 class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
     """Test DFT variable-length property addition."""
 
@@ -1050,7 +1087,9 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         data = Data()
         data.num_nodes = 0
         with self.assertRaises(DatasetSpecificHandlerError):
-            handler._add_variable_length_properties_internal(data, _make_raw_properties(), 0, "test")
+            handler._add_variable_length_properties_internal(
+                data, _make_raw_properties(), 0, "test"
+            )
 
     def test_non_vibrational_property_added(self):
         """Non-vibrational variable-length property (e.g. Qmulliken) is added."""
@@ -1068,7 +1107,9 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
         with self.assertRaises(PropertyEnrichmentError):
-            handler._add_variable_length_properties_internal(data, _make_raw_properties(), 0, "test")
+            handler._add_variable_length_properties_internal(
+                data, _make_raw_properties(), 0, "test"
+            )
 
     @patch.object(DFTDatasetHandler, "_process_vibrational_data_internal")
     def test_vibrational_data_dispatched(self, mock_vib):
@@ -1083,6 +1124,7 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 16: _process_vibmodes_internal (7 tests)
 # ============================================================================
+
 
 class TestProcessVibmodesInternal(unittest.TestCase):
     """Test DFT vibrational mode tensor processing."""
@@ -1145,6 +1187,7 @@ class TestProcessVibmodesInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 17: enrich_pyg_data (8 tests)
 # ============================================================================
+
 
 class TestEnrichPygData(unittest.TestCase):
     """Test DFT PyG data enrichment orchestration."""
@@ -1222,17 +1265,21 @@ class TestEnrichPygData(unittest.TestCase):
         """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
         data = _make_pyg_data()
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=RuntimeError("unexpected"),
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
 
 # ============================================================================
 # GROUP 18: validate_configuration (5 tests)
 # ============================================================================
+
 
 class TestValidateConfiguration(unittest.TestCase):
     """Test DFT-specific configuration validation."""
@@ -1276,17 +1323,21 @@ class TestValidateConfiguration(unittest.TestCase):
     def test_unexpected_config_error_wrapped(self):
         """Unexpected configuration error is wrapped in HandlerConfigurationError."""
         handler = _make_handler()
-        with patch.object(
-            type(handler).__bases__[0], "validate_configuration",
-            side_effect=RuntimeError("config_boom"),
+        with (
+            patch.object(
+                type(handler).__bases__[0],
+                "validate_configuration",
+                side_effect=RuntimeError("config_boom"),
+            ),
+            self.assertRaises(HandlerConfigurationError),
         ):
-            with self.assertRaises(HandlerConfigurationError):
-                handler.validate_configuration()
+            handler.validate_configuration()
 
 
 # ============================================================================
 # GROUP 19: Transform Validation Helpers (8 tests)
 # ============================================================================
+
 
 class TestTransformValidationHelpers(unittest.TestCase):
     """Test DFT-specific transform validation methods."""
@@ -1340,8 +1391,11 @@ class TestTransformValidationHelpers(unittest.TestCase):
         """_get_dataset_suitable_transforms returns intersection with available."""
         handler = _make_handler()
         available = {
-            "RandomRotate": None, "GCNNorm": None, "AddSelfLoops": None,
-            "DropEdge": None, "SomeOtherTransform": None
+            "RandomRotate": None,
+            "GCNNorm": None,
+            "AddSelfLoops": None,
+            "DropEdge": None,
+            "SomeOtherTransform": None,
         }
         suitable = handler._get_dataset_suitable_transforms(available)
         self.assertIn("RandomRotate", suitable)
@@ -1352,6 +1406,7 @@ class TestTransformValidationHelpers(unittest.TestCase):
 # ============================================================================
 # GROUP 20: get_processing_statistics (5 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test DFT processing statistics generation."""
@@ -1373,8 +1428,16 @@ class TestGetProcessingStatistics(unittest.TestCase):
         """Vibrational refinement stats included when molecules were refined."""
         handler = _make_handler()
         processed = [
-            {"vibrational_refinement_performed": True, "original_freqs_count": 10, "refined_freqs_count": 8},
-            {"vibrational_refinement_performed": True, "original_freqs_count": 20, "refined_freqs_count": 15},
+            {
+                "vibrational_refinement_performed": True,
+                "original_freqs_count": 10,
+                "refined_freqs_count": 8,
+            },
+            {
+                "vibrational_refinement_performed": True,
+                "original_freqs_count": 20,
+                "refined_freqs_count": 15,
+            },
         ]
         stats = handler.get_processing_statistics(processed)
         self.assertIn("vibrational_refinement", stats)
@@ -1397,6 +1460,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # ============================================================================
 # GROUP 21: _process_vibrational_data_internal (6 tests)
 # ============================================================================
+
 
 class TestProcessVibrationalDataInternal(unittest.TestCase):
     """Test DFT vibrational data processing with refinement."""
@@ -1427,29 +1491,41 @@ class TestProcessVibrationalDataInternal(unittest.TestCase):
         props = {"freqs": np.array([1000.0, 2000.0])}
         handler._process_vibrational_data_internal(data, props, 0, "test")
 
-    @patch("milia_pipeline.config.data_refining.refine_molecular_vibrations",
-           return_value=(np.array([1000.0]), [np.zeros((3, 3))], True))
+    @patch(
+        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
+        return_value=(np.array([1000.0]), [np.zeros((3, 3))], True),
+    )
     def test_successful_refinement(self, mock_refine):
         """Successful refinement sets freqs and vibmodes on PyG data."""
         pc = _make_processing_config(vibration_refinement={"comparison_tolerance": 1e-4})
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3)
-        props = {"freqs": np.array([1000.0]), "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])}
+        props = {
+            "freqs": np.array([1000.0]),
+            "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]]),
+        }
         handler._process_vibrational_data_internal(data, props, 0, "test")
         self.assertTrue(hasattr(data, "freqs"))
 
-    @patch("milia_pipeline.config.data_refining.refine_molecular_vibrations",
-           return_value=(np.array([]), [], False))
+    @patch(
+        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
+        return_value=(np.array([]), [], False),
+    )
     def test_rejected_refinement_raises(self, mock_refine):
         """Rejected refinement raises DatasetSpecificHandlerError."""
         handler = _make_handler()
         data = _make_pyg_data()
-        props = {"freqs": np.array([1000.0]), "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]])}
+        props = {
+            "freqs": np.array([1000.0]),
+            "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]]),
+        }
         with self.assertRaises(DatasetSpecificHandlerError):
             handler._process_vibrational_data_internal(data, props, 0, "test")
 
-    @patch("milia_pipeline.config.data_refining.refine_molecular_vibrations",
-           return_value=(np.array([]), [], False))
+    @patch(
+        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
+        return_value=(np.array([]), [], False),
+    )
     def test_rejected_increments_error_count(self, mock_refine):
         """Rejected refinement increments class-level error count."""
         handler = _make_handler()
@@ -1461,8 +1537,10 @@ class TestProcessVibrationalDataInternal(unittest.TestCase):
             pass
         self.assertGreater(DFTDatasetHandler._vibrational_error_count, 0)
 
-    @patch("milia_pipeline.config.data_refining.refine_molecular_vibrations",
-           side_effect=ImportError("no refine"))
+    @patch(
+        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
+        side_effect=ImportError("no refine"),
+    )
     def test_import_error_raises_dft_handler_error(self, mock_refine):
         """Import error during refinement raises DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -1475,6 +1553,7 @@ class TestProcessVibrationalDataInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 22: Edge Cases and Integration (6 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndIntegration(unittest.TestCase):
     """Test edge cases and integration scenarios."""
@@ -1541,34 +1620,35 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDFTDatasetHandlerIdentity,              # GROUP 1:   6 tests
-        TestGetRequiredProperties,                   # GROUP 2:   7 tests
-        TestGetMolecularCharge,                      # GROUP 3:   6 tests
-        TestValidateMoleculeDataSuccess,             # GROUP 4:   5 tests
-        TestValidateMoleculeDataErrors,              # GROUP 5:   7 tests
-        TestProcessPropertyValue,                    # GROUP 6:   8 tests
-        TestGetTransformRecommendations,             # GROUP 7:   5 tests
-        TestGetSupportedDescriptors,                 # GROUP 8:   4 tests
-        TestGetSupportedStructuralFeatures,          # GROUP 9:   5 tests
-        TestIsValidProperty,                         # GROUP 10:  7 tests
-        TestValidateVibrationalData,                 # GROUP 11:  5 tests
-        TestAddScalarTargetsInternal,                # GROUP 12:  9 tests
-        TestCalculateAtomizationEnergyInternal,      # GROUP 13:  8 tests
-        TestAddVectorPropertiesInternal,             # GROUP 14:  6 tests
-        TestAddVariableLengthPropertiesInternal,     # GROUP 15:  5 tests
-        TestProcessVibmodesInternal,                 # GROUP 16:  7 tests
-        TestEnrichPygData,                           # GROUP 17:  8 tests
-        TestValidateConfiguration,                   # GROUP 18:  5 tests
-        TestTransformValidationHelpers,              # GROUP 19:  8 tests
-        TestGetProcessingStatistics,                 # GROUP 20:  5 tests
-        TestProcessVibrationalDataInternal,          # GROUP 21:  6 tests
-        TestEdgeCasesAndIntegration,                 # GROUP 22:  6 tests
+        TestDFTDatasetHandlerIdentity,  # GROUP 1:   6 tests
+        TestGetRequiredProperties,  # GROUP 2:   7 tests
+        TestGetMolecularCharge,  # GROUP 3:   6 tests
+        TestValidateMoleculeDataSuccess,  # GROUP 4:   5 tests
+        TestValidateMoleculeDataErrors,  # GROUP 5:   7 tests
+        TestProcessPropertyValue,  # GROUP 6:   8 tests
+        TestGetTransformRecommendations,  # GROUP 7:   5 tests
+        TestGetSupportedDescriptors,  # GROUP 8:   4 tests
+        TestGetSupportedStructuralFeatures,  # GROUP 9:   5 tests
+        TestIsValidProperty,  # GROUP 10:  7 tests
+        TestValidateVibrationalData,  # GROUP 11:  5 tests
+        TestAddScalarTargetsInternal,  # GROUP 12:  9 tests
+        TestCalculateAtomizationEnergyInternal,  # GROUP 13:  8 tests
+        TestAddVectorPropertiesInternal,  # GROUP 14:  6 tests
+        TestAddVariableLengthPropertiesInternal,  # GROUP 15:  5 tests
+        TestProcessVibmodesInternal,  # GROUP 16:  7 tests
+        TestEnrichPygData,  # GROUP 17:  8 tests
+        TestValidateConfiguration,  # GROUP 18:  5 tests
+        TestTransformValidationHelpers,  # GROUP 19:  8 tests
+        TestGetProcessingStatistics,  # GROUP 20:  5 tests
+        TestProcessVibrationalDataInternal,  # GROUP 21:  6 tests
+        TestEdgeCasesAndIntegration,  # GROUP 22:  6 tests
     ]
 
     for test_class in test_classes:

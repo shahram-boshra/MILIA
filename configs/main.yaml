@@ -9,22 +9,22 @@ global_paths:
   working_root_dir: ~/Chem_Data/Milia_PyG_Dataset
 
 # ────────────
-# Dataset Type      
+# Dataset Type
 # ────────────
 dataset_type: "DFT"  # Options: "DFT", "DMC", "Wavefunction", "QM9", "ANI1X", "ANI1CCX", "RMD17", "ANI2X", "XXMD", "QDPi"
 
 
 # ────────────────
-# Global Constants      
+# Global Constants
 # ────────────────
 global_constants:
   # ────────────────
-  # Unit Conversions      
+  # Unit Conversions
   # ────────────────
   har2ev: 27.211386245988
   bohr_to_angstrom: 0.529177210903
 # ─────────────────────────────
-# Atomic Energies (in Hartrees)      
+# Atomic Energies (in Hartrees)
 # ─────────────────────────────
 atomic_energies_hartree:
   # Atomic energies in Hartree for common heavy atoms (and Hydrogen)
@@ -39,7 +39,7 @@ atomic_energies_hartree:
   16: -398.1021030909759020   # S
   14: -289.3578409507016431   # Si
 # ────────────────────────────────────
-# Heavy Atom Symbols (with relevant z)      
+# Heavy Atom Symbols (with relevant z)
 # ────────────────────────────────────
 heavy_atom_symbols_to_z:
   C: 6
@@ -63,7 +63,7 @@ data_config:
   common_settings:
     # Test molecule limit for debugging
     test_molecule_limit: 100  # Set to a specific number for testing, or 'null' for full dataset
-    
+
     # Enhanced structural features integration
     structural_feature_integration:
       # Pass coordinates to structural feature extraction for 3D features

@@ -56,11 +56,10 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -78,6 +77,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def models_pkg():
     """
@@ -88,11 +88,11 @@ def models_pkg():
     """
     try:
         import milia_pipeline.models as mdl
+
         return mdl
     except ImportError as exc:
         pytest.fail(
-            f"milia_pipeline.models could not be imported — smoke test "
-            f"precondition violated: {exc}"
+            f"milia_pipeline.models could not be imported — smoke test precondition violated: {exc}"
         )
 
 
@@ -138,25 +138,31 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-        "__maintainer__",
-        "__status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+            "__maintainer__",
+            "__status__",
+        ],
+    )
     def test_metadata_attribute_exists(self, models_pkg, attr):
         """Each metadata dunder is defined on the models package."""
         assert hasattr(models_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__license__",
-        "__maintainer__",
-        "__status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__license__",
+            "__maintainer__",
+            "__status__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, models_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(models_pkg, attr)
@@ -168,9 +174,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = models_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -178,9 +182,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
     def test_status_is_production(self, models_pkg):
@@ -364,9 +366,7 @@ class TestSmokePhase7BuildersExports:
     @pytest.mark.smoke
     def test_layer_registry_instance_exists(self, models_pkg):
         """The ``layer_registry`` instance is present."""
-        assert hasattr(models_pkg, "layer_registry"), (
-            "layer_registry instance is missing"
-        )
+        assert hasattr(models_pkg, "layer_registry"), "layer_registry instance is missing"
 
 
 class TestSmokePhase8HPOExports:
@@ -409,15 +409,11 @@ class TestSmokePhase8HPOExports:
         if models_pkg.HPO_AVAILABLE:
             for name in self.HPO_NAMES:
                 obj = getattr(models_pkg, name)
-                assert obj is not None, (
-                    f"HPO_AVAILABLE is True but '{name}' is None"
-                )
+                assert obj is not None, f"HPO_AVAILABLE is True but '{name}' is None"
         else:
             for name in self.HPO_NAMES:
                 obj = getattr(models_pkg, name)
-                assert obj is None, (
-                    f"HPO_AVAILABLE is False but '{name}' is not None"
-                )
+                assert obj is None, f"HPO_AVAILABLE is False but '{name}' is not None"
 
 
 class TestSmokeTrainingInfrastructureExports:
@@ -601,9 +597,7 @@ class TestSmokeExceptionExports:
     def test_exception_is_a_class(self, models_pkg, name):
         """Each exception export is a class."""
         obj = getattr(models_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeConvenienceFunctions:
@@ -612,30 +606,22 @@ class TestSmokeConvenienceFunctions:
     @pytest.mark.smoke
     def test_get_module_info_exists(self, models_pkg):
         """``get_module_info`` is present on the models package."""
-        assert hasattr(models_pkg, "get_module_info"), (
-            "get_module_info is missing"
-        )
+        assert hasattr(models_pkg, "get_module_info"), "get_module_info is missing"
 
     @pytest.mark.smoke
     def test_get_module_info_is_callable(self, models_pkg):
         """``get_module_info`` is callable."""
-        assert callable(models_pkg.get_module_info), (
-            "get_module_info should be callable"
-        )
+        assert callable(models_pkg.get_module_info), "get_module_info should be callable"
 
     @pytest.mark.smoke
     def test_print_module_summary_exists(self, models_pkg):
         """``print_module_summary`` is present on the models package."""
-        assert hasattr(models_pkg, "print_module_summary"), (
-            "print_module_summary is missing"
-        )
+        assert hasattr(models_pkg, "print_module_summary"), "print_module_summary is missing"
 
     @pytest.mark.smoke
     def test_print_module_summary_is_callable(self, models_pkg):
         """``print_module_summary`` is callable."""
-        assert callable(models_pkg.print_module_summary), (
-            "print_module_summary should be callable"
-        )
+        assert callable(models_pkg.print_module_summary), "print_module_summary should be callable"
 
 
 class TestSmokeMissingComponentsTracking:
@@ -644,9 +630,7 @@ class TestSmokeMissingComponentsTracking:
     @pytest.mark.smoke
     def test_missing_components_exists(self, models_pkg):
         """``_MISSING_COMPONENTS`` list is defined on the models package."""
-        assert hasattr(models_pkg, "_MISSING_COMPONENTS"), (
-            "_MISSING_COMPONENTS is missing"
-        )
+        assert hasattr(models_pkg, "_MISSING_COMPONENTS"), "_MISSING_COMPONENTS is missing"
 
     @pytest.mark.smoke
     def test_missing_components_is_list(self, models_pkg):
@@ -704,9 +688,7 @@ class TestSmokeDocstringPresent:
         """The models package has a non-empty ``__doc__`` attribute."""
         assert models_pkg.__doc__ is not None, "__doc__ is None"
         assert isinstance(models_pkg.__doc__, str), "__doc__ should be str"
-        assert len(models_pkg.__doc__) > 100, (
-            "__doc__ should be a substantial docstring"
-        )
+        assert len(models_pkg.__doc__) > 100, "__doc__ should be a substantial docstring"
 
 
 # ===================================================================
@@ -732,9 +714,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, models_pkg, all_names):
@@ -742,10 +722,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(models_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(models_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -753,13 +730,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -822,13 +794,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in models/__init__.py but not in __all__: "
@@ -886,9 +862,7 @@ class TestContractClassTypes:
     def test_export_is_class(self, models_pkg, name):
         """Each expected class export is actually a class."""
         obj = getattr(models_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractCallableTypes:
@@ -944,9 +918,7 @@ class TestContractCallableTypes:
     def test_export_is_callable(self, models_pkg, name):
         """Each expected callable export is callable."""
         obj = getattr(models_pkg, name)
-        assert callable(obj), (
-            f"'{name}' should be callable, got {type(obj).__name__}"
-        )
+        assert callable(obj), f"'{name}' should be callable, got {type(obj).__name__}"
 
 
 class TestContractExceptionHierarchy:
@@ -970,9 +942,7 @@ class TestContractExceptionHierarchy:
     def test_exception_is_exception_subclass(self, models_pkg, name):
         """Each exception class is a subclass of Exception."""
         cls = getattr(models_pkg, name)
-        assert issubclass(cls, Exception), (
-            f"'{name}' should be a subclass of Exception"
-        )
+        assert issubclass(cls, Exception), f"'{name}' should be a subclass of Exception"
 
     @pytest.mark.contract
     def test_model_error_is_base_for_others(self, models_pkg):
@@ -1013,18 +983,15 @@ class TestContractRegistryInstance:
     @pytest.mark.contract
     def test_registry_list_available_models_is_callable(self, models_pkg):
         """``registry.list_available_models`` is callable."""
-        method = getattr(models_pkg.registry, "list_available_models")
-        assert callable(method), (
-            "registry.list_available_models should be callable"
-        )
+        method = models_pkg.registry.list_available_models
+        assert callable(method), "registry.list_available_models should be callable"
 
     @pytest.mark.contract
     def test_registry_list_available_models_returns_list(self, models_pkg):
         """``registry.list_available_models()`` returns a list."""
         result = models_pkg.registry.list_available_models()
         assert isinstance(result, list), (
-            f"registry.list_available_models() should return list, "
-            f"got {type(result).__name__}"
+            f"registry.list_available_models() should return list, got {type(result).__name__}"
         )
 
 
@@ -1043,9 +1010,7 @@ class TestContractGetModuleInfoReturnType:
     def test_get_module_info_has_version(self, models_pkg):
         """``get_module_info()`` result includes 'version' key."""
         result = models_pkg.get_module_info()
-        assert "version" in result, (
-            "get_module_info() result missing 'version' key"
-        )
+        assert "version" in result, "get_module_info() result missing 'version' key"
 
     @pytest.mark.contract
     def test_get_module_info_version_matches(self, models_pkg):
@@ -1078,9 +1043,7 @@ class TestContractGetModuleInfoReturnType:
                 "phase_8_features",
             }
             missing = expected_keys - set(result.keys())
-            assert not missing, (
-                f"get_module_info() missing expected keys: {sorted(missing)}"
-            )
+            assert not missing, f"get_module_info() missing expected keys: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_get_module_info_phase_7_features_structure(self, models_pkg):
@@ -1092,9 +1055,7 @@ class TestContractGetModuleInfoReturnType:
         if "error" in result:
             pytest.skip("get_module_info() returned error")
         p7 = result.get("phase_7_features")
-        assert isinstance(p7, dict), (
-            f"phase_7_features should be dict, got {type(p7).__name__}"
-        )
+        assert isinstance(p7, dict), f"phase_7_features should be dict, got {type(p7).__name__}"
         expected_flags = {
             "custom_architectures",
             "ensemble_models",
@@ -1102,9 +1063,7 @@ class TestContractGetModuleInfoReturnType:
             "layer_registry",
         }
         missing = expected_flags - set(p7.keys())
-        assert not missing, (
-            f"phase_7_features missing keys: {sorted(missing)}"
-        )
+        assert not missing, f"phase_7_features missing keys: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_get_module_info_phase_8_features_structure(self, models_pkg):
@@ -1116,9 +1075,7 @@ class TestContractGetModuleInfoReturnType:
         if "error" in result:
             pytest.skip("get_module_info() returned error")
         p8 = result.get("phase_8_features")
-        assert isinstance(p8, dict), (
-            f"phase_8_features should be dict, got {type(p8).__name__}"
-        )
+        assert isinstance(p8, dict), f"phase_8_features should be dict, got {type(p8).__name__}"
         expected_flags = {
             "hyperparameter_optimization",
             "optuna_backend",
@@ -1127,9 +1084,7 @@ class TestContractGetModuleInfoReturnType:
             "study_analyzer",
         }
         missing = expected_flags - set(p8.keys())
-        assert not missing, (
-            f"phase_8_features missing keys: {sorted(missing)}"
-        )
+        assert not missing, f"phase_8_features missing keys: {sorted(missing)}"
 
 
 class TestContractPrintModuleSummary:
@@ -1143,9 +1098,7 @@ class TestContractPrintModuleSummary:
         """
         models_pkg.print_module_summary()
         captured = capsys.readouterr()
-        assert len(captured.out) > 0, (
-            "print_module_summary() should produce stdout output"
-        )
+        assert len(captured.out) > 0, "print_module_summary() should produce stdout output"
 
     @pytest.mark.contract
     def test_print_module_summary_includes_version(self, models_pkg, capsys):
@@ -1155,8 +1108,7 @@ class TestContractPrintModuleSummary:
         models_pkg.print_module_summary()
         captured = capsys.readouterr()
         assert models_pkg.__version__ in captured.out, (
-            f"print_module_summary() output should include version "
-            f"'{models_pkg.__version__}'"
+            f"print_module_summary() output should include version '{models_pkg.__version__}'"
         )
 
 
@@ -1195,9 +1147,7 @@ class TestContractHPOConditionalImports:
         ]
         for name in callable_names:
             obj = getattr(models_pkg, name)
-            assert callable(obj), (
-                f"HPO function '{name}' should be callable when HPO_AVAILABLE"
-            )
+            assert callable(obj), f"HPO function '{name}' should be callable when HPO_AVAILABLE"
 
 
 class TestContractFallbackStubs:
@@ -1229,8 +1179,7 @@ class TestContractFallbackStubs:
         """
         result = models_pkg.get_category_statistics()
         assert isinstance(result, dict), (
-            f"get_category_statistics() should return dict, got "
-            f"{type(result).__name__}"
+            f"get_category_statistics() should return dict, got {type(result).__name__}"
         )
 
 
@@ -1301,9 +1250,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1339,9 +1286,7 @@ class TestContractCategorySections:
         registry_entries = {"ModelRegistry", "registry", "get_model", "list_models"}
         all_set = set(all_names)
         missing = registry_entries - all_set
-        assert not missing, (
-            f"Registry section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"Registry section missing entries: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_factory_section(self, all_names):
@@ -1349,9 +1294,7 @@ class TestContractCategorySections:
         factory_entries = {"ModelFactory", "create_model", "get_factory"}
         all_set = set(all_names)
         missing = factory_entries - all_set
-        assert not missing, (
-            f"Factory section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"Factory section missing entries: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_training_section(self, all_names):
@@ -1359,21 +1302,15 @@ class TestContractCategorySections:
         training_entries = {"Trainer", "EarlyStopping", "ModelCheckpoint", "DataSplitter"}
         all_set = set(all_names)
         missing = training_entries - all_set
-        assert not missing, (
-            f"Training section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"Training section missing entries: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_exceptions_section(self, all_names):
         """``__all__`` includes core exception entries."""
-        exception_entries = {
-            "ModelError", "ModelNotFoundError", "TrainingError", "CheckpointError"
-        }
+        exception_entries = {"ModelError", "ModelNotFoundError", "TrainingError", "CheckpointError"}
         all_set = set(all_names)
         missing = exception_entries - all_set
-        assert not missing, (
-            f"Exceptions section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"Exceptions section missing entries: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_hpo_section(self, all_names):
@@ -1381,22 +1318,20 @@ class TestContractCategorySections:
         hpo_entries = {"HPO_AVAILABLE", "HPOManager", "HPOConfig"}
         all_set = set(all_names)
         missing = hpo_entries - all_set
-        assert not missing, (
-            f"HPO section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"HPO section missing entries: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_builders_section(self, all_names):
         """``__all__`` includes builders entries."""
         builder_entries = {
-            "LayerRegistry", "ArchitectureBuilder", "ModelComposer",
-            "ArchitectureTemplates"
+            "LayerRegistry",
+            "ArchitectureBuilder",
+            "ModelComposer",
+            "ArchitectureTemplates",
         }
         all_set = set(all_names)
         missing = builder_entries - all_set
-        assert not missing, (
-            f"Builders section missing entries: {sorted(missing)}"
-        )
+        assert not missing, f"Builders section missing entries: {sorted(missing)}"
 
 
 class TestContractLossRegistryInterface:
@@ -1414,8 +1349,7 @@ class TestContractLossRegistryInterface:
         """``LossRegistry.list_available()`` returns a list."""
         result = models_pkg.LossRegistry.list_available()
         assert isinstance(result, list), (
-            f"LossRegistry.list_available() should return list, "
-            f"got {type(result).__name__}"
+            f"LossRegistry.list_available() should return list, got {type(result).__name__}"
         )
 
 
@@ -1434,8 +1368,7 @@ class TestContractOptimizerRegistryInterface:
         """``OptimizerRegistry.list_available()`` returns a list."""
         result = models_pkg.OptimizerRegistry.list_available()
         assert isinstance(result, list), (
-            f"OptimizerRegistry.list_available() should return list, "
-            f"got {type(result).__name__}"
+            f"OptimizerRegistry.list_available() should return list, got {type(result).__name__}"
         )
 
 
@@ -1454,8 +1387,7 @@ class TestContractSchedulerRegistryInterface:
         """``SchedulerRegistry.list_available()`` returns a list."""
         result = models_pkg.SchedulerRegistry.list_available()
         assert isinstance(result, list), (
-            f"SchedulerRegistry.list_available() should return list, "
-            f"got {type(result).__name__}"
+            f"SchedulerRegistry.list_available() should return list, got {type(result).__name__}"
         )
 
 
@@ -1481,16 +1413,17 @@ class TestContractConvenienceFunctionSignatures:
         """``get_module_info()`` accepts zero required arguments."""
         sig = inspect.signature(models_pkg.get_module_info)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
         ]
         assert len(required) == 0, (
-            f"get_module_info() should take no required args, "
-            f"found: {[p.name for p in required]}"
+            f"get_module_info() should take no required args, found: {[p.name for p in required]}"
         )
 
     @pytest.mark.contract
@@ -1498,9 +1431,11 @@ class TestContractConvenienceFunctionSignatures:
         """``print_module_summary()`` accepts zero required arguments."""
         sig = inspect.signature(models_pkg.print_module_summary)
         required = [
-            p for p in sig.parameters.values()
+            p
+            for p in sig.parameters.values()
             if p.default is inspect.Parameter.empty
-            and p.kind not in (
+            and p.kind
+            not in (
                 inspect.Parameter.VAR_POSITIONAL,
                 inspect.Parameter.VAR_KEYWORD,
             )
@@ -1529,21 +1464,15 @@ class TestContractMissingComponentsIntegrity:
         """Every entry in ``_MISSING_COMPONENTS`` is a string."""
         for item in models_pkg._MISSING_COMPONENTS:
             assert isinstance(item, str), (
-                f"_MISSING_COMPONENTS entry should be str, "
-                f"got {type(item).__name__}: {item}"
+                f"_MISSING_COMPONENTS entry should be str, got {type(item).__name__}: {item}"
             )
 
     @pytest.mark.contract
     def test_missing_components_no_duplicates(self, models_pkg):
         """``_MISSING_COMPONENTS`` has no duplicate entries."""
         items = models_pkg._MISSING_COMPONENTS
-        duplicates = [
-            item for item in items
-            if items.count(item) > 1
-        ]
-        assert not duplicates, (
-            f"Duplicate entries in _MISSING_COMPONENTS: {set(duplicates)}"
-        )
+        duplicates = [item for item in items if items.count(item) > 1]
+        assert not duplicates, f"Duplicate entries in _MISSING_COMPONENTS: {set(duplicates)}"
 
 
 class TestContractModuleDocstring:
@@ -1561,30 +1490,22 @@ class TestContractModuleDocstring:
     def test_docstring_mentions_phase_7(self, models_pkg):
         """Module docstring mentions Phase 7 (builders)."""
         doc = models_pkg.__doc__
-        assert "PHASE 7" in doc or "Phase 7" in doc, (
-            "Module docstring should mention Phase 7"
-        )
+        assert "PHASE 7" in doc or "Phase 7" in doc, "Module docstring should mention Phase 7"
 
     @pytest.mark.contract
     def test_docstring_mentions_phase_8(self, models_pkg):
         """Module docstring mentions Phase 8 (HPO)."""
         doc = models_pkg.__doc__
-        assert "PHASE 8" in doc or "Phase 8" in doc, (
-            "Module docstring should mention Phase 8"
-        )
+        assert "PHASE 8" in doc or "Phase 8" in doc, "Module docstring should mention Phase 8"
 
     @pytest.mark.contract
     def test_docstring_mentions_trainer(self, models_pkg):
         """Module docstring mentions Trainer."""
         doc = models_pkg.__doc__
-        assert "Trainer" in doc, (
-            "Module docstring should mention Trainer"
-        )
+        assert "Trainer" in doc, "Module docstring should mention Trainer"
 
     @pytest.mark.contract
     def test_docstring_mentions_model_registry(self, models_pkg):
         """Module docstring mentions ModelRegistry."""
         doc = models_pkg.__doc__
-        assert "ModelRegistry" in doc, (
-            "Module docstring should mention ModelRegistry"
-        )
+        assert "ModelRegistry" in doc, "Module docstring should mention ModelRegistry"

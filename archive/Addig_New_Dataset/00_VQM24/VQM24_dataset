@@ -8,7 +8,7 @@
 
 The VQM24 dataset can be downloaded from its official source on Zenodo:
 
-https://zenodo.org/records/15442257 
+https://zenodo.org/records/15442257
 
 This page provides various .npz files for different parts of the dataset, including:
 
@@ -20,8 +20,8 @@ This page provides various .npz files for different parts of the dataset, includ
 __________
 
 *Note (mE)
-__________  
- 
+__________
+
 All keys are the same in DFT_all.npz, DFT_saddles.npz, and DFT_uniques.npz but 'graphs' key (which presents the SMILES of the molecule) which is not available in DFT_saddles.npz.
 
                                         "graphs" --- > Present in (DFT_all and DFT_uniques) but not DFT_saddles.
@@ -83,4 +83,3 @@ ____________
 
 While wavefunctions.tar.gz is also provided, it contains .molden files of the wavefunctions. These are raw quantum mechanical outputs and typically require specialized quantum chemistry software to process before they can be directly used as numerical features for ML models in the same way as the .npz files. Therefore, for direct "dataset" deployment in the common ML sense (ready-to-use numerical arrays), the four .npz files are the primary ones.
 So, the answer is 4 datasets based on the .npz files for direct ML deployment.
-

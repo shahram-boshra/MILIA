@@ -8,7 +8,7 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 # Load the npz file
-npz_path = Path.home() / 'Chem_Data/milia_PyG_Dataset/raw/wavefunctions_sliced.npz'
+npz_path = Path.home() / "Chem_Data/milia_PyG_Dataset/raw/wavefunctions_sliced.npz"
 data = np.load(npz_path, allow_pickle=True)
 
 print("=" * 70)
@@ -19,7 +19,7 @@ print()
 
 # List all keys
 for i, key in enumerate(sorted(data.keys()), 1):
-    if key == 'metadata':
+    if key == "metadata":
         print(f"{i:2d}. {key:30s} - metadata dict")
     else:
         print(f"{i:2d}. {key:30s} - shape: {data[key].shape}, dtype: {data[key].dtype}")
@@ -31,37 +31,47 @@ print("=" * 70)
 
 expected_features = [
     # Core features (5)
-    "compounds", "atoms", "coordinates", "n_atoms", "n_electrons",
-    
+    "compounds",
+    "atoms",
+    "coordinates",
+    "n_atoms",
+    "n_electrons",
     # Basic electronic (7)
-    "homo_energy_eV", "lumo_energy_eV", "homo_lumo_gap_eV",
-    "homo_index", "lumo_index",
-    "mo_energies", "mo_occupations",
-    
+    "homo_energy_eV",
+    "lumo_energy_eV",
+    "homo_lumo_gap_eV",
+    "homo_index",
+    "lumo_index",
+    "mo_energies",
+    "mo_occupations",
     # Energy (2)
-    "total_energy_eV", "total_energy_Hartree",
-    
+    "total_energy_eV",
+    "total_energy_Hartree",
     # Molecular properties (2)
-    "molecular_formula", "molecular_weight",
-    
+    "molecular_formula",
+    "molecular_weight",
     # MO statistics (4)
-    "mo_energy_mean_eV", "mo_energy_std_eV", "mo_energy_min_eV", "mo_energy_max_eV",
-    
+    "mo_energy_mean_eV",
+    "mo_energy_std_eV",
+    "mo_energy_min_eV",
+    "mo_energy_max_eV",
     # Orbital counts (2)
-    "n_occupied_orbitals", "n_virtual_orbitals",
-    
+    "n_occupied_orbitals",
+    "n_virtual_orbitals",
     # Quantum descriptors (5)
-    "ionization_potential_eV", "electron_affinity_eV", 
-    "chemical_hardness_eV", "chemical_potential_eV", "electrophilicity_eV",
-    
+    "ionization_potential_eV",
+    "electron_affinity_eV",
+    "chemical_hardness_eV",
+    "chemical_potential_eV",
+    "electrophilicity_eV",
     # Advanced MO info (3)
-    "mo_coefficients", "mo_kind", "n_basis_functions",
-    
+    "mo_coefficients",
+    "mo_kind",
+    "n_basis_functions",
     # Basis info (1)
     "n_shells",
-    
     # Metadata (1)
-    "metadata"
+    "metadata",
 ]
 
 print(f"Expected: {len(expected_features)} keys")

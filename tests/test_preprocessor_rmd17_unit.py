@@ -35,36 +35,35 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import tempfile
 import shutil
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
 import numpy as np
-from typing import Dict, Any, List
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.rmd17 import (
-    RMD17Preprocessor,
-    _build_object_array,
     KCAL_MOL_TO_HARTREE,
     RMD17_MOLECULES,
+    RMD17Preprocessor,
+    _build_object_array,
 )
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
-from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
-
 
 # ============================================================================
 # HELPERS: Build realistic config and mock objects
 # ============================================================================
+
 
 def _make_config(**overrides):
     """
@@ -76,17 +75,19 @@ def _make_config(**overrides):
                 'include_old_data', 'cleanup_temp'
     """
     config = {
-        'raw_archive_path': overrides.get(
-            'raw_archive_path', '/tmp/test_data/raw/rmd17.tar.bz2'),
-        'output_npz_path': overrides.get(
-            'output_npz_path', '/tmp/test_data/processed/rmd17.npz'),
+        "raw_archive_path": overrides.get("raw_archive_path", "/tmp/test_data/raw/rmd17.tar.bz2"),
+        "output_npz_path": overrides.get("output_npz_path", "/tmp/test_data/processed/rmd17.npz"),
     }
-    for key in ['molecules_to_include', 'max_conformers_per_molecule',
-                'include_old_data', 'cleanup_temp']:
+    for key in [
+        "molecules_to_include",
+        "max_conformers_per_molecule",
+        "include_old_data",
+        "cleanup_temp",
+    ]:
         if key in overrides:
             config[key] = overrides[key]
     for key in list(config.keys()):
-        if overrides.get(f'_remove_{key}', False):
+        if overrides.get(f"_remove_{key}", False):
             del config[key]
     return config
 
@@ -154,39 +155,40 @@ def _make_mock_features_and_metadata():
     forces_arr[2] = np.random.randn(12, 3).astype(np.float32)
 
     mol_name_arr = np.empty(3, dtype=object)
-    mol_name_arr[0] = 'ethanol'
-    mol_name_arr[1] = 'ethanol'
-    mol_name_arr[2] = 'benzene'
+    mol_name_arr[0] = "ethanol"
+    mol_name_arr[1] = "ethanol"
+    mol_name_arr[2] = "benzene"
 
     features = {
-        'atoms': atoms_arr,
-        'coordinates': coords_arr,
-        'energies': np.array([-0.385, -0.384, -0.595], dtype=np.float64),
-        'forces': forces_arr,
-        'molecule_name': mol_name_arr,
+        "atoms": atoms_arr,
+        "coordinates": coords_arr,
+        "energies": np.array([-0.385, -0.384, -0.595], dtype=np.float64),
+        "forces": forces_arr,
+        "molecule_name": mol_name_arr,
     }
 
     metadata = {
-        'total_conformers': 3,
-        'molecules_included': ['ethanol', 'benzene'],
-        'molecule_counts': {'ethanol': 2, 'benzene': 1},
-        'mean_atoms': 10.0,
-        'max_atoms': 12,
-        'min_atoms': 9,
-        'properties_extracted': ['atoms', 'coordinates', 'energies', 'forces', 'molecule_name'],
-        'energy_units': 'hartree',
-        'force_units': 'hartree/angstrom',
-        'original_energy_units': 'kcal/mol',
-        'conversion_factor': KCAL_MOL_TO_HARTREE,
-        'level_of_theory': 'PBE/def2-SVP',
-        'source': 'rMD17 (Christensen & von Lilienfeld, 2020)',
+        "total_conformers": 3,
+        "molecules_included": ["ethanol", "benzene"],
+        "molecule_counts": {"ethanol": 2, "benzene": 1},
+        "mean_atoms": 10.0,
+        "max_atoms": 12,
+        "min_atoms": 9,
+        "properties_extracted": ["atoms", "coordinates", "energies", "forces", "molecule_name"],
+        "energy_units": "hartree",
+        "force_units": "hartree/angstrom",
+        "original_energy_units": "kcal/mol",
+        "conversion_factor": KCAL_MOL_TO_HARTREE,
+        "level_of_theory": "PBE/def2-SVP",
+        "source": "rMD17 (Christensen & von Lilienfeld, 2020)",
     }
 
     return features, metadata
 
 
-def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
-                              parse_return=None, extracted_dir=None):
+def _create_and_run_pipeline(
+    config, mock_extract, mock_parse, mock_build, parse_return=None, extracted_dir=None
+):
     """
     Helper: create preprocessor with proper Path.exists handling and run preprocess.
     """
@@ -195,12 +197,11 @@ def _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build,
         extracted_dir = Path("/tmp/rmd17_extract_fake")
     mock_extract.return_value = extracted_dir
 
-    exists_fn = _path_exists_factory(
-        config['raw_archive_path'], config['output_npz_path'])
+    exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
 
     with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
         preprocessor = _make_preprocessor(config=config)
-        with patch.object(Path, 'exists', return_value=False):
+        with patch.object(Path, "exists", return_value=False):
             result = preprocessor.preprocess()
 
     return preprocessor, result
@@ -216,7 +217,7 @@ def _make_mock_npz_dir(tmpdir, molecules_data):
     """
     npz_dir = Path(tmpdir)
     for mol_name, data in molecules_data.items():
-        npz_path = npz_dir / f'rmd17_{mol_name}.npz'
+        npz_path = npz_dir / f"rmd17_{mol_name}.npz"
         np.savez(str(npz_path), **data)
     return npz_dir
 
@@ -224,16 +225,17 @@ def _make_mock_npz_dir(tmpdir, molecules_data):
 def _simple_molecule_data(n_atoms=3, n_conf=1):
     """Build simple molecule data arrays for parse tests."""
     return {
-        'nuclear_charges': np.arange(1, n_atoms + 1, dtype=np.uint8),
-        'coords': np.random.randn(n_conf, n_atoms, 3).astype(np.float32),
-        'energies': np.linspace(-200, -190, n_conf).astype(np.float64),
-        'forces': np.random.randn(n_conf, n_atoms, 3).astype(np.float32),
+        "nuclear_charges": np.arange(1, n_atoms + 1, dtype=np.uint8),
+        "coords": np.random.randn(n_conf, n_atoms, 3).astype(np.float32),
+        "energies": np.linspace(-200, -190, n_conf).astype(np.float64),
+        "forces": np.random.randn(n_conf, n_atoms, 3).astype(np.float32),
     }
 
 
 # ============================================================================
 # GROUP 1: RMD17Preprocessor — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestRMD17PreprocessorIdentity(unittest.TestCase):
     """Test RMD17Preprocessor identity, registration, and basic attributes."""
@@ -275,6 +277,7 @@ class TestRMD17PreprocessorIdentity(unittest.TestCase):
 # GROUP 2: Module-Level Constants (6 tests)
 # ============================================================================
 
+
 class TestModuleLevelConstants(unittest.TestCase):
     """Test module-level constants: KCAL_MOL_TO_HARTREE, RMD17_MOLECULES."""
 
@@ -301,9 +304,16 @@ class TestModuleLevelConstants(unittest.TestCase):
     def test_rmd17_molecules_expected_names(self):
         """RMD17_MOLECULES contains all 10 expected molecule names."""
         expected = {
-            'aspirin', 'azobenzene', 'benzene', 'ethanol',
-            'malonaldehyde', 'naphthalene', 'paracetamol',
-            'salicylic', 'toluene', 'uracil',
+            "aspirin",
+            "azobenzene",
+            "benzene",
+            "ethanol",
+            "malonaldehyde",
+            "naphthalene",
+            "paracetamol",
+            "salicylic",
+            "toluene",
+            "uracil",
         }
         self.assertEqual(set(RMD17_MOLECULES), expected)
 
@@ -311,6 +321,7 @@ class TestModuleLevelConstants(unittest.TestCase):
 # ============================================================================
 # GROUP 3: _build_object_array — Module-Level Helper (5 tests)
 # ============================================================================
+
 
 class TestBuildObjectArray(unittest.TestCase):
     """Test _build_object_array() preserves inner array dtypes."""
@@ -344,14 +355,15 @@ class TestBuildObjectArray(unittest.TestCase):
 
     def test_preserves_string_items(self):
         """_build_object_array preserves string items."""
-        result = _build_object_array(['aspirin', 'benzene', 'ethanol'])
-        self.assertEqual(result[0], 'aspirin')
-        self.assertEqual(result[2], 'ethanol')
+        result = _build_object_array(["aspirin", "benzene", "ethanol"])
+        self.assertEqual(result[0], "aspirin")
+        self.assertEqual(result[2], "ethanol")
 
 
 # ============================================================================
 # GROUP 4: _validate_config — Success Paths (5 tests)
 # ============================================================================
+
 
 class TestValidateConfigSuccess(unittest.TestCase):
     """Test _validate_config success paths for valid configuration."""
@@ -364,8 +376,7 @@ class TestValidateConfigSuccess(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_molecules_to_include(self, mock_exists):
         """Config with valid molecules_to_include passes validation."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=['aspirin', 'benzene']))
+        _make_preprocessor(config=_make_config(molecules_to_include=["aspirin", "benzene"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_max_conformers(self, mock_exists):
@@ -375,11 +386,14 @@ class TestValidateConfigSuccess(unittest.TestCase):
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_all_optional_keys(self, mock_exists):
         """Config with all optional keys passes validation."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=['ethanol', 'toluene'],
-            max_conformers_per_molecule=500,
-            include_old_data=True,
-            cleanup_temp=False))
+        _make_preprocessor(
+            config=_make_config(
+                molecules_to_include=["ethanol", "toluene"],
+                max_conformers_per_molecule=500,
+                include_old_data=True,
+                cleanup_temp=False,
+            )
+        )
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_valid_config_with_none_molecules(self, mock_exists):
@@ -393,6 +407,7 @@ class TestValidateConfigSuccess(unittest.TestCase):
 # ============================================================================
 # GROUP 5: _validate_config — Missing Required Keys (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMissingKeys(unittest.TestCase):
     """Test _validate_config error paths for missing required configuration keys."""
@@ -424,6 +439,7 @@ class TestValidateConfigMissingKeys(unittest.TestCase):
 # GROUP 6: _validate_config — Path Validation (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigPathValidation(unittest.TestCase):
     """Test _validate_config error paths for invalid file paths."""
 
@@ -452,6 +468,7 @@ class TestValidateConfigPathValidation(unittest.TestCase):
 # GROUP 7: _validate_config — Archive Extension Warning (3 tests)
 # ============================================================================
 
+
 class TestValidateConfigArchiveExtension(unittest.TestCase):
     """Test _validate_config behavior for archive file extensions.
 
@@ -462,10 +479,10 @@ class TestValidateConfigArchiveExtension(unittest.TestCase):
     def test_tar_bz2_extension_accepted_silently(self, mock_exists):
         """Archive with .tar.bz2 extension passes without warning."""
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/rmd17.tar.bz2'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/rmd17.tar.bz2"), logger=logger
+            )
             for c in mock_warn.call_args_list:
                 self.assertNotIn(".tar.bz2", str(c))
 
@@ -476,23 +493,23 @@ class TestValidateConfigArchiveExtension(unittest.TestCase):
         Evidence: rmd17.py lines 188-191 — self.logger.warning(...).
         """
         logger = _make_logger()
-        with patch.object(logger, 'warning') as mock_warn:
+        with patch.object(logger, "warning") as mock_warn:
             _make_preprocessor(
-                config=_make_config(raw_archive_path='/tmp/data/rmd17.zip'),
-                logger=logger)
+                config=_make_config(raw_archive_path="/tmp/data/rmd17.zip"), logger=logger
+            )
             mock_warn.assert_called_once()
             self.assertIn(".tar.bz2", mock_warn.call_args[0][0])
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_non_tar_bz2_does_not_raise(self, mock_exists):
         """Non-.tar.bz2 extension does not raise any exception."""
-        _make_preprocessor(
-            config=_make_config(raw_archive_path='/tmp/data/rmd17.dat'))
+        _make_preprocessor(config=_make_config(raw_archive_path="/tmp/data/rmd17.dat"))
 
 
 # ============================================================================
 # GROUP 8: _validate_config — molecules_to_include Validation (4 tests)
 # ============================================================================
+
 
 class TestValidateConfigMolecules(unittest.TestCase):
     """Test _validate_config for molecules_to_include validation.
@@ -504,21 +521,20 @@ class TestValidateConfigMolecules(unittest.TestCase):
     def test_invalid_molecule_name_raises(self, mock_exists):
         """Unknown molecule name raises ConfigurationError."""
         with self.assertRaises(ConfigurationError) as ctx:
-            _make_preprocessor(config=_make_config(
-                molecules_to_include=['aspirin', 'fake_molecule']))
+            _make_preprocessor(
+                config=_make_config(molecules_to_include=["aspirin", "fake_molecule"])
+            )
         self.assertIn("fake_molecule", str(ctx.exception))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_all_valid_molecules_accepted(self, mock_exists):
         """All 10 valid molecule names accepted."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=RMD17_MOLECULES.copy()))
+        _make_preprocessor(config=_make_config(molecules_to_include=RMD17_MOLECULES.copy()))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_single_valid_molecule_accepted(self, mock_exists):
         """Single valid molecule name accepted."""
-        _make_preprocessor(config=_make_config(
-            molecules_to_include=['uracil']))
+        _make_preprocessor(config=_make_config(molecules_to_include=["uracil"]))
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_error_message_lists_valid_molecules(self, mock_exists):
@@ -527,8 +543,7 @@ class TestValidateConfigMolecules(unittest.TestCase):
         Evidence: rmd17.py line 201 — f"Valid molecules: {RMD17_MOLECULES}".
         """
         with self.assertRaises(ConfigurationError) as ctx:
-            _make_preprocessor(config=_make_config(
-                molecules_to_include=['invalid_mol']))
+            _make_preprocessor(config=_make_config(molecules_to_include=["invalid_mol"]))
         error_msg = str(ctx.exception)
         self.assertIn("aspirin", error_msg)
 
@@ -537,114 +552,116 @@ class TestValidateConfigMolecules(unittest.TestCase):
 # GROUP 9: preprocess — Full Pipeline Success (5 tests)
 # ============================================================================
 
+
 class TestPreprocessFullPipeline(unittest.TestCase):
     """Test preprocess() full pipeline execution with mocked dependencies."""
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_full_pipeline_returns_output_path(self, mock_extract, mock_parse, mock_build):
         """Full pipeline returns the configured output_npz_path."""
         config = _make_config()
-        _, result = _create_and_run_pipeline(
-            config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+        _, result = _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_extract_called_with_archive_path(self, mock_extract, mock_parse, mock_build):
         """Step 1: _extract_archive called with correct archive path."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        mock_extract.assert_called_once_with(Path(config['raw_archive_path']))
+        mock_extract.assert_called_once_with(Path(config["raw_archive_path"]))
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_parse_called_with_extracted_dir(self, mock_extract, mock_parse, mock_build):
         """Step 2: _parse_rmd17_npz_files called with extracted directory."""
         extracted = Path("/tmp/rmd17_extract_test")
         config = _make_config()
         _create_and_run_pipeline(
-            config, mock_extract, mock_parse, mock_build,
-            extracted_dir=extracted)
+            config, mock_extract, mock_parse, mock_build, extracted_dir=extracted
+        )
         mock_parse.assert_called_once()
-        self.assertEqual(
-            mock_parse.call_args.kwargs.get('extracted_dir'), extracted)
+        self.assertEqual(mock_parse.call_args.kwargs.get("extracted_dir"), extracted)
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_build_npz_called_with_features(self, mock_extract, mock_parse, mock_build):
         """Step 3: _build_npz called with features from parse step."""
         features, metadata = _make_mock_features_and_metadata()
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build,
-            parse_return=(features, metadata))
+            _make_config(), mock_extract, mock_parse, mock_build, parse_return=(features, metadata)
+        )
         mock_build.assert_called_once()
         self.assertIs(mock_build.call_args[0][0], features)
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_build_npz_called_with_output_path(self, mock_extract, mock_parse, mock_build):
         """Step 3: _build_npz called with correct output path."""
         config = _make_config()
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
         mock_build.assert_called_once()
-        self.assertEqual(
-            mock_build.call_args[0][2], Path(config['output_npz_path']))
+        self.assertEqual(mock_build.call_args[0][2], Path(config["output_npz_path"]))
 
 
 # ============================================================================
 # GROUP 10: preprocess — Pipeline Step Ordering (2 tests)
 # ============================================================================
 
+
 class TestPreprocessStepOrdering(unittest.TestCase):
     """Test preprocess() executes pipeline steps in correct order."""
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_steps_execute_in_order(self, mock_extract, mock_parse, mock_build):
         """Steps execute in order: extract -> parse -> build."""
         config = _make_config()
         call_order = []
 
         def track_extract(path):
-            call_order.append('extract')
+            call_order.append("extract")
             return Path("/tmp/rmd17_extract_fake")
 
         def track_parse(**kw):
-            call_order.append('parse')
+            call_order.append("parse")
             return _make_mock_features_and_metadata()
 
         def track_build(*args, **kw):
-            call_order.append('build')
+            call_order.append("build")
 
         mock_extract.side_effect = track_extract
         mock_parse.side_effect = track_parse
         mock_build.side_effect = track_build
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 preprocessor.preprocess()
 
-        self.assertEqual(call_order, ['extract', 'parse', 'build'])
+        self.assertEqual(call_order, ["extract", "parse", "build"])
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_build_receives_parse_output(self, mock_extract, mock_parse, mock_build):
         """Step 3 receives features and metadata from Step 2."""
         expected_features, expected_meta = _make_mock_features_and_metadata()
         _create_and_run_pipeline(
-            _make_config(), mock_extract, mock_parse, mock_build,
-            parse_return=(expected_features, expected_meta))
+            _make_config(),
+            mock_extract,
+            mock_parse,
+            mock_build,
+            parse_return=(expected_features, expected_meta),
+        )
         self.assertIs(mock_build.call_args[0][0], expected_features)
         self.assertIs(mock_build.call_args[0][1], expected_meta)
 
@@ -653,73 +670,70 @@ class TestPreprocessStepOrdering(unittest.TestCase):
 # GROUP 11: preprocess — Error Wrapping (5 tests)
 # ============================================================================
 
+
 class TestPreprocessErrorWrapping(unittest.TestCase):
     """Test preprocess() wraps all exceptions in DataProcessingError."""
 
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_extract_error_wrapped(self, mock_extract):
         """Extraction RuntimeError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.side_effect = RuntimeError("Archive corrupt")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIn("rMD17 preprocessing failed", str(ctx.exception))
 
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_parse_error_wrapped(self, mock_extract, mock_parse):
         """Parse RuntimeError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.return_value = Path("/tmp/fake_extract")
         mock_parse.side_effect = RuntimeError("NPZ corrupt")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 with self.assertRaises(DataProcessingError):
                     preprocessor.preprocess()
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_build_error_wrapped(self, mock_extract, mock_parse, mock_build):
         """_build_npz IOError wrapped in DataProcessingError."""
         config = _make_config()
         mock_extract.return_value = Path("/tmp/fake_extract")
         mock_parse.return_value = _make_mock_features_and_metadata()
-        mock_build.side_effect = IOError("Disk full")
+        mock_build.side_effect = OSError("Disk full")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 with self.assertRaises(DataProcessingError):
                     preprocessor.preprocess()
 
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_wrapped_error_preserves_cause(self, mock_extract):
         """DataProcessingError preserves original exception as __cause__."""
         config = _make_config()
         original_error = RuntimeError("Original error")
         mock_extract.side_effect = original_error
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor.preprocess()
         self.assertIs(ctx.exception.__cause__, original_error)
 
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_wrapped_error_has_rmd17_context(self, mock_extract):
         """DataProcessingError message mentions rMD17.
 
@@ -728,8 +742,7 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         config = _make_config()
         mock_extract.side_effect = RuntimeError("fail")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
             with self.assertRaises(DataProcessingError) as ctx:
@@ -741,70 +754,68 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
 # GROUP 12: preprocess — Default Values (5 tests)
 # ============================================================================
 
+
 class TestPreprocessDefaults(unittest.TestCase):
     """Test preprocess() uses correct defaults for optional config keys."""
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_default_molecules_to_include_is_none(self, mock_extract, mock_parse, mock_build):
         """Default molecules_to_include is None (all molecules).
 
         Evidence: rmd17.py line 220 — config.get('molecules_to_include', None).
         """
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertIsNone(
-            mock_parse.call_args.kwargs.get('molecules_to_include'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("molecules_to_include"))
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_default_max_conformers_is_none(self, mock_extract, mock_parse, mock_build):
         """Default max_conformers_per_molecule is None (all conformers).
 
         Evidence: rmd17.py line 221 — config.get('max_conformers_per_molecule', None).
         """
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertIsNone(
-            mock_parse.call_args.kwargs.get('max_conformers'))
+        self.assertIsNone(mock_parse.call_args.kwargs.get("max_conformers"))
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_default_include_old_data_is_false(self, mock_extract, mock_parse, mock_build):
         """Default include_old_data is False.
 
         Evidence: rmd17.py line 222 — config.get('include_old_data', False).
         """
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build)
-        self.assertFalse(
-            mock_parse.call_args.kwargs.get('include_old_data'))
+        self.assertFalse(mock_parse.call_args.kwargs.get("include_old_data"))
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_explicit_molecules_passed_to_parser(self, mock_extract, mock_parse, mock_build):
         """Explicit molecules_to_include config passed to _parse_rmd17_npz_files."""
-        config = _make_config(molecules_to_include=['aspirin', 'benzene'])
+        config = _make_config(molecules_to_include=["aspirin", "benzene"])
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
         self.assertEqual(
-            mock_parse.call_args.kwargs.get('molecules_to_include'),
-            ['aspirin', 'benzene'])
+            mock_parse.call_args.kwargs.get("molecules_to_include"), ["aspirin", "benzene"]
+        )
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_explicit_max_conformers_passed_to_parser(self, mock_extract, mock_parse, mock_build):
         """Explicit max_conformers_per_molecule passed to _parse_rmd17_npz_files."""
         config = _make_config(max_conformers_per_molecule=500)
         _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(
-            mock_parse.call_args.kwargs.get('max_conformers'), 500)
+        self.assertEqual(mock_parse.call_args.kwargs.get("max_conformers"), 500)
 
 
 # ============================================================================
 # GROUP 13: preprocess — Cleanup Behavior (4 tests)
 # ============================================================================
+
 
 class TestPreprocessCleanup(unittest.TestCase):
     """Test preprocess() cleanup behavior (Step 4).
@@ -814,52 +825,49 @@ class TestPreprocessCleanup(unittest.TestCase):
     """
 
     @patch("milia_pipeline.preprocessing.preprocessors.rmd17.shutil.rmtree")
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
-    def test_cleanup_called_when_enabled(self, mock_extract, mock_parse,
-                                         mock_build, mock_rmtree):
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
+    def test_cleanup_called_when_enabled(self, mock_extract, mock_parse, mock_build, mock_rmtree):
         """Cleanup removes temp directory when cleanup_temp=True (default)."""
         config = _make_config()
         mock_parse.return_value = _make_mock_features_and_metadata()
         extracted = Path("/tmp/rmd17_extract_test")
         mock_extract.return_value = extracted
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=True):
+            with patch.object(Path, "exists", return_value=True):
                 preprocessor.preprocess()
 
         mock_rmtree.assert_called_once_with(extracted)
 
     @patch("milia_pipeline.preprocessing.preprocessors.rmd17.shutil.rmtree")
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
-    def test_cleanup_skipped_when_disabled(self, mock_extract, mock_parse,
-                                            mock_build, mock_rmtree):
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
+    def test_cleanup_skipped_when_disabled(self, mock_extract, mock_parse, mock_build, mock_rmtree):
         """Cleanup skipped when cleanup_temp=False."""
         config = _make_config(cleanup_temp=False)
         mock_parse.return_value = _make_mock_features_and_metadata()
         mock_extract.return_value = Path("/tmp/rmd17_extract_test")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=True):
+            with patch.object(Path, "exists", return_value=True):
                 preprocessor.preprocess()
 
         mock_rmtree.assert_not_called()
 
     @patch("milia_pipeline.preprocessing.preprocessors.rmd17.shutil.rmtree")
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
-    def test_cleanup_runs_even_on_parse_failure(self, mock_extract, mock_parse,
-                                                  mock_build, mock_rmtree):
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
+    def test_cleanup_runs_even_on_parse_failure(
+        self, mock_extract, mock_parse, mock_build, mock_rmtree
+    ):
         """Cleanup runs even when parse raises (finally block).
 
         Evidence: rmd17.py lines 258-263 — cleanup is in finally block.
@@ -868,32 +876,31 @@ class TestPreprocessCleanup(unittest.TestCase):
         mock_extract.return_value = Path("/tmp/rmd17_extract_test")
         mock_parse.side_effect = RuntimeError("Parse failed")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=True):
+            with patch.object(Path, "exists", return_value=True):
                 with self.assertRaises(DataProcessingError):
                     preprocessor.preprocess()
 
         mock_rmtree.assert_called_once()
 
     @patch("milia_pipeline.preprocessing.preprocessors.rmd17.shutil.rmtree")
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
-    def test_cleanup_skipped_when_dir_not_exists(self, mock_extract, mock_parse,
-                                                   mock_build, mock_rmtree):
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
+    def test_cleanup_skipped_when_dir_not_exists(
+        self, mock_extract, mock_parse, mock_build, mock_rmtree
+    ):
         """Cleanup skipped when extracted_dir no longer exists."""
         config = _make_config()
         mock_parse.return_value = _make_mock_features_and_metadata()
         mock_extract.return_value = Path("/tmp/rmd17_extract_test")
 
-        exists_fn = _path_exists_factory(
-            config['raw_archive_path'], config['output_npz_path'])
+        exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, 'exists', return_value=False):
+            with patch.object(Path, "exists", return_value=False):
                 preprocessor.preprocess()
 
         mock_rmtree.assert_not_called()
@@ -902,6 +909,7 @@ class TestPreprocessCleanup(unittest.TestCase):
 # ============================================================================
 # GROUP 14: _extract_archive — Archive Extraction (4 tests)
 # ============================================================================
+
 
 class TestExtractArchive(unittest.TestCase):
     """Test _extract_archive() for tar.bz2 extraction logic.
@@ -916,25 +924,28 @@ class TestExtractArchive(unittest.TestCase):
         preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_data_dir = Path(tmpdir) / 'rmd17' / 'npz_data'
+            npz_data_dir = Path(tmpdir) / "rmd17" / "npz_data"
             npz_data_dir.mkdir(parents=True)
-            np.savez(str(npz_data_dir / 'rmd17_benzene.npz'),
-                     nuclear_charges=np.array([6, 1], dtype=np.uint8))
+            np.savez(
+                str(npz_data_dir / "rmd17_benzene.npz"),
+                nuclear_charges=np.array([6, 1], dtype=np.uint8),
+            )
 
-            archive_path = Path(tmpdir) / 'rmd17.tar.bz2'
+            archive_path = Path(tmpdir) / "rmd17.tar.bz2"
             import tarfile
-            with tarfile.open(archive_path, 'w:bz2') as tar:
-                tar.add(str(Path(tmpdir) / 'rmd17'), arcname='rmd17')
+
+            with tarfile.open(archive_path, "w:bz2") as tar:
+                tar.add(str(Path(tmpdir) / "rmd17"), arcname="rmd17")
 
             result = preprocessor._extract_archive(archive_path)
             try:
-                npz_files = list(result.glob('rmd17_*.npz'))
+                npz_files = list(result.glob("rmd17_*.npz"))
                 self.assertGreater(len(npz_files), 0)
             finally:
                 parent = result
-                while parent.name and 'rmd17_extract_' not in parent.name:
+                while parent.name and "rmd17_extract_" not in parent.name:
                     parent = parent.parent
-                if parent.exists() and 'rmd17_extract_' in parent.name:
+                if parent.exists() and "rmd17_extract_" in parent.name:
                     shutil.rmtree(parent)
 
     @patch("pathlib.Path.exists", return_value=True)
@@ -943,14 +954,15 @@ class TestExtractArchive(unittest.TestCase):
         preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            empty_dir = Path(tmpdir) / 'empty'
+            empty_dir = Path(tmpdir) / "empty"
             empty_dir.mkdir()
-            (empty_dir / 'readme.txt').write_text('empty')
+            (empty_dir / "readme.txt").write_text("empty")
 
-            archive_path = Path(tmpdir) / 'empty.tar.bz2'
+            archive_path = Path(tmpdir) / "empty.tar.bz2"
             import tarfile
-            with tarfile.open(archive_path, 'w:bz2') as tar:
-                tar.add(str(empty_dir), arcname='empty')
+
+            with tarfile.open(archive_path, "w:bz2") as tar:
+                tar.add(str(empty_dir), arcname="empty")
 
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor._extract_archive(archive_path)
@@ -962,8 +974,8 @@ class TestExtractArchive(unittest.TestCase):
         preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            corrupt_path = Path(tmpdir) / 'corrupt.tar.bz2'
-            corrupt_path.write_bytes(b'not a tar file')
+            corrupt_path = Path(tmpdir) / "corrupt.tar.bz2"
+            corrupt_path.write_bytes(b"not a tar file")
 
             with self.assertRaises(DataProcessingError) as ctx:
                 preprocessor._extract_archive(corrupt_path)
@@ -978,32 +990,35 @@ class TestExtractArchive(unittest.TestCase):
         preprocessor = _make_preprocessor()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            flat_dir = Path(tmpdir) / 'flat'
+            flat_dir = Path(tmpdir) / "flat"
             flat_dir.mkdir()
-            np.savez(str(flat_dir / 'rmd17_ethanol.npz'),
-                     nuclear_charges=np.array([6, 1], dtype=np.uint8))
+            np.savez(
+                str(flat_dir / "rmd17_ethanol.npz"),
+                nuclear_charges=np.array([6, 1], dtype=np.uint8),
+            )
 
-            archive_path = Path(tmpdir) / 'flat.tar.bz2'
+            archive_path = Path(tmpdir) / "flat.tar.bz2"
             import tarfile
-            with tarfile.open(archive_path, 'w:bz2') as tar:
-                tar.add(str(flat_dir / 'rmd17_ethanol.npz'),
-                        arcname='rmd17_ethanol.npz')
+
+            with tarfile.open(archive_path, "w:bz2") as tar:
+                tar.add(str(flat_dir / "rmd17_ethanol.npz"), arcname="rmd17_ethanol.npz")
 
             result = preprocessor._extract_archive(archive_path)
             try:
-                npz_files = list(result.glob('rmd17_*.npz'))
+                npz_files = list(result.glob("rmd17_*.npz"))
                 self.assertGreater(len(npz_files), 0)
             finally:
                 parent = result
-                while parent.name and 'rmd17_extract_' not in parent.name:
+                while parent.name and "rmd17_extract_" not in parent.name:
                     parent = parent.parent
-                if parent.exists() and 'rmd17_extract_' in parent.name:
+                if parent.exists() and "rmd17_extract_" in parent.name:
                     shutil.rmtree(parent)
 
 
 # ============================================================================
 # GROUP 15: _parse_rmd17_npz_files — Core Parsing Logic (8 tests)
 # ============================================================================
+
 
 class TestParseRmd17NpzFiles(unittest.TestCase):
     """Test _parse_rmd17_npz_files internal method for NPZ parsing and unit conversion."""
@@ -1013,12 +1028,18 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         """_parse_rmd17_npz_files returns (features_dict, metadata_dict) tuple."""
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=9, n_conf=3),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=9, n_conf=3),
+                },
+            )
             features, metadata = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol'],
-                max_conformers=None, include_old_data=False)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol"],
+                max_conformers=None,
+                include_old_data=False,
+            )
             self.assertIsInstance(features, dict)
             self.assertIsInstance(metadata, dict)
 
@@ -1032,20 +1053,26 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         energy_kcal = 100.0
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'benzene': {
-                    'nuclear_charges': np.array([6, 1], dtype=np.uint8),
-                    'coords': np.random.randn(1, 2, 3).astype(np.float32),
-                    'energies': np.array([energy_kcal], dtype=np.float64),
-                    'forces': np.random.randn(1, 2, 3).astype(np.float32),
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "benzene": {
+                        "nuclear_charges": np.array([6, 1], dtype=np.uint8),
+                        "coords": np.random.randn(1, 2, 3).astype(np.float32),
+                        "energies": np.array([energy_kcal], dtype=np.float64),
+                        "forces": np.random.randn(1, 2, 3).astype(np.float32),
+                    },
                 },
-            })
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['benzene'],
-                max_conformers=None, include_old_data=False)
+                extracted_dir=npz_dir,
+                molecules_to_include=["benzene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
 
             expected_hartree = energy_kcal * KCAL_MOL_TO_HARTREE
-            self.assertAlmostEqual(features['energies'][0], expected_hartree, places=12)
+            self.assertAlmostEqual(features["energies"][0], expected_hartree, places=12)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_converts_forces_to_hartree(self, mock_exists):
@@ -1057,20 +1084,26 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         force_kcal = np.array([[[10.0, 20.0, 30.0]]], dtype=np.float32)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'benzene': {
-                    'nuclear_charges': np.array([6], dtype=np.uint8),
-                    'coords': np.random.randn(1, 1, 3).astype(np.float32),
-                    'energies': np.array([-100.0], dtype=np.float64),
-                    'forces': force_kcal,
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "benzene": {
+                        "nuclear_charges": np.array([6], dtype=np.uint8),
+                        "coords": np.random.randn(1, 1, 3).astype(np.float32),
+                        "energies": np.array([-100.0], dtype=np.float64),
+                        "forces": force_kcal,
+                    },
                 },
-            })
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['benzene'],
-                max_conformers=None, include_old_data=False)
+                extracted_dir=npz_dir,
+                molecules_to_include=["benzene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
 
             expected = force_kcal[0] * KCAL_MOL_TO_HARTREE
-            np.testing.assert_allclose(features['forces'][0], expected, rtol=1e-6)
+            np.testing.assert_allclose(features["forces"][0], expected, rtol=1e-6)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_preserves_uint8_atom_dtype(self, mock_exists):
@@ -1080,18 +1113,24 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'benzene': {
-                    'nuclear_charges': np.array([6, 6, 1, 1], dtype=np.uint8),
-                    'coords': np.random.randn(1, 4, 3).astype(np.float32),
-                    'energies': np.array([-100.0], dtype=np.float64),
-                    'forces': np.random.randn(1, 4, 3).astype(np.float32),
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "benzene": {
+                        "nuclear_charges": np.array([6, 6, 1, 1], dtype=np.uint8),
+                        "coords": np.random.randn(1, 4, 3).astype(np.float32),
+                        "energies": np.array([-100.0], dtype=np.float64),
+                        "forces": np.random.randn(1, 4, 3).astype(np.float32),
+                    },
                 },
-            })
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['benzene'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(features['atoms'][0].dtype, np.uint8)
+                extracted_dir=npz_dir,
+                molecules_to_include=["benzene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(features["atoms"][0].dtype, np.uint8)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_applies_max_conformers_limit(self, mock_exists):
@@ -1101,30 +1140,42 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=3, n_conf=10),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=3, n_conf=10),
+                },
+            )
             features, metadata = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol'],
-                max_conformers=3, include_old_data=False)
-            self.assertEqual(metadata['total_conformers'], 3)
-            self.assertEqual(len(features['energies']), 3)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol"],
+                max_conformers=3,
+                include_old_data=False,
+            )
+            self.assertEqual(metadata["total_conformers"], 3)
+            self.assertEqual(len(features["energies"]), 3)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_multiple_molecules(self, mock_exists):
         """_parse_rmd17_npz_files combines data from multiple molecules."""
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=3, n_conf=2),
-                'benzene': _simple_molecule_data(n_atoms=4, n_conf=3),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=3, n_conf=2),
+                    "benzene": _simple_molecule_data(n_atoms=4, n_conf=3),
+                },
+            )
             features, metadata = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol', 'benzene'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(metadata['total_conformers'], 5)
-            self.assertEqual(metadata['molecule_counts']['ethanol'], 2)
-            self.assertEqual(metadata['molecule_counts']['benzene'], 3)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol", "benzene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(metadata["total_conformers"], 5)
+            self.assertEqual(metadata["molecule_counts"]["ethanol"], 2)
+            self.assertEqual(metadata["molecule_counts"]["benzene"], 3)
 
     def test_parse_skips_missing_molecule_file(self):
         """_parse_rmd17_npz_files skips molecules with missing NPZ files.
@@ -1139,15 +1190,21 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
             preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
             # Only create ethanol — aspirin NPZ does not exist on disk
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=2, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=2, n_conf=1),
+                },
+            )
             features, metadata = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol', 'aspirin'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(metadata['total_conformers'], 1)
-            self.assertIn('ethanol', metadata['molecule_counts'])
-            self.assertNotIn('aspirin', metadata['molecule_counts'])
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol", "aspirin"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
+            self.assertIn("ethanol", metadata["molecule_counts"])
+            self.assertNotIn("aspirin", metadata["molecule_counts"])
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_includes_old_data_when_requested(self, mock_exists):
@@ -1158,22 +1215,26 @@ class TestParseRmd17NpzFiles(unittest.TestCase):
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
             mol_data = _simple_molecule_data(n_atoms=2, n_conf=2)
-            mol_data['old_energies'] = np.array([-100.5, -99.5], dtype=np.float64)
-            mol_data['old_forces'] = np.random.randn(2, 2, 3).astype(np.float32)
-            mol_data['old_indices'] = np.array([42, 43], dtype=np.int64)
-            npz_dir = _make_mock_npz_dir(tmpdir, {'benzene': mol_data})
+            mol_data["old_energies"] = np.array([-100.5, -99.5], dtype=np.float64)
+            mol_data["old_forces"] = np.random.randn(2, 2, 3).astype(np.float32)
+            mol_data["old_indices"] = np.array([42, 43], dtype=np.int64)
+            npz_dir = _make_mock_npz_dir(tmpdir, {"benzene": mol_data})
 
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['benzene'],
-                max_conformers=None, include_old_data=True)
-            self.assertIn('old_energies', features)
-            self.assertIn('old_forces', features)
-            self.assertIn('old_indices', features)
+                extracted_dir=npz_dir,
+                molecules_to_include=["benzene"],
+                max_conformers=None,
+                include_old_data=True,
+            )
+            self.assertIn("old_energies", features)
+            self.assertIn("old_forces", features)
+            self.assertIn("old_indices", features)
 
 
 # ============================================================================
 # GROUP 16: _parse_rmd17_npz_files — Metadata (6 tests)
 # ============================================================================
+
 
 class TestParseMetadata(unittest.TestCase):
     """Test _parse_rmd17_npz_files metadata construction."""
@@ -1185,10 +1246,10 @@ class TestParseMetadata(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             npz_dir = _make_mock_npz_dir(tmpdir, molecules_data)
             kwargs = {
-                'extracted_dir': npz_dir,
-                'molecules_to_include': list(molecules_data.keys()),
-                'max_conformers': None,
-                'include_old_data': False,
+                "extracted_dir": npz_dir,
+                "molecules_to_include": list(molecules_data.keys()),
+                "max_conformers": None,
+                "include_old_data": False,
             }
             kwargs.update(parse_kwargs)
             return preprocessor._parse_rmd17_npz_files(**kwargs)
@@ -1196,47 +1257,55 @@ class TestParseMetadata(unittest.TestCase):
     def test_metadata_energy_units_hartree(self):
         """Metadata energy_units is 'hartree'."""
         _, metadata = self._run_parse_with_data(
-            {'benzene': _simple_molecule_data(n_atoms=1, n_conf=1)})
-        self.assertEqual(metadata['energy_units'], 'hartree')
+            {"benzene": _simple_molecule_data(n_atoms=1, n_conf=1)}
+        )
+        self.assertEqual(metadata["energy_units"], "hartree")
 
     def test_metadata_force_units(self):
         """Metadata force_units is 'hartree/angstrom'."""
         _, metadata = self._run_parse_with_data(
-            {'benzene': _simple_molecule_data(n_atoms=1, n_conf=1)})
-        self.assertEqual(metadata['force_units'], 'hartree/angstrom')
+            {"benzene": _simple_molecule_data(n_atoms=1, n_conf=1)}
+        )
+        self.assertEqual(metadata["force_units"], "hartree/angstrom")
 
     def test_metadata_original_energy_units(self):
         """Metadata original_energy_units is 'kcal/mol'."""
         _, metadata = self._run_parse_with_data(
-            {'benzene': _simple_molecule_data(n_atoms=1, n_conf=1)})
-        self.assertEqual(metadata['original_energy_units'], 'kcal/mol')
+            {"benzene": _simple_molecule_data(n_atoms=1, n_conf=1)}
+        )
+        self.assertEqual(metadata["original_energy_units"], "kcal/mol")
 
     def test_metadata_conversion_factor(self):
         """Metadata conversion_factor matches KCAL_MOL_TO_HARTREE constant."""
         _, metadata = self._run_parse_with_data(
-            {'benzene': _simple_molecule_data(n_atoms=1, n_conf=1)})
-        self.assertEqual(metadata['conversion_factor'], KCAL_MOL_TO_HARTREE)
+            {"benzene": _simple_molecule_data(n_atoms=1, n_conf=1)}
+        )
+        self.assertEqual(metadata["conversion_factor"], KCAL_MOL_TO_HARTREE)
 
     def test_metadata_level_of_theory(self):
         """Metadata level_of_theory is 'PBE/def2-SVP'."""
         _, metadata = self._run_parse_with_data(
-            {'benzene': _simple_molecule_data(n_atoms=1, n_conf=1)})
-        self.assertEqual(metadata['level_of_theory'], 'PBE/def2-SVP')
+            {"benzene": _simple_molecule_data(n_atoms=1, n_conf=1)}
+        )
+        self.assertEqual(metadata["level_of_theory"], "PBE/def2-SVP")
 
     def test_metadata_atom_statistics(self):
         """Metadata includes correct atom count statistics."""
-        _, metadata = self._run_parse_with_data({
-            'ethanol': _simple_molecule_data(n_atoms=3, n_conf=1),
-            'benzene': _simple_molecule_data(n_atoms=6, n_conf=1),
-        })
-        self.assertEqual(metadata['min_atoms'], 3)
-        self.assertEqual(metadata['max_atoms'], 6)
-        self.assertAlmostEqual(metadata['mean_atoms'], 4.5)
+        _, metadata = self._run_parse_with_data(
+            {
+                "ethanol": _simple_molecule_data(n_atoms=3, n_conf=1),
+                "benzene": _simple_molecule_data(n_atoms=6, n_conf=1),
+            }
+        )
+        self.assertEqual(metadata["min_atoms"], 3)
+        self.assertEqual(metadata["max_atoms"], 6)
+        self.assertAlmostEqual(metadata["mean_atoms"], 4.5)
 
 
 # ============================================================================
 # GROUP 17: _build_npz — Internal Method Logic (4 tests)
 # ============================================================================
+
 
 class TestBuildNpz(unittest.TestCase):
     """Test _build_npz internal method for NPZ file construction."""
@@ -1263,7 +1332,7 @@ class TestBuildNpz(unittest.TestCase):
             output_path = Path(tmpdir) / "test_output.npz"
             preprocessor._build_npz(features, metadata, output_path)
             loaded = np.load(str(output_path), allow_pickle=True)
-            self.assertIn('_metadata', loaded.files)
+            self.assertIn("_metadata", loaded.files)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_build_npz_creates_parent_directory(self, mock_exists):
@@ -1295,6 +1364,7 @@ class TestBuildNpz(unittest.TestCase):
 # GROUP 18: BasePreprocessor Integration — run() Method (5 tests)
 # ============================================================================
 
+
 class TestBasePreprocessorRunIntegration(unittest.TestCase):
     """Test RMD17Preprocessor works with BasePreprocessor.run() method."""
 
@@ -1310,17 +1380,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         call_order = []
 
         def mock_preprocess():
-            call_order.append('preprocess')
+            call_order.append("preprocess")
             return Path("/tmp/test_output.npz")
 
         def mock_validate_output(path):
-            call_order.append('validate_output')
+            call_order.append("validate_output")
 
-        with patch.object(preprocessor, 'preprocess', side_effect=mock_preprocess):
-            with patch.object(preprocessor, '_validate_output', side_effect=mock_validate_output):
+        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
+            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
                 preprocessor.run()
 
-        self.assertEqual(call_order, ['preprocess', 'validate_output'])
+        self.assertEqual(call_order, ["preprocess", "validate_output"])
 
     def test_run_raises_on_invalid_config(self):
         """Construction raises ConfigurationError when config is invalid."""
@@ -1331,8 +1401,7 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
     def test_run_calls_preprocess(self, mock_exists):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(preprocessor, 'preprocess',
-                          wraps=preprocessor.preprocess) as mock_pp:
+        with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
             try:
                 preprocessor.run()
             except Exception:
@@ -1341,16 +1410,17 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
 
     def test_has_run_method_from_base(self):
         """RMD17Preprocessor inherits run() from BasePreprocessor."""
-        self.assertTrue(hasattr(RMD17Preprocessor, 'run'))
+        self.assertTrue(hasattr(RMD17Preprocessor, "run"))
 
     def test_has_validate_output_from_base(self):
         """RMD17Preprocessor inherits _validate_output() from BasePreprocessor."""
-        self.assertTrue(hasattr(RMD17Preprocessor, '_validate_output'))
+        self.assertTrue(hasattr(RMD17Preprocessor, "_validate_output"))
 
 
 # ============================================================================
 # GROUP 19: Edge Cases and Robustness (8 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndRobustness(unittest.TestCase):
     """Test edge cases and robustness scenarios."""
@@ -1359,22 +1429,22 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
     def test_config_with_extra_unknown_keys_still_valid(self, mock_exists):
         """Config with extra unknown keys does not cause validation errors."""
         config = _make_config()
-        config['extra_key'] = 'extra_value'
+        config["extra_key"] = "extra_value"
         _make_preprocessor(config=config)
 
-    @patch.object(RMD17Preprocessor, '_build_npz')
-    @patch.object(RMD17Preprocessor, '_parse_rmd17_npz_files')
-    @patch.object(RMD17Preprocessor, '_extract_archive')
+    @patch.object(RMD17Preprocessor, "_build_npz")
+    @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
+    @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_preprocess_with_all_config_options(self, mock_extract, mock_parse, mock_build):
         """Pipeline works with all optional config options specified."""
         config = _make_config(
-            molecules_to_include=['aspirin', 'benzene'],
+            molecules_to_include=["aspirin", "benzene"],
             max_conformers_per_molecule=100,
             include_old_data=True,
-            cleanup_temp=False)
-        _, result = _create_and_run_pipeline(
-            config, mock_extract, mock_parse, mock_build)
-        self.assertEqual(result, Path(config['output_npz_path']))
+            cleanup_temp=False,
+        )
+        _, result = _create_and_run_pipeline(config, mock_extract, mock_parse, mock_build)
+        self.assertEqual(result, Path(config["output_npz_path"]))
 
     def test_parse_defaults_to_all_molecules_when_none(self):
         """_parse_rmd17_npz_files processes all RMD17_MOLECULES when None.
@@ -1389,14 +1459,20 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         with patch("pathlib.Path.exists", return_value=True):
             preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=2, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=2, n_conf=1),
+                },
+            )
             features, metadata = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=None,
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(metadata['total_conformers'], 1)
-            self.assertEqual(metadata['molecules_included'], RMD17_MOLECULES)
+                extracted_dir=npz_dir,
+                molecules_to_include=None,
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(metadata["total_conformers"], 1)
+            self.assertEqual(metadata["molecules_included"], RMD17_MOLECULES)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_stores_molecule_names(self, mock_exists):
@@ -1406,14 +1482,20 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'toluene': _simple_molecule_data(n_atoms=2, n_conf=2),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "toluene": _simple_molecule_data(n_atoms=2, n_conf=2),
+                },
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['toluene'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(features['molecule_name'][0], 'toluene')
-            self.assertEqual(features['molecule_name'][1], 'toluene')
+                extracted_dir=npz_dir,
+                molecules_to_include=["toluene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(features["molecule_name"][0], "toluene")
+            self.assertEqual(features["molecule_name"][1], "toluene")
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_coordinates_are_float32(self, mock_exists):
@@ -1423,13 +1505,19 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=2, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=2, n_conf=1),
+                },
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(features['coordinates'][0].dtype, np.float32)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(features["coordinates"][0].dtype, np.float32)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_forces_are_float32(self, mock_exists):
@@ -1439,13 +1527,19 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=2, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=2, n_conf=1),
+                },
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(features['forces'][0].dtype, np.float32)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(features["forces"][0].dtype, np.float32)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_energies_are_float64(self, mock_exists):
@@ -1455,26 +1549,38 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
         """
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'ethanol': _simple_molecule_data(n_atoms=2, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "ethanol": _simple_molecule_data(n_atoms=2, n_conf=1),
+                },
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['ethanol'],
-                max_conformers=None, include_old_data=False)
-            self.assertEqual(features['energies'].dtype, np.float64)
+                extracted_dir=npz_dir,
+                molecules_to_include=["ethanol"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            self.assertEqual(features["energies"].dtype, np.float64)
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_parse_feature_keys_present(self, mock_exists):
         """_parse_rmd17_npz_files returns all expected feature keys."""
         preprocessor = _make_preprocessor()
         with tempfile.TemporaryDirectory() as tmpdir:
-            npz_dir = _make_mock_npz_dir(tmpdir, {
-                'benzene': _simple_molecule_data(n_atoms=3, n_conf=1),
-            })
+            npz_dir = _make_mock_npz_dir(
+                tmpdir,
+                {
+                    "benzene": _simple_molecule_data(n_atoms=3, n_conf=1),
+                },
+            )
             features, _ = preprocessor._parse_rmd17_npz_files(
-                extracted_dir=npz_dir, molecules_to_include=['benzene'],
-                max_conformers=None, include_old_data=False)
-            expected_keys = {'atoms', 'coordinates', 'energies', 'forces', 'molecule_name'}
+                extracted_dir=npz_dir,
+                molecules_to_include=["benzene"],
+                max_conformers=None,
+                include_old_data=False,
+            )
+            expected_keys = {"atoms", "coordinates", "energies", "forces", "molecule_name"}
             self.assertEqual(set(features.keys()), expected_keys)
 
 
@@ -1482,31 +1588,32 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestRMD17PreprocessorIdentity,        # GROUP 1:   6 tests
-        TestModuleLevelConstants,              # GROUP 2:   6 tests
-        TestBuildObjectArray,                  # GROUP 3:   5 tests
-        TestValidateConfigSuccess,             # GROUP 4:   5 tests
-        TestValidateConfigMissingKeys,         # GROUP 5:   4 tests
-        TestValidateConfigPathValidation,      # GROUP 6:   3 tests
-        TestValidateConfigArchiveExtension,    # GROUP 7:   3 tests
-        TestValidateConfigMolecules,           # GROUP 8:   4 tests
-        TestPreprocessFullPipeline,            # GROUP 9:   5 tests
-        TestPreprocessStepOrdering,            # GROUP 10:  2 tests
-        TestPreprocessErrorWrapping,           # GROUP 11:  5 tests
-        TestPreprocessDefaults,                # GROUP 12:  5 tests
-        TestPreprocessCleanup,                 # GROUP 13:  4 tests
-        TestExtractArchive,                    # GROUP 14:  4 tests
-        TestParseRmd17NpzFiles,                # GROUP 15:  8 tests
-        TestParseMetadata,                     # GROUP 16:  6 tests
-        TestBuildNpz,                          # GROUP 17:  4 tests
-        TestBasePreprocessorRunIntegration,    # GROUP 18:  5 tests
-        TestEdgeCasesAndRobustness,            # GROUP 19:  8 tests
+        TestRMD17PreprocessorIdentity,  # GROUP 1:   6 tests
+        TestModuleLevelConstants,  # GROUP 2:   6 tests
+        TestBuildObjectArray,  # GROUP 3:   5 tests
+        TestValidateConfigSuccess,  # GROUP 4:   5 tests
+        TestValidateConfigMissingKeys,  # GROUP 5:   4 tests
+        TestValidateConfigPathValidation,  # GROUP 6:   3 tests
+        TestValidateConfigArchiveExtension,  # GROUP 7:   3 tests
+        TestValidateConfigMolecules,  # GROUP 8:   4 tests
+        TestPreprocessFullPipeline,  # GROUP 9:   5 tests
+        TestPreprocessStepOrdering,  # GROUP 10:  2 tests
+        TestPreprocessErrorWrapping,  # GROUP 11:  5 tests
+        TestPreprocessDefaults,  # GROUP 12:  5 tests
+        TestPreprocessCleanup,  # GROUP 13:  4 tests
+        TestExtractArchive,  # GROUP 14:  4 tests
+        TestParseRmd17NpzFiles,  # GROUP 15:  8 tests
+        TestParseMetadata,  # GROUP 16:  6 tests
+        TestBuildNpz,  # GROUP 17:  4 tests
+        TestBasePreprocessorRunIntegration,  # GROUP 18:  5 tests
+        TestEdgeCasesAndRobustness,  # GROUP 19:  8 tests
     ]
 
     for test_class in test_classes:

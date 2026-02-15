@@ -1,9 +1,9 @@
 # MILIA YAML SPLITTING IMPLEMENTATION BLUEPRINT
 
-**Document Version**: 2.2 (data_config.yaml Removal Update)  
-**Date**: February 02, 2026  
-**Status**: ✅ IMPLEMENTED AND VERIFIED  
-**Target Modules**: 
+**Document Version**: 2.2 (data_config.yaml Removal Update)
+**Date**: February 02, 2026
+**Status**: ✅ IMPLEMENTED AND VERIFIED
+**Target Modules**:
 - `milia_pipeline/config/config_loader.py` (PRIMARY - 95% of changes)
 - `milia_pipeline/cli_manager.py` (SECONDARY - 2 minor updates)
 
@@ -168,7 +168,7 @@ _stats_lock = threading.Lock()
 #### 3.1.2 Entry Point Function Signature (Lines 403-405)
 
 ```python
-def load_config(config_path=None, enable_enhancement=True, enable_migration=True, 
+def load_config(config_path=None, enable_enhancement=True, enable_migration=True,
                enable_validation=True, validation_level='NORMAL', force_reload=False,
                report_validation=True):
 ```
@@ -180,11 +180,11 @@ def load_config(config_path=None, enable_enhancement=True, enable_migration=True
 def _get_default_config_path():
     """Get the default configuration file path"""
     possible_paths = ['config.yaml', 'config.yml', './configs/config.yaml']
-    
+
     for path in possible_paths:
         if os.path.exists(path):
             return path
-    
+
     return 'config.yaml'
 ```
 
@@ -193,17 +193,17 @@ def _get_default_config_path():
 def _get_default_config_path():
     """
     Get the default configuration file or directory path.
-    
+
     YAML Splitting Enhancement:
     - Now supports both single-file (backward compatible) and directory (split-file) modes
-    
+
     Priority Order:
     1. config.yaml (single file in CWD) - HIGHEST, backward compatible
     2. config.yml (single file in CWD)
     3. ./configs/ (directory) - triggers split-file mode
        NOTE: Uses 'configs/' (plural) to avoid confusion with milia_pipeline/config/ (Python code)
     4. ./configs/config.yaml (single file inside configs/) - fallback
-    
+
     Edge Case Clarification:
     - If ./configs/ directory exists, it takes priority over ./configs/config.yaml
     - The directory mode will then discover ALL *.yaml files inside ./configs/
@@ -211,23 +211,23 @@ def _get_default_config_path():
       loaded as part of the directory merge (see _collect_yaml_files)
     """
     from pathlib import Path
-    
+
     # Priority 1: Single file (backward compatible)
     for file_path in ['config.yaml', 'config.yml']:
         if Path(file_path).is_file():
             return file_path
-    
+
     # Priority 2: Configs directory (NEW - split-file mode)
     # NOTE: 'configs/' (plural) avoids confusion with milia_pipeline/config/ (Python code module)
     configs_dir = Path('./configs')
     if configs_dir.is_dir():
         return str(configs_dir)
-    
+
     # Priority 3: config.yaml inside configs/ directory (legacy layout)
     config_in_dir = Path('./configs/config.yaml')
     if config_in_dir.is_file():
         return str(config_in_dir)
-    
+
     # Default fallback
     return 'config.yaml'
 ```
@@ -300,8 +300,8 @@ config = yaml.safe_load(content)  # Line 489
 | plugins | 2510-2700 | plugins.yaml |
 | prediction_config | 2710-2923 | prediction.yaml |
 
-**COLOCATION NOTE**: Each dataset's `property_availability.{DATASET}` and `data_config.property_selection.{DATASET}` 
-are colocated in the same file as `{dataset}_config`. This follows the industry best practice: 
+**COLOCATION NOTE**: Each dataset's `property_availability.{DATASET}` and `data_config.property_selection.{DATASET}`
+are colocated in the same file as `{dataset}_config`. This follows the industry best practice:
 "Place code as close to where it's relevant as possible" (Kent C. Dodds).
 
 ---
@@ -318,50 +318,50 @@ Add these functions BEFORE the `load_config()` function (insert at approximately
 def _discover_config_files(config_path: str) -> Tuple[bool, List[Path]]:
     """
     Discover configuration files for YAML splitting support.
-    
+
     Strategy:
     1. If config_path is a file that exists → single-file mode (backward compatible)
     2. If config_path is a directory → split-file mode (new feature)
     3. If config_path doesn't exist but config_path + '/' does → split-file mode
-    
+
     Args:
         config_path: Path to config file or directory
-        
+
     Returns:
         Tuple of (is_split_mode: bool, files: List[Path])
         - is_split_mode=False: files contains single config file path
         - is_split_mode=True: files contains all YAML files to merge (sorted)
-        
+
     File Discovery Order (for split mode):
     1. main.yaml (if exists) - loaded first as base
     2. All *.yaml and *.yml files in root (alphabetical)
     3. All *.yaml and *.yml files in datasets/ subdirectory (alphabetical)
-    
+
     YAML Splitting Architecture Evidence:
     - Home Assistant pattern: !include_dir_merge_named for directory-based splitting
-    - Industry standard: "Split large configuration files into smaller, 
+    - Industry standard: "Split large configuration files into smaller,
       purpose-specific ones to ease management" (Configu, 2024)
     - Python pathlib.Path.glob() for file discovery (Python 3.4+)
     """
     config_path = Path(config_path)
-    
+
     # Case 1: Single file exists (backward compatibility)
     if config_path.is_file():
         logger.debug(f"Single-file config mode: {config_path}")
         return (False, [config_path])
-    
+
     # Case 2: Directory exists (split-file mode)
     if config_path.is_dir():
         logger.debug(f"Split-file config mode: {config_path}")
         return (True, _collect_yaml_files(config_path))
-    
+
     # Case 3: Path might be intended as directory
     # (e.g., 'configs' when 'configs/' exists but 'configs' file doesn't)
     if config_path.with_suffix('').is_dir():
         dir_path = config_path.with_suffix('')
         logger.debug(f"Split-file config mode (inferred directory): {dir_path}")
         return (True, _collect_yaml_files(dir_path))
-    
+
     # Case 4: Neither exists - return as-is, let load_config() handle the error
     return (False, [config_path])
 
@@ -369,31 +369,31 @@ def _discover_config_files(config_path: str) -> Tuple[bool, List[Path]]:
 def _collect_yaml_files(config_dir: Path) -> List[Path]:
     """
     Collect all YAML files from config directory in merge order.
-    
+
     Merge Order (later files override earlier):
     1. main.yaml or main.yml (base configuration, if exists)
     2. Root-level *.yaml/*.yml (alphabetical, excluding main.yaml/main.yml)
        - This includes config.yaml if present (handles edge case where
          directory contains config.yaml instead of main.yaml)
     3. datasets/*.yaml/*.yml (alphabetical) - dataset-specific configs
-    
+
     Edge Case Handling:
     - If ./configs/ exists with config.yaml but NO main.yaml:
       config.yaml is picked up in step 2 (root-level files)
     - Files are sorted alphabetically, so 'config.yaml' loads before
       'datasets.yaml', 'models.yaml', etc.
-    
+
     Args:
         config_dir: Path to configuration directory
-        
+
     Returns:
         List of Path objects in merge order
-        
+
     Evidence: pathlib.Path.glob() is the modern Python standard for
     file discovery (Python docs, 3.4+)
     """
     files = []
-    
+
     # 1. Main config first (if exists) - preferred base file name
     main_yaml = config_dir / 'main.yaml'
     main_yml = config_dir / 'main.yml'
@@ -401,7 +401,7 @@ def _collect_yaml_files(config_dir: Path) -> List[Path]:
         files.append(main_yaml)
     elif main_yml.exists():
         files.append(main_yml)
-    
+
     # 2. Root-level YAML files (alphabetical, excluding main)
     # NOTE: This catches config.yaml if main.yaml doesn't exist
     root_yamls = sorted(
@@ -409,7 +409,7 @@ def _collect_yaml_files(config_dir: Path) -> List[Path]:
         + [f for f in config_dir.glob('*.yml') if f.name not in ('main.yml',)]
     )
     files.extend(root_yamls)
-    
+
     # 3. Dataset subdirectory (if exists)
     datasets_dir = config_dir / 'datasets'
     if datasets_dir.is_dir():
@@ -417,12 +417,12 @@ def _collect_yaml_files(config_dir: Path) -> List[Path]:
             list(datasets_dir.glob('*.yaml')) + list(datasets_dir.glob('*.yml'))
         )
         files.extend(dataset_yamls)
-    
+
     if not files:
         logger.warning(f"No YAML files found in config directory: {config_dir}")
     else:
         logger.debug(f"Discovered {len(files)} config files: {[f.name for f in files]}")
-    
+
     return files
 ```
 
@@ -432,41 +432,41 @@ def _collect_yaml_files(config_dir: Path) -> List[Path]:
 def _deep_merge_configs(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """
     Recursively merge two configuration dictionaries.
-    
+
     Dependencies: Python standard library ONLY (copy.deepcopy)
     NO external packages required (deepmerge/mergedeep NOT used)
-    
+
     Merge Strategy:
     - Dict + Dict: Recursive merge (nested keys combined)
     - List + List: Override (later list replaces earlier)
     - Any + Any: Override (later value replaces earlier)
-    
+
     This follows the standard YAML merging pattern used by:
     - Dynaconf (Python settings library)
     - hiyapyco (hierarchical YAML merging)
     - pydantic-config (Pydantic V2 compatible)
-    
+
     Args:
         base: Base configuration dictionary
         override: Override configuration dictionary
-        
+
     Returns:
         New merged dictionary (does not modify inputs)
-        
+
     Implementation Note:
         Uses copy.deepcopy() from Python standard library to achieve
         the same merge semantics as deepmerge/mergedeep libraries
         without adding external dependencies.
-    
+
     Thread Safety: Returns new dict, no mutation of inputs
     """
     # Start with deep copy of base to avoid mutation
     result = copy.deepcopy(base)
-    
+
     for key, override_value in override.items():
         if key in result:
             base_value = result[key]
-            
+
             # Both are dicts: recursive merge
             if isinstance(base_value, dict) and isinstance(override_value, dict):
                 result[key] = _deep_merge_configs(base_value, override_value)
@@ -477,20 +477,20 @@ def _deep_merge_configs(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[
         else:
             # New key: add with deep copy
             result[key] = copy.deepcopy(override_value)
-    
+
     return result
 
 
 def _load_and_merge_yaml_files(files: List[Path]) -> Dict[str, Any]:
     """
     Load multiple YAML files and merge them in order.
-    
+
     Args:
         files: List of YAML file paths in merge order
-        
+
     Returns:
         Merged configuration dictionary
-        
+
     Raises:
         ConfigurationError: If any file fails to load or parse
     """
@@ -500,35 +500,35 @@ def _load_and_merge_yaml_files(files: List[Path]) -> Dict[str, Any]:
             config_key='config_files',
             actual_value='empty list'
         )
-    
+
     merged_config = {}
     loaded_files = []
-    
+
     for file_path in files:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
-            
+
             if not content:
                 logger.warning(f"Empty config file skipped: {file_path}")
                 continue
-            
+
             file_config = yaml.safe_load(content)
-            
+
             if file_config is None:
                 logger.warning(f"Config file parsed as None, skipped: {file_path}")
                 continue
-            
+
             if not isinstance(file_config, dict):
                 raise ConfigurationError(
                     f"Config file must contain a dictionary, got {type(file_config).__name__}",
                     config_key='config_format',
                     actual_value=str(file_path)
                 )
-            
+
             merged_config = _deep_merge_configs(merged_config, file_config)
             loaded_files.append(file_path.name)
-            
+
         except yaml.YAMLError as e:
             raise ConfigurationError(
                 f"Error parsing configuration file {file_path}: {str(e)}",
@@ -541,7 +541,7 @@ def _load_and_merge_yaml_files(files: List[Path]) -> Dict[str, Any]:
                 config_key='file_encoding',
                 actual_value=str(file_path)
             )
-    
+
     logger.info(f"Merged {len(loaded_files)} config files: {loaded_files}")
     return merged_config
 ```
@@ -581,13 +581,13 @@ import hashlib
 try:                                               # Line 479
     with open(config_path, 'r', encoding='utf-8') as f:  # Line 480
         content = f.read().strip()                 # Line 481
-        
+
     if not content:                                # Line 483
         raise ConfigurationError(
             f"Configuration file is empty: {config_path}",
             config_key='config_content'
         )                                          # Line 487
-    
+
     config = yaml.safe_load(content)               # Line 489 ← MODIFICATION POINT
 ```
 
@@ -604,13 +604,13 @@ try:
         single_file = config_files[0]
         with open(single_file, 'r', encoding='utf-8') as f:
             content = f.read().strip()
-            
+
         if not content:
             raise ConfigurationError(
                 f"Configuration file is empty: {single_file}",
                 config_key='config_content'
             )
-        
+
         config = yaml.safe_load(content)
 ```
 
@@ -865,7 +865,7 @@ data_config:
   common_settings:
     # Test molecule limit for debugging
     test_molecule_limit: null  # Set to a specific number for testing, or null for full dataset
-    
+
     # Enhanced structural features integration
     structural_feature_integration:
       # Pass coordinates to structural feature extraction for 3D features
@@ -967,7 +967,7 @@ data_config:
 dmc_config:
   raw_npz_filename: DMC.npz
   raw_data_download_url: https://zenodo.org/records/15442257/files/DMC.npz?download=1
-  
+
   uncertainty_handling:
     uncertainty_field_name: std
     use_for_loss_weighting: true
@@ -999,8 +999,8 @@ data_config:
       variable_len_graph_properties_to_include: []
 ```
 
-> **NOTE**: `data_config.yaml` has been removed from the architecture. Global `data_config.common_settings` 
-> are now included in `main.yaml` (see main.yaml example above). Dataset-specific `data_config.property_selection.{DATASET}` 
+> **NOTE**: `data_config.yaml` has been removed from the architecture. Global `data_config.common_settings`
+> are now included in `main.yaml` (see main.yaml example above). Dataset-specific `data_config.property_selection.{DATASET}`
 > sections are colocated in `datasets/{dataset}.yaml` files.
 
 ### 6.3 Adding New Datasets (Future-Proof with Colocation)
@@ -1167,7 +1167,7 @@ is_split_mode, config_files = _discover_config_files(config_path)
 The function signature of `load_config()` remains **exactly the same**:
 
 ```python
-def load_config(config_path=None, enable_enhancement=True, enable_migration=True, 
+def load_config(config_path=None, enable_enhancement=True, enable_migration=True,
                enable_validation=True, validation_level='NORMAL', force_reload=False,
                report_validation=True):
 ```
@@ -1185,48 +1185,48 @@ All existing code calling `load_config()` will continue to work unchanged.
 
 class TestYAMLSplitting:
     """Test suite for YAML splitting implementation."""
-    
+
     def test_single_file_backward_compatibility(self):
         """Existing single-file config continues to work."""
         config = load_config('config.yaml')
         assert 'dataset_type' in config
-        
+
     def test_split_directory_discovery(self):
         """Split directory mode discovers all YAML files."""
         is_split, files = _discover_config_files('./configs/')
         assert is_split is True
         assert len(files) > 0
-        
+
     def test_deep_merge_nested_dicts(self):
         """Nested dictionaries are merged correctly."""
         base = {'a': {'x': 1, 'y': 2}}
         override = {'a': {'y': 3, 'z': 4}}
         result = _deep_merge_configs(base, override)
         assert result == {'a': {'x': 1, 'y': 3, 'z': 4}}
-        
+
     def test_deep_merge_list_override(self):
         """Lists are overridden, not appended."""
         base = {'items': [1, 2, 3]}
         override = {'items': [4, 5]}
         result = _deep_merge_configs(base, override)
         assert result == {'items': [4, 5]}
-        
+
     def test_cache_key_includes_file_times(self):
         """Cache key changes when any file is modified."""
         # Implementation depends on test infrastructure
         pass
-        
+
     def test_thread_safety(self):
         """Concurrent access doesn't cause race conditions."""
         import concurrent.futures
-        
+
         def load_config_task():
             return load_config('./configs/')
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(load_config_task) for _ in range(100)]
             results = [f.result() for f in futures]
-            
+
         # All results should be identical
         assert all(r == results[0] for r in results)
 ```
@@ -1309,7 +1309,7 @@ assert 'DFT' in config.get('data_config', {}).get('property_selection', {})
 - [ ] Add `import hashlib`
 
 **Step 1.2 - New Functions (insert before line 400)**:
-- [ ] Add `_discover_config_files()` function 
+- [ ] Add `_discover_config_files()` function
 - [ ] Add `_collect_yaml_files()` function
 - [ ] Add `_deep_merge_configs()` function
 - [ ] Add `_load_and_merge_yaml_files()` function
@@ -1332,7 +1332,7 @@ assert 'DFT' in config.get('data_config', {}).get('property_selection', {})
 python3 -c "
 from pathlib import Path
 from milia_pipeline.config.config_loader import (
-    _discover_config_files, _collect_yaml_files, 
+    _discover_config_files, _collect_yaml_files,
     _deep_merge_configs, _load_and_merge_yaml_files, load_config
 )
 
@@ -1503,7 +1503,7 @@ def write_yaml_file(filepath: Path, data: dict, header_comment: str = None):
 
 def split_config():
     \"\"\"Split monolithic config.yaml into modular files.\"\"\"
-    
+
     # Step 1: Backup original
     backup_path = Path(f'{CONFIG_SOURCE}.backup')
     if not backup_path.exists():
@@ -1511,21 +1511,21 @@ def split_config():
         print(f'✓ Backup created: {backup_path}')
     else:
         print(f'✓ Backup already exists: {backup_path}')
-    
+
     # Step 2: Load original config
     with open(CONFIG_SOURCE, 'r', encoding='utf-8') as f:
         original = yaml.safe_load(f)
     print(f'✓ Loaded {CONFIG_SOURCE} ({len(original)} top-level keys)')
-    
+
     # Step 3: Create directory structure
     CONFIG_DIR.mkdir(exist_ok=True)
     DATASETS_DIR.mkdir(exist_ok=True)
     print(f'✓ Created directories: {CONFIG_DIR}/, {DATASETS_DIR}/')
-    
+
     # Step 4: Split into files
     main_config = {}
     unassigned_keys = []
-    
+
     for key, value in original.items():
         if key in MAIN_KEYS:
             # Goes to main.yaml
@@ -1544,13 +1544,13 @@ def split_config():
             # Unknown key - add to main.yaml with warning
             main_config[key] = value
             unassigned_keys.append(key)
-    
+
     # Write main.yaml
     write_yaml_file(CONFIG_DIR / 'main.yaml', main_config, 'Main Configuration (Global Settings)')
-    
+
     if unassigned_keys:
         print(f'⚠️  Warning: Unassigned keys added to main.yaml: {unassigned_keys}')
-    
+
     print(f'\\n✓ Migration complete!')
     return backup_path
 
@@ -1576,38 +1576,38 @@ def deep_compare(orig, split, path='', differences=None):
     \"\"\"Recursively compare two configs, collecting all differences.\"\"\"
     if differences is None:
         differences = []
-    
+
     if type(orig) != type(split):
         differences.append(f'Type mismatch at {path}: {type(orig).__name__} vs {type(split).__name__}')
         return differences
-    
+
     if isinstance(orig, dict):
         orig_keys = set(orig.keys())
         split_keys = set(split.keys())
-        
+
         missing_in_split = orig_keys - split_keys
         extra_in_split = split_keys - orig_keys
-        
+
         for key in missing_in_split:
             differences.append(f'Missing key in split: {path}.{key}' if path else f'Missing key: {key}')
         for key in extra_in_split:
             differences.append(f'Extra key in split: {path}.{key}' if path else f'Extra key: {key}')
-        
+
         for key in orig_keys & split_keys:
             new_path = f'{path}.{key}' if path else key
             deep_compare(orig[key], split[key], new_path, differences)
-    
+
     elif isinstance(orig, list):
         if len(orig) != len(split):
             differences.append(f'List length mismatch at {path}: {len(orig)} vs {len(split)}')
         else:
             for i, (o, s) in enumerate(zip(orig, split)):
                 deep_compare(o, s, f'{path}[{i}]', differences)
-    
+
     else:
         if orig != split:
             differences.append(f'Value mismatch at {path}: {repr(orig)[:50]} vs {repr(split)[:50]}')
-    
+
     return differences
 
 # Load original (backup)
@@ -1764,7 +1764,7 @@ The `_normalize_dataset_type()` function normalizes dataset types using the regi
 if 'dataset_type' in config:
     original_dataset_type = config['dataset_type']
     config['dataset_type'] = _normalize_dataset_type(
-        original_dataset_type, 
+        original_dataset_type,
         _skip_cache_if_reentrant=_normalization_skipped
     )
 ```
@@ -1781,10 +1781,10 @@ def load_and_merge_config(self, args: argparse.Namespace) -> Dict[str, Any]:
     try:
         # Load base configuration
         self.config = load_config(args.config)  # <-- Line 2032: Calls load_config()
-        
+
         # Apply CLI overrides
         self._apply_cli_overrides(args)
-        
+
         return self.config
 ```
 
@@ -1793,7 +1793,7 @@ def load_and_merge_config(self, args: argparse.Namespace) -> Dict[str, Any]:
 from milia_pipeline.config.config_loader import load_config
 ```
 
-**Verification**: 
+**Verification**:
 - `grep -n "yaml.safe_load" /mnt/user-data/uploads/cli_manager.py` returns NO results
 - All YAML loading is delegated to `load_config()` from `config_loader.py`
 
@@ -1816,7 +1816,7 @@ CLI manager integration points (all use `load_and_merge_config()`):
 
 **Blueprint Status**: ✅ Complete and ready for implementation (v2.1 with Colocation).
 
-**Implementation Estimate**: 
+**Implementation Estimate**:
 - `config_loader.py`: ~100-150 lines of new code
 - `cli_manager.py`: ~10 lines of minor updates
 - Dataset YAML files: Migration to colocated structure

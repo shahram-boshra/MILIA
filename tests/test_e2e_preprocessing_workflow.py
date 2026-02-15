@@ -35,14 +35,12 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import os
-import sys
 import logging
+import sys
 import tempfile
-import copy
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from unittest.mock import patch, MagicMock
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -67,6 +65,7 @@ from torch_geometric.transforms import Compose
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
+
     RDKIT_AVAILABLE = True
 except ImportError:
     RDKIT_AVAILABLE = False
@@ -105,78 +104,110 @@ ETHANOL_SMILES = "CCO"
 # ===========================================================================
 # SYNTHETIC DATA FACTORY
 # ===========================================================================
-def _make_water_mol_dict(mol_index: int = 0) -> Dict[str, Any]:
+def _make_water_mol_dict(mol_index: int = 0) -> dict[str, Any]:
     """Create synthetic water molecule data dict."""
     return {
-        'inchi': WATER_INCHI, 'smiles': WATER_SMILES,
-        'atomic_numbers': np.array([8, 1, 1]),
-        'coordinates': np.array([
-            [0.0, 0.0, 0.1173], [0.0, 0.7572, -0.4692], [0.0, -0.7572, -0.4692]
-        ], dtype=np.float32),
-        'total_energy': -76.4, 'mol_index': mol_index,
-        'num_atoms': 3, 'molecular_charge': 0,
+        "inchi": WATER_INCHI,
+        "smiles": WATER_SMILES,
+        "atomic_numbers": np.array([8, 1, 1]),
+        "coordinates": np.array(
+            [[0.0, 0.0, 0.1173], [0.0, 0.7572, -0.4692], [0.0, -0.7572, -0.4692]], dtype=np.float32
+        ),
+        "total_energy": -76.4,
+        "mol_index": mol_index,
+        "num_atoms": 3,
+        "molecular_charge": 0,
     }
 
 
-def _make_methane_mol_dict(mol_index: int = 1) -> Dict[str, Any]:
+def _make_methane_mol_dict(mol_index: int = 1) -> dict[str, Any]:
     """Create synthetic methane molecule data dict."""
     return {
-        'inchi': METHANE_INCHI, 'smiles': METHANE_SMILES,
-        'atomic_numbers': np.array([6, 1, 1, 1, 1]),
-        'coordinates': np.array([
-            [0.0, 0.0, 0.0], [0.6276, 0.6276, 0.6276],
-            [-0.6276, -0.6276, 0.6276], [-0.6276, 0.6276, -0.6276],
-            [0.6276, -0.6276, -0.6276],
-        ], dtype=np.float32),
-        'total_energy': -40.5, 'mol_index': mol_index,
-        'num_atoms': 5, 'molecular_charge': 0,
+        "inchi": METHANE_INCHI,
+        "smiles": METHANE_SMILES,
+        "atomic_numbers": np.array([6, 1, 1, 1, 1]),
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.6276, 0.6276, 0.6276],
+                [-0.6276, -0.6276, 0.6276],
+                [-0.6276, 0.6276, -0.6276],
+                [0.6276, -0.6276, -0.6276],
+            ],
+            dtype=np.float32,
+        ),
+        "total_energy": -40.5,
+        "mol_index": mol_index,
+        "num_atoms": 5,
+        "molecular_charge": 0,
     }
 
 
-def _make_ethanol_mol_dict(mol_index: int = 2) -> Dict[str, Any]:
+def _make_ethanol_mol_dict(mol_index: int = 2) -> dict[str, Any]:
     """Create synthetic ethanol molecule data dict."""
     return {
-        'inchi': ETHANOL_INCHI, 'smiles': ETHANOL_SMILES,
-        'atomic_numbers': np.array([6, 6, 8, 1, 1, 1, 1, 1, 1]),
-        'coordinates': np.array([
-            [-1.27, 0.25, 0.0], [0.0, -0.55, 0.0], [1.13, 0.32, 0.0],
-            [-2.13, -0.42, 0.0], [-1.31, 0.88, 0.89], [-1.31, 0.88, -0.89],
-            [0.04, -1.18, 0.89], [0.04, -1.18, -0.89], [1.93, -0.20, 0.0],
-        ], dtype=np.float32),
-        'total_energy': -155.0, 'mol_index': mol_index,
-        'num_atoms': 9, 'molecular_charge': 0,
+        "inchi": ETHANOL_INCHI,
+        "smiles": ETHANOL_SMILES,
+        "atomic_numbers": np.array([6, 6, 8, 1, 1, 1, 1, 1, 1]),
+        "coordinates": np.array(
+            [
+                [-1.27, 0.25, 0.0],
+                [0.0, -0.55, 0.0],
+                [1.13, 0.32, 0.0],
+                [-2.13, -0.42, 0.0],
+                [-1.31, 0.88, 0.89],
+                [-1.31, 0.88, -0.89],
+                [0.04, -1.18, 0.89],
+                [0.04, -1.18, -0.89],
+                [1.93, -0.20, 0.0],
+            ],
+            dtype=np.float32,
+        ),
+        "total_energy": -155.0,
+        "mol_index": mol_index,
+        "num_atoms": 9,
+        "molecular_charge": 0,
     }
 
 
-def _make_synthetic_mol_data_list(count: int = 5) -> List[Dict[str, Any]]:
+def _make_synthetic_mol_data_list(count: int = 5) -> list[dict[str, Any]]:
     """Create list of synthetic molecule data dicts, cycling templates."""
     templates = [_make_water_mol_dict, _make_methane_mol_dict, _make_ethanol_mol_dict]
     return [templates[i % len(templates)](mol_index=i) for i in range(count)]
 
 
-def _create_minimal_config(dataset_type: str = "DFT", tmp_dir: Optional[str] = None) -> Dict[str, Any]:
+def _create_minimal_config(dataset_type: str = "DFT", tmp_dir: str | None = None) -> dict[str, Any]:
     """Create minimal valid configuration dict for testing."""
     working_dir = tmp_dir or tempfile.mkdtemp()
     return {
-        'dataset_type': dataset_type,
-        'working_root_dir': working_dir,
-        'data_config': {
-            'common_settings': {'max_atoms': 100, 'min_atoms': 1, 'heavy_atoms_only': False},
-            'property_selection': {dataset_type: {'total_energy': True}},
+        "dataset_type": dataset_type,
+        "working_root_dir": working_dir,
+        "data_config": {
+            "common_settings": {"max_atoms": 100, "min_atoms": 1, "heavy_atoms_only": False},
+            "property_selection": {dataset_type: {"total_energy": True}},
         },
-        'property_availability': {dataset_type: {'total_energy': True, 'forces': False}},
-        'structural_features': {'enabled': False},
-        'filter_config': {'max_atoms': 100, 'min_atoms': 1, 'heavy_atoms_only': False},
-        'processing': {'chunk_size': 100, 'num_workers': 0},
-        'transformations': {'standard_transforms': [], 'experimental_setups': {}, 'default_setup': None},
-        'uncertainty': {'enabled': False},
+        "property_availability": {dataset_type: {"total_energy": True, "forces": False}},
+        "structural_features": {"enabled": False},
+        "filter_config": {"max_atoms": 100, "min_atoms": 1, "heavy_atoms_only": False},
+        "processing": {"chunk_size": 100, "num_workers": 0},
+        "transformations": {
+            "standard_transforms": [],
+            "experimental_setups": {},
+            "default_setup": None,
+        },
+        "uncertainty": {"enabled": False},
     }
 
 
 def _create_synthetic_pyg_data(
-    num_atoms: int = 5, num_edges: int = 8, has_pos: bool = True,
-    has_y: bool = True, has_x: bool = True, has_edge_attr: bool = False,
-    node_feature_dim: int = 11, edge_feature_dim: int = 4,
+    num_atoms: int = 5,
+    num_edges: int = 8,
+    has_pos: bool = True,
+    has_y: bool = True,
+    has_x: bool = True,
+    has_edge_attr: bool = False,
+    node_feature_dim: int = 11,
+    edge_feature_dim: int = 4,
 ) -> Data:
     """Create a synthetic PyG Data object for testing."""
     data = Data()
@@ -201,21 +232,34 @@ def _create_synthetic_pyg_data(
 # ===========================================================================
 # MOCK HANDLER FACTORY
 # ===========================================================================
-def _create_mock_handler(dataset_type: str = "DFT", required_properties: Optional[List[str]] = None,
-                         creation_strategy: str = "identifier_coordinate_based") -> MagicMock:
+def _create_mock_handler(
+    dataset_type: str = "DFT",
+    required_properties: list[str] | None = None,
+    creation_strategy: str = "identifier_coordinate_based",
+) -> MagicMock:
     """Create a MagicMock satisfying DatasetHandler abstract interface."""
     if required_properties is None:
-        required_properties = ['total_energy']
+        required_properties = ["total_energy"]
     handler = MagicMock()
     handler.get_dataset_type.return_value = dataset_type
     handler.get_required_properties.return_value = required_properties
     handler.get_molecule_creation_strategy.return_value = creation_strategy
     handler.validate_configuration.return_value = None
-    handler.get_supported_descriptors.return_value = {'categories': ['constitutional'], 'excluded': []}
-    handler.get_processing_statistics.return_value = {'total_processed': 0, 'total_errors': 0}
+    handler.get_supported_descriptors.return_value = {
+        "categories": ["constitutional"],
+        "excluded": [],
+    }
+    handler.get_processing_statistics.return_value = {"total_processed": 0, "total_errors": 0}
     handler.get_dataset_name.return_value = f"Test {dataset_type} Dataset"
-    handler.get_supported_structural_features.return_value = {'atom': ['degree'], 'bond': ['bond_type']}
-    handler.get_transform_compatibility_info.return_value = {'recommended': [], 'avoid': [], 'warnings': []}
+    handler.get_supported_structural_features.return_value = {
+        "atom": ["degree"],
+        "bond": ["bond_type"],
+    }
+    handler.get_transform_compatibility_info.return_value = {
+        "recommended": [],
+        "avoid": [],
+        "warnings": [],
+    }
     handler.get_default_molecular_charge.return_value = 0
     handler.validate_molecule_data.return_value = None
 
@@ -227,13 +271,14 @@ def _create_mock_handler(dataset_type: str = "DFT", required_properties: Optiona
     handler.dataset_config = mock_dataset_config
 
     def _mock_enrich(pyg_data, raw_properties_dict, mol_idx, inchi_identifier):
-        if 'total_energy' in raw_properties_dict:
-            energy = raw_properties_dict['total_energy']
+        if "total_energy" in raw_properties_dict:
+            energy = raw_properties_dict["total_energy"]
             if isinstance(energy, (int, float)):
                 pyg_data.y = torch.tensor([energy], dtype=torch.float32)
             elif isinstance(energy, torch.Tensor):
                 pyg_data.y = energy
         return pyg_data
+
     handler.enrich_pyg_data.side_effect = _mock_enrich
     handler.process_rdkit_molecule.return_value = None
     return handler
@@ -311,35 +356,55 @@ class TestConfigLoadingE2E:
 
     def test_load_config_from_yaml_file(self, minimal_config_yaml):
         """Load config from a real YAML file and verify structure."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
+
         clear_config_cache()
-        config = load_config(config_path=minimal_config_yaml, enable_validation=False,
-                             enable_migration=False, enable_enhancement=False)
+        config = load_config(
+            config_path=minimal_config_yaml,
+            enable_validation=False,
+            enable_migration=False,
+            enable_enhancement=False,
+        )
         assert isinstance(config, dict), "load_config must return a dict"
-        assert 'dataset_type' in config
-        assert config['dataset_type'] == 'DFT'
+        assert "dataset_type" in config
+        assert config["dataset_type"] == "DFT"
 
     def test_load_config_contains_required_sections(self, minimal_config_yaml):
         """Loaded config contains sections needed by preprocessing."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
+
         clear_config_cache()
-        config = load_config(config_path=minimal_config_yaml, enable_validation=False,
-                             enable_migration=False, enable_enhancement=False)
-        assert 'dataset_type' in config
+        config = load_config(
+            config_path=minimal_config_yaml,
+            enable_validation=False,
+            enable_migration=False,
+            enable_enhancement=False,
+        )
+        assert "dataset_type" in config
         assert isinstance(config, dict)
 
     def test_load_config_clear_cache_works(self, minimal_config_yaml):
         """Cache clearing allows reloading."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache, is_config_loaded
+        from milia_pipeline.config.config_loader import (
+            clear_config_cache,
+            is_config_loaded,
+            load_config,
+        )
+
         clear_config_cache()
         assert not is_config_loaded()
-        load_config(config_path=minimal_config_yaml, enable_validation=False,
-                     enable_migration=False, enable_enhancement=False)
+        load_config(
+            config_path=minimal_config_yaml,
+            enable_validation=False,
+            enable_migration=False,
+            enable_enhancement=False,
+        )
         clear_config_cache()
 
     def test_load_config_with_split_mode_directory(self, tmp_working_dir):
         """Config loading supports split-mode (directory of YAML files)."""
-        from milia_pipeline.config.config_loader import load_config, clear_config_cache
+        from milia_pipeline.config.config_loader import clear_config_cache, load_config
+
         configs_dir = Path(tmp_working_dir) / "configs_split_test"
         configs_dir.mkdir(parents=True, exist_ok=True)
         (configs_dir / "main.yaml").write_text(
@@ -347,10 +412,14 @@ class TestConfigLoadingE2E:
             "data_config:\n  common_settings:\n    max_atoms: 100\n    min_atoms: 1\n"
         )
         clear_config_cache()
-        config = load_config(config_path=str(configs_dir), enable_validation=False,
-                             enable_migration=False, enable_enhancement=False)
+        config = load_config(
+            config_path=str(configs_dir),
+            enable_validation=False,
+            enable_migration=False,
+            enable_enhancement=False,
+        )
         assert isinstance(config, dict)
-        assert config.get('dataset_type') == 'DFT'
+        assert config.get("dataset_type") == "DFT"
 
 
 # ===========================================================================
@@ -361,45 +430,63 @@ class TestHandlerCreationE2E:
 
     def test_create_dataset_handler_returns_handler(self, minimal_config):
         """create_dataset_handler returns a DatasetHandler subclass."""
-        from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig, ProcessingConfig
+        from milia_pipeline.config.config_containers import (
+            DatasetConfig,
+            FilterConfig,
+            ProcessingConfig,
+        )
         from milia_pipeline.handlers.base_handler import create_dataset_handler
+
         try:
-            dc = DatasetConfig(dataset_type="DFT", working_root_dir=minimal_config['working_root_dir'])
+            dc = DatasetConfig(
+                dataset_type="DFT", working_root_dir=minimal_config["working_root_dir"]
+            )
             fc = FilterConfig(max_atoms=100, min_atoms=1)
-            pc = ProcessingConfig(scalar_graph_targets=['total_energy'])
+            pc = ProcessingConfig(scalar_graph_targets=["total_energy"])
             handler = create_dataset_handler(dc, fc, pc, logging.getLogger("test_h"))
             from milia_pipeline.handlers.base_handler import DatasetHandler
+
             assert isinstance(handler, DatasetHandler)
             assert handler.get_dataset_type() == "DFT"
         except ImportError as e:
             pytest.skip(f"Handler dependencies not available: {e}")
         except Exception as e:
             from milia_pipeline.exceptions import HandlerNotAvailableError
+
             if isinstance(e, HandlerNotAvailableError):
                 pytest.skip(f"DFT handler not registered: {e}")
             raise
 
     def test_create_dataset_handler_invalid_type_raises(self, minimal_config):
         """Invalid handler type raises either Pydantic ValidationError or HandlerNotAvailableError."""
-        from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig, ProcessingConfig
-        from milia_pipeline.handlers.base_handler import create_dataset_handler
-        from milia_pipeline.exceptions import HandlerNotAvailableError
         from pydantic import ValidationError as PydanticValidationError
+
+        from milia_pipeline.config.config_containers import (
+            DatasetConfig,
+            FilterConfig,
+            ProcessingConfig,
+        )
+        from milia_pipeline.exceptions import HandlerNotAvailableError
+        from milia_pipeline.handlers.base_handler import create_dataset_handler
+
         # DatasetConfig uses Pydantic field_validator on dataset_type which validates
         # against the handler registry. An invalid type is rejected at config level.
         with pytest.raises((HandlerNotAvailableError, PydanticValidationError, ValueError)):
-            dc = DatasetConfig(dataset_type="NONEXISTENT_XYZ", working_root_dir=minimal_config['working_root_dir'])
+            dc = DatasetConfig(
+                dataset_type="NONEXISTENT_XYZ", working_root_dir=minimal_config["working_root_dir"]
+            )
             fc = FilterConfig(max_atoms=100, min_atoms=1)
-            pc = ProcessingConfig(scalar_graph_targets=['total_energy'])
+            pc = ProcessingConfig(scalar_graph_targets=["total_energy"])
             create_dataset_handler(dc, fc, pc, logging.getLogger("test_inv"))
 
     def test_handler_registry_status_accessible(self):
         """get_registry_status returns diagnostic dict."""
         from milia_pipeline.handlers.base_handler import get_registry_status
+
         status = get_registry_status()
         assert isinstance(status, dict)
-        assert 'initialized' in status
-        assert 'available' in status
+        assert "initialized" in status
+        assert "available" in status
 
 
 # ===========================================================================
@@ -411,21 +498,53 @@ class TestMoleculeConversionE2E:
     @pytest.mark.skipif(not RDKIT_AVAILABLE, reason="RDKit required")
     def test_converter_initialization_with_mock_handler(self, minimal_config, mock_handler):
         """MoleculeDataConverter initializes with a mock handler."""
-        from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig, ProcessingConfig
-        with patch('milia_pipeline.molecules.molecule_converter_core.load_config', return_value=minimal_config), \
-             patch('milia_pipeline.molecules.molecule_converter_core.get_dataset_appropriate_structural_features', return_value={'enabled': False}), \
-             patch('milia_pipeline.molecules.molecule_converter_core.is_structural_features_enabled', return_value=False), \
-             patch('milia_pipeline.molecules.molecule_converter_core.get_charge_handling_config', return_value={}), \
-             patch('milia_pipeline.molecules.molecule_converter_core.get_geometric_features_config', return_value={}), \
-             patch('milia_pipeline.molecules.molecule_converter_core.get_stereochemistry_config', return_value={}):
-            dc = DatasetConfig(dataset_type="DFT", working_root_dir=minimal_config['working_root_dir'])
+        from milia_pipeline.config.config_containers import (
+            DatasetConfig,
+            FilterConfig,
+            ProcessingConfig,
+        )
+
+        with (
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.load_config",
+                return_value=minimal_config,
+            ),
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.get_dataset_appropriate_structural_features",
+                return_value={"enabled": False},
+            ),
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.is_structural_features_enabled",
+                return_value=False,
+            ),
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.get_charge_handling_config",
+                return_value={},
+            ),
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.get_geometric_features_config",
+                return_value={},
+            ),
+            patch(
+                "milia_pipeline.molecules.molecule_converter_core.get_stereochemistry_config",
+                return_value={},
+            ),
+        ):
+            dc = DatasetConfig(
+                dataset_type="DFT", working_root_dir=minimal_config["working_root_dir"]
+            )
             fc = FilterConfig(max_atoms=100, min_atoms=1)
-            pc = ProcessingConfig(scalar_graph_targets=['total_energy'])
+            pc = ProcessingConfig(scalar_graph_targets=["total_energy"])
             try:
                 from milia_pipeline.molecules.molecule_converter_core import MoleculeDataConverter
-                conv = MoleculeDataConverter(dataset_handler=mock_handler, dataset_config=dc,
-                                            filter_config=fc, processing_config=pc,
-                                            structural_features_config={'enabled': False})
+
+                conv = MoleculeDataConverter(
+                    dataset_handler=mock_handler,
+                    dataset_config=dc,
+                    filter_config=fc,
+                    processing_config=pc,
+                    structural_features_config={"enabled": False},
+                )
                 assert conv._handler is mock_handler or conv._dataset_handler is mock_handler
                 assert conv.dataset_type == "DFT"
             except Exception as e:
@@ -440,16 +559,27 @@ class TestMoleculeConversionE2E:
             pytest.skip(f"mol_conversion_utils not importable: {e}")
         water = _make_water_mol_dict()
         try:
-            mol = create_rdkit_mol(mol_identifier=water['inchi'], coordinates=water['coordinates'],
-                                   atomic_numbers=water['atomic_numbers'], logger=logging.getLogger("t"),
-                                   handler=mock_handler, molecule_index=0, mol_id_type='inchi')
+            mol = create_rdkit_mol(
+                mol_identifier=water["inchi"],
+                coordinates=water["coordinates"],
+                atomic_numbers=water["atomic_numbers"],
+                logger=logging.getLogger("t"),
+                handler=mock_handler,
+                molecule_index=0,
+                mol_id_type="inchi",
+            )
             assert mol is not None
             assert isinstance(mol, Chem.Mol)
-            assert mol.GetNumAtoms() == len(water['atomic_numbers'])
+            assert mol.GetNumAtoms() == len(water["atomic_numbers"])
             assert mol.GetNumConformers() > 0
         except Exception as e:
             etype = type(e).__name__
-            if etype in ('RDKitConversionError', 'HandlerValidationError', 'HandlerOperationError', 'MoleculeProcessingError'):
+            if etype in (
+                "RDKitConversionError",
+                "HandlerValidationError",
+                "HandlerOperationError",
+                "MoleculeProcessingError",
+            ):
                 pytest.skip(f"create_rdkit_mol raised {etype} with mock handler: {e}")
             raise
 
@@ -466,18 +596,19 @@ class TestMoleculeConversionE2E:
         mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol, randomSeed=42)
         try:
-            pyg = mol_to_pyg_data(rdkit_mol=mol, handler=mock_handler, molecule_index=0,
-                                  logger=logging.getLogger("t"))
+            pyg = mol_to_pyg_data(
+                rdkit_mol=mol, handler=mock_handler, molecule_index=0, logger=logging.getLogger("t")
+            )
             assert isinstance(pyg, Data)
-            assert hasattr(pyg, 'z')
-            assert hasattr(pyg, 'edge_index')
+            assert hasattr(pyg, "z")
+            assert hasattr(pyg, "edge_index")
             if pyg.z is not None:
                 assert isinstance(pyg.z, torch.Tensor)
             if pyg.edge_index is not None:
                 assert pyg.edge_index.dim() == 2
                 assert pyg.edge_index.size(0) == 2
         except Exception as e:
-            if type(e).__name__ in ('PyGDataCreationError', 'HandlerOperationError'):
+            if type(e).__name__ in ("PyGDataCreationError", "HandlerOperationError"):
                 pytest.skip(f"mol_to_pyg_data raised {type(e).__name__}: {e}")
             raise
 
@@ -494,20 +625,23 @@ class TestFeatureEnrichmentE2E:
             from milia_pipeline.molecules.property_enrichment import enrich_pyg_data_with_properties
         except ImportError as e:
             pytest.skip(f"property_enrichment not importable: {e}")
-        if hasattr(synthetic_pyg_data, 'y'):
-            delattr(synthetic_pyg_data, 'y')
+        if hasattr(synthetic_pyg_data, "y"):
+            delattr(synthetic_pyg_data, "y")
         try:
             enriched = enrich_pyg_data_with_properties(
-                pyg_data=synthetic_pyg_data, mol_idx=0,
-                raw_properties_dict={'total_energy': -76.4},
-                inchi_identifier=WATER_INCHI, logger=logging.getLogger("t"),
-                dataset_handler=mock_handler)
+                pyg_data=synthetic_pyg_data,
+                mol_idx=0,
+                raw_properties_dict={"total_energy": -76.4},
+                inchi_identifier=WATER_INCHI,
+                logger=logging.getLogger("t"),
+                dataset_handler=mock_handler,
+            )
             assert enriched is not None
             assert isinstance(enriched, Data)
-            if hasattr(enriched, 'y') and enriched.y is not None:
+            if hasattr(enriched, "y") and enriched.y is not None:
                 assert isinstance(enriched.y, torch.Tensor)
         except Exception as e:
-            if type(e).__name__ in ('HandlerOperationError', 'PropertyEnrichmentError'):
+            if type(e).__name__ in ("HandlerOperationError", "PropertyEnrichmentError"):
                 pytest.skip(f"Enrichment raised {type(e).__name__}: {e}")
             raise
 
@@ -519,13 +653,16 @@ class TestFeatureEnrichmentE2E:
             pytest.skip(f"property_enrichment not importable: {e}")
         try:
             enrich_pyg_data_with_properties(
-                pyg_data=synthetic_pyg_data, mol_idx=1,
-                raw_properties_dict={'total_energy': -40.5},
-                inchi_identifier=METHANE_INCHI, logger=logging.getLogger("t"),
-                dataset_handler=mock_handler)
+                pyg_data=synthetic_pyg_data,
+                mol_idx=1,
+                raw_properties_dict={"total_energy": -40.5},
+                inchi_identifier=METHANE_INCHI,
+                logger=logging.getLogger("t"),
+                dataset_handler=mock_handler,
+            )
             mock_handler.enrich_pyg_data.assert_called_once()
         except Exception as e:
-            if type(e).__name__ in ('HandlerOperationError', 'PropertyEnrichmentError'):
+            if type(e).__name__ in ("HandlerOperationError", "PropertyEnrichmentError"):
                 pytest.skip(f"Enrichment call verification skipped: {e}")
             raise
 
@@ -555,17 +692,30 @@ class TestStructuralFeaturesE2E:
         for b in mol.GetBonds():
             i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
             edges.extend([[i, j], [j, i]])
-        pyg.edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() if edges else torch.zeros((2, 0), dtype=torch.long)
+        pyg.edge_index = (
+            torch.tensor(edges, dtype=torch.long).t().contiguous()
+            if edges
+            else torch.zeros((2, 0), dtype=torch.long)
+        )
         try:
-            result = add_structural_features(rdkit_mol=mol, pyg_data=pyg,
-                                             feature_config={'atom': ['degree', 'hybridization'], 'bond': ['bond_type']},
-                                             logger=logging.getLogger("t"), molecule_index=0, inchi=ETHANOL_INCHI)
+            result = add_structural_features(
+                rdkit_mol=mol,
+                pyg_data=pyg,
+                feature_config={"atom": ["degree", "hybridization"], "bond": ["bond_type"]},
+                logger=logging.getLogger("t"),
+                molecule_index=0,
+                inchi=ETHANOL_INCHI,
+            )
             assert result is not None and isinstance(result, Data)
             if result.x is not None:
                 assert result.x.dim() == 2
                 assert result.x.size(0) == na
         except Exception as e:
-            if type(e).__name__ in ('StructuralFeatureError', 'MoleculeProcessingError', 'PyGDataCreationError'):
+            if type(e).__name__ in (
+                "StructuralFeatureError",
+                "MoleculeProcessingError",
+                "PyGDataCreationError",
+            ):
                 pytest.skip(f"Structural features raised {type(e).__name__}: {e}")
             raise
 
@@ -579,8 +729,9 @@ class TestStructuralFeaturesE2E:
         mol = Chem.MolFromSmiles("C")
         mol = Chem.AddHs(mol)
         pyg = Data(z=torch.tensor([6, 1, 1, 1, 1], dtype=torch.long))
-        result = add_structural_features(rdkit_mol=mol, pyg_data=pyg, feature_config=None,
-                                         logger=logging.getLogger("t"))
+        result = add_structural_features(
+            rdkit_mol=mol, pyg_data=pyg, feature_config=None, logger=logging.getLogger("t")
+        )
         assert result is pyg
 
     @pytest.mark.skipif(not RDKIT_AVAILABLE, reason="RDKit required")
@@ -622,43 +773,58 @@ class TestTransformApplicationE2E:
     def test_create_transform_sequence_valid_config(self, synthetic_pyg_data):
         """create_transform_sequence with valid config produces a Compose."""
         try:
-            from milia_pipeline.transformations.graph_transforms import create_transform_sequence, list_available_transforms
+            from milia_pipeline.transformations.graph_transforms import (
+                create_transform_sequence,
+                list_available_transforms,
+            )
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         available = list_available_transforms()
         configs = []
-        for candidate in ['NormalizeFeatures', 'AddSelfLoops', 'ToUndirected']:
+        for candidate in ["NormalizeFeatures", "AddSelfLoops", "ToUndirected"]:
             if candidate in available:
-                configs.append({'name': candidate})
+                configs.append({"name": candidate})
                 break
         if not configs:
             pytest.skip("No common transforms available")
         try:
-            result = create_transform_sequence(configs=configs, enable_recovery=True, sample_data=synthetic_pyg_data)
+            result = create_transform_sequence(
+                configs=configs, enable_recovery=True, sample_data=synthetic_pyg_data
+            )
             if result is not None:
                 assert isinstance(result, Compose)
         except Exception as e:
-            if type(e).__name__ in ('TransformCompositionError', 'TransformNotFoundError', 'TransformConfigurationError'):
+            if type(e).__name__ in (
+                "TransformCompositionError",
+                "TransformNotFoundError",
+                "TransformConfigurationError",
+            ):
                 pytest.skip(f"Transform composition raised {type(e).__name__}: {e}")
             raise
 
     def test_apply_transform_to_pyg_data(self, synthetic_pyg_data):
         """Applying a composed transform to PyG Data should not crash."""
         try:
-            from milia_pipeline.transformations.graph_transforms import create_transform_sequence, list_available_transforms
+            from milia_pipeline.transformations.graph_transforms import (
+                create_transform_sequence,
+                list_available_transforms,
+            )
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
-        if 'NormalizeFeatures' not in list_available_transforms():
+        if "NormalizeFeatures" not in list_available_transforms():
             pytest.skip("NormalizeFeatures not available")
         try:
-            transform = create_transform_sequence(configs=[{'name': 'NormalizeFeatures'}],
-                                                  enable_recovery=True, sample_data=synthetic_pyg_data)
+            transform = create_transform_sequence(
+                configs=[{"name": "NormalizeFeatures"}],
+                enable_recovery=True,
+                sample_data=synthetic_pyg_data,
+            )
             if transform is not None:
                 transformed = transform(synthetic_pyg_data.clone())
                 assert isinstance(transformed, Data)
-                assert hasattr(transformed, 'z')
+                assert hasattr(transformed, "z")
         except Exception as e:
-            if type(e).__name__ in ('TransformCompositionError', 'TransformationError'):
+            if type(e).__name__ in ("TransformCompositionError", "TransformationError"):
                 pytest.skip(f"raised {type(e).__name__}: {e}")
             raise
 
@@ -698,10 +864,13 @@ class TestMoleculeValidationE2E:
             pytest.skip(f"not importable: {e}")
         water = _make_water_mol_dict()
         try:
-            result = validate_molecular_structure(atoms=water['atomic_numbers'],
-                                                  coordinates=water['coordinates'],
-                                                  molecule_index=0, inchi=water['inchi'],
-                                                  handler=mock_handler)
+            result = validate_molecular_structure(
+                atoms=water["atomic_numbers"],
+                coordinates=water["coordinates"],
+                molecule_index=0,
+                inchi=water["inchi"],
+                handler=mock_handler,
+            )
             if result is not None and isinstance(result, tuple):
                 assert len(result) == 2
                 # Validated atoms and coordinates should be numpy arrays
@@ -709,7 +878,11 @@ class TestMoleculeValidationE2E:
                 assert isinstance(result[1], np.ndarray)
         except Exception as e:
             etype = type(e).__name__
-            if etype in ('HandlerOperationError', 'HandlerValidationError', 'MoleculeProcessingError'):
+            if etype in (
+                "HandlerOperationError",
+                "HandlerValidationError",
+                "MoleculeProcessingError",
+            ):
                 pytest.skip(f"Validation raised {etype} with mock handler: {e}")
             raise
 
@@ -725,18 +898,20 @@ class TestMoleculeValidationE2E:
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         try:
-            result = validate_pyg_data_completeness(pyg_data=synthetic_pyg_data,
-                                                     dataset_type="DFT",
-                                                     molecule_index=0,
-                                                     handler=mock_handler)
+            result = validate_pyg_data_completeness(
+                pyg_data=synthetic_pyg_data,
+                dataset_type="DFT",
+                molecule_index=0,
+                handler=mock_handler,
+            )
             if result is not None:
                 assert isinstance(result, dict)
                 # Should contain basic validation keys
-                if 'has_basic_structure' in result:
-                    assert isinstance(result['has_basic_structure'], bool)
+                if "has_basic_structure" in result:
+                    assert isinstance(result["has_basic_structure"], bool)
         except Exception as e:
             etype = type(e).__name__
-            if etype in ('HandlerOperationError', 'HandlerValidationError', 'ValidationError'):
+            if etype in ("HandlerOperationError", "HandlerValidationError", "ValidationError"):
                 pytest.skip(f"Validation raised {etype} with mock handler: {e}")
             raise
 
@@ -750,7 +925,9 @@ class TestFeatureEnricherE2E:
     def test_get_feature_extraction_diagnostics_callable(self):
         """get_feature_extraction_diagnostics is importable and callable."""
         try:
-            from milia_pipeline.molecules.molecule_feature_enricher import get_feature_extraction_diagnostics
+            from milia_pipeline.molecules.molecule_feature_enricher import (
+                get_feature_extraction_diagnostics,
+            )
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         assert callable(get_feature_extraction_diagnostics)
@@ -758,7 +935,9 @@ class TestFeatureEnricherE2E:
     def test_analyze_structural_feature_capabilities_callable(self):
         """analyze_structural_feature_capabilities is importable and callable."""
         try:
-            from milia_pipeline.molecules.molecule_feature_enricher import analyze_structural_feature_capabilities
+            from milia_pipeline.molecules.molecule_feature_enricher import (
+                analyze_structural_feature_capabilities,
+            )
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         assert callable(analyze_structural_feature_capabilities)
@@ -772,31 +951,31 @@ class TestPyGDataIntegrity:
 
     def test_pyg_data_has_atomic_numbers(self, synthetic_pyg_data):
         """z is a 1D long tensor."""
-        assert hasattr(synthetic_pyg_data, 'z')
+        assert hasattr(synthetic_pyg_data, "z")
         assert isinstance(synthetic_pyg_data.z, torch.Tensor)
         assert synthetic_pyg_data.z.dtype in (torch.long, torch.int64)
         assert synthetic_pyg_data.z.dim() == 1
 
     def test_pyg_data_has_edge_index(self, synthetic_pyg_data):
         """edge_index is [2, num_edges] long tensor."""
-        assert hasattr(synthetic_pyg_data, 'edge_index')
+        assert hasattr(synthetic_pyg_data, "edge_index")
         assert synthetic_pyg_data.edge_index.dim() == 2
         assert synthetic_pyg_data.edge_index.size(0) == 2
 
     def test_pyg_data_has_positions(self, synthetic_pyg_data):
         """pos is [num_atoms, 3] float32 tensor."""
-        assert hasattr(synthetic_pyg_data, 'pos')
+        assert hasattr(synthetic_pyg_data, "pos")
         assert synthetic_pyg_data.pos.dtype == torch.float32
         assert synthetic_pyg_data.pos.dim() == 2 and synthetic_pyg_data.pos.size(1) == 3
 
     def test_pyg_data_has_target(self, synthetic_pyg_data):
         """y is a float tensor."""
-        assert hasattr(synthetic_pyg_data, 'y')
+        assert hasattr(synthetic_pyg_data, "y")
         assert synthetic_pyg_data.y.dtype == torch.float32
 
     def test_pyg_data_has_node_features(self, synthetic_pyg_data):
         """x is [num_atoms, feature_dim] float tensor."""
-        assert hasattr(synthetic_pyg_data, 'x')
+        assert hasattr(synthetic_pyg_data, "x")
         assert synthetic_pyg_data.x.dim() == 2
         assert synthetic_pyg_data.x.size(0) == synthetic_pyg_data.z.size(0)
 
@@ -814,7 +993,12 @@ class TestPyGDataIntegrity:
     def test_synthetic_dataset_all_valid(self, synthetic_pyg_dataset):
         """All graphs in synthetic dataset have consistent structure."""
         for i, d in enumerate(synthetic_pyg_dataset):
-            assert hasattr(d, 'z') and hasattr(d, 'edge_index') and hasattr(d, 'pos') and hasattr(d, 'y'), f"Graph {i} missing attrs"
+            assert (
+                hasattr(d, "z")
+                and hasattr(d, "edge_index")
+                and hasattr(d, "pos")
+                and hasattr(d, "y")
+            ), f"Graph {i} missing attrs"
             assert d.z.size(0) == d.pos.size(0), f"Graph {i}: z/pos mismatch"
 
 
@@ -840,23 +1024,41 @@ class TestFullPipelineIntegrationE2E:
         pyg = Data()
         pyg.z = torch.tensor([a.GetAtomicNum() for a in mol.GetAtoms()], dtype=torch.long)
         conf = mol.GetConformer(0)
-        pyg.pos = torch.tensor([[conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y,
-                                 conf.GetAtomPosition(i).z] for i in range(na)], dtype=torch.float32)
+        pyg.pos = torch.tensor(
+            [
+                [conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y, conf.GetAtomPosition(i).z]
+                for i in range(na)
+            ],
+            dtype=torch.float32,
+        )
         edges = []
         for b in mol.GetBonds():
             i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
             edges.extend([[i, j], [j, i]])
-        pyg.edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() if edges else torch.zeros((2, 0), dtype=torch.long)
+        pyg.edge_index = (
+            torch.tensor(edges, dtype=torch.long).t().contiguous()
+            if edges
+            else torch.zeros((2, 0), dtype=torch.long)
+        )
         try:
-            result = add_structural_features(rdkit_mol=mol, pyg_data=pyg,
-                                             feature_config={'atom': ['degree', 'hybridization'], 'bond': ['bond_type']},
-                                             logger=logging.getLogger("t"), molecule_index=0, inchi=ETHANOL_INCHI)
+            result = add_structural_features(
+                rdkit_mol=mol,
+                pyg_data=pyg,
+                feature_config={"atom": ["degree", "hybridization"], "bond": ["bond_type"]},
+                logger=logging.getLogger("t"),
+                molecule_index=0,
+                inchi=ETHANOL_INCHI,
+            )
             assert isinstance(result, Data) and result.z.size(0) == na
             assert result.pos.size() == (na, 3)
             if result.x is not None:
                 assert result.x.dim() == 2 and result.x.size(0) == na
         except Exception as e:
-            if type(e).__name__ in ('StructuralFeatureError', 'MoleculeProcessingError', 'PyGDataCreationError'):
+            if type(e).__name__ in (
+                "StructuralFeatureError",
+                "MoleculeProcessingError",
+                "PyGDataCreationError",
+            ):
                 pytest.skip(f"raised {type(e).__name__}: {e}")
             raise
 
@@ -865,7 +1067,10 @@ class TestFullPipelineIntegrationE2E:
         """Complete: molecule -> PyG Data -> features -> transform."""
         try:
             from milia_pipeline.molecules.mol_structural_features import add_structural_features
-            from milia_pipeline.transformations.graph_transforms import create_transform_sequence, list_available_transforms
+            from milia_pipeline.transformations.graph_transforms import (
+                create_transform_sequence,
+                list_available_transforms,
+            )
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         mol = Chem.MolFromSmiles("C")
@@ -877,31 +1082,45 @@ class TestFullPipelineIntegrationE2E:
         pyg = Data()
         pyg.z = torch.tensor([a.GetAtomicNum() for a in mol.GetAtoms()], dtype=torch.long)
         conf = mol.GetConformer(0)
-        pyg.pos = torch.tensor([[conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y,
-                                 conf.GetAtomPosition(i).z] for i in range(na)], dtype=torch.float32)
+        pyg.pos = torch.tensor(
+            [
+                [conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y, conf.GetAtomPosition(i).z]
+                for i in range(na)
+            ],
+            dtype=torch.float32,
+        )
         edges = []
         for b in mol.GetBonds():
             i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
             edges.extend([[i, j], [j, i]])
-        pyg.edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() if edges else torch.zeros((2, 0), dtype=torch.long)
+        pyg.edge_index = (
+            torch.tensor(edges, dtype=torch.long).t().contiguous()
+            if edges
+            else torch.zeros((2, 0), dtype=torch.long)
+        )
         try:
-            pyg = add_structural_features(rdkit_mol=mol, pyg_data=pyg,
-                                          feature_config={'atom': ['degree'], 'bond': ['bond_type']},
-                                          logger=logging.getLogger("t"), molecule_index=0)
+            pyg = add_structural_features(
+                rdkit_mol=mol,
+                pyg_data=pyg,
+                feature_config={"atom": ["degree"], "bond": ["bond_type"]},
+                logger=logging.getLogger("t"),
+                molecule_index=0,
+            )
         except Exception:
             pass  # Continue with basic data if features fail
         available = list_available_transforms()
-        if 'AddSelfLoops' in available:
+        if "AddSelfLoops" in available:
             try:
-                transform = create_transform_sequence(configs=[{'name': 'AddSelfLoops'}],
-                                                      enable_recovery=True, sample_data=pyg)
+                transform = create_transform_sequence(
+                    configs=[{"name": "AddSelfLoops"}], enable_recovery=True, sample_data=pyg
+                )
                 if transform is not None:
                     transformed = transform(pyg.clone())
-                    assert isinstance(transformed, Data) and hasattr(transformed, 'z')
+                    assert isinstance(transformed, Data) and hasattr(transformed, "z")
                     if transformed.edge_index is not None and pyg.edge_index is not None:
                         assert transformed.edge_index.size(1) >= pyg.edge_index.size(1)
             except Exception as e:
-                if type(e).__name__ in ('TransformCompositionError', 'TransformationError'):
+                if type(e).__name__ in ("TransformCompositionError", "TransformationError"):
                     pytest.skip(f"raised {type(e).__name__}: {e}")
                 raise
 
@@ -910,22 +1129,29 @@ class TestFullPipelineIntegrationE2E:
         mol_data_list = _make_synthetic_mol_data_list(count=5)
         results = []
         for md in mol_data_list:
-            results.append(_create_synthetic_pyg_data(num_atoms=md['num_atoms'],
-                                                      num_edges=max(2, md['num_atoms'] * 2 - 2),
-                                                      has_pos=True, has_y=True, has_x=False))
+            results.append(
+                _create_synthetic_pyg_data(
+                    num_atoms=md["num_atoms"],
+                    num_edges=max(2, md["num_atoms"] * 2 - 2),
+                    has_pos=True,
+                    has_y=True,
+                    has_x=False,
+                )
+            )
         assert len(results) == 5
         for i, d in enumerate(results):
-            assert isinstance(d, Data) and hasattr(d, 'z') and hasattr(d, 'edge_index')
-            assert hasattr(d, 'pos') and hasattr(d, 'y')
+            assert isinstance(d, Data) and hasattr(d, "z") and hasattr(d, "edge_index")
+            assert hasattr(d, "pos") and hasattr(d, "y")
 
     def test_handler_enrichment_applied_to_all_molecules(self, mock_handler):
         """Handler enrichment callable for each molecule in a batch."""
         mol_data_list = _make_synthetic_mol_data_list(count=3)
         cnt = 0
         for i, md in enumerate(mol_data_list):
-            data = _create_synthetic_pyg_data(num_atoms=md['num_atoms'],
-                                              num_edges=max(2, md['num_atoms'] * 2 - 2), has_y=False)
-            enriched = mock_handler.enrich_pyg_data(data, md, i, md.get('inchi', 'test'))
+            data = _create_synthetic_pyg_data(
+                num_atoms=md["num_atoms"], num_edges=max(2, md["num_atoms"] * 2 - 2), has_y=False
+            )
+            enriched = mock_handler.enrich_pyg_data(data, md, i, md.get("inchi", "test"))
             if enriched is not None:
                 cnt += 1
         assert cnt == 3
@@ -942,6 +1168,7 @@ class TestMiliaDatasetSmoke:
         """miliaDataset is importable."""
         try:
             from milia_pipeline.datasets.milia_dataset import miliaDataset
+
             assert miliaDataset is not None
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
@@ -950,6 +1177,7 @@ class TestMiliaDatasetSmoke:
         """miliaDataset is a subclass of InMemoryDataset."""
         try:
             from milia_pipeline.datasets.milia_dataset import miliaDataset
+
             assert issubclass(miliaDataset, torch_geometric.data.InMemoryDataset)
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
@@ -958,7 +1186,8 @@ class TestMiliaDatasetSmoke:
         """miliaDataset has process() and download() methods."""
         try:
             from milia_pipeline.datasets.milia_dataset import miliaDataset
-            assert callable(getattr(miliaDataset, 'process')) and callable(getattr(miliaDataset, 'download'))
+
+            assert callable(miliaDataset.process) and callable(miliaDataset.download)
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
 
@@ -972,28 +1201,36 @@ class TestErrorHandlingE2E:
     def test_property_enrichment_none_handler_raises(self, synthetic_pyg_data):
         """enrich_pyg_data_with_properties with None handler raises."""
         try:
-            from milia_pipeline.molecules.property_enrichment import enrich_pyg_data_with_properties
             from milia_pipeline.exceptions import HandlerOperationError
+            from milia_pipeline.molecules.property_enrichment import enrich_pyg_data_with_properties
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         with pytest.raises((HandlerOperationError, Exception)):
-            enrich_pyg_data_with_properties(pyg_data=synthetic_pyg_data, mol_idx=0,
-                                            raw_properties_dict={'total_energy': -76.4},
-                                            inchi_identifier=WATER_INCHI,
-                                            logger=logging.getLogger("t"), dataset_handler=None)
+            enrich_pyg_data_with_properties(
+                pyg_data=synthetic_pyg_data,
+                mol_idx=0,
+                raw_properties_dict={"total_energy": -76.4},
+                inchi_identifier=WATER_INCHI,
+                logger=logging.getLogger("t"),
+                dataset_handler=None,
+            )
 
     @pytest.mark.skipif(not RDKIT_AVAILABLE, reason="RDKit required")
     def test_structural_features_none_mol_raises(self):
         """add_structural_features with None mol raises MoleculeProcessingError."""
         try:
-            from milia_pipeline.molecules.mol_structural_features import add_structural_features
             from milia_pipeline.exceptions import MoleculeProcessingError
+            from milia_pipeline.molecules.mol_structural_features import add_structural_features
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         pyg = Data(z=torch.tensor([8, 1, 1], dtype=torch.long))
         with pytest.raises(MoleculeProcessingError):
-            add_structural_features(rdkit_mol=None, pyg_data=pyg,
-                                    feature_config={'atom': ['degree']}, logger=logging.getLogger("t"))
+            add_structural_features(
+                rdkit_mol=None,
+                pyg_data=pyg,
+                feature_config={"atom": ["degree"]},
+                logger=logging.getLogger("t"),
+            )
 
     @pytest.mark.skipif(not RDKIT_AVAILABLE, reason="RDKit required")
     def test_structural_features_none_pyg_raises(self):
@@ -1004,24 +1241,37 @@ class TestErrorHandlingE2E:
         so this currently raises TypeError wrapping the intended PyGDataCreationError.
         """
         try:
-            from milia_pipeline.molecules.mol_structural_features import add_structural_features
             from milia_pipeline.exceptions import PyGDataCreationError
+            from milia_pipeline.molecules.mol_structural_features import add_structural_features
         except ImportError as e:
             pytest.skip(f"not importable: {e}")
         mol = Chem.MolFromSmiles("O")
         with pytest.raises((PyGDataCreationError, TypeError)):
-            add_structural_features(rdkit_mol=mol, pyg_data=None,
-                                    feature_config={'atom': ['degree']}, logger=logging.getLogger("t"))
+            add_structural_features(
+                rdkit_mol=mol,
+                pyg_data=None,
+                feature_config={"atom": ["degree"]},
+                logger=logging.getLogger("t"),
+            )
 
     def test_exception_hierarchy_importable(self):
         """Core exception classes are importable with correct hierarchy."""
         try:
             from milia_pipeline.exceptions import (
-                BaseProjectError, ConfigurationError, MoleculeProcessingError,
-                HandlerError, HandlerNotAvailableError, HandlerOperationError,
-                RDKitConversionError, PyGDataCreationError, PropertyEnrichmentError,
-                StructuralFeatureError, TransformError, TransformCompositionError,
+                BaseProjectError,
+                ConfigurationError,
+                HandlerError,
+                HandlerNotAvailableError,
+                HandlerOperationError,
+                MoleculeProcessingError,
+                PropertyEnrichmentError,
+                PyGDataCreationError,
+                RDKitConversionError,
+                StructuralFeatureError,
+                TransformCompositionError,
+                TransformError,
             )
+
             assert issubclass(ConfigurationError, BaseProjectError)
             assert issubclass(MoleculeProcessingError, BaseProjectError)
             assert issubclass(HandlerError, BaseProjectError)

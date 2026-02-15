@@ -20,12 +20,12 @@ wavefunction_config:
   # URL to download raw wavefunction data (optional - typically preprocessed locally)
   raw_data_download_url: https://zenodo.org/records/15442257/files/wavefunctions.tar.gz?download=1
   # Root directory where the processed PyTorch Geometric dataset will be stored
-  
+
   # Wavefunction processing configuration
   processing_config:
     # Feature extraction tier: "basic", "standard", or "complete"
     # - basic: Essential features (atoms, coordinates, HOMO/LUMO)
-    # - standard: Basic + orbital energies, occupations  
+    # - standard: Basic + orbital energies, occupations
     # - complete: Standard + full coefficient matrices, all MO data
     feature_tier: basic
 
@@ -34,10 +34,10 @@ wavefunction_config:
       # Number of molecules to preprocess (null = all molecules in archive)
       # Use integer for testing/limiting dataset size (e.g., 10, 100, 1000) (applies for preprocessing step)
       num_molecules: 25
-      
+
       # Clean up temporary .molden files after preprocessing
       cleanup_temp: true
-  
+
   # Uncertainty handling (placeholder for future implementation)
   uncertainty_handling:
     # Currently not supported for wavefunction datasets
@@ -47,7 +47,7 @@ wavefunction_config:
 
 # ────────────────────────────────────────────────────
 # Wavefunction Property Selection for PyG Data Objects
-# ──────────────────────────────────────────────────── 
+# ────────────────────────────────────────────────────
 data_config:
   property_selection:
     Wavefunction:
@@ -59,40 +59,40 @@ data_config:
         - homo_energy_eV                 # HOMO orbital energy (eV)
         - lumo_energy_eV                 # LUMO orbital energy (eV)
         - homo_lumo_gap_eV               # HOMO-LUMO gap (eV)
-        
+
         # Orbital indices
         - homo_index                     # Index of HOMO orbital
         - lumo_index                     # Index of LUMO orbital
-        
+
         # Orbital energy statistics
         - mo_energy_mean_eV              # Mean MO energy (eV)
         - mo_energy_std_eV               # Std dev of MO energies (eV)
         - mo_energy_min_eV               # Minimum MO energy (eV)
         - mo_energy_max_eV               # Maximum MO energy (eV)
-        
+
         # Chemical descriptors (all in eV)
         - ionization_potential_eV        # Ionization potential approx (eV)
         - electron_affinity_eV           # Electron affinity approx (eV)
         - chemical_hardness_eV           # Chemical hardness (eV)
         - chemical_potential_eV          # Chemical potential (eV)
         - electrophilicity_eV            # Electrophilicity index (eV)
-        
+
         # Electronic structure properties
         - n_electrons                    # Total number of electrons
         - n_basis_functions              # Number of basis functions
         - n_occupied_orbitals            # Number of occupied MOs
         - n_virtual_orbitals             # Number of virtual MOs
         - n_shells                       # Number of atomic shells
-        
+
         # Molecular properties
         - molecular_weight               # Molecular weight (amu)
-      
+
       # Node-level features - currently none from .molden files
       node_features_to_add: []
-      
+
       # Vector graph properties - currently none from .molden files
       vector_graph_properties_to_include: []
-      
+
       # Variable-length properties - MO data
       variable_len_graph_properties_to_include:
         - mo_energies                    # All molecular orbital energies
@@ -111,18 +111,18 @@ property_availability:
     # Source: .molden files parsed via IOData → wavefunctions.npz
     # Reference: VQM24 dataset (Zenodo record 15442257)
     # Coordinate units: Bohr | Energy units: Hartree
-    
+
     # Molecular identifiers
     molecular_identifiers:
       - compounds           # Compound identifiers (e.g., NxO2PxSiH6_103)
       - molecular_formula   # Molecular formula string (e.g., PSiO2NH6)
-    
+
     # Atomic structure properties
     atomic_structure:
       - atoms               # Atomic numbers (int64 array)
       - coordinates         # Cartesian coordinates in Bohr (float64, shape: n_atoms x 3)
       - n_atoms             # Number of atoms per molecule (int32)
-    
+
     # Scalar graph-level properties
     scalar_graph_targets:
       # Frontier orbital energies (Hartree)
@@ -152,22 +152,22 @@ property_availability:
       - n_virtual_orbitals          # Number of virtual MOs (int32)
       # Molecular properties
       - molecular_weight            # Molecular weight in amu (float64)
-    
+
     # Node-level (atomic) properties
     node_features: []  # No per-atom features in current .molden extraction
-    
+
     # Fixed-size vector graph properties
     vector_graph_properties: []  # No fixed-size vector properties
-    
+
     # Variable-length graph properties (MO data)
     variable_len_graph_properties:
       - mo_energies         # All molecular orbital energies (float64, shape: n_basis)
       - mo_occupations      # All molecular orbital occupations (float64, shape: n_basis)
       - mo_coefficients     # MO coefficient matrix (float64, shape: n_basis x n_basis)
-    
+
     # Metadata fields (non-target)
     metadata_fields:
       - mo_kind             # MO type: 'restricted' or 'unrestricted' (object/string)
-    
+
     # Wavefunction data is deterministic - no uncertainty fields
     uncertainty_fields: []

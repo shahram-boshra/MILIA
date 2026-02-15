@@ -21,16 +21,16 @@ Quick Start:
     ...     FineTuner,
     ...     FreezeStrategy,
     ... )
-    >>> 
+    >>>
     >>> # Load pre-trained model and prepare for fine-tuning
     >>> fine_tuner = FineTuner.from_checkpoint("pretrained_model.pt")
-    >>> 
+    >>>
     >>> # Prepare model: freeze encoder, replace output head
     >>> model = fine_tuner.prepare_for_finetuning(
     ...     new_out_channels=5,  # New task has 5 targets
     ...     freeze_strategy=FreezeStrategy.ENCODER
     ... )
-    >>> 
+    >>>
     >>> # Then train with Trainer as normal
     >>> trainer = Trainer(model=model, ...)
     >>> trainer.fit()
@@ -50,7 +50,7 @@ Transfer Learning Workflow:
 """
 
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,11 @@ __author__ = "MILIA Team"
 # =============================================================================
 
 from .fine_tuner import (
-    # Enum for freeze strategies
-    FreezeStrategy,
-    
     # Main fine-tuning class
     FineTuner,
+    # Enum for freeze strategies
+    FreezeStrategy,
 )
-
 
 # =============================================================================
 # PUBLIC API
@@ -82,10 +80,9 @@ from .fine_tuner import (
 
 __all__ = [
     # Freeze strategy enum
-    'FreezeStrategy',
-    
+    "FreezeStrategy",
     # Main class
-    'FineTuner',
+    "FineTuner",
 ]
 
 
@@ -93,13 +90,14 @@ __all__ = [
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # =============================================================================
 
-def get_available_components() -> Dict[str, List[str]]:
+
+def get_available_components() -> dict[str, list[str]]:
     """
     Get all available transfer learning components.
-    
+
     Returns:
         Dictionary mapping component types to available classes/functions
-        
+
     Example:
         >>> from milia_pipeline.models.post_training.transfer_learning import get_available_components
         >>> components = get_available_components()
@@ -107,58 +105,58 @@ def get_available_components() -> Dict[str, List[str]]:
         >>> print(f"Freeze strategies: {components['freeze_strategies']}")
     """
     return {
-        'classes': ['FineTuner'],
-        'enums': ['FreezeStrategy'],
-        'freeze_strategies': [s.value for s in FreezeStrategy],
+        "classes": ["FineTuner"],
+        "enums": ["FreezeStrategy"],
+        "freeze_strategies": [s.value for s in FreezeStrategy],
     }
 
 
 def print_available_components():
     """
     Print all available transfer learning components to console.
-    
+
     Useful for exploring available options during development.
-    
+
     Example:
         >>> from milia_pipeline.models.post_training.transfer_learning import print_available_components
         >>> print_available_components()
     """
     components = get_available_components()
-    
+
     print("=" * 70)
     print("MILIA Pipeline - Transfer Learning Module Components")
     print("=" * 70)
-    
+
     print(f"\n📦 Classes ({len(components['classes'])} available):")
-    for i, name in enumerate(components['classes'], 1):
+    for i, name in enumerate(components["classes"], 1):
         print(f"  {i}. {name}")
-    
+
     print(f"\n🔧 Enums ({len(components['enums'])} available):")
-    for i, name in enumerate(components['enums'], 1):
+    for i, name in enumerate(components["enums"], 1):
         print(f"  {i}. {name}")
-    
+
     print(f"\n❄️  Freeze Strategies ({len(components['freeze_strategies'])} available):")
-    for i, strategy in enumerate(components['freeze_strategies'], 1):
+    for i, strategy in enumerate(components["freeze_strategies"], 1):
         desc = {
-            'none': 'Train all parameters (full fine-tuning)',
-            'encoder': 'Freeze GNN encoder, train head only',
-            'encoder_partial': 'Freeze first N layers of encoder',
-            'all_but_last': 'Freeze all but last linear layer',
-        }.get(strategy, '')
+            "none": "Train all parameters (full fine-tuning)",
+            "encoder": "Freeze GNN encoder, train head only",
+            "encoder_partial": "Freeze first N layers of encoder",
+            "all_but_last": "Freeze all but last linear layer",
+        }.get(strategy, "")
         print(f"  {i}. {strategy}: {desc}")
-    
+
     print("\n" + "=" * 70)
     print(f"Transfer Learning Module v{__version__}")
     print("=" * 70)
 
 
-def list_freeze_strategies() -> List[str]:
+def list_freeze_strategies() -> list[str]:
     """
     List all available freeze strategies.
-    
+
     Returns:
         List of freeze strategy names
-        
+
     Example:
         >>> strategies = list_freeze_strategies()
         >>> print(strategies)

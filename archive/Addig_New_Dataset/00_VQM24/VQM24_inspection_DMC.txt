@@ -21,7 +21,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 10793
     Sample first 5 elements: ['Br2C2H0_0_conformer_1', 'Br2C2H2_0_conformer_1', 'Br2C2H2_1_conformer_1', 'Br2C2H4_0_conformer_1', 'Br2C2H4_1_conformer_1']...
 
-  Key: 'graphs'  
+  Key: 'graphs'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: <U30
     Shape: (10793,)
@@ -29,7 +29,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 10793
     Sample first 5 elements: ['BrC#CBr', 'C=C(Br)Br', 'Br/C=C/Br', 'CC(Br)Br', 'BrCCBr']...
 
-  Key: 'inchi'   
+  Key: 'inchi'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: <U57
     Shape: (10793,)
@@ -37,7 +37,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 10793
     Sample first 5 elements: ['InChI=1S/C2Br2/c3-1-2-4', 'InChI=1S/C2H2Br2/c1-2(3)4/h1H2', 'InChI=1S/C2H2Br2/c3-1-2-4/h1-2H/b2-1+', 'InChI=1S/C2H4Br2/c1-2(3)4/h2H,1H3', 'InChI=1S/C2H4Br2/c3-1-2-4/h1-2H2']...
 
-  Key: 'atoms'   
+  Key: 'atoms'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (10793,)
@@ -45,7 +45,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 10793
     Sample first 5 elements: [array([35,  6,  6, 35], dtype=int32), array([ 6,  6, 35, 35,  1,  1], dtype=int32), array([35,  6,  6, 35,  1,  1], dtype=int32), array([ 6,  6, 35, 35,  1,  1,  1,  1], dtype=int32), array([35,  6,  6, 35,  1,  1,  1,  1], dtype=int32)]...
 
-  Key: 'coordinates'   
+  Key: 'coordinates'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (10793,)
@@ -80,7 +80,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
        [-3.35634670e-01, -1.21586904e+00, -8.95885479e-01],
        [-3.35638033e-01, -1.21584420e+00,  8.95918048e-01]])]...
 
-  Key: 'Etot'   
+  Key: 'Etot'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: float64
     Shape: (10793,)
@@ -88,7 +88,7 @@ NPZ file loaded successfully from '/home/shahram/Chem_Data/VQM24_PyG_Dataset/raw
     Total elements: 10793
     Sample first 5 elements: [-37.962391, -39.232666, -39.235807, -40.477863, -40.481217]...
 
-  Key: 'std'   
+  Key: 'std'
     Type: <class 'numpy.ndarray'>
     NumPy dtype: object
     Shape: (10793,)

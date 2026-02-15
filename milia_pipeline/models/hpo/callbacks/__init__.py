@@ -22,10 +22,10 @@ Usage:
     ...     OptunaPruningCallback,
     ...     create_hpo_callback,
     ... )
-    >>> 
+    >>>
     >>> # Direct usage with Optuna trial
     >>> callback = OptunaPruningCallback(trial=trial, monitor="val_loss")
-    >>> 
+    >>>
     >>> # Factory function usage
     >>> callback = create_hpo_callback(
     ...     trial=trial,
@@ -43,9 +43,9 @@ Integration Point:
 # =============================================================================
 
 from .optuna_callback import (
+    OPTUNA_AVAILABLE,
     OptunaPruningCallback,
     create_hpo_callback,
-    OPTUNA_AVAILABLE,
 )
 
 # =============================================================================

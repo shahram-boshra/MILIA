@@ -25,31 +25,28 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, call
 import logging
-from typing import Dict, Any, Type
-from abc import ABC
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.preprocessing.registry import PreprocessorRegistry
-from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.exceptions import (
     ConfigurationError,
     DataProcessingError,
 )
-
+from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
+from milia_pipeline.preprocessing.registry import PreprocessorRegistry
 
 # ============================================================================
 # HELPERS: Concrete subclass builders for testing the registry
 # ============================================================================
+
 
 def _make_concrete_preprocessor_class(class_name="StubPreprocessor"):
     """
@@ -58,16 +55,21 @@ def _make_concrete_preprocessor_class(class_name="StubPreprocessor"):
     These are lightweight stubs used exclusively to test registry behavior.
     Both abstract methods (_validate_config, preprocess) are implemented as no-ops.
     """
+
     def _validate_config(self):
         pass
 
     def preprocess(self):
         return Path("/tmp/dummy_output.npz")
 
-    cls = type(class_name, (BasePreprocessor,), {
-        "_validate_config": _validate_config,
-        "preprocess": preprocess,
-    })
+    cls = type(
+        class_name,
+        (BasePreprocessor,),
+        {
+            "_validate_config": _validate_config,
+            "preprocess": preprocess,
+        },
+    )
     return cls
 
 
@@ -82,6 +84,7 @@ def _make_logger():
 # GROUP 1: PreprocessorRegistry Class Structure (6 tests)
 # ============================================================================
 
+
 class TestPreprocessorRegistryStructure(unittest.TestCase):
     """Test that PreprocessorRegistry has correct structure and class attributes."""
 
@@ -92,38 +95,29 @@ class TestPreprocessorRegistryStructure(unittest.TestCase):
 
     def test_register_is_classmethod(self):
         """register() is a classmethod."""
-        self.assertIsInstance(
-            PreprocessorRegistry.__dict__["register"], classmethod
-        )
+        self.assertIsInstance(PreprocessorRegistry.__dict__["register"], classmethod)
 
     def test_get_preprocessor_is_classmethod(self):
         """get_preprocessor() is a classmethod."""
-        self.assertIsInstance(
-            PreprocessorRegistry.__dict__["get_preprocessor"], classmethod
-        )
+        self.assertIsInstance(PreprocessorRegistry.__dict__["get_preprocessor"], classmethod)
 
     def test_list_preprocessors_is_classmethod(self):
         """list_preprocessors() is a classmethod."""
-        self.assertIsInstance(
-            PreprocessorRegistry.__dict__["list_preprocessors"], classmethod
-        )
+        self.assertIsInstance(PreprocessorRegistry.__dict__["list_preprocessors"], classmethod)
 
     def test_supports_preprocessing_is_classmethod(self):
         """supports_preprocessing() is a classmethod."""
-        self.assertIsInstance(
-            PreprocessorRegistry.__dict__["supports_preprocessing"], classmethod
-        )
+        self.assertIsInstance(PreprocessorRegistry.__dict__["supports_preprocessing"], classmethod)
 
     def test_clear_registry_is_classmethod(self):
         """clear_registry() is a classmethod."""
-        self.assertIsInstance(
-            PreprocessorRegistry.__dict__["clear_registry"], classmethod
-        )
+        self.assertIsInstance(PreprocessorRegistry.__dict__["clear_registry"], classmethod)
 
 
 # ============================================================================
 # GROUP 2: register() — Decorator Registration (14 tests)
 # ============================================================================
+
 
 class TestPreprocessorRegistryRegister(unittest.TestCase):
     """Test the @register decorator for registering preprocessor classes."""
@@ -158,10 +152,12 @@ class TestPreprocessorRegistryRegister(unittest.TestCase):
 
     def test_register_as_decorator_syntax(self):
         """@register works with standard decorator syntax."""
+
         @PreprocessorRegistry.register("DecoratorTest")
         class DecoratorTestPreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/out.npz")
 
@@ -222,6 +218,7 @@ class TestPreprocessorRegistryRegister(unittest.TestCase):
 
     def test_register_rejects_non_base_preprocessor_subclass(self):
         """@register raises ConfigurationError for non-BasePreprocessor classes."""
+
         class NotAPreprocessor:
             pass
 
@@ -238,6 +235,7 @@ class TestPreprocessorRegistryRegister(unittest.TestCase):
 
     def test_register_non_subclass_not_added_to_registry(self):
         """Rejected class is not added to the registry."""
+
         class BadClass:
             pass
 
@@ -248,10 +246,12 @@ class TestPreprocessorRegistryRegister(unittest.TestCase):
 
     def test_register_preserves_class_name(self):
         """Registered class retains its original __name__."""
+
         @PreprocessorRegistry.register("NameCheck")
         class MySpecialPreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/out.npz")
 
@@ -273,6 +273,7 @@ class TestPreprocessorRegistryRegister(unittest.TestCase):
 # ============================================================================
 # GROUP 3: get_preprocessor() — Lookup by Dataset Type (14 tests)
 # ============================================================================
+
 
 class TestPreprocessorRegistryGetPreprocessor(unittest.TestCase):
     """Test get_preprocessor() exact match and case-insensitive fallback."""
@@ -392,6 +393,7 @@ class TestPreprocessorRegistryGetPreprocessor(unittest.TestCase):
 # GROUP 4: list_preprocessors() — Enumeration (8 tests)
 # ============================================================================
 
+
 class TestPreprocessorRegistryListPreprocessors(unittest.TestCase):
     """Test list_preprocessors() returns correct list of registered types."""
 
@@ -475,6 +477,7 @@ class TestPreprocessorRegistryListPreprocessors(unittest.TestCase):
 # GROUP 5: supports_preprocessing() — Boolean Check (12 tests)
 # ============================================================================
 
+
 class TestPreprocessorRegistrySupportsPreprocessing(unittest.TestCase):
     """Test supports_preprocessing() exact match and case-insensitive fallback."""
 
@@ -485,9 +488,7 @@ class TestPreprocessorRegistrySupportsPreprocessing(unittest.TestCase):
 
         self.StubCls = _make_concrete_preprocessor_class("StubPreprocessor")
         PreprocessorRegistry.register("Wavefunction")(self.StubCls)
-        PreprocessorRegistry.register("DFT")(
-            _make_concrete_preprocessor_class("DFTStub")
-        )
+        PreprocessorRegistry.register("DFT")(_make_concrete_preprocessor_class("DFTStub"))
 
     def tearDown(self):
         """Restore registry state."""
@@ -550,6 +551,7 @@ class TestPreprocessorRegistrySupportsPreprocessing(unittest.TestCase):
 # GROUP 6: clear_registry() — Reset Behavior (6 tests)
 # ============================================================================
 
+
 class TestPreprocessorRegistryClearRegistry(unittest.TestCase):
     """Test clear_registry() properly resets the registry."""
 
@@ -567,9 +569,7 @@ class TestPreprocessorRegistryClearRegistry(unittest.TestCase):
         """clear_registry() removes all entries."""
         StubCls = _make_concrete_preprocessor_class("Stub")
         PreprocessorRegistry.register("A")(StubCls)
-        PreprocessorRegistry.register("B")(
-            _make_concrete_preprocessor_class("StubB")
-        )
+        PreprocessorRegistry.register("B")(_make_concrete_preprocessor_class("StubB"))
 
         PreprocessorRegistry.clear_registry()
         self.assertEqual(len(PreprocessorRegistry._preprocessors), 0)
@@ -619,6 +619,7 @@ class TestPreprocessorRegistryClearRegistry(unittest.TestCase):
 # ============================================================================
 # GROUP 7: Edge Cases and Boundary Conditions (10 tests)
 # ============================================================================
+
 
 class TestPreprocessorRegistryEdgeCases(unittest.TestCase):
     """Edge cases: special characters, whitespace, unicode, concurrency patterns."""
@@ -702,6 +703,7 @@ class TestPreprocessorRegistryEdgeCases(unittest.TestCase):
 
     def test_non_class_raises_type_error(self):
         """Passing a non-class (e.g., function) to decorator raises TypeError or ConfigurationError."""
+
         def not_a_class():
             pass
 
@@ -712,6 +714,7 @@ class TestPreprocessorRegistryEdgeCases(unittest.TestCase):
 # ============================================================================
 # GROUP 8: Integration Scenarios — Realistic Usage Patterns (10 tests)
 # ============================================================================
+
 
 class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
     """Realistic end-to-end scenarios mimicking production usage."""
@@ -728,10 +731,12 @@ class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
 
     def test_full_registration_and_retrieval_workflow(self):
         """Register → list → supports → get → instantiate workflow."""
+
         @PreprocessorRegistry.register("Wavefunction")
         class WavefunctionPreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/wavefunction.npz")
 
@@ -809,8 +814,14 @@ class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
     def test_register_all_known_project_dataset_types(self):
         """Register all known project dataset types and verify enumeration."""
         known_types = [
-            "Wavefunction", "QM9", "ANI1x", "ANI1ccx",
-            "RMD17", "ANI2x", "XXMD", "QDPi",
+            "Wavefunction",
+            "QM9",
+            "ANI1x",
+            "ANI1ccx",
+            "RMD17",
+            "ANI2x",
+            "XXMD",
+            "QDPi",
         ]
         for dtype in known_types:
             StubCls = _make_concrete_preprocessor_class(f"{dtype}Stub")
@@ -847,10 +858,12 @@ class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
 
     def test_decorator_used_at_class_definition_time(self):
         """Decorator registers class at definition time, before any explicit call."""
+
         @PreprocessorRegistry.register("EarlyBird")
         class EarlyBirdPreprocessor(BasePreprocessor):
             def _validate_config(self):
                 pass
+
             def preprocess(self):
                 return Path("/tmp/early.npz")
 
@@ -866,20 +879,21 @@ class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestPreprocessorRegistryStructure,              # GROUP 1:  6 tests
-        TestPreprocessorRegistryRegister,                # GROUP 2: 14 tests
-        TestPreprocessorRegistryGetPreprocessor,         # GROUP 3: 14 tests
-        TestPreprocessorRegistryListPreprocessors,       # GROUP 4:  8 tests
-        TestPreprocessorRegistrySupportsPreprocessing,   # GROUP 5: 12 tests
-        TestPreprocessorRegistryClearRegistry,           # GROUP 6:  6 tests
-        TestPreprocessorRegistryEdgeCases,               # GROUP 7: 10 tests
-        TestPreprocessorRegistryIntegrationScenarios,    # GROUP 8: 10 tests
+        TestPreprocessorRegistryStructure,  # GROUP 1:  6 tests
+        TestPreprocessorRegistryRegister,  # GROUP 2: 14 tests
+        TestPreprocessorRegistryGetPreprocessor,  # GROUP 3: 14 tests
+        TestPreprocessorRegistryListPreprocessors,  # GROUP 4:  8 tests
+        TestPreprocessorRegistrySupportsPreprocessing,  # GROUP 5: 12 tests
+        TestPreprocessorRegistryClearRegistry,  # GROUP 6:  6 tests
+        TestPreprocessorRegistryEdgeCases,  # GROUP 7: 10 tests
+        TestPreprocessorRegistryIntegrationScenarios,  # GROUP 8: 10 tests
     ]
 
     for test_class in test_classes:

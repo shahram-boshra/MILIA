@@ -34,19 +34,17 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
-import os
-import sys
 import logging
-import tempfile
 import shutil
+import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-import numpy as np
 
 # ===========================================================================
 # PATH SETUP: Add project root to Python path FIRST
@@ -151,6 +149,7 @@ logger = logging.getLogger(__name__)
 # HELPER: Minimal GNN for smoke testing
 # ===========================================================================
 
+
 class _MinimalGCN(nn.Module):
     """A minimal GCN-like model that requires NO PyG optional extensions.
 
@@ -201,6 +200,7 @@ class _MinimalGCN(nn.Module):
 # FIXTURES
 # ===========================================================================
 
+
 @pytest.fixture(scope="module")
 def tmp_work_dir():
     """Provide a temporary working directory for the test module.
@@ -214,7 +214,7 @@ def tmp_work_dir():
 
 
 @pytest.fixture(scope="module")
-def synthetic_pyg_data_list() -> List:
+def synthetic_pyg_data_list() -> list:
     """Create a minimal list of synthetic PyG Data objects for prediction.
 
     Generates 5 small molecular graphs with:
@@ -253,9 +253,7 @@ def synthetic_pyg_data_list() -> List:
         pos = torch.randn(num_atoms, 3, dtype=torch.float32)
 
         # Atomic numbers (C=6, N=7, O=8, H=1)
-        z = torch.tensor(
-            rng.choice([1, 6, 7, 8], size=num_atoms), dtype=torch.long
-        )
+        z = torch.tensor(rng.choice([1, 6, 7, 8], size=num_atoms), dtype=torch.long)
 
         data = Data(x=x, edge_index=edge_index, y=y, pos=pos, z=z)
         data_list.append(data)
@@ -391,6 +389,7 @@ def mock_v1_checkpoint_path(tmp_work_dir, minimal_model):
 # SECTION 1: CHECKPOINT MANAGER SMOKE TESTS
 # ===========================================================================
 
+
 class TestCheckpointManagerSmoke:
     """Smoke tests for CheckpointManager.
 
@@ -410,8 +409,8 @@ class TestCheckpointManagerSmoke:
     def test_checkpoint_manager_importable(self):
         """CheckpointManager can be imported without errors."""
         from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
-            CheckpointManager,
             CHECKPOINT_FORMAT_VERSION,
+            CheckpointManager,
         )
 
         assert CheckpointManager is not None
@@ -520,9 +519,7 @@ class TestCheckpointManagerSmoke:
 
         assert manager.is_v2_checkpoint(checkpoint) is True
 
-    def test_legacy_checkpoint_backward_compatibility(
-        self, tmp_work_dir, mock_v1_checkpoint_path
-    ):
+    def test_legacy_checkpoint_backward_compatibility(self, tmp_work_dir, mock_v1_checkpoint_path):
         """v1.0 checkpoints load with default metadata.
 
         Evidence: checkpoint_manager.py load() (lines 219-227) detects
@@ -615,6 +612,7 @@ class TestCheckpointManagerSmoke:
 # SECTION 2: MODEL LOADER SMOKE TESTS
 # ===========================================================================
 
+
 class TestModelLoaderSmoke:
     """Smoke tests for ModelLoader.
 
@@ -659,9 +657,7 @@ class TestModelLoaderSmoke:
         assert hasattr(ModelLoader, "get_checkpoint_info")
         assert hasattr(ModelLoader, "_load")
 
-    def test_get_checkpoint_info(
-        self, tmp_work_dir, mock_checkpoint_path
-    ):
+    def test_get_checkpoint_info(self, tmp_work_dir, mock_checkpoint_path):
         """get_checkpoint_info() returns metadata without loading model.
 
         Evidence: model_loader.py get_checkpoint_info() (lines 440-483)
@@ -689,9 +685,7 @@ class TestModelLoaderSmoke:
         assert info["epoch"] == 10
         assert info["best_val_loss"] == 0.6
 
-    def test_get_checkpoint_info_legacy(
-        self, tmp_work_dir, mock_v1_checkpoint_path
-    ):
+    def test_get_checkpoint_info_legacy(self, tmp_work_dir, mock_v1_checkpoint_path):
         """get_checkpoint_info() handles v1.0 checkpoints gracefully.
 
         Evidence: model_loader.py get_checkpoint_info() reads from
@@ -777,16 +771,18 @@ class TestModelLoaderSmoke:
         )
 
         mock_factory = MagicMock()
-        with patch(
-            "milia_pipeline.models.post_training.inference.model_loader.get_factory",
-            return_value=mock_factory,
+        with (
+            patch(
+                "milia_pipeline.models.post_training.inference.model_loader.get_factory",
+                return_value=mock_factory,
+            ),
+            pytest.raises(FileNotFoundError),
         ):
-            with pytest.raises(FileNotFoundError):
-                ModelLoader.load_from_checkpoint(
-                    checkpoint_path="nonexistent/model.pt",
-                    working_root_dir=tmp_work_dir,
-                    device=torch.device("cpu"),
-                )
+            ModelLoader.load_from_checkpoint(
+                checkpoint_path="nonexistent/model.pt",
+                working_root_dir=tmp_work_dir,
+                device=torch.device("cpu"),
+            )
 
     def test_load_from_checkpoint_v1_missing_params_raises(
         self, tmp_work_dir, mock_v1_checkpoint_path
@@ -803,16 +799,18 @@ class TestModelLoaderSmoke:
         )
 
         mock_factory = MagicMock()
-        with patch(
-            "milia_pipeline.models.post_training.inference.model_loader.get_factory",
-            return_value=mock_factory,
+        with (
+            patch(
+                "milia_pipeline.models.post_training.inference.model_loader.get_factory",
+                return_value=mock_factory,
+            ),
+            pytest.raises(ValueError, match="model_name is required"),
         ):
-            with pytest.raises(ValueError, match="model_name is required"):
-                ModelLoader.load_from_checkpoint(
-                    checkpoint_path=mock_v1_checkpoint_path,
-                    working_root_dir=tmp_work_dir,
-                    device=torch.device("cpu"),
-                )
+            ModelLoader.load_from_checkpoint(
+                checkpoint_path=mock_v1_checkpoint_path,
+                working_root_dir=tmp_work_dir,
+                device=torch.device("cpu"),
+            )
 
     def test_load_from_checkpoint_v1_with_overrides(
         self, tmp_work_dir, mock_v1_checkpoint_path, minimal_model
@@ -859,6 +857,7 @@ class TestModelLoaderSmoke:
 # ===========================================================================
 # SECTION 3: PREDICTOR SMOKE TESTS
 # ===========================================================================
+
 
 class TestPredictorSmoke:
     """Smoke tests for Predictor.
@@ -911,9 +910,7 @@ class TestPredictorSmoke:
         assert predictor.task_type == "graph_regression"
         assert not predictor.model.training
 
-    def test_predict_single(
-        self, tmp_work_dir, minimal_model, synthetic_pyg_data_list
-    ):
+    def test_predict_single(self, tmp_work_dir, minimal_model, synthetic_pyg_data_list):
         """predict() returns a tensor for a single Data object.
 
         Evidence: predictor.py predict() (lines 209-240) calls
@@ -963,9 +960,7 @@ class TestPredictorSmoke:
 
         assert isinstance(prediction, np.ndarray)
 
-    def test_predict_batch(
-        self, tmp_work_dir, minimal_model, synthetic_pyg_data_list
-    ):
+    def test_predict_batch(self, tmp_work_dir, minimal_model, synthetic_pyg_data_list):
         """predict_batch() returns concatenated predictions for dataset.
 
         Evidence: predictor.py predict_batch() (lines 427-467) creates
@@ -992,9 +987,7 @@ class TestPredictorSmoke:
         # Should have one prediction per graph in dataset
         assert predictions.shape[0] == len(synthetic_pyg_data_list)
 
-    def test_predict_batch_return_numpy(
-        self, tmp_work_dir, minimal_model, synthetic_pyg_data_list
-    ):
+    def test_predict_batch_return_numpy(self, tmp_work_dir, minimal_model, synthetic_pyg_data_list):
         """predict_batch(return_numpy=True) returns a numpy array.
 
         Evidence: predictor.py predict_batch() (lines 465-466) checks
@@ -1020,9 +1013,7 @@ class TestPredictorSmoke:
         assert isinstance(predictions, np.ndarray)
         assert predictions.shape[0] == len(synthetic_pyg_data_list)
 
-    def test_structural_features_config_property(
-        self, tmp_work_dir, minimal_model
-    ):
+    def test_structural_features_config_property(self, tmp_work_dir, minimal_model):
         """structural_features_config property returns config from model_info.
 
         Evidence: predictor.py structural_features_config property
@@ -1056,9 +1047,7 @@ class TestPredictorSmoke:
         assert "bond" in config
         assert "atomic_num" in config["atom"]
 
-    def test_structural_features_config_property_none(
-        self, tmp_work_dir, minimal_model
-    ):
+    def test_structural_features_config_property_none(self, tmp_work_dir, minimal_model):
         """structural_features_config returns None when model_info is empty.
 
         Evidence: predictor.py structural_features_config property
@@ -1077,9 +1066,7 @@ class TestPredictorSmoke:
 
         assert predictor.structural_features_config is None
 
-    def test_save_predictions_csv(
-        self, tmp_work_dir, minimal_model, synthetic_pyg_data_list
-    ):
+    def test_save_predictions_csv(self, tmp_work_dir, minimal_model, synthetic_pyg_data_list):
         """save_predictions() writes predictions to CSV file.
 
         Evidence: predictor.py save_predictions() (lines 469-546) resolves
@@ -1097,9 +1084,7 @@ class TestPredictorSmoke:
             task_type="graph_regression",
         )
 
-        predictions = predictor.predict_batch(
-            synthetic_pyg_data_list[:2], batch_size=2
-        )
+        predictions = predictor.predict_batch(synthetic_pyg_data_list[:2], batch_size=2)
 
         output_path = predictor.save_predictions(
             predictions, "predictions/test_output.csv", format="csv"
@@ -1108,9 +1093,7 @@ class TestPredictorSmoke:
         assert output_path.exists()
         assert output_path.suffix == ".csv"
 
-    def test_save_predictions_pt(
-        self, tmp_work_dir, minimal_model, synthetic_pyg_data_list
-    ):
+    def test_save_predictions_pt(self, tmp_work_dir, minimal_model, synthetic_pyg_data_list):
         """save_predictions(format='pt') writes predictions to .pt file.
 
         Evidence: predictor.py save_predictions() (lines 539-540) uses
@@ -1127,9 +1110,7 @@ class TestPredictorSmoke:
             task_type="graph_regression",
         )
 
-        predictions = predictor.predict_batch(
-            synthetic_pyg_data_list[:2], batch_size=2
-        )
+        predictions = predictor.predict_batch(synthetic_pyg_data_list[:2], batch_size=2)
 
         output_path = predictor.save_predictions(
             predictions, "predictions/test_output.pt", format="pt"
@@ -1193,6 +1174,7 @@ class TestPredictorSmoke:
 # SECTION 4: DATA CONVERTER REGISTRY SMOKE TESTS
 # ===========================================================================
 
+
 class TestDataConverterRegistrySmoke:
     """Smoke tests for DataConverterRegistry.
 
@@ -1228,10 +1210,10 @@ class TestDataConverterRegistrySmoke:
     def test_convenience_functions_importable(self):
         """Convenience functions can be imported without errors."""
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
-            convert_to_pyg,
             convert_batch_to_pyg,
-            list_available_formats,
+            convert_to_pyg,
             list_all_formats,
+            list_available_formats,
         )
 
         assert callable(convert_to_pyg)
@@ -1255,9 +1237,7 @@ class TestDataConverterRegistrySmoke:
         all_formats = registry.list_all()
 
         assert isinstance(all_formats, list)
-        assert len(all_formats) >= 2, (
-            "At least pyg_data and dict converters should be registered"
-        )
+        assert len(all_formats) >= 2, "At least pyg_data and dict converters should be registered"
         assert "pyg_data" in all_formats
         assert "dict" in all_formats
 
@@ -1299,10 +1279,11 @@ class TestDataConverterRegistrySmoke:
         Evidence: data_converter.py PyGDataConverter.convert() (lines 385-388)
         checks isinstance(input_data, Data) and returns input_data as-is.
         """
+        from torch_geometric.data import Data
+
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
         )
-        from torch_geometric.data import Data
 
         data = synthetic_pyg_data_list[0]
         result = convert_to_pyg(data, format="pyg_data")
@@ -1318,10 +1299,11 @@ class TestDataConverterRegistrySmoke:
         iterates dict items, converts lists/tuples to tensors, and creates
         Data(**data_dict).
         """
+        from torch_geometric.data import Data
+
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
         )
-        from torch_geometric.data import Data
 
         input_dict = {
             "x": torch.randn(5, 11),
@@ -1376,10 +1358,11 @@ class TestDataConverterRegistrySmoke:
         Evidence: data_converter.py convert_to_pyg() (lines ~1148-1151)
         calls registry.auto_detect(input_data) when format is None.
         """
+        from torch_geometric.data import Data
+
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             convert_to_pyg,
         )
-        from torch_geometric.data import Data
 
         data = synthetic_pyg_data_list[0]
         result = convert_to_pyg(data)  # format=None → auto-detect
@@ -1407,10 +1390,11 @@ class TestDataConverterRegistrySmoke:
         an ABC with abstract methods: format_name, is_available,
         can_convert, convert.
         """
+        from abc import ABC
+
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
             BaseDataConverter,
         )
-        from abc import ABC
 
         assert issubclass(BaseDataConverter, ABC)
 
@@ -1437,6 +1421,7 @@ class TestDataConverterRegistrySmoke:
 # ===========================================================================
 # SECTION 5: FULL PREDICTION PIPELINE INTEGRATION SMOKE TESTS
 # ===========================================================================
+
 
 class TestPredictionPipelineIntegrationSmoke:
     """Smoke tests for the complete prediction pipeline flow.
@@ -1508,9 +1493,7 @@ class TestPredictionPipelineIntegrationSmoke:
             assert single_pred.shape[-1] == 1
 
             # Step 3: Run batch prediction
-            batch_pred = predictor.predict_batch(
-                synthetic_pyg_data_list[:2], batch_size=2
-            )
+            batch_pred = predictor.predict_batch(synthetic_pyg_data_list[:2], batch_size=2)
             assert isinstance(batch_pred, torch.Tensor)
             assert batch_pred.shape[0] == 2
 
@@ -1651,9 +1634,7 @@ class TestPredictionPipelineIntegrationSmoke:
             )
 
             # Step 3: Predict
-            predictions = predictor.predict_batch(
-                synthetic_pyg_data_list, batch_size=2
-            )
+            predictions = predictor.predict_batch(synthetic_pyg_data_list, batch_size=2)
             assert predictions.shape[0] == len(synthetic_pyg_data_list)
 
             # Step 4: Save predictions
@@ -1666,6 +1647,7 @@ class TestPredictionPipelineIntegrationSmoke:
 # ===========================================================================
 # SECTION 6: POST-TRAINING PUBLIC API SMOKE TESTS
 # ===========================================================================
+
 
 class TestPostTrainingPublicAPISmoke:
     """Smoke tests for the post_training public API.
@@ -1694,8 +1676,8 @@ class TestPostTrainingPublicAPISmoke:
         is also available.
         """
         from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
-            CheckpointManager,
             CHECKPOINT_FORMAT_VERSION,
+            CheckpointManager,
         )
 
         assert CheckpointManager is not None
@@ -1730,13 +1712,13 @@ class TestPostTrainingPublicAPISmoke:
         BaseDataConverter, convert_to_pyg, list_available_formats, etc.
         """
         from milia_pipeline.models.post_training.data_preparation.data_converter import (
-            DataConverterRegistry,
             BaseDataConverter,
-            convert_to_pyg,
+            DataConverterRegistry,
             convert_batch_to_pyg,
-            list_available_formats,
-            list_all_formats,
+            convert_to_pyg,
             get_registry,
+            list_all_formats,
+            list_available_formats,
         )
 
         assert DataConverterRegistry is not None
@@ -1766,9 +1748,7 @@ class TestPostTrainingPublicAPISmoke:
         except ImportError:
             # get_available_components may not be re-exported at package level
             # depending on __init__.py structure. This is acceptable for smoke.
-            pytest.skip(
-                "get_available_components not available at package level"
-            )
+            pytest.skip("get_available_components not available at package level")
 
     def test_get_implementation_status(self):
         """get_implementation_status() returns status dict.
@@ -1784,14 +1764,13 @@ class TestPostTrainingPublicAPISmoke:
             status = get_implementation_status()
             assert isinstance(status, dict)
         except ImportError:
-            pytest.skip(
-                "get_implementation_status not available at package level"
-            )
+            pytest.skip("get_implementation_status not available at package level")
 
 
 # ===========================================================================
 # SECTION 7: 3D CONFORMER UTILITY SMOKE TESTS
 # ===========================================================================
+
 
 class TestConformerUtilitySmoke:
     """Smoke tests for 3D conformer generation utilities.

@@ -28,7 +28,7 @@ descriptors:
     requires_3d: false  # Does it need 3D coordinates?
     requires_charges: false  # Does it need partial charges?
     version: "1.0.0"
-  
+
   # Add more descriptors here
   # - name: "AnotherDescriptor"
   #   function_name: "calculate_another"

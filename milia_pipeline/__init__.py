@@ -30,14 +30,14 @@ Quick Start
 Basic usage with CLI:
 
     >>> from milia_pipeline import create_cli_manager, setup_logging
-    >>> 
+    >>>
     >>> # Setup logging
     >>> logger = setup_logging(log_level="INFO")
-    >>> 
+    >>>
     >>> # Create CLI manager and parse arguments
     >>> cli = create_cli_manager(logger=logger)
     >>> args = cli.parse_args(['--config', 'config.yaml', '--process'])
-    >>> 
+    >>>
     >>> # Load and validate configuration
     >>> config = cli.load_and_merge_config(args)
     >>> cli.validate_args(args, config)
@@ -57,17 +57,17 @@ Programmatic API usage:
     >>> from milia_pipeline.config import load_config
     >>> from milia_pipeline.handlers import create_handler
     >>> from milia_pipeline.datasets import miliaDataset
-    >>> 
+    >>>
     >>> # Load configuration
     >>> config = load_config('config.yaml')
-    >>> 
+    >>>
     >>> # Create dataset handler
     >>> handler = create_handler(
     ...     dataset_type='DFT',
     ...     config=config,
     ...     logger=logger
     ... )
-    >>> 
+    >>>
     >>> # Process dataset
     >>> dataset = miliaDataset(
     ...     root='./data',
@@ -117,7 +117,7 @@ The package is organized into 7 core modules:
     Model training, evaluation, and post-training inference
     - ModelFactory, Trainer, DataSplitter
     - HPOManager for hyperparameter optimization
-    
+
 **models/post_training/** (Phase 5b)
     Post-training inference and prediction workflow
     - Predictor, ModelLoader, load_model
@@ -264,9 +264,9 @@ from milia_pipeline.cli_manager import (
     CLIManager,
     CLIValidationError,
     create_cli_manager,
-    parse_cli_args,
     # PHASE 7: Registry integration diagnostics
     get_cli_registry_status,
+    parse_cli_args,
 )
 
 # --- Post-Training Module (Phase 5b - Conditional) ---
@@ -274,17 +274,18 @@ from milia_pipeline.cli_manager import (
 _POST_TRAINING_AVAILABLE = False
 try:
     from milia_pipeline.models.post_training import (
-        # Model Loading
-        ModelLoader,
-        load_model,
-        load_model_only,
-        # Prediction
-        Predictor,
-        predict,
+        CHECKPOINT_FORMAT_VERSION,
         # Checkpoint Management
         CheckpointManager,
-        CHECKPOINT_FORMAT_VERSION,
+        # Model Loading
+        ModelLoader,
+        # Prediction
+        Predictor,
+        load_model,
+        load_model_only,
+        predict,
     )
+
     _POST_TRAINING_AVAILABLE = True
 except ImportError:
     # Post-training module not yet implemented or dependencies not available
@@ -300,11 +301,12 @@ except ImportError:
 _DATA_PREPARATION_AVAILABLE = False
 try:
     from milia_pipeline.models.post_training.data_preparation import (
-        convert_to_pyg,
-        convert_batch_to_pyg,
-        list_available_formats,
         DataConverterRegistry,
+        convert_batch_to_pyg,
+        convert_to_pyg,
+        list_available_formats,
     )
+
     _DATA_PREPARATION_AVAILABLE = True
 except ImportError:
     convert_to_pyg = None
@@ -319,128 +321,100 @@ try:
         FineTuner,
         FreezeStrategy,
     )
+
     _TRANSFER_LEARNING_AVAILABLE = True
 except ImportError:
     FineTuner = None
     FreezeStrategy = None
 
 # --- Logging Configuration ---
-from milia_pipeline.logging_config import (
-    setup_logging,
-    HandlerLoggerAdapter,
-    MigrationLoggerAdapter,
-    TransformLoggerAdapter,
-    create_handler_logger,
-    create_migration_logger,
-    create_transform_logger,
-    log_exception_with_context,
-    configure_debug_logging_for_handlers,
-    configure_debug_logging_for_transforms,
-    disable_verbose_third_party_logging,
-)
-
 # ==========================================
 # EXCEPTION EXPORTS
 # ==========================================
-
 # Base and Configuration Exceptions
+# Molecule Processing Exceptions
+# PHASE 7: Generic Uncertainty Processing Exception
+# Handler System Exceptions
+# PHASE 7: Generic Dataset-Specific Handler Exception
+# Validation and Compatibility Exceptions
+# Transform System Exceptions
+# Plugin System Exceptions
+# Descriptor System Exceptions
+# PHASE 7: Exception Factory Functions and Registry Integration
 from milia_pipeline.exceptions import (
+    AtomFilterError,
     BaseProjectError,
-    LoggingConfigurationError,
+    CompatibilityError,
     ConfigurationError,
     DataProcessingError,
-    PreprocessingRequiredError,
-    MissingDependencyError,
-)
-
-# Molecule Processing Exceptions
-from milia_pipeline.exceptions import (
-    MoleculeProcessingError,
-    MoleculeFilterRejectedError,
-    AtomFilterError,
-    RDKitConversionError,
-    PyGDataCreationError,
-    PropertyEnrichmentError,
-    StructuralFeatureError,
-    VibrationRefinementError,
-)
-
-# PHASE 7: Generic Uncertainty Processing Exception
-from milia_pipeline.exceptions import (
-    UncertaintyProcessingError,
-)
-
-# Handler System Exceptions
-from milia_pipeline.exceptions import (
-    HandlerError,
-    HandlerNotAvailableError,
-    HandlerConfigurationError,
-    HandlerOperationError,
-    HandlerValidationError,
-    HandlerCompatibilityError,
-    HandlerIntegrationError,
-    TransformHandlerIntegrationError,
-)
-
-# PHASE 7: Generic Dataset-Specific Handler Exception
-from milia_pipeline.exceptions import (
-    DatasetSpecificHandlerError,
-)
-
-# Validation and Compatibility Exceptions
-from milia_pipeline.exceptions import (
-    ValidationError,
-    CompatibilityError,
-    MigrationError,
-    LegacyCodeError,
-)
-
-# Transform System Exceptions
-from milia_pipeline.exceptions import (
-    TransformError,
-    TransformCompatibilityError,
-    TransformationError,
     DatasetIntegrationError,
-    TransformValidationError,
-    TransformCompositionError,
-    TransformNotFoundError,
-    TransformRegistryError,
-    ExperimentalSetupError,
-    TransformConfigurationError,
-)
-
-# Plugin System Exceptions
-from milia_pipeline.exceptions import (
-    PluginError,
-    PluginValidationError,
-    PluginSecurityError,
-    PluginDependencyError,
-    PluginDiscoveryError,
-    PluginRegistrationError,
-    PluginLoadError,
-)
-
-# Descriptor System Exceptions
-from milia_pipeline.exceptions import (
-    DescriptorError,
+    DatasetSpecificHandlerError,
     DescriptorCalculationError,
-    DescriptorValidationError,
+    DescriptorError,
+    DescriptorPluginConfigError,
     DescriptorPluginError,
     DescriptorPluginLoadError,
     DescriptorPluginValidationError,
-    DescriptorPluginConfigError,
-)
-
-# PHASE 7: Exception Factory Functions and Registry Integration
-from milia_pipeline.exceptions import (
+    DescriptorValidationError,
+    ExperimentalSetupError,
+    HandlerCompatibilityError,
+    HandlerConfigurationError,
+    HandlerError,
+    HandlerIntegrationError,
+    HandlerNotAvailableError,
+    HandlerOperationError,
+    HandlerValidationError,
+    LegacyCodeError,
+    LoggingConfigurationError,
+    MigrationError,
+    MissingDependencyError,
+    MoleculeFilterRejectedError,
+    MoleculeProcessingError,
+    PluginDependencyError,
+    PluginDiscoveryError,
+    PluginError,
+    PluginLoadError,
+    PluginRegistrationError,
+    PluginSecurityError,
+    PluginValidationError,
+    PreprocessingRequiredError,
+    PropertyEnrichmentError,
+    PyGDataCreationError,
+    RDKitConversionError,
+    StructuralFeatureError,
+    TransformationError,
+    TransformCompatibilityError,
+    TransformCompositionError,
+    TransformConfigurationError,
+    TransformError,
+    TransformHandlerIntegrationError,
+    TransformNotFoundError,
+    TransformRegistryError,
+    TransformValidationError,
+    UncertaintyProcessingError,
+    ValidationError,
+    VibrationRefinementError,
     # Factory functions for dynamic exception creation
     create_dataset_handler_error,
-    create_uncertainty_processing_error,
     create_handler_not_available_error,
+    create_uncertainty_processing_error,
     # Registry status diagnostics
     get_exception_registry_status,
     # Validation function
     validate_exception_hierarchy,
+)
+from milia_pipeline.logging_config import (
+    HandlerLoggerAdapter,
+    MigrationLoggerAdapter,
+    TransformLoggerAdapter,
+    configure_debug_logging_for_handlers,
+    configure_debug_logging_for_transforms,
+    create_handler_logger,
+    create_migration_logger,
+    create_transform_logger,
+    disable_verbose_third_party_logging,
+    log_exception_with_context,
+    setup_logging,
 )
 
 # ==========================================
@@ -454,7 +428,6 @@ __all__ = [
     "__license__",
     "__maintainer__",
     "__status__",
-    
     # CLI Management
     "CLIManager",
     "CLIValidationError",
@@ -462,7 +435,6 @@ __all__ = [
     "parse_cli_args",
     # PHASE 7: Registry integration diagnostics
     "get_cli_registry_status",
-    
     # Post-Training Module (Phase 5b - Conditional)
     # Model Loading
     "ModelLoader",
@@ -486,7 +458,6 @@ __all__ = [
     "_POST_TRAINING_AVAILABLE",
     "_DATA_PREPARATION_AVAILABLE",
     "_TRANSFER_LEARNING_AVAILABLE",
-    
     # Logging Configuration
     "setup_logging",
     "HandlerLoggerAdapter",
@@ -499,7 +470,6 @@ __all__ = [
     "configure_debug_logging_for_handlers",
     "configure_debug_logging_for_transforms",
     "disable_verbose_third_party_logging",
-    
     # Base and Configuration Exceptions
     "BaseProjectError",
     "LoggingConfigurationError",
@@ -507,7 +477,6 @@ __all__ = [
     "DataProcessingError",
     "PreprocessingRequiredError",
     "MissingDependencyError",
-    
     # Molecule Processing Exceptions
     "MoleculeProcessingError",
     "MoleculeFilterRejectedError",
@@ -517,10 +486,8 @@ __all__ = [
     "PropertyEnrichmentError",
     "StructuralFeatureError",
     "VibrationRefinementError",
-    
     # PHASE 7: Generic Uncertainty Processing Exception
     "UncertaintyProcessingError",
-    
     # Handler System Exceptions
     "HandlerError",
     "HandlerNotAvailableError",
@@ -530,16 +497,13 @@ __all__ = [
     "HandlerCompatibilityError",
     "HandlerIntegrationError",
     "TransformHandlerIntegrationError",
-    
     # PHASE 7: Generic Dataset-Specific Handler Exception
     "DatasetSpecificHandlerError",
-    
     # Validation and Compatibility Exceptions
     "ValidationError",
     "CompatibilityError",
     "MigrationError",
     "LegacyCodeError",
-    
     # Transform System Exceptions
     "TransformError",
     "TransformCompatibilityError",
@@ -551,7 +515,6 @@ __all__ = [
     "TransformRegistryError",
     "ExperimentalSetupError",
     "TransformConfigurationError",
-    
     # Plugin System Exceptions
     "PluginError",
     "PluginValidationError",
@@ -560,7 +523,6 @@ __all__ = [
     "PluginDiscoveryError",
     "PluginRegistrationError",
     "PluginLoadError",
-    
     # Descriptor System Exceptions
     "DescriptorError",
     "DescriptorCalculationError",
@@ -569,7 +531,6 @@ __all__ = [
     "DescriptorPluginLoadError",
     "DescriptorPluginValidationError",
     "DescriptorPluginConfigError",
-    
     # PHASE 7: Exception Factory Functions and Registry Integration
     "create_dataset_handler_error",
     "create_uncertainty_processing_error",
@@ -605,13 +566,14 @@ __all__ = [
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # ==========================================
 
+
 def get_version() -> str:
     """
     Get the current version of the milia Pipeline package.
-    
+
     Returns:
         str: Version string in semantic versioning format (MAJOR.MINOR.PATCH)
-    
+
     Example:
         >>> from milia_pipeline import get_version
         >>> print(get_version())
@@ -623,7 +585,7 @@ def get_version() -> str:
 def get_package_info() -> dict:
     """
     Get comprehensive package information including version, status, and metadata.
-    
+
     Returns:
         dict: Dictionary containing package metadata with keys:
             - version: Package version string
@@ -632,7 +594,7 @@ def get_package_info() -> dict:
             - maintainer: Current maintainer
             - status: Development status
             - python_requires: Minimum Python version
-    
+
     Example:
         >>> from milia_pipeline import get_package_info
         >>> info = get_package_info()
@@ -652,7 +614,7 @@ def get_package_info() -> dict:
 def check_dependencies() -> dict:
     """
     Check availability of optional dependencies and features.
-    
+
     Returns:
         dict: Dictionary with dependency availability status:
             - rdkit: RDKit molecular informatics (required)
@@ -664,7 +626,7 @@ def check_dependencies() -> dict:
             - post_training_available: Post-training inference module (Phase 5b)
             - data_preparation_available: Data conversion for inference
             - transfer_learning_available: Transfer learning/fine-tuning support
-    
+
     Example:
         >>> from milia_pipeline import check_dependencies
         >>> deps = check_dependencies()
@@ -674,54 +636,60 @@ def check_dependencies() -> dict:
         ...     print("Warning: IOData not available, quantum chemistry format support limited")
     """
     dependencies = {}
-    
+
     # Check RDKit
     try:
         import rdkit
-        dependencies['rdkit'] = True
+
+        dependencies["rdkit"] = True
     except ImportError:
-        dependencies['rdkit'] = False
-    
+        dependencies["rdkit"] = False
+
     # Check PyTorch Geometric
     try:
         import torch_geometric
-        dependencies['torch_geometric'] = True
+
+        dependencies["torch_geometric"] = True
     except ImportError:
-        dependencies['torch_geometric'] = False
-    
+        dependencies["torch_geometric"] = False
+
     # Check IOData
     try:
         import iodata
-        dependencies['iodata'] = True
+
+        dependencies["iodata"] = True
     except ImportError:
-        dependencies['iodata'] = False
-    
+        dependencies["iodata"] = False
+
     # Check transform system
     try:
         from milia_pipeline.transformations import get_graph_transforms
-        dependencies['transforms_available'] = True
+
+        dependencies["transforms_available"] = True
     except ImportError:
-        dependencies['transforms_available'] = False
-    
+        dependencies["transforms_available"] = False
+
     # Check plugin system
     try:
         from milia_pipeline.transformations.plugin_system import PluginRegistry
-        dependencies['plugins_available'] = True
+
+        dependencies["plugins_available"] = True
     except ImportError:
-        dependencies['plugins_available'] = False
-    
+        dependencies["plugins_available"] = False
+
     # Check config validation
     try:
         from milia_pipeline.config.config_schemas import YAMLSchemaValidator
-        dependencies['config_validation_available'] = True
+
+        dependencies["config_validation_available"] = True
     except ImportError:
-        dependencies['config_validation_available'] = False
-    
+        dependencies["config_validation_available"] = False
+
     # Phase 5b: Check post-training module
-    dependencies['post_training_available'] = _POST_TRAINING_AVAILABLE
-    dependencies['data_preparation_available'] = _DATA_PREPARATION_AVAILABLE
-    dependencies['transfer_learning_available'] = _TRANSFER_LEARNING_AVAILABLE
-    
+    dependencies["post_training_available"] = _POST_TRAINING_AVAILABLE
+    dependencies["data_preparation_available"] = _DATA_PREPARATION_AVAILABLE
+    dependencies["transfer_learning_available"] = _TRANSFER_LEARNING_AVAILABLE
+
     return dependencies
 
 
@@ -729,15 +697,15 @@ def initialize_pipeline(
     config_path: str = None,
     log_level: str = "INFO",
     enable_plugins: bool = True,
-    validate_config: bool = True
+    validate_config: bool = True,
 ) -> tuple:
     """
     Initialize the milia Pipeline with configuration and logging.
-    
+
     This is a convenience function that sets up the complete pipeline
     environment including logging, configuration loading, and optional
     plugin discovery.
-    
+
     Args:
         config_path (str, optional): Path to YAML configuration file.
             If None, uses default configuration.
@@ -747,31 +715,31 @@ def initialize_pipeline(
             Defaults to True.
         validate_config (bool): Whether to validate configuration against schema.
             Defaults to True.
-    
+
     Returns:
         tuple: (logger, config, cli_manager) where:
             - logger: Configured logger instance
             - config: Loaded configuration dictionary (or None if no config_path)
             - cli_manager: CLI manager instance for further operations
-    
+
     Raises:
         ConfigurationError: If configuration loading or validation fails
         LoggingConfigurationError: If logging setup fails
         PluginError: If plugin discovery fails (when enable_plugins=True)
-    
+
     Example:
         >>> from milia_pipeline import initialize_pipeline
-        >>> 
+        >>>
         >>> # Basic initialization
         >>> logger, config, cli = initialize_pipeline(
         ...     config_path='config.yaml',
         ...     log_level='INFO'
         ... )
-        >>> 
+        >>>
         >>> # Use the initialized components
         >>> logger.info("Pipeline initialized successfully")
         >>> dataset_type = config.get('dataset', {}).get('type', 'DFT')
-    
+
     Notes:
         - This function is a high-level convenience wrapper
         - For more control, use individual initialization functions
@@ -783,33 +751,34 @@ def initialize_pipeline(
         enable_handler_logging=True,
         enable_migration_logging=False,
         enable_transform_logging=True,
-        log_level=log_level
+        log_level=log_level,
     )
-    
+
     logger.info(f"Initializing milia Pipeline v{__version__}")
-    
+
     # Create CLI manager
     cli_manager = create_cli_manager(logger=logger)
-    
+
     # Load configuration if provided
     config = None
     if config_path:
         try:
             from milia_pipeline.config.config_loader import load_config
+
             config = load_config(config_path)
             logger.info(f"Configuration loaded from: {config_path}")
-            
+
             # Validate configuration if requested
             if validate_config:
                 try:
                     from milia_pipeline.config.config_schemas import (
+                        ValidationConfig,
                         YAMLSchemaValidator,
-                        ValidationConfig
                     )
+
                     validator = YAMLSchemaValidator()
                     validation_config = ValidationConfig(
-                        strict_mode=True,
-                        warn_on_unknown_keys=True
+                        strict_mode=True, warn_on_unknown_keys=True
                     )
                     validator.validate(config, validation_config)
                     logger.info("Configuration validation: PASSED")
@@ -818,24 +787,23 @@ def initialize_pipeline(
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
             raise ConfigurationError(
-                message=f"Configuration loading failed: {e}",
-                config_key=config_path,
-                details=str(e)
+                message=f"Configuration loading failed: {e}", config_key=config_path, details=str(e)
             )
-    
+
     # Discover plugins if enabled
     if enable_plugins:
         try:
             from milia_pipeline.transformations.plugin_system import PluginRegistry
+
             plugin_count = len(PluginRegistry.list_plugins())
             logger.info(f"Plugin discovery: Found {plugin_count} plugins")
         except ImportError:
             logger.warning("Plugin system not available")
         except Exception as e:
             logger.warning(f"Plugin discovery failed: {e}")
-    
+
     logger.info("Milia Pipeline initialization complete")
-    
+
     return logger, config, cli_manager
 
 

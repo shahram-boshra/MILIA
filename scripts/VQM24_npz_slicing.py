@@ -1,9 +1,10 @@
-import numpy as np
 import os
 
+import numpy as np
+
 # Define the input and output file names
-original_file = '/app/08/DFT_saddles.npz'  # <--- REMEMBER TO CHANGE THIS
-output_file = '/app/08/DFT_saddles_sliced.npz'
+original_file = "/app/08/DFT_saddles.npz"  # <--- REMEMBER TO CHANGE THIS
+output_file = "/app/08/DFT_saddles_sliced.npz"
 
 # Define the number of values to keep per key
 num_values_to_keep = 1000
@@ -17,7 +18,9 @@ try:
     print("Original file loaded successfully.")
     print(f"Available keys in the original file: {list(data_original.keys())}")
 except FileNotFoundError:
-    print(f"Error: '{original_file}' not found. Please ensure the file is in the correct directory.")
+    print(
+        f"Error: '{original_file}' not found. Please ensure the file is in the correct directory."
+    )
     exit()
 except Exception as e:
     print(f"An error occurred while loading the original file: {e}")
@@ -39,14 +42,18 @@ for key in data_original.keys():
         # Slice the array to keep only the first 'num_values_to_keep' values
         subset_array = original_array[:num_values_to_keep]
         subset_data[key] = subset_array
-        print(f"  - Key '{key}': Original shape {original_array.shape}, New shape {subset_array.shape}")
+        print(
+            f"  - Key '{key}': Original shape {original_array.shape}, New shape {subset_array.shape}"
+        )
     else:
         # If the array is smaller than desired, or not suitable for this kind of slicing,
         # you might choose to include it fully or skip it, depending on your needs.
         # For this scenario, let's include it fully if it's smaller,
         # assuming you want all keys present.
         subset_data[key] = original_array
-        print(f"  - Key '{key}': Array too small ({original_array.shape[0]} values) or not suitable for slicing to {num_values_to_keep}. Including full array.")
+        print(
+            f"  - Key '{key}': Array too small ({original_array.shape[0]} values) or not suitable for slicing to {num_values_to_keep}. Including full array."
+        )
 
 # --- 3. Save the subsetted data to a new .npz file ---
 try:
@@ -68,5 +75,5 @@ else:
     print("New file not found for size verification.")
 
 # --- 5. Clean up (optional, important for large files) ---
-data_original.close() # Close the loaded npz file to free resources
+data_original.close()  # Close the loaded npz file to free resources
 print("Original .npz file closed.")

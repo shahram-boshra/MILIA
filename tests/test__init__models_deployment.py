@@ -61,12 +61,12 @@ Markers:
 
 import importlib
 import inspect
+import logging
 import sys
 import types
-import logging
-from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
 from enum import Enum
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -84,6 +84,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def deployment_pkg():
     """
@@ -95,6 +96,7 @@ def deployment_pkg():
     """
     try:
         import milia_pipeline.models.deployment as dep
+
         return dep
     except ImportError as exc:
         pytest.fail(
@@ -107,8 +109,7 @@ def deployment_pkg():
 def all_names(deployment_pkg):
     """Return the ``__all__`` list from the deployment package."""
     assert hasattr(deployment_pkg, "__all__"), (
-        "milia_pipeline.models.deployment.__all__ is missing — "
-        "contract violation"
+        "milia_pipeline.models.deployment.__all__ is missing — contract violation"
     )
     return list(deployment_pkg.__all__)
 
@@ -146,19 +147,25 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_exists(self, deployment_pkg, attr):
         """Each metadata dunder is defined on the deployment package."""
         assert hasattr(deployment_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, deployment_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(deployment_pkg, attr)
@@ -170,9 +177,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = deployment_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -180,9 +185,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeExceptionExports:
@@ -210,18 +213,14 @@ class TestSmokeExceptionExports:
     def test_exception_class_is_a_class(self, deployment_pkg, name):
         """Each exception export is a class (not an instance or function)."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", EXCEPTION_CLASSES)
     def test_exception_class_is_exception_subclass(self, deployment_pkg, name):
         """Each exception class is a subclass of Exception."""
         obj = getattr(deployment_pkg, name)
-        assert issubclass(obj, Exception), (
-            f"'{name}' should be a subclass of Exception"
-        )
+        assert issubclass(obj, Exception), f"'{name}' should be a subclass of Exception"
 
 
 class TestSmokeDeploymentStrategyExports:
@@ -254,39 +253,29 @@ class TestSmokeDeploymentStrategyExports:
         "DeploymentManager",
     ]
 
-    ALL_STRATEGY_EXPORTS = (
-        BASE_EXPORTS + ENUM_EXPORTS + STRATEGY_EXPORTS + MANAGER_EXPORTS
-    )
+    ALL_STRATEGY_EXPORTS = BASE_EXPORTS + ENUM_EXPORTS + STRATEGY_EXPORTS + MANAGER_EXPORTS
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", ALL_STRATEGY_EXPORTS)
     def test_deployment_strategy_export_exists(self, deployment_pkg, name):
         """Each deployment strategy export is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Deployment strategy export '{name}' is None or missing"
-        )
+        assert obj is not None, f"Deployment strategy export '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", BASE_EXPORTS + STRATEGY_EXPORTS + MANAGER_EXPORTS)
     def test_deployment_strategy_export_is_class(self, deployment_pkg, name):
         """Each deployment strategy/config/manager export is a class."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", ENUM_EXPORTS)
     def test_deployment_enum_is_enum_subclass(self, deployment_pkg, name):
         """Each deployment enum export is an Enum subclass."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
-        assert issubclass(obj, Enum), (
-            f"'{name}' should be a subclass of Enum"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
+        assert issubclass(obj, Enum), f"'{name}' should be a subclass of Enum"
 
 
 class TestSmokeModelOptimizationExports:
@@ -312,18 +301,14 @@ class TestSmokeModelOptimizationExports:
     def test_optimization_class_exists(self, deployment_pkg, name):
         """Each optimization class is importable from the deployment package."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Optimization class '{name}' is None or missing"
-        )
+        assert obj is not None, f"Optimization class '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", OPTIMIZATION_CLASSES)
     def test_optimization_class_is_a_class(self, deployment_pkg, name):
         """Each optimization export is a class."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", OPTIMIZATION_ENUMS)
@@ -339,9 +324,7 @@ class TestSmokeModelOptimizationExports:
     def test_optimization_function_exists(self, deployment_pkg, name):
         """Each optimization convenience function is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Optimization function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Optimization function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", OPTIMIZATION_FUNCTIONS)
@@ -375,18 +358,14 @@ class TestSmokeMonitoringExports:
     def test_monitoring_class_exists(self, deployment_pkg, name):
         """Each monitoring class is importable from the deployment package."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Monitoring class '{name}' is None or missing"
-        )
+        assert obj is not None, f"Monitoring class '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", MONITORING_CLASSES)
     def test_monitoring_class_is_a_class(self, deployment_pkg, name):
         """Each monitoring export is a class."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", MONITORING_ENUMS)
@@ -402,9 +381,7 @@ class TestSmokeMonitoringExports:
     def test_monitoring_function_exists(self, deployment_pkg, name):
         """Each monitoring convenience function is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Monitoring function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Monitoring function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", MONITORING_FUNCTIONS)
@@ -430,9 +407,7 @@ class TestSmokeHighLevelConvenienceFunctions:
     def test_convenience_function_exists(self, deployment_pkg, name):
         """Each high-level convenience function is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Convenience function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Convenience function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", CONVENIENCE_FUNCTIONS)
@@ -456,9 +431,7 @@ class TestSmokeUtilityFunctions:
     def test_utility_function_exists(self, deployment_pkg, name):
         """Each utility function is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Utility function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Utility function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", UTILITY_FUNCTIONS)
@@ -483,9 +456,7 @@ class TestSmokeSubmoduleConvenienceFunctions:
     def test_submodule_function_exists(self, deployment_pkg, name):
         """Each submodule convenience function is present and non-None."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Submodule convenience function '{name}' is None or missing"
-        )
+        assert obj is not None, f"Submodule convenience function '{name}' is None or missing"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", SUBMODULE_FUNCTIONS)
@@ -548,17 +519,14 @@ class TestSmokeListDeploymentTargets:
         """``list_deployment_targets()`` returns a list."""
         result = deployment_pkg.list_deployment_targets()
         assert isinstance(result, (list, tuple, set, frozenset)), (
-            f"list_deployment_targets() should return a collection, "
-            f"got {type(result).__name__}"
+            f"list_deployment_targets() should return a collection, got {type(result).__name__}"
         )
 
     @pytest.mark.smoke
     def test_list_deployment_targets_is_nonempty(self, deployment_pkg):
         """``list_deployment_targets()`` returns at least one target."""
         result = deployment_pkg.list_deployment_targets()
-        assert len(result) > 0, (
-            "list_deployment_targets() should return at least one target"
-        )
+        assert len(result) > 0, "list_deployment_targets() should return at least one target"
 
     @pytest.mark.smoke
     def test_list_deployment_targets_contains_strings(self, deployment_pkg):
@@ -592,9 +560,7 @@ class TestContractAllCompleteness:
             if name in seen:
                 duplicates.append(name)
             seen.add(name)
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, deployment_pkg, all_names):
@@ -602,25 +568,16 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(deployment_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(deployment_pkg, name)]
         assert not unresolvable, (
-            f"Names in __all__ that are not defined on the module: "
-            f"{unresolvable}"
+            f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
 
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
     @pytest.mark.contract
     def test_all_has_minimum_expected_count(self, all_names):
@@ -692,13 +649,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in deployment/__init__.py but not in "
@@ -717,26 +678,23 @@ class TestContractExceptionHierarchy:
     @pytest.mark.contract
     def test_deployment_error_inherits_model_error(self, deployment_pkg):
         """``DeploymentError`` inherits from ``ModelError``."""
-        assert issubclass(
-            deployment_pkg.DeploymentError,
-            deployment_pkg.ModelError
-        ), "DeploymentError should inherit from ModelError"
+        assert issubclass(deployment_pkg.DeploymentError, deployment_pkg.ModelError), (
+            "DeploymentError should inherit from ModelError"
+        )
 
     @pytest.mark.contract
     def test_optimization_error_inherits_model_error(self, deployment_pkg):
         """``OptimizationError`` inherits from ``ModelError``."""
-        assert issubclass(
-            deployment_pkg.OptimizationError,
-            deployment_pkg.ModelError
-        ), "OptimizationError should inherit from ModelError"
+        assert issubclass(deployment_pkg.OptimizationError, deployment_pkg.ModelError), (
+            "OptimizationError should inherit from ModelError"
+        )
 
     @pytest.mark.contract
     def test_monitoring_error_inherits_model_error(self, deployment_pkg):
         """``MonitoringError`` inherits from ``ModelError``."""
-        assert issubclass(
-            deployment_pkg.MonitoringError,
-            deployment_pkg.ModelError
-        ), "MonitoringError should inherit from ModelError"
+        assert issubclass(deployment_pkg.MonitoringError, deployment_pkg.ModelError), (
+            "MonitoringError should inherit from ModelError"
+        )
 
     @pytest.mark.contract
     def test_configuration_error_inherits_model_error(self, deployment_pkg):
@@ -744,37 +702,37 @@ class TestContractExceptionHierarchy:
         # Note: In the main exceptions module, ConfigurationError may inherit
         # from BaseProjectError. In the fallback definitions, it inherits
         # from ModelError. We test the actual hierarchy as loaded.
-        assert issubclass(
-            deployment_pkg.ConfigurationError,
-            Exception
-        ), "ConfigurationError should be a subclass of Exception"
+        assert issubclass(deployment_pkg.ConfigurationError, Exception), (
+            "ConfigurationError should be a subclass of Exception"
+        )
 
     @pytest.mark.contract
     def test_export_error_inherits_model_error(self, deployment_pkg):
         """``ExportError`` inherits from ``ModelError``."""
-        assert issubclass(
-            deployment_pkg.ExportError,
-            deployment_pkg.ModelError
-        ), "ExportError should inherit from ModelError"
+        assert issubclass(deployment_pkg.ExportError, deployment_pkg.ModelError), (
+            "ExportError should inherit from ModelError"
+        )
 
     @pytest.mark.contract
     def test_alert_error_inherits_monitoring_error(self, deployment_pkg):
         """``AlertError`` inherits from ``MonitoringError``."""
-        assert issubclass(
-            deployment_pkg.AlertError,
-            deployment_pkg.MonitoringError
-        ), "AlertError should inherit from MonitoringError"
+        assert issubclass(deployment_pkg.AlertError, deployment_pkg.MonitoringError), (
+            "AlertError should inherit from MonitoringError"
+        )
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("name", [
-        "ModelError",
-        "DeploymentError",
-        "OptimizationError",
-        "MonitoringError",
-        "ConfigurationError",
-        "ExportError",
-        "AlertError",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ModelError",
+            "DeploymentError",
+            "OptimizationError",
+            "MonitoringError",
+            "ConfigurationError",
+            "ExportError",
+            "AlertError",
+        ],
+    )
     def test_exception_is_instantiable_with_message(self, deployment_pkg, name):
         """Each exception can be instantiated with a string message."""
         exc_cls = getattr(deployment_pkg, name)
@@ -803,15 +761,12 @@ class TestContractDeploymentTargetEnum:
         """``DeploymentTarget`` has at least 6 members."""
         members = list(deployment_pkg.DeploymentTarget)
         assert len(members) >= 6, (
-            f"DeploymentTarget should have at least 6 members, "
-            f"got {len(members)}"
+            f"DeploymentTarget should have at least 6 members, got {len(members)}"
         )
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_deployment_target_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_deployment_target_has_expected_member(self, deployment_pkg, member_name):
         """DeploymentTarget has each expected member."""
         assert hasattr(deployment_pkg.DeploymentTarget, member_name), (
             f"DeploymentTarget missing expected member '{member_name}'"
@@ -829,9 +784,7 @@ class TestContractServingModeEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_serving_mode_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_serving_mode_has_expected_member(self, deployment_pkg, member_name):
         """ServingMode has each expected member."""
         assert hasattr(deployment_pkg.ServingMode, member_name), (
             f"ServingMode missing expected member '{member_name}'"
@@ -850,9 +803,7 @@ class TestContractQuantizationTypeEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_quantization_type_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_quantization_type_has_expected_member(self, deployment_pkg, member_name):
         """QuantizationType has each expected member."""
         assert hasattr(deployment_pkg.QuantizationType, member_name), (
             f"QuantizationType missing expected member '{member_name}'"
@@ -871,9 +822,7 @@ class TestContractPruningTypeEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_pruning_type_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_pruning_type_has_expected_member(self, deployment_pkg, member_name):
         """PruningType has each expected member."""
         assert hasattr(deployment_pkg.PruningType, member_name), (
             f"PruningType missing expected member '{member_name}'"
@@ -896,9 +845,7 @@ class TestContractMetricTypeEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_metric_type_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_metric_type_has_expected_member(self, deployment_pkg, member_name):
         """MetricType has each expected member."""
         assert hasattr(deployment_pkg.MetricType, member_name), (
             f"MetricType missing expected member '{member_name}'"
@@ -917,9 +864,7 @@ class TestContractAlertSeverityEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_alert_severity_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_alert_severity_has_expected_member(self, deployment_pkg, member_name):
         """AlertSeverity has each expected member."""
         assert hasattr(deployment_pkg.AlertSeverity, member_name), (
             f"AlertSeverity missing expected member '{member_name}'"
@@ -937,9 +882,7 @@ class TestContractDriftTypeEnum:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("member_name", EXPECTED_MEMBERS)
-    def test_drift_type_has_expected_member(
-        self, deployment_pkg, member_name
-    ):
+    def test_drift_type_has_expected_member(self, deployment_pkg, member_name):
         """DriftType has each expected member."""
         assert hasattr(deployment_pkg.DriftType, member_name), (
             f"DriftType missing expected member '{member_name}'"
@@ -982,9 +925,7 @@ class TestContractDeploymentConfigDataclass:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("attr", EXPECTED_ATTRIBUTES)
-    def test_deployment_config_attribute_in_annotations_or_init(
-        self, deployment_pkg, attr
-    ):
+    def test_deployment_config_attribute_in_annotations_or_init(self, deployment_pkg, attr):
         """
         Each expected attribute is declared in DeploymentConfig's annotations
         or __init__ signature (dataclass or Pydantic field).
@@ -1035,9 +976,7 @@ class TestContractOptimizationConfigDataclass:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("attr", EXPECTED_ATTRIBUTES)
-    def test_optimization_config_attribute_in_annotations_or_init(
-        self, deployment_pkg, attr
-    ):
+    def test_optimization_config_attribute_in_annotations_or_init(self, deployment_pkg, attr):
         """
         Each expected attribute is declared in OptimizationConfig's annotations
         or __init__ signature.
@@ -1088,9 +1027,7 @@ class TestContractMonitoringConfigDataclass:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("attr", EXPECTED_ATTRIBUTES)
-    def test_monitoring_config_attribute_in_annotations_or_init(
-        self, deployment_pkg, attr
-    ):
+    def test_monitoring_config_attribute_in_annotations_or_init(self, deployment_pkg, attr):
         """
         Each expected attribute is declared in MonitoringConfig's annotations
         or __init__ signature.
@@ -1129,15 +1066,11 @@ class TestContractAlertDataclass:
     @pytest.mark.contract
     def test_alert_has_to_dict(self, deployment_pkg):
         """``Alert`` has a ``to_dict()`` method."""
-        assert hasattr(deployment_pkg.Alert, "to_dict"), (
-            "Alert should have a to_dict() method"
-        )
+        assert hasattr(deployment_pkg.Alert, "to_dict"), "Alert should have a to_dict() method"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("attr", EXPECTED_ATTRIBUTES)
-    def test_alert_attribute_in_annotations_or_init(
-        self, deployment_pkg, attr
-    ):
+    def test_alert_attribute_in_annotations_or_init(self, deployment_pkg, attr):
         """
         Each expected attribute is declared in Alert's annotations
         or __init__ signature.
@@ -1151,9 +1084,7 @@ class TestContractAlertDataclass:
         except (ValueError, TypeError):
             pass
 
-        assert attr in annotations or attr in init_sig_params, (
-            f"Alert should declare '{attr}'"
-        )
+        assert attr in annotations or attr in init_sig_params, f"Alert should declare '{attr}'"
 
 
 class TestContractDeploymentStrategyABC:
@@ -1178,20 +1109,15 @@ class TestContractDeploymentStrategyABC:
         has_abc_meta = type(cls).__name__ == "ABCMeta"
         has_abstract_methods = bool(getattr(cls, "__abstractmethods__", set()))
         assert has_abc_meta or has_abstract_methods, (
-            "DeploymentStrategy should be an abstract class (ABCMeta or "
-            "with __abstractmethods__)"
+            "DeploymentStrategy should be an abstract class (ABCMeta or with __abstractmethods__)"
         )
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", EXPECTED_ABSTRACT_METHODS)
-    def test_deployment_strategy_has_method(
-        self, deployment_pkg, method_name
-    ):
+    def test_deployment_strategy_has_method(self, deployment_pkg, method_name):
         """DeploymentStrategy defines each expected method."""
         cls = deployment_pkg.DeploymentStrategy
-        assert hasattr(cls, method_name), (
-            f"DeploymentStrategy should define '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"DeploymentStrategy should define '{method_name}'"
 
     @pytest.mark.contract
     def test_deployment_strategy_has_get_deployment_info(self, deployment_pkg):
@@ -1216,9 +1142,7 @@ class TestContractStrategyImplementationsInheritance:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("strategy_name", STRATEGY_IMPLEMENTATIONS)
-    def test_strategy_inherits_deployment_strategy(
-        self, deployment_pkg, strategy_name
-    ):
+    def test_strategy_inherits_deployment_strategy(self, deployment_pkg, strategy_name):
         """Each strategy implementation inherits from DeploymentStrategy."""
         strategy_cls = getattr(deployment_pkg, strategy_name)
         base_cls = deployment_pkg.DeploymentStrategy
@@ -1233,8 +1157,7 @@ class TestContractStrategyImplementationsInheritance:
         strategy_cls = getattr(deployment_pkg, strategy_name)
         abstract_methods = getattr(strategy_cls, "__abstractmethods__", set())
         assert len(abstract_methods) == 0, (
-            f"'{strategy_name}' should be concrete but has abstract methods: "
-            f"{abstract_methods}"
+            f"'{strategy_name}' should be concrete but has abstract methods: {abstract_methods}"
         )
 
 
@@ -1251,23 +1174,15 @@ class TestContractDeploymentManagerPublicAPI:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", EXPECTED_METHODS)
-    def test_deployment_manager_has_method(
-        self, deployment_pkg, method_name
-    ):
+    def test_deployment_manager_has_method(self, deployment_pkg, method_name):
         """DeploymentManager defines each expected public method."""
         cls = deployment_pkg.DeploymentManager
-        assert hasattr(cls, method_name), (
-            f"DeploymentManager should define '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"DeploymentManager should define '{method_name}'"
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"DeploymentManager.{method_name} should be callable"
-        )
+        assert callable(method), f"DeploymentManager.{method_name} should be callable"
 
     @pytest.mark.contract
-    def test_deployment_manager_has_list_available_targets(
-        self, deployment_pkg
-    ):
+    def test_deployment_manager_has_list_available_targets(self, deployment_pkg):
         """DeploymentManager has ``list_available_targets()`` classmethod."""
         cls = deployment_pkg.DeploymentManager
         assert hasattr(cls, "list_available_targets"), (
@@ -1275,18 +1190,15 @@ class TestContractDeploymentManagerPublicAPI:
         )
 
     @pytest.mark.contract
-    def test_deployment_manager_has_strategies_registry(
-        self, deployment_pkg
-    ):
+    def test_deployment_manager_has_strategies_registry(self, deployment_pkg):
         """DeploymentManager has ``_strategies`` class attribute mapping."""
         cls = deployment_pkg.DeploymentManager
         assert hasattr(cls, "_strategies"), (
             "DeploymentManager should have '_strategies' class attribute"
         )
-        strategies = getattr(cls, "_strategies")
+        strategies = cls._strategies
         assert isinstance(strategies, dict), (
-            f"DeploymentManager._strategies should be a dict, "
-            f"got {type(strategies).__name__}"
+            f"DeploymentManager._strategies should be a dict, got {type(strategies).__name__}"
         )
 
 
@@ -1303,18 +1215,12 @@ class TestContractModelOptimizerPublicAPI:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", EXPECTED_METHODS)
-    def test_model_optimizer_has_method(
-        self, deployment_pkg, method_name
-    ):
+    def test_model_optimizer_has_method(self, deployment_pkg, method_name):
         """ModelOptimizer defines each expected public method."""
         cls = deployment_pkg.ModelOptimizer
-        assert hasattr(cls, method_name), (
-            f"ModelOptimizer should define '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ModelOptimizer should define '{method_name}'"
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ModelOptimizer.{method_name} should be callable"
-        )
+        assert callable(method), f"ModelOptimizer.{method_name} should be callable"
 
 
 class TestContractModelMonitorPublicAPI:
@@ -1337,18 +1243,12 @@ class TestContractModelMonitorPublicAPI:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("method_name", EXPECTED_METHODS)
-    def test_model_monitor_has_method(
-        self, deployment_pkg, method_name
-    ):
+    def test_model_monitor_has_method(self, deployment_pkg, method_name):
         """ModelMonitor defines each expected public method."""
         cls = deployment_pkg.ModelMonitor
-        assert hasattr(cls, method_name), (
-            f"ModelMonitor should define '{method_name}'"
-        )
+        assert hasattr(cls, method_name), f"ModelMonitor should define '{method_name}'"
         method = getattr(cls, method_name)
-        assert callable(method), (
-            f"ModelMonitor.{method_name} should be callable"
-        )
+        assert callable(method), f"ModelMonitor.{method_name} should be callable"
 
 
 class TestContractConvenienceFunctionSignatures:
@@ -1361,8 +1261,7 @@ class TestContractConvenienceFunctionSignatures:
         param_names = set(sig.parameters.keys())
         expected = {"model", "save_path"}
         assert expected.issubset(param_names), (
-            f"deploy_model_locally should accept at least {expected}, "
-            f"got {param_names}"
+            f"deploy_model_locally should accept at least {expected}, got {param_names}"
         )
 
     @pytest.mark.contract
@@ -1372,8 +1271,7 @@ class TestContractConvenienceFunctionSignatures:
         param_names = set(sig.parameters.keys())
         expected = {"model", "save_path", "target"}
         assert expected.issubset(param_names), (
-            f"deploy_model_to_cloud should accept at least {expected}, "
-            f"got {param_names}"
+            f"deploy_model_to_cloud should accept at least {expected}, got {param_names}"
         )
 
     @pytest.mark.contract
@@ -1383,8 +1281,7 @@ class TestContractConvenienceFunctionSignatures:
         param_names = set(sig.parameters.keys())
         expected = {"model", "quantize", "prune"}
         assert expected.issubset(param_names), (
-            f"optimize_model_for_deployment should accept at least "
-            f"{expected}, got {param_names}"
+            f"optimize_model_for_deployment should accept at least {expected}, got {param_names}"
         )
 
     @pytest.mark.contract
@@ -1394,8 +1291,7 @@ class TestContractConvenienceFunctionSignatures:
         param_names = set(sig.parameters.keys())
         expected = {"model_name"}
         assert expected.issubset(param_names), (
-            f"create_production_monitor should accept at least "
-            f"{expected}, got {param_names}"
+            f"create_production_monitor should accept at least {expected}, got {param_names}"
         )
 
     @pytest.mark.contract
@@ -1403,11 +1299,9 @@ class TestContractConvenienceFunctionSignatures:
         """``create_deployment_pipeline`` has the expected parameters."""
         sig = inspect.signature(deployment_pkg.create_deployment_pipeline)
         param_names = set(sig.parameters.keys())
-        expected = {"model", "save_path", "target", "optimize",
-                     "enable_monitoring"}
+        expected = {"model", "save_path", "target", "optimize", "enable_monitoring"}
         assert expected.issubset(param_names), (
-            f"create_deployment_pipeline should accept at least "
-            f"{expected}, got {param_names}"
+            f"create_deployment_pipeline should accept at least {expected}, got {param_names}"
         )
 
 
@@ -1435,9 +1329,7 @@ class TestContractOptimizeModelForDeploymentSignatureDetails:
         """``prune_amount`` defaults to 0.3."""
         sig = inspect.signature(deployment_pkg.optimize_model_for_deployment)
         param = sig.parameters["prune_amount"]
-        assert param.default == 0.3, (
-            f"prune_amount should default to 0.3, got {param.default}"
-        )
+        assert param.default == 0.3, f"prune_amount should default to 0.3, got {param.default}"
 
     @pytest.mark.contract
     def test_optimize_has_export_onnx_param(self, deployment_pkg):
@@ -1451,9 +1343,7 @@ class TestContractOptimizeModelForDeploymentSignatureDetails:
     def test_optimize_has_verbose_param(self, deployment_pkg):
         """``optimize_model_for_deployment`` accepts ``verbose``."""
         sig = inspect.signature(deployment_pkg.optimize_model_for_deployment)
-        assert "verbose" in sig.parameters, (
-            "optimize_model_for_deployment should accept 'verbose'"
-        )
+        assert "verbose" in sig.parameters, "optimize_model_for_deployment should accept 'verbose'"
 
 
 class TestContractCreateProductionMonitorSignatureDetails:
@@ -1473,9 +1363,7 @@ class TestContractCreateProductionMonitorSignatureDetails:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("param_name", EXPECTED_PARAMS)
-    def test_create_production_monitor_has_param(
-        self, deployment_pkg, param_name
-    ):
+    def test_create_production_monitor_has_param(self, deployment_pkg, param_name):
         """``create_production_monitor`` accepts each expected parameter."""
         sig = inspect.signature(deployment_pkg.create_production_monitor)
         assert param_name in sig.parameters, (
@@ -1502,9 +1390,7 @@ class TestContractCreateDeploymentPipelineSignatureDetails:
 
     @pytest.mark.contract
     @pytest.mark.parametrize("param_name", EXPECTED_PARAMS)
-    def test_create_deployment_pipeline_has_param(
-        self, deployment_pkg, param_name
-    ):
+    def test_create_deployment_pipeline_has_param(self, deployment_pkg, param_name):
         """``create_deployment_pipeline`` accepts each expected parameter."""
         sig = inspect.signature(deployment_pkg.create_deployment_pipeline)
         assert param_name in sig.parameters, (
@@ -1516,30 +1402,22 @@ class TestContractCreateDeploymentPipelineSignatureDetails:
         """``target`` defaults to ``"local"``."""
         sig = inspect.signature(deployment_pkg.create_deployment_pipeline)
         param = sig.parameters["target"]
-        assert param.default == "local", (
-            f"target should default to 'local', got {param.default!r}"
-        )
+        assert param.default == "local", f"target should default to 'local', got {param.default!r}"
 
 
 class TestContractDeployModelToCloudValidation:
     """§2 — deploy_model_to_cloud validates target parameter."""
 
     @pytest.mark.contract
-    def test_deploy_model_to_cloud_rejects_invalid_target(
-        self, deployment_pkg
-    ):
+    def test_deploy_model_to_cloud_rejects_invalid_target(self, deployment_pkg):
         """
         ``deploy_model_to_cloud`` raises ConfigurationError for an invalid
         cloud target.
         """
         mock_model = MagicMock()
-        with pytest.raises(
-            (deployment_pkg.ConfigurationError, deployment_pkg.DeploymentError)
-        ):
+        with pytest.raises((deployment_pkg.ConfigurationError, deployment_pkg.DeploymentError)):
             deployment_pkg.deploy_model_to_cloud(
-                model=mock_model,
-                save_path="/tmp/test_deploy",
-                target="invalid_cloud_provider"
+                model=mock_model, save_path="/tmp/test_deploy", target="invalid_cloud_provider"
             )
 
 
@@ -1556,9 +1434,7 @@ class TestContractValidateDeploymentConfig:
         """``validate_deployment_config`` accepts a ``config`` parameter."""
         sig = inspect.signature(deployment_pkg.validate_deployment_config)
         param_names = set(sig.parameters.keys())
-        assert "config" in param_names, (
-            "validate_deployment_config should accept 'config'"
-        )
+        assert "config" in param_names, "validate_deployment_config should accept 'config'"
 
 
 class TestContractGetDeploymentInfo:
@@ -1574,9 +1450,7 @@ class TestContractGetDeploymentInfo:
         """``get_deployment_info`` accepts a ``manager`` parameter."""
         sig = inspect.signature(deployment_pkg.get_deployment_info)
         param_names = set(sig.parameters.keys())
-        assert "manager" in param_names, (
-            "get_deployment_info should accept 'manager'"
-        )
+        assert "manager" in param_names, "get_deployment_info should accept 'manager'"
 
     @pytest.mark.contract
     def test_get_deployment_info_delegates_to_manager(self, deployment_pkg):
@@ -1647,18 +1521,14 @@ class TestContractPublicAPISurface:
     @pytest.mark.parametrize("name", EXPECTED_ALL_NAMES)
     def test_expected_name_in_all(self, all_names, name):
         """Each expected public API name is present in ``__all__``."""
-        assert name in all_names, (
-            f"Expected name '{name}' is missing from __all__"
-        )
+        assert name in all_names, f"Expected name '{name}' is missing from __all__"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", EXPECTED_ALL_NAMES)
     def test_expected_name_is_resolvable(self, deployment_pkg, name):
         """Each expected public API name resolves to a non-None object."""
         obj = getattr(deployment_pkg, name, None)
-        assert obj is not None, (
-            f"Expected API name '{name}' is None or missing from module"
-        )
+        assert obj is not None, f"Expected API name '{name}' is None or missing from module"
 
 
 class TestContractCallableVsClassClassification:
@@ -1715,24 +1585,18 @@ class TestContractCallableVsClassClassification:
     def test_class_export_is_class(self, deployment_pkg, name):
         """Each class export is a class."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", FUNCTION_NAMES)
     def test_function_export_is_callable(self, deployment_pkg, name):
         """Each function export is callable."""
         obj = getattr(deployment_pkg, name)
-        assert callable(obj), (
-            f"'{name}' should be callable, got {type(obj).__name__}"
-        )
+        assert callable(obj), f"'{name}' should be callable, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", FUNCTION_NAMES)
     def test_function_export_is_function(self, deployment_pkg, name):
         """Each function export is a function (not a class or bound method)."""
         obj = getattr(deployment_pkg, name)
-        assert inspect.isfunction(obj), (
-            f"'{name}' should be a function, got {type(obj).__name__}"
-        )
+        assert inspect.isfunction(obj), f"'{name}' should be a function, got {type(obj).__name__}"

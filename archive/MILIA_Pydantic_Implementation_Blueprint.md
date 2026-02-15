@@ -1,12 +1,12 @@
 # MILIA Pydantic Implementation Blueprint
 
-**Project**: MILIA (Machine Intelligent Learning Interface Assistant) Pipeline  
-**Task**: Comprehensive Pydantic V2 Integration for Runtime Validation  
-**Status**: 🏆 ALL PHASES COMPLETE ✅ (108/~111 dataclasses migrated - 100%)  
-**Document Version**: 1.39.0  
-**Created**: 2026-01-07  
-**Last Updated**: 2026-01-08  
-**Based On**: Line-by-line analysis of 10 source files + Pydantic V2 official documentation + Codebase audit  
+**Project**: MILIA (Machine Intelligent Learning Interface Assistant) Pipeline
+**Task**: Comprehensive Pydantic V2 Integration for Runtime Validation
+**Status**: 🏆 ALL PHASES COMPLETE ✅ (108/~111 dataclasses migrated - 100%)
+**Document Version**: 1.39.0
+**Created**: 2026-01-07
+**Last Updated**: 2026-01-08
+**Based On**: Line-by-line analysis of 10 source files + Pydantic V2 official documentation + Codebase audit
 **Total Phases**: 38 (Phase 1-38 ALL COMPLETE ✅) - MILIA IS NOW FULLY FASTAPI-READY
 
 ---
@@ -239,7 +239,7 @@ def initialize_fields(cls, data: Any) -> Any:
 
 #### Pattern A: `object.__setattr__` in Frozen Dataclasses (35+ occurrences)
 
-**Location**: `config_containers.py`  
+**Location**: `config_containers.py`
 **Lines affected**: 324, 328, 332, 336, 460, 464, 555, 559, 654-666, 797, 863, 867, 971, 974, 978, 1165-1178, 1484, 1488, 1640
 
 **Current Pattern** (config_containers.py line 324):
@@ -278,7 +278,7 @@ class DatasetConfig(BaseModel, frozen=True):
 
 #### Pattern B: Dynamic Registry Validation
 
-**Location**: `config_containers.py` lines 317-319, 788-790, 825-827  
+**Location**: `config_containers.py` lines 317-319, 788-790, 825-827
 **Registry functions**: `_get_valid_dataset_types()`, `_is_valid_dataset_type()` (delegate to `config_loader.py`)
 
 **Current Pattern**:
@@ -302,7 +302,7 @@ def validate_dataset_type(cls, v: str) -> str:
 
 #### Pattern C: Nested Container References
 
-**Location**: `config_containers.py` line 1154  
+**Location**: `config_containers.py` line 1154
 **Example**: `TransformationConfig` contains `Dict[str, ExperimentalSetup]`
 
 **Pydantic V2 Solution**: Native support - Pydantic validates nested models automatically.
@@ -335,7 +335,7 @@ from pydantic.dataclasses import dataclass
 from pydantic import field_validator
 from dataclasses import field  # Keep for default_factory
 
-# config_containers.py - Full BaseModel migration  
+# config_containers.py - Full BaseModel migration
 from pydantic import BaseModel, field_validator, model_validator, ConfigDict
 from pydantic import ValidationError as PydanticValidationError  # Aliased
 from typing_extensions import Self
@@ -373,11 +373,11 @@ from pydantic import ValidationError as PydanticValidationError
 
 ## 4. PHASE 1: base.py MIGRATION ✅ COMPLETE
 
-**File**: `milia_pipeline/datasets/base.py`  
-**Lines**: 265  
-**Classes**: 3 frozen dataclasses  
-**Complexity**: LOW  
-**Status**: ✅ COMPLETE (2026-01-07)  
+**File**: `milia_pipeline/datasets/base.py`
+**Lines**: 265
+**Classes**: 3 frozen dataclasses
+**Complexity**: LOW
+**Status**: ✅ COMPLETE (2026-01-07)
 **Rationale**: Simplest file, no `object.__setattr__` usage, drop-in Pydantic dataclass replacement
 
 ### 4.0 Implementation Summary
@@ -397,7 +397,7 @@ from dataclasses import field  # Keep for default_factory
 
 **Classes Unchanged** (Pydantic dataclass calls `__post_init__` AFTER validation):
 - `DatasetMetadata` (Lines 28-52): `__post_init__` validates `name`, `version`, `description`
-- `DatasetSchema` (Lines 55-85): `__post_init__` validates `required_properties`, `coordinate_units`, `energy_units`  
+- `DatasetSchema` (Lines 55-85): `__post_init__` validates `required_properties`, `coordinate_units`, `energy_units`
 - `DatasetFeatures` (Lines 88-127): No `__post_init__`, pure boolean flags with `to_dict()` method
 
 **Verification Test**:
@@ -425,7 +425,7 @@ class DatasetMetadata:
     description: str
     author: Optional[str] = None
     license: Optional[str] = None
-    
+
     def __post_init__(self):
         if not self.name or not isinstance(self.name, str):
             raise ValueError("DatasetMetadata.name must be a non-empty string")
@@ -484,11 +484,11 @@ def __post_init__(self):
         raise TypeError("required_properties must be a tuple")
     if not self.required_properties:
         raise ValueError("required_properties cannot be empty")
-    
+
     valid_coord_units = ('angstrom', 'bohr')
     if self.coordinate_units not in valid_coord_units:
         raise ValueError(f"coordinate_units must be one of {valid_coord_units}")
-    
+
     valid_energy_units = ('hartree', 'eV', 'kcal/mol', 'kJ/mol')
     if self.energy_units not in valid_energy_units:
         raise ValueError(f"energy_units must be one of {valid_energy_units}")
@@ -560,11 +560,11 @@ from dataclasses import field  # Keep for default_factory
 
 ## 5. PHASE 2: config_containers.py MIGRATION ✅ COMPLETE
 
-**File**: `milia_pipeline/config/config_containers.py`  
-**Lines**: 4405 → 4479 (after migration)  
-**Classes**: 10 frozen dataclasses  
-**Complexity**: HIGH  
-**Status**: ✅ COMPLETE (2026-01-07)  
+**File**: `milia_pipeline/config/config_containers.py`
+**Lines**: 4405 → 4479 (after migration)
+**Classes**: 10 frozen dataclasses
+**Complexity**: HIGH
+**Status**: ✅ COMPLETE (2026-01-07)
 **Rationale**: Contains `object.__setattr__` pattern that required `model_validator(mode='before')` pattern
 
 ### 5.0 Implementation Summary
@@ -655,7 +655,7 @@ import logging
 class DatasetConfig(BaseModel, frozen=True):
     """
     Container for dataset type configuration.
-    
+
     [Preserved existing docstring]
     """
     dataset_type: str
@@ -664,7 +664,7 @@ class DatasetConfig(BaseModel, frozen=True):
     handler_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
     validation_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
     migration_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('dataset_type')
     @classmethod
     def validate_dataset_type(cls, v: str) -> str:
@@ -673,7 +673,7 @@ class DatasetConfig(BaseModel, frozen=True):
             valid_types = _get_valid_dataset_types()
             raise ValueError(f"Invalid dataset_type: {v}. Must be one of {valid_types}")
         return v
-    
+
     @model_validator(mode='before')
     @classmethod
     def set_computed_fields_and_defaults(cls, data: Any) -> Any:
@@ -686,7 +686,7 @@ class DatasetConfig(BaseModel, frozen=True):
                 uncertainty_enabled = bool(uncertainty_config.get('use_for_loss_weighting', False))
                 if uncertainty_enabled:
                     data['is_uncertainty_enabled'] = uncertainty_enabled
-            
+
             # Initialize dict fields if None or missing
             if data.get('handler_config') is None:
                 data['handler_config'] = {}
@@ -695,11 +695,11 @@ class DatasetConfig(BaseModel, frozen=True):
             if data.get('migration_config') is None:
                 data['migration_config'] = {}
         return data
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
-    
+
     # All existing methods preserved unchanged (is_compatible_with_handler, get_handler_config, etc.)
 ```
 
@@ -710,7 +710,7 @@ class DatasetConfig(BaseModel, frozen=True):
 class FilterConfig(BaseModel, frozen=True):
     """
     Container for molecule filtering configuration.
-    
+
     [Preserved existing docstring]
     """
     max_atoms: Optional[int] = None
@@ -719,7 +719,7 @@ class FilterConfig(BaseModel, frozen=True):
     dmc_uncertainty_filter: Optional[Dict[str, Any]] = None
     handler_filters: Optional[Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
     filter_validation: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @model_validator(mode='before')
     @classmethod
     def initialize_dict_fields(cls, data: Any) -> Any:
@@ -730,11 +730,11 @@ class FilterConfig(BaseModel, frozen=True):
             if data.get('filter_validation') is None:
                 data['filter_validation'] = {}
         return data
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
-    
+
     # All existing methods preserved unchanged
 ```
 
@@ -749,7 +749,7 @@ class FilterConfig(BaseModel, frozen=True):
 class ClassName:
     field1: Type1
     field2: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         if self.field2 is None:
             object.__setattr__(self, 'field2', {})
@@ -759,13 +759,13 @@ class ClassName:
 class ClassName(BaseModel, frozen=True):
     field1: Type1
     field2: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('field1')
     @classmethod
     def validate_field1(cls, v: Type1) -> Type1:
         # validation logic
         return v
-    
+
     @model_validator(mode='before')
     @classmethod
     def initialize_defaults(cls, data: Any) -> Any:
@@ -774,7 +774,7 @@ class ClassName(BaseModel, frozen=True):
             if data.get('field2') is None:
                 data['field2'] = {}
         return data
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
 ```
@@ -793,7 +793,7 @@ def validate_consistency(self) -> Self:
 ### 5.6 Specific Migrations Implemented
 
 #### StructuralFeaturesConfig (Lines 549-615) ✅
-- Pattern: `model_validator(mode='before')` 
+- Pattern: `model_validator(mode='before')`
 - Fields initialized: `handler_features`, `feature_validation`
 
 #### ProcessingConfig (Lines 640-785) ✅
@@ -865,11 +865,11 @@ return DatasetConfig.model_validate({
 
 ## 6. PHASE 3: config_bridge.py MIGRATION ✅ COMPLETE
 
-**File**: `milia_pipeline/models/utils/config_bridge.py`  
-**Lines**: 1527 → 1545 (after migration)  
-**Classes**: 31 mutable dataclasses  
-**Complexity**: MEDIUM  
-**Status**: ✅ COMPLETE (2026-01-07)  
+**File**: `milia_pipeline/models/utils/config_bridge.py`
+**Lines**: 1527 → 1545 (after migration)
+**Classes**: 31 mutable dataclasses
+**Complexity**: MEDIUM
+**Status**: ✅ COMPLETE (2026-01-07)
 **Rationale**: Mutable dataclasses with `validate()` methods - simpler migration (no `frozen=True`, no `object.__setattr__`)
 
 ### 6.0 Implementation Summary
@@ -926,7 +926,7 @@ print('✅ Phase 3 verification passed')
 class ModelSelectionConfig(BaseModel):
     task_type: str
     model_name: str
-    
+
     @field_validator('task_type')
     @classmethod
     def validate_task_type(cls, v: str) -> str:
@@ -946,7 +946,7 @@ class DataSplitConfig(BaseModel):
     train_ratio: float = 0.8
     val_ratio: float = 0.1
     test_ratio: float = 0.1
-    
+
     @model_validator(mode='after')
     def validate_ratios(self) -> 'DataSplitConfig':
         total = self.train_ratio + self.val_ratio + self.test_ratio
@@ -960,7 +960,7 @@ class DataSplitConfig(BaseModel):
 class DistributedConfig(BaseModel):
     enabled: bool = False
     strategy: str = "ddp"
-    
+
     @model_validator(mode='after')
     def validate_strategy(self) -> 'DistributedConfig':
         if self.enabled:  # Only validate when enabled
@@ -977,14 +977,14 @@ class DistributedConfig(BaseModel):
 class HPOConfigBridge(BaseModel):
     backend: str = "optuna"
     n_trials: int = 100
-    
+
     @field_validator('backend')
     @classmethod
     def validate_backend(cls, v: str) -> str:
         if v not in ("optuna", "ray_tune"):
             raise ValueError(f"Unknown HPO backend: '{v}'")
         return v
-    
+
     @field_validator('n_trials')
     @classmethod
     def validate_n_trials(cls, v: int) -> int:
@@ -1031,11 +1031,11 @@ from enum import Enum
 
 ## 7. PHASE 4: validators.py INTEGRATION ✅ COMPLETE
 
-**File**: `milia_pipeline/config/validators.py`  
-**Lines**: 4917 → 5070 (after migration)  
-**Key Class**: `ValidationResult` (lines 666-781)  
-**Complexity**: LOW (integration, not migration)  
-**Status**: ✅ COMPLETE (2026-01-07)  
+**File**: `milia_pipeline/config/validators.py`
+**Lines**: 4917 → 5070 (after migration)
+**Key Class**: `ValidationResult` (lines 666-781)
+**Complexity**: LOW (integration, not migration)
+**Status**: ✅ COMPLETE (2026-01-07)
 **Rationale**: Added Pydantic wrapper functions to bridge Pydantic ValidationError with MILIA ValidationResult
 
 ### 7.0 Implementation Summary
@@ -1093,12 +1093,12 @@ class ValidationResult:
         self._is_valid = is_valid
         self._errors = errors or []
         self._checked = False
-    
+
     @property
     def is_valid(self) -> bool:
         self._checked = True
         return self._is_valid
-    
+
     def get_validated_data(self) -> Any:
         if not self._checked:
             raise ValidationError(...)
@@ -1121,13 +1121,13 @@ class ValidationResult:
 def wrap_pydantic_validation_error(pydantic_error: 'PydanticValidationError') -> ValidationResult:
     """
     Convert Pydantic ValidationError to MILIA ValidationResult.
-    
+
     This allows existing code that expects ValidationResult to work
     with Pydantic validation errors.
-    
+
     Args:
         pydantic_error: Pydantic V2 ValidationError instance
-        
+
     Returns:
         ValidationResult with errors extracted from Pydantic error
     """
@@ -1146,12 +1146,12 @@ def validate_with_pydantic_model(
 ) -> Union[ValidationResult, Tuple[bool, List[str]]]:
     """
     Validate data using a Pydantic model, returning MILIA ValidationResult.
-    
+
     Args:
         data: Dictionary of data to validate
         model_class: Pydantic BaseModel class to validate against
         return_wrapper: If True, return ValidationResult; if False, return tuple
-        
+
     Returns:
         ValidationResult or (is_valid, errors) tuple
     """
@@ -1189,9 +1189,9 @@ except ImportError:
 
 ## 8. PHASE 5: exceptions.py COMPATIBILITY
 
-**File**: `milia_pipeline/exceptions.py`  
-**Lines**: 4046  
-**Key Class**: `ValidationError` (lines 1743-1780)  
+**File**: `milia_pipeline/exceptions.py`
+**Lines**: 4046
+**Key Class**: `ValidationError` (lines 1743-1780)
 **Issue**: Namespace conflict with Pydantic's `ValidationError`
 
 ### 8.1 MILIA ValidationError Analysis (Lines 1743-1780)
@@ -1439,7 +1439,7 @@ import time
 
 #### A.2.2 DatasetConfig Class Migration (Lines 292-336 ONLY)
 
-**CRITICAL**: This replaces ONLY the decorator, class declaration, fields, and `__post_init__`. 
+**CRITICAL**: This replaces ONLY the decorator, class declaration, fields, and `__post_init__`.
 All existing methods (lines 338-431) are PRESERVED and NOT touched.
 
 **str_replace old_str** (EXACT content of lines 292-336):
@@ -1448,10 +1448,10 @@ All existing methods (lines 338-431) are PRESERVED and NOT touched.
 class DatasetConfig:
     """
     Container for dataset-specific configuration.
-    
+
     Enhanced for handler pattern support with improved validation
     and handler compatibility features.
-    
+
     Attributes:
         dataset_type: Type of dataset ("DFT" or "DMC")
         uncertainty_config: DMC uncertainty handling configuration
@@ -1466,26 +1466,26 @@ class DatasetConfig:
     handler_config: Optional[Dict[str, Any]] = field(default_factory=dict)
     validation_config: Optional[Dict[str, Any]] = field(default_factory=dict)
     migration_config: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Validate dataset_type using dynamic registry lookup
         valid_types = _get_valid_dataset_types()
         if not _is_valid_dataset_type(self.dataset_type):
             raise ValueError(f"Invalid dataset_type: {self.dataset_type}. Must be one of {valid_types}")
-        
+
         # Auto-compute uncertainty enabled if not explicitly set
         if self.uncertainty_config and not hasattr(self, '_is_uncertainty_enabled_set'):
             uncertainty_enabled = bool(self.uncertainty_config.get('use_for_loss_weighting', False))
             object.__setattr__(self, 'is_uncertainty_enabled', uncertainty_enabled)
-        
+
         # Initialize handler_config if None
         if self.handler_config is None:
             object.__setattr__(self, 'handler_config', {})
-        
+
         # Initialize validation_config if None
         if self.validation_config is None:
             object.__setattr__(self, 'validation_config', {})
-        
+
         # Initialize migration_config if None
         if self.migration_config is None:
             object.__setattr__(self, 'migration_config', {})
@@ -1496,10 +1496,10 @@ class DatasetConfig:
 class DatasetConfig(BaseModel, frozen=True):
     """
     Container for dataset-specific configuration.
-    
+
     Enhanced for handler pattern support with improved validation
     and handler compatibility features.
-    
+
     Attributes:
         dataset_type: Type of dataset ("DFT" or "DMC")
         uncertainty_config: DMC uncertainty handling configuration
@@ -1514,7 +1514,7 @@ class DatasetConfig(BaseModel, frozen=True):
     handler_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
     validation_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
     migration_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('dataset_type')
     @classmethod
     def validate_dataset_type(cls, v: str) -> str:
@@ -1523,18 +1523,18 @@ class DatasetConfig(BaseModel, frozen=True):
             valid_types = _get_valid_dataset_types()
             raise ValueError(f"Invalid dataset_type: {v}. Must be one of {valid_types}")
         return v
-    
+
     @model_validator(mode='after')
     def set_computed_fields_and_defaults(self) -> Self:
         """Initialize None fields and compute derived values."""
         updates = {}
-        
+
         # Auto-compute uncertainty enabled if not explicitly set
         if self.uncertainty_config and not self.is_uncertainty_enabled:
             uncertainty_enabled = bool(self.uncertainty_config.get('use_for_loss_weighting', False))
             if uncertainty_enabled:
                 updates['is_uncertainty_enabled'] = uncertainty_enabled
-        
+
         # Initialize dict fields if None
         if self.handler_config is None:
             updates['handler_config'] = {}
@@ -1542,9 +1542,9 @@ class DatasetConfig(BaseModel, frozen=True):
             updates['validation_config'] = {}
         if self.migration_config is None:
             updates['migration_config'] = {}
-        
+
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -1558,18 +1558,18 @@ class DatasetConfig(BaseModel, frozen=True):
 
 **str_replace old_str** (EXACT content of lines 433-464, note leading space on line 433):
 ```python
- 
-@dataclass(frozen=True) 
+
+@dataclass(frozen=True)
 class FilterConfig:
     """
     Container for molecule filtering configuration.
-    
+
     Enhanced for supporting handler-specific filtering and
     improved validation capabilities.
-    
+
     Attributes:
         max_atoms: Maximum number of atoms allowed
-        min_atoms: Minimum number of atoms allowed  
+        min_atoms: Minimum number of atoms allowed
         heavy_atom_filter: Configuration for heavy atom filtering
         dmc_uncertainty_filter: DMC-specific uncertainty filtering
         handler_filters: Handler-specific filter configurations
@@ -1581,12 +1581,12 @@ class FilterConfig:
     dmc_uncertainty_filter: Optional[Dict[str, Any]] = None
     handler_filters: Optional[Dict[str, Dict[str, Any]]] = field(default_factory=dict)
     filter_validation: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Initialize handler_filters if None
         if self.handler_filters is None:
             object.__setattr__(self, 'handler_filters', {})
-        
+
         # Initialize filter_validation if None
         if self.filter_validation is None:
             object.__setattr__(self, 'filter_validation', {})
@@ -1594,17 +1594,17 @@ class FilterConfig:
 
 **str_replace new_str**:
 ```python
- 
+
 class FilterConfig(BaseModel, frozen=True):
     """
     Container for molecule filtering configuration.
-    
+
     Enhanced for supporting handler-specific filtering and
     improved validation capabilities.
-    
+
     Attributes:
         max_atoms: Maximum number of atoms allowed
-        min_atoms: Minimum number of atoms allowed  
+        min_atoms: Minimum number of atoms allowed
         heavy_atom_filter: Configuration for heavy atom filtering
         dmc_uncertainty_filter: DMC-specific uncertainty filtering
         handler_filters: Handler-specific filter configurations
@@ -1616,7 +1616,7 @@ class FilterConfig(BaseModel, frozen=True):
     dmc_uncertainty_filter: Optional[Dict[str, Any]] = None
     handler_filters: Optional[Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
     filter_validation: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @model_validator(mode='after')
     def initialize_dict_fields(self) -> Self:
         """Initialize None dict fields to empty dicts."""
@@ -1626,7 +1626,7 @@ class FilterConfig(BaseModel, frozen=True):
         if self.filter_validation is None:
             updates['filter_validation'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -1642,10 +1642,10 @@ class FilterConfig(BaseModel, frozen=True):
 class StructuralFeaturesConfig:
     """
     Container for structural features configuration.
-    
+
     Enhanced for andler-Based Pattern Development with handler-specific feature configuration
     and improved validation.
-    
+
     Attributes:
         atom_features: List of atom-level features to extract
         bond_features: List of bond-level features to extract
@@ -1658,12 +1658,12 @@ class StructuralFeaturesConfig:
     preprocessing: Optional[Dict[str, Any]] = None
     handler_features: Optional[Dict[str, Dict[str, Any]]] = field(default_factory=dict)
     feature_validation: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Initialize handler_features if None
         if self.handler_features is None:
             object.__setattr__(self, 'handler_features', {})
-        
+
         # Initialize feature_validation if None
         if self.feature_validation is None:
             object.__setattr__(self, 'feature_validation', {})
@@ -1674,10 +1674,10 @@ class StructuralFeaturesConfig:
 class StructuralFeaturesConfig(BaseModel, frozen=True):
     """
     Container for structural features configuration.
-    
+
     Enhanced for andler-Based Pattern Development with handler-specific feature configuration
     and improved validation.
-    
+
     Attributes:
         atom_features: List of atom-level features to extract
         bond_features: List of bond-level features to extract
@@ -1690,7 +1690,7 @@ class StructuralFeaturesConfig(BaseModel, frozen=True):
     preprocessing: Optional[Dict[str, Any]] = None
     handler_features: Optional[Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
     feature_validation: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @model_validator(mode='after')
     def initialize_dict_fields(self) -> Self:
         """Initialize None dict fields to empty dicts."""
@@ -1700,7 +1700,7 @@ class StructuralFeaturesConfig(BaseModel, frozen=True):
         if self.feature_validation is None:
             updates['feature_validation'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -1718,10 +1718,10 @@ class StructuralFeaturesConfig(BaseModel, frozen=True):
 class ProcessingConfig:
     """
     Container for data processing configuration.
-    
+
     Enhanced for Handler-Based Pattern Development with handler-specific processing configuration
     and migration support.
-    
+
     Attributes:
         scalar_graph_targets: Scalar properties to include in y tensor
         node_features: Node-level features to add
@@ -1747,7 +1747,7 @@ class ProcessingConfig:
     preprocessing_feature_tier: Optional[str] = 'standard'
     preprocessing_num_molecules: Optional[int] = None
     preprocessing_cleanup_temp: bool = True
-    
+
     def __post_init__(self):
         # Set defaults for None fields
         if self.node_features is None:
@@ -1756,11 +1756,11 @@ class ProcessingConfig:
             object.__setattr__(self, 'vector_graph_properties', [])
         if self.variable_len_graph_properties is None:
             object.__setattr__(self, 'variable_len_graph_properties', [])
-        
+
         # Initialize handler_processing if None
         if self.handler_processing is None:
             object.__setattr__(self, 'handler_processing', {})
-        
+
         # Initialize migration_settings if None
         if self.migration_settings is None:
             object.__setattr__(self, 'migration_settings', {})
@@ -1771,10 +1771,10 @@ class ProcessingConfig:
 class ProcessingConfig(BaseModel, frozen=True):
     """
     Container for data processing configuration.
-    
+
     Enhanced for Handler-Based Pattern Development with handler-specific processing configuration
     and migration support.
-    
+
     Attributes:
         scalar_graph_targets: Scalar properties to include in y tensor
         node_features: Node-level features to add
@@ -1800,7 +1800,7 @@ class ProcessingConfig(BaseModel, frozen=True):
     preprocessing_feature_tier: Optional[str] = 'standard'
     preprocessing_num_molecules: Optional[int] = None
     preprocessing_cleanup_temp: bool = True
-    
+
     @model_validator(mode='after')
     def initialize_list_and_dict_fields(self) -> Self:
         """Initialize None list/dict fields to empty collections."""
@@ -1816,7 +1816,7 @@ class ProcessingConfig(BaseModel, frozen=True):
         if self.migration_settings is None:
             updates['migration_settings'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -1832,9 +1832,9 @@ class ProcessingConfig(BaseModel, frozen=True):
 class HandlerConfig:
     """
     Container for handler-specific configuration and settings.
-    
+
     This is a container specifically for Handler-Based Pattern Development handler pattern support.
-    
+
     Attributes:
         handler_type: Type of handler ("DFT" or "DMC")
         validation_settings: Handler validation configuration
@@ -1851,15 +1851,15 @@ class HandlerConfig:
     performance_settings: Optional[Dict[str, Any]] = field(default_factory=dict)
     migration_mode: bool = False
     compatibility_layer: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Validate handler type using dynamic registry lookup
         if not _is_valid_dataset_type(self.handler_type):
             valid_types = _get_valid_dataset_types()
             raise ValueError(f"Invalid handler_type: {self.handler_type}. Must be one of {valid_types}")
-        
+
         # Initialize dictionaries if None
-        for field_name in ['validation_settings', 'processing_settings', 'error_handling', 
+        for field_name in ['validation_settings', 'processing_settings', 'error_handling',
                           'performance_settings', 'compatibility_layer']:
             field_value = getattr(self, field_name)
             if field_value is None:
@@ -1871,9 +1871,9 @@ class HandlerConfig:
 class HandlerConfig(BaseModel, frozen=True):
     """
     Container for handler-specific configuration and settings.
-    
+
     This is a container specifically for Handler-Based Pattern Development handler pattern support.
-    
+
     Attributes:
         handler_type: Type of handler ("DFT" or "DMC")
         validation_settings: Handler validation configuration
@@ -1890,7 +1890,7 @@ class HandlerConfig(BaseModel, frozen=True):
     performance_settings: Optional[Dict[str, Any]] = Field(default_factory=dict)
     migration_mode: bool = False
     compatibility_layer: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('handler_type')
     @classmethod
     def validate_handler_type(cls, v: str) -> str:
@@ -1899,17 +1899,17 @@ class HandlerConfig(BaseModel, frozen=True):
             valid_types = _get_valid_dataset_types()
             raise ValueError(f"Invalid handler_type: {v}. Must be one of {valid_types}")
         return v
-    
+
     @model_validator(mode='after')
     def initialize_dict_fields(self) -> Self:
         """Initialize None dict fields to empty dicts."""
         updates = {}
-        for field_name in ['validation_settings', 'processing_settings', 'error_handling', 
+        for field_name in ['validation_settings', 'processing_settings', 'error_handling',
                           'performance_settings', 'compatibility_layer']:
             if getattr(self, field_name) is None:
                 updates[field_name] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -1923,7 +1923,7 @@ class HandlerConfig(BaseModel, frozen=True):
 class TransformSpec:
     """
     Individual transform specification with validation.
-    
+
     Attributes:
         name: Transform name/identifier
         kwargs: Transform parameters (keyword arguments)
@@ -1937,20 +1937,20 @@ class TransformSpec:
     description: Optional[str] = None
     validation_config: Optional[Dict[str, Any]] = field(default_factory=dict)
 
-    
+
     def __post_init__(self):
         # Initialize kwargs if None
         if self.kwargs is None:
             object.__setattr__(self, 'kwargs', {})
-        
+
         # Initialize validation_config if None
         if self.validation_config is None:
             object.__setattr__(self, 'validation_config', {})
 
         # Validate name
         if not self.name or not isinstance(self.name, str):
-            raise ValueError("Transform name must be a non-empty string")  
-        
+            raise ValueError("Transform name must be a non-empty string")
+
         # Validate kwargs
         if not isinstance(self.kwargs, dict):
             raise ValueError("Transform kwargs must be a dictionary")
@@ -1961,7 +1961,7 @@ class TransformSpec:
 class TransformSpec(BaseModel, frozen=True):
     """
     Individual transform specification with validation.
-    
+
     Attributes:
         name: Transform name/identifier
         kwargs: Transform parameters (keyword arguments)
@@ -1974,7 +1974,7 @@ class TransformSpec(BaseModel, frozen=True):
     enabled: bool = True
     description: Optional[str] = None
     validation_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('name')
     @classmethod
     def validate_name(cls, v: str) -> str:
@@ -1982,7 +1982,7 @@ class TransformSpec(BaseModel, frozen=True):
         if not v or not isinstance(v, str):
             raise ValueError("Transform name must be a non-empty string")
         return v
-    
+
     @field_validator('kwargs')
     @classmethod
     def validate_kwargs(cls, v: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1992,7 +1992,7 @@ class TransformSpec(BaseModel, frozen=True):
         if not isinstance(v, dict):
             raise ValueError("Transform kwargs must be a dictionary")
         return v
-    
+
     @model_validator(mode='after')
     def initialize_dict_fields(self) -> Self:
         """Initialize None dict fields to empty dicts."""
@@ -2002,11 +2002,11 @@ class TransformSpec(BaseModel, frozen=True):
         if self.validation_config is None:
             updates['validation_config'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert TransformSpec to dictionary format for compose_transforms().
-        
+
         Returns:
             Dict with 'name', 'kwargs', 'enabled' keys compatible with
             graph_transforms.compose_transforms() expected format.
@@ -2046,14 +2046,14 @@ class ModelSelectionConfig:
     task_type: str
     model_name: str
     baseline_model: Optional[str] = None
-    
+
     def validate(self):
         """Validate selection configuration."""
         if not self.task_type:
             raise ConfigurationError("task_type is required")
         if not self.model_name:
             raise ConfigurationError("model_name is required")
-        
+
         # Validate task_type
         try:
             TaskType(self.task_type)
@@ -2072,7 +2072,7 @@ class ModelSelectionConfig(BaseModel):
     task_type: str
     model_name: str
     baseline_model: Optional[str] = None
-    
+
     @field_validator('task_type')
     @classmethod
     def validate_task_type_field(cls, v: str) -> str:
@@ -2088,7 +2088,7 @@ class ModelSelectionConfig(BaseModel):
                 f"Must be one of: {valid_tasks}"
             )
         return v
-    
+
     @field_validator('model_name')
     @classmethod
     def validate_model_name_field(cls, v: str) -> str:
@@ -2096,7 +2096,7 @@ class ModelSelectionConfig(BaseModel):
         if not v:
             raise ConfigurationError("model_name is required")
         return v
-    
+
     def validate(self):
         """Backward compatible validate method (now a no-op, validation happens on construction)."""
         pass
@@ -2120,9 +2120,9 @@ class ModelSelectionConfig(BaseModel):
 class ExperimentalSetup:
     """
     Container for experimental setup configuration.
-    
+
     Added for Transformation Configuration Support
-    
+
     Attributes:
         name: Experimental setup name
         transforms: List of transform specifications
@@ -2144,34 +2144,34 @@ class ExperimentalSetup:
 
     # Add this to the ExperimentalSetup class (monkey-patch style for the artifact)
     #ExperimentalSetup.validate_experimental_setup_safe = validate_experimental_setup_safe
-    
+
     def __post_init__(self):
         """Validate experimental setup configuration"""
         # Initialize lists if None
         if self.expected_effects is None:
             object.__setattr__(self, 'expected_effects', [])
-        
+
         if self.dataset_compatibility is None:
             object.__setattr__(self, 'dataset_compatibility', [])
-        
+
         # Initialize validation_config if None
         if self.validation_config is None:
             object.__setattr__(self, 'validation_config', {})
-        
+
         # Validate setup
         if not self.name or not isinstance(self.name, str):
             raise ValueError("Experimental setup name must be a non-empty string")
-        
+
         if not isinstance(self.transforms, list):
             raise ValueError("Transforms must be a list")
-        
+
         # CHANGED: Allow empty transforms for test scenarios
         # Original code: if not self.transforms:
         #     raise ValueError("Experimental setup must have at least one transform")
         # New behavior: Only warn about empty transforms but don't fail
         if not self.transforms and hasattr(self, '_strict_validation') and self._strict_validation:
             raise ValueError("Experimental setup must have at least one transform")
-        
+
         # Validate all transforms are TransformSpec instances
         for i, transform in enumerate(self.transforms):
             if not isinstance(transform, TransformSpec):
@@ -2183,9 +2183,9 @@ class ExperimentalSetup:
 class ExperimentalSetup(BaseModel, frozen=True):
     """
     Container for experimental setup configuration.
-    
+
     Added for Transformation Configuration Support
-    
+
     Attributes:
         name: Experimental setup name
         transforms: List of transform specifications
@@ -2204,7 +2204,7 @@ class ExperimentalSetup(BaseModel, frozen=True):
     expected_effects: Optional[List[str]] = Field(default_factory=list)
     validation_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
     dataset_compatibility: Optional[List[str]] = Field(default_factory=list)
-    
+
     @field_validator('name')
     @classmethod
     def validate_name(cls, v: str) -> str:
@@ -2212,7 +2212,7 @@ class ExperimentalSetup(BaseModel, frozen=True):
         if not v or not isinstance(v, str):
             raise ValueError("Experimental setup name must be a non-empty string")
         return v
-    
+
     @field_validator('transforms')
     @classmethod
     def validate_transforms(cls, v: List) -> List:
@@ -2223,7 +2223,7 @@ class ExperimentalSetup(BaseModel, frozen=True):
             if not isinstance(transform, TransformSpec):
                 raise ValueError(f"Transform {i} must be a TransformSpec instance")
         return v
-    
+
     @model_validator(mode='after')
     def initialize_list_and_dict_fields(self) -> Self:
         """Initialize None list/dict fields to empty collections."""
@@ -2235,7 +2235,7 @@ class ExperimentalSetup(BaseModel, frozen=True):
         if self.validation_config is None:
             updates['validation_config'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -2249,9 +2249,9 @@ class ExperimentalSetup(BaseModel, frozen=True):
 class TransformationConfig:
     """
     Container for comprehensive transformation configuration.
-    
+
     Added for Transformation Configuration Support
-    
+
     Attributes:
         experimental_setups: Dictionary of experimental setups by name
         default_setup: Name of the default experimental setup
@@ -2267,35 +2267,35 @@ class TransformationConfig:
     performance_settings: Optional[Dict[str, Any]] = field(default_factory=dict)
     migration_metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
     research_metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         # Initialize standard_transforms if None
         if self.standard_transforms is None:
             object.__setattr__(self, 'standard_transforms', [])
-        
+
         # Initialize dictionaries if None
         if self.validation is None:
             object.__setattr__(self, 'validation', {})
-        
+
         if self.performance_settings is None:
             object.__setattr__(self, 'performance_settings', {})
-        
+
         if self.migration_metadata is None:
             object.__setattr__(self, 'migration_metadata', {})
-        
+
         if self.research_metadata is None:
             object.__setattr__(self, 'research_metadata', {})
-        
+
         # Validate configuration
         if not isinstance(self.experimental_setups, dict):
             raise ValueError("Experimental setups must be a dictionary")
-        
+
         if not self.experimental_setups:
             raise ValueError("At least one experimental setup must be defined")
-        
+
         if self.default_setup not in self.experimental_setups:
             raise ValueError(f"Default setup '{self.default_setup}' not found in experimental setups")
-        
+
         # Validate all setups are ExperimentalSetup instances
         for name, setup in self.experimental_setups.items():
             if not isinstance(setup, ExperimentalSetup):
@@ -2307,9 +2307,9 @@ class TransformationConfig:
 class TransformationConfig(BaseModel, frozen=True):
     """
     Container for comprehensive transformation configuration.
-    
+
     Added for Transformation Configuration Support
-    
+
     Attributes:
         experimental_setups: Dictionary of experimental setups by name
         default_setup: Name of the default experimental setup
@@ -2325,7 +2325,7 @@ class TransformationConfig(BaseModel, frozen=True):
     performance_settings: Optional[Dict[str, Any]] = Field(default_factory=dict)
     migration_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     research_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     @field_validator('experimental_setups')
     @classmethod
     def validate_experimental_setups(cls, v: Dict) -> Dict:
@@ -2338,14 +2338,14 @@ class TransformationConfig(BaseModel, frozen=True):
             if not isinstance(setup, ExperimentalSetup):
                 raise ValueError(f"Setup '{name}' must be an ExperimentalSetup instance")
         return v
-    
+
     @model_validator(mode='after')
     def validate_default_setup_and_init_fields(self) -> Self:
         """Validate default_setup exists and initialize None fields."""
         # Validate default_setup exists
         if self.default_setup not in self.experimental_setups:
             raise ValueError(f"Default setup '{self.default_setup}' not found in experimental setups")
-        
+
         # Initialize None fields
         updates = {}
         if self.standard_transforms is None:
@@ -2359,7 +2359,7 @@ class TransformationConfig(BaseModel, frozen=True):
         if self.research_metadata is None:
             updates['research_metadata'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -2373,7 +2373,7 @@ class TransformationConfig(BaseModel, frozen=True):
 class DescriptorConfig:
     """
     Container for molecular descriptor configuration.
-    
+
     Attributes:
         enabled: Whether descriptor computation is enabled
         default_categories: Categories to compute by default
@@ -2394,7 +2394,7 @@ class DescriptorConfig:
     num_workers: int = 1
     error_handling: str = 'warn'
     validation_mode: str = 'standard'
-    
+
     def __post_init__(self):
         """Validate descriptor configuration."""
         # Validate error_handling
@@ -2404,7 +2404,7 @@ class DescriptorConfig:
                 f"Invalid error_handling: {self.error_handling}. "
                 f"Valid modes: {valid_error_modes}"
             )
-        
+
         # Validate validation_mode
         valid_validation_modes = ['strict', 'standard', 'permissive']
         if self.validation_mode not in valid_validation_modes:
@@ -2412,15 +2412,15 @@ class DescriptorConfig:
                 f"Invalid validation_mode: {self.validation_mode}. "
                 f"Valid modes: {valid_validation_modes}"
             )
-        
+
         # Validate num_workers
         if self.num_workers < 1:
             raise ValueError(f"num_workers must be >= 1, got {self.num_workers}")
-        
+
         # Auto-adjust num_workers for parallel computation
         if self.parallel_computation and self.num_workers == 1:
             object.__setattr__(self, 'num_workers', 2)
-        
+
         # Initialize categories if None
         if self.categories is None:
             object.__setattr__(self, 'categories', {})
@@ -2431,7 +2431,7 @@ class DescriptorConfig:
 class DescriptorConfig(BaseModel, frozen=True):
     """
     Container for molecular descriptor configuration.
-    
+
     Attributes:
         enabled: Whether descriptor computation is enabled
         default_categories: Categories to compute by default
@@ -2452,7 +2452,7 @@ class DescriptorConfig(BaseModel, frozen=True):
     num_workers: int = 1
     error_handling: str = 'warn'
     validation_mode: str = 'standard'
-    
+
     @field_validator('error_handling')
     @classmethod
     def validate_error_handling(cls, v: str) -> str:
@@ -2464,7 +2464,7 @@ class DescriptorConfig(BaseModel, frozen=True):
                 f"Valid modes: {valid_error_modes}"
             )
         return v
-    
+
     @field_validator('validation_mode')
     @classmethod
     def validate_validation_mode(cls, v: str) -> str:
@@ -2476,7 +2476,7 @@ class DescriptorConfig(BaseModel, frozen=True):
                 f"Valid modes: {valid_validation_modes}"
             )
         return v
-    
+
     @field_validator('num_workers')
     @classmethod
     def validate_num_workers(cls, v: int) -> int:
@@ -2484,22 +2484,22 @@ class DescriptorConfig(BaseModel, frozen=True):
         if v < 1:
             raise ValueError(f"num_workers must be >= 1, got {v}")
         return v
-    
+
     @model_validator(mode='after')
     def auto_adjust_workers_and_init_fields(self) -> Self:
         """Auto-adjust num_workers and initialize None fields."""
         updates = {}
-        
+
         # Auto-adjust num_workers for parallel computation
         if self.parallel_computation and self.num_workers == 1:
             updates['num_workers'] = 2
-        
+
         # Initialize categories if None
         if self.categories is None:
             updates['categories'] = {}
-        
+
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -2513,7 +2513,7 @@ class DescriptorConfig(BaseModel, frozen=True):
 class DescriptorCategoryConfig:
     """
     Container for individual descriptor category configuration.
-    
+
     Attributes:
         category_name: Name of the category
         enabled: Whether category is enabled
@@ -2524,7 +2524,7 @@ class DescriptorCategoryConfig:
     enabled: bool = True
     descriptors: Optional[List[str]] = None
     options: Dict[str, Any] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         """Validate category configuration."""
         # Validate category name
@@ -2537,7 +2537,7 @@ class DescriptorCategoryConfig:
                 f"Invalid category: {self.category_name}. "
                 f"Valid categories: {valid_categories}"
             )
-        
+
         # Initialize options if None
         if self.options is None:
             object.__setattr__(self, 'options', {})
@@ -2548,7 +2548,7 @@ class DescriptorCategoryConfig:
 class DescriptorCategoryConfig(BaseModel, frozen=True):
     """
     Container for individual descriptor category configuration.
-    
+
     Attributes:
         category_name: Name of the category
         enabled: Whether category is enabled
@@ -2559,7 +2559,7 @@ class DescriptorCategoryConfig(BaseModel, frozen=True):
     enabled: bool = True
     descriptors: Optional[List[str]] = None
     options: Dict[str, Any] = Field(default_factory=dict)
-    
+
     @field_validator('category_name')
     @classmethod
     def validate_category_name(cls, v: str) -> str:
@@ -2574,7 +2574,7 @@ class DescriptorCategoryConfig(BaseModel, frozen=True):
                 f"Valid categories: {valid_categories}"
             )
         return v
-    
+
     @model_validator(mode='after')
     def initialize_dict_fields(self) -> Self:
         """Initialize None dict fields to empty dicts."""
@@ -2582,7 +2582,7 @@ class DescriptorCategoryConfig(BaseModel, frozen=True):
         if self.options is None:
             updates['options'] = {}
         return self.model_copy(update=updates) if updates else self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -2611,8 +2611,8 @@ Phase 6 migrates the Hyperparameter Optimization (HPO) module from frozen datacl
 
 ### 9.2 Phase 6a: param_types.py Migration
 
-**Location**: `milia_pipeline/models/hpo/search_spaces/param_types.py`  
-**Lines**: 159 → 195  
+**Location**: `milia_pipeline/models/hpo/search_spaces/param_types.py`
+**Lines**: 159 → 195
 **Classes**: 1 (`SearchSpaceParamConfig`)
 
 #### 9.2.1 Import Changes
@@ -2644,22 +2644,22 @@ class SearchSpaceParamConfig:
     step: Optional[int] = None
     choices: Optional[List[Any]] = None
     log: bool = False
-    
+
     def __post_init__(self):
         """Validate configuration based on type."""
         from milia_pipeline.exceptions import ConfigurationError
-        
-        if self.type in (ParamType.INT, ParamType.FLOAT, ParamType.LOGUNIFORM, 
+
+        if self.type in (ParamType.INT, ParamType.FLOAT, ParamType.LOGUNIFORM,
                          ParamType.UNIFORM, ParamType.INT_UNIFORM):
             if self.low is None or self.high is None:
                 raise ConfigurationError(...)
             if self.low >= self.high:
                 raise ConfigurationError(...)
-        
+
         if self.type == ParamType.CATEGORICAL:
             if not self.choices or len(self.choices) == 0:
                 raise ConfigurationError(...)
-        
+
         if self.type == ParamType.DISCRETE_UNIFORM:
             ...
 ```
@@ -2674,42 +2674,42 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
     step: Optional[int] = None
     choices: Optional[List[Any]] = None
     log: bool = False
-    
+
     @model_validator(mode='before')
     @classmethod
     def validate_type_requirements(cls, data: Any) -> Any:
         """Validate configuration requirements based on parameter type."""
         if isinstance(data, dict):
             param_type = data.get('type')
-            
+
             # Convert string to enum if needed
             if isinstance(param_type, str):
                 try:
                     param_type = ParamType(param_type)
                 except ValueError:
                     return data  # Let Pydantic handle the error
-            
+
             # Numeric types require low and high
             numeric_types = (
                 ParamType.INT, ParamType.FLOAT, ParamType.LOGUNIFORM,
                 ParamType.UNIFORM, ParamType.INT_UNIFORM, ParamType.DISCRETE_UNIFORM
             )
-            
+
             if param_type in numeric_types:
                 low = data.get('low')
                 high = data.get('high')
-                
+
                 if low is None or high is None:
                     raise ValueError(
                         f"Parameter type '{param_type.value}' requires 'low' and 'high'. "
                         f"Got low={low}, high={high}"
                     )
-                
+
                 if low >= high:
                     raise ValueError(
                         f"'low' must be less than 'high'. Got low={low}, high={high}"
                     )
-            
+
             # Categorical requires non-empty choices
             if param_type == ParamType.CATEGORICAL:
                 choices = data.get('choices')
@@ -2717,9 +2717,9 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
                     raise ValueError(
                         "Categorical parameter requires non-empty 'choices' list"
                     )
-        
+
         return data
-    
+
     def to_dict(self) -> dict:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -2727,8 +2727,8 @@ class SearchSpaceParamConfig(BaseModel, frozen=True):
 
 ### 9.3 Phase 6b: hpo_config.py Migration
 
-**Location**: `milia_pipeline/models/hpo/hpo_config.py`  
-**Lines**: 581 → 621  
+**Location**: `milia_pipeline/models/hpo/hpo_config.py`
+**Lines**: 581 → 621
 **Classes**: 5 (`PrunerConfig`, `SamplerConfig`, `StudyConfig`, `MultiObjectiveStudyConfig`, `HPOConfig`)
 
 #### 9.3.1 Import Changes
@@ -2760,21 +2760,21 @@ class PrunerConfig(BaseModel, frozen=True):
     interval_steps: int = 1
     percentile: float = 25.0
     n_brackets: int = 4
-    
+
     @field_validator('n_startup_trials')
     @classmethod
     def validate_n_startup_trials(cls, v: int) -> int:
         if v < 0:
             raise ValueError(f"n_startup_trials must be non-negative, got {v}")
         return v
-    
+
     @field_validator('interval_steps')
     @classmethod
     def validate_interval_steps(cls, v: int) -> int:
         if v < 1:
             raise ValueError(f"interval_steps must be at least 1, got {v}")
         return v
-    
+
     @model_validator(mode='before')
     @classmethod
     def validate_type_specific_fields(cls, data: Any) -> Any:
@@ -2783,18 +2783,18 @@ class PrunerConfig(BaseModel, frozen=True):
             pruner_type = data.get('type', PrunerType.MEDIAN)
             if isinstance(pruner_type, str):
                 pruner_type = PrunerType(pruner_type)
-            
+
             if pruner_type == PrunerType.PERCENTILE:
                 percentile = data.get('percentile', 25.0)
                 if not (0 < percentile < 100):
                     raise ValueError(f"percentile must be between 0 and 100, got {percentile}")
-            
+
             if pruner_type == PrunerType.HYPERBAND:
                 n_brackets = data.get('n_brackets', 4)
                 if n_brackets < 1:
                     raise ValueError(f"n_brackets must be at least 1, got {n_brackets}")
         return data
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
 ```
@@ -2809,21 +2809,21 @@ class SamplerConfig(BaseModel, frozen=True):
     seed: Optional[int] = None
     multivariate: bool = True
     constant_liar: bool = False
-    
+
     @field_validator('n_startup_trials')
     @classmethod
     def validate_n_startup_trials(cls, v: int) -> int:
         if v < 0:
             raise ValueError(f"n_startup_trials must be non-negative, got {v}")
         return v
-    
+
     @field_validator('seed')
     @classmethod
     def validate_seed(cls, v: Optional[int]) -> Optional[int]:
         if v is not None and v < 0:
             raise ValueError(f"seed must be non-negative, got {v}")
         return v
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
 ```
@@ -2838,25 +2838,25 @@ class StudyConfig(BaseModel, frozen=True):
     study_name: str = "milia_hpo"
     storage: Optional[str] = None
     load_if_exists: bool = True
-    
+
     @field_validator('metric')
     @classmethod
     def validate_metric(cls, v: str) -> str:
         if not v:
             raise ValueError("metric cannot be empty")
         return v
-    
+
     @field_validator('study_name')
     @classmethod
     def validate_study_name(cls, v: str) -> str:
         if not v:
             raise ValueError("study_name cannot be empty")
         return v
-    
+
     @property
     def is_multi_objective(self) -> bool:
         return False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
 ```
@@ -2874,7 +2874,7 @@ class MultiObjectiveStudyConfig(BaseModel, frozen=True):
     storage: Optional[str] = None
     load_if_exists: bool = True
     reference_point: Optional[Tuple[float, ...]] = None
-    
+
     @model_validator(mode='before')
     @classmethod
     def validate_multi_objective_config(cls, data: Any) -> Any:
@@ -2882,24 +2882,24 @@ class MultiObjectiveStudyConfig(BaseModel, frozen=True):
             directions = data.get('directions', ("minimize",))
             metrics = data.get('metrics', ("val_loss",))
             reference_point = data.get('reference_point')
-            
+
             if len(directions) != len(metrics):
                 raise ValueError(
                     f"directions and metrics must have same length. "
                     f"Got {len(directions)} vs {len(metrics)}"
                 )
-            
+
             if len(metrics) < 2:
                 raise ValueError(f"Multi-objective requires at least 2 metrics")
-            
+
             if reference_point and len(reference_point) != len(metrics):
                 raise ValueError(f"reference_point must match number of metrics")
         return data
-    
+
     @property
     def is_multi_objective(self) -> bool:
         return True
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
 ```
@@ -2921,31 +2921,31 @@ class HPOConfig(BaseModel, frozen=True):
     cv_folds: int = 0
     cv_metric_aggregation: str = "mean"
     task_type: Optional[str] = None
-    
+
     @field_validator('backend')
     @classmethod
     def validate_backend(cls, v: str) -> str:
         if v not in ("optuna", "ray_tune"):
             raise ValueError(f"Unknown HPO backend: '{v}'")
         return v
-    
+
     @field_validator('n_trials')
     @classmethod
     def validate_n_trials(cls, v: int) -> int:
         if v < 1:
             raise ValueError(f"n_trials must be at least 1, got {v}")
         return v
-    
+
     @field_validator('cv_metric_aggregation')
     @classmethod
     def validate_cv_metric_aggregation(cls, v: str) -> str:
         if v not in ("mean", "median", "min", "max"):
             raise ValueError(f"Invalid cv_metric_aggregation: '{v}'")
         return v
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
-    
+
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> 'HPOConfig':
         """Create HPOConfig from dictionary (preserved from original)."""
@@ -3005,11 +3005,11 @@ from milia_pipeline.models.hpo.hpo_config import HPOConfig, PrunerConfig, Sample
 
 ## 10. PHASE 7: device_manager.py MIGRATION ✅ COMPLETE
 
-**File**: `milia_pipeline/models/acceleration/device_manager.py`  
-**Lines**: 713 → 718 (after migration)  
-**Classes**: 1 mutable dataclass  
-**Complexity**: LOW  
-**Status**: ✅ COMPLETE (2026-01-07)  
+**File**: `milia_pipeline/models/acceleration/device_manager.py`
+**Lines**: 713 → 718 (after migration)
+**Classes**: 1 mutable dataclass
+**Complexity**: LOW
+**Status**: ✅ COMPLETE (2026-01-07)
 **Rationale**: First file in Acceleration module; simple mutable dataclass with custom methods
 
 ### 10.1 Implementation Summary
@@ -3043,14 +3043,14 @@ class DeviceInfo:
     compute_capability: Optional[tuple] = None
     is_available: bool = True
     is_default: bool = False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'device_type': self.device_type,
             'device_id': self.device_id,
             # ... manual dict creation
         }
-    
+
     def memory_summary(self) -> str:
         # ... implementation
 ```
@@ -3060,7 +3060,7 @@ class DeviceInfo:
 class DeviceInfo(BaseModel):
     """
     Information about a compute device.
-    
+
     Pattern: Follows mutable BaseModel pattern from config_bridge.py (Pydantic V2)
     """
     device_type: str
@@ -3071,14 +3071,14 @@ class DeviceInfo(BaseModel):
     compute_capability: Optional[Tuple[int, int]] = None
     is_available: bool = True
     is_default: bool = False
-    
+
     # Allow arbitrary types for compute_capability tuple compatibility
     model_config = {'arbitrary_types_allowed': True}
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Backward compatible method wrapping Pydantic V2's model_dump()."""
         return self.model_dump()
-    
+
     def memory_summary(self) -> str:
         # ... implementation unchanged
 ```
@@ -4482,7 +4482,7 @@ After completing Phases 17-38, the following will be achieved:
   - No `__post_init__` validation logic (pure registration container)
 - **Key Finding - ConfigDict(arbitrary_types_allowed=True)**: Required because `model_class` is `Type[torch.nn.Module]` which is not a standard Pydantic-serializable type. This allows PyTorch module class references to be stored without explicit serialization logic.
 - **Key Finding - Nested Pydantic Model**: `metadata` field is `ModelMetadata` (alias for `DynamicModelMetadata` from Phase 23), demonstrating seamless nesting of Pydantic models.
-- **Backward Compatibility**: 
+- **Backward Compatibility**:
   - Same constructor API: `ModelRegistration(name=..., model_class=..., metadata=..., is_builtin=..., plugin_name=..., registered_at=...)`
   - Same attribute access: `registration.name`, `registration.model_class`, `registration.metadata`
   - `_register_internal()` method at lines 356-363 requires zero modifications

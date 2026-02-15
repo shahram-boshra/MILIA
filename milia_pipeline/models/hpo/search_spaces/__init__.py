@@ -15,7 +15,7 @@ Exports:
         ParamType: Enum defining supported parameter types for search spaces
         SearchSpaceParamConfig: Frozen dataclass for single hyperparameter configuration
         SearchSpaceBuilder: Builder class for constructing hyperparameter search spaces
-    
+
     Functions:
         build_search_space: Create a new SearchSpaceBuilder instance
         get_model_search_space: Get predefined search space for a model
@@ -29,14 +29,14 @@ Example:
     ...     build_search_space,
     ...     get_model_search_space,
     ... )
-    >>> 
+    >>>
     >>> # Using ParamType and SearchSpaceParamConfig directly
     >>> lr_config = SearchSpaceParamConfig(
     ...     type=ParamType.LOGUNIFORM,
     ...     low=1e-5,
     ...     high=1e-2,
     ... )
-    >>> 
+    >>>
     >>> # Using SearchSpaceBuilder fluent API
     >>> search_space = (
     ...     SearchSpaceBuilder()
@@ -45,10 +45,10 @@ Example:
     ...     .add_categorical("activation", ["relu", "gelu", "elu"])
     ...     .build()
     ... )
-    >>> 
+    >>>
     >>> # Using convenience function
     >>> space = build_search_space().add_int("layers", 2, 6).build()
-    >>> 
+    >>>
     >>> # Using predefined model search space
     >>> gat_space = get_model_search_space("GAT")
 
@@ -61,7 +61,6 @@ import logging
 # =============================================================================
 # IMPORTS FROM SUBMODULES
 # =============================================================================
-
 # Parameter type definitions
 from .param_types import (
     ParamType,
@@ -75,7 +74,6 @@ from .search_space_builder import (
     get_model_search_space,
     validate_search_space,
 )
-
 
 # =============================================================================
 # MODULE EXPORTS

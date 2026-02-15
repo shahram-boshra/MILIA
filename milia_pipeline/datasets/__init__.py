@@ -129,41 +129,7 @@ Author: milia Pipeline Development Team
 License: As per project license
 """
 
-from typing import Optional, Dict, Any, List
-
-# ============================================================================
-# Core Dataset Implementation
-# ============================================================================
-
-from .milia_dataset import miliaDataset
-
-# ============================================================================
-# PHASE 1 ADDITIONS - Dataset Registry Infrastructure
-# ============================================================================
-
-from milia_pipeline.datasets.base import (
-    BaseDataset,
-    DatasetMetadata,
-    DatasetSchema,
-    DatasetFeatures,
-)
-from milia_pipeline.datasets.registry import (
-    DatasetRegistry,
-    get_default_registry,
-    register,
-    get,
-    list_all,
-    is_registered,
-)
-from milia_pipeline.datasets.protocols import (
-    DatasetHandlerProtocol,
-    DatasetConverterProtocol,
-    DatasetValidatorProtocol,
-)
-from milia_pipeline.exceptions import (
-    DatasetRegistrationError,
-    DatasetNotFoundError,
-)
+from typing import Any, Dict, List, Optional
 
 # ============================================================================
 # PHASE 2 ADDITIONS - Dataset Implementations (via Dynamic Auto-Discovery)
@@ -173,8 +139,39 @@ from milia_pipeline.exceptions import (
 # The @register decorators are triggered automatically when the implementations
 # module is imported. No explicit imports are required here.
 # See: MILIA_Adding_New_Datasets_Implementation_Blueprint.md (Dynamic Discovery Pattern v1.0.0)
-
 import milia_pipeline.datasets.implementations  # Triggers auto-discovery and @register decorators
+
+# ============================================================================
+# PHASE 1 ADDITIONS - Dataset Registry Infrastructure
+# ============================================================================
+from milia_pipeline.datasets.base import (
+    BaseDataset,
+    DatasetFeatures,
+    DatasetMetadata,
+    DatasetSchema,
+)
+from milia_pipeline.datasets.protocols import (
+    DatasetConverterProtocol,
+    DatasetHandlerProtocol,
+    DatasetValidatorProtocol,
+)
+from milia_pipeline.datasets.registry import (
+    DatasetRegistry,
+    get,
+    get_default_registry,
+    is_registered,
+    list_all,
+    register,
+)
+from milia_pipeline.exceptions import (
+    DatasetNotFoundError,
+    DatasetRegistrationError,
+)
+
+# ============================================================================
+# Core Dataset Implementation
+# ============================================================================
+from .milia_dataset import miliaDataset
 
 # ============================================================================
 # Version and Metadata
@@ -191,18 +188,15 @@ __module_status__ = "Production Ready - Handler-Only Architecture with Phase 6 R
 __all__ = [
     # Primary Dataset Class
     "miliaDataset",
-    
     # Version and Metadata
     "__version__",
     "__author__",
     "__module_status__",
-    
     # Phase 1: Base Classes
     "BaseDataset",
     "DatasetMetadata",
     "DatasetSchema",
     "DatasetFeatures",
-    
     # Phase 1: Registry
     "DatasetRegistry",
     "get_default_registry",
@@ -210,24 +204,19 @@ __all__ = [
     "get",
     "list_all",
     "is_registered",
-    
     # Phase 1: Protocols
     "DatasetHandlerProtocol",
     "DatasetConverterProtocol",
     "DatasetValidatorProtocol",
-    
     # Phase 1: Exceptions
     "DatasetRegistrationError",
     "DatasetNotFoundError",
-    
     # Phase 1: Plugin Initialization
     "initialize_plugins",
-    
     # Phase 2: Dataset Implementations (accessed via dynamic __getattr__)
     # NOTE: Individual dataset classes (e.g., DFTDataset, DMCDataset) are available
     # via lazy import using the registry. Use get('DatasetName') or import directly.
     # Example: from milia_pipeline.datasets import DFTDataset  # Works via __getattr__
-    
     # Dynamic Dataset Type Discovery
     "get_supported_dataset_types",
     "SUPPORTED_DATASET_TYPES",  # LEGACY - kept for backward compatibility
@@ -238,48 +227,54 @@ __all__ = [
 # Dynamic Dataset Class Access (Backward Compatibility)
 # ============================================================================
 
+
 def __getattr__(name: str):
     """
     Dynamic attribute access for dataset classes registered in the registry.
-    
+
     This enables backward-compatible imports like:
         from milia_pipeline.datasets import DFTDataset
         from milia_pipeline.datasets import QM9Dataset
-    
+
     Without requiring explicit imports in this module, aligning with the
     dynamic auto-discovery pattern.
-    
+
     Args:
         name: The attribute name being accessed
-        
+
     Returns:
         The dataset class if registered in the registry
-        
+
     Raises:
         AttributeError: If the name is not a registered dataset class
     """
     # Check if this looks like a dataset class name (ends with 'Dataset')
-    if name.endswith('Dataset'):
+    if name.endswith("Dataset"):
         # Extract the dataset type name (e.g., 'DFTDataset' -> 'DFT')
         dataset_type = name[:-7]  # Remove 'Dataset' suffix
-        
+
         # Try to get from registry
         try:
-            from milia_pipeline.datasets.registry import get as registry_get, is_registered
+            from milia_pipeline.datasets.registry import get as registry_get
+            from milia_pipeline.datasets.registry import is_registered
+
             if is_registered(dataset_type):
                 return registry_get(dataset_type)
         except Exception:
             pass
-        
+
         # Try uppercase version (e.g., 'dft' -> 'DFT')
         try:
-            from milia_pipeline.datasets.registry import get as registry_get, is_registered
+            from milia_pipeline.datasets.registry import get as registry_get
+            from milia_pipeline.datasets.registry import is_registered
+
             if is_registered(dataset_type.upper()):
                 return registry_get(dataset_type.upper())
         except Exception:
             pass
-    
+
     raise AttributeError(f"module 'milia_pipeline.datasets' has no attribute '{name}'")
+
 
 # ============================================================================
 # Module-Level Documentation Variables
@@ -293,46 +288,48 @@ def __getattr__(name: str):
 def _discover_dataset_types_for_constant() -> list:
     """
     Discover dataset types for populating SUPPORTED_DATASET_TYPES constant.
-    
+
     This function is called once at module load time to populate the legacy
     SUPPORTED_DATASET_TYPES constant with dynamically discovered types.
-    
+
     DYNAMIC APPROACH:
     1. First tries the registry (primary source of truth)
     2. If registry fails, dynamically discovers from filesystem
     3. Never uses hardcoded dataset type lists
-    
+
     Returns:
         List of discovered dataset type names
-        
+
     ADDED Phase 6.1: Dynamic population of legacy constant
     """
     # Try registry first
     try:
         from milia_pipeline.datasets.registry import list_all
+
         return list_all()
     except Exception:
         pass
-    
+
     # DYNAMIC FALLBACK: Discover dataset types from implementations directory
     try:
         from pathlib import Path
-        implementations_dir = Path(__file__).parent / 'implementations'
+
+        implementations_dir = Path(__file__).parent / "implementations"
         if implementations_dir.exists():
             discovered_types = []
-            for py_file in implementations_dir.glob('*.py'):
-                if py_file.name.startswith('_'):
+            for py_file in implementations_dir.glob("*.py"):
+                if py_file.name.startswith("_"):
                     continue
                 # Extract dataset name from filename (e.g., dft.py -> DFT, qm9.py -> QM9)
                 dataset_name = py_file.stem.upper()
                 # Exclude non-dataset modules
-                if dataset_name not in ['BASE', 'REGISTRY', 'UTILS', 'COMMON']:
+                if dataset_name not in ["BASE", "REGISTRY", "UTILS", "COMMON"]:
                     discovered_types.append(dataset_name)
             if discovered_types:
                 return discovered_types
     except Exception:
         pass
-    
+
     # Final fallback: return empty list (no hardcoded types)
     return []
 
@@ -346,15 +343,15 @@ SUPPORTED_DATASET_TYPES = _discover_dataset_types_for_constant()
 def get_supported_dataset_types():
     """
     Get list of supported dataset types dynamically.
-    
+
     DYNAMIC APPROACH: Instead of hardcoded SUPPORTED_DATASET_TYPES, this function:
     1. First tries the registry (primary source of truth)
     2. If registry fails, dynamically discovers dataset implementations from filesystem
     3. Never relies on hardcoded SUPPORTED_DATASET_TYPES constant
-    
+
     Returns:
         List of all supported dataset type names
-        
+
     Note:
         Use this function instead of SUPPORTED_DATASET_TYPES constant
         for forward compatibility with new dataset types.
@@ -362,31 +359,34 @@ def get_supported_dataset_types():
     # Try registry first
     try:
         from milia_pipeline.datasets.registry import list_all
+
         return list_all()
     except Exception:
         pass
-    
+
     # DYNAMIC FALLBACK: Discover dataset types from implementations directory
     try:
         from pathlib import Path
-        implementations_dir = Path(__file__).parent / 'implementations'
+
+        implementations_dir = Path(__file__).parent / "implementations"
         if implementations_dir.exists():
             discovered_types = []
-            for py_file in implementations_dir.glob('*.py'):
-                if py_file.name.startswith('_'):
+            for py_file in implementations_dir.glob("*.py"):
+                if py_file.name.startswith("_"):
                     continue
                 # Extract dataset name from filename (e.g., dft.py -> DFT, qm9.py -> QM9)
                 dataset_name = py_file.stem.upper()
                 # Exclude non-dataset modules
-                if dataset_name not in ['BASE', 'REGISTRY', 'UTILS', 'COMMON']:
+                if dataset_name not in ["BASE", "REGISTRY", "UTILS", "COMMON"]:
                     discovered_types.append(dataset_name)
             if discovered_types:
                 return discovered_types
     except Exception:
         pass
-    
+
     # Final fallback: return empty list
     return []
+
 
 HANDLER_ARCHITECTURE_VERSION = "2.0"
 """Current handler architecture version (Handler-Only)."""
@@ -407,20 +407,22 @@ PHASE_6_INTEGRATION_VERSION = "6.0.0"
 # Module Initialization
 # ============================================================================
 
+
 def _initialize_module():
     """
     Initialize the datasets module with validation checks.
-    
+
     This function performs module-level initialization and validation,
     ensuring all required dependencies are available.
-    
+
     Note:
         This is called automatically on module import and should not be
         called directly by users.
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     # Log module initialization
     logger.debug(f"Initializing datasets module (version {__version__})")
     logger.debug(f"Handler Architecture: {HANDLER_ARCHITECTURE_VERSION}")
@@ -428,38 +430,43 @@ def _initialize_module():
     logger.debug(f"Registry Version: {REGISTRY_VERSION}")
     logger.debug(f"Implementations Version: {IMPLEMENTATIONS_VERSION}")
     logger.debug(f"Phase 6 Integration: {PHASE_6_INTEGRATION_VERSION}")
-    
+
     # Check for optional dependencies
     try:
         import torch_geometric
+
         logger.debug("PyTorch Geometric available")
     except ImportError:
         logger.warning("PyTorch Geometric not available - dataset functionality will be limited")
-    
+
     try:
         from milia_pipeline.handlers import create_dataset_handler
+
         logger.debug("Dataset handlers available")
     except ImportError:
         logger.warning("Dataset handlers not available - using basic processing")
-    
+
     try:
         from milia_pipeline.transformations.graph_transforms import get_graph_transforms
+
         logger.debug("Enhanced transformation system available")
     except ImportError:
         logger.warning("Enhanced transformation system not available - using basic transforms")
-    
+
     try:
         from milia_pipeline.descriptors.descriptor_calculator import DescriptorCalculator
+
         logger.debug("Descriptor system available")
     except ImportError:
         logger.warning("Descriptor system not available - descriptors will not be calculated")
-    
+
     # Phase 2: Log registered datasets
     registered = list_all()
     logger.debug(f"Registered datasets: {registered}")
-    
+
     # Phase 6: Log registry integration status
     logger.debug(f"Phase 6 registry integration active (version {PHASE_6_INTEGRATION_VERSION})")
+
 
 # Perform module initialization
 _initialize_module()
@@ -468,10 +475,11 @@ _initialize_module()
 # Module Information Functions
 # ============================================================================
 
-def get_module_info() -> Dict[str, Any]:
+
+def get_module_info() -> dict[str, Any]:
     """
     Get comprehensive information about the datasets module.
-    
+
     Returns:
         dict: Dictionary containing module metadata including:
             - version: Module version
@@ -482,7 +490,7 @@ def get_module_info() -> Dict[str, Any]:
             - transformation_system: Transformation system version
             - available_features: List of available features
             - phase_6_integration: Phase 6 registry integration version
-    
+
     Example:
         >>> from milia_pipeline.datasets import get_module_info
         >>> info = get_module_info()
@@ -492,43 +500,47 @@ def get_module_info() -> Dict[str, Any]:
     """
     # Check feature availability
     features = []
-    
+
     try:
         import torch_geometric
+
         features.append("pytorch_geometric")
     except ImportError:
         pass
-    
+
     try:
         from milia_pipeline.handlers import create_dataset_handler
+
         features.append("dataset_handlers")
     except ImportError:
         pass
-    
+
     try:
         from milia_pipeline.transformations.graph_transforms import get_graph_transforms
+
         features.append("enhanced_transforms")
     except ImportError:
         pass
-    
+
     try:
         from milia_pipeline.descriptors.descriptor_calculator import DescriptorCalculator
+
         features.append("descriptors")
     except ImportError:
         pass
-    
+
     # Phase 1: Registry is always available
     features.append("dataset_registry")
-    
+
     # Phase 2: Dataset implementations
     features.append("dataset_implementations")
-    
+
     # Phase 6: Registry-based feature queries
     features.append("phase_6_registry_integration")
-    
+
     # Standard transforms support
     features.append("standard_transforms")
-    
+
     return {
         "version": __version__,
         "author": __author__,
@@ -540,8 +552,8 @@ def get_module_info() -> Dict[str, Any]:
         "implementations_version": IMPLEMENTATIONS_VERSION,
         "phase_6_integration": PHASE_6_INTEGRATION_VERSION,
         "available_features": features,
-        "core_classes": ["miliaDataset", "BaseDataset", "DatasetRegistry"] + 
-                        [f"{name}Dataset" for name in list_all()],  # DYNAMIC: Dataset classes from registry
+        "core_classes": ["miliaDataset", "BaseDataset", "DatasetRegistry"]
+        + [f"{name}Dataset" for name in list_all()],  # DYNAMIC: Dataset classes from registry
         "architecture": "Handler-Only (No Backward Compatibility)",
         "exception_integration": "Complete Handler Exception Hierarchy",
         "registered_datasets": list_all(),
@@ -560,13 +572,13 @@ def get_module_info() -> Dict[str, Any]:
     }
 
 
-def check_dependencies() -> Dict[str, bool]:
+def check_dependencies() -> dict[str, bool]:
     """
     Check availability of optional dependencies.
-    
+
     Returns:
         dict: Dictionary mapping dependency names to availability status
-    
+
     Example:
         >>> from milia_pipeline.datasets import check_dependencies
         >>> deps = check_dependencies()
@@ -576,61 +588,67 @@ def check_dependencies() -> Dict[str, bool]:
         ...     print("Phase 6 registry integration is available")
     """
     dependencies = {}
-    
+
     # PyTorch Geometric
     try:
         import torch_geometric
-        dependencies['pytorch_geometric'] = True
+
+        dependencies["pytorch_geometric"] = True
     except ImportError:
-        dependencies['pytorch_geometric'] = False
-    
+        dependencies["pytorch_geometric"] = False
+
     # Dataset Handlers
     try:
         from milia_pipeline.handlers import create_dataset_handler
-        dependencies['dataset_handlers'] = True
+
+        dependencies["dataset_handlers"] = True
     except ImportError:
-        dependencies['dataset_handlers'] = False
-    
+        dependencies["dataset_handlers"] = False
+
     # Enhanced Transformation System
     try:
         from milia_pipeline.transformations.graph_transforms import get_graph_transforms
-        dependencies['enhanced_transforms'] = True
+
+        dependencies["enhanced_transforms"] = True
     except ImportError:
-        dependencies['enhanced_transforms'] = False
-    
+        dependencies["enhanced_transforms"] = False
+
     # Descriptor System
     try:
         from milia_pipeline.descriptors.descriptor_calculator import DescriptorCalculator
-        dependencies['descriptors'] = True
+
+        dependencies["descriptors"] = True
     except ImportError:
-        dependencies['descriptors'] = False
-    
+        dependencies["descriptors"] = False
+
     # RDKit
     try:
         import rdkit
-        dependencies['rdkit'] = True
+
+        dependencies["rdkit"] = True
     except ImportError:
-        dependencies['rdkit'] = False
-    
+        dependencies["rdkit"] = False
+
     # NumPy
     try:
         import numpy
-        dependencies['numpy'] = True
+
+        dependencies["numpy"] = True
     except ImportError:
-        dependencies['numpy'] = False
-    
+        dependencies["numpy"] = False
+
     # Phase 1: Dataset Registry (always available)
-    dependencies['dataset_registry'] = True
-    
+    dependencies["dataset_registry"] = True
+
     # Phase 2: Dataset Implementations (always available after Phase 2)
-    dependencies['dataset_implementations'] = True
-    
+    dependencies["dataset_implementations"] = True
+
     # Phase 6: Registry-based feature queries (always available after Phase 6)
-    dependencies['phase_6_registry_integration'] = True
-    
+    dependencies["phase_6_registry_integration"] = True
+
     # Standard transforms support (always available)
-    dependencies['standard_transforms'] = True
-    
+    dependencies["standard_transforms"] = True
+
     return dependencies
 
 
@@ -638,13 +656,14 @@ def check_dependencies() -> Dict[str, bool]:
 # Phase 1: Plugin Initialization
 # ============================================================================
 
+
 def initialize_plugins(load_external: bool = True) -> int:
     """
     Initialize dataset plugins (placeholder for Phase 8).
-    
+
     Args:
         load_external: Whether to load external plugins via entry points
-        
+
     Returns:
         Number of external plugins loaded
     """
@@ -655,17 +674,20 @@ def initialize_plugins(load_external: bool = True) -> int:
 # Module Documentation Update
 # ============================================================================
 
+
 # Update module docstring with runtime information
 def _update_module_docstring():
     """Update module __doc__ with runtime dependency information."""
     deps = check_dependencies()
     available = [name for name, status in deps.items() if status]
     unavailable = [name for name, status in deps.items() if not status]
-    
+
     if unavailable:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"Optional dependencies not available: {', '.join(unavailable)}")
+
 
 # Update documentation on import
 _update_module_docstring()

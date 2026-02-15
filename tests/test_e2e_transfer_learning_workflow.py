@@ -17,19 +17,17 @@ Modules exercised:
 Author: MILIA Team
 """
 
-import sys
-import os
 import copy
-import tempfile
 import logging
+import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from collections import defaultdict
+from typing import Any
 
 import pytest
 import torch
 import torch.nn as nn
-from torch_geometric.data import Data, Batch
+from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
 # ---------------------------------------------------------------------------
@@ -45,6 +43,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # SYNTHETIC DATA HELPERS
 # =============================================================================
+
 
 def _make_synthetic_pyg_data(
     num_nodes: int = 10,
@@ -76,7 +75,7 @@ def _make_synthetic_dataset(
     num_node_features: int = 16,
     num_targets: int = 1,
     seed: int = 42,
-) -> List[Data]:
+) -> list[Data]:
     """Create a list of synthetic PyG Data objects."""
     return [
         _make_synthetic_pyg_data(
@@ -93,6 +92,7 @@ def _make_synthetic_dataset(
 # =============================================================================
 # MINIMAL GNN MODEL (self-contained, no external registry dependency)
 # =============================================================================
+
 
 class _SimpleGNNEncoder(nn.Module):
     """Minimal GNN-like encoder with conv layers for testing freeze strategies."""
@@ -121,9 +121,7 @@ class _SimpleGraphModel(nn.Module):
     FineTuner's freeze/replace logic to operate correctly.
     """
 
-    def __init__(
-        self, in_channels: int, hidden_channels: int, out_channels: int
-    ):
+    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int):
         super().__init__()
         self.encoder = _SimpleGNNEncoder(in_channels, hidden_channels)
         self.head = nn.Linear(hidden_channels, out_channels)
@@ -132,13 +130,14 @@ class _SimpleGraphModel(nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        batch: Optional[torch.Tensor] = None,
+        batch: torch.Tensor | None = None,
     ) -> torch.Tensor:
         # Encode nodes
         h = self.encoder(x)
         # Global mean pooling
         if batch is not None:
             from torch_geometric.nn import global_mean_pool
+
             h = global_mean_pool(h, batch)
         else:
             h = h.mean(dim=0, keepdim=True)
@@ -149,6 +148,7 @@ class _SimpleGraphModel(nn.Module):
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def device():
@@ -217,13 +217,14 @@ def tmp_working_dir(tmp_path):
 # HELPER: train a model with Trainer and save checkpoint
 # =============================================================================
 
+
 def _train_and_save_checkpoint(
     model: nn.Module,
-    dataset: List[Data],
+    dataset: list[Data],
     device: torch.device,
     checkpoint_dir: Path,
     max_epochs: int = 3,
-    model_info: Optional[Dict[str, Any]] = None,
+    model_info: dict[str, Any] | None = None,
 ) -> Path:
     """
     Train *model* for *max_epochs* and save a v2.0 checkpoint.
@@ -231,8 +232,8 @@ def _train_and_save_checkpoint(
     Uses the real Trainer and ModelCheckpoint from the MILIA codebase.
     Returns the path to the saved checkpoint.
     """
-    from milia_pipeline.models.training.trainer import Trainer
     from milia_pipeline.models.training.callbacks import ModelCheckpoint
+    from milia_pipeline.models.training.trainer import Trainer
 
     # Split dataset into train / val
     split = int(0.8 * len(dataset))
@@ -294,6 +295,7 @@ def _train_and_save_checkpoint(
 # =============================================================================
 # TEST CLASS — End-to-End Transfer Learning Workflow
 # =============================================================================
+
 
 @pytest.mark.e2e
 class TestE2ETransferLearningWorkflow:
@@ -451,9 +453,7 @@ class TestE2ETransferLearningWorkflow:
                     f"Non-encoder param '{name}' should be trainable but requires_grad=False"
                 )
 
-    def test_fine_tuner_freeze_none(
-        self, base_model, base_out_channels, device
-    ):
+    def test_fine_tuner_freeze_none(self, base_model, base_out_channels, device):
         """FreezeStrategy.NONE leaves all parameters trainable."""
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
@@ -475,9 +475,7 @@ class TestE2ETransferLearningWorkflow:
                 f"Param '{name}' should be trainable with FreezeStrategy.NONE"
             )
 
-    def test_fine_tuner_freeze_all_but_last(
-        self, base_model, base_out_channels, device
-    ):
+    def test_fine_tuner_freeze_all_but_last(self, base_model, base_out_channels, device):
         """FreezeStrategy.ALL_BUT_LAST freezes everything except the last layer."""
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
@@ -500,17 +498,11 @@ class TestE2ETransferLearningWorkflow:
 
         for name, param in model.named_parameters():
             if name.startswith(last_layer_prefix):
-                assert param.requires_grad, (
-                    f"Last-layer param '{name}' should be trainable"
-                )
+                assert param.requires_grad, f"Last-layer param '{name}' should be trainable"
             else:
-                assert not param.requires_grad, (
-                    f"Non-last-layer param '{name}' should be frozen"
-                )
+                assert not param.requires_grad, f"Non-last-layer param '{name}' should be frozen"
 
-    def test_fine_tuner_freeze_encoder_partial(
-        self, base_model, base_out_channels, device
-    ):
+    def test_fine_tuner_freeze_encoder_partial(self, base_model, base_out_channels, device):
         """FreezeStrategy.ENCODER_PARTIAL freezes the first N layers."""
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
@@ -529,12 +521,8 @@ class TestE2ETransferLearningWorkflow:
         )
 
         # At least some parameters should be frozen and some trainable
-        frozen_count = sum(
-            1 for p in model.parameters() if not p.requires_grad
-        )
-        trainable_count = sum(
-            1 for p in model.parameters() if p.requires_grad
-        )
+        frozen_count = sum(1 for p in model.parameters() if not p.requires_grad)
+        trainable_count = sum(1 for p in model.parameters() if p.requires_grad)
         assert frozen_count > 0, "ENCODER_PARTIAL should freeze some parameters"
         assert trainable_count > 0, "ENCODER_PARTIAL should leave some parameters trainable"
 
@@ -542,9 +530,7 @@ class TestE2ETransferLearningWorkflow:
     # 4. FineTuner — output head replacement
     # -----------------------------------------------------------------
 
-    def test_replace_output_head(
-        self, base_model, base_out_channels, new_out_channels
-    ):
+    def test_replace_output_head(self, base_model, base_out_channels, new_out_channels):
         """FineTuner replaces the last Linear layer for a new task dimension."""
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
@@ -564,8 +550,7 @@ class TestE2ETransferLearningWorkflow:
 
         # The head's output dimension should match new_out_channels
         assert model.head.out_features == new_out_channels, (
-            f"Expected head out_features={new_out_channels}, "
-            f"got {model.head.out_features}"
+            f"Expected head out_features={new_out_channels}, got {model.head.out_features}"
         )
         # The head's input dimension should remain unchanged
         assert model.head.in_features == base_model.encoder.conv2.out_features
@@ -597,12 +582,12 @@ class TestE2ETransferLearningWorkflow:
         6. Assert frozen encoder params did not change
         7. Assert fine-tuned model produces predictions of correct shape
         """
-        from milia_pipeline.models.training.trainer import Trainer
-        from milia_pipeline.models.training.callbacks import ModelCheckpoint
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
             FreezeStrategy,
         )
+        from milia_pipeline.models.training.callbacks import ModelCheckpoint
+        from milia_pipeline.models.training.trainer import Trainer
 
         # --- Step 1 & 2: Train and save base checkpoint ---
         ckpt_dir = tmp_working_dir / "checkpoints"
@@ -695,9 +680,7 @@ class TestE2ETransferLearningWorkflow:
         test_batch = Batch.from_data_list([test_data])
         adapted_model.eval()
         with torch.no_grad():
-            pred = adapted_model(
-                test_batch.x, test_batch.edge_index, batch=test_batch.batch
-            )
+            pred = adapted_model(test_batch.x, test_batch.edge_index, batch=test_batch.batch)
         assert pred.shape[-1] == new_out_channels, (
             f"Expected prediction dim={new_out_channels}, got {pred.shape[-1]}"
         )
@@ -756,9 +739,7 @@ class TestE2ETransferLearningWorkflow:
 
         ft = FineTuner(
             model=fresh_model,
-            hyper_parameters=checkpoint.get("hyper_parameters", {}).get(
-                "hyperparameters", {}
-            ),
+            hyper_parameters=checkpoint.get("hyper_parameters", {}).get("hyperparameters", {}),
             working_root_dir=tmp_working_dir,
         )
         adapted_model = ft.prepare_for_finetuning(
@@ -818,10 +799,6 @@ class TestE2ETransferLearningWorkflow:
         from milia_pipeline.models.post_training.inference.predictor import (
             Predictor,
         )
-        from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
-            FineTuner,
-            FreezeStrategy,
-        )
 
         # Create and adapt model (skip full training for speed)
         model = _SimpleGraphModel(
@@ -839,13 +816,12 @@ class TestE2ETransferLearningWorkflow:
 
         preds = predictor.predict_batch(fine_tune_dataset[:5], batch_size=2)
 
-        csv_path = predictor.save_predictions(
-            preds, "predictions/results.csv", format="csv"
-        )
+        csv_path = predictor.save_predictions(preds, "predictions/results.csv", format="csv")
         assert csv_path.exists()
 
         # Read and verify
         import pandas as pd
+
         df = pd.read_csv(csv_path)
         assert len(df) == 5
         # Multi-target: columns are prediction_0 ... prediction_{n-1}
@@ -889,9 +865,7 @@ class TestE2ETransferLearningWorkflow:
         )
 
         loaded = cm.load(save_path)
-        loaded_config = loaded.get("data_info", {}).get(
-            "structural_features_config"
-        )
+        loaded_config = loaded.get("data_info", {}).get("structural_features_config")
         assert loaded_config == structural_config, (
             "structural_features_config not preserved through checkpoint"
         )
@@ -915,12 +889,12 @@ class TestE2ETransferLearningWorkflow:
         Fine-tuning on the new task should show a decreasing training loss,
         confirming that the adapted model is actually learning.
         """
-        from milia_pipeline.models.training.trainer import Trainer
-        from milia_pipeline.models.training.callbacks import ModelCheckpoint
         from milia_pipeline.models.post_training.transfer_learning.fine_tuner import (
             FineTuner,
             FreezeStrategy,
         )
+        from milia_pipeline.models.training.callbacks import ModelCheckpoint
+        from milia_pipeline.models.training.trainer import Trainer
 
         # Train base
         ckpt_dir = tmp_working_dir / "ckpt_loss"
@@ -957,12 +931,8 @@ class TestE2ETransferLearningWorkflow:
         # Fine-tune for 10 epochs with a moderate LR to observe loss trend.
         # shuffle=False for reproducibility across runs.
         ft_split = int(0.8 * len(fine_tune_dataset))
-        ft_train_loader = DataLoader(
-            fine_tune_dataset[:ft_split], batch_size=8, shuffle=False
-        )
-        ft_val_loader = DataLoader(
-            fine_tune_dataset[ft_split:], batch_size=8, shuffle=False
-        )
+        ft_train_loader = DataLoader(fine_tune_dataset[:ft_split], batch_size=8, shuffle=False)
+        ft_val_loader = DataLoader(fine_tune_dataset[ft_split:], batch_size=8, shuffle=False)
 
         ft_ckpt_dir = tmp_working_dir / "ft_ckpt_loss"
         ft_ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -989,9 +959,7 @@ class TestE2ETransferLearningWorkflow:
         ft_results = ft_trainer.fit()
 
         train_losses = ft_results["train_metrics"].get("train_loss", [])
-        assert len(train_losses) == 10, (
-            f"Expected 10 epoch losses, got {len(train_losses)}"
-        )
+        assert len(train_losses) == 10, f"Expected 10 epoch losses, got {len(train_losses)}"
 
         # The *best* (minimum) loss observed should be strictly lower than the
         # initial loss.  This is more robust than comparing last-vs-first because
@@ -1016,11 +984,11 @@ class TestE2ETransferLearningWorkflow:
         tmp_working_dir,
     ):
         """EarlyStopping can halt fine-tuning when validation loss stops improving."""
-        from milia_pipeline.models.training.trainer import Trainer
         from milia_pipeline.models.training.callbacks import (
             EarlyStopping,
             ModelCheckpoint,
         )
+        from milia_pipeline.models.training.trainer import Trainer
 
         # Use a model with a very high learning rate to cause rapid initial
         # convergence followed by divergence/plateau, so EarlyStopping triggers.
@@ -1031,12 +999,8 @@ class TestE2ETransferLearningWorkflow:
         )
 
         ft_split = int(0.5 * len(fine_tune_dataset))
-        train_loader = DataLoader(
-            fine_tune_dataset[:ft_split], batch_size=4, shuffle=False
-        )
-        val_loader = DataLoader(
-            fine_tune_dataset[ft_split:], batch_size=4, shuffle=False
-        )
+        train_loader = DataLoader(fine_tune_dataset[:ft_split], batch_size=4, shuffle=False)
+        val_loader = DataLoader(fine_tune_dataset[ft_split:], batch_size=4, shuffle=False)
 
         ckpt_dir = tmp_working_dir / "early_stop_ckpt"
         ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -1044,12 +1008,13 @@ class TestE2ETransferLearningWorkflow:
         # patience=3 means stop if no improvement for 3 consecutive epochs.
         # A very large learning rate (0.5) causes the loss to oscillate wildly
         # after initial descent, so patience will be exhausted quickly.
-        early_stop = EarlyStopping(
-            monitor="val_loss", patience=3, mode="min", min_delta=0.0
-        )
+        early_stop = EarlyStopping(monitor="val_loss", patience=3, mode="min", min_delta=0.0)
         ckpt_cb = ModelCheckpoint(
-            dirpath=ckpt_dir, monitor="val_loss", mode="min",
-            save_top_k=1, save_last=True,
+            dirpath=ckpt_dir,
+            monitor="val_loss",
+            mode="min",
+            save_top_k=1,
+            save_last=True,
         )
 
         trainer = Trainer(
@@ -1066,9 +1031,7 @@ class TestE2ETransferLearningWorkflow:
         results = trainer.fit()
 
         # Verify EarlyStopping was active and trainer ran
-        epochs_completed = len(
-            results["train_metrics"].get("train_loss", [])
-        )
+        epochs_completed = len(results["train_metrics"].get("train_loss", []))
         # The core contract: EarlyStopping callback correctly integrates with
         # Trainer (set_trainer called, on_epoch_end invoked, should_stop checked).
         # We verify integration by checking the callback's internal state was updated.

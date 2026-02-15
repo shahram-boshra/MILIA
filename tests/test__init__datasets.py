@@ -63,9 +63,7 @@ import importlib
 import inspect
 import sys
 import types
-import logging
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -83,6 +81,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def datasets_pkg():
     """
@@ -93,6 +92,7 @@ def datasets_pkg():
     """
     try:
         import milia_pipeline.datasets as ds
+
         return ds
     except ImportError as exc:
         pytest.fail(
@@ -143,21 +143,27 @@ class TestSmokeMetadataAttributes:
     """§1.2 — Verify module-level metadata attributes are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__module_status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__module_status__",
+        ],
+    )
     def test_metadata_attribute_exists(self, datasets_pkg, attr):
         """Each metadata dunder is defined on the datasets package."""
         assert hasattr(datasets_pkg, attr), f"Missing attribute: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "__version__",
-        "__author__",
-        "__module_status__",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "__version__",
+            "__author__",
+            "__module_status__",
+        ],
+    )
     def test_metadata_attribute_is_string(self, datasets_pkg, attr):
         """Each metadata dunder is a non-empty string."""
         value = getattr(datasets_pkg, attr)
@@ -169,9 +175,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = datasets_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -179,34 +183,38 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
 
 class TestSmokeVersionConstants:
     """§1.2 — Version and architecture constants are present and typed."""
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "HANDLER_ARCHITECTURE_VERSION",
-        "TRANSFORMATION_SYSTEM_VERSION",
-        "REGISTRY_VERSION",
-        "IMPLEMENTATIONS_VERSION",
-        "PHASE_6_INTEGRATION_VERSION",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "HANDLER_ARCHITECTURE_VERSION",
+            "TRANSFORMATION_SYSTEM_VERSION",
+            "REGISTRY_VERSION",
+            "IMPLEMENTATIONS_VERSION",
+            "PHASE_6_INTEGRATION_VERSION",
+        ],
+    )
     def test_version_constant_exists(self, datasets_pkg, attr):
         """Each version constant is defined on the datasets package."""
         assert hasattr(datasets_pkg, attr), f"Missing version constant: {attr}"
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("attr", [
-        "HANDLER_ARCHITECTURE_VERSION",
-        "TRANSFORMATION_SYSTEM_VERSION",
-        "REGISTRY_VERSION",
-        "IMPLEMENTATIONS_VERSION",
-        "PHASE_6_INTEGRATION_VERSION",
-    ])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "HANDLER_ARCHITECTURE_VERSION",
+            "TRANSFORMATION_SYSTEM_VERSION",
+            "REGISTRY_VERSION",
+            "IMPLEMENTATIONS_VERSION",
+            "PHASE_6_INTEGRATION_VERSION",
+        ],
+    )
     def test_version_constant_is_string(self, datasets_pkg, attr):
         """Each version constant is a non-empty string."""
         value = getattr(datasets_pkg, attr)
@@ -228,8 +236,7 @@ class TestSmokeCoreDatasetClassExport:
     def test_milia_dataset_is_a_class(self, datasets_pkg):
         """``miliaDataset`` is a class (not an instance or function)."""
         assert inspect.isclass(datasets_pkg.miliaDataset), (
-            f"miliaDataset should be a class, got "
-            f"{type(datasets_pkg.miliaDataset).__name__}"
+            f"miliaDataset should be a class, got {type(datasets_pkg.miliaDataset).__name__}"
         )
 
 
@@ -255,9 +262,7 @@ class TestSmokeBaseClassExports:
     def test_base_class_is_a_class(self, datasets_pkg, name):
         """Each base class export is a class (not an instance or function)."""
         obj = getattr(datasets_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeRegistryExports:
@@ -313,9 +318,7 @@ class TestSmokeProtocolExports:
     def test_protocol_class_is_a_class(self, datasets_pkg, name):
         """Each protocol export is a class."""
         obj = getattr(datasets_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeExceptionExports:
@@ -338,9 +341,7 @@ class TestSmokeExceptionExports:
     def test_exception_class_is_a_class(self, datasets_pkg, name):
         """Each exception export is a class."""
         obj = getattr(datasets_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeDynamicDiscoveryExports:
@@ -362,8 +363,7 @@ class TestSmokeDynamicDiscoveryExports:
         """``get_supported_dataset_types()`` returns a list."""
         result = datasets_pkg.get_supported_dataset_types()
         assert isinstance(result, list), (
-            f"get_supported_dataset_types() should return list, "
-            f"got {type(result).__name__}"
+            f"get_supported_dataset_types() should return list, got {type(result).__name__}"
         )
 
     @pytest.mark.smoke
@@ -446,9 +446,7 @@ class TestSmokePluginInitialization:
     def test_initialize_plugins_returns_zero_placeholder(self, datasets_pkg):
         """``initialize_plugins()`` returns 0 (Phase 8 placeholder)."""
         result = datasets_pkg.initialize_plugins()
-        assert result == 0, (
-            f"initialize_plugins() placeholder should return 0, got {result}"
-        )
+        assert result == 0, f"initialize_plugins() placeholder should return 0, got {result}"
 
 
 class TestSmokeModuleInitialization:
@@ -552,8 +550,7 @@ class TestSmokePhase2AutoDiscovery:
         )
         # At least one dataset should be registered after auto-discovery
         assert len(registered) > 0, (
-            "list_all() should return at least one registered dataset "
-            "after Phase 2 auto-discovery"
+            "list_all() should return at least one registered dataset after Phase 2 auto-discovery"
         )
 
 
@@ -571,9 +568,7 @@ class TestSmokeRegisteredDatasetAccess:
             attr_name = f"{dataset_name}Dataset"
             try:
                 cls = getattr(datasets_pkg, attr_name)
-                assert cls is not None, (
-                    f"Dynamic access to '{attr_name}' returned None"
-                )
+                assert cls is not None, f"Dynamic access to '{attr_name}' returned None"
             except AttributeError:
                 # Some dataset names may not follow the simple
                 # convention (e.g., ANI1x vs ANI1X). Skip gracefully.
@@ -587,9 +582,7 @@ class TestSmokeRegisteredDatasetAccess:
         registered = datasets_pkg.list_all()
         for dataset_name in registered:
             cls = datasets_pkg.get(dataset_name)
-            assert cls is not None, (
-                f"get('{dataset_name}') returned None"
-            )
+            assert cls is not None, f"get('{dataset_name}') returned None"
 
 
 # ===================================================================
@@ -615,9 +608,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, datasets_pkg, all_names):
@@ -625,10 +616,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(datasets_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(datasets_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -636,13 +624,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -707,13 +690,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in datasets/__init__.py but not in __all__: "
@@ -735,9 +722,7 @@ class TestContractBaseClassTypes:
     def test_dataclass_is_class(self, datasets_pkg, name):
         """Each Pydantic dataclass export is a class."""
         obj = getattr(datasets_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("name", PYDANTIC_DATACLASSES)
@@ -757,6 +742,7 @@ class TestContractBaseClassTypes:
         # Check for Pydantic BaseModel
         try:
             from pydantic import BaseModel
+
             is_pydantic_model = issubclass(cls, BaseModel)
         except ImportError:
             is_pydantic_model = False
@@ -765,20 +751,18 @@ class TestContractBaseClassTypes:
         is_stdlib_dc = hasattr(cls, "__dataclass_fields__")
 
         assert is_pydantic_dc or is_pydantic_model or is_stdlib_dc, (
-            f"'{name}' should be a Pydantic dataclass, Pydantic BaseModel, "
-            f"or stdlib dataclass"
+            f"'{name}' should be a Pydantic dataclass, Pydantic BaseModel, or stdlib dataclass"
         )
 
     @pytest.mark.contract
     def test_base_dataset_is_abstract(self, datasets_pkg):
         """``BaseDataset`` is an abstract class (has abstract methods)."""
         from abc import ABC
+
         cls = datasets_pkg.BaseDataset
         assert inspect.isclass(cls), "BaseDataset should be a class"
         # BaseDataset should be an ABC subclass
-        assert issubclass(cls, ABC), (
-            "BaseDataset should be a subclass of ABC"
-        )
+        assert issubclass(cls, ABC), "BaseDataset should be a subclass of ABC"
 
 
 class TestContractRegistryClassContract:
@@ -797,9 +781,7 @@ class TestContractRegistryClassContract:
     def test_registry_has_method(self, datasets_pkg, method):
         """DatasetRegistry exposes the expected method."""
         cls = datasets_pkg.DatasetRegistry
-        assert hasattr(cls, method), (
-            f"DatasetRegistry should have '{method}' method"
-        )
+        assert hasattr(cls, method), f"DatasetRegistry should have '{method}' method"
 
     @pytest.mark.contract
     def test_registry_is_not_singleton(self, datasets_pkg):
@@ -813,8 +795,7 @@ class TestContractRegistryClassContract:
         instance1 = cls()
         instance2 = cls()
         assert instance1 is not instance2, (
-            "DatasetRegistry should NOT be a singleton — "
-            "two instances should be distinct objects"
+            "DatasetRegistry should NOT be a singleton — two instances should be distinct objects"
         )
 
 
@@ -830,9 +811,7 @@ class TestContractRegistryFunctionSignatures:
     def test_get_accepts_name_parameter(self, datasets_pkg):
         """``get`` function accepts at least one parameter (name)."""
         sig = inspect.signature(datasets_pkg.get)
-        assert len(sig.parameters) >= 1, (
-            "get() should accept at least one parameter (dataset name)"
-        )
+        assert len(sig.parameters) >= 1, "get() should accept at least one parameter (dataset name)"
 
     @pytest.mark.contract
     def test_list_all_is_callable(self, datasets_pkg):
@@ -843,9 +822,7 @@ class TestContractRegistryFunctionSignatures:
     def test_is_registered_accepts_name_parameter(self, datasets_pkg):
         """``is_registered`` function accepts at least one parameter."""
         sig = inspect.signature(datasets_pkg.is_registered)
-        assert len(sig.parameters) >= 1, (
-            "is_registered() should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "is_registered() should accept at least one parameter"
 
     @pytest.mark.contract
     def test_get_default_registry_is_callable(self, datasets_pkg):
@@ -857,8 +834,7 @@ class TestContractRegistryFunctionSignatures:
         """``get_default_registry()`` returns a DatasetRegistry instance."""
         result = datasets_pkg.get_default_registry()
         assert isinstance(result, datasets_pkg.DatasetRegistry), (
-            f"get_default_registry() should return DatasetRegistry, "
-            f"got {type(result).__name__}"
+            f"get_default_registry() should return DatasetRegistry, got {type(result).__name__}"
         )
 
 
@@ -873,13 +849,12 @@ class TestContractProtocolTypes:
         Per the project structure doc: DatasetHandlerProtocol is
         runtime_checkable with 11 methods.
         """
-        from typing import runtime_checkable, Protocol
+        from typing import Protocol
+
         proto = datasets_pkg.DatasetHandlerProtocol
-        assert issubclass(proto, Protocol), (
-            "DatasetHandlerProtocol should be a Protocol subclass"
-        )
+        assert issubclass(proto, Protocol), "DatasetHandlerProtocol should be a Protocol subclass"
         # runtime_checkable protocols have _is_runtime_protocol = True
-        assert getattr(proto, '_is_runtime_protocol', False), (
+        assert getattr(proto, "_is_runtime_protocol", False), (
             "DatasetHandlerProtocol should be @runtime_checkable"
         )
 
@@ -906,8 +881,8 @@ class TestContractProtocolTypes:
         # or as direct attributes on the class
         has_method = (
             hasattr(proto, method)
-            or method in getattr(proto, '__protocol_attrs__', set())
-            or method in getattr(proto, '__abstractmethods__', set())
+            or method in getattr(proto, "__protocol_attrs__", set())
+            or method in getattr(proto, "__abstractmethods__", set())
         )
         assert has_method, (
             f"DatasetHandlerProtocol should define '{method}' "
@@ -992,8 +967,7 @@ class TestContractGetModuleInfoContract:
         """get_module_info() result contains the expected key."""
         info = datasets_pkg.get_module_info()
         assert key in info, (
-            f"get_module_info() missing expected key '{key}'. "
-            f"Available keys: {sorted(info.keys())}"
+            f"get_module_info() missing expected key '{key}'. Available keys: {sorted(info.keys())}"
         )
 
     @pytest.mark.contract
@@ -1056,13 +1030,11 @@ class TestContractGetModuleInfoContract:
         info = datasets_pkg.get_module_info()
         phase_6 = info["phase_6_features"]
         assert isinstance(phase_6, dict), (
-            f"get_module_info()['phase_6_features'] should be dict, "
-            f"got {type(phase_6).__name__}"
+            f"get_module_info()['phase_6_features'] should be dict, got {type(phase_6).__name__}"
         )
         for key, value in phase_6.items():
             assert isinstance(value, bool), (
-                f"phase_6_features['{key}'] should be bool, "
-                f"got {type(value).__name__}"
+                f"phase_6_features['{key}'] should be bool, got {type(value).__name__}"
             )
 
     @pytest.mark.contract
@@ -1076,8 +1048,7 @@ class TestContractGetModuleInfoContract:
         )
         for key, value in st_features.items():
             assert isinstance(value, bool), (
-                f"standard_transforms_features['{key}'] should be bool, "
-                f"got {type(value).__name__}"
+                f"standard_transforms_features['{key}'] should be bool, got {type(value).__name__}"
             )
 
 
@@ -1105,12 +1076,9 @@ class TestContractCheckDependenciesContract:
     def test_always_true_dependency(self, datasets_pkg, key):
         """Dependencies that are always available should be True."""
         deps = datasets_pkg.check_dependencies()
-        assert key in deps, (
-            f"check_dependencies() missing expected key '{key}'"
-        )
+        assert key in deps, f"check_dependencies() missing expected key '{key}'"
         assert deps[key] is True, (
-            f"check_dependencies()['{key}'] should always be True, "
-            f"got {deps[key]}"
+            f"check_dependencies()['{key}'] should always be True, got {deps[key]}"
         )
 
     @pytest.mark.contract
@@ -1118,9 +1086,7 @@ class TestContractCheckDependenciesContract:
     def test_optional_dependency_key_exists(self, datasets_pkg, key):
         """Each optional dependency key exists in the result."""
         deps = datasets_pkg.check_dependencies()
-        assert key in deps, (
-            f"check_dependencies() missing expected key '{key}'"
-        )
+        assert key in deps, f"check_dependencies() missing expected key '{key}'"
 
     @pytest.mark.contract
     @pytest.mark.parametrize("key", OPTIONAL_DEPENDENCY_KEYS)
@@ -1128,8 +1094,7 @@ class TestContractCheckDependenciesContract:
         """Each optional dependency value is a boolean."""
         deps = datasets_pkg.check_dependencies()
         assert isinstance(deps[key], bool), (
-            f"check_dependencies()['{key}'] should be bool, "
-            f"got {type(deps[key]).__name__}"
+            f"check_dependencies()['{key}'] should be bool, got {type(deps[key]).__name__}"
         )
 
 
@@ -1185,8 +1150,7 @@ class TestContractInitializePluginsContract:
         sig = inspect.signature(datasets_pkg.initialize_plugins)
         param_names = set(sig.parameters.keys())
         assert "load_external" in param_names, (
-            f"initialize_plugins() should have 'load_external' parameter. "
-            f"Has: {param_names}"
+            f"initialize_plugins() should have 'load_external' parameter. Has: {param_names}"
         )
 
     @pytest.mark.contract
@@ -1195,8 +1159,7 @@ class TestContractInitializePluginsContract:
         sig = inspect.signature(datasets_pkg.initialize_plugins)
         param = sig.parameters["load_external"]
         assert param.default is True, (
-            f"initialize_plugins(load_external=) should default to True, "
-            f"got {param.default}"
+            f"initialize_plugins(load_external=) should default to True, got {param.default}"
         )
 
     @pytest.mark.contract
@@ -1220,9 +1183,7 @@ class TestContractDynamicGetAttrContract:
         assert "__getattr__" in module_dict, (
             "datasets/__init__.py should define a module-level __getattr__"
         )
-        assert callable(module_dict["__getattr__"]), (
-            "__getattr__ should be callable"
-        )
+        assert callable(module_dict["__getattr__"]), "__getattr__ should be callable"
 
     @pytest.mark.contract
     def test_getattr_raises_attributeerror_for_invalid_names(self, datasets_pkg):
@@ -1311,9 +1272,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_minimum_length(self, all_names):
@@ -1354,16 +1313,14 @@ class TestContractVersionConstantValues:
     def test_registry_version(self, datasets_pkg):
         """REGISTRY_VERSION is '1.0'."""
         assert datasets_pkg.REGISTRY_VERSION == "1.0", (
-            f"REGISTRY_VERSION should be '1.0', "
-            f"got '{datasets_pkg.REGISTRY_VERSION}'"
+            f"REGISTRY_VERSION should be '1.0', got '{datasets_pkg.REGISTRY_VERSION}'"
         )
 
     @pytest.mark.contract
     def test_implementations_version(self, datasets_pkg):
         """IMPLEMENTATIONS_VERSION is '1.0'."""
         assert datasets_pkg.IMPLEMENTATIONS_VERSION == "1.0", (
-            f"IMPLEMENTATIONS_VERSION should be '1.0', "
-            f"got '{datasets_pkg.IMPLEMENTATIONS_VERSION}'"
+            f"IMPLEMENTATIONS_VERSION should be '1.0', got '{datasets_pkg.IMPLEMENTATIONS_VERSION}'"
         )
 
     @pytest.mark.contract
@@ -1390,8 +1347,7 @@ class TestContractRegisteredDatasetsContract:
         for dataset_name in registered:
             cls = datasets_pkg.get(dataset_name)
             assert inspect.isclass(cls), (
-                f"get('{dataset_name}') should return a class, "
-                f"got {type(cls).__name__}"
+                f"get('{dataset_name}') should return a class, got {type(cls).__name__}"
             )
             assert issubclass(cls, datasets_pkg.BaseDataset), (
                 f"Registered dataset '{dataset_name}' ({cls.__name__}) should "
@@ -1408,8 +1364,7 @@ class TestContractRegisteredDatasetsContract:
         for dataset_name in registered:
             cls = datasets_pkg.get(dataset_name)
             assert hasattr(cls, "metadata"), (
-                f"Registered dataset '{dataset_name}' should have "
-                f"'metadata' class attribute"
+                f"Registered dataset '{dataset_name}' should have 'metadata' class attribute"
             )
             metadata = cls.metadata
             assert isinstance(metadata, datasets_pkg.DatasetMetadata), (
@@ -1427,8 +1382,7 @@ class TestContractRegisteredDatasetsContract:
         for dataset_name in registered:
             cls = datasets_pkg.get(dataset_name)
             assert hasattr(cls, "schema"), (
-                f"Registered dataset '{dataset_name}' should have "
-                f"'schema' class attribute"
+                f"Registered dataset '{dataset_name}' should have 'schema' class attribute"
             )
             schema = cls.schema
             assert isinstance(schema, datasets_pkg.DatasetSchema), (
@@ -1446,8 +1400,7 @@ class TestContractRegisteredDatasetsContract:
         for dataset_name in registered:
             cls = datasets_pkg.get(dataset_name)
             assert hasattr(cls, "features"), (
-                f"Registered dataset '{dataset_name}' should have "
-                f"'features' class attribute"
+                f"Registered dataset '{dataset_name}' should have 'features' class attribute"
             )
             features = cls.features
             assert isinstance(features, datasets_pkg.DatasetFeatures), (
@@ -1466,8 +1419,7 @@ class TestContractRegistryGetAndIsRegisteredConsistency:
         for name in registered:
             cls = datasets_pkg.get(name)
             assert inspect.isclass(cls), (
-                f"get('{name}') should return a class, "
-                f"got {type(cls).__name__}"
+                f"get('{name}') should return a class, got {type(cls).__name__}"
             )
 
     @pytest.mark.contract
@@ -1476,25 +1428,20 @@ class TestContractRegistryGetAndIsRegisteredConsistency:
         registered = datasets_pkg.list_all()
         for name in registered:
             assert datasets_pkg.is_registered(name), (
-                f"is_registered('{name}') should be True since '{name}' "
-                f"appears in list_all()"
+                f"is_registered('{name}') should be True since '{name}' appears in list_all()"
             )
 
     @pytest.mark.contract
     def test_is_registered_false_for_nonexistent(self, datasets_pkg):
         """is_registered() returns False for an unregistered name."""
         result = datasets_pkg.is_registered("ZZZCompletelyFakeDataset12345")
-        assert result is False, (
-            "is_registered() should return False for a non-existent dataset"
-        )
+        assert result is False, "is_registered() should return False for a non-existent dataset"
 
     @pytest.mark.contract
     def test_list_all_returns_no_duplicates(self, datasets_pkg):
         """list_all() does not return duplicate dataset names."""
         registered = datasets_pkg.list_all()
-        assert len(registered) == len(set(registered)), (
-            f"list_all() has duplicates: {registered}"
-        )
+        assert len(registered) == len(set(registered)), f"list_all() has duplicates: {registered}"
 
 
 class TestContractModuleDocstring:
@@ -1503,9 +1450,7 @@ class TestContractModuleDocstring:
     @pytest.mark.contract
     def test_module_has_docstring(self, datasets_pkg):
         """The datasets package has a non-empty docstring."""
-        assert datasets_pkg.__doc__ is not None, (
-            "datasets package should have a __doc__ string"
-        )
+        assert datasets_pkg.__doc__ is not None, "datasets package should have a __doc__ string"
         assert len(datasets_pkg.__doc__) > 100, (
             "datasets package docstring should be substantial (>100 chars)"
         )
@@ -1514,17 +1459,13 @@ class TestContractModuleDocstring:
     def test_docstring_mentions_milia(self, datasets_pkg):
         """The docstring references 'Milia' or 'milia'."""
         doc = datasets_pkg.__doc__.lower()
-        assert "milia" in doc, (
-            "datasets package docstring should mention 'Milia'"
-        )
+        assert "milia" in doc, "datasets package docstring should mention 'Milia'"
 
     @pytest.mark.contract
     def test_docstring_mentions_registry(self, datasets_pkg):
         """The docstring references the registry system."""
         doc = datasets_pkg.__doc__.lower()
-        assert "registry" in doc, (
-            "datasets package docstring should mention the registry system"
-        )
+        assert "registry" in doc, "datasets package docstring should mention the registry system"
 
 
 class TestContractListAllConsistentWithGetModuleInfo:

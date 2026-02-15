@@ -58,10 +58,10 @@ Usage Examples
 **Basic Preprocessing**:
     >>> from milia_pipeline.preprocessing import PreprocessorRegistry
     >>> import logging
-    >>> 
+    >>>
     >>> # Get preprocessor class
     >>> PreprocessorClass = PreprocessorRegistry.get_preprocessor("Wavefunction")
-    >>> 
+    >>>
     >>> # Configure preprocessing
     >>> config = {
     ...     'raw_tar_path': 'raw/wavefunctions.tar.gz',
@@ -69,7 +69,7 @@ Usage Examples
     ...     'num_molecules': 100,
     ...     'feature_tier': 'standard'
     ... }
-    >>> 
+    >>>
     >>> # Initialize and run
     >>> logger = logging.getLogger(__name__)
     >>> preprocessor = PreprocessorClass(config, logger)
@@ -78,7 +78,7 @@ Usage Examples
 
 **Check Preprocessing Support**:
     >>> from milia_pipeline.preprocessing import PreprocessorRegistry
-    >>> 
+    >>>
     >>> if PreprocessorRegistry.supports_preprocessing("Wavefunction"):
     ...     print("Wavefunction preprocessing is available")
 
@@ -89,16 +89,16 @@ Usage Examples
     ...     build_npz,
     ...     validate_npz_structure
     ... )
-    >>> 
+    >>>
     >>> # Extract archive
     >>> extracted_dir = extract_from_targz('raw/data.tar.gz', 'temp/')
-    >>> 
+    >>>
     >>> # Parse molecular data
     >>> molecules = parse_molden_files(extracted_dir)
-    >>> 
+    >>>
     >>> # Build NPZ file
     >>> output_path = build_npz(molecules, 'processed/output.npz')
-    >>> 
+    >>>
     >>> # Validate structure
     >>> validate_npz_structure(output_path)
 
@@ -114,13 +114,13 @@ To create a custom preprocessor:
 
 Example:
     >>> from milia_pipeline.preprocessing import BasePreprocessor, PreprocessorRegistry
-    >>> 
+    >>>
     >>> @PreprocessorRegistry.register("CustomDataset")
     >>> class CustomPreprocessor(BasePreprocessor):
     ...     def _validate_config(self):
     ...         # Validate configuration
     ...         pass
-    ...     
+    ...
     ...     def preprocess(self):
     ...         # Implement preprocessing logic
     ...         return output_path
@@ -173,7 +173,6 @@ import logging
 import warnings
 from typing import List, Optional
 
-
 # ============================================================================
 # Core Component Imports
 # ============================================================================
@@ -212,7 +211,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import wavefunction preprocessor: {e}. "
         "Wavefunction preprocessing will not be available.",
-        ImportWarning
+        ImportWarning,
     )
 
 # QM9 Preprocessor
@@ -221,9 +220,8 @@ try:
 except ImportError as e:
     _PREPROCESSOR_IMPORT_ERRORS.append(("qm9", str(e)))
     warnings.warn(
-        f"Failed to import qm9 preprocessor: {e}. "
-        "QM9 preprocessing will not be available.",
-        ImportWarning
+        f"Failed to import qm9 preprocessor: {e}. QM9 preprocessing will not be available.",
+        ImportWarning,
     )
 
 # ANI1x Preprocessor
@@ -232,9 +230,8 @@ try:
 except ImportError as e:
     _PREPROCESSOR_IMPORT_ERRORS.append(("ani1x", str(e)))
     warnings.warn(
-        f"Failed to import ani1x preprocessor: {e}. "
-        "ANI1x preprocessing will not be available.",
-        ImportWarning
+        f"Failed to import ani1x preprocessor: {e}. ANI1x preprocessing will not be available.",
+        ImportWarning,
     )
 
 
@@ -255,7 +252,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import archive_handlers utilities: {e}. "
         "Archive extraction functions will not be available.",
-        ImportWarning
+        ImportWarning,
     )
     extract_from_targz = None
 
@@ -267,22 +264,19 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import format_parsers utilities: {e}. "
         "Format parsing functions will not be available.",
-        ImportWarning
+        ImportWarning,
     )
     parse_molden_files = None
 
 # NPZ Building Utilities
 try:
-    from milia_pipeline.preprocessing.utils.npz_builders import (
-        build_npz,
-        validate_npz_structure
-    )
+    from milia_pipeline.preprocessing.utils.npz_builders import build_npz, validate_npz_structure
 except ImportError as e:
     _UTILITY_IMPORT_ERRORS.append(("npz_builders", str(e)))
     warnings.warn(
         f"Failed to import npz_builders utilities: {e}. "
         "NPZ building and validation functions will not be available.",
-        ImportWarning
+        ImportWarning,
     )
     build_npz = None
     validate_npz_structure = None
@@ -293,23 +287,20 @@ except ImportError as e:
 # ============================================================================
 
 # Module version
-__version__ = '1.1'
+__version__ = "1.1"
 
 # Public API - explicitly define what gets exported with "from preprocessing import *"
 __all__ = [
     # Core Classes
-    'BasePreprocessor',         # Abstract base for custom preprocessors
-    'PreprocessorRegistry',     # Registry for preprocessor management
-    
+    "BasePreprocessor",  # Abstract base for custom preprocessors
+    "PreprocessorRegistry",  # Registry for preprocessor management
     # Utility Functions - Archive Handling
-    'extract_from_targz',       # Extract files from tar.gz archives
-    
+    "extract_from_targz",  # Extract files from tar.gz archives
     # Utility Functions - Format Parsing
-    'parse_molden_files',       # Parse MOLDEN format files
-    
+    "parse_molden_files",  # Parse MOLDEN format files
     # Utility Functions - NPZ Building
-    'build_npz',                # Build NPZ files from molecular data
-    'validate_npz_structure',   # Validate NPZ file structure
+    "build_npz",  # Build NPZ files from molecular data
+    "validate_npz_structure",  # Validate NPZ file structure
 ]
 
 
@@ -323,7 +314,7 @@ _logger = logging.getLogger(__name__)
 
 def _log_initialization_status() -> None:
     """Log the initialization status of the preprocessing subsystem."""
-    
+
     # Log registered preprocessors
     registered = PreprocessorRegistry.list_preprocessors()
     if registered:
@@ -336,7 +327,7 @@ def _log_initialization_status() -> None:
             "Preprocessing subsystem initialized but no preprocessors were registered. "
             "Check for import errors."
         )
-    
+
     # Log preprocessor import errors if any
     if _PREPROCESSOR_IMPORT_ERRORS:
         _logger.warning(
@@ -344,12 +335,10 @@ def _log_initialization_status() -> None:
         )
         for name, error in _PREPROCESSOR_IMPORT_ERRORS:
             _logger.warning(f"  - {name}: {error}")
-    
+
     # Log utility import errors if any
     if _UTILITY_IMPORT_ERRORS:
-        _logger.warning(
-            f"Encountered {len(_UTILITY_IMPORT_ERRORS)} utility import error(s):"
-        )
+        _logger.warning(f"Encountered {len(_UTILITY_IMPORT_ERRORS)} utility import error(s):")
         for name, error in _UTILITY_IMPORT_ERRORS:
             _logger.warning(f"  - {name}: {error}")
 
@@ -357,14 +346,14 @@ def _log_initialization_status() -> None:
 def get_preprocessing_info() -> dict:
     """
     Get information about the preprocessing subsystem.
-    
+
     Returns:
         Dictionary containing:
         - version: Module version
         - registered_preprocessors: List of registered preprocessor names
         - available_utilities: List of successfully imported utility functions
         - import_errors: List of import errors encountered
-    
+
     Example:
         >>> from milia_pipeline.preprocessing import get_preprocessing_info
         >>> info = get_preprocessing_info()
@@ -372,18 +361,20 @@ def get_preprocessing_info() -> dict:
         >>> print(f"Preprocessors: {info['registered_preprocessors']}")
     """
     return {
-        'version': __version__,
-        'registered_preprocessors': PreprocessorRegistry.list_preprocessors(),
-        'available_utilities': [
-            name for name in [
-                'extract_from_targz',
-                'parse_molden_files',
-                'build_npz',
-                'validate_npz_structure'
-            ] if globals().get(name) is not None
+        "version": __version__,
+        "registered_preprocessors": PreprocessorRegistry.list_preprocessors(),
+        "available_utilities": [
+            name
+            for name in [
+                "extract_from_targz",
+                "parse_molden_files",
+                "build_npz",
+                "validate_npz_structure",
+            ]
+            if globals().get(name) is not None
         ],
-        'preprocessor_import_errors': _PREPROCESSOR_IMPORT_ERRORS,
-        'utility_import_errors': _UTILITY_IMPORT_ERRORS,
+        "preprocessor_import_errors": _PREPROCESSOR_IMPORT_ERRORS,
+        "utility_import_errors": _UTILITY_IMPORT_ERRORS,
     }
 
 
@@ -395,32 +386,30 @@ _log_initialization_status()
 # Module-Level Validation
 # ============================================================================
 
+
 def _validate_critical_components() -> None:
     """
     Validate that critical components are available.
-    
+
     Raises:
         RuntimeError: If critical components are missing
     """
     errors = []
-    
+
     # Check core classes
-    if 'BasePreprocessor' not in globals():
+    if "BasePreprocessor" not in globals():
         errors.append("BasePreprocessor is not available")
-    
-    if 'PreprocessorRegistry' not in globals():
+
+    if "PreprocessorRegistry" not in globals():
         errors.append("PreprocessorRegistry is not available")
-    
+
     # Check if at least one preprocessor is registered
     if not PreprocessorRegistry.list_preprocessors():
-        errors.append(
-            "No preprocessors registered - check preprocessor imports"
-        )
-    
+        errors.append("No preprocessors registered - check preprocessor imports")
+
     if errors:
         raise RuntimeError(
-            "Preprocessing subsystem initialization failed:\n  " +
-            "\n  ".join(errors)
+            "Preprocessing subsystem initialization failed:\n  " + "\n  ".join(errors)
         )
 
 
@@ -437,16 +426,17 @@ except RuntimeError as e:
 # Convenience Functions
 # ============================================================================
 
-def list_available_preprocessors() -> List[str]:
+
+def list_available_preprocessors() -> list[str]:
     """
     List all available preprocessors.
-    
+
     This is a convenience function that wraps PreprocessorRegistry.list_preprocessors()
     for easier access.
-    
+
     Returns:
         List of registered preprocessor names
-    
+
     Example:
         >>> from milia_pipeline.preprocessing import list_available_preprocessors
         >>> preprocessors = list_available_preprocessors()
@@ -458,16 +448,16 @@ def list_available_preprocessors() -> List[str]:
 def supports_dataset(dataset_type: str) -> bool:
     """
     Check if preprocessing is supported for a given dataset type.
-    
+
     This is a convenience function that wraps PreprocessorRegistry.supports_preprocessing()
     for easier access.
-    
+
     Args:
         dataset_type: Name/type of dataset to check
-    
+
     Returns:
         True if preprocessing is supported for this dataset type
-    
+
     Example:
         >>> from milia_pipeline.preprocessing import supports_dataset
         >>> if supports_dataset("Wavefunction"):
@@ -477,11 +467,13 @@ def supports_dataset(dataset_type: str) -> bool:
 
 
 # Add convenience functions to public API
-__all__.extend([
-    'get_preprocessing_info',
-    'list_available_preprocessors',
-    'supports_dataset',
-])
+__all__.extend(
+    [
+        "get_preprocessing_info",
+        "list_available_preprocessors",
+        "supports_dataset",
+    ]
+)
 
 
 # ============================================================================

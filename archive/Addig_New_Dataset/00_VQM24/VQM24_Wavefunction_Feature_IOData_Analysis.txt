@@ -12,10 +12,10 @@ Dataset: 500 .molden files in /root/Chem_Data/VQM24_PyG_Dataset/raw/wavefunction
 Parser: IOData (qc-iodata) with PyTorch 2.4.0
 Status: ✓ SUCCESSFUL - All features extracted and convertible to PyTorch tensors
 
-Key Finding: IOData extracts the COMPLETE quantum chemistry feature spectrum 
+Key Finding: IOData extracts the COMPLETE quantum chemistry feature spectrum
 from .molden files, providing full access to:
 - Molecular geometry
-- Basis set representation  
+- Basis set representation
 - Complete electronic wavefunction
 - Orbital energies and occupations
 - All quantum mechanical properties
@@ -140,7 +140,7 @@ DEPLOYMENT STRATEGY:
 Primary features for ML:
   ✓ nbasis: Single integer (wavefunction dimension)
   ✓ n_shells: Single integer (structure complexity)
-  
+
 Advanced features (optional):
   - Shell-by-shell breakdown
   - Exponent/coefficient details
@@ -162,7 +162,7 @@ MO Kind (mo.kind):
   - Type: String
   - Values: "restricted", "unrestricted", "generalized"
   - Example: "restricted" (closed-shell, single reference)
-  - Meaning: 
+  - Meaning:
     * "restricted": Paired electrons (most common)
     * "unrestricted": Unpaired electrons (radicals)
     * "generalized": Complex spin states
@@ -180,10 +180,10 @@ MO Coefficients (mo.coeffs):
   - Each column: One molecular orbital expressed in basis function basis
   - Size: ~44 KB per molecule (manageable!)
   - PyTorch: torch.float32 tensor
-  
+
   CRITICAL: This is the full quantum mechanical description!
   Each MO is: ψ_i = Σ(c_ij * φ_j) where φ_j are basis functions
-  
+
   Use cases:
     - Predicting properties from wavefunctions
     - Transfer learning for quantum chemistry
@@ -197,13 +197,13 @@ MO Energies (mo.energies):
   - Range: -89.04 to +3.26 Hartree in example
   - Content: Orbital eigenvalues from quantum calculation
   - PyTorch: torch.float32 tensor
-  
+
   Physical meaning:
     - Negative energies: Bound states
     - Positive energies: Continuum states
     - Large negative: Core electrons (tightly bound)
     - Near zero: Valence electrons (chemically active)
-  
+
   Use cases:
     - Direct ML targets (predicting orbital energies)
     - Features for property prediction
@@ -215,12 +215,12 @@ MO Occupations (mo.occs):
   - Values: 0.0 (empty), 2.0 (filled), or fractional (special cases)
   - Example: 36 orbitals with 2.0, 70 orbitals with 0.0
   - PyTorch: torch.float32 tensor
-  
+
   Physical meaning:
     - Occupation = 2.0: Doubly occupied (paired electrons)
     - Occupation = 0.0: Virtual (unoccupied)
     - Sum of occupations = Total number of electrons
-  
+
   Use cases:
     - Identifying occupied vs virtual orbitals
     - Electron counting
@@ -264,7 +264,7 @@ DERIVED MO FEATURES:
      * Large gap (>5 eV): Stable, unreactive, insulator
      * Small gap (<3 eV): Reactive, semiconductor
      * Example gap (8.04 eV): Very stable molecule
-   
+
    Use cases:
      - Primary ML target for property prediction
      - Reactivity prediction
@@ -436,11 +436,11 @@ REQUIRED COMPONENTS:
    - Option A: One-hot encoded atomic numbers
      * Shape: [n_atoms, n_elements]
      * Example: [9, 118] for all elements
-   
+
    - Option B: Atomic number only
      * Shape: [n_atoms, 1]
      * Example: [9, 1]
-   
+
    - Option C: Extended features
      * Atomic number + electronegativity + radius + ...
      * Shape: [n_atoms, n_features]
@@ -579,7 +579,7 @@ PERFORMANCE:
 -----------
 Parsing time: ~5-10 seconds per file with IOData
 Bottleneck: Disk I/O and normalization checks
-Recommendation: 
+Recommendation:
   - Batch processing with multiprocessing
   - Cache parsed data (pickle or HDF5)
   - Lazy loading for large datasets
@@ -614,7 +614,7 @@ Recommended YAML structure for VQM24 Handler:
 wavefunction_dataset:
   name: "VQM24_Wavefunction"
   data_dir: "/root/Chem_Data/VQM24_PyG_Dataset/raw/wavefunction_sliced"
-  
+
   # Feature selection
   features:
     # Geometric features
@@ -622,43 +622,43 @@ wavefunction_dataset:
       atomic_numbers: true
       coordinates: true
       coordinate_units: "bohr"  # or "angstrom"
-    
+
     # Basic electronic features
     electronic_basic:
       homo_energy: true
       lumo_energy: true
       homo_lumo_gap: true
       n_electrons: true
-    
+
     # Detailed electronic features
     electronic_detailed:
       mo_energies: true
       mo_occupations: true
       n_basis_functions: true
-    
+
     # Full wavefunction
     wavefunction:
       mo_coefficients: false  # Set true only if needed
-    
+
     # Derived features
     derived:
       molecular_weight: true
       center_of_mass: false
       distance_matrix: false  # Expensive
-  
+
   # PyG graph construction
   graph:
     edge_construction: "distance_cutoff"  # or "knn", "rdkit", "fully_connected"
     distance_cutoff: 3.0  # Bohr
     k_neighbors: 5  # if using knn
-    
+
   # Data processing
   processing:
     cache_parsed: true
     cache_format: "hdf5"  # or "pickle", "pt"
     cache_path: "./cache/wavefunction_cache.h5"
     lazy_loading: false  # Set true for large datasets
-    
+
   # Training
   training:
     batch_size: 32
@@ -677,7 +677,7 @@ CLASS STRUCTURE:
 class WavefunctionDatasetHandler:
     """
     Handler for VQM24 Wavefunction dataset (.molden files)
-    
+
     Features:
     - YAML-configurable feature extraction
     - Tiered loading (Tier 1-4)
@@ -686,39 +686,39 @@ class WavefunctionDatasetHandler:
     - Caching support (HDF5, pickle)
     - Lazy loading for large datasets
     """
-    
+
     def __init__(self, config_path: str):
         """Load configuration and initialize handler"""
         pass
-    
+
     def parse_molden_file(self, filepath: str) -> Dict:
         """Parse single .molden file with IOData"""
         pass
-    
+
     def extract_features(self, mol_data, tier: int = 3) -> Dict:
         """Extract features based on configuration tier"""
         pass
-    
+
     def to_pytorch_tensors(self, features: Dict) -> Dict:
         """Convert NumPy arrays to PyTorch tensors"""
         pass
-    
+
     def to_pyg_data(self, features: Dict) -> Data:
         """Create PyG Data object"""
         pass
-    
+
     def build_cache(self):
         """Parse all files and build cache"""
         pass
-    
+
     def load_from_cache(self, index: int) -> Data:
         """Load preprocessed data from cache"""
         pass
-    
+
     def __getitem__(self, index: int) -> Data:
         """PyTorch Dataset interface"""
         pass
-    
+
     def __len__(self) -> int:
         """Dataset size"""
         pass
@@ -796,13 +796,13 @@ Primary:
   - HOMO-LUMO gap prediction
   - Orbital energy prediction
   - Total energy prediction
-  
+
 Secondary:
   - Dipole moment
   - Polarizability
   - Excitation energies
   - Ionization potential / Electron affinity
-  
+
 Advanced:
   - Reaction barriers
   - Molecular properties from wavefunction
@@ -814,18 +814,18 @@ Advanced:
 
 IOData Library:
 --------------
-T. Verstraelen, W. Adams, L. Pujal, A. Tehrani, B. D. Kelly, L. Macaya, 
-F. Meng, M. Richer, R. Hernandez-Esparza, X. D. Yang, M. Chan, T. D. Kim, 
-M. Cools-Ceuppens, V. Chuiko, E. Vohringer-Martinez, P. W. Ayers, 
+T. Verstraelen, W. Adams, L. Pujal, A. Tehrani, B. D. Kelly, L. Macaya,
+F. Meng, M. Richer, R. Hernandez-Esparza, X. D. Yang, M. Chan, T. D. Kim,
+M. Cools-Ceuppens, V. Chuiko, E. Vohringer-Martinez, P. W. Ayers,
 F. Heidar-Zadeh
-"IOData: A python library for reading, writing, and converting computational 
+"IOData: A python library for reading, writing, and converting computational
 chemistry file formats and generating input files"
 Journal of Computational Chemistry, 2021, 42(6), 458-464
 
 Molden Format:
 -------------
 G. Schaftenaar, J.H. Noordik
-"Molden: a pre- and post-processing program for molecular and electronic 
+"Molden: a pre- and post-processing program for molecular and electronic
 structures"
 Journal of Computer-Aided Molecular Design, 2000, 14, 123-134
 
@@ -839,22 +839,22 @@ ICLR Workshop on Representation Learning on Graphs and Manifolds, 2019
 14. GLOSSARY
 ================================================================================
 
-HOMO: Highest Occupied Molecular Orbital - the highest energy orbital 
+HOMO: Highest Occupied Molecular Orbital - the highest energy orbital
       containing electrons. Related to ionization potential.
 
-LUMO: Lowest Unoccupied Molecular Orbital - the lowest energy orbital 
+LUMO: Lowest Unoccupied Molecular Orbital - the lowest energy orbital
       without electrons. Related to electron affinity.
 
-HOMO-LUMO Gap: Energy difference between HOMO and LUMO. Key descriptor for 
+HOMO-LUMO Gap: Energy difference between HOMO and LUMO. Key descriptor for
               stability, reactivity, and optical properties.
 
-Basis Function: Mathematical function used to construct molecular orbitals. 
+Basis Function: Mathematical function used to construct molecular orbitals.
                Typically Gaussian functions centered on atoms.
 
 Molecular Orbital: Wavefunction describing electron distribution in molecule.
                   Linear combination of basis functions.
 
-MO Coefficients: Expansion coefficients for molecular orbitals in terms of 
+MO Coefficients: Expansion coefficients for molecular orbitals in terms of
                 basis functions. Complete wavefunction representation.
 
 Hartree: Atomic unit of energy. 1 Hartree = 27.211 eV = 627.5 kcal/mol
@@ -863,7 +863,7 @@ Bohr: Atomic unit of length. 1 Bohr = 0.529177 Angstrom
 
 GTO: Gaussian Type Orbital - basis function type used in quantum chemistry
 
-Restricted: Wavefunction type where alpha and beta electrons share same 
+Restricted: Wavefunction type where alpha and beta electrons share same
            spatial orbitals (closed-shell molecules)
 
 Unrestricted: Wavefunction type where alpha and beta electrons have different
@@ -873,7 +873,7 @@ Unrestricted: Wavefunction type where alpha and beta electrons have different
 END OF SYSTEMATIC ANALYSIS
 ================================================================================
 
-This document provides the COMPLETE feature spectrum available from .molden 
+This document provides the COMPLETE feature spectrum available from .molden
 files via IOData for deployment in the VQM24 Python software.
 
 All features are extractable, convertible to PyTorch tensors, and compatible

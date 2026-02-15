@@ -1,10 +1,10 @@
 # MILIA Pipeline: Mock Pollution Prevention Guide
 
-**Project:** MILIA Pipeline  
-**Version:** 1.0.0  
-**Date:** 2026-02-11  
-**Evidence Base:** 8 polluter files hardened, 1,132 tests verified, 22,575 full-suite collection with 0 errors  
-**Companion Document:** `MILIA_Test_Infrastructure_Tracker.md` §4.3–§4.4  
+**Project:** MILIA Pipeline
+**Version:** 1.0.0
+**Date:** 2026-02-11
+**Evidence Base:** 8 polluter files hardened, 1,132 tests verified, 22,575 full-suite collection with 0 errors
+**Companion Document:** `MILIA_Test_Infrastructure_Tracker.md` §4.3–§4.4
 
 ---
 

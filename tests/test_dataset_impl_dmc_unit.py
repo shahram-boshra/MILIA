@@ -34,32 +34,27 @@ Evidence sources:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.dmc import DMCDataset
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
 )
+from milia_pipeline.datasets.implementations.dmc import DMCDataset
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from dmc.py source
@@ -67,36 +62,34 @@ from milia_pipeline.datasets.registry import (
 
 EXPECTED_METADATA_NAME = "DMC"
 EXPECTED_METADATA_VERSION = "1.0.0"
-EXPECTED_METADATA_DESCRIPTION = (
-    "DMC quantum Monte Carlo dataset with uncertainty handling"
-)
+EXPECTED_METADATA_DESCRIPTION = "DMC quantum Monte Carlo dataset with uncertainty handling"
 EXPECTED_METADATA_AUTHOR = "MILIA Pipeline Team"
 
-EXPECTED_REQUIRED_PROPERTIES = ('Etot', 'std', 'atoms', 'coordinates')
-EXPECTED_OPTIONAL_PROPERTIES = ('qmc_stats', 'correlation_data')
-EXPECTED_IDENTIFIER_KEYS = (('inchi', 'inchi'), ('graphs', 'smiles'))
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_REQUIRED_PROPERTIES = ("Etot", "std", "atoms", "coordinates")
+EXPECTED_OPTIONAL_PROPERTIES = ("qmc_stats", "correlation_data")
+EXPECTED_IDENTIFIER_KEYS = (("inchi", "inchi"), ("graphs", "smiles"))
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': True,
-    'atomization_energy': False,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": False,
+    "uncertainty_handling": True,
+    "atomization_energy": False,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "dmc_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'identifier_coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "identifier_coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -106,6 +99,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: DMCDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestDMCDatasetClassIdentity(unittest.TestCase):
     """Verify DMCDataset is a proper BaseDataset subclass with correct identity."""
@@ -156,6 +150,7 @@ class TestDMCDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: DMCDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestDMCDatasetRegistration(unittest.TestCase):
     """Verify DMCDataset is registered via @register decorator."""
 
@@ -176,6 +171,7 @@ class TestDMCDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class (project structure line 372).
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("DMC")
         self.assertIs(retrieved, DMCDataset)
 
@@ -185,6 +181,7 @@ class TestDMCDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names (project structure line 372).
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("DMC", all_names)
 
@@ -193,9 +190,7 @@ class TestDMCDatasetRegistration(unittest.TestCase):
 
         Evidence: dmc.py line 22 imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[DMCDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[DMCDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -211,6 +206,7 @@ class TestDMCDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: DMCDataset.metadata — DatasetMetadata (6 tests)
 # ============================================================================
+
 
 class TestDMCDatasetMetadata(unittest.TestCase):
     """Verify DMCDataset.metadata is a correctly configured DatasetMetadata.
@@ -255,6 +251,7 @@ class TestDMCDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: DMCDataset.schema — DatasetSchema (8 tests)
 # ============================================================================
+
 
 class TestDMCDatasetSchema(unittest.TestCase):
     """Verify DMCDataset.schema is a correctly configured DatasetSchema.
@@ -312,7 +309,7 @@ class TestDMCDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            DMCDataset.schema.required_properties = ('modified',)
+            DMCDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -323,6 +320,7 @@ class TestDMCDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: DMCDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestDMCDatasetFeatures(unittest.TestCase):
     """Verify DMCDataset.features is a correctly configured DatasetFeatures.
@@ -397,6 +395,7 @@ class TestDMCDatasetFeatures(unittest.TestCase):
 # GROUP 6: DMCDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestDMCDatasetConfigKey(unittest.TestCase):
     """Verify DMCDataset.config_key is correctly set.
 
@@ -416,6 +415,7 @@ class TestDMCDatasetConfigKey(unittest.TestCase):
 # GROUP 7: DMCDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestDMCDatasetGetRequiredProperties(unittest.TestCase):
     """Verify DMCDataset.get_required_properties() classmethod.
 
@@ -425,7 +425,7 @@ class TestDMCDatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = DMCDataset.__dict__.get('get_required_properties')
+        descriptor = DMCDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -468,6 +468,7 @@ class TestDMCDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: DMCDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestDMCDatasetGetFeatureSupport(unittest.TestCase):
     """Verify DMCDataset.get_feature_support() classmethod.
 
@@ -477,7 +478,7 @@ class TestDMCDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = DMCDataset.__dict__.get('get_feature_support')
+        descriptor = DMCDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -526,6 +527,7 @@ class TestDMCDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: DMCDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestDMCDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify DMCDataset.get_molecule_creation_strategy() classmethod.
 
@@ -535,7 +537,7 @@ class TestDMCDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = DMCDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = DMCDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -555,7 +557,7 @@ class TestDMCDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(DMCDataset, 'get_molecule_creation_strategy')
+        method = DMCDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -563,6 +565,7 @@ class TestDMCDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: DMCDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestDMCDatasetCreateHandler(unittest.TestCase):
     """Verify DMCDataset.create_handler() factory method with lazy import.
@@ -574,7 +577,7 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = DMCDataset.__dict__.get('create_handler')
+        descriptor = DMCDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -589,13 +592,19 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = DMCDataset.__dict__['create_handler'].__func__
+        unbound_func = DMCDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -604,7 +613,7 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
         Evidence: dmc.py line 97: experimental_setup=None.
         """
         sig = inspect.signature(DMCDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -624,11 +633,11 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockDMCDatasetHandler')
+            mock_handler_cls = Mock(name="MockDMCDatasetHandler")
             mock_module = MagicMock()
             mock_module.DMCDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.dmc'
+            handler_mod_key = "milia_pipeline.handlers.implementations.dmc"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -663,11 +672,11 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 
         Evidence: dmc.py lines 114-119.
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -691,7 +700,7 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 
         Evidence: dmc.py line 114: return DMCDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = DMCDataset.create_handler(
@@ -704,7 +713,7 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring."""
-        method = getattr(DMCDataset, 'create_handler')
+        method = DMCDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -712,6 +721,7 @@ class TestDMCDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: DMCDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestDMCDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify DMCDataset.handler_class is None (default from BaseDataset).
@@ -749,6 +759,7 @@ class TestDMCDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: DMCDataset — Method Signatures and Return Annotations (6 tests)
 # ============================================================================
 
+
 class TestDMCDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -759,35 +770,35 @@ class TestDMCDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -795,6 +806,7 @@ class TestDMCDatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 13: DMCDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestDMCDatasetMethodDocstrings(unittest.TestCase):
     """Verify each DMCDataset method has a non-empty docstring."""
@@ -805,27 +817,26 @@ class TestDMCDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(DMCDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
     def test_get_required_properties_docstring_mentions_evidence(self):
         """get_required_properties docstring references config_constants.py."""
-        method = getattr(DMCDataset, 'get_required_properties')
+        method = DMCDataset.get_required_properties
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_feature_support_docstring_mentions_evidence(self):
         """get_feature_support docstring references config_constants.py."""
-        method = getattr(DMCDataset, 'get_feature_support')
+        method = DMCDataset.get_feature_support
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_molecule_creation_strategy_docstring_mentions_evidence(self):
         """get_molecule_creation_strategy docstring references dataset_handlers.py."""
-        method = getattr(DMCDataset, 'get_molecule_creation_strategy')
+        method = DMCDataset.get_molecule_creation_strategy
         self.assertIn("dataset_handlers", method.__doc__)
 
 
@@ -833,18 +844,21 @@ class TestDMCDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: DMCDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the dmc implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The dmc.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.dmc as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_dmc_dataset(self):
         """DMCDataset is importable from the implementations.dmc module."""
         import milia_pipeline.datasets.implementations.dmc as mod
+
         self.assertTrue(hasattr(mod, "DMCDataset"))
         self.assertIs(mod.DMCDataset, DMCDataset)
 
@@ -853,9 +867,7 @@ class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: dmc.py lines 17-22.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dmc']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dmc"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -867,9 +879,7 @@ class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: dmc.py line 22.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dmc']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dmc"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -883,9 +893,7 @@ class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.dmc']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.dmc"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -896,10 +904,12 @@ class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -923,6 +933,7 @@ class TestDMCDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: DMCDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestDMCDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with DMC.
 
@@ -941,14 +952,14 @@ class TestDMCDatasetFeaturesIntegration(unittest.TestCase):
         Key DMC-specific feature: uncertainty handling is the distinguishing
         capability of DMC datasets (includes statistical std values).
         """
-        self.assertTrue(DMCDataset.features.supports('uncertainty_handling'))
+        self.assertTrue(DMCDataset.features.supports("uncertainty_handling"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         Key difference from DFT: DMC does NOT support vibrational analysis.
         """
-        self.assertFalse(DMCDataset.features.supports('vibrational_analysis'))
+        self.assertFalse(DMCDataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -959,6 +970,7 @@ class TestDMCDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: DMCDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestDMCDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -993,6 +1005,7 @@ class TestDMCDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: DMCDataset — Edge Cases and Robustness (5 tests)
 # ============================================================================
+
 
 class TestDMCDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of DMCDataset."""
@@ -1036,10 +1049,10 @@ class TestDMCDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockDMCDatasetHandler')
+            mock_handler_cls = Mock(name="MockDMCDatasetHandler")
             mock_module = MagicMock()
             mock_module.DMCDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.dmc'
+            handler_mod_key = "milia_pipeline.handlers.implementations.dmc"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1067,15 +1080,16 @@ class TestDMCDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. DMCDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', DMCDataset.__dict__)
-        self.assertIn('schema', DMCDataset.__dict__)
-        self.assertIn('features', DMCDataset.__dict__)
-        self.assertIn('config_key', DMCDataset.__dict__)
+        self.assertIn("metadata", DMCDataset.__dict__)
+        self.assertIn("schema", DMCDataset.__dict__)
+        self.assertIn("features", DMCDataset.__dict__)
+        self.assertIn("config_key", DMCDataset.__dict__)
 
 
 # ============================================================================
 # GROUP 18: DMCDataset — DMC-Specific Differentiation (6 tests)
 # ============================================================================
+
 
 class TestDMCDatasetDifferentiation(unittest.TestCase):
     """Verify DMC-specific characteristics that distinguish it from DFT.
@@ -1090,7 +1104,7 @@ class TestDMCDatasetDifferentiation(unittest.TestCase):
         Key difference: DFT does NOT require 'std'; DMC does.
         """
         result = DMCDataset.get_required_properties()
-        self.assertIn('std', result)
+        self.assertIn("std", result)
 
     def test_uncertainty_handling_is_enabled(self):
         """DMC enables uncertainty_handling feature (DFT does not).
@@ -1121,8 +1135,8 @@ class TestDMCDatasetDifferentiation(unittest.TestCase):
         DFT has vibrational-specific optional properties instead.
         """
         optional = DMCDataset.schema.optional_properties
-        self.assertIn('qmc_stats', optional)
-        self.assertIn('correlation_data', optional)
+        self.assertIn("qmc_stats", optional)
+        self.assertIn("correlation_data", optional)
 
     def test_config_key_is_dmc_specific(self):
         """config_key is 'dmc_config' (not 'dft_config').
@@ -1137,30 +1151,31 @@ class TestDMCDatasetDifferentiation(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDMCDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestDMCDatasetRegistration,                  # GROUP 2:  5 tests
-        TestDMCDatasetMetadata,                      # GROUP 3:  6 tests
-        TestDMCDatasetSchema,                        # GROUP 4:  8 tests
-        TestDMCDatasetFeatures,                      # GROUP 5: 10 tests
-        TestDMCDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestDMCDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestDMCDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestDMCDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestDMCDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestDMCDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestDMCDatasetMethodSignatures,              # GROUP 12: 6 tests
-        TestDMCDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestDMCDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestDMCDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestDMCDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestDMCDatasetEdgeCases,                     # GROUP 17: 5 tests
-        TestDMCDatasetDifferentiation,               # GROUP 18: 6 tests
+        TestDMCDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestDMCDatasetRegistration,  # GROUP 2:  5 tests
+        TestDMCDatasetMetadata,  # GROUP 3:  6 tests
+        TestDMCDatasetSchema,  # GROUP 4:  8 tests
+        TestDMCDatasetFeatures,  # GROUP 5: 10 tests
+        TestDMCDatasetConfigKey,  # GROUP 6:  2 tests
+        TestDMCDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestDMCDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestDMCDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestDMCDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestDMCDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestDMCDatasetMethodSignatures,  # GROUP 12: 6 tests
+        TestDMCDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestDMCDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestDMCDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestDMCDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestDMCDatasetEdgeCases,  # GROUP 17: 5 tests
+        TestDMCDatasetDifferentiation,  # GROUP 18: 6 tests
     ]
 
     for test_class in test_classes:

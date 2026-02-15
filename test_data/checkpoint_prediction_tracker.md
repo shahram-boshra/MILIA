@@ -2,8 +2,8 @@
 
 ## Current Status: ✅ IMPLEMENTATION COMPLETE
 
-**Last Updated**: 2025-12-25  
-**Status**: All 6 fixes implemented and verified  
+**Last Updated**: 2025-12-25
+**Status**: All 6 fixes implemented and verified
 **All Tracker Claims**: ✅ Verified against actual source code
 
 ---
@@ -88,7 +88,7 @@ But training datasets can have ANY number of features depending on:
 
 ### Key Insight (Verified via Web Search)
 
-The question is **NOT** "What are the 18 features?" 
+The question is **NOT** "What are the 18 features?"
 
 The correct question is: **"How do we ensure test data is featurized identically to training data?"**
 
@@ -192,7 +192,7 @@ MILIA needs a **unified featurization system** that:
 ### This Works for ANY Input Format
 
 - **SMILES**: Featurizer converts SMILES → PyG Data with N features
-- **InChI**: Featurizer converts InChI → PyG Data with N features  
+- **InChI**: Featurizer converts InChI → PyG Data with N features
 - **XYZ**: Featurizer converts XYZ → PyG Data with N features
 - **SDF/MOL**: Featurizer converts SDF → PyG Data with N features
 
@@ -301,7 +301,7 @@ if hasattr(actual_model, 'in_channels'):
 ### Test Data Conversion (main.py lines 3215-3217)
 ```python
 # Currently uses SMILESConverter with 6 default features
-data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None) 
+data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None)
             for inp in inputs]
 ```
 
@@ -441,7 +441,7 @@ self.atom_features = atom_features or [
 
 #### 8. convert_to_pyg Has No Access to Featurization Config (VERIFIED - main.py line 3216)
 ```python
-data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None) 
+data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None)
             for inp in inputs]  # NO structural_features_config passed!
 ```
 **The bridge between checkpoint and conversion is completely missing.**
@@ -472,7 +472,7 @@ TRAINING LAYER (Save featurization config)
 ├── main.py ─────────────────► Add structural_features_config to model_info
 └── callbacks.py ────────────► Save structural_features_config in checkpoint['data_info']
 
-LOADING LAYER (Expose featurization config)  
+LOADING LAYER (Expose featurization config)
 ├── model_loader.py ─────────► Include data_info in returned model_info
 └── predictor.py ────────────► Store and expose data_info/structural_features_config
 
@@ -487,8 +487,8 @@ INFERENCE LAYER (Apply featurization config)
 
 #### Fix 16: main.py - Add structural_features_config to model_info
 
-**File**: `milia_pipeline/main.py`  
-**Function**: `_run_standard_training()`  
+**File**: `milia_pipeline/main.py`
+**Function**: `_run_standard_training()`
 **Location**: Insert BEFORE line 3639 (before comment `# 7. Create trainer with model_info for target selection`)
 
 **VERIFIED Current Code** (lines 3639-3652):
@@ -520,7 +520,7 @@ INFERENCE LAYER (Apply featurization config)
         # ====================================================================
         if model_info is None:
             model_info = {}
-        
+
         # Capture structural_features_config from dataset for checkpoint saving
         if hasattr(dataset, 'structural_features_config') and dataset.structural_features_config:
             model_info['structural_features_config'] = dataset.structural_features_config
@@ -531,10 +531,10 @@ INFERENCE LAYER (Apply featurization config)
             )
         else:
             logger.debug("No structural_features_config found on dataset - checkpoint will use default featurization")
-        
+
 ```
 
-**Evidence (VERIFIED from source files)**: 
+**Evidence (VERIFIED from source files)**:
 - `dataset` parameter is available in function signature (main.py line 3328)
 - `dataset.structural_features_config` exists (milia_dataset.py line 559: `self.structural_features_config: Dict[str, Any] = full_config.get('structural_features', {})`)
 - `model_info` is passed to Trainer and stored as `trainer.model_info` (main.py line 3650)
@@ -543,9 +543,9 @@ INFERENCE LAYER (Apply featurization config)
 
 #### Fix 17: callbacks.py - Save to Checkpoint
 
-**File**: `milia_pipeline/models/training/callbacks.py`  
-**Class**: `ModelCheckpoint`  
-**Method**: `_save_checkpoint()`  
+**File**: `milia_pipeline/models/training/callbacks.py`
+**Class**: `ModelCheckpoint`
+**Method**: `_save_checkpoint()`
 **Location**: Lines 559-562 (data_info section)
 
 **VERIFIED Current Code** (callbacks.py lines 559-562):
@@ -583,8 +583,8 @@ INFERENCE LAYER (Apply featurization config)
 
 #### Fix 18: model_loader.py - Include data_info in model_info
 
-**File**: `milia_pipeline/models/post_training/inference/model_loader.py`  
-**Method**: `_load()`  
+**File**: `milia_pipeline/models/post_training/inference/model_loader.py`
+**Method**: `_load()`
 **Location**: Lines 352-358 (before return statement)
 
 **VERIFIED Current Code** (model_loader.py lines 352-358):
@@ -595,10 +595,10 @@ INFERENCE LAYER (Apply featurization config)
         # ═══════════════════════════════════════════════════════════════
         final_model_info = {**model_info}  # Start with recreated
         final_model_info.update(saved_model_info)  # Override with saved
-        
+
         logger.info(f"Model loaded successfully from {resolved_checkpoint_path}")
         logger.debug(f"Model info: uses_edge_features={final_model_info.get('uses_edge_features')}")
-        
+
         return model, final_model_info
 ```
 
@@ -610,7 +610,7 @@ INFERENCE LAYER (Apply featurization config)
         # ═══════════════════════════════════════════════════════════════
         final_model_info = {**model_info}  # Start with recreated
         final_model_info.update(saved_model_info)  # Override with saved
-        
+
         # ═══════════════════════════════════════════════════════════════
         # FIX 18: INCLUDE data_info FOR FEATURIZATION CONFIG ACCESS
         # ═══════════════════════════════════════════════════════════════
@@ -626,10 +626,10 @@ INFERENCE LAYER (Apply featurization config)
                     f"Featurization config loaded from checkpoint: "
                     f"atom={list(data_info['structural_features_config'].get('atom', []))}"
                 )
-        
+
         logger.info(f"Model loaded successfully from {resolved_checkpoint_path}")
         logger.debug(f"Model info: uses_edge_features={final_model_info.get('uses_edge_features')}")
-        
+
         return model, final_model_info
 ```
 
@@ -642,8 +642,8 @@ INFERENCE LAYER (Apply featurization config)
 
 #### Fix 19: predictor.py - Store and Expose model_info
 
-**File**: `milia_pipeline/models/post_training/inference/predictor.py`  
-**Class**: `Predictor`  
+**File**: `milia_pipeline/models/post_training/inference/predictor.py`
+**Class**: `Predictor`
 **Methods**: `__init__()` and `from_checkpoint()`
 
 **VERIFIED Current Code** (`__init__`, predictor.py lines 60-84):
@@ -657,7 +657,7 @@ INFERENCE LAYER (Apply featurization config)
     ):
         """
         Initialize predictor.
-        
+
         Args:
             model: PyTorch model (should be in eval mode)
             working_root_dir: Base directory for resolving relative paths.
@@ -669,7 +669,7 @@ INFERENCE LAYER (Apply featurization config)
         self._working_root_dir = Path(working_root_dir).expanduser().resolve()
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.task_type = task_type
-        
+
         # Ensure model is on correct device and in eval mode
         self.model.to(self.device)
         self.model.eval()
@@ -687,7 +687,7 @@ INFERENCE LAYER (Apply featurization config)
     ):
         """
         Initialize predictor.
-        
+
         Args:
             model: PyTorch model (should be in eval mode)
             working_root_dir: Base directory for resolving relative paths.
@@ -700,7 +700,7 @@ INFERENCE LAYER (Apply featurization config)
         self._working_root_dir = Path(working_root_dir).expanduser().resolve()
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.task_type = task_type
-        
+
         # ====================================================================
         # FIX 19: STORE model_info FOR FEATURIZATION CONFIG ACCESS
         # ====================================================================
@@ -709,7 +709,7 @@ INFERENCE LAYER (Apply featurization config)
         # FUTURE-PROOF: Works with any model_info structure
         # ====================================================================
         self.model_info = model_info or {}
-        
+
         # Ensure model is on correct device and in eval mode
         self.model.to(self.device)
         self.model.eval()
@@ -724,12 +724,12 @@ INFERENCE LAYER (Apply featurization config)
             device=device,
             **loader_kwargs
         )
-        
+
         # Get task_type from checkpoint
         checkpoint = cm.load(resolved_path)
         hyper_params = checkpoint.get('hyper_parameters', {})
         task_type = hyper_params.get('task_type')
-        
+
         return cls(model=model, working_root_dir=working_root_dir, device=device, task_type=task_type)
 ```
 
@@ -742,17 +742,17 @@ INFERENCE LAYER (Apply featurization config)
             device=device,
             **loader_kwargs
         )
-        
+
         # Get task_type from checkpoint
         checkpoint = cm.load(resolved_path)
         hyper_params = checkpoint.get('hyper_parameters', {})
         task_type = hyper_params.get('task_type')
-        
+
         # FIX 19: Pass model_info to __init__ (contains data_info with structural_features_config)
         return cls(
-            model=model, 
-            working_root_dir=working_root_dir, 
-            device=device, 
+            model=model,
+            working_root_dir=working_root_dir,
+            device=device,
             task_type=task_type,
             model_info=model_info  # FIX 19: Pass model_info for featurization config access
         )
@@ -771,10 +771,10 @@ INFERENCE LAYER (Apply featurization config)
     def structural_features_config(self) -> Optional[Dict[str, Any]]:
         """
         Get structural features config from checkpoint for featurization.
-        
+
         Returns:
             Dict with 'atom' and 'bond' feature lists, or None if not available.
-            
+
         Example:
             >>> predictor = Predictor.from_checkpoint("model.pt", working_root_dir=Path("."))
             >>> config = predictor.structural_features_config
@@ -798,7 +798,7 @@ INFERENCE LAYER (Apply featurization config)
 
 #### Fix 20: data_converter.py - DYNAMIC Post-Processing Solution
 
-**File**: `milia_pipeline/models/post_training/data_preparation/data_converter.py`  
+**File**: `milia_pipeline/models/post_training/data_preparation/data_converter.py`
 **Solution**: Post-processing in `convert_to_pyg()` function (NOT individual converters)
 
 **DESIGN RATIONALE**:
@@ -814,7 +814,7 @@ INFERENCE LAYER (Apply featurization config)
 ```python
         # PRESERVE SMILES FOR DYNAMIC POST-PROCESSING FEATURIZATION
         smiles = Chem.MolToSmiles(mol)
-        
+
         return Data(
             x=x,
             edge_index=edge_index,
@@ -834,24 +834,24 @@ def _apply_structural_features_if_available(
 ) -> Data:
     """
     Apply structural features to PyG Data if config is provided and mol can be reconstructed.
-    
+
     DYNAMIC: Works with any converter that stores smiles or inchi attribute
     PRODUCTION-READY: Graceful fallback if mol cannot be reconstructed
     FUTURE-PROOF: Future converters automatically benefit by storing smiles/inchi
     """
     if structural_features_config is None:
         return data
-    
+
     if not (structural_features_config.get('atom') or structural_features_config.get('bond')):
         return data
-    
+
     # Try to reconstruct RDKit mol from stored representation
     mol = None
     mol_source = None
-    
+
     try:
         from rdkit import Chem
-        
+
         if hasattr(data, 'smiles') and data.smiles:
             mol = Chem.MolFromSmiles(data.smiles)
             mol_source = 'smiles'
@@ -862,14 +862,14 @@ def _apply_structural_features_if_available(
     except ImportError:
         logger.debug("RDKit not available - structural features not applied")
         return data
-    
+
     if mol is None:
         if mol_source:
             logger.warning(f"Failed to reconstruct mol from {mol_source}")
         else:
             logger.debug("No SMILES/InChI in data - structural features not applied")
         return data
-    
+
     try:
         from milia_pipeline.molecules.mol_structural_features import add_structural_features
         return add_structural_features(mol, data, structural_features_config, logger)
@@ -888,13 +888,13 @@ def convert_to_pyg(
     **kwargs
 ) -> Data:
     # ... existing conversion logic ...
-    
+
     data = converter.convert(input_data, **kwargs)
-    
+
     # POST-PROCESSING: Apply structural features if config provided
     if structural_features_config:
         data = _apply_structural_features_if_available(data, structural_features_config)
-    
+
     return data
 ```
 
@@ -913,8 +913,8 @@ def convert_to_pyg(
 
 #### Fix 21: main.py (handle_predict_mode) - Connect the Pipeline
 
-**File**: `milia_pipeline/main.py`  
-**Function**: `handle_predict_mode()`  
+**File**: `milia_pipeline/main.py`
+**Function**: `handle_predict_mode()`
 **Location**: After predictor creation (line 3176) and before data conversion (line 3216)
 
 **VERIFIED Current Code** (main.py lines 3171-3176):
@@ -931,7 +931,7 @@ def convert_to_pyg(
 **VERIFIED Current Code** (main.py lines 3215-3217):
 ```python
             # Convert to PyG
-            data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None) 
+            data_list = [convert_to_pyg(inp, format=input_format if input_format != 'auto' else None)
                         for inp in inputs]
 ```
 
@@ -957,7 +957,7 @@ def convert_to_pyg(
                 "This may cause dimension mismatch if training used different features. "
                 "Consider re-training with updated code that saves featurization config."
             )
-        
+
 ```
 
 **EXACT Code to REPLACE lines 3215-3217**:
@@ -971,10 +971,10 @@ def convert_to_pyg(
             # ================================================================
             data_list = [
                 convert_to_pyg(
-                    inp, 
+                    inp,
                     format=input_format if input_format != 'auto' else None,
                     structural_features_config=structural_features_config  # FIX 21: Same featurization as training
-                ) 
+                )
                 for inp in inputs
             ]
 ```

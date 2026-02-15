@@ -11,29 +11,31 @@ decorators to prevent mock pollution of sys.modules.
 
 Author: Milia Team
 """
+
 import sys
 from pathlib import Path
+
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
-import pytest
 import hashlib
-from unittest.mock import patch, MagicMock, PropertyMock, call
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from milia_pipeline.descriptors.descriptor_calculator import (
-    CalculationResult,
     BatchCalculationResult,
+    CalculationResult,
     DescriptorCalculator,
 )
 from milia_pipeline.exceptions import (
     DescriptorCalculationError,
-    DescriptorValidationError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_registry():
@@ -114,6 +116,7 @@ def calculator_no_conformers(mock_registry, mock_validator):
 # CalculationResult Pydantic Model Tests
 # ===========================================================================
 
+
 class TestCalculationResult:
     """Test CalculationResult Pydantic BaseModel."""
 
@@ -181,8 +184,7 @@ class TestCalculationResult:
             descriptor_name="test",
         )
         d = result.to_dict()
-        expected_keys = {"success", "value", "descriptor_name",
-                         "error_message", "computation_time"}
+        expected_keys = {"success", "value", "descriptor_name", "error_message", "computation_time"}
         assert set(d.keys()) == expected_keys
 
     def test_to_dict_matches_model_dump(self):
@@ -228,6 +230,7 @@ class TestCalculationResult:
 # ===========================================================================
 # BatchCalculationResult Pydantic Model Tests
 # ===========================================================================
+
 
 class TestBatchCalculationResult:
     """Test BatchCalculationResult Pydantic BaseModel."""
@@ -291,8 +294,7 @@ class TestBatchCalculationResult:
             molecules_processed=0,
         )
         d = result.to_dict()
-        expected_keys = {"successful", "failed", "total_time",
-                         "molecules_processed"}
+        expected_keys = {"successful", "failed", "total_time", "molecules_processed"}
         assert set(d.keys()) == expected_keys
 
     def test_to_dict_matches_model_dump(self):
@@ -320,6 +322,7 @@ class TestBatchCalculationResult:
 # ===========================================================================
 # DescriptorCalculator Initialization Tests
 # ===========================================================================
+
 
 class TestDescriptorCalculatorInit:
     """Test DescriptorCalculator initialization and configuration."""
@@ -398,11 +401,14 @@ class TestDescriptorCalculatorInit:
 # calculate_single Tests
 # ===========================================================================
 
+
 class TestCalculateSingle:
     """Test DescriptorCalculator.calculate_single()."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_successful_calculation(self, MockChem, calculator, mock_registry, mock_validator, mock_mol):
+    def test_successful_calculation(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test a basic successful descriptor calculation."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=42.0)
@@ -430,8 +436,9 @@ class TestCalculateSingle:
         assert "not found in registry" in result.error_message
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_descriptor_function_called_with_mol(self, MockChem, calculator, mock_registry,
-                                                  mock_validator, mock_mol):
+    def test_descriptor_function_called_with_mol(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that the descriptor function is called with the molecule."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=10.0)
@@ -442,8 +449,9 @@ class TestCalculateSingle:
         desc_func.assert_called_once_with(mock_mol)
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_calculation_exception_returns_failure(self, MockChem, calculator, mock_registry,
-                                                    mock_validator, mock_mol):
+    def test_calculation_exception_returns_failure(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that exceptions during calculation are caught and returned as failure."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(side_effect=ValueError("division by zero"))
@@ -457,8 +465,9 @@ class TestCalculateSingle:
         assert "division by zero" in result.error_message
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_calculation_exception_type_in_error_message(self, MockChem, calculator, mock_registry,
-                                                          mock_validator, mock_mol):
+    def test_calculation_exception_type_in_error_message(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that the exception type name is included in the error message."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(side_effect=RuntimeError("some error"))
@@ -470,8 +479,9 @@ class TestCalculateSingle:
         assert "some error" in result.error_message
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_statistics_incremented_on_success(self, MockChem, calculator, mock_registry,
-                                                mock_validator, mock_mol):
+    def test_statistics_incremented_on_success(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that statistics are correctly updated on success."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -484,8 +494,9 @@ class TestCalculateSingle:
         assert calculator._stats["failed"] == 0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_statistics_incremented_on_failure(self, MockChem, calculator, mock_registry,
-                                               mock_validator, mock_mol):
+    def test_statistics_incremented_on_failure(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that statistics are correctly updated on failure."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(side_effect=Exception("boom"))
@@ -498,7 +509,9 @@ class TestCalculateSingle:
         assert calculator._stats["failed"] == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_default_mol_identifier(self, MockChem, calculator, mock_registry, mock_validator, mock_mol):
+    def test_default_mol_identifier(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that default mol_identifier is 'unknown'."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -513,12 +526,14 @@ class TestCalculateSingle:
 # Cache Behavior Tests
 # ===========================================================================
 
+
 class TestCacheBehavior:
     """Test caching logic in calculate_single."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_cache_hit_returns_cached_value(self, MockChem, calculator,
-                                            mock_registry, mock_validator, mock_mol):
+    def test_cache_hit_returns_cached_value(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that a second call for the same mol+descriptor returns from cache."""
         MockChem.MolToSmiles.return_value = "CCO"
         desc_func = MagicMock(return_value=46.07)
@@ -535,8 +550,9 @@ class TestCacheBehavior:
         assert calculator._stats["cache_hits"] == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_cache_disabled_no_caching(self, MockChem, calculator_no_cache,
-                                       mock_registry, mock_validator, mock_mol):
+    def test_cache_disabled_no_caching(
+        self, MockChem, calculator_no_cache, mock_registry, mock_validator, mock_mol
+    ):
         """Test that caching is skipped when enable_cache=False."""
         MockChem.MolToSmiles.return_value = "CCO"
         desc_func = MagicMock(return_value=46.07)
@@ -550,9 +566,9 @@ class TestCacheBehavior:
         assert calculator_no_cache._stats["cache_hits"] == 0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_different_descriptors_not_cached_together(self, MockChem, calculator,
-                                                       mock_registry, mock_validator,
-                                                       mock_mol):
+    def test_different_descriptors_not_cached_together(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that different descriptor names produce different cache keys."""
         MockChem.MolToSmiles.return_value = "CCO"
         func_a = MagicMock(return_value=1.0)
@@ -583,6 +599,7 @@ class TestCacheBehavior:
 # Cache Key Generation Tests
 # ===========================================================================
 
+
 class TestCacheKeyGeneration:
     """Test _get_cache_key() method."""
 
@@ -593,7 +610,7 @@ class TestCacheKeyGeneration:
 
         key = calculator._get_cache_key(mock_mol, "MolWt")
 
-        expected = hashlib.md5("CCO:MolWt".encode()).hexdigest()
+        expected = hashlib.md5(b"CCO:MolWt").hexdigest()
         assert key == expected
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
@@ -611,9 +628,7 @@ class TestCacheKeyGeneration:
         mol_a = MagicMock()
         mol_b = MagicMock()
 
-        MockChem.MolToSmiles.side_effect = lambda m: (
-            "CCO" if m is mol_a else "CC(=O)O"
-        )
+        MockChem.MolToSmiles.side_effect = lambda m: "CCO" if m is mol_a else "CC(=O)O"
 
         key_a = calculator._get_cache_key(mol_a, "MolWt")
         key_b = calculator._get_cache_key(mol_b, "MolWt")
@@ -624,12 +639,14 @@ class TestCacheKeyGeneration:
 # Requirement Handling Tests
 # ===========================================================================
 
+
 class TestRequirementHandling:
     """Test requirement checking and auto-resolution in calculate_single."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_requirements_met_proceeds_to_calculation(self, MockChem, calculator, mock_registry,
-                                                      mock_validator, mock_mol):
+    def test_requirements_met_proceeds_to_calculation(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test normal flow when all requirements are met."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=5.0)
@@ -643,8 +660,7 @@ class TestRequirementHandling:
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
     @patch("milia_pipeline.descriptors.descriptor_calculator.AllChem")
     def test_3d_requirement_triggers_conformer_generation(
-        self, MockAllChem, MockChem, calculator, mock_registry,
-        mock_validator, mock_mol
+        self, MockAllChem, MockChem, calculator, mock_registry, mock_validator, mock_mol
     ):
         """Test that missing 3D coordinates trigger conformer generation."""
         # First check: fails with 3D requirement
@@ -684,8 +700,7 @@ class TestRequirementHandling:
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
     @patch("milia_pipeline.descriptors.descriptor_calculator.AllChem")
     def test_charge_requirement_triggers_charge_computation(
-        self, MockAllChem, MockChem, calculator, mock_registry,
-        mock_validator, mock_mol
+        self, MockAllChem, MockChem, calculator, mock_registry, mock_validator, mock_mol
     ):
         """Test that missing charges trigger Gasteiger charge computation."""
         # First check: fails with charge requirement
@@ -711,9 +726,7 @@ class TestRequirementHandling:
     ):
         """Test that unresolvable missing requirements return failure."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
-        mock_validator.check_requirements.return_value = (
-            False, ["some_unknown_requirement"]
-        )
+        mock_validator.check_requirements.return_value = (False, ["some_unknown_requirement"])
 
         result = calculator.calculate_single(mock_mol, "WeirdDesc", "mol_001")
 
@@ -725,12 +738,14 @@ class TestRequirementHandling:
 # Value Validation Tests
 # ===========================================================================
 
+
 class TestValueValidation:
     """Test post-calculation value validation."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_valid_value_returns_success(self, MockChem, calculator, mock_registry,
-                                         mock_validator, mock_mol):
+    def test_valid_value_returns_success(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that valid value passes validation."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=100.0)
@@ -742,8 +757,9 @@ class TestValueValidation:
         assert result.value == 100.0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_invalid_value_returns_failure(self, MockChem, calculator, mock_registry,
-                                           mock_validator, mock_mol):
+    def test_invalid_value_returns_failure(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that invalid value (per validator) returns failure."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=float("nan"))
@@ -758,8 +774,9 @@ class TestValueValidation:
         assert "NaN" in result.error_message
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_invalid_value_increments_failed_stat(self, MockChem, calculator, mock_registry,
-                                                   mock_validator, mock_mol):
+    def test_invalid_value_increments_failed_stat(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that validation failure increments failed counter."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=float("inf"))
@@ -776,6 +793,7 @@ class TestValueValidation:
 # 3D Conformer Generation Tests
 # ===========================================================================
 
+
 class TestEnsure3DConformer:
     """Test _ensure_3d_conformer() method."""
 
@@ -790,8 +808,7 @@ class TestEnsure3DConformer:
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
     @patch("milia_pipeline.descriptors.descriptor_calculator.AllChem")
-    def test_conformer_generation_workflow(self, MockAllChem, MockChem,
-                                           calculator, mock_mol):
+    def test_conformer_generation_workflow(self, MockAllChem, MockChem, calculator, mock_mol):
         """Test the full conformer generation workflow."""
         mock_mol.GetNumConformers.return_value = 0
         mol_copy = MagicMock()
@@ -809,8 +826,7 @@ class TestEnsure3DConformer:
         assert calculator._stats["conformers_generated"] == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_conformer_generation_failure_returns_original(self, MockChem,
-                                                           calculator, mock_mol):
+    def test_conformer_generation_failure_returns_original(self, MockChem, calculator, mock_mol):
         """Test that conformer generation failure returns the original molecule."""
         mock_mol.GetNumConformers.return_value = 0
         MockChem.Mol.side_effect = Exception("Cannot copy molecule")
@@ -825,13 +841,13 @@ class TestEnsure3DConformer:
 # Charge Computation Tests
 # ===========================================================================
 
+
 class TestComputeCharges:
     """Test _compute_charges() method."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
     @patch("milia_pipeline.descriptors.descriptor_calculator.AllChem")
-    def test_charge_computation_workflow(self, MockAllChem, MockChem,
-                                         calculator, mock_mol):
+    def test_charge_computation_workflow(self, MockAllChem, MockChem, calculator, mock_mol):
         """Test the Gasteiger charge computation workflow."""
         mol_copy = MagicMock()
         MockChem.Mol.return_value = mol_copy
@@ -843,8 +859,7 @@ class TestComputeCharges:
         assert result is mol_copy
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_charge_computation_failure_returns_original(self, MockChem,
-                                                         calculator, mock_mol):
+    def test_charge_computation_failure_returns_original(self, MockChem, calculator, mock_mol):
         """Test that charge computation failure returns the original molecule."""
         MockChem.Mol.side_effect = Exception("Cannot compute charges")
 
@@ -857,12 +872,14 @@ class TestComputeCharges:
 # calculate_batch Tests
 # ===========================================================================
 
+
 class TestCalculateBatch:
     """Test DescriptorCalculator.calculate_batch()."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_all_successful(self, MockChem, calculator, mock_registry,
-                                   mock_validator, mock_mol):
+    def test_batch_all_successful(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test batch calculation where all descriptors succeed."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         call_count = {"n": 0}
@@ -876,9 +893,7 @@ class TestCalculateBatch:
         desc_func = MagicMock(side_effect=side_effect)
         mock_registry.get_descriptor.return_value = desc_func
 
-        result = calculator.calculate_batch(
-            mock_mol, ["MolWt", "LogP", "TPSA"], "mol_001"
-        )
+        result = calculator.calculate_batch(mock_mol, ["MolWt", "LogP", "TPSA"], "mol_001")
 
         assert isinstance(result, BatchCalculationResult)
         assert len(result.successful) == 3
@@ -887,8 +902,9 @@ class TestCalculateBatch:
         assert result.total_time >= 0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_with_failures_fallback_enabled(self, MockChem, calculator, mock_registry,
-                                                   mock_validator, mock_mol):
+    def test_batch_with_failures_fallback_enabled(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test batch with failures when fallback_on_error=True."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         # First descriptor succeeds, second fails (not in registry)
@@ -896,26 +912,22 @@ class TestCalculateBatch:
         desc_func = MagicMock(return_value=1.0)
         mock_registry.get_descriptor.return_value = desc_func
 
-        result = calculator.calculate_batch(
-            mock_mol, ["Good", "Missing", "AlsoGood"], "mol_001"
-        )
+        result = calculator.calculate_batch(mock_mol, ["Good", "Missing", "AlsoGood"], "mol_001")
 
         assert "Good" in result.successful
         assert "Missing" in result.failed
         assert "AlsoGood" in result.successful
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_failure_raises_without_fallback(self, MockChem, calculator_no_fallback,
-                                                    mock_registry, mock_validator,
-                                                    mock_mol):
+    def test_batch_failure_raises_without_fallback(
+        self, MockChem, calculator_no_fallback, mock_registry, mock_validator, mock_mol
+    ):
         """Test that batch raises DescriptorCalculationError when fallback=False."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         mock_registry.has_descriptor.return_value = False
 
         with pytest.raises(DescriptorCalculationError) as exc_info:
-            calculator_no_fallback.calculate_batch(
-                mock_mol, ["NonExistent"], "mol_001"
-            )
+            calculator_no_fallback.calculate_batch(mock_mol, ["NonExistent"], "mol_001")
         assert exc_info.value.descriptor_name == "NonExistent"
 
     def test_batch_empty_list(self, calculator, mock_mol):
@@ -927,8 +939,9 @@ class TestCalculateBatch:
         assert result.molecules_processed == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_molecules_processed_always_one(self, MockChem, calculator, mock_registry,
-                                                   mock_validator, mock_mol):
+    def test_batch_molecules_processed_always_one(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that molecules_processed is always 1 for single-molecule batch."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -942,12 +955,12 @@ class TestCalculateBatch:
 # calculate_for_molecules Tests
 # ===========================================================================
 
+
 class TestCalculateForMolecules:
     """Test DescriptorCalculator.calculate_for_molecules()."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_multiple_molecules(self, MockChem, calculator, mock_registry,
-                                 mock_validator):
+    def test_multiple_molecules(self, MockChem, calculator, mock_registry, mock_validator):
         """Test calculating descriptors for multiple molecules."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -969,8 +982,9 @@ class TestCalculateForMolecules:
         assert results == []
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_results_order_matches_input_order(self, MockChem, calculator, mock_registry,
-                                                mock_validator):
+    def test_results_order_matches_input_order(
+        self, MockChem, calculator, mock_registry, mock_validator
+    ):
         """Test that results are returned in the same order as input molecules."""
         MockChem.MolToSmiles.side_effect = lambda m: f"mock_smiles_{id(m)}"
         call_order = []
@@ -998,6 +1012,7 @@ class TestCalculateForMolecules:
 # Statistics Tests
 # ===========================================================================
 
+
 class TestStatistics:
     """Test get_statistics(), reset_statistics()."""
 
@@ -1015,8 +1030,9 @@ class TestStatistics:
         assert stats["cache_size"] == 0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_get_statistics_after_calculations(self, MockChem, calculator, mock_registry,
-                                                mock_validator, mock_mol):
+    def test_get_statistics_after_calculations(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test statistics after some successful calculations."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -1088,12 +1104,14 @@ class TestStatistics:
 # Integration-Style Scenario Tests (all mocked)
 # ===========================================================================
 
+
 class TestEndToEndScenarios:
     """Test full workflows combining multiple methods, all dependencies mocked."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_cache_populated_then_hit(self, MockChem, calculator, mock_registry,
-                                      mock_validator, mock_mol):
+    def test_cache_populated_then_hit(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test full flow: calculate → cache → recalculate → cache hit."""
         MockChem.MolToSmiles.return_value = "CCO"
         desc_func = MagicMock(return_value=46.07)
@@ -1114,8 +1132,9 @@ class TestEndToEndScenarios:
         assert stats["cache_hits"] == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_then_statistics_consistency(self, MockChem, calculator, mock_registry,
-                                               mock_validator, mock_mol):
+    def test_batch_then_statistics_consistency(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that batch calculation stats are consistent."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -1128,8 +1147,7 @@ class TestEndToEndScenarios:
         assert stats["successful"] == 3
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_multi_molecule_batch_flow(self, MockChem, calculator, mock_registry,
-                                       mock_validator):
+    def test_multi_molecule_batch_flow(self, MockChem, calculator, mock_registry, mock_validator):
         """Test calculate_for_molecules returns correct number of results."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -1146,8 +1164,7 @@ class TestEndToEndScenarios:
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
     @patch("milia_pipeline.descriptors.descriptor_calculator.AllChem")
     def test_3d_and_charge_resolution_in_sequence(
-        self, MockAllChem, MockChem, calculator, mock_registry,
-        mock_validator, mock_mol
+        self, MockAllChem, MockChem, calculator, mock_registry, mock_validator, mock_mol
     ):
         """Test that 3D then charge resolution works in sequence for different descriptors."""
         mol_copy = MagicMock()
@@ -1157,7 +1174,7 @@ class TestEndToEndScenarios:
         # Descriptor 1: needs 3D
         mock_validator.check_requirements.side_effect = [
             (False, ["3D coordinates"]),  # first check
-            (True, []),                   # after conformer
+            (True, []),  # after conformer
         ]
         desc_func_3d = MagicMock(return_value=1.5)
         mock_registry.get_descriptor.return_value = desc_func_3d
@@ -1169,7 +1186,7 @@ class TestEndToEndScenarios:
         # Descriptor 2: needs charges
         mock_validator.check_requirements.side_effect = [
             (False, ["partial charges"]),  # first check
-            (True, []),                    # after charges
+            (True, []),  # after charges
         ]
         desc_func_charge = MagicMock(return_value=0.5)
         mock_registry.get_descriptor.return_value = desc_func_charge
@@ -1178,8 +1195,9 @@ class TestEndToEndScenarios:
         assert r2.success is True
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_clear_cache_then_recalculate(self, MockChem, calculator, mock_registry,
-                                          mock_validator, mock_mol):
+    def test_clear_cache_then_recalculate(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that clearing cache forces recalculation."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=42.0)
@@ -1199,35 +1217,32 @@ class TestEndToEndScenarios:
 # DescriptorCalculationError Exception Tests
 # ===========================================================================
 
+
 class TestDescriptorCalculationErrorUsage:
     """Test that DescriptorCalculationError is raised correctly in batch mode."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_exception_has_descriptor_name_attribute(self, MockChem, calculator_no_fallback,
-                                                      mock_registry, mock_validator,
-                                                      mock_mol):
+    def test_exception_has_descriptor_name_attribute(
+        self, MockChem, calculator_no_fallback, mock_registry, mock_validator, mock_mol
+    ):
         """Test that raised exception contains descriptor_name."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         mock_registry.has_descriptor.return_value = False
 
         with pytest.raises(DescriptorCalculationError) as exc_info:
-            calculator_no_fallback.calculate_batch(
-                mock_mol, ["BadDesc"], "mol_001"
-            )
+            calculator_no_fallback.calculate_batch(mock_mol, ["BadDesc"], "mol_001")
         assert exc_info.value.descriptor_name == "BadDesc"
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_exception_has_molecule_id_attribute(self, MockChem, calculator_no_fallback,
-                                                  mock_registry, mock_validator,
-                                                  mock_mol):
+    def test_exception_has_molecule_id_attribute(
+        self, MockChem, calculator_no_fallback, mock_registry, mock_validator, mock_mol
+    ):
         """Test that raised exception contains molecule_id."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         mock_registry.has_descriptor.return_value = False
 
         with pytest.raises(DescriptorCalculationError) as exc_info:
-            calculator_no_fallback.calculate_batch(
-                mock_mol, ["BadDesc"], "test_mol_xyz"
-            )
+            calculator_no_fallback.calculate_batch(mock_mol, ["BadDesc"], "test_mol_xyz")
         assert exc_info.value.extra_info.get("molecule_id") == "test_mol_xyz"
 
     def test_exception_inherits_from_descriptor_error(self):
@@ -1246,12 +1261,14 @@ class TestDescriptorCalculationErrorUsage:
 # Edge Cases
 # ===========================================================================
 
+
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_descriptor_returns_zero(self, MockChem, calculator, mock_registry,
-                                     mock_validator, mock_mol):
+    def test_descriptor_returns_zero(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that 0.0 is a valid descriptor value."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=0.0)
@@ -1262,8 +1279,9 @@ class TestEdgeCases:
         assert result.value == 0.0
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_descriptor_returns_very_large_value(self, MockChem, calculator, mock_registry,
-                                                  mock_validator, mock_mol):
+    def test_descriptor_returns_very_large_value(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test descriptor returning a very large float."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1e15)
@@ -1274,8 +1292,9 @@ class TestEdgeCases:
         assert result.value == 1e15
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_descriptor_returns_negative_value(self, MockChem, calculator, mock_registry,
-                                                mock_validator, mock_mol):
+    def test_descriptor_returns_negative_value(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test descriptor returning a negative float."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=-42.5)
@@ -1286,8 +1305,9 @@ class TestEdgeCases:
         assert result.value == -42.5
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_batch_single_descriptor(self, MockChem, calculator, mock_registry,
-                                      mock_validator, mock_mol):
+    def test_batch_single_descriptor(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test batch with a single descriptor."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)
@@ -1297,8 +1317,9 @@ class TestEdgeCases:
         assert len(result.successful) == 1
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_multiple_sequential_failures_tracked(self, MockChem, calculator, mock_registry,
-                                                   mock_validator, mock_mol):
+    def test_multiple_sequential_failures_tracked(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that multiple sequential failures are all tracked."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(side_effect=Exception("fail"))
@@ -1312,8 +1333,9 @@ class TestEdgeCases:
         assert calculator._stats["total_calculations"] == 5
 
     @patch("milia_pipeline.descriptors.descriptor_calculator.Chem")
-    def test_computation_time_is_non_negative(self, MockChem, calculator, mock_registry,
-                                               mock_validator, mock_mol):
+    def test_computation_time_is_non_negative(
+        self, MockChem, calculator, mock_registry, mock_validator, mock_mol
+    ):
         """Test that computation_time is always non-negative."""
         MockChem.MolToSmiles.return_value = "mock_smiles"
         desc_func = MagicMock(return_value=1.0)

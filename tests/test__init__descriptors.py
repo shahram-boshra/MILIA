@@ -58,12 +58,11 @@ Markers:
 
 import importlib
 import inspect
-import sys
-import types
 import logging
 import re
+import sys
+import types
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -81,6 +80,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Fixtures
 # ===================================================================
 
+
 @pytest.fixture(scope="module")
 def desc_pkg():
     """
@@ -91,6 +91,7 @@ def desc_pkg():
     """
     try:
         import milia_pipeline.descriptors as desc
+
         return desc
     except ImportError as exc:
         pytest.fail(
@@ -149,9 +150,7 @@ class TestSmokeMetadataAttributes:
     def test_version_attribute_is_string(self, desc_pkg):
         """``__version__`` is a non-empty string."""
         value = desc_pkg.__version__
-        assert isinstance(value, str), (
-            f"__version__ should be str, got {type(value)}"
-        )
+        assert isinstance(value, str), f"__version__ should be str, got {type(value)}"
         assert len(value) > 0, "__version__ should be non-empty"
 
     @pytest.mark.smoke
@@ -159,9 +158,7 @@ class TestSmokeMetadataAttributes:
         """``__version__`` follows a MAJOR.MINOR.PATCH pattern."""
         version = desc_pkg.__version__
         parts = version.split(".")
-        assert len(parts) >= 2, (
-            f"Version '{version}' should have at least MAJOR.MINOR components"
-        )
+        assert len(parts) >= 2, f"Version '{version}' should have at least MAJOR.MINOR components"
         for part in parts:
             numeric_part = ""
             for ch in part:
@@ -169,9 +166,7 @@ class TestSmokeMetadataAttributes:
                     numeric_part += ch
                 else:
                     break
-            assert len(numeric_part) > 0, (
-                f"Version component '{part}' should start with a digit"
-            )
+            assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
     def test_version_value_is_1_0_0(self, desc_pkg):
@@ -275,9 +270,7 @@ class TestSmokeCalculatorExports:
     def test_calculator_class_is_a_class(self, desc_pkg, name):
         """Each calculator export is a class (not an instance or function)."""
         obj = getattr(desc_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestSmokeValidatorExports:
@@ -386,9 +379,7 @@ class TestSmokePluginSystemExports:
     def test_plugin_class_is_a_class(self, desc_pkg, name):
         """Each plugin export is a class (not an instance or function)."""
         obj = getattr(desc_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
     @pytest.mark.smoke
     @pytest.mark.parametrize("name", PLUGIN_FUNCTIONS)
@@ -474,9 +465,7 @@ class TestSmokeAllExportsAccessible:
         for name in all_names:
             if not hasattr(desc_pkg, name):
                 missing.append(name)
-        assert not missing, (
-            f"Names in __all__ that are not accessible on the module: {missing}"
-        )
+        assert not missing, f"Names in __all__ that are not accessible on the module: {missing}"
 
 
 # ===================================================================
@@ -507,9 +496,7 @@ class TestContractAllCompleteness:
                 duplicates.append(name)
             seen.add(name)
 
-        assert not duplicates, (
-            f"Unexpected duplicate entries in __all__: {duplicates}"
-        )
+        assert not duplicates, f"Unexpected duplicate entries in __all__: {duplicates}"
 
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, desc_pkg, all_names):
@@ -517,10 +504,7 @@ class TestContractAllCompleteness:
         Generic sweep: every single entry in ``__all__`` must be resolvable,
         regardless of whether it is parameterized individually.
         """
-        unresolvable = [
-            name for name in all_names
-            if not hasattr(desc_pkg, name)
-        ]
+        unresolvable = [name for name in all_names if not hasattr(desc_pkg, name)]
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
@@ -528,13 +512,8 @@ class TestContractAllCompleteness:
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
         """Every entry in ``__all__`` is a string."""
-        non_strings = [
-            (i, name) for i, name in enumerate(all_names)
-            if not isinstance(name, str)
-        ]
-        assert not non_strings, (
-            f"Non-string entries in __all__: {non_strings}"
-        )
+        non_strings = [(i, name) for i, name in enumerate(all_names) if not isinstance(name, str)]
+        assert not non_strings, f"Non-string entries in __all__: {non_strings}"
 
 
 class TestContractAllConsistency:
@@ -581,13 +560,17 @@ class TestContractAllConsistency:
 
         # Filter common Python internals
         python_internals = {
-            "__builtins__", "__cached__", "__doc__", "__file__",
-            "__loader__", "__name__", "__package__", "__path__",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__path__",
             "__spec__",
         }
-        missing_from_all = [
-            n for n in missing_from_all if n not in python_internals
-        ]
+        missing_from_all = [n for n in missing_from_all if n not in python_internals]
 
         assert not missing_from_all, (
             f"Public names imported in descriptors/__init__.py but not in __all__: "
@@ -666,17 +649,13 @@ class TestContractRegistryFunctionSignatures:
     def test_get_descriptor_accepts_name_parameter(self, desc_pkg):
         """``get_descriptor`` accepts at least one parameter (descriptor name)."""
         sig = inspect.signature(desc_pkg.get_descriptor)
-        assert len(sig.parameters) >= 1, (
-            "get_descriptor should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "get_descriptor should accept at least one parameter"
 
     @pytest.mark.contract
     def test_has_descriptor_accepts_name_parameter(self, desc_pkg):
         """``has_descriptor`` accepts at least one parameter (descriptor name)."""
         sig = inspect.signature(desc_pkg.has_descriptor)
-        assert len(sig.parameters) >= 1, (
-            "has_descriptor should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "has_descriptor should accept at least one parameter"
 
 
 class TestContractCategoryClassTypes:
@@ -703,7 +682,9 @@ class TestContractCategoryClassTypes:
         # Check that it has at least one of the documented category names
         # as an attribute or member
         documented_categories = [
-            "CONSTITUTIONAL", "TOPOLOGICAL", "ELECTRONIC",
+            "CONSTITUTIONAL",
+            "TOPOLOGICAL",
+            "ELECTRONIC",
             "GEOMETRIC",
         ]
         found_any = False
@@ -745,9 +726,7 @@ class TestContractCategoryFunctionTypes:
     def test_category_function_is_function_or_callable(self, desc_pkg, name):
         """Each category function is a function or callable object."""
         obj = getattr(desc_pkg, name)
-        assert callable(obj), (
-            f"'{name}' should be callable, got {type(obj).__name__}"
-        )
+        assert callable(obj), f"'{name}' should be callable, got {type(obj).__name__}"
 
 
 class TestContractCategoryConstants:
@@ -789,9 +768,7 @@ class TestContractCategoryConstants:
     def test_descriptors_by_category_is_non_empty(self, desc_pkg):
         """``DESCRIPTORS_BY_CATEGORY`` is non-empty (6 categories documented)."""
         obj = desc_pkg.DESCRIPTORS_BY_CATEGORY
-        assert len(obj) > 0, (
-            "DESCRIPTORS_BY_CATEGORY should be non-empty (6 categories documented)"
-        )
+        assert len(obj) > 0, "DESCRIPTORS_BY_CATEGORY should be non-empty (6 categories documented)"
 
 
 class TestContractCalculatorClassTypes:
@@ -808,9 +785,7 @@ class TestContractCalculatorClassTypes:
     def test_calculator_is_class(self, desc_pkg, name):
         """Each calculator export is a class."""
         obj = getattr(desc_pkg, name)
-        assert inspect.isclass(obj), (
-            f"'{name}' should be a class, got {type(obj).__name__}"
-        )
+        assert inspect.isclass(obj), f"'{name}' should be a class, got {type(obj).__name__}"
 
 
 class TestContractValidatorClassTypes:
@@ -828,8 +803,7 @@ class TestContractValidatorClassTypes:
     def test_validation_result_is_class(self, desc_pkg):
         """``ValidationResult`` is a class."""
         assert inspect.isclass(desc_pkg.ValidationResult), (
-            f"ValidationResult should be a class, got "
-            f"{type(desc_pkg.ValidationResult).__name__}"
+            f"ValidationResult should be a class, got {type(desc_pkg.ValidationResult).__name__}"
         )
 
     @pytest.mark.contract
@@ -868,17 +842,13 @@ class TestContractValidatorFunctionSignatures:
     def test_validate_value_accepts_parameters(self, desc_pkg):
         """``validate_value`` accepts at least one parameter."""
         sig = inspect.signature(desc_pkg.validate_value)
-        assert len(sig.parameters) >= 1, (
-            "validate_value should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "validate_value should accept at least one parameter"
 
     @pytest.mark.contract
     def test_check_requirements_accepts_parameters(self, desc_pkg):
         """``check_requirements`` accepts at least one parameter."""
         sig = inspect.signature(desc_pkg.check_requirements)
-        assert len(sig.parameters) >= 1, (
-            "check_requirements should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "check_requirements should accept at least one parameter"
 
     @pytest.mark.contract
     def test_filter_by_requirements_accepts_parameters(self, desc_pkg):
@@ -906,9 +876,7 @@ class TestContractIntegrationFunctionTypes:
     def test_integration_function_is_callable(self, desc_pkg, name):
         """Each integration function is callable."""
         obj = getattr(desc_pkg, name)
-        assert callable(obj), (
-            f"'{name}' should be callable, got {type(obj).__name__}"
-        )
+        assert callable(obj), f"'{name}' should be callable, got {type(obj).__name__}"
 
 
 class TestContractIntegrationFunctionSignatures:
@@ -996,9 +964,7 @@ class TestContractPluginFunctionTypes:
     def test_plugin_function_is_callable(self, desc_pkg, name):
         """Each plugin function is callable."""
         obj = getattr(desc_pkg, name)
-        assert callable(obj), (
-            f"'{name}' should be callable, got {type(obj).__name__}"
-        )
+        assert callable(obj), f"'{name}' should be callable, got {type(obj).__name__}"
 
 
 class TestContractPluginFunctionSignatures:
@@ -1008,17 +974,13 @@ class TestContractPluginFunctionSignatures:
     def test_validate_plugin_accepts_parameters(self, desc_pkg):
         """``validate_plugin`` accepts at least one parameter."""
         sig = inspect.signature(desc_pkg.validate_plugin)
-        assert len(sig.parameters) >= 1, (
-            "validate_plugin should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "validate_plugin should accept at least one parameter"
 
     @pytest.mark.contract
     def test_get_plugin_info_accepts_parameters(self, desc_pkg):
         """``get_plugin_info`` accepts at least one parameter."""
         sig = inspect.signature(desc_pkg.get_plugin_info)
-        assert len(sig.parameters) >= 1, (
-            "get_plugin_info should accept at least one parameter"
-        )
+        assert len(sig.parameters) >= 1, "get_plugin_info should accept at least one parameter"
 
 
 class TestContractRegistrySingletonHasListAll:
@@ -1054,13 +1016,12 @@ class TestContractRegistrySingletonHasListAll:
             count = len(result)
         except TypeError:
             pytest.fail(
-                "registry.list_all_descriptors() must return a sized collection "
-                "(supports len())"
+                "registry.list_all_descriptors() must return a sized collection (supports len())"
             )
         # The project documents 400+ descriptors
         assert count >= 0, (
-            f"registry.list_all_descriptors() returned a collection with "
-            f"negative length — this should not happen"
+            "registry.list_all_descriptors() returned a collection with "
+            "negative length — this should not happen"
         )
 
 
@@ -1076,7 +1037,6 @@ class TestContractPublicAPISurface:
     MINIMUM_API = {
         # Version
         "__version__",
-
         # Registry System
         "DescriptorRegistry",
         "DescriptorRegistration",
@@ -1085,7 +1045,6 @@ class TestContractPublicAPISurface:
         "has_descriptor",
         "list_descriptors",
         "auto_discover_rdkit",
-
         # Categories and Metadata
         "DescriptorCategory",
         "DescriptorMetadata",
@@ -1101,12 +1060,10 @@ class TestContractPublicAPISurface:
         "DESCRIPTOR_METADATA_MAP",
         "ALL_DESCRIPTORS",
         "DESCRIPTORS_BY_CATEGORY",
-
         # Calculator
         "DescriptorCalculator",
         "CalculationResult",
         "BatchCalculationResult",
-
         # Validator
         "DescriptorValidator",
         "ValidationResult",
@@ -1114,7 +1071,6 @@ class TestContractPublicAPISurface:
         "check_requirements",
         "filter_by_requirements",
         "validator",
-
         # Integration
         "descriptors_to_tensor",
         "add_descriptors_to_pyg_data",
@@ -1122,7 +1078,6 @@ class TestContractPublicAPISurface:
         "extract_descriptors_from_pyg_data",
         "validate_descriptor_integration",
         "get_descriptor_statistics",
-
         # Plugin System
         "DescriptorPluginLoader",
         "DescriptorPluginMetadata",
@@ -1139,9 +1094,7 @@ class TestContractPublicAPISurface:
         """The minimum expected public API is present in ``__all__``."""
         all_set = set(all_names)
         missing = self.MINIMUM_API - all_set
-        assert not missing, (
-            f"Minimum API names missing from __all__: {sorted(missing)}"
-        )
+        assert not missing, f"Minimum API names missing from __all__: {sorted(missing)}"
 
     @pytest.mark.contract
     def test_all_has_expected_length(self, all_names):
@@ -1212,9 +1165,7 @@ class TestContractSubmoduleOrganization:
         try:
             importlib.import_module(submodule)
         except ImportError as exc:
-            pytest.fail(
-                f"Submodule '{submodule}' could not be imported: {exc}"
-            )
+            pytest.fail(f"Submodule '{submodule}' could not be imported: {exc}")
 
 
 class TestContractCrossSubmoduleConsistency:
@@ -1230,6 +1181,7 @@ class TestContractCrossSubmoduleConsistency:
         as ``DescriptorRegistry`` from the descriptor_registry submodule.
         """
         import milia_pipeline.descriptors.descriptor_registry as reg_mod
+
         assert desc_pkg.DescriptorRegistry is reg_mod.DescriptorRegistry, (
             "DescriptorRegistry on the package should be the same object "
             "as in descriptor_registry submodule"
@@ -1242,6 +1194,7 @@ class TestContractCrossSubmoduleConsistency:
         as ``DescriptorCalculator`` from the descriptor_calculator submodule.
         """
         import milia_pipeline.descriptors.descriptor_calculator as calc_mod
+
         assert desc_pkg.DescriptorCalculator is calc_mod.DescriptorCalculator, (
             "DescriptorCalculator on the package should be the same object "
             "as in descriptor_calculator submodule"
@@ -1254,6 +1207,7 @@ class TestContractCrossSubmoduleConsistency:
         as ``DescriptorCategory`` from the descriptor_categories submodule.
         """
         import milia_pipeline.descriptors.descriptor_categories as cat_mod
+
         assert desc_pkg.DescriptorCategory is cat_mod.DescriptorCategory, (
             "DescriptorCategory on the package should be the same object "
             "as in descriptor_categories submodule"
@@ -1266,6 +1220,7 @@ class TestContractCrossSubmoduleConsistency:
         as ``DescriptorValidator`` from the descriptor_validator submodule.
         """
         import milia_pipeline.descriptors.descriptor_validator as val_mod
+
         assert desc_pkg.DescriptorValidator is val_mod.DescriptorValidator, (
             "DescriptorValidator on the package should be the same object "
             "as in descriptor_validator submodule"
@@ -1278,6 +1233,7 @@ class TestContractCrossSubmoduleConsistency:
         as ``DescriptorPluginLoader`` from the descriptor_plugin_system submodule.
         """
         import milia_pipeline.descriptors.descriptor_plugin_system as plugin_mod
+
         assert desc_pkg.DescriptorPluginLoader is plugin_mod.DescriptorPluginLoader, (
             "DescriptorPluginLoader on the package should be the same object "
             "as in descriptor_plugin_system submodule"
@@ -1297,6 +1253,7 @@ class TestContractSingletonIdentity:
         as ``registry`` from the descriptor_registry submodule.
         """
         import milia_pipeline.descriptors.descriptor_registry as reg_mod
+
         assert desc_pkg.registry is reg_mod.registry, (
             "registry singleton on the package should be the same object "
             "as in descriptor_registry submodule (identity, not equality)"
@@ -1309,6 +1266,7 @@ class TestContractSingletonIdentity:
         as ``validator`` from the descriptor_validator submodule.
         """
         import milia_pipeline.descriptors.descriptor_validator as val_mod
+
         assert desc_pkg.validator is val_mod.validator, (
             "validator singleton on the package should be the same object "
             "as in descriptor_validator submodule (identity, not equality)"
@@ -1321,6 +1279,7 @@ class TestContractSingletonIdentity:
         as ``plugin_loader`` from the descriptor_plugin_system submodule.
         """
         import milia_pipeline.descriptors.descriptor_plugin_system as plugin_mod
+
         assert desc_pkg.plugin_loader is plugin_mod.plugin_loader, (
             "plugin_loader singleton on the package should be the same object "
             "as in descriptor_plugin_system submodule (identity, not equality)"
@@ -1343,8 +1302,7 @@ class TestContractNamespaceCleanlinessLogging:
         if hasattr(desc_pkg, "logger"):
             obj = desc_pkg.logger
             assert isinstance(obj, logging.Logger), (
-                f"logger should be a logging.Logger instance, got "
-                f"{type(obj).__name__}"
+                f"logger should be a logging.Logger instance, got {type(obj).__name__}"
             )
 
 
@@ -1391,6 +1349,5 @@ class TestContractVersionFormat:
         # Accept patterns like: 1.0.0, 1.2.3, 1.0.0-alpha, 1.0.0rc1
         pattern = r"^\d+\.\d+\.\d+([a-zA-Z0-9._-]*)?$"
         assert re.match(pattern, version), (
-            f"__version__ '{version}' does not match semver pattern "
-            f"MAJOR.MINOR.PATCH"
+            f"__version__ '{version}' does not match semver pattern MAJOR.MINOR.PATCH"
         )

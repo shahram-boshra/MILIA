@@ -34,32 +34,27 @@ Evidence sources:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.qm9 import QM9Dataset
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
 )
+from milia_pipeline.datasets.implementations.qm9 import QM9Dataset
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from qm9.py source
@@ -74,47 +69,53 @@ EXPECTED_METADATA_DESCRIPTION = (
 EXPECTED_METADATA_AUTHOR = "Ramakrishnan, Dral, Rupp, von Lilienfeld"
 EXPECTED_METADATA_LICENSE = "CC0"
 
-EXPECTED_REQUIRED_PROPERTIES = ('U0', 'atoms', 'coordinates')
+EXPECTED_REQUIRED_PROPERTIES = ("U0", "atoms", "coordinates")
 EXPECTED_OPTIONAL_PROPERTIES = (
-    'A', 'B', 'C',
-    'mu',
-    'alpha',
-    'homo', 'lumo', 'gap',
-    'r2',
-    'zpve',
-    'U', 'H', 'G',
-    'Cv',
-    'Qmulliken',
-    'freqs',
-    'smiles_relaxed',
-    'inchi_relaxed',
+    "A",
+    "B",
+    "C",
+    "mu",
+    "alpha",
+    "homo",
+    "lumo",
+    "gap",
+    "r2",
+    "zpve",
+    "U",
+    "H",
+    "G",
+    "Cv",
+    "Qmulliken",
+    "freqs",
+    "smiles_relaxed",
+    "inchi_relaxed",
 )
 EXPECTED_IDENTIFIER_KEYS = (
-    ('inchi', 'inchi'),
-    ('smiles', 'smiles'),
+    ("inchi", "inchi"),
+    ("smiles", "smiles"),
 )
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': True,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': True,
-    'frequency_analysis': True,
-    'orbital_analysis': False,
-    'homo_lumo_gap': True,
-    'mo_energies': False,
+    "vibrational_analysis": True,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": True,
+    "frequency_analysis": True,
+    "orbital_analysis": False,
+    "homo_lumo_gap": True,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "qm9_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'identifier_coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "identifier_coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -124,6 +125,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: QM9Dataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestQM9DatasetClassIdentity(unittest.TestCase):
     """Verify QM9Dataset is a proper BaseDataset subclass with correct identity."""
@@ -170,6 +172,7 @@ class TestQM9DatasetClassIdentity(unittest.TestCase):
 # GROUP 2: QM9Dataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestQM9DatasetRegistration(unittest.TestCase):
     """Verify QM9Dataset is registered via @register decorator."""
 
@@ -190,6 +193,7 @@ class TestQM9DatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class (project structure line 372).
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("QM9")
         self.assertIs(retrieved, QM9Dataset)
 
@@ -199,6 +203,7 @@ class TestQM9DatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names (project structure line 372).
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("QM9", all_names)
 
@@ -207,9 +212,7 @@ class TestQM9DatasetRegistration(unittest.TestCase):
 
         Evidence: qm9.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[QM9Dataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[QM9Dataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -225,6 +228,7 @@ class TestQM9DatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: QM9Dataset.metadata — DatasetMetadata (7 tests)
 # ============================================================================
+
 
 class TestQM9DatasetMetadata(unittest.TestCase):
     """Verify QM9Dataset.metadata is a correctly configured DatasetMetadata.
@@ -273,6 +277,7 @@ class TestQM9DatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: QM9Dataset.schema — DatasetSchema (8 tests)
 # ============================================================================
+
 
 class TestQM9DatasetSchema(unittest.TestCase):
     """Verify QM9Dataset.schema is a correctly configured DatasetSchema.
@@ -340,7 +345,7 @@ class TestQM9DatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            QM9Dataset.schema.required_properties = ('modified',)
+            QM9Dataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -351,6 +356,7 @@ class TestQM9DatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: QM9Dataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestQM9DatasetFeatures(unittest.TestCase):
     """Verify QM9Dataset.features is a correctly configured DatasetFeatures.
@@ -412,6 +418,7 @@ class TestQM9DatasetFeatures(unittest.TestCase):
 # GROUP 6: QM9Dataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestQM9DatasetConfigKey(unittest.TestCase):
     """Verify QM9Dataset.config_key is correctly set.
 
@@ -431,6 +438,7 @@ class TestQM9DatasetConfigKey(unittest.TestCase):
 # GROUP 7: QM9Dataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestQM9DatasetGetRequiredProperties(unittest.TestCase):
     """Verify QM9Dataset.get_required_properties() classmethod.
 
@@ -439,7 +447,7 @@ class TestQM9DatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = QM9Dataset.__dict__.get('get_required_properties')
+        descriptor = QM9Dataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -476,6 +484,7 @@ class TestQM9DatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: QM9Dataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestQM9DatasetGetFeatureSupport(unittest.TestCase):
     """Verify QM9Dataset.get_feature_support() classmethod.
 
@@ -484,7 +493,7 @@ class TestQM9DatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = QM9Dataset.__dict__.get('get_feature_support')
+        descriptor = QM9Dataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -530,6 +539,7 @@ class TestQM9DatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: QM9Dataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestQM9DatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify QM9Dataset.get_molecule_creation_strategy() classmethod.
 
@@ -538,7 +548,7 @@ class TestQM9DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = QM9Dataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = QM9Dataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -558,7 +568,7 @@ class TestQM9DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(QM9Dataset, 'get_molecule_creation_strategy')
+        method = QM9Dataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -566,6 +576,7 @@ class TestQM9DatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: QM9Dataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestQM9DatasetCreateHandler(unittest.TestCase):
     """Verify QM9Dataset.create_handler() factory method with lazy import.
@@ -577,7 +588,7 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = QM9Dataset.__dict__.get('create_handler')
+        descriptor = QM9Dataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -592,13 +603,19 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = QM9Dataset.__dict__['create_handler'].__func__
+        unbound_func = QM9Dataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -607,7 +624,7 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
         Evidence: qm9.py create_handler: experimental_setup=None.
         """
         sig = inspect.signature(QM9Dataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -627,11 +644,11 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockQM9DatasetHandler')
+            mock_handler_cls = Mock(name="MockQM9DatasetHandler")
             mock_module = MagicMock()
             mock_module.QM9DatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.qm9'
+            handler_mod_key = "milia_pipeline.handlers.implementations.qm9"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -666,11 +683,11 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 
         Evidence: qm9.py create_handler returns QM9DatasetHandler(...).
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -694,7 +711,7 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 
         Evidence: qm9.py create_handler: return QM9DatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = QM9Dataset.create_handler(
@@ -707,7 +724,7 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring mentioning lazy import."""
-        method = getattr(QM9Dataset, 'create_handler')
+        method = QM9Dataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -715,6 +732,7 @@ class TestQM9DatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: QM9Dataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestQM9DatasetHandlerClassAttribute(unittest.TestCase):
     """Verify QM9Dataset.handler_class is None (default from BaseDataset).
@@ -752,6 +770,7 @@ class TestQM9DatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: QM9Dataset — Method Signatures and Return Annotations (6 tests)
 # ============================================================================
 
+
 class TestQM9DatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -762,35 +781,35 @@ class TestQM9DatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -798,6 +817,7 @@ class TestQM9DatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 13: QM9Dataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestQM9DatasetMethodDocstrings(unittest.TestCase):
     """Verify each QM9Dataset method has a non-empty docstring."""
@@ -808,27 +828,26 @@ class TestQM9DatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(QM9Dataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
     def test_get_required_properties_docstring_mentions_qm9(self):
         """get_required_properties docstring references QM9."""
-        method = getattr(QM9Dataset, 'get_required_properties')
+        method = QM9Dataset.get_required_properties
         self.assertIn("QM9", method.__doc__)
 
     def test_get_feature_support_docstring_mentions_qm9(self):
         """get_feature_support docstring references QM9."""
-        method = getattr(QM9Dataset, 'get_feature_support')
+        method = QM9Dataset.get_feature_support
         self.assertIn("QM9", method.__doc__)
 
     def test_get_molecule_creation_strategy_docstring_mentions_strategy(self):
         """get_molecule_creation_strategy docstring references the strategy type."""
-        method = getattr(QM9Dataset, 'get_molecule_creation_strategy')
+        method = QM9Dataset.get_molecule_creation_strategy
         self.assertIn("identifier_coordinate_based", method.__doc__)
 
 
@@ -836,18 +855,21 @@ class TestQM9DatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: QM9Dataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the qm9 implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The qm9.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.qm9 as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_qm9_dataset(self):
         """QM9Dataset is importable from the implementations.qm9 module."""
         import milia_pipeline.datasets.implementations.qm9 as mod
+
         self.assertTrue(hasattr(mod, "QM9Dataset"))
         self.assertIs(mod.QM9Dataset, QM9Dataset)
 
@@ -856,9 +878,7 @@ class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: qm9.py imports from milia_pipeline.datasets.base.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qm9']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qm9"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -870,9 +890,7 @@ class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: qm9.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qm9']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qm9"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -886,9 +904,7 @@ class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qm9']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qm9"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -899,10 +915,12 @@ class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -926,6 +944,7 @@ class TestQM9DatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: QM9Dataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestQM9DatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with QM9.
 
@@ -940,11 +959,11 @@ class TestQM9DatasetFeaturesIntegration(unittest.TestCase):
 
     def test_supports_vibrational_analysis(self):
         """features.supports('vibrational_analysis') returns True."""
-        self.assertTrue(QM9Dataset.features.supports('vibrational_analysis'))
+        self.assertTrue(QM9Dataset.features.supports("vibrational_analysis"))
 
     def test_supports_uncertainty_handling_false(self):
         """features.supports('uncertainty_handling') returns False."""
-        self.assertFalse(QM9Dataset.features.supports('uncertainty_handling'))
+        self.assertFalse(QM9Dataset.features.supports("uncertainty_handling"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -955,6 +974,7 @@ class TestQM9DatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: QM9Dataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestQM9DatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -987,6 +1007,7 @@ class TestQM9DatasetSchemaMethodConsistency(unittest.TestCase):
 # GROUP 17: QM9Dataset — QM9-Specific Schema Validation (6 tests)
 # ============================================================================
 
+
 class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
     """Verify QM9-specific schema properties and their scientific correctness.
 
@@ -999,7 +1020,7 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         Evidence: qm9.py schema comment: U0 (internal energy at 0K) is the primary
         energy target.
         """
-        self.assertIn('U0', QM9Dataset.schema.required_properties)
+        self.assertIn("U0", QM9Dataset.schema.required_properties)
 
     def test_orbital_energy_properties_in_optional(self):
         """HOMO, LUMO, and gap properties are in optional_properties.
@@ -1008,9 +1029,9 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         These are orbital energies in Hartree from QM9.
         """
         optional = QM9Dataset.schema.optional_properties
-        self.assertIn('homo', optional)
-        self.assertIn('lumo', optional)
-        self.assertIn('gap', optional)
+        self.assertIn("homo", optional)
+        self.assertIn("lumo", optional)
+        self.assertIn("gap", optional)
 
     def test_thermodynamic_energies_in_optional(self):
         """U, H, G thermodynamic energies are in optional_properties.
@@ -1019,9 +1040,9 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         U = internal energy at 298.15K, H = enthalpy, G = free energy (all Hartree).
         """
         optional = QM9Dataset.schema.optional_properties
-        self.assertIn('U', optional)
-        self.assertIn('H', optional)
-        self.assertIn('G', optional)
+        self.assertIn("U", optional)
+        self.assertIn("H", optional)
+        self.assertIn("G", optional)
 
     def test_rotational_constants_in_optional(self):
         """Rotational constants A, B, C are in optional_properties.
@@ -1029,9 +1050,9 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         Evidence: qm9.py schema optional_properties includes A, B, C (GHz).
         """
         optional = QM9Dataset.schema.optional_properties
-        self.assertIn('A', optional)
-        self.assertIn('B', optional)
-        self.assertIn('C', optional)
+        self.assertIn("A", optional)
+        self.assertIn("B", optional)
+        self.assertIn("C", optional)
 
     def test_inchi_is_primary_identifier(self):
         """InChI is the first identifier key (primary molecular scheme for MILIA).
@@ -1040,7 +1061,7 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         InChI is tried FIRST as it is MILIA's primary molecular scheme.
         """
         first_key = QM9Dataset.schema.identifier_keys[0]
-        self.assertEqual(first_key, ('inchi', 'inchi'))
+        self.assertEqual(first_key, ("inchi", "inchi"))
 
     def test_smiles_is_fallback_identifier(self):
         """SMILES is the second identifier key (fallback).
@@ -1048,12 +1069,13 @@ class TestQM9DatasetSchemaSpecifics(unittest.TestCase):
         Evidence: qm9.py schema identifier_keys: SMILES is fallback only.
         """
         second_key = QM9Dataset.schema.identifier_keys[1]
-        self.assertEqual(second_key, ('smiles', 'smiles'))
+        self.assertEqual(second_key, ("smiles", "smiles"))
 
 
 # ============================================================================
 # GROUP 18: QM9Dataset — Edge Cases and Robustness (5 tests)
 # ============================================================================
+
 
 class TestQM9DatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of QM9Dataset."""
@@ -1097,10 +1119,10 @@ class TestQM9DatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockQM9DatasetHandler')
+            mock_handler_cls = Mock(name="MockQM9DatasetHandler")
             mock_module = MagicMock()
             mock_module.QM9DatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.qm9'
+            handler_mod_key = "milia_pipeline.handlers.implementations.qm9"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1128,15 +1150,16 @@ class TestQM9DatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. QM9Dataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', QM9Dataset.__dict__)
-        self.assertIn('schema', QM9Dataset.__dict__)
-        self.assertIn('features', QM9Dataset.__dict__)
-        self.assertIn('config_key', QM9Dataset.__dict__)
+        self.assertIn("metadata", QM9Dataset.__dict__)
+        self.assertIn("schema", QM9Dataset.__dict__)
+        self.assertIn("features", QM9Dataset.__dict__)
+        self.assertIn("config_key", QM9Dataset.__dict__)
 
 
 # ============================================================================
 # GROUP 19: QM9Dataset — Differences from DFT Dataset (4 tests)
 # ============================================================================
+
 
 class TestQM9DatasetDifferencesFromDFT(unittest.TestCase):
     """Verify QM9-specific properties that distinguish it from DFT dataset.
@@ -1158,8 +1181,8 @@ class TestQM9DatasetDifferencesFromDFT(unittest.TestCase):
         Evidence: qm9.py schema required_properties includes 'U0'.
         U0 = internal energy at 0K.
         """
-        self.assertIn('U0', QM9Dataset.schema.required_properties)
-        self.assertNotIn('Etot', QM9Dataset.schema.required_properties)
+        self.assertIn("U0", QM9Dataset.schema.required_properties)
+        self.assertNotIn("Etot", QM9Dataset.schema.required_properties)
 
     def test_optional_properties_count(self):
         """QM9 has 18 optional properties (more than DFT's 4).
@@ -1178,14 +1201,15 @@ class TestQM9DatasetDifferencesFromDFT(unittest.TestCase):
         unlike DFT which uses 'graphs' as the npz key for SMILES.
         """
         # Find the SMILES identifier key
-        smiles_keys = [k for k in QM9Dataset.schema.identifier_keys if k[1] == 'smiles']
+        smiles_keys = [k for k in QM9Dataset.schema.identifier_keys if k[1] == "smiles"]
         self.assertEqual(len(smiles_keys), 1)
-        self.assertEqual(smiles_keys[0], ('smiles', 'smiles'))
+        self.assertEqual(smiles_keys[0], ("smiles", "smiles"))
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1193,25 +1217,25 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestQM9DatasetClassIdentity,                # GROUP 1:   8 tests
-        TestQM9DatasetRegistration,                  # GROUP 2:   5 tests
-        TestQM9DatasetMetadata,                      # GROUP 3:   7 tests
-        TestQM9DatasetSchema,                        # GROUP 4:   8 tests
-        TestQM9DatasetFeatures,                      # GROUP 5:  10 tests
-        TestQM9DatasetConfigKey,                     # GROUP 6:   2 tests
-        TestQM9DatasetGetRequiredProperties,         # GROUP 7:   5 tests
-        TestQM9DatasetGetFeatureSupport,             # GROUP 8:   6 tests
-        TestQM9DatasetGetMoleculeCreationStrategy,   # GROUP 9:   4 tests
-        TestQM9DatasetCreateHandler,                 # GROUP 10:  7 tests
-        TestQM9DatasetHandlerClassAttribute,         # GROUP 11:  3 tests
-        TestQM9DatasetMethodSignatures,              # GROUP 12:  6 tests
-        TestQM9DatasetMethodDocstrings,              # GROUP 13:  4 tests
-        TestQM9DatasetModuleImportsAndExports,       # GROUP 14:  5 tests
-        TestQM9DatasetFeaturesIntegration,           # GROUP 15:  4 tests
-        TestQM9DatasetSchemaMethodConsistency,       # GROUP 16:  3 tests
-        TestQM9DatasetSchemaSpecifics,               # GROUP 17:  6 tests
-        TestQM9DatasetEdgeCases,                     # GROUP 18:  5 tests
-        TestQM9DatasetDifferencesFromDFT,            # GROUP 19:  4 tests
+        TestQM9DatasetClassIdentity,  # GROUP 1:   8 tests
+        TestQM9DatasetRegistration,  # GROUP 2:   5 tests
+        TestQM9DatasetMetadata,  # GROUP 3:   7 tests
+        TestQM9DatasetSchema,  # GROUP 4:   8 tests
+        TestQM9DatasetFeatures,  # GROUP 5:  10 tests
+        TestQM9DatasetConfigKey,  # GROUP 6:   2 tests
+        TestQM9DatasetGetRequiredProperties,  # GROUP 7:   5 tests
+        TestQM9DatasetGetFeatureSupport,  # GROUP 8:   6 tests
+        TestQM9DatasetGetMoleculeCreationStrategy,  # GROUP 9:   4 tests
+        TestQM9DatasetCreateHandler,  # GROUP 10:  7 tests
+        TestQM9DatasetHandlerClassAttribute,  # GROUP 11:  3 tests
+        TestQM9DatasetMethodSignatures,  # GROUP 12:  6 tests
+        TestQM9DatasetMethodDocstrings,  # GROUP 13:  4 tests
+        TestQM9DatasetModuleImportsAndExports,  # GROUP 14:  5 tests
+        TestQM9DatasetFeaturesIntegration,  # GROUP 15:  4 tests
+        TestQM9DatasetSchemaMethodConsistency,  # GROUP 16:  3 tests
+        TestQM9DatasetSchemaSpecifics,  # GROUP 17:  6 tests
+        TestQM9DatasetEdgeCases,  # GROUP 18:  5 tests
+        TestQM9DatasetDifferencesFromDFT,  # GROUP 19:  4 tests
     ]
 
     for test_class in test_classes:

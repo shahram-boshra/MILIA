@@ -1,8 +1,8 @@
 # MILIA Pipeline: Recommended Datasets Roadmap
 
-**Version:** 1.0.0 
-**Created:** 2025-12-27 
-**Purpose:** Prioritized roadmap for adding new datasets to MILIA to achieve competitive differentiation in the molecular ML software market 
+**Version:** 1.0.0
+**Created:** 2025-12-27
+**Purpose:** Prioritized roadmap for adding new datasets to MILIA to achieve competitive differentiation in the molecular ML software market
 **Evidence-Based:** All recommendations derived from web searches of current literature, benchmarks, and community adoption
 
 ---
@@ -605,9 +605,9 @@ Based on QM9 implementation experience, each new dataset requires:
 
 ## Document Information
 
-**Version:** 1.0.0  
-**Created:** 2025-12-27  
-**Author:** MILIA Development Team  
+**Version:** 1.0.0
+**Created:** 2025-12-27
+**Author:** MILIA Development Team
 **Evidence Sources:** Web searches of Scientific Data, Nature Communications, ACS Catalysis, arXiv, GitHub repositories, and benchmark documentation
 
 **Key References:**

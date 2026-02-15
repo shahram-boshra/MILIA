@@ -13,20 +13,20 @@ Module location: milia_pipeline/models/registry/pyg_introspector.py
 """
 
 import inspect
-import logging
 import types
-from typing import Any, Dict, Optional, Set, Type
-from unittest.mock import MagicMock, patch
+from typing import Optional
+from unittest.mock import patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helpers – lightweight stand-ins for torch.nn.Module and PyG models
 # ---------------------------------------------------------------------------
 
+
 class _FakeModule:
     """Minimal stand-in for torch.nn.Module so issubclass() checks pass."""
+
     pass
 
 
@@ -38,11 +38,11 @@ class _FakeGCN(_FakeModule):
         in_channels: int,
         hidden_channels: int,
         num_layers: int,
-        out_channels: Optional[int] = None,
+        out_channels: int | None = None,
         dropout: float = 0.0,
         act: str = "relu",
-        norm: Optional[str] = None,
-        jk: Optional[str] = None,
+        norm: str | None = None,
+        jk: str | None = None,
         **kwargs,
     ):
         pass
@@ -64,7 +64,7 @@ class _FakeGAT(_FakeModule):
         in_channels: int,
         hidden_channels: int,
         num_layers: int,
-        out_channels: Optional[int] = None,
+        out_channels: int | None = None,
         heads: int = 1,
         dropout: float = 0.0,
         v2: bool = False,
@@ -84,7 +84,7 @@ class _FakeGraphSAGE(_FakeModule):
         in_channels: int,
         hidden_channels: int,
         num_layers: int,
-        out_channels: Optional[int] = None,
+        out_channels: int | None = None,
         dropout: float = 0.0,
         project: bool = False,
     ):
@@ -185,6 +185,7 @@ class _FakeNoForward(_FakeModule):
 
 class _FakeNoSignature:
     """Model where inspect.signature fails."""
+
     __init__ = None
 
 
@@ -212,6 +213,7 @@ class _FakeTransformerModel(_FakeModule):
 # Helper – building fake module for discover_pyg_models()
 # ---------------------------------------------------------------------------
 
+
 def _build_fake_pyg_nn_models_module():
     """Build a fake torch_geometric.nn.models module with public model classes."""
     mod = types.ModuleType("torch_geometric.nn.models")
@@ -236,6 +238,7 @@ _MODULE_PATH = "milia_pipeline.models.registry.pyg_introspector"
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(autouse=True)
 def _reset_introspector_singleton():
@@ -263,9 +266,8 @@ def mock_nn_module():
     fake_nn = types.ModuleType("torch.nn")
     fake_nn.Module = _FakeModule
 
-    with patch.dict("sys.modules", {"torch.nn": fake_nn}):
-        with patch(f"{_MODULE_PATH}.nn", fake_nn):
-            yield fake_nn
+    with patch.dict("sys.modules", {"torch.nn": fake_nn}), patch(f"{_MODULE_PATH}.nn", fake_nn):
+        yield fake_nn
 
 
 @pytest.fixture
@@ -301,6 +303,7 @@ def fake_discovery_env(mock_nn_module):
 # 1. ParameterInfo (Pydantic BaseModel)
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestParameterInfo:
     """Tests for the ParameterInfo Pydantic model."""
 
@@ -316,9 +319,14 @@ class TestParameterInfo:
     def test_construction_with_all_fields(self):
         intro = pytest.importorskip(_MODULE_PATH)
         pi = intro.ParameterInfo(
-            name="hidden_channels", param_type="int", required=False,
-            default=64, description="Number of hidden channels",
-            min_value=1.0, max_value=512.0, choices=[32, 64, 128],
+            name="hidden_channels",
+            param_type="int",
+            required=False,
+            default=64,
+            description="Number of hidden channels",
+            min_value=1.0,
+            max_value=512.0,
+            choices=[32, 64, 128],
         )
         assert pi.default == 64
         assert pi.min_value == 1.0
@@ -342,6 +350,7 @@ class TestParameterInfo:
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. introspect_model_signature
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestIntrospectModelSignature:
     """Tests for introspect_model_signature()."""
@@ -413,6 +422,7 @@ class TestIntrospectModelSignature:
 # 3. introspect_forward_signature
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestIntrospectForwardSignature:
     """Tests for introspect_forward_signature()."""
 
@@ -461,6 +471,7 @@ class TestIntrospectForwardSignature:
 # 4. model_accepts_kwargs
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestModelAcceptsKwargs:
     """Tests for model_accepts_kwargs()."""
 
@@ -488,6 +499,7 @@ class TestModelAcceptsKwargs:
 # ═══════════════════════════════════════════════════════════════════════════
 # 5. get_required_data_attributes
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestGetRequiredDataAttributes:
     """Tests for get_required_data_attributes()."""
@@ -523,6 +535,7 @@ class TestGetRequiredDataAttributes:
 # ═══════════════════════════════════════════════════════════════════════════
 # 6. Conv Kwargs
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestConvKwargs:
     """Tests for get_model_conv_kwargs() and KNOWN_CONV_KWARGS."""
@@ -572,6 +585,7 @@ class TestConvKwargs:
 # 7. Type Inference Helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestTypeInference:
     """Tests for _infer_param_type and _type_hint_to_string."""
 
@@ -608,7 +622,9 @@ class TestTypeInference:
 
     def test_default_none_infers_optional(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        param = inspect.Parameter("something", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None)
+        param = inspect.Parameter(
+            "something", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None
+        )
         assert intro._infer_param_type("something", param, {}) == "optional"
 
     def test_fallback_any(self):
@@ -620,6 +636,7 @@ class TestTypeInference:
 # ═══════════════════════════════════════════════════════════════════════════
 # 8. _infer_intelligent_default
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestInferIntelligentDefault:
     """Tests for _infer_intelligent_default()."""
@@ -673,6 +690,7 @@ class TestInferIntelligentDefault:
 # 9. _infer_category_enum
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestInferCategoryEnum:
     """Tests for _infer_category_enum()."""
 
@@ -711,6 +729,7 @@ class TestInferCategoryEnum:
 # 10. _infer_supported_tasks
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestInferSupportedTasks:
     """Tests for _infer_supported_tasks()."""
 
@@ -746,6 +765,7 @@ class TestInferSupportedTasks:
 # 11. _infer_tags
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestInferTags:
     """Tests for _infer_tags()."""
 
@@ -765,13 +785,16 @@ class TestInferTags:
     def test_model_with_heads_multihead_tag(self):
         intro = pytest.importorskip(_MODULE_PATH)
         params = intro.introspect_model_signature(_FakeTransformerModel)
-        tags = intro._infer_tags("TransformerConv", "torch_geometric.nn.conv.TransformerConv", params)
+        tags = intro._infer_tags(
+            "TransformerConv", "torch_geometric.nn.conv.TransformerConv", params
+        )
         assert "multi-head" in tags
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 12. _parameters_to_hyperparameters_dict
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestParametersToHyperparametersDict:
     """Tests for _parameters_to_hyperparameters_dict()."""
@@ -780,10 +803,15 @@ class TestParametersToHyperparametersDict:
         intro = pytest.importorskip(_MODULE_PATH)
         params = {
             "hidden_channels": intro.ParameterInfo(
-                name="hidden_channels", param_type="int", required=True,
+                name="hidden_channels",
+                param_type="int",
+                required=True,
             ),
             "dropout": intro.ParameterInfo(
-                name="dropout", param_type="float", required=False, default=0.5,
+                name="dropout",
+                param_type="float",
+                required=False,
+                default=0.5,
             ),
         }
         hp = intro._parameters_to_hyperparameters_dict(params)
@@ -794,7 +822,9 @@ class TestParametersToHyperparametersDict:
         intro = pytest.importorskip(_MODULE_PATH)
         params = {
             "encoder": intro.ParameterInfo(name="encoder", param_type="any", required=True),
-            "decoder": intro.ParameterInfo(name="decoder", param_type="any", required=False, default=None),
+            "decoder": intro.ParameterInfo(
+                name="decoder", param_type="any", required=False, default=None
+            ),
         }
         hp = intro._parameters_to_hyperparameters_dict(params)
         assert hp["encoder"]["type"] == "module"
@@ -804,7 +834,9 @@ class TestParametersToHyperparametersDict:
         intro = pytest.importorskip(_MODULE_PATH)
         params = {
             "num_blocks": intro.ParameterInfo(
-                name="num_blocks", param_type="int", required=True,
+                name="num_blocks",
+                param_type="int",
+                required=True,
             ),
         }
         hp = intro._parameters_to_hyperparameters_dict(params)
@@ -815,31 +847,47 @@ class TestParametersToHyperparametersDict:
 # 13. generate_search_space / _param_to_search_space
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestGenerateSearchSpace:
     """Tests for generate_search_space()."""
 
     def test_int_param_space(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = {"hidden_channels": intro.ParameterInfo(
-            name="hidden_channels", param_type="int", required=False, default=64,
-        )}
+        params = {
+            "hidden_channels": intro.ParameterInfo(
+                name="hidden_channels",
+                param_type="int",
+                required=False,
+                default=64,
+            )
+        }
         space = intro.generate_search_space(params)
         assert "hidden_channels" in space["hyperparameters"]
         assert space["hyperparameters"]["hidden_channels"]["type"] == "int"
 
     def test_dropout_float_space(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = {"dropout": intro.ParameterInfo(
-            name="dropout", param_type="float", required=False, default=0.0,
-        )}
+        params = {
+            "dropout": intro.ParameterInfo(
+                name="dropout",
+                param_type="float",
+                required=False,
+                default=0.0,
+            )
+        }
         space = intro.generate_search_space(params)
         assert space["hyperparameters"]["dropout"]["high"] == 0.6
 
     def test_bool_categorical_space(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = {"normalize": intro.ParameterInfo(
-            name="normalize", param_type="bool", required=False, default=True,
-        )}
+        params = {
+            "normalize": intro.ParameterInfo(
+                name="normalize",
+                param_type="bool",
+                required=False,
+                default=True,
+            )
+        }
         space = intro.generate_search_space(params)
         assert space["hyperparameters"]["normalize"]["type"] == "categorical"
 
@@ -847,8 +895,12 @@ class TestGenerateSearchSpace:
         intro = pytest.importorskip(_MODULE_PATH)
         params = {
             "in_channels": intro.ParameterInfo(name="in_channels", param_type="int", required=True),
-            "out_channels": intro.ParameterInfo(name="out_channels", param_type="int", required=True),
-            "num_layers": intro.ParameterInfo(name="num_layers", param_type="int", required=False, default=3),
+            "out_channels": intro.ParameterInfo(
+                name="out_channels", param_type="int", required=True
+            ),
+            "num_layers": intro.ParameterInfo(
+                name="num_layers", param_type="int", required=False, default=3
+            ),
         }
         space = intro.generate_search_space(params)
         assert "in_channels" not in space["hyperparameters"]
@@ -866,6 +918,7 @@ class TestGenerateSearchSpace:
 # 14. validate_params_against_signature
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestValidateParamsAgainstSignature:
     """Tests for validate_params_against_signature()."""
 
@@ -880,8 +933,7 @@ class TestValidateParamsAgainstSignature:
     def test_unknown_param_detected(self):
         intro = pytest.importorskip(_MODULE_PATH)
         ok, errors = intro.validate_params_against_signature(
-            _FakeGCN, {"in_channels": 10, "hidden_channels": 64,
-                       "num_layers": 3, "bogus": 42}
+            _FakeGCN, {"in_channels": 10, "hidden_channels": 64, "num_layers": 3, "bogus": 42}
         )
         assert ok is False
         assert any("bogus" in e for e in errors)
@@ -896,6 +948,7 @@ class TestValidateParamsAgainstSignature:
 # ═══════════════════════════════════════════════════════════════════════════
 # 15. get_valid_params_for_model
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestGetValidParamsForModel:
     """Tests for get_valid_params_for_model()."""
@@ -912,13 +965,15 @@ class TestGetValidParamsForModel:
 # 16. DynamicModelMetadata
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestDynamicModelMetadata:
     """Tests for the DynamicModelMetadata Pydantic model."""
 
     def test_construction(self):
         intro = pytest.importorskip(_MODULE_PATH)
         meta = intro.DynamicModelMetadata(
-            name="TestModel", category=intro.ModelCategory.BASIC_GNN,
+            name="TestModel",
+            category=intro.ModelCategory.BASIC_GNN,
             import_path="test.TestModel",
         )
         assert meta.name == "TestModel"
@@ -928,7 +983,8 @@ class TestDynamicModelMetadata:
     def test_to_dict_serializes_enum(self):
         intro = pytest.importorskip(_MODULE_PATH)
         meta = intro.DynamicModelMetadata(
-            name="GCN", category=intro.ModelCategory.BASIC_GNN,
+            name="GCN",
+            category=intro.ModelCategory.BASIC_GNN,
             import_path="torch_geometric.nn.models.GCN",
         )
         d = meta.to_dict()
@@ -953,6 +1009,7 @@ class TestDynamicModelMetadata:
 # ═══════════════════════════════════════════════════════════════════════════
 # 17. generate_model_metadata
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestGenerateModelMetadata:
     """Tests for generate_model_metadata()."""
@@ -1005,6 +1062,7 @@ class TestGenerateModelMetadata:
 # 18. discover_pyg_models
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestDiscoverPygModels:
     """Tests for discover_pyg_models()."""
 
@@ -1049,6 +1107,7 @@ class TestDiscoverPygModels:
 # ═══════════════════════════════════════════════════════════════════════════
 # 19. PyGModelIntrospector (Singleton)
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestPyGModelIntrospector:
     """Tests for the PyGModelIntrospector singleton class."""
@@ -1095,6 +1154,7 @@ class TestPyGModelIntrospector:
 # 20. get_introspector
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestGetIntrospector:
     """Tests for the get_introspector() convenience function."""
 
@@ -1113,6 +1173,7 @@ class TestGetIntrospector:
 # ═══════════════════════════════════════════════════════════════════════════
 # 21. Backward Compatible API Functions
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestBackwardCompatibleAPI:
     """Tests for module-level backward-compatible functions."""
@@ -1143,6 +1204,7 @@ class TestBackwardCompatibleAPI:
 # 22. _LazyAllModels / ALL_MODELS
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestLazyAllModels:
     """Tests for the _LazyAllModels lazy-loading dict."""
 
@@ -1159,6 +1221,7 @@ class TestLazyAllModels:
 # 23. ModelCategory Enum
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestModelCategoryEnum:
     """Tests for the ModelCategory enum."""
 
@@ -1168,8 +1231,16 @@ class TestModelCategoryEnum:
 
     def test_has_expected_categories(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        expected = {"BASIC_GNN", "CONVOLUTIONAL", "ATTENTION", "POOLING",
-                    "AGGREGATION", "AUTOENCODER", "TRANSFORMER", "UTILITY"}
+        expected = {
+            "BASIC_GNN",
+            "CONVOLUTIONAL",
+            "ATTENTION",
+            "POOLING",
+            "AGGREGATION",
+            "AUTOENCODER",
+            "TRANSFORMER",
+            "UTILITY",
+        }
         for cat in expected:
             assert hasattr(intro.ModelCategory, cat), f"Missing category: {cat}"
 
@@ -1182,6 +1253,7 @@ class TestModelCategoryEnum:
 # ═══════════════════════════════════════════════════════════════════════════
 # 24. _extract_param_description
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestExtractParamDescription:
     """Tests for _extract_param_description()."""
@@ -1203,6 +1275,7 @@ class TestExtractParamDescription:
 # 25. _extract_forward_param_description
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestExtractForwardParamDescription:
     """Tests for _extract_forward_param_description()."""
 
@@ -1222,6 +1295,7 @@ class TestExtractForwardParamDescription:
 # 26. Cross-Function Integration
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestCrossFunctionIntegration:
     """Verify functions compose correctly end-to-end."""
 
@@ -1231,8 +1305,7 @@ class TestCrossFunctionIntegration:
         valid_names = set(params.keys())
         # A config with only valid param names should pass
         ok, errors = intro.validate_params_against_signature(
-            _FakeGCN,
-            {name: 1 for name in valid_names if params[name].required}
+            _FakeGCN, {name: 1 for name in valid_names if params[name].required}
         )
         assert ok is True
 

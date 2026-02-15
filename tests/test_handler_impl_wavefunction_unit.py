@@ -28,15 +28,11 @@ NPZ file paths (mocked, never downloaded):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock, call
 import logging
-import copy
-import math
-from typing import Dict, List, Any, Optional, Tuple
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import torch
@@ -47,20 +43,18 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.handlers.implementations.wavefunction import WavefunctionDatasetHandler
 from milia_pipeline.exceptions import (
-    PropertyEnrichmentError,
-    MoleculeProcessingError,
-    HandlerError,
-    HandlerConfigurationError,
-    HandlerValidationError,
     DatasetSpecificHandlerError,
+    HandlerValidationError,
+    MoleculeProcessingError,
+    PropertyEnrichmentError,
 )
-
+from milia_pipeline.handlers.implementations.wavefunction import WavefunctionDatasetHandler
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for WavefunctionDatasetHandler
 # ============================================================================
+
 
 def _make_dataset_config(**overrides):
     """
@@ -74,7 +68,7 @@ def _make_dataset_config(**overrides):
     cfg.root_dir = overrides.get("root_dir", "/tmp/test_data")
     cfg.raw_dir = overrides.get("raw_dir", "/tmp/test_data/raw")
     cfg.is_uncertainty_enabled = overrides.get("is_uncertainty_enabled", False)
-    cfg.uncertainty_config = overrides.get("uncertainty_config", None)
+    cfg.uncertainty_config = overrides.get("uncertainty_config")
     return cfg
 
 
@@ -87,7 +81,7 @@ def _make_filter_config(**overrides):
     cfg = Mock(name="FilterConfig")
     cfg.max_atoms = overrides.get("max_atoms", 100)
     cfg.min_atoms = overrides.get("min_atoms", 1)
-    cfg.allowed_elements = overrides.get("allowed_elements", None)
+    cfg.allowed_elements = overrides.get("allowed_elements")
     return cfg
 
 
@@ -108,7 +102,9 @@ def _make_processing_config(**overrides):
     cfg.node_features = overrides.get("node_features", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
-    cfg.common_required_properties = overrides.get("common_required_properties", ["atoms", "coordinates"])
+    cfg.common_required_properties = overrides.get(
+        "common_required_properties", ["atoms", "coordinates"]
+    )
     return cfg
 
 
@@ -123,7 +119,7 @@ def _make_handler(**overrides):
     filter_config = overrides.get("filter_config", _make_filter_config())
     processing_config = overrides.get("processing_config", _make_processing_config())
     logger = overrides.get("logger", logging.getLogger("test.wavefunction"))
-    experimental_setup = overrides.get("experimental_setup", None)
+    experimental_setup = overrides.get("experimental_setup")
 
     handler = WavefunctionDatasetHandler(
         dataset_config=dataset_config,
@@ -176,8 +172,10 @@ def _make_raw_properties(**overrides):
     """
     num_atoms = overrides.get("num_atoms", 3)
     props = {
-        "atoms": overrides.get("atoms", np.array(['C', 'H', 'H'], dtype=object)[:num_atoms]),
-        "coordinates": overrides.get("coordinates", np.random.randn(num_atoms, 3).astype(np.float64)),
+        "atoms": overrides.get("atoms", np.array(["C", "H", "H"], dtype=object)[:num_atoms]),
+        "coordinates": overrides.get(
+            "coordinates", np.random.randn(num_atoms, 3).astype(np.float64)
+        ),
         "compounds": overrides.get("compounds", "BrCPxSiSxH4_331"),
         "homo_lumo_gap_eV": overrides.get("homo_lumo_gap_eV", 4.56),
         "n_electrons": overrides.get("n_electrons", 8),
@@ -192,6 +190,7 @@ def _make_raw_properties(**overrides):
 # ============================================================================
 # GROUP 1: WavefunctionDatasetHandler — Identity and Registration (6 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetHandlerIdentity(unittest.TestCase):
     """Test WavefunctionDatasetHandler identity, registration, and basic attributes."""
@@ -217,6 +216,7 @@ class TestWavefunctionDatasetHandlerIdentity(unittest.TestCase):
     def test_is_subclass_of_dataset_handler(self):
         """WavefunctionDatasetHandler is a proper DatasetHandler subclass."""
         from milia_pipeline.handlers.base_handler import DatasetHandler
+
         self.assertTrue(issubclass(WavefunctionDatasetHandler, DatasetHandler))
 
     def test_handler_stores_configs(self):
@@ -225,8 +225,10 @@ class TestWavefunctionDatasetHandlerIdentity(unittest.TestCase):
         fc = _make_filter_config()
         pc = _make_processing_config()
         handler = WavefunctionDatasetHandler(
-            dataset_config=dc, filter_config=fc,
-            processing_config=pc, logger=logging.getLogger("test"),
+            dataset_config=dc,
+            filter_config=fc,
+            processing_config=pc,
+            logger=logging.getLogger("test"),
         )
         self.assertIs(handler.dataset_config, dc)
         self.assertIs(handler.filter_config, fc)
@@ -241,6 +243,7 @@ class TestWavefunctionDatasetHandlerIdentity(unittest.TestCase):
 # ============================================================================
 # GROUP 2: get_required_properties (6 tests)
 # ============================================================================
+
 
 class TestGetRequiredProperties(unittest.TestCase):
     """Test Wavefunction-specific required property determination."""
@@ -300,6 +303,7 @@ class TestGetRequiredProperties(unittest.TestCase):
 # ============================================================================
 # GROUP 3: get_molecular_charge (7 tests)
 # ============================================================================
+
 
 class TestGetMolecularCharge(unittest.TestCase):
     """Test Wavefunction-specific molecular charge from n_electrons."""
@@ -369,6 +373,7 @@ class TestGetMolecularCharge(unittest.TestCase):
 # GROUP 4: validate_molecule_data — Success Paths (5 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataSuccess(unittest.TestCase):
     """Test Wavefunction molecule validation success paths."""
 
@@ -420,6 +425,7 @@ class TestValidateMoleculeDataSuccess(unittest.TestCase):
 # GROUP 5: validate_molecule_data — Error Paths (7 tests)
 # ============================================================================
 
+
 class TestValidateMoleculeDataErrors(unittest.TestCase):
     """Test Wavefunction molecule validation error paths."""
 
@@ -448,8 +454,10 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
         self.assertIn("atoms", str(ctx.exception))
         self.assertIn("coordinates", str(ctx.exception))
 
-    @patch("milia_pipeline.handlers.implementations.wavefunction.validate_molecular_structure",
-           side_effect=ValueError("Atom count mismatch"))
+    @patch(
+        "milia_pipeline.handlers.implementations.wavefunction.validate_molecular_structure",
+        side_effect=ValueError("Atom count mismatch"),
+    )
     def test_structure_validation_failure_raises_dataset_specific_error(self, mock_validate):
         """Structure validation failure wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -483,6 +491,7 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
 # GROUP 6: _validate_wavefunction_features (7 tests)
 # ============================================================================
 
+
 class TestValidateWavefunctionFeatures(unittest.TestCase):
     """Test wavefunction-specific quantum mechanical feature validation."""
 
@@ -509,7 +518,7 @@ class TestValidateWavefunctionFeatures(unittest.TestCase):
     def test_non_finite_mo_energies_logs_warning(self):
         """Non-finite MO energies log a warning but do not raise."""
         handler = _make_handler()
-        props = {"mo_energies": np.array([float('inf'), -5.2, 0.3])}
+        props = {"mo_energies": np.array([float("inf"), -5.2, 0.3])}
         with self.assertLogs("test.wavefunction", level="WARNING") as cm:
             handler._validate_wavefunction_features(props, 0, "test")
         self.assertTrue(any("non-finite MO energies" in msg for msg in cm.output))
@@ -539,6 +548,7 @@ class TestValidateWavefunctionFeatures(unittest.TestCase):
 # ============================================================================
 # GROUP 7: process_property_value (8 tests)
 # ============================================================================
+
 
 class TestProcessPropertyValue(unittest.TestCase):
     """Test Wavefunction-specific property value processing."""
@@ -581,8 +591,10 @@ class TestProcessPropertyValue(unittest.TestCase):
         with self.assertRaises(DatasetSpecificHandlerError):
             handler.process_property_value("mo_occupations", ["x", "y"], 0)
 
-    @patch("milia_pipeline.handlers.implementations.wavefunction.is_value_valid_and_not_nan",
-           return_value=False)
+    @patch(
+        "milia_pipeline.handlers.implementations.wavefunction.is_value_valid_and_not_nan",
+        return_value=False,
+    )
     def test_homo_lumo_gap_nan_returns_none(self, mock_valid):
         """Invalid HOMO-LUMO gap returns None."""
         handler = _make_handler()
@@ -600,6 +612,7 @@ class TestProcessPropertyValue(unittest.TestCase):
 # ============================================================================
 # GROUP 8: get_transform_recommendations (5 tests)
 # ============================================================================
+
 
 class TestGetTransformRecommendations(unittest.TestCase):
     """Test Wavefunction-specific transform recommendations."""
@@ -648,6 +661,7 @@ class TestGetTransformRecommendations(unittest.TestCase):
 # GROUP 9: get_supported_descriptors (5 tests)
 # ============================================================================
 
+
 class TestGetSupportedDescriptors(unittest.TestCase):
     """Test Wavefunction-specific descriptor support reporting."""
 
@@ -681,7 +695,14 @@ class TestGetSupportedDescriptors(unittest.TestCase):
         """Wavefunction supports constitutional, topological, electronic, geometric, drug_likeness, fragments."""
         handler = _make_handler()
         desc = handler.get_supported_descriptors()
-        expected = ["constitutional", "topological", "electronic", "geometric", "drug_likeness", "fragments"]
+        expected = [
+            "constitutional",
+            "topological",
+            "electronic",
+            "geometric",
+            "drug_likeness",
+            "fragments",
+        ]
         for cat in expected:
             self.assertIn(cat, desc["categories"])
 
@@ -689,6 +710,7 @@ class TestGetSupportedDescriptors(unittest.TestCase):
 # ============================================================================
 # GROUP 10: get_supported_structural_features (5 tests)
 # ============================================================================
+
 
 class TestGetSupportedStructuralFeatures(unittest.TestCase):
     """Test Wavefunction-specific structural feature support."""
@@ -730,6 +752,7 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
 # ============================================================================
 # GROUP 11: _is_valid_property (7 tests)
 # ============================================================================
+
 
 class TestIsValidProperty(unittest.TestCase):
     """Test Wavefunction property validation."""
@@ -773,6 +796,7 @@ class TestIsValidProperty(unittest.TestCase):
 # ============================================================================
 # GROUP 12: _ensure_tensor (8 tests)
 # ============================================================================
+
 
 class TestEnsureTensor(unittest.TestCase):
     """Test tensor conversion utility."""
@@ -837,6 +861,7 @@ class TestEnsureTensor(unittest.TestCase):
 # ============================================================================
 # GROUP 13: _add_scalar_targets_internal (10 tests)
 # ============================================================================
+
 
 class TestAddScalarTargetsInternal(unittest.TestCase):
     """Test Wavefunction scalar target addition to PyG data."""
@@ -923,8 +948,11 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         with self.assertRaises(PropertyEnrichmentError):
             handler._add_scalar_targets_internal(data, props, 0, "test")
 
-    @patch("milia_pipeline.handlers.implementations.wavefunction.FEATURE_TIERS",
-           {"standard": ["homo_lumo_gap_eV"]}, create=True)
+    @patch(
+        "milia_pipeline.handlers.implementations.wavefunction.FEATURE_TIERS",
+        {"standard": ["homo_lumo_gap_eV"]},
+        create=True,
+    )
     def test_tier_aware_filtering(self):
         """Tier-aware filtering skips targets not in the feature tier."""
         pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV", "total_energy"])
@@ -949,6 +977,7 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
 # ============================================================================
 # GROUP 14: _add_orbital_properties_internal (6 tests)
 # ============================================================================
+
 
 class TestAddOrbitalPropertiesInternal(unittest.TestCase):
     """Test Wavefunction orbital property addition to PyG data."""
@@ -1020,11 +1049,15 @@ class TestAddOrbitalPropertiesInternal(unittest.TestCase):
 # GROUP 15: _add_node_features_internal (6 tests)
 # ============================================================================
 
+
 class TestAddNodeFeaturesInternal(unittest.TestCase):
     """Test Wavefunction node feature addition."""
 
-    @patch("milia_pipeline.handlers.implementations.wavefunction.HEAVY_ATOM_SYMBOLS_TO_Z",
-           {"C": 6, "H": 1, "O": 8}, create=True)
+    @patch(
+        "milia_pipeline.handlers.implementations.wavefunction.HEAVY_ATOM_SYMBOLS_TO_Z",
+        {"C": 6, "H": 1, "O": 8},
+        create=True,
+    )
     def test_adds_node_features_from_atoms(self):
         """Node features are created from atom types."""
         pc = _make_processing_config(node_features=["atoms"])
@@ -1049,8 +1082,7 @@ class TestAddNodeFeaturesInternal(unittest.TestCase):
         with self.assertRaises(PropertyEnrichmentError):
             handler._add_node_features_internal(data, props, 0, "test")
 
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z",
-           {"C": 6, "H": 1})
+    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
     def test_unknown_atom_uses_zero_placeholder(self):
         """Unknown atom type maps to 0 and logs warning."""
         pc = _make_processing_config(node_features=["atoms"])
@@ -1061,8 +1093,7 @@ class TestAddNodeFeaturesInternal(unittest.TestCase):
             handler._add_node_features_internal(data, props, 0, "test")
         self.assertTrue(any("Unknown atom type" in msg for msg in cm.output))
 
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z",
-           {"C": 6, "H": 1})
+    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
     def test_node_features_unsqueezed_when_1d(self):
         """1D node features are unsqueezed to 2D (N, 1)."""
         pc = _make_processing_config(node_features=["atoms"])
@@ -1073,8 +1104,7 @@ class TestAddNodeFeaturesInternal(unittest.TestCase):
         self.assertEqual(data.x.dim(), 2)
         self.assertEqual(data.x.shape[1], 1)
 
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z",
-           {"C": 6, "H": 1})
+    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
     def test_node_features_dtype_long(self):
         """Node features (atomic numbers) are torch.long."""
         pc = _make_processing_config(node_features=["atoms"])
@@ -1091,17 +1121,21 @@ class TestAddNodeFeaturesInternal(unittest.TestCase):
         data = _make_pyg_data()
         props = _make_raw_properties(atoms=np.array(["C", "H", "H"], dtype=object))
         # Force _ensure_tensor to raise to trigger the except block
-        with patch.object(
-            handler, "_ensure_tensor",
-            side_effect=RuntimeError("tensor conversion boom"),
+        with (
+            patch.object(
+                handler,
+                "_ensure_tensor",
+                side_effect=RuntimeError("tensor conversion boom"),
+            ),
+            self.assertRaises(PropertyEnrichmentError),
         ):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_node_features_internal(data, props, 0, "test")
+            handler._add_node_features_internal(data, props, 0, "test")
 
 
 # ============================================================================
 # GROUP 16: enrich_pyg_data (7 tests)
 # ============================================================================
+
 
 class TestEnrichPygData(unittest.TestCase):
     """Test Wavefunction PyG data enrichment orchestration."""
@@ -1151,32 +1185,41 @@ class TestEnrichPygData(unittest.TestCase):
         """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
         data = _make_pyg_data()
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=RuntimeError("unexpected"),
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
     def test_property_enrichment_error_propagates(self):
         """PropertyEnrichmentError from internal methods propagates directly."""
         handler = _make_handler()
         data = _make_pyg_data()
-        with patch.object(
-            handler, "_add_scalar_targets_internal",
-            side_effect=PropertyEnrichmentError(
-                molecule_index=0, inchi="test",
-                property_name="test_prop", reason="test reason",
-                detail="test detail",
+        with (
+            patch.object(
+                handler,
+                "_add_scalar_targets_internal",
+                side_effect=PropertyEnrichmentError(
+                    molecule_index=0,
+                    inchi="test",
+                    property_name="test_prop",
+                    reason="test reason",
+                    detail="test detail",
+                ),
             ),
+            self.assertRaises(PropertyEnrichmentError),
         ):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
 
 # ============================================================================
 # GROUP 17: get_processing_statistics (6 tests)
 # ============================================================================
+
 
 class TestGetProcessingStatistics(unittest.TestCase):
     """Test Wavefunction processing statistics generation."""
@@ -1210,9 +1253,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
         stats = handler.get_processing_statistics(processed)
         self.assertIn("homo_lumo_gap_stats", stats)
         self.assertEqual(stats["homo_lumo_gap_stats"]["count"], 2)
-        self.assertAlmostEqual(
-            stats["homo_lumo_gap_stats"]["mean"], (4.56 + 5.67) / 2, places=4
-        )
+        self.assertAlmostEqual(stats["homo_lumo_gap_stats"]["mean"], (4.56 + 5.67) / 2, places=4)
 
     def test_orbital_data_tracking(self):
         """Molecules with orbital data are tracked."""
@@ -1241,6 +1282,7 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # ============================================================================
 # GROUP 18: Transform Validation Helpers (8 tests)
 # ============================================================================
+
 
 class TestTransformValidationHelpers(unittest.TestCase):
     """Test Wavefunction-specific transform validation methods."""
@@ -1298,6 +1340,7 @@ class TestTransformValidationHelpers(unittest.TestCase):
 # GROUP 19: _get_dataset_suitable_transforms (5 tests)
 # ============================================================================
 
+
 class TestGetDatasetSuitableTransforms(unittest.TestCase):
     """Test Wavefunction-specific suitable transform selection."""
 
@@ -1305,8 +1348,11 @@ class TestGetDatasetSuitableTransforms(unittest.TestCase):
         """Suitable transforms include geometric transforms (Distance, Cartesian)."""
         handler = _make_handler()
         available = {
-            "Distance": None, "Cartesian": None, "Polar": None,
-            "Spherical": None, "AddSelfLoops": None,
+            "Distance": None,
+            "Cartesian": None,
+            "Polar": None,
+            "Spherical": None,
+            "AddSelfLoops": None,
         }
         suitable = handler._get_dataset_suitable_transforms(available)
         self.assertIn("Distance", suitable)
@@ -1346,6 +1392,7 @@ class TestGetDatasetSuitableTransforms(unittest.TestCase):
 # ============================================================================
 # GROUP 20: Edge Cases and Integration (7 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndIntegration(unittest.TestCase):
     """Test edge cases and integration scenarios."""
@@ -1389,32 +1436,39 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
         """MoleculeProcessingError in validate_molecule_data wraps to DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=MoleculeProcessingError(
-                message="Processing failed",
-                molecule_index=0,
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=MoleculeProcessingError(
+                    message="Processing failed",
+                    molecule_index=0,
+                ),
             ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, molecule_index=0, identifier="test")
+            handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
     def test_unexpected_error_in_validation_wraps(self):
         """Unexpected errors in validate_molecule_data wrap to DatasetSpecificHandlerError."""
         handler = _make_handler()
         props = _make_raw_properties()
-        with patch.object(
-            handler, "_is_valid_property",
-            side_effect=TypeError("unexpected type error"),
+        with (
+            patch.object(
+                handler,
+                "_is_valid_property",
+                side_effect=TypeError("unexpected type error"),
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
         ):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(props, molecule_index=0, identifier="test")
+            handler.validate_molecule_data(props, molecule_index=0, identifier="test")
 
     def test_process_property_unexpected_exception_wrapped(self):
         """Unexpected exception in process_property_value wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
         with patch.object(
-            handler, "process_property_value",
+            handler,
+            "process_property_value",
             wraps=handler.process_property_value,
         ):
             # Force an unexpected error
@@ -1430,32 +1484,33 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestWavefunctionDatasetHandlerIdentity,       # GROUP 1:    6 tests
-        TestGetRequiredProperties,                     # GROUP 2:    6 tests
-        TestGetMolecularCharge,                        # GROUP 3:    7 tests
-        TestValidateMoleculeDataSuccess,               # GROUP 4:    5 tests
-        TestValidateMoleculeDataErrors,                # GROUP 5:    7 tests
-        TestValidateWavefunctionFeatures,              # GROUP 6:    7 tests
-        TestProcessPropertyValue,                      # GROUP 7:    8 tests
-        TestGetTransformRecommendations,               # GROUP 8:    5 tests
-        TestGetSupportedDescriptors,                   # GROUP 9:    5 tests
-        TestGetSupportedStructuralFeatures,            # GROUP 10:   5 tests
-        TestIsValidProperty,                           # GROUP 11:   7 tests
-        TestEnsureTensor,                              # GROUP 12:   8 tests
-        TestAddScalarTargetsInternal,                  # GROUP 13:  10 tests
-        TestAddOrbitalPropertiesInternal,              # GROUP 14:   6 tests
-        TestAddNodeFeaturesInternal,                   # GROUP 15:   6 tests
-        TestEnrichPygData,                             # GROUP 16:   7 tests
-        TestGetProcessingStatistics,                   # GROUP 17:   6 tests
-        TestTransformValidationHelpers,                # GROUP 18:   8 tests
-        TestGetDatasetSuitableTransforms,              # GROUP 19:   5 tests
-        TestEdgeCasesAndIntegration,                   # GROUP 20:   7 tests
+        TestWavefunctionDatasetHandlerIdentity,  # GROUP 1:    6 tests
+        TestGetRequiredProperties,  # GROUP 2:    6 tests
+        TestGetMolecularCharge,  # GROUP 3:    7 tests
+        TestValidateMoleculeDataSuccess,  # GROUP 4:    5 tests
+        TestValidateMoleculeDataErrors,  # GROUP 5:    7 tests
+        TestValidateWavefunctionFeatures,  # GROUP 6:    7 tests
+        TestProcessPropertyValue,  # GROUP 7:    8 tests
+        TestGetTransformRecommendations,  # GROUP 8:    5 tests
+        TestGetSupportedDescriptors,  # GROUP 9:    5 tests
+        TestGetSupportedStructuralFeatures,  # GROUP 10:   5 tests
+        TestIsValidProperty,  # GROUP 11:   7 tests
+        TestEnsureTensor,  # GROUP 12:   8 tests
+        TestAddScalarTargetsInternal,  # GROUP 13:  10 tests
+        TestAddOrbitalPropertiesInternal,  # GROUP 14:   6 tests
+        TestAddNodeFeaturesInternal,  # GROUP 15:   6 tests
+        TestEnrichPygData,  # GROUP 16:   7 tests
+        TestGetProcessingStatistics,  # GROUP 17:   6 tests
+        TestTransformValidationHelpers,  # GROUP 18:   8 tests
+        TestGetDatasetSuitableTransforms,  # GROUP 19:   5 tests
+        TestEdgeCasesAndIntegration,  # GROUP 20:   7 tests
     ]
 
     for test_class in test_classes:

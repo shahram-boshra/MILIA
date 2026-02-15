@@ -53,34 +53,29 @@ QDPi-specific characteristics (from qdpi.py source):
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock
 import inspect
-from typing import Dict, List
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.datasets.base import (
+    BaseDataset,
+    DatasetFeatures,
+    DatasetMetadata,
+    DatasetSchema,
+)
 from milia_pipeline.datasets.implementations.qdpi import (
     QDPiDataset,
 )
-from milia_pipeline.datasets.base import (
-    BaseDataset,
-    DatasetMetadata,
-    DatasetSchema,
-    DatasetFeatures,
-)
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from qdpi.py source
@@ -97,53 +92,63 @@ EXPECTED_METADATA_DESCRIPTION = (
 EXPECTED_METADATA_AUTHOR = "Zeng, Giese, G\u00f6tz, York (Rutgers LBSR)"
 EXPECTED_METADATA_LICENSE = "CC BY 4.0"
 
-EXPECTED_REQUIRED_PROPERTIES = ('atoms', 'coordinates', 'energy')
+EXPECTED_REQUIRED_PROPERTIES = ("atoms", "coordinates", "energy")
 EXPECTED_OPTIONAL_PROPERTIES = (
-    'forces',              # Atomic forces in Hartree/Angstrom (converted from eV/Angstrom)
-    'formula',             # Chemical formula group identifier from HDF5
-    'molecular_charge',    # CRITICAL: Molecular charge for charged molecules
-    'subset',              # Source subset identifier (spice, ani, geom, etc.)
-    'charge_type',         # 'neutral' or 'charged' (from directory structure)
+    "forces",  # Atomic forces in Hartree/Angstrom (converted from eV/Angstrom)
+    "formula",  # Chemical formula group identifier from HDF5
+    "molecular_charge",  # CRITICAL: Molecular charge for charged molecules
+    "subset",  # Source subset identifier (spice, ani, geom, etc.)
+    "charge_type",  # 'neutral' or 'charged' (from directory structure)
 )
 # CRITICAL: QDPi has NO parseable chemical identifiers — empty tuple
 EXPECTED_IDENTIFIER_KEYS = ()
-EXPECTED_COORDINATE_UNITS = 'angstrom'
-EXPECTED_ENERGY_UNITS = 'hartree'
+EXPECTED_COORDINATE_UNITS = "angstrom"
+EXPECTED_ENERGY_UNITS = "hartree"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': False,
-    'atomization_energy': True,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': False,
-    'homo_lumo_gap': False,
-    'mo_energies': False,
+    "vibrational_analysis": False,
+    "uncertainty_handling": False,
+    "atomization_energy": True,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": False,
+    "homo_lumo_gap": False,
+    "mo_energies": False,
 }
 
 EXPECTED_CONFIG_KEY = "qdpi_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "coordinate_based"
 
 # QDPi-specific: 13 supported elements (atomic numbers)
 EXPECTED_SUPPORTED_ELEMENTS = [1, 3, 6, 7, 8, 9, 11, 15, 16, 17, 19, 35, 53]
 EXPECTED_SUPPORTED_ELEMENT_SYMBOLS = [
-    'H', 'Li', 'C', 'N', 'O', 'F', 'Na', 'P', 'S', 'Cl', 'K', 'Br', 'I'
+    "H",
+    "Li",
+    "C",
+    "N",
+    "O",
+    "F",
+    "Na",
+    "P",
+    "S",
+    "Cl",
+    "K",
+    "Br",
+    "I",
 ]
 
 # QDPi-specific: 7 source subsets
-EXPECTED_SOURCE_SUBSETS = [
-    'spice', 'ani', 'geom', 'freesolvmd', 're', 'remd', 'comp6'
-]
+EXPECTED_SOURCE_SUBSETS = ["spice", "ani", "geom", "freesolvmd", "re", "remd", "comp6"]
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
-    'get_supported_elements',
-    'get_supported_element_symbols',
-    'supports_charged_molecules',
-    'get_source_subsets',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
+    "get_supported_elements",
+    "get_supported_element_symbols",
+    "supports_charged_molecules",
+    "get_source_subsets",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -153,6 +158,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: QDPiDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetClassIdentity(unittest.TestCase):
     """Verify QDPiDataset is a proper BaseDataset subclass with correct identity."""
@@ -206,6 +212,7 @@ class TestQDPiDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: QDPiDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetRegistration(unittest.TestCase):
     """Verify QDPiDataset is registered via @register decorator."""
 
@@ -226,6 +233,7 @@ class TestQDPiDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class.
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("QDPi")
         self.assertIs(retrieved, QDPiDataset)
 
@@ -235,6 +243,7 @@ class TestQDPiDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names.
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("QDPi", all_names)
 
@@ -243,9 +252,7 @@ class TestQDPiDatasetRegistration(unittest.TestCase):
 
         Evidence: qdpi.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[QDPiDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[QDPiDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -261,6 +268,7 @@ class TestQDPiDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: QDPiDataset.metadata — DatasetMetadata (7 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetMetadata(unittest.TestCase):
     """Verify QDPiDataset.metadata is a correctly configured DatasetMetadata.
@@ -312,6 +320,7 @@ class TestQDPiDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: QDPiDataset.schema — DatasetSchema (9 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetSchema(unittest.TestCase):
     """Verify QDPiDataset.schema is a correctly configured DatasetSchema.
@@ -387,7 +396,7 @@ class TestQDPiDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            QDPiDataset.schema.required_properties = ('modified',)
+            QDPiDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -405,6 +414,7 @@ class TestQDPiDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: QDPiDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetFeatures(unittest.TestCase):
     """Verify QDPiDataset.features is a correctly configured DatasetFeatures.
@@ -487,6 +497,7 @@ class TestQDPiDatasetFeatures(unittest.TestCase):
 # GROUP 6: QDPiDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetConfigKey(unittest.TestCase):
     """Verify QDPiDataset.config_key is correctly set.
 
@@ -506,6 +517,7 @@ class TestQDPiDatasetConfigKey(unittest.TestCase):
 # GROUP 7: QDPiDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetGetRequiredProperties(unittest.TestCase):
     """Verify QDPiDataset.get_required_properties() classmethod.
 
@@ -515,7 +527,7 @@ class TestQDPiDatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_required_properties')
+        descriptor = QDPiDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -555,6 +567,7 @@ class TestQDPiDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: QDPiDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetGetFeatureSupport(unittest.TestCase):
     """Verify QDPiDataset.get_feature_support() classmethod.
 
@@ -564,7 +577,7 @@ class TestQDPiDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_feature_support')
+        descriptor = QDPiDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -611,6 +624,7 @@ class TestQDPiDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: QDPiDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify QDPiDataset.get_molecule_creation_strategy() classmethod.
 
@@ -620,7 +634,7 @@ class TestQDPiDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = QDPiDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -643,7 +657,7 @@ class TestQDPiDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(QDPiDataset, 'get_molecule_creation_strategy')
+        method = QDPiDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -651,6 +665,7 @@ class TestQDPiDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: QDPiDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetCreateHandler(unittest.TestCase):
     """Verify QDPiDataset.create_handler() factory method with lazy import.
@@ -662,7 +677,7 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('create_handler')
+        descriptor = QDPiDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -677,13 +692,19 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = QDPiDataset.__dict__['create_handler'].__func__
+        unbound_func = QDPiDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -692,7 +713,7 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
         Evidence: qdpi.py create_handler signature: experimental_setup=None.
         """
         sig = inspect.signature(QDPiDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -712,11 +733,11 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockQDPiDatasetHandler')
+            mock_handler_cls = Mock(name="MockQDPiDatasetHandler")
             mock_module = MagicMock()
             mock_module.QDPiDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.qdpi'
+            handler_mod_key = "milia_pipeline.handlers.implementations.qdpi"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -751,11 +772,11 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 
         Evidence: qdpi.py create_handler() return QDPiDatasetHandler(...).
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -779,7 +800,7 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 
         Evidence: qdpi.py: return QDPiDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = QDPiDataset.create_handler(
@@ -792,7 +813,7 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring mentioning lazy import."""
-        method = getattr(QDPiDataset, 'create_handler')
+        method = QDPiDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -800,6 +821,7 @@ class TestQDPiDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: QDPiDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify QDPiDataset.handler_class is None (default from BaseDataset).
@@ -837,6 +859,7 @@ class TestQDPiDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: QDPiDataset — Method Signatures and Return Annotations (7 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations.
 
@@ -850,35 +873,35 @@ class TestQDPiDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -887,19 +910,25 @@ class TestQDPiDatasetMethodSignatures(unittest.TestCase):
 
         Evidence: base.py BaseDataset.create_handler() with 5-parameter signature.
         """
-        sig = self._get_sig('create_handler')
+        sig = self._get_sig("create_handler")
         params = list(sig.parameters.keys())
         self.assertEqual(len(params), 5)
         self.assertEqual(
             params,
-            ['dataset_config', 'filter_config', 'processing_config',
-             'logger', 'experimental_setup'],
+            [
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
 
 # ============================================================================
 # GROUP 13: QDPiDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
     """Verify each QDPiDataset method has a non-empty docstring."""
@@ -910,11 +939,10 @@ class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(QDPiDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
@@ -923,7 +951,7 @@ class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: qdpi.py get_required_properties docstring.
         """
-        method = getattr(QDPiDataset, 'get_required_properties')
+        method = QDPiDataset.get_required_properties
         doc = method.__doc__
         self.assertIn("propert", doc.lower())
 
@@ -932,7 +960,7 @@ class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
 
         Evidence: qdpi.py get_feature_support docstring.
         """
-        method = getattr(QDPiDataset, 'get_feature_support')
+        method = QDPiDataset.get_feature_support
         doc = method.__doc__
         self.assertIn("feature", doc.lower())
 
@@ -942,7 +970,7 @@ class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
         Evidence: qdpi.py get_molecule_creation_strategy docstring explains why
         coordinate_based is used (no parseable identifiers in HDF5).
         """
-        method = getattr(QDPiDataset, 'get_molecule_creation_strategy')
+        method = QDPiDataset.get_molecule_creation_strategy
         doc = method.__doc__
         self.assertIn("coordinate_based", doc)
 
@@ -951,18 +979,21 @@ class TestQDPiDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: QDPiDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the qdpi implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The qdpi.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.qdpi as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_qdpi_dataset(self):
         """QDPiDataset is importable from the implementations.qdpi module."""
         import milia_pipeline.datasets.implementations.qdpi as mod
+
         self.assertTrue(hasattr(mod, "QDPiDataset"))
         self.assertIs(mod.QDPiDataset, QDPiDataset)
 
@@ -971,9 +1002,7 @@ class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: qdpi.py imports from milia_pipeline.datasets.base.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qdpi']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qdpi"])
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
         self.assertIn("DatasetMetadata", source)
@@ -985,9 +1014,7 @@ class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
 
         Evidence: qdpi.py imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qdpi']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qdpi"])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_module_does_not_import_handler_at_module_level(self):
@@ -1001,9 +1028,7 @@ class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
         """
         import ast
 
-        source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.qdpi']
-        )
+        source = inspect.getsource(sys.modules["milia_pipeline.datasets.implementations.qdpi"])
         tree = ast.parse(source)
 
         # Collect module-level import statements only
@@ -1014,10 +1039,12 @@ class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -1041,6 +1068,7 @@ class TestQDPiDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: QDPiDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with QDPi.
 
@@ -1058,14 +1086,14 @@ class TestQDPiDatasetFeaturesIntegration(unittest.TestCase):
 
         QDPi specific: atomization_energy is the only enabled feature.
         """
-        self.assertTrue(QDPiDataset.features.supports('atomization_energy'))
+        self.assertTrue(QDPiDataset.features.supports("atomization_energy"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         QDPi specific: no vibrational frequencies available.
         """
-        self.assertFalse(QDPiDataset.features.supports('vibrational_analysis'))
+        self.assertFalse(QDPiDataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -1076,6 +1104,7 @@ class TestQDPiDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: QDPiDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -1107,6 +1136,7 @@ class TestQDPiDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: QDPiDataset — Edge Cases and Robustness (9 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of QDPiDataset."""
@@ -1150,10 +1180,10 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockQDPiDatasetHandler')
+            mock_handler_cls = Mock(name="MockQDPiDatasetHandler")
             mock_module = MagicMock()
             mock_module.QDPiDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.qdpi'
+            handler_mod_key = "milia_pipeline.handlers.implementations.qdpi"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1181,10 +1211,10 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. QDPiDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', QDPiDataset.__dict__)
-        self.assertIn('schema', QDPiDataset.__dict__)
-        self.assertIn('features', QDPiDataset.__dict__)
-        self.assertIn('config_key', QDPiDataset.__dict__)
+        self.assertIn("metadata", QDPiDataset.__dict__)
+        self.assertIn("schema", QDPiDataset.__dict__)
+        self.assertIn("features", QDPiDataset.__dict__)
+        self.assertIn("config_key", QDPiDataset.__dict__)
 
     def test_strategy_is_not_identifier_based(self):
         """get_molecule_creation_strategy() does NOT return 'identifier_coordinate_based'.
@@ -1193,8 +1223,8 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
         QDPi uses 'coordinate_based' because it has no chemical identifiers.
         """
         result = QDPiDataset.get_molecule_creation_strategy()
-        self.assertNotEqual(result, 'identifier_coordinate_based')
-        self.assertEqual(result, 'coordinate_based')
+        self.assertNotEqual(result, "identifier_coordinate_based")
+        self.assertEqual(result, "coordinate_based")
 
     def test_required_properties_uses_energy_not_energies(self):
         """QDPi required_properties uses 'energy' (singular), NOT 'energies' (plural).
@@ -1203,8 +1233,8 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
         The 'energies' key from HDF5 is mapped to 'energy' during preprocessing.
         """
         result = QDPiDataset.get_required_properties()
-        self.assertIn('energy', result)
-        self.assertNotIn('energies', result)
+        self.assertIn("energy", result)
+        self.assertNotIn("energies", result)
 
     def test_no_molecules_class_attribute(self):
         """QDPi does NOT have a MOLECULES class attribute in its own __dict__.
@@ -1212,7 +1242,7 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
         QDPi is a large-scale dataset (~1.6M structures) without a fixed
         molecule list, unlike rMD17 which defines MOLECULES.
         """
-        self.assertNotIn('MOLECULES', QDPiDataset.__dict__)
+        self.assertNotIn("MOLECULES", QDPiDataset.__dict__)
 
     def test_optional_properties_includes_molecular_charge(self):
         """QDPi optional_properties includes 'molecular_charge'.
@@ -1222,12 +1252,13 @@ class TestQDPiDatasetEdgeCases(unittest.TestCase):
         via rdDetermineBonds in charged species.
         Evidence: qdpi.py schema optional_properties definition.
         """
-        self.assertIn('molecular_charge', QDPiDataset.schema.optional_properties)
+        self.assertIn("molecular_charge", QDPiDataset.schema.optional_properties)
 
 
 # ============================================================================
 # GROUP 18: QDPiDataset — QDPi-Specific Distinctions (10 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
     """Test QDPi-specific characteristics that distinguish it from other datasets.
@@ -1273,7 +1304,7 @@ class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
         Evidence: qdpi.py schema optional_properties includes 'forces'
         for atomic forces (eV/Angstrom → Hartree/Angstrom).
         """
-        self.assertIn('forces', QDPiDataset.schema.optional_properties)
+        self.assertIn("forces", QDPiDataset.schema.optional_properties)
 
     def test_optional_properties_has_formula(self):
         """QDPi optional_properties includes 'formula'.
@@ -1281,7 +1312,7 @@ class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
         Evidence: qdpi.py schema optional_properties includes 'formula'
         for chemical formula group identifier from HDF5.
         """
-        self.assertIn('formula', QDPiDataset.schema.optional_properties)
+        self.assertIn("formula", QDPiDataset.schema.optional_properties)
 
     def test_optional_properties_has_subset(self):
         """QDPi optional_properties includes 'subset'.
@@ -1289,7 +1320,7 @@ class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
         Evidence: qdpi.py schema optional_properties includes 'subset'
         for source dataset identifier (spice, ani, geom, etc.).
         """
-        self.assertIn('subset', QDPiDataset.schema.optional_properties)
+        self.assertIn("subset", QDPiDataset.schema.optional_properties)
 
     def test_optional_properties_has_charge_type(self):
         """QDPi optional_properties includes 'charge_type'.
@@ -1297,7 +1328,7 @@ class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
         Evidence: qdpi.py schema optional_properties includes 'charge_type'
         for 'neutral' or 'charged' (from directory structure).
         """
-        self.assertIn('charge_type', QDPiDataset.schema.optional_properties)
+        self.assertIn("charge_type", QDPiDataset.schema.optional_properties)
 
     def test_metadata_description_mentions_dft_functional(self):
         """metadata.description mentions the DFT functional level.
@@ -1320,6 +1351,7 @@ class TestQDPiDatasetSpecificDistinctions(unittest.TestCase):
 # GROUP 19: QDPiDataset — get_supported_elements() (6 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetGetSupportedElements(unittest.TestCase):
     """Verify QDPiDataset.get_supported_elements() classmethod.
 
@@ -1330,7 +1362,7 @@ class TestQDPiDatasetGetSupportedElements(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_supported_elements is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_supported_elements')
+        descriptor = QDPiDataset.__dict__.get("get_supported_elements")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -1364,7 +1396,7 @@ class TestQDPiDatasetGetSupportedElements(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_supported_elements method has a non-empty docstring."""
-        method = getattr(QDPiDataset, 'get_supported_elements')
+        method = QDPiDataset.get_supported_elements
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -1372,6 +1404,7 @@ class TestQDPiDatasetGetSupportedElements(unittest.TestCase):
 # ============================================================================
 # GROUP 20: QDPiDataset — get_supported_element_symbols() (5 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetGetSupportedElementSymbols(unittest.TestCase):
     """Verify QDPiDataset.get_supported_element_symbols() classmethod.
@@ -1381,7 +1414,7 @@ class TestQDPiDatasetGetSupportedElementSymbols(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_supported_element_symbols is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_supported_element_symbols')
+        descriptor = QDPiDataset.__dict__.get("get_supported_element_symbols")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -1415,6 +1448,7 @@ class TestQDPiDatasetGetSupportedElementSymbols(unittest.TestCase):
 # GROUP 21: QDPiDataset — supports_charged_molecules() (4 tests)
 # ============================================================================
 
+
 class TestQDPiDatasetSupportsChargedMolecules(unittest.TestCase):
     """Verify QDPiDataset.supports_charged_molecules() classmethod.
 
@@ -1425,7 +1459,7 @@ class TestQDPiDatasetSupportsChargedMolecules(unittest.TestCase):
 
     def test_is_classmethod(self):
         """supports_charged_molecules is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('supports_charged_molecules')
+        descriptor = QDPiDataset.__dict__.get("supports_charged_molecules")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -1446,7 +1480,7 @@ class TestQDPiDatasetSupportsChargedMolecules(unittest.TestCase):
 
     def test_has_docstring(self):
         """supports_charged_molecules method has a non-empty docstring."""
-        method = getattr(QDPiDataset, 'supports_charged_molecules')
+        method = QDPiDataset.supports_charged_molecules
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -1454,6 +1488,7 @@ class TestQDPiDatasetSupportsChargedMolecules(unittest.TestCase):
 # ============================================================================
 # GROUP 22: QDPiDataset — get_source_subsets() (5 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetGetSourceSubsets(unittest.TestCase):
     """Verify QDPiDataset.get_source_subsets() classmethod.
@@ -1464,7 +1499,7 @@ class TestQDPiDatasetGetSourceSubsets(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_source_subsets is a classmethod."""
-        descriptor = QDPiDataset.__dict__.get('get_source_subsets')
+        descriptor = QDPiDataset.__dict__.get("get_source_subsets")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -1497,6 +1532,7 @@ class TestQDPiDatasetGetSourceSubsets(unittest.TestCase):
 # ============================================================================
 # GROUP 23: QDPiDataset — Element Count Consistency (3 tests)
 # ============================================================================
+
 
 class TestQDPiDatasetElementConsistency(unittest.TestCase):
     """Verify consistency between get_supported_elements() and
@@ -1532,35 +1568,36 @@ class TestQDPiDatasetElementConsistency(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestQDPiDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestQDPiDatasetRegistration,                  # GROUP 2:  5 tests
-        TestQDPiDatasetMetadata,                      # GROUP 3:  7 tests
-        TestQDPiDatasetSchema,                        # GROUP 4:  9 tests
-        TestQDPiDatasetFeatures,                      # GROUP 5: 10 tests
-        TestQDPiDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestQDPiDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestQDPiDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestQDPiDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestQDPiDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestQDPiDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestQDPiDatasetMethodSignatures,              # GROUP 12: 7 tests
-        TestQDPiDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestQDPiDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestQDPiDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestQDPiDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestQDPiDatasetEdgeCases,                     # GROUP 17: 9 tests
-        TestQDPiDatasetSpecificDistinctions,          # GROUP 18: 10 tests
-        TestQDPiDatasetGetSupportedElements,          # GROUP 19: 6 tests
-        TestQDPiDatasetGetSupportedElementSymbols,    # GROUP 20: 5 tests
-        TestQDPiDatasetSupportsChargedMolecules,      # GROUP 21: 4 tests
-        TestQDPiDatasetGetSourceSubsets,              # GROUP 22: 5 tests
-        TestQDPiDatasetElementConsistency,            # GROUP 23: 3 tests
+        TestQDPiDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestQDPiDatasetRegistration,  # GROUP 2:  5 tests
+        TestQDPiDatasetMetadata,  # GROUP 3:  7 tests
+        TestQDPiDatasetSchema,  # GROUP 4:  9 tests
+        TestQDPiDatasetFeatures,  # GROUP 5: 10 tests
+        TestQDPiDatasetConfigKey,  # GROUP 6:  2 tests
+        TestQDPiDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestQDPiDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestQDPiDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestQDPiDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestQDPiDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestQDPiDatasetMethodSignatures,  # GROUP 12: 7 tests
+        TestQDPiDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestQDPiDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestQDPiDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestQDPiDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestQDPiDatasetEdgeCases,  # GROUP 17: 9 tests
+        TestQDPiDatasetSpecificDistinctions,  # GROUP 18: 10 tests
+        TestQDPiDatasetGetSupportedElements,  # GROUP 19: 6 tests
+        TestQDPiDatasetGetSupportedElementSymbols,  # GROUP 20: 5 tests
+        TestQDPiDatasetSupportsChargedMolecules,  # GROUP 21: 4 tests
+        TestQDPiDatasetGetSourceSubsets,  # GROUP 22: 5 tests
+        TestQDPiDatasetElementConsistency,  # GROUP 23: 3 tests
     ]
 
     for test_class in test_classes:

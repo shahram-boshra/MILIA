@@ -32,16 +32,16 @@ Quick Start:
     ...     convert_batch_to_pyg,
     ...     list_available_formats,
     ... )
-    >>> 
+    >>>
     >>> # Convert SMILES (auto-detected)
     >>> data = convert_to_pyg("CCO")
-    >>> 
+    >>>
     >>> # Convert XYZ file
     >>> data = convert_to_pyg("molecule.xyz")
-    >>> 
+    >>>
     >>> # Convert batch
     >>> batch = convert_batch_to_pyg(["CCO", "CC(=O)O", "c1ccccc1"])
-    >>> 
+    >>>
     >>> # Check available formats
     >>> print(list_available_formats())
 
@@ -50,27 +50,27 @@ Custom Converters:
     ...     BaseDataConverter,
     ...     register_converter,
     ... )
-    >>> 
+    >>>
     >>> @register_converter("my_format")
     >>> class MyConverter(BaseDataConverter):
     ...     @property
     ...     def format_name(self) -> str:
     ...         return "my_format"
-    ...     
+    ...
     ...     @property
     ...     def is_available(self) -> bool:
     ...         return True
-    ...     
+    ...
     ...     def can_convert(self, input_data) -> bool:
     ...         return isinstance(input_data, MyDataType)
-    ...     
+    ...
     ...     def convert(self, input_data, **kwargs):
     ...         # Convert to PyG Data
     ...         return Data(x=..., edge_index=...)
 """
 
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -88,34 +88,25 @@ __author__ = "MILIA Team"
 # =============================================================================
 
 # Registry and base classes
-from .data_converter import (
-    # Protocol
-    DataConverterProtocol,
-    
-    # Registry (singleton)
-    DataConverterRegistry,
-    get_registry,
-    register_converter,
-    
-    # Base class for custom converters
-    BaseDataConverter,
-)
-
 # Built-in converters (always available)
-from .data_converter import (
-    PyGDataConverter,
-    DictConverter,
-)
-
 # Convenience functions (DYNAMIC API)
 from .data_converter import (
-    convert_to_pyg,
+    # Base class for custom converters
+    BaseDataConverter,
+    # Protocol
+    DataConverterProtocol,
+    # Registry (singleton)
+    DataConverterRegistry,
+    DictConverter,
+    PyGDataConverter,
     convert_batch_to_pyg,
-    list_available_formats,
+    convert_to_pyg,
+    get_registry,
     list_all_formats,
+    list_available_formats,
+    register_converter,
     smiles_to_data,  # Legacy alias
 )
-
 
 # =============================================================================
 # OPTIONAL CONVERTERS (Dependency-gated imports)
@@ -125,10 +116,11 @@ from .data_converter import (
 _RDKIT_AVAILABLE = False
 try:
     from .data_converter import (
-        SMILESConverter,
         InChIConverter,
         SDFConverter,
+        SMILESConverter,
     )
+
     _RDKIT_AVAILABLE = True
 except ImportError:
     SMILESConverter = None
@@ -139,9 +131,10 @@ except ImportError:
 _ASE_AVAILABLE = False
 try:
     from .data_converter import (
-        XYZConverter,
         ASEAtomsConverter,
+        XYZConverter,
     )
+
     _ASE_AVAILABLE = True
 except ImportError:
     XYZConverter = None
@@ -155,64 +148,57 @@ except ImportError:
 # Core exports (always available)
 __all_core__ = [
     # Protocol
-    'DataConverterProtocol',
-    
+    "DataConverterProtocol",
     # Registry
-    'DataConverterRegistry',
-    'get_registry',
-    'register_converter',
-    
+    "DataConverterRegistry",
+    "get_registry",
+    "register_converter",
     # Base class
-    'BaseDataConverter',
-    
+    "BaseDataConverter",
     # Built-in converters
-    'PyGDataConverter',
-    'DictConverter',
-    
+    "PyGDataConverter",
+    "DictConverter",
     # Convenience functions
-    'convert_to_pyg',
-    'convert_batch_to_pyg',
-    'list_available_formats',
-    'list_all_formats',
-    'smiles_to_data',
+    "convert_to_pyg",
+    "convert_batch_to_pyg",
+    "list_available_formats",
+    "list_all_formats",
+    "smiles_to_data",
 ]
 
 # RDKit converters (conditional)
 __all_rdkit__ = []
 if _RDKIT_AVAILABLE:
     __all_rdkit__ = [
-        'SMILESConverter',
-        'InChIConverter',
-        'SDFConverter',
+        "SMILESConverter",
+        "InChIConverter",
+        "SDFConverter",
     ]
 
 # ASE converters (conditional)
 __all_ase__ = []
 if _ASE_AVAILABLE:
     __all_ase__ = [
-        'XYZConverter',
-        'ASEAtomsConverter',
+        "XYZConverter",
+        "ASEAtomsConverter",
     ]
 
 # Complete public API
-__all__ = (
-    __all_core__ +
-    __all_rdkit__ +
-    __all_ase__
-)
+__all__ = __all_core__ + __all_rdkit__ + __all_ase__
 
 
 # =============================================================================
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # =============================================================================
 
-def get_available_components() -> Dict[str, List[str]]:
+
+def get_available_components() -> dict[str, list[str]]:
     """
     Get all available data preparation components.
-    
+
     Returns:
         Dictionary mapping component types to available classes/functions
-        
+
     Example:
         >>> from milia_pipeline.models.post_training.data_preparation import get_available_components
         >>> components = get_available_components()
@@ -221,83 +207,83 @@ def get_available_components() -> Dict[str, List[str]]:
         >>> print(f"ASE converters: {components['ase_converters']}")
     """
     return {
-        'core': __all_core__,
-        'rdkit_converters': __all_rdkit__,
-        'ase_converters': __all_ase__,
-        'available_formats': list_available_formats(),
-        'all_formats': list_all_formats(),
+        "core": __all_core__,
+        "rdkit_converters": __all_rdkit__,
+        "ase_converters": __all_ase__,
+        "available_formats": list_available_formats(),
+        "all_formats": list_all_formats(),
     }
 
 
 def print_available_components():
     """
     Print all available data preparation components to console.
-    
+
     Useful for exploring available options during development.
-    
+
     Example:
         >>> from milia_pipeline.models.post_training.data_preparation import print_available_components
         >>> print_available_components()
     """
     components = get_available_components()
-    
+
     print("=" * 70)
     print("MILIA Pipeline - Data Preparation Module Components")
     print("=" * 70)
-    
+
     print(f"\n📦 Core Components ({len(components['core'])} available):")
-    for i, name in enumerate(components['core'], 1):
+    for i, name in enumerate(components["core"], 1):
         print(f"  {i:2d}. {name}")
-    
-    if components['rdkit_converters']:
+
+    if components["rdkit_converters"]:
         print(f"\n🧪 RDKit Converters ({len(components['rdkit_converters'])} available):")
-        for i, name in enumerate(components['rdkit_converters'], 1):
+        for i, name in enumerate(components["rdkit_converters"], 1):
             print(f"  {i}. {name}")
     else:
         print("\n🧪 RDKit Converters: Not available (pip install rdkit)")
-    
-    if components['ase_converters']:
+
+    if components["ase_converters"]:
         print(f"\n⚛️  ASE Converters ({len(components['ase_converters'])} available):")
-        for i, name in enumerate(components['ase_converters'], 1):
+        for i, name in enumerate(components["ase_converters"], 1):
             print(f"  {i}. {name}")
     else:
         print("\n⚛️  ASE Converters: Not available (pip install ase)")
-    
+
     print(f"\n📋 Available Formats: {components['available_formats']}")
     print(f"📋 All Formats: {components['all_formats']}")
-    
+
     print("\n" + "=" * 70)
     print(f"Data Preparation Module v{__version__}")
     print("=" * 70)
 
 
-def check_dependencies() -> Dict[str, bool]:
+def check_dependencies() -> dict[str, bool]:
     """
     Check which optional dependencies are available.
-    
+
     Returns:
         Dictionary of dependency name to availability status
-        
+
     Example:
         >>> deps = check_dependencies()
         >>> if deps['rdkit']:
         ...     print("RDKit is available - SMILES/InChI/SDF conversion supported")
     """
     deps = {
-        'rdkit': _RDKIT_AVAILABLE,
-        'ase': _ASE_AVAILABLE,
+        "rdkit": _RDKIT_AVAILABLE,
+        "ase": _ASE_AVAILABLE,
     }
-    
+
     # Check individual formats
     registry = get_registry()
     for fmt in registry.list_all():
         converter_cls = registry.get(fmt)
         try:
             instance = converter_cls()
-            deps[f'format_{fmt}'] = instance.is_available
+            deps[f"format_{fmt}"] = instance.is_available
         except Exception:
-            deps[f'format_{fmt}'] = False
-    
+            deps[f"format_{fmt}"] = False
+
     return deps
 
 

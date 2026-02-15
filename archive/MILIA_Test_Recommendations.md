@@ -277,7 +277,7 @@ Regression tests verify that known bugs stay fixed and that critical outputs rem
 
 ---
 
-### 4.2 `test_regression_checkpoint_compatibility.py`   
+### 4.2 `test_regression_checkpoint_compatibility.py`
 
 **What it tests**: Checkpoints saved with the current code can be loaded correctly, and the v2.0 format is maintained. Also tests backward compatibility with v1.0 format if applicable.
 
@@ -289,7 +289,7 @@ Regression tests verify that known bugs stay fixed and that critical outputs rem
 
 ---
 
-### 4.3 `test_regression_featurization_consistency.py`   
+### 4.3 `test_regression_featurization_consistency.py`
 
 **What it tests**: The structural features configuration persistence fix (v1.6.0) — training-time featurization config is saved in checkpoints and correctly applied during prediction to avoid dimension mismatches.
 
@@ -309,7 +309,7 @@ Configuration tests verify that the YAML configuration system handles valid, inv
 
 **Why essential for your goals**: Configuration is the primary user interface for scientific software. Robust config validation tests prevent "silent misconfiguration" — a common source of incorrect scientific results.
 
-### 5.1 `test_config_validation_comprehensive.py`   
+### 5.1 `test_config_validation_comprehensive.py`
 
 **What it tests**: End-to-end configuration validation including schema validation, Pydantic V2 model validation, cross-field consistency checks, and meaningful error messages for invalid configs.
 
@@ -325,7 +325,7 @@ Configuration tests verify that the YAML configuration system handles valid, inv
 
 ---
 
-### 5.2 `test_config_split_mode_parity.py` — ⬆️ EXPANDED (absorbs retired Section 4.1)   
+### 5.2 `test_config_split_mode_parity.py` — ⬆️ EXPANDED (absorbs retired Section 4.1)
 
 **What it tests**: Split-mode configuration (`configs/` directory with multiple YAML files) produces the same effective configuration as single-file mode (`config.yaml`). This test now also carries the regression protection responsibility originally assigned to Section 4.1 (`test_regression_config_migration.py`), which was retired due to `migrate_config.py` deprecation.
 
@@ -346,7 +346,7 @@ Thread safety tests verify that concurrent access to thread-safe components (reg
 
 **Why essential for your goals**: MILIA documents extensive thread safety guarantees. Tests that verify these guarantees demonstrate rigorous engineering — highly valued in both research and industry.
 
-### 6.1 `test_thread_safety_registries.py`   
+### 6.1 `test_thread_safety_registries.py`
 
 **What it tests**: Concurrent registration, lookup, and unregistration in all registry types do not cause race conditions or inconsistent state.
 

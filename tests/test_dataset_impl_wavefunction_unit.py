@@ -44,32 +44,27 @@ CRITICAL DIFFERENCES FROM DFT tested here:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, Mock, MagicMock, call
 import inspect
-from typing import Dict, List, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.datasets.implementations.wavefunction import WavefunctionDataset
 from milia_pipeline.datasets.base import (
     BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
 )
+from milia_pipeline.datasets.implementations.wavefunction import WavefunctionDataset
 from milia_pipeline.datasets.registry import (
-    register,
     is_registered,
-    get_default_registry,
 )
-
 
 # ============================================================================
 # CONSTANTS: Expected values derived from wavefunction.py source
@@ -82,32 +77,31 @@ EXPECTED_METADATA_DESCRIPTION = (
 )
 EXPECTED_METADATA_AUTHOR = "MILIA Pipeline Team"
 
-EXPECTED_REQUIRED_PROPERTIES = ('atoms', 'coordinates', 'compounds')
-EXPECTED_OPTIONAL_PROPERTIES = ('mo_energies', 'mo_occupations', 'homo_lumo_gap_eV',
-                                'total_energy')
-EXPECTED_IDENTIFIER_KEYS = (('compounds', 'compound_id'),)
-EXPECTED_COORDINATE_UNITS = 'bohr'
-EXPECTED_ENERGY_UNITS = 'eV'
+EXPECTED_REQUIRED_PROPERTIES = ("atoms", "coordinates", "compounds")
+EXPECTED_OPTIONAL_PROPERTIES = ("mo_energies", "mo_occupations", "homo_lumo_gap_eV", "total_energy")
+EXPECTED_IDENTIFIER_KEYS = (("compounds", "compound_id"),)
+EXPECTED_COORDINATE_UNITS = "bohr"
+EXPECTED_ENERGY_UNITS = "eV"
 
 EXPECTED_FEATURES = {
-    'vibrational_analysis': False,
-    'uncertainty_handling': False,
-    'atomization_energy': False,
-    'rotational_constants': False,
-    'frequency_analysis': False,
-    'orbital_analysis': True,
-    'homo_lumo_gap': True,
-    'mo_energies': True,
+    "vibrational_analysis": False,
+    "uncertainty_handling": False,
+    "atomization_energy": False,
+    "rotational_constants": False,
+    "frequency_analysis": False,
+    "orbital_analysis": True,
+    "homo_lumo_gap": True,
+    "mo_energies": True,
 }
 
 EXPECTED_CONFIG_KEY = "wavefunction_config"
-EXPECTED_MOLECULE_CREATION_STRATEGY = 'coordinate_based'
+EXPECTED_MOLECULE_CREATION_STRATEGY = "coordinate_based"
 
 EXPECTED_CLASSMETHOD_NAMES = [
-    'get_required_properties',
-    'get_feature_support',
-    'get_molecule_creation_strategy',
-    'create_handler',
+    "get_required_properties",
+    "get_feature_support",
+    "get_molecule_creation_strategy",
+    "create_handler",
 ]
 
 # Sentinel for sys.modules cleanup in scoped handler mocking
@@ -117,6 +111,7 @@ _SENTINEL = object()
 # ============================================================================
 # GROUP 1: WavefunctionDataset — Class Identity and Type Hierarchy (8 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetClassIdentity(unittest.TestCase):
     """Verify WavefunctionDataset is a proper BaseDataset subclass with correct identity."""
@@ -167,6 +162,7 @@ class TestWavefunctionDatasetClassIdentity(unittest.TestCase):
 # GROUP 2: WavefunctionDataset — Registration with @register (5 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetRegistration(unittest.TestCase):
     """Verify WavefunctionDataset is registered via @register decorator."""
 
@@ -187,6 +183,7 @@ class TestWavefunctionDatasetRegistration(unittest.TestCase):
         Evidence: registry.py get() method returns the registered class (project structure line 372).
         """
         from milia_pipeline.datasets.registry import get
+
         retrieved = get("Wavefunction")
         self.assertIs(retrieved, WavefunctionDataset)
 
@@ -196,6 +193,7 @@ class TestWavefunctionDatasetRegistration(unittest.TestCase):
         Evidence: registry.py list_all() returns all registered names (project structure line 372).
         """
         from milia_pipeline.datasets.registry import list_all
+
         all_names = list_all()
         self.assertIn("Wavefunction", all_names)
 
@@ -204,9 +202,7 @@ class TestWavefunctionDatasetRegistration(unittest.TestCase):
 
         Evidence: wavefunction.py line 27 imports register from milia_pipeline.datasets.registry.
         """
-        source = inspect.getsource(
-            sys.modules[WavefunctionDataset.__module__]
-        )
+        source = inspect.getsource(sys.modules[WavefunctionDataset.__module__])
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
     def test_registration_uses_metadata_name(self):
@@ -222,6 +218,7 @@ class TestWavefunctionDatasetRegistration(unittest.TestCase):
 # ============================================================================
 # GROUP 3: WavefunctionDataset.metadata — DatasetMetadata (6 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetMetadata(unittest.TestCase):
     """Verify WavefunctionDataset.metadata is a correctly configured DatasetMetadata.
@@ -266,6 +263,7 @@ class TestWavefunctionDatasetMetadata(unittest.TestCase):
 # ============================================================================
 # GROUP 4: WavefunctionDataset.schema — DatasetSchema (8 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetSchema(unittest.TestCase):
     """Verify WavefunctionDataset.schema is a correctly configured DatasetSchema.
@@ -351,7 +349,7 @@ class TestWavefunctionDatasetSchema(unittest.TestCase):
         (project structure line 340-343).
         """
         with self.assertRaises((AttributeError, TypeError, Exception)):
-            WavefunctionDataset.schema.required_properties = ('modified',)
+            WavefunctionDataset.schema.required_properties = ("modified",)
 
     def test_schema_required_properties_are_tuples(self):
         """required_properties and optional_properties are tuples (immutable sequences)."""
@@ -362,6 +360,7 @@ class TestWavefunctionDatasetSchema(unittest.TestCase):
 # ============================================================================
 # GROUP 5: WavefunctionDataset.features — DatasetFeatures (10 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetFeatures(unittest.TestCase):
     """Verify WavefunctionDataset.features is a correctly configured DatasetFeatures.
@@ -441,6 +440,7 @@ class TestWavefunctionDatasetFeatures(unittest.TestCase):
 # GROUP 6: WavefunctionDataset.config_key (2 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetConfigKey(unittest.TestCase):
     """Verify WavefunctionDataset.config_key is correctly set.
 
@@ -460,6 +460,7 @@ class TestWavefunctionDatasetConfigKey(unittest.TestCase):
 # GROUP 7: WavefunctionDataset.get_required_properties() (5 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetGetRequiredProperties(unittest.TestCase):
     """Verify WavefunctionDataset.get_required_properties() classmethod.
 
@@ -473,7 +474,7 @@ class TestWavefunctionDatasetGetRequiredProperties(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_required_properties is a classmethod."""
-        descriptor = WavefunctionDataset.__dict__.get('get_required_properties')
+        descriptor = WavefunctionDataset.__dict__.get("get_required_properties")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -514,6 +515,7 @@ class TestWavefunctionDatasetGetRequiredProperties(unittest.TestCase):
 # GROUP 8: WavefunctionDataset.get_feature_support() (6 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetGetFeatureSupport(unittest.TestCase):
     """Verify WavefunctionDataset.get_feature_support() classmethod.
 
@@ -523,7 +525,7 @@ class TestWavefunctionDatasetGetFeatureSupport(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_feature_support is a classmethod."""
-        descriptor = WavefunctionDataset.__dict__.get('get_feature_support')
+        descriptor = WavefunctionDataset.__dict__.get("get_feature_support")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -569,6 +571,7 @@ class TestWavefunctionDatasetGetFeatureSupport(unittest.TestCase):
 # GROUP 9: WavefunctionDataset.get_molecule_creation_strategy() (4 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetGetMoleculeCreationStrategy(unittest.TestCase):
     """Verify WavefunctionDataset.get_molecule_creation_strategy() classmethod.
 
@@ -582,7 +585,7 @@ class TestWavefunctionDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_is_classmethod(self):
         """get_molecule_creation_strategy is a classmethod."""
-        descriptor = WavefunctionDataset.__dict__.get('get_molecule_creation_strategy')
+        descriptor = WavefunctionDataset.__dict__.get("get_molecule_creation_strategy")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -607,7 +610,7 @@ class TestWavefunctionDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 
     def test_has_docstring(self):
         """get_molecule_creation_strategy method has a non-empty docstring."""
-        method = getattr(WavefunctionDataset, 'get_molecule_creation_strategy')
+        method = WavefunctionDataset.get_molecule_creation_strategy
         self.assertIsNotNone(method.__doc__)
         self.assertGreater(len(method.__doc__.strip()), 0)
 
@@ -615,6 +618,7 @@ class TestWavefunctionDatasetGetMoleculeCreationStrategy(unittest.TestCase):
 # ============================================================================
 # GROUP 10: WavefunctionDataset.create_handler() — Lazy Import Pattern (7 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
     """Verify WavefunctionDataset.create_handler() factory method with lazy import.
@@ -626,7 +630,7 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 
     def test_is_classmethod(self):
         """create_handler is a classmethod."""
-        descriptor = WavefunctionDataset.__dict__.get('create_handler')
+        descriptor = WavefunctionDataset.__dict__.get("create_handler")
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, classmethod)
 
@@ -641,13 +645,19 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
         via __func__ to capture all parameters including 'cls'.
         """
         # Access the underlying function to get the full signature including 'cls'
-        unbound_func = WavefunctionDataset.__dict__['create_handler'].__func__
+        unbound_func = WavefunctionDataset.__dict__["create_handler"].__func__
         sig = inspect.signature(unbound_func)
         params = list(sig.parameters.keys())
         self.assertEqual(
             params,
-            ['cls', 'dataset_config', 'filter_config',
-             'processing_config', 'logger', 'experimental_setup'],
+            [
+                "cls",
+                "dataset_config",
+                "filter_config",
+                "processing_config",
+                "logger",
+                "experimental_setup",
+            ],
         )
 
     def test_experimental_setup_default_is_none(self):
@@ -656,7 +666,7 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
         Evidence: wavefunction.py line 106: experimental_setup=None.
         """
         sig = inspect.signature(WavefunctionDataset.create_handler)
-        default = sig.parameters['experimental_setup'].default
+        default = sig.parameters["experimental_setup"].default
         self.assertIsNone(default)
 
     def _mock_handler_module(self):
@@ -676,11 +686,11 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockWavefunctionDatasetHandler')
+            mock_handler_cls = Mock(name="MockWavefunctionDatasetHandler")
             mock_module = MagicMock()
             mock_module.WavefunctionDatasetHandler = mock_handler_cls
 
-            handler_mod_key = 'milia_pipeline.handlers.implementations.wavefunction'
+            handler_mod_key = "milia_pipeline.handlers.implementations.wavefunction"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -715,11 +725,11 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 
         Evidence: wavefunction.py lines 116-121.
         """
-        mock_dataset_config = Mock(name='dataset_config')
-        mock_filter_config = Mock(name='filter_config')
-        mock_processing_config = Mock(name='processing_config')
-        mock_logger = Mock(name='logger')
-        mock_experimental_setup = Mock(name='experimental_setup')
+        mock_dataset_config = Mock(name="dataset_config")
+        mock_filter_config = Mock(name="filter_config")
+        mock_processing_config = Mock(name="processing_config")
+        mock_logger = Mock(name="logger")
+        mock_experimental_setup = Mock(name="experimental_setup")
 
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = Mock()
@@ -743,7 +753,7 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 
         Evidence: wavefunction.py line 116: return WavefunctionDatasetHandler(...).
         """
-        mock_handler_instance = Mock(name='handler_instance')
+        mock_handler_instance = Mock(name="handler_instance")
         with self._mock_handler_module() as mock_cls:
             mock_cls.return_value = mock_handler_instance
             result = WavefunctionDataset.create_handler(
@@ -756,7 +766,7 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 
     def test_create_handler_has_docstring(self):
         """create_handler method has a non-empty docstring."""
-        method = getattr(WavefunctionDataset, 'create_handler')
+        method = WavefunctionDataset.create_handler
         self.assertIsNotNone(method.__doc__)
         self.assertIn("lazy import", method.__doc__.lower())
 
@@ -764,6 +774,7 @@ class TestWavefunctionDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 11: WavefunctionDataset — handler_class Default (3 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetHandlerClassAttribute(unittest.TestCase):
     """Verify WavefunctionDataset.handler_class is None (default from BaseDataset).
@@ -801,6 +812,7 @@ class TestWavefunctionDatasetHandlerClassAttribute(unittest.TestCase):
 # GROUP 12: WavefunctionDataset — Method Signatures and Return Annotations (6 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetMethodSignatures(unittest.TestCase):
     """Verify method signatures and return type annotations."""
 
@@ -811,35 +823,35 @@ class TestWavefunctionDatasetMethodSignatures(unittest.TestCase):
 
     def test_get_required_properties_return_annotation(self):
         """get_required_properties() -> List[str]."""
-        sig = self._get_sig('get_required_properties')
-        self.assertEqual(sig.return_annotation, List[str])
+        sig = self._get_sig("get_required_properties")
+        self.assertEqual(sig.return_annotation, list[str])
 
     def test_get_feature_support_return_annotation(self):
         """get_feature_support() -> Dict[str, bool]."""
-        sig = self._get_sig('get_feature_support')
-        self.assertEqual(sig.return_annotation, Dict[str, bool])
+        sig = self._get_sig("get_feature_support")
+        self.assertEqual(sig.return_annotation, dict[str, bool])
 
     def test_get_molecule_creation_strategy_return_annotation(self):
         """get_molecule_creation_strategy() -> str."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         self.assertIs(sig.return_annotation, str)
 
     def test_get_required_properties_params(self):
         """get_required_properties(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_required_properties')
+        sig = self._get_sig("get_required_properties")
         # Bound method signature excludes 'cls'
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_feature_support_params(self):
         """get_feature_support(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_feature_support')
+        sig = self._get_sig("get_feature_support")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
     def test_get_molecule_creation_strategy_params(self):
         """get_molecule_creation_strategy(cls) has only 'cls' parameter."""
-        sig = self._get_sig('get_molecule_creation_strategy')
+        sig = self._get_sig("get_molecule_creation_strategy")
         params = list(sig.parameters.keys())
         self.assertEqual(params, [])
 
@@ -847,6 +859,7 @@ class TestWavefunctionDatasetMethodSignatures(unittest.TestCase):
 # ============================================================================
 # GROUP 13: WavefunctionDataset — Method Docstrings (4 tests with subTests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetMethodDocstrings(unittest.TestCase):
     """Verify each WavefunctionDataset method has a non-empty docstring."""
@@ -857,27 +870,26 @@ class TestWavefunctionDatasetMethodDocstrings(unittest.TestCase):
             with self.subTest(method=method_name):
                 method = getattr(WavefunctionDataset, method_name)
                 doc = getattr(method, "__doc__", None)
-                self.assertIsNotNone(
-                    doc, f"{method_name} has no docstring"
-                )
+                self.assertIsNotNone(doc, f"{method_name} has no docstring")
                 self.assertGreater(
-                    len(doc.strip()), 0,
+                    len(doc.strip()),
+                    0,
                     f"{method_name} has empty docstring",
                 )
 
     def test_get_required_properties_docstring_mentions_evidence(self):
         """get_required_properties docstring references config_constants.py."""
-        method = getattr(WavefunctionDataset, 'get_required_properties')
+        method = WavefunctionDataset.get_required_properties
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_feature_support_docstring_mentions_evidence(self):
         """get_feature_support docstring references config_constants.py."""
-        method = getattr(WavefunctionDataset, 'get_feature_support')
+        method = WavefunctionDataset.get_feature_support
         self.assertIn("config_constants", method.__doc__)
 
     def test_get_molecule_creation_strategy_docstring_mentions_evidence(self):
         """get_molecule_creation_strategy docstring references dataset_handlers.py."""
-        method = getattr(WavefunctionDataset, 'get_molecule_creation_strategy')
+        method = WavefunctionDataset.get_molecule_creation_strategy
         self.assertIn("dataset_handlers", method.__doc__)
 
 
@@ -885,18 +897,21 @@ class TestWavefunctionDatasetMethodDocstrings(unittest.TestCase):
 # GROUP 14: WavefunctionDataset — Module-Level Imports and Exports (5 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
     """Verify the wavefunction implementation module imports and exports correctly."""
 
     def test_module_has_docstring(self):
         """The wavefunction.py module has a non-empty module docstring."""
         import milia_pipeline.datasets.implementations.wavefunction as mod
+
         self.assertIsNotNone(mod.__doc__)
         self.assertGreater(len(mod.__doc__.strip()), 0)
 
     def test_module_exports_wavefunction_dataset(self):
         """WavefunctionDataset is importable from the implementations.wavefunction module."""
         import milia_pipeline.datasets.implementations.wavefunction as mod
+
         self.assertTrue(hasattr(mod, "WavefunctionDataset"))
         self.assertIs(mod.WavefunctionDataset, WavefunctionDataset)
 
@@ -906,7 +921,7 @@ class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
         Evidence: wavefunction.py lines 22-27.
         """
         source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.wavefunction']
+            sys.modules["milia_pipeline.datasets.implementations.wavefunction"]
         )
         self.assertIn("from milia_pipeline.datasets.base import", source)
         self.assertIn("BaseDataset", source)
@@ -920,7 +935,7 @@ class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
         Evidence: wavefunction.py line 27.
         """
         source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.wavefunction']
+            sys.modules["milia_pipeline.datasets.implementations.wavefunction"]
         )
         self.assertIn("from milia_pipeline.datasets.registry import register", source)
 
@@ -936,7 +951,7 @@ class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
         import ast
 
         source = inspect.getsource(
-            sys.modules['milia_pipeline.datasets.implementations.wavefunction']
+            sys.modules["milia_pipeline.datasets.implementations.wavefunction"]
         )
         tree = ast.parse(source)
 
@@ -948,10 +963,12 @@ class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
         for node in ast.iter_child_nodes(tree):
             # Top-level imports
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.ImportFrom) and node.names:
-                    for alias in node.names:
-                        module_level_import_names.append(alias.name)
-                elif isinstance(node, ast.Import) and node.names:
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.names
+                    or isinstance(node, ast.Import)
+                    and node.names
+                ):
                     for alias in node.names:
                         module_level_import_names.append(alias.name)
 
@@ -975,6 +992,7 @@ class TestWavefunctionDatasetModuleImportsAndExports(unittest.TestCase):
 # GROUP 15: WavefunctionDataset — DatasetFeatures.to_dict() and .supports() (4 tests)
 # ============================================================================
 
+
 class TestWavefunctionDatasetFeaturesIntegration(unittest.TestCase):
     """Verify DatasetFeatures integration methods work correctly with Wavefunction.
 
@@ -992,14 +1010,14 @@ class TestWavefunctionDatasetFeaturesIntegration(unittest.TestCase):
 
         CRITICAL: This is the key distinguishing feature of Wavefunction datasets.
         """
-        self.assertTrue(WavefunctionDataset.features.supports('orbital_analysis'))
+        self.assertTrue(WavefunctionDataset.features.supports("orbital_analysis"))
 
     def test_supports_vibrational_analysis_false(self):
         """features.supports('vibrational_analysis') returns False.
 
         CRITICAL DIFFERENCE FROM DFT: DFT supports vibrational_analysis, Wavefunction does not.
         """
-        self.assertFalse(WavefunctionDataset.features.supports('vibrational_analysis'))
+        self.assertFalse(WavefunctionDataset.features.supports("vibrational_analysis"))
 
     def test_to_dict_keys_match_expected_features(self):
         """features.to_dict() keys match all 8 expected feature names."""
@@ -1010,6 +1028,7 @@ class TestWavefunctionDatasetFeaturesIntegration(unittest.TestCase):
 # ============================================================================
 # GROUP 16: WavefunctionDataset — Schema Consistency with Methods (3 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetSchemaMethodConsistency(unittest.TestCase):
     """Verify schema data is consistent with method return values."""
@@ -1045,6 +1064,7 @@ class TestWavefunctionDatasetSchemaMethodConsistency(unittest.TestCase):
 # ============================================================================
 # GROUP 17: WavefunctionDataset — Edge Cases and Robustness (5 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetEdgeCases(unittest.TestCase):
     """Test edge cases and robustness of WavefunctionDataset."""
@@ -1092,10 +1112,10 @@ class TestWavefunctionDatasetEdgeCases(unittest.TestCase):
 
         @contextlib.contextmanager
         def _scoped_handler_mock():
-            mock_handler_cls = Mock(name='MockWavefunctionDatasetHandler')
+            mock_handler_cls = Mock(name="MockWavefunctionDatasetHandler")
             mock_module = MagicMock()
             mock_module.WavefunctionDatasetHandler = mock_handler_cls
-            handler_mod_key = 'milia_pipeline.handlers.implementations.wavefunction'
+            handler_mod_key = "milia_pipeline.handlers.implementations.wavefunction"
             original = sys.modules.get(handler_mod_key, _SENTINEL)
             sys.modules[handler_mod_key] = mock_module
             try:
@@ -1123,15 +1143,16 @@ class TestWavefunctionDatasetEdgeCases(unittest.TestCase):
         """Class-level attributes (metadata, schema, features) are class attributes,
         not instance attributes. WavefunctionDataset is used as a class, not instantiated,
         but we verify the attributes live on the class itself."""
-        self.assertIn('metadata', WavefunctionDataset.__dict__)
-        self.assertIn('schema', WavefunctionDataset.__dict__)
-        self.assertIn('features', WavefunctionDataset.__dict__)
-        self.assertIn('config_key', WavefunctionDataset.__dict__)
+        self.assertIn("metadata", WavefunctionDataset.__dict__)
+        self.assertIn("schema", WavefunctionDataset.__dict__)
+        self.assertIn("features", WavefunctionDataset.__dict__)
+        self.assertIn("config_key", WavefunctionDataset.__dict__)
 
 
 # ============================================================================
 # GROUP 18: WavefunctionDataset — Critical Differences from DFT/DMC (6 tests)
 # ============================================================================
+
 
 class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
     """Verify the critical behavioral differences between Wavefunction and DFT/DMC.
@@ -1153,8 +1174,8 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         Compound IDs like 'BrCPxSiSxH4_331' are NOT parseable chemical identifiers.
         """
         strategy = WavefunctionDataset.get_molecule_creation_strategy()
-        self.assertEqual(strategy, 'coordinate_based')
-        self.assertNotEqual(strategy, 'identifier_coordinate_based')
+        self.assertEqual(strategy, "coordinate_based")
+        self.assertNotEqual(strategy, "identifier_coordinate_based")
 
     def test_coordinates_in_bohr_not_angstrom(self):
         """Coordinate units are 'bohr', NOT 'angstrom'.
@@ -1163,8 +1184,8 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         Wavefunction data uses atomic units (Bohr); automatic conversion to Angstrom
         is required during processing.
         """
-        self.assertEqual(WavefunctionDataset.schema.coordinate_units, 'bohr')
-        self.assertNotEqual(WavefunctionDataset.schema.coordinate_units, 'angstrom')
+        self.assertEqual(WavefunctionDataset.schema.coordinate_units, "bohr")
+        self.assertNotEqual(WavefunctionDataset.schema.coordinate_units, "angstrom")
 
     def test_identifier_keys_single_compound_id(self):
         """Identifier keys use ('compounds', 'compound_id') — a single label-only key.
@@ -1176,7 +1197,7 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         self.assertEqual(len(WavefunctionDataset.schema.identifier_keys), 1)
         self.assertEqual(
             WavefunctionDataset.schema.identifier_keys[0],
-            ('compounds', 'compound_id'),
+            ("compounds", "compound_id"),
         )
 
     def test_etot_not_in_required_properties(self):
@@ -1186,7 +1207,7 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         Energy information comes from orbital analysis (mo_energies, total_energy).
         """
         required = WavefunctionDataset.get_required_properties()
-        self.assertNotIn('Etot', required)
+        self.assertNotIn("Etot", required)
 
     def test_orbital_features_enabled(self):
         """Orbital analysis features (orbital_analysis, homo_lumo_gap, mo_energies) are all True.
@@ -1194,9 +1215,9 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         These are the distinguishing features of Wavefunction datasets.
         """
         features = WavefunctionDataset.get_feature_support()
-        self.assertTrue(features['orbital_analysis'])
-        self.assertTrue(features['homo_lumo_gap'])
-        self.assertTrue(features['mo_energies'])
+        self.assertTrue(features["orbital_analysis"])
+        self.assertTrue(features["homo_lumo_gap"])
+        self.assertTrue(features["mo_energies"])
 
     def test_vibrational_features_disabled(self):
         """Vibrational/thermodynamic features are all False.
@@ -1205,15 +1226,16 @@ class TestWavefunctionDatasetCriticalDifferences(unittest.TestCase):
         rotational_constants=True, frequency_analysis=True. Wavefunction has all False.
         """
         features = WavefunctionDataset.get_feature_support()
-        self.assertFalse(features['vibrational_analysis'])
-        self.assertFalse(features['atomization_energy'])
-        self.assertFalse(features['rotational_constants'])
-        self.assertFalse(features['frequency_analysis'])
+        self.assertFalse(features["vibrational_analysis"])
+        self.assertFalse(features["atomization_energy"])
+        self.assertFalse(features["rotational_constants"])
+        self.assertFalse(features["frequency_analysis"])
 
 
 # ============================================================================
 # TEST RUNNER
 # ============================================================================
+
 
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
@@ -1221,24 +1243,24 @@ def run_comprehensive_suite():
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestWavefunctionDatasetClassIdentity,                # GROUP 1:  8 tests
-        TestWavefunctionDatasetRegistration,                  # GROUP 2:  5 tests
-        TestWavefunctionDatasetMetadata,                      # GROUP 3:  6 tests
-        TestWavefunctionDatasetSchema,                        # GROUP 4:  8 tests
-        TestWavefunctionDatasetFeatures,                      # GROUP 5: 10 tests
-        TestWavefunctionDatasetConfigKey,                     # GROUP 6:  2 tests
-        TestWavefunctionDatasetGetRequiredProperties,         # GROUP 7:  5 tests
-        TestWavefunctionDatasetGetFeatureSupport,             # GROUP 8:  6 tests
-        TestWavefunctionDatasetGetMoleculeCreationStrategy,   # GROUP 9:  4 tests
-        TestWavefunctionDatasetCreateHandler,                 # GROUP 10: 7 tests
-        TestWavefunctionDatasetHandlerClassAttribute,         # GROUP 11: 3 tests
-        TestWavefunctionDatasetMethodSignatures,              # GROUP 12: 6 tests
-        TestWavefunctionDatasetMethodDocstrings,              # GROUP 13: 4 tests
-        TestWavefunctionDatasetModuleImportsAndExports,       # GROUP 14: 5 tests
-        TestWavefunctionDatasetFeaturesIntegration,           # GROUP 15: 4 tests
-        TestWavefunctionDatasetSchemaMethodConsistency,       # GROUP 16: 3 tests
-        TestWavefunctionDatasetEdgeCases,                     # GROUP 17: 5 tests
-        TestWavefunctionDatasetCriticalDifferences,           # GROUP 18: 6 tests
+        TestWavefunctionDatasetClassIdentity,  # GROUP 1:  8 tests
+        TestWavefunctionDatasetRegistration,  # GROUP 2:  5 tests
+        TestWavefunctionDatasetMetadata,  # GROUP 3:  6 tests
+        TestWavefunctionDatasetSchema,  # GROUP 4:  8 tests
+        TestWavefunctionDatasetFeatures,  # GROUP 5: 10 tests
+        TestWavefunctionDatasetConfigKey,  # GROUP 6:  2 tests
+        TestWavefunctionDatasetGetRequiredProperties,  # GROUP 7:  5 tests
+        TestWavefunctionDatasetGetFeatureSupport,  # GROUP 8:  6 tests
+        TestWavefunctionDatasetGetMoleculeCreationStrategy,  # GROUP 9:  4 tests
+        TestWavefunctionDatasetCreateHandler,  # GROUP 10: 7 tests
+        TestWavefunctionDatasetHandlerClassAttribute,  # GROUP 11: 3 tests
+        TestWavefunctionDatasetMethodSignatures,  # GROUP 12: 6 tests
+        TestWavefunctionDatasetMethodDocstrings,  # GROUP 13: 4 tests
+        TestWavefunctionDatasetModuleImportsAndExports,  # GROUP 14: 5 tests
+        TestWavefunctionDatasetFeaturesIntegration,  # GROUP 15: 4 tests
+        TestWavefunctionDatasetSchemaMethodConsistency,  # GROUP 16: 3 tests
+        TestWavefunctionDatasetEdgeCases,  # GROUP 17: 5 tests
+        TestWavefunctionDatasetCriticalDifferences,  # GROUP 18: 6 tests
     ]
 
     for test_class in test_classes:

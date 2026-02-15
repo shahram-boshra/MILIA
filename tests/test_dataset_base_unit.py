@@ -23,13 +23,11 @@ MOCK POLLUTION PREVENTION:
 Updated: February 2026 - Production-ready comprehensive test coverage
 """
 
-import sys
-import os
-from pathlib import Path
-import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock
 import logging
-from typing import Dict, List, Tuple, Optional, Type, Any
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock
 
 # CRITICAL: Add project root to Python path FIRST
 project_root = Path(__file__).parent.parent
@@ -37,22 +35,21 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from milia_pipeline.datasets.base import (
+    BaseDataset,
+    DatasetFeatures,
     DatasetMetadata,
     DatasetSchema,
-    DatasetFeatures,
-    BaseDataset,
 )
-
 from milia_pipeline.datasets.protocols import (
-    DatasetHandlerProtocol,
     DatasetConverterProtocol,
+    DatasetHandlerProtocol,
     DatasetValidatorProtocol,
 )
-
 
 # ============================================================================
 # HELPER: Reusable valid fixtures for building test subclasses
 # ============================================================================
+
 
 def _make_valid_metadata(**overrides):
     """Create a valid DatasetMetadata with optional overrides."""
@@ -163,6 +160,7 @@ def _build_concrete_dataset_class(
 # GROUP 1: DatasetMetadata — Construction, Validation, Immutability (15 tests)
 # ============================================================================
 
+
 class TestDatasetMetadataConstruction(unittest.TestCase):
     """Test DatasetMetadata creation, validation, and immutability."""
 
@@ -180,8 +178,11 @@ class TestDatasetMetadataConstruction(unittest.TestCase):
     def test_valid_full_metadata(self):
         """Metadata with all fields is created successfully."""
         meta = DatasetMetadata(
-            name="QM9", version="2.1.0", description="QM9 dataset",
-            author="Ruddigkeit et al.", license="CC0-1.0"
+            name="QM9",
+            version="2.1.0",
+            description="QM9 dataset",
+            author="Ruddigkeit et al.",
+            license="CC0-1.0",
         )
         self.assertEqual(meta.author, "Ruddigkeit et al.")
         self.assertEqual(meta.license, "CC0-1.0")
@@ -267,6 +268,7 @@ class TestDatasetMetadataConstruction(unittest.TestCase):
 # ============================================================================
 # GROUP 2: DatasetSchema — Construction, Validation, Immutability (18 tests)
 # ============================================================================
+
 
 class TestDatasetSchemaConstruction(unittest.TestCase):
     """Test DatasetSchema creation, validation, and immutability."""
@@ -406,6 +408,7 @@ class TestDatasetSchemaConstruction(unittest.TestCase):
 # GROUP 3: DatasetFeatures — Construction, Defaults, to_dict, supports (16 tests)
 # ============================================================================
 
+
 class TestDatasetFeaturesConstruction(unittest.TestCase):
     """Test DatasetFeatures creation, defaults, to_dict, and supports."""
 
@@ -455,9 +458,14 @@ class TestDatasetFeaturesConstruction(unittest.TestCase):
     def test_to_dict_keys(self):
         """to_dict contains all 8 expected keys."""
         expected_keys = {
-            "vibrational_analysis", "uncertainty_handling", "atomization_energy",
-            "rotational_constants", "frequency_analysis", "orbital_analysis",
-            "homo_lumo_gap", "mo_energies",
+            "vibrational_analysis",
+            "uncertainty_handling",
+            "atomization_energy",
+            "rotational_constants",
+            "frequency_analysis",
+            "orbital_analysis",
+            "homo_lumo_gap",
+            "mo_energies",
         }
         feat = DatasetFeatures()
         self.assertEqual(set(feat.to_dict().keys()), expected_keys)
@@ -505,9 +513,14 @@ class TestDatasetFeaturesConstruction(unittest.TestCase):
     def test_each_flag_individually(self):
         """Every individual flag can be independently set to True."""
         flag_names = [
-            "vibrational_analysis", "uncertainty_handling", "atomization_energy",
-            "rotational_constants", "frequency_analysis", "orbital_analysis",
-            "homo_lumo_gap", "mo_energies",
+            "vibrational_analysis",
+            "uncertainty_handling",
+            "atomization_energy",
+            "rotational_constants",
+            "frequency_analysis",
+            "orbital_analysis",
+            "homo_lumo_gap",
+            "mo_energies",
         ]
         for flag in flag_names:
             with self.subTest(flag=flag):
@@ -521,10 +534,14 @@ class TestDatasetFeaturesConstruction(unittest.TestCase):
     def test_all_flags_true(self):
         """All flags can be True simultaneously."""
         feat = DatasetFeatures(
-            vibrational_analysis=True, uncertainty_handling=True,
-            atomization_energy=True, rotational_constants=True,
-            frequency_analysis=True, orbital_analysis=True,
-            homo_lumo_gap=True, mo_energies=True,
+            vibrational_analysis=True,
+            uncertainty_handling=True,
+            atomization_energy=True,
+            rotational_constants=True,
+            frequency_analysis=True,
+            orbital_analysis=True,
+            homo_lumo_gap=True,
+            mo_energies=True,
         )
         for val in feat.to_dict().values():
             self.assertTrue(val)
@@ -545,6 +562,7 @@ class TestDatasetFeaturesConstruction(unittest.TestCase):
 # ============================================================================
 # GROUP 4: BaseDataset — __init_subclass__ Validation (16 tests)
 # ============================================================================
+
 
 class TestBaseDatasetInitSubclass(unittest.TestCase):
     """Test BaseDataset __init_subclass__ compile-time validation."""
@@ -581,13 +599,11 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
 
             @classmethod
             @abstractmethod
-            def get_feature_support(cls):
-                ...
+            def get_feature_support(cls): ...
 
             @classmethod
             @abstractmethod
-            def get_molecule_creation_strategy(cls):
-                ...
+            def get_molecule_creation_strategy(cls): ...
 
         # PartialDataset still has __abstractmethods__, so validation is skipped
         self.assertTrue(hasattr(PartialDataset, "__abstractmethods__"))
@@ -597,81 +613,111 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
     def test_missing_metadata_raises_type_error(self):
         """Missing metadata raises TypeError at class definition time."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 schema = _make_valid_schema()
                 features = _make_valid_features()
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("metadata", str(ctx.exception))
 
     def test_missing_schema_raises_type_error(self):
         """Missing schema raises TypeError at class definition time."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 features = _make_valid_features()
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("schema", str(ctx.exception))
 
     def test_missing_features_raises_type_error(self):
         """Missing features raises TypeError at class definition time."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = _make_valid_schema()
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("features", str(ctx.exception))
 
     def test_missing_config_key_raises_type_error(self):
         """Missing config_key raises TypeError at class definition time."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = _make_valid_schema()
                 features = _make_valid_features()
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("config_key", str(ctx.exception))
 
     def test_missing_multiple_attrs_reports_all(self):
         """Missing multiple attributes reports all missing names."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         msg = str(ctx.exception)
         self.assertIn("metadata", msg)
@@ -684,6 +730,7 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
     def test_metadata_wrong_type_raises(self):
         """metadata that is not a DatasetMetadata instance raises TypeError."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = {"name": "X"}  # dict, not DatasetMetadata
                 schema = _make_valid_schema()
@@ -691,17 +738,23 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("DatasetMetadata", str(ctx.exception))
 
     def test_schema_wrong_type_raises(self):
         """schema that is not a DatasetSchema instance raises TypeError."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = ("energy",)  # tuple, not DatasetSchema
@@ -709,17 +762,23 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("DatasetSchema", str(ctx.exception))
 
     def test_features_wrong_type_raises(self):
         """features that is not a DatasetFeatures instance raises TypeError."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = _make_valid_schema()
@@ -727,17 +786,23 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("DatasetFeatures", str(ctx.exception))
 
     def test_config_key_empty_string_raises(self):
         """config_key as empty string raises TypeError."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = _make_valid_schema()
@@ -745,17 +810,23 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = ""
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("config_key", str(ctx.exception))
 
     def test_config_key_non_string_raises(self):
         """config_key as non-string raises TypeError."""
         with self.assertRaises(TypeError) as ctx:
+
             class BadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 schema = _make_valid_schema()
@@ -763,11 +834,16 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = 42
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("config_key", str(ctx.exception))
 
@@ -776,6 +852,7 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
     def test_wrong_type_error_message_includes_class_name(self):
         """Error message includes the offending class name."""
         with self.assertRaises(TypeError) as ctx:
+
             class MyBadDataset(BaseDataset):
                 metadata = "not_metadata"
                 schema = _make_valid_schema()
@@ -783,17 +860,23 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = "bad"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("MyBadDataset", str(ctx.exception))
 
     def test_missing_attr_error_includes_class_name(self):
         """Missing-attr error message includes class name."""
         with self.assertRaises(TypeError) as ctx:
+
             class AnotherBadDS(BaseDataset):
                 metadata = _make_valid_metadata()
                 # schema missing
@@ -801,11 +884,16 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
                 config_key = "x"
 
                 @classmethod
-                def get_required_properties(cls): return []
+                def get_required_properties(cls):
+                    return []
+
                 @classmethod
-                def get_feature_support(cls): return {}
+                def get_feature_support(cls):
+                    return {}
+
                 @classmethod
-                def get_molecule_creation_strategy(cls): return "coordinate_based"
+                def get_molecule_creation_strategy(cls):
+                    return "coordinate_based"
 
         self.assertIn("AnotherBadDS", str(ctx.exception))
 
@@ -813,6 +901,7 @@ class TestBaseDatasetInitSubclass(unittest.TestCase):
 # ============================================================================
 # GROUP 5: BaseDataset — Abstract Methods and ClassVar Defaults (10 tests)
 # ============================================================================
+
 
 class TestBaseDatasetClassMethods(unittest.TestCase):
     """Test abstract method implementations and default class methods."""
@@ -842,9 +931,7 @@ class TestBaseDatasetClassMethods(unittest.TestCase):
 
     def test_get_molecule_creation_strategy(self):
         """get_molecule_creation_strategy returns the expected string."""
-        self.assertEqual(
-            self.cls.get_molecule_creation_strategy(), "identifier_coordinate_based"
-        )
+        self.assertEqual(self.cls.get_molecule_creation_strategy(), "identifier_coordinate_based")
 
     def test_get_optional_properties(self):
         """get_optional_properties returns list from schema."""
@@ -879,6 +966,7 @@ class TestBaseDatasetClassMethods(unittest.TestCase):
 # ============================================================================
 # GROUP 6: BaseDataset — create_handler Factory Method (9 tests)
 # ============================================================================
+
 
 class TestBaseDatasetCreateHandler(unittest.TestCase):
     """Test the create_handler factory method."""
@@ -996,11 +1084,16 @@ class TestBaseDatasetCreateHandler(unittest.TestCase):
             config_key = "custom"
 
             @classmethod
-            def get_required_properties(cls): return []
+            def get_required_properties(cls):
+                return []
+
             @classmethod
-            def get_feature_support(cls): return {}
+            def get_feature_support(cls):
+                return {}
+
             @classmethod
-            def get_molecule_creation_strategy(cls): return "coordinate_based"
+            def get_molecule_creation_strategy(cls):
+                return "coordinate_based"
 
             @classmethod
             def create_handler(cls, *args, **kwargs):
@@ -1013,6 +1106,7 @@ class TestBaseDatasetCreateHandler(unittest.TestCase):
 # ============================================================================
 # GROUP 7: BaseDataset — Optional ClassVars (handler, converter, validator) (6 tests)
 # ============================================================================
+
 
 class TestBaseDatasetOptionalClassVars(unittest.TestCase):
     """Test optional ClassVar defaults and assignment."""
@@ -1041,7 +1135,9 @@ class TestBaseDatasetOptionalClassVars(unittest.TestCase):
         mc = Mock(spec=DatasetConverterProtocol)
         mv = Mock(spec=DatasetValidatorProtocol)
         ds = _build_concrete_dataset_class(
-            handler_class=mh, converter_class=mc, validator_class=mv,
+            handler_class=mh,
+            converter_class=mc,
+            validator_class=mv,
         )
         self.assertIs(ds.handler_class, mh)
         self.assertIs(ds.converter_class, mc)
@@ -1055,7 +1151,8 @@ class TestBaseDatasetOptionalClassVars(unittest.TestCase):
     def test_optional_classvars_independent_per_subclass(self):
         """Each subclass has independent optional ClassVars."""
         ds1 = _build_concrete_dataset_class(
-            class_name="DS1", handler_class=Mock(spec=DatasetHandlerProtocol),
+            class_name="DS1",
+            handler_class=Mock(spec=DatasetHandlerProtocol),
         )
         ds2 = _build_concrete_dataset_class(class_name="DS2", handler_class=None)
         self.assertIsNotNone(ds1.handler_class)
@@ -1065,6 +1162,7 @@ class TestBaseDatasetOptionalClassVars(unittest.TestCase):
 # ============================================================================
 # GROUP 8: BaseDataset — Inheritance and Subclass Isolation (8 tests)
 # ============================================================================
+
 
 class TestBaseDatasetInheritance(unittest.TestCase):
     """Test inheritance patterns, multi-level subclassing, and isolation."""
@@ -1083,10 +1181,12 @@ class TestBaseDatasetInheritance(unittest.TestCase):
     def test_subclass_metadata_isolated(self):
         """Different subclasses have independent metadata."""
         ds1 = _build_concrete_dataset_class(
-            class_name="DS_A", metadata=_make_valid_metadata(name="A"),
+            class_name="DS_A",
+            metadata=_make_valid_metadata(name="A"),
         )
         ds2 = _build_concrete_dataset_class(
-            class_name="DS_B", metadata=_make_valid_metadata(name="B"),
+            class_name="DS_B",
+            metadata=_make_valid_metadata(name="B"),
         )
         self.assertEqual(ds1.metadata.name, "A")
         self.assertEqual(ds2.metadata.name, "B")
@@ -1134,6 +1234,7 @@ class TestBaseDatasetInheritance(unittest.TestCase):
 # GROUP 9: Realistic Dataset Patterns (6 tests)
 # ============================================================================
 
+
 class TestRealisticDatasetPatterns(unittest.TestCase):
     """Test patterns matching real dataset implementations (DFT, DMC, Wavefunction)."""
 
@@ -1142,7 +1243,9 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
         ds = _build_concrete_dataset_class(
             class_name="DFTLikeDataset",
             metadata=DatasetMetadata(
-                name="DFT", version="1.0.0", description="DFT quantum chemistry",
+                name="DFT",
+                version="1.0.0",
+                description="DFT quantum chemistry",
             ),
             schema=DatasetSchema(
                 required_properties=("energy", "forces", "atomic_numbers", "coordinates"),
@@ -1164,7 +1267,9 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
         ds = _build_concrete_dataset_class(
             class_name="DMCLikeDataset",
             metadata=DatasetMetadata(
-                name="DMC", version="1.0.0", description="DMC quantum Monte Carlo",
+                name="DMC",
+                version="1.0.0",
+                description="DMC quantum Monte Carlo",
             ),
             schema=DatasetSchema(
                 required_properties=("energy", "forces", "atomic_numbers", "coordinates"),
@@ -1183,7 +1288,8 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
         ds = _build_concrete_dataset_class(
             class_name="WavefunctionLikeDataset",
             metadata=DatasetMetadata(
-                name="Wavefunction", version="1.0.0",
+                name="Wavefunction",
+                version="1.0.0",
                 description="Quantum wavefunction data",
             ),
             schema=DatasetSchema(
@@ -1191,7 +1297,9 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
                 energy_units="hartree",
             ),
             features=DatasetFeatures(
-                orbital_analysis=True, homo_lumo_gap=True, mo_energies=True,
+                orbital_analysis=True,
+                homo_lumo_gap=True,
+                mo_energies=True,
             ),
             config_key="wavefunction_config",
             strategy="coordinate_based",
@@ -1206,7 +1314,9 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
         ds = _build_concrete_dataset_class(
             class_name="QM9LikeDataset",
             metadata=DatasetMetadata(
-                name="QM9", version="1.0.0", description="QM9 small organics",
+                name="QM9",
+                version="1.0.0",
+                description="QM9 small organics",
             ),
             schema=DatasetSchema(
                 required_properties=("energy", "atomic_numbers", "coordinates"),
@@ -1222,15 +1332,18 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
     def test_multiple_datasets_coexist(self):
         """Multiple dataset classes can coexist without interference."""
         ds1 = _build_concrete_dataset_class(
-            class_name="DS_X", config_key="x",
+            class_name="DS_X",
+            config_key="x",
             metadata=_make_valid_metadata(name="X"),
         )
         ds2 = _build_concrete_dataset_class(
-            class_name="DS_Y", config_key="y",
+            class_name="DS_Y",
+            config_key="y",
             metadata=_make_valid_metadata(name="Y"),
         )
         ds3 = _build_concrete_dataset_class(
-            class_name="DS_Z", config_key="z",
+            class_name="DS_Z",
+            config_key="z",
             metadata=_make_valid_metadata(name="Z"),
         )
         self.assertEqual(ds1.metadata.name, "X")
@@ -1248,6 +1361,7 @@ class TestRealisticDatasetPatterns(unittest.TestCase):
 # ============================================================================
 # GROUP 10: Edge Cases and Boundary Conditions (8 tests)
 # ============================================================================
+
 
 class TestEdgeCasesAndBoundary(unittest.TestCase):
     """Test edge cases and boundary conditions."""
@@ -1308,22 +1422,23 @@ class TestEdgeCasesAndBoundary(unittest.TestCase):
 # TEST RUNNER
 # ============================================================================
 
+
 def run_comprehensive_suite():
     """Run all test groups in a structured order."""
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
     test_classes = [
-        TestDatasetMetadataConstruction,       # GROUP 1: 15 tests
-        TestDatasetSchemaConstruction,         # GROUP 2: 18 tests
-        TestDatasetFeaturesConstruction,       # GROUP 3: 16 tests
-        TestBaseDatasetInitSubclass,           # GROUP 4: 16 tests
-        TestBaseDatasetClassMethods,           # GROUP 5: 10 tests
-        TestBaseDatasetCreateHandler,          # GROUP 6:  9 tests
-        TestBaseDatasetOptionalClassVars,      # GROUP 7:  6 tests
-        TestBaseDatasetInheritance,            # GROUP 8:  8 tests
-        TestRealisticDatasetPatterns,          # GROUP 9:  6 tests
-        TestEdgeCasesAndBoundary,              # GROUP 10: 8 tests
+        TestDatasetMetadataConstruction,  # GROUP 1: 15 tests
+        TestDatasetSchemaConstruction,  # GROUP 2: 18 tests
+        TestDatasetFeaturesConstruction,  # GROUP 3: 16 tests
+        TestBaseDatasetInitSubclass,  # GROUP 4: 16 tests
+        TestBaseDatasetClassMethods,  # GROUP 5: 10 tests
+        TestBaseDatasetCreateHandler,  # GROUP 6:  9 tests
+        TestBaseDatasetOptionalClassVars,  # GROUP 7:  6 tests
+        TestBaseDatasetInheritance,  # GROUP 8:  8 tests
+        TestRealisticDatasetPatterns,  # GROUP 9:  6 tests
+        TestEdgeCasesAndBoundary,  # GROUP 10: 8 tests
     ]
 
     for test_class in test_classes:

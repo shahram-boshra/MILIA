@@ -1,9 +1,9 @@
 # Plugin Distribution Format
 ## VQM24 Plugin System - Distribution Specification
 
-**Phase:** Plugin Distribution Format  
-**Status:** Implementation Ready  
-**Version:** 1.0.0  
+**Phase:** Plugin Distribution Format
+**Status:** Implementation Ready
+**Version:** 1.0.0
 **Last Updated:** October 15, 2025
 
 ---
@@ -30,11 +30,11 @@
 
 The Plugin Distribution Format defines the **standard structure, metadata, and requirements** for distributing custom transforms as VQM24 plugins. This ensures:
 
-✅ **Consistency** - All plugins follow the same structure  
-✅ **Discoverability** - Plugins can be automatically found and loaded  
-✅ **Validation** - Plugins can be verified before use  
-✅ **Security** - Plugins can be checked for safety  
-✅ **Documentation** - Users know what plugins do and how to use them  
+✅ **Consistency** - All plugins follow the same structure
+✅ **Discoverability** - Plugins can be automatically found and loaded
+✅ **Validation** - Plugins can be verified before use
+✅ **Security** - Plugins can be checked for safety
+✅ **Documentation** - Users know what plugins do and how to use them
 
 ### Key Components
 
@@ -124,12 +124,12 @@ transforms:
     category: "quantum"               # Category: molecular/quantum/experimental/augmentation
     description: "What this transform does"
     version: "1.0.0"                  # Transform version
-    
+
     # Data requirements (from TransformMetadata)
     required_node_features: ["x", "pos"]
     required_edge_features: []
     required_graph_attributes: ["energy"]
-    
+
     # Parameter constraints (from get_parameter_constraints)
     parameter_constraints:
       threshold:
@@ -238,15 +238,15 @@ updated_date: "2025-10-15"
   category: "quantum"                 # ✅ REQUIRED: Category
   description: "Transform description" # ✅ REQUIRED: What it does
   version: "1.0.0"                    # ✅ REQUIRED: Transform version
-  
+
   # Data requirements (match TransformMetadata)
   required_node_features: []          # ❌ OPTIONAL: Node features needed
   required_edge_features: []          # ❌ OPTIONAL: Edge features needed
   required_graph_attributes: []       # ❌ OPTIONAL: Graph attributes needed
-  
+
   # Parameter schema (match get_parameter_constraints)
   parameter_constraints: {}           # ❌ OPTIONAL: Parameter validation
-  
+
   # Additional metadata
   paper_reference: ""                 # ❌ OPTIONAL: Citation/DOI
   github_url: ""                      # ❌ OPTIONAL: Source code link
@@ -390,35 +390,35 @@ from vqm24_pipeline.transformations.custom_transforms import (
 ```python
 class MyTransform(QuantumTransformBase):
     """Transform docstring."""
-    
+
     def __init__(self, param1: float = 1.0):
         """
         Initialize transform.
-        
+
         Args:
             param1: Parameter description
         """
         super().__init__()  # ✅ REQUIRED: Call parent __init__
         self.param1 = param1
-    
+
     def transform(self, data: Data) -> Data:
         """
         ✅ REQUIRED: Core transformation logic.
-        
+
         Args:
             data: Input molecular graph
-        
+
         Returns:
             Transformed molecular graph (or None to filter)
         """
         # Your implementation
         return data
-    
+
     @classmethod
     def get_metadata(cls) -> TransformMetadata:
         """
         ✅ REQUIRED: Transform metadata.
-        
+
         Returns:
             TransformMetadata with complete information
         """
@@ -430,12 +430,12 @@ class MyTransform(QuantumTransformBase):
             description="What this transform does",
             required_graph_attributes=["energy"]
         )
-    
+
     @classmethod
     def get_parameter_constraints(cls) -> Dict[str, Any]:
         """
         ⚠️ RECOMMENDED: Parameter validation constraints.
-        
+
         Returns:
             Dictionary of parameter constraints
         """
@@ -527,28 +527,28 @@ logger = logging.getLogger(__name__)
 class MyTransform(QuantumTransformBase):
     """
     Brief transform description.
-    
+
     Longer description with details about:
     - What the transform does
     - When to use it
     - Key features
-    
+
     Example:
         >>> transform = MyTransform(threshold=0.5)
         >>> data = transform(input_data)
-    
+
     Args:
         threshold: Description of threshold parameter
-    
+
     Attributes:
         threshold: Stored threshold value
     """
-    
+
     def __init__(self, threshold: float = 0.5):
         super().__init__()
         self.threshold = threshold
         logger.debug(f"Initialized {self.__class__.__name__} with threshold={threshold}")
-    
+
     def validate_input(self, data: Data):
         """Validate input data before transformation."""
         # Chemistry validation
@@ -558,12 +558,12 @@ class MyTransform(QuantumTransformBase):
                 f"Molecular structure invalid: {issues}",
                 transform_name=self._metadata.name
             )
-        
+
         # Quantum validation
         is_valid, issues = self.validate_quantum_properties(data)
         if not is_valid:
             logger.warning(f"Quantum property issues: {issues}")
-        
+
         # Custom validation
         if not hasattr(data, 'energy'):
             raise TransformValidationError(
@@ -571,17 +571,17 @@ class MyTransform(QuantumTransformBase):
                 transform_name=self._metadata.name,
                 required_attributes=['energy']
             )
-    
+
     def transform(self, data: Data) -> Data:
         """
         Apply transformation to molecular graph.
-        
+
         Args:
             data: Input molecular graph
-        
+
         Returns:
             Transformed molecular graph
-        
+
         Raises:
             TransformValidationError: If input invalid
             TransformExecutionError: If processing fails
@@ -589,17 +589,17 @@ class MyTransform(QuantumTransformBase):
         try:
             # Clone to avoid modifying input
             data = data.clone()
-            
+
             # Your transformation logic
             logger.debug(f"Processing molecule with {data.num_nodes} atoms")
-            
+
             # Example: Scale energy
             if hasattr(data, 'energy'):
                 data.energy = data.energy * self.threshold
                 logger.debug(f"Scaled energy by {self.threshold}")
-            
+
             return data
-            
+
         except Exception as e:
             logger.error(f"Transform failed: {e}")
             raise TransformExecutionError(
@@ -607,7 +607,7 @@ class MyTransform(QuantumTransformBase):
                 transform_name=self._metadata.name,
                 original_error=e
             ) from e
-    
+
     def validate_output(self, data: Data):
         """Validate output data after transformation."""
         if not hasattr(data, 'energy'):
@@ -615,13 +615,13 @@ class MyTransform(QuantumTransformBase):
                 "Missing expected output attribute 'energy'",
                 transform_name=self._metadata.name
             )
-        
+
         if not torch.all(torch.isfinite(data.energy)):
             raise TransformValidationError(
                 "Non-finite energy values in output",
                 transform_name=self._metadata.name
             )
-    
+
     @classmethod
     def get_metadata(cls) -> TransformMetadata:
         """Get transform metadata."""
@@ -638,7 +638,7 @@ class MyTransform(QuantumTransformBase):
             required_edge_features=[],
             required_graph_attributes=["energy"]
         )
-    
+
     @classmethod
     def get_parameter_constraints(cls) -> Dict[str, Any]:
         """Get parameter validation constraints."""
@@ -650,12 +650,12 @@ class MyTransform(QuantumTransformBase):
                 'description': 'Energy scaling threshold'
             }
         }
-    
+
     @classmethod
     def get_required_node_attributes(cls):
         """Get required node attributes."""
         return {'x'}
-    
+
     @classmethod
     def get_required_graph_attributes(cls):
         """Get required graph attributes."""
@@ -740,93 +740,93 @@ from vqm24_pipeline.exceptions import (
 
 class TestMyTransform:
     """Test suite for MyTransform."""
-    
+
     def test_initialization(self):
         """Test transform initialization."""
         transform = MyTransform(threshold=0.5)
         assert transform.threshold == 0.5
-    
+
     def test_initialization_with_defaults(self):
         """Test initialization with default parameters."""
         transform = MyTransform()
         assert transform.threshold == 0.5  # Default value
-    
+
     def test_basic_functionality(self, sample_quantum_graph):
         """Test basic transform operation."""
         transform = MyTransform(threshold=2.0)
         result = transform(sample_quantum_graph)
-        
+
         assert result is not None
         assert result.num_nodes == 10
         assert hasattr(result, 'energy')
         # Check energy was scaled
         expected_energy = sample_quantum_graph.energy * 2.0
         assert torch.allclose(result.energy, expected_energy)
-    
+
     def test_clones_input_data(self, sample_quantum_graph):
         """Test that input data is not modified."""
         original_energy = sample_quantum_graph.energy.clone()
         transform = MyTransform(threshold=2.0)
         result = transform(sample_quantum_graph)
-        
+
         # Original should be unchanged
         assert torch.allclose(sample_quantum_graph.energy, original_energy)
         # Result should be different
         assert not torch.allclose(result.energy, original_energy)
-    
+
     def test_missing_required_attribute(self):
         """Test handling of missing required attributes."""
         transform = MyTransform()
         data = Data(x=torch.randn(5, 3), num_nodes=5)
-        
+
         with pytest.raises(TransformValidationError) as exc_info:
             transform(data)
-        
+
         assert "Missing required attribute" in str(exc_info.value)
-    
+
     def test_parameter_constraints(self):
         """Test parameter constraint definitions."""
         constraints = MyTransform.get_parameter_constraints()
-        
+
         assert 'threshold' in constraints
         assert constraints['threshold']['type'] == float
         assert constraints['threshold']['range'] == (0.0, 10.0)
         assert constraints['threshold']['default'] == 0.5
-    
+
     def test_metadata(self):
         """Test metadata retrieval."""
         metadata = MyTransform.get_metadata()
-        
+
         assert metadata.name == "MyTransform"
         assert metadata.version == "1.0.0"
         assert metadata.category == "quantum"
         assert "energy" in metadata.required_graph_attributes
-    
+
     def test_required_attributes(self):
         """Test required attribute definitions."""
         node_attrs = MyTransform.get_required_node_attributes()
         graph_attrs = MyTransform.get_required_graph_attributes()
-        
+
         assert 'x' in node_attrs
         assert 'energy' in graph_attrs
-    
+
     def test_handles_invalid_values(self, sample_quantum_graph):
         """Test handling of invalid values."""
         transform = MyTransform()
         sample_quantum_graph.energy = torch.tensor([float('nan')])
-        
+
         with pytest.raises((TransformValidationError, TransformExecutionError)):
             transform(sample_quantum_graph)
-    
+
     def test_reproducibility(self, sample_quantum_graph):
         """Test deterministic behavior."""
         transform = MyTransform(threshold=1.5)
-        
+
         result1 = transform(sample_quantum_graph.clone())
         result2 = transform(sample_quantum_graph.clone())
-        
+
         assert torch.allclose(result1.energy, result2.energy)
-    
+
     def test_edge_cases_small_molecule(self):
         """Test with very small molecule."""
         transform = MyTransform()
@@ -835,11 +835,11 @@ class TestMyTransform:
             energy=torch.tensor([-10.0]),
             num_nodes=1
         )
-        
+
         result = transform(data)
         assert result is not None
         assert result.num_nodes == 1
-    
+
     def test_edge_cases_large_molecule(self):
         """Test with large molecule."""
         transform = MyTransform()
@@ -848,31 +848,31 @@ class TestMyTransform:
             energy=torch.tensor([-1000.0]),
             num_nodes=1000
         )
-        
+
         result = transform(data)
         assert result is not None
         assert result.num_nodes == 1000
-    
+
     def test_compatibility_validation(self, sample_quantum_graph):
         """Test compatibility validation."""
         transform = MyTransform()
-        
+
         is_valid, warnings = transform.validate_compatibility(
             sample_quantum_graph,
             validation_level='strict'
         )
-        
+
         assert is_valid
         assert isinstance(warnings, list)
-    
+
     def test_usage_statistics(self, sample_quantum_graph):
         """Test usage statistics tracking."""
         transform = MyTransform()
-        
+
         # Apply transform multiple times
         for _ in range(5):
             transform(sample_quantum_graph.clone())
-        
+
         stats = transform.get_usage_statistics()
         assert stats['call_count'] == 5
         assert stats['success_rate'] == 1.0
@@ -880,26 +880,26 @@ class TestMyTransform:
 
 class TestMyTransformIntegration:
     """Integration tests for MyTransform."""
-    
+
     def test_registry_integration(self):
         """Test integration with TransformRegistry."""
         from vqm24_pipeline.transformations.graph_transforms import TransformRegistry
-        
+
         # Register transform
         TransformRegistry.register("MyTransform", MyTransform)
-        
+
         # Retrieve from registry
         transform = TransformRegistry.get("MyTransform", threshold=3.0)
-        
+
         assert isinstance(transform, MyTransform)
         assert transform.threshold == 3.0
-    
+
     def test_config_integration(self, sample_quantum_graph):
         """Test configuration-based usage."""
         # Simulate config-based initialization
         config_params = {'threshold': 1.5}
         transform = MyTransform(**config_params)
-        
+
         result = transform(sample_quantum_graph)
         assert result is not None
 
@@ -1410,13 +1410,13 @@ python main.py --comprehensive-validate-plugin my_plugin
 
 # Output example:
 # âœ" Structure validation passed
-# âœ" Metadata validation passed  
+# âœ" Metadata validation passed
 # âœ" Compatibility check passed
 # âœ" Import test passed
 # âœ" Transform instantiation passed
 # ⚠ No tests found (recommended)
 # âœ" Security scan passed
-# 
+#
 # Plugin 'my_plugin' validation: PASSED
 ```
 
@@ -1430,17 +1430,17 @@ import os
 def generate_plugin_checksum(plugin_dir):
     """Generate SHA-256 checksum for plugin."""
     hasher = hashlib.sha256()
-    
+
     for root, dirs, files in os.walk(plugin_dir):
         # Skip tests and examples
         dirs[:] = [d for d in dirs if d not in ['tests', 'examples', '__pycache__']]
-        
+
         for file in sorted(files):
             if file.endswith('.py') or file == 'plugin.yaml':
                 filepath = os.path.join(root, file)
                 with open(filepath, 'rb') as f:
                     hasher.update(f.read())
-    
+
     return f"sha256:{hasher.hexdigest()}"
 
 # Usage
@@ -1494,21 +1494,21 @@ from vqm24_pipeline.transformations.custom_transforms import (
 
 class EnergyFilter(QuantumTransformBase):
     """Filter molecules by energy threshold."""
-    
+
     def __init__(self, max_energy: float = 0.0):
         super().__init__()
         self.max_energy = max_energy
-    
+
     def transform(self, data: Data) -> Optional[Data]:
         """Return None if energy exceeds threshold."""
         if not hasattr(data, 'energy'):
             return data
-        
+
         if data.energy.item() > self.max_energy:
             return None  # Filter out
-        
+
         return data
-    
+
     @classmethod
     def get_metadata(cls):
         return TransformMetadata(
@@ -1567,31 +1567,31 @@ from vqm24_pipeline.transformations.custom_transforms import (
 
 class AdaptiveNormalizer(QuantumTransformBase):
     """Normalize features adaptively based on molecule size."""
-    
+
     def __init__(self, small_threshold: int = 10, scale_factor: float = 2.0):
         super().__init__()
         self.small_threshold = small_threshold
         self.scale_factor = scale_factor
-    
+
     def transform(self, data: Data) -> Data:
         """Apply size-dependent normalization."""
         data = data.clone()
-        
+
         if data.num_nodes < self.small_threshold:
             # Small molecule: gentle normalization
             scale = 1.0
         else:
             # Large molecule: aggressive normalization
             scale = self.scale_factor
-        
+
         if hasattr(data, 'x'):
             data.x = data.x / scale
-        
+
         # Store metadata
         data.normalization_scale = torch.tensor(scale)
-        
+
         return data
-    
+
     @classmethod
     def get_metadata(cls):
         return TransformMetadata(
@@ -1602,7 +1602,7 @@ class AdaptiveNormalizer(QuantumTransformBase):
             description="Size-adaptive feature normalization",
             required_node_features=["x"]
         )
-    
+
     @classmethod
     def get_parameter_constraints(cls):
         return {
@@ -1648,7 +1648,7 @@ transforms:
         choices: ["zscore", "minmax", "robust"]
         default: "zscore"
         description: "Normalization method"
-  
+
   # Transform 2: Force scaler
   - name: "ForceScaler"
     class_name: "ForceScaler"
@@ -1663,7 +1663,7 @@ transforms:
         range: [0.1, 10.0]
         default: 1.0
         description: "Force scaling factor"
-  
+
   # Transform 3: Charge normalizer
   - name: "ChargeNormalizer"
     class_name: "ChargeNormalizer"
@@ -1790,7 +1790,7 @@ def transform(self, data: Data) -> Data:
             transform_name=self._metadata.name,
             required_attributes=['required_attr']
         )
-    
+
     # Execution errors
     try:
         result = risky_operation(data)
@@ -1800,7 +1800,7 @@ def transform(self, data: Data) -> Data:
             transform_name=self._metadata.name,
             original_error=e
         ) from e
-    
+
     return result
 ```
 
@@ -1873,7 +1873,7 @@ def transform(self, data: Data) -> Data:
     cache_key = self._get_cache_key(data)
     if cache_key in self._cache:
         return self._cache[cache_key]
-    
+
     result = self._expensive_operation(data)
     self._cache[cache_key] = result
     return result
@@ -2116,7 +2116,7 @@ from vqm24_pipeline.transformations.custom_transforms import (
 class MyTransform(QuantumTransformBase):
     def transform(self, data: Data) -> Data:
         return data
-    
+
     @classmethod
     def get_metadata(cls):
         return TransformMetadata(
