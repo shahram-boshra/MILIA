@@ -24,11 +24,19 @@ Structural Feature Integration:
 - Integration with dataset_handlers.py feature declarations
 """
 
+from __future__ import annotations
+
 import logging
 import warnings
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from milia_pipeline.config.config_loader import load_config
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
+
+    from milia_pipeline.handlers.base_handler import DatasetHandler
+
 from milia_pipeline.exceptions import (
     ConfigurationError,
     HandlerConfigurationError,
@@ -39,6 +47,8 @@ from milia_pipeline.exceptions import (
 )
 
 try:
+    from pydantic import BaseModel as _BaseModelRuntime
+
     from milia_pipeline.config.config_containers import (
         DatasetConfig,
         ExperimentalSetup,
@@ -673,7 +683,7 @@ class EnhancedConfigAccessor:
 
     def __init__(
         self,
-        config: Union[dict[str, Any], "ConfigContainer"],
+        config: Union[dict[str, Any], BaseModel],
         validation_level: ValidationLevel = ValidationLevel.STANDARD,
         auto_validate: bool = True,
         dataset_context: str | None = None,
@@ -701,8 +711,10 @@ class EnhancedConfigAccessor:
         self._schema_validator = None
         if SCHEMAS_AVAILABLE:
             try:
-                # Create YAMLSchemaValidator instance
-                self._schema_validator = YAMLSchemaValidator()
+                # Create YAMLSchemaValidator instance via lazy import helper
+                _, _, _YAMLSchemaValidator, _ = _get_config_schemas()
+                if _YAMLSchemaValidator is not None:
+                    self._schema_validator = _YAMLSchemaValidator()
             except Exception as e:
                 logger.debug(f"Could not initialize schema validator: {e}")
 
@@ -902,7 +914,7 @@ class EnhancedConfigAccessor:
 
 
 def get_transform_config(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     transform_name: str,
     validate: bool = True,
     use_intelligent_defaults: bool = True,
@@ -996,7 +1008,7 @@ def get_transform_config(
 
 
 def get_transform_parameter(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     transform_name: str,
     parameter_name: str,
     default: Any = None,
@@ -1130,7 +1142,7 @@ def get_transform_parameter(
 
 
 def get_dataset_specific_config(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     dataset_type: str,
     config_key: str,
     default: Any = None,
@@ -1177,7 +1189,7 @@ def get_dataset_specific_config(
 
 
 def get_all_transforms(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     validate_each: bool = True,
     dataset_context: str | None = None,
 ) -> list[dict[str, Any]]:
@@ -1226,7 +1238,7 @@ def get_all_transforms(
 
 
 def get_config_with_fallback(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     keys: list[str],
     default: Any = None,
     expected_type: type | None = None,
@@ -1269,7 +1281,7 @@ def get_config_with_fallback(
 
 
 def validate_config_structure(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     required_keys: list[str] | None = None,
     dataset_context: str | None = None,
     validation_level: ValidationLevel = ValidationLevel.STANDARD,
@@ -1298,19 +1310,21 @@ def validate_config_structure(
             if isinstance(config, dict):
                 if key not in config:
                     errors.append(f"Required key '{key}' missing from configuration")
-            elif CONTAINERS_AVAILABLE and isinstance(config, ConfigContainer):
+            elif CONTAINERS_AVAILABLE and isinstance(config, _BaseModelRuntime):
                 if not hasattr(config, key):
                     errors.append(f"Required attribute '{key}' missing from configuration")
 
     # Schema validation if available
     if SCHEMAS_AVAILABLE:
         try:
-            # Use YAMLSchemaValidator to validate structure
-            validator = YAMLSchemaValidator()
-            validation_result = validator.validate(config)
-            # Adjust based on actual return type of YAMLSchemaValidator.validate()
-            if not validation_result:
-                errors.append("Schema structure validation failed")
+            # Use YAMLSchemaValidator to validate structure via lazy import helper
+            _, _, _YAMLSchemaValidator, _ = _get_config_schemas()
+            if _YAMLSchemaValidator is not None:
+                validator = _YAMLSchemaValidator()
+                validation_result = validator.validate(config)
+                # Adjust based on actual return type of YAMLSchemaValidator.validate()
+                if not validation_result:
+                    errors.append("Schema structure validation failed")
         except Exception as e:
             logger.debug(f"Schema validation error: {e}")
 
@@ -2220,7 +2234,7 @@ def get_transformation_config() -> TransformationConfig:
 
 
 def get_experimental_setup(
-    config: Union[dict[str, Any], "ConfigContainer"],
+    config: Union[dict[str, Any], BaseModel],
     setup_name: str,
     validate: bool = True,
     dataset_context: str | None = None,
@@ -4240,7 +4254,7 @@ def create_transformation_config_container() -> TransformationConfig:
 
 
 @wrap_handler_operation("ConfigAccessor", "create_dataset_handler")
-def create_dataset_handler() -> "DatasetHandler":
+def create_dataset_handler() -> DatasetHandler:
     """
     Create a dataset handler from the current global configuration.
 

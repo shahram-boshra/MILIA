@@ -11,6 +11,8 @@ Author: milia Team
 Version: 1.0.0
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from collections import defaultdict
