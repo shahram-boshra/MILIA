@@ -29,8 +29,10 @@ PHASE 6: Registry Integration for Dynamic Dataset Feature Queries
 - Zero modifications required to add new dataset types with appropriate features
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch_geometric.data import Data
@@ -52,6 +54,9 @@ from milia_pipeline.exceptions import (
     StructuralFeatureError,
     wrap_handler_operation,
 )
+
+if TYPE_CHECKING:
+    from milia_pipeline.handlers.base_handler import DatasetHandler
 
 logger = logging.getLogger(__name__)
 
