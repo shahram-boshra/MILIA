@@ -170,6 +170,16 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["milia_pipeline"]
 
+[tool.ruff.lint.per-file-ignores]
+# Test files use deferred imports (conftest.py design) to avoid collection-time
+# failures when heavy deps (torch, torch_geometric, numpy) are not installed.
+# This is a deliberate architectural decision — NOT suppressible at source.
+"tests/*" = ["E402"]
+# __init__.py files re-export symbols for public API convenience.
+# F401: Re-exported names appear "unused" to the linter but are consumed by importers.
+# E402: Imports come after module docstrings/comments — standard packaging practice.
+"__init__.py" = ["F401", "E402"]
+
 # coverage.py
 [tool.coverage.run]
 source = ["milia_pipeline"]
