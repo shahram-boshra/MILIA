@@ -169,3 +169,17 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["milia_pipeline"]
+
+# coverage.py
+[tool.coverage.run]
+source = ["milia_pipeline"]
+omit = [
+    "tests/*",
+    "scripts/*",
+    "examples/*",
+    "archive/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
