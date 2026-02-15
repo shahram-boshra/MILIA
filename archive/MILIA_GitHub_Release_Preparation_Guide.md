@@ -697,7 +697,7 @@ Additional files created by Audit (not in original Guide):
 | 23 | `docs/` (Sphinx build system, 8 files) | Docs | Low | ✅ Complete (Audit §3.9) |
 | 24 | `examples/` | Polish | Low | ✅ Placeholder `.gitkeep` (Audit §1.1) |
 
-**Remaining**: Item #6 (`docker-publish.yml`) spec is complete — execute creation instructions in step 5a of "What Actually Remains" section, then follow steps 5b–5f for GHCR configuration and reviewer access.
+**Remaining**: Item #6 (`docker-publish.yml`) spec is complete — execute creation instructions in step 5a of "Post-GitHub-Push Configuration" section, then follow steps 5b–5f for GHCR configuration and reviewer access.
 
 ---
 
@@ -742,9 +742,9 @@ All questions originally listed here have been resolved during the Production Re
 
 ---
 
-## What Actually Remains — Post-Creation Actions
+## Post-GitHub-Push Configuration — One-Time Setup Actions
 
-All file creation work described in this guide and the Production Release File Audit has been completed. The audit identifies several items that cannot be completed until Git is initialized and the repository is pushed to GitHub. These are the true remaining action items:
+The following actions cannot be performed until Git is initialized, the initial commit is made, and the repository is pushed to GitHub. They are **post-push configuration steps**, not file creation tasks — all file creation is covered by Parts A–C above.
 
 ### 1. Initialize Git & Make the Initial Commit (Audit §7B)
 
@@ -1174,8 +1174,8 @@ Run through this checklist **before** sending the invitation to a reviewer/inter
 
 ---
 
-**Document Version**: 1.5.0
+**Document Version**: 1.5.1
 **Created**: February 2026
-**Updated**: February 2026 — v1.5.0: Added step 5 to "What Actually Remains" section — complete practical guide for `docker-publish.yml` creation, GHCR configuration, inherited permissions, collaborator invitation, reviewer instructions, and end-to-end verification checklist. Evidence-based on GitHub Docs (GHCR, Connecting packages, Configuring access, Inviting collaborators, Permission levels), `docker/metadata-action` README, and `docker/build-push-action` README. Addresses the final remaining item (#6 in Summary Table). v1.4.0: Added "What Actually Remains — Post-Creation Actions" section with the 4 post-creation steps (git init, pre-commit activation, GitHub push + post-push settings, RTD connection) sourced from Audit §7B, §3.1, §3.4, §7C, §3.9. v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide. Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a); restructured B1 into B1a + B1b; updated implementation order, dependency graph, and summary table
+**Updated**: February 2026 — v1.5.1: Renamed "What Actually Remains" to "Post-GitHub-Push Configuration — One-Time Setup Actions" for clarity; updated all cross-references. v1.5.0: Added step 5 to "Post-GitHub-Push Configuration" section — complete practical guide for `docker-publish.yml` creation, GHCR configuration, inherited permissions, collaborator invitation, reviewer instructions, and end-to-end verification checklist. Evidence-based on GitHub Docs (GHCR, Connecting packages, Configuring access, Inviting collaborators, Permission levels), `docker/metadata-action` README, and `docker/build-push-action` README. Addresses the final remaining item (#6 in Summary Table). v1.4.0: Added "Post-GitHub-Push Configuration" section (originally "What Actually Remains — Post-Creation Actions") with the 4 post-creation steps (git init, pre-commit activation, GitHub push + post-push settings, RTD connection) sourced from Audit §7B, §3.1, §3.4, §7C, §3.9. v1.3.0: Updated all section statuses to reflect completed Production Release File Audit implementation (Audit §1–§3 fully complete); all items marked ✅ except `docker-publish.yml` (B1a). Added audit-created files not in original guide. Resolved all "Files Required" questions. v1.2.0: Added mandatory Docker image build+push to GHCR workflow (B1a); restructured B1 into B1a + B1b; updated implementation order, dependency graph, and summary table
 **Based On**: MILIA Pipeline Project Structure v1.1.0, MILIA Production Release File Audit v1.1.0, MILIA Test Recommendations v1.2.0
 **Evidence Sources**: PyPA, pyOpenSci, Scientific Python Dev Guide, GitHub Docs (Actions, Container Jobs, GHCR, Packages Billing, Connecting a repository to a package, Configuring a package's access control and visibility, Inviting collaborators to a personal repository, Permission levels for a personal account repository, About permissions for GitHub Packages), Docker Docs, `docker/metadata-action` README, `docker/build-push-action` README, conda-incubator/setup-miniconda, pytest docs, Keng's Blog (see full list above)
