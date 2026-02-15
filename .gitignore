@@ -224,17 +224,30 @@ __marimo__/
 # ============================================================================
 # MILIA-specific exclusions
 # Source: MILIA Production Release File Audit §1.1 (Decision Tracker), §4
+#         MILIA GitHub Release Implementation Guide §A1
 # ============================================================================
 
-# Internal development documentation — blueprints, VQM24 investigation notes,
-# testing guides, decision records. No end-user value. (§4.4)
-# Pattern: archive/* (not archive/) so Git can negate specific files below.
-# Per git-scm.com/docs/gitignore: "It is not possible to re-include a file
-# if a parent directory of that file is excluded."
-archive/*
-# Production Release File Audit — active project governance document,
-# its change history must be tracked in Git.
-!archive/MILIA_Production_Release_File_Audit.md
+# Conda environment directories (MILIA uses shah_env via environment.yml)
+shah_env/
+.conda/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Wheel files (standalone, outside wheels/ directory)
+*.whl
+
+# Internal development documentation — blueprints, investigation notes,
+# testing guides, decision records, release guides. Local-only reference
+# documents with no end-user value. Not tracked by Git. (§4.4)
+archive/
 
 # Documentation — now populated with Sphinx build system (§3.9).
 # docs/ is tracked in Git. Build output (docs/_build/) is already excluded
