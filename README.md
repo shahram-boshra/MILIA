@@ -1,7 +1,8 @@
-# MILIA (Machine Intelligent Learning Inference Assistant)
+# MILIA (Machine Intelligent Learning Interface Assistant)
 
 **Molecular graph processing and machine learning framework for computational chemistry**
 
+[![CI](https://github.com/shahram-boshra/MILIA/actions/workflows/ci.yml/badge.svg)](https://github.com/shahram-boshra/MILIA/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://docs.astral.sh/ruff/)
@@ -53,6 +54,33 @@ The no-code design, comprehensive CLI with interactive mode, and 12+ processing 
 ## Installation
 
 MILIA relies on heavy scientific packages (PyTorch, PyTorch Geometric, RDKit) that are best managed through conda to avoid binary dependency conflicts.
+
+### Method 1: Docker (Recommended)
+
+The fastest way to get MILIA running. A pre-built image is available on GitHub Container Registry:
+
+```bash
+# Pull and run the pre-built image
+docker pull ghcr.io/shahram-boshra/milia:latest
+docker run -it ghcr.io/shahram-boshra/milia:latest
+# → (shah_env) root@...:/app/milia#
+
+# Verify MILIA works (inside the container)
+pytest -m smoke --tb=short
+milia --help
+```
+
+Or build locally from the Dockerfile:
+
+```bash
+git clone https://github.com/shahram-boshra/MILIA.git
+cd MILIA
+docker build -t milia .
+docker run -it milia
+# → (shah_env) root@...:/app/milia#
+```
+
+### Method 2: Conda (Without Docker)
 
 ```bash
 # 1. Create and activate conda environment
@@ -198,6 +226,11 @@ If you use MILIA in your research, please cite it. See [CITATION.cff](CITATION.c
 ## License
 
 MILIA is released under the [MIT License](LICENSE).
+
+## Authors
+
+- **Asadollah (Shahram) Boshra** — [a.boshra@gmail.com](mailto:a.boshra@gmail.com)
+- **Ilia Boshra** — [ilia.boshra@gmail.com](mailto:ilia.boshra@gmail.com)
 
 ## Links
 
