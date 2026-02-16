@@ -666,7 +666,7 @@ class NASManager:
             raise HPOError(
                 "ModelFactory not available",
                 details="Cannot build model without model_factory module",
-            )
+            ) from None
 
         factory = get_factory() if get_factory else ModelFactory()
 
@@ -943,7 +943,7 @@ class HeterogeneousGNN(nn.Module):
             raise HPOError(
                 "PyTorch Geometric not available",
                 details="Cannot create GNN layers without torch_geometric",
-            )
+            ) from None
 
         layer_type = layer_type.lower()
 
@@ -1022,7 +1022,7 @@ class HeterogeneousGNN(nn.Module):
             raise HPOError(
                 "PyTorch Geometric not available",
                 details="Cannot create pooling without torch_geometric",
-            )
+            ) from None
 
         pooling_type = pooling_type.lower()
 

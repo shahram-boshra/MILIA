@@ -206,7 +206,7 @@ def parse_molden_files(
                     f"Too many parsing failures ({failed_count}/{len(molden_files)})",
                     operation="molden_parsing",
                     details=f"Recent errors: {errors[-5:]}",
-                )
+                ) from e
 
     if parsed_count == 0:
         raise DataProcessingError(

@@ -1273,7 +1273,7 @@ def validate_handler_availability(logger: logging.Logger) -> bool:
                 requested_dataset_type="unknown",
                 missing_dependencies=[str(e)],
                 details=f"Import error: {str(e)}",
-            )
+            ) from e
 
         # ================================================================
         # PHASE 7: Dynamic handler availability testing from registry
@@ -1345,7 +1345,7 @@ def validate_handler_availability(logger: logging.Logger) -> bool:
             handler_type="factory",
             incompatible_features=["handler_factory_test"],
             details=f"Unexpected error: {type(e).__name__}: {str(e)}",
-        )
+        ) from e
 
 
 def validate_transformation_system(
@@ -1694,7 +1694,7 @@ def create_handler_for_validation(
             message=f"Failed to create {dataset_config.dataset_type} handler",
             requested_dataset_type=dataset_config.dataset_type,
             details=f"Unexpected error: {type(e).__name__}: {str(e)}",
-        )
+        ) from e
 
 
 def validate_configuration(
@@ -1877,7 +1877,7 @@ def validate_dmc_configuration(
             handler_type=dataset_config.dataset_type,
             config_validation_errors=[str(e)],
             details=f"Validation error: {type(e).__name__}: {str(e)}",
-        )
+        ) from e
 
 
 def validate_dft_configuration(
@@ -1936,7 +1936,7 @@ def validate_dft_configuration(
             handler_type=dataset_config.dataset_type,
             config_validation_errors=[str(e)],
             details=f"Validation error: {type(e).__name__}: {str(e)}",
-        )
+        ) from e
 
 
 def validate_dataset_specific_configuration(

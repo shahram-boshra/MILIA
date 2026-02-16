@@ -906,7 +906,7 @@ class EnhancedConfigAccessor:
             raise ValueError(
                 f"Failed to cast {value} (type: {type(value).__name__}) "
                 f"to {target_type.__name__}: {e}"
-            )
+            ) from e
 
     def get_stats(self) -> dict[str, Any]:
         """Get accessor statistics."""
@@ -1118,7 +1118,7 @@ def get_transform_parameter(
                 config_key=f"transforms.{transform_name}.kwargs.{parameter_name}",
                 details=str(e),
                 suggestions=f"Ensure value is compatible with {expected_type.__name__}",
-            )
+            ) from e
 
     # Validate parameter if requested
     if validate and GRAPH_TRANSFORMS_AVAILABLE:

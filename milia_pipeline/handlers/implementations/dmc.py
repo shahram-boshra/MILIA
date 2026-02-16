@@ -121,7 +121,7 @@ class DMCDatasetHandler(DatasetHandler):
                         molecule_index=molecule_index,
                         identifier=identifier,
                         details=f"InChI: {identifier}, Energy value: {etot}, Type: {type(etot)}",
-                    )
+                    ) from None
             # Validate uncertainty data if enabled
             if self.dataset_config.is_uncertainty_enabled:
                 self._validate_uncertainty_data(raw_properties_dict, molecule_index, identifier)
@@ -270,7 +270,7 @@ class DMCDatasetHandler(DatasetHandler):
                         message=f"DMC energy is non-numeric string: '{value}'",
                         operation="property_processing",
                         details=f"Cannot convert '{value}' to float",
-                    )
+                    ) from None
 
             return value
 
@@ -611,7 +611,7 @@ class DMCDatasetHandler(DatasetHandler):
                                 property_name=key,
                                 reason=f"DMC scalar target '{key}' string cannot be converted to number",
                                 detail=f"Value: '{value}'",
-                            )
+                            ) from None
                     elif isinstance(value, (list, tuple)):
                         if len(value) == 1:
                             val_to_add = float(value[0])

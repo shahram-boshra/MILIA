@@ -2529,7 +2529,7 @@ def create_descriptor_config_from_yaml(
     except Exception as e:
         error_msg = f"Failed to create descriptor configuration: {str(e)}"
         logger.error(error_msg)
-        raise ConfigurationError(error_msg)
+        raise ConfigurationError(error_msg) from e
 
 
 def create_default_descriptor_config() -> DescriptorConfig:
@@ -4162,7 +4162,7 @@ def create_transformation_config_from_dict(config_dict: dict[str, Any]) -> Trans
             experimental_setup = create_experimental_setup_from_dict(setup_dict)
             experimental_setups[setup_name] = experimental_setup
         except ValueError as e:
-            raise ValueError(f"Invalid experimental setup '{setup_name}': {str(e)}")
+            raise ValueError(f"Invalid experimental setup '{setup_name}': {str(e)}") from e
 
     return TransformationConfig(
         experimental_setups=experimental_setups,

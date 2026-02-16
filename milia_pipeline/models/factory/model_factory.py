@@ -905,7 +905,7 @@ class EdgeLevelModelWrapper(torch.nn.Module):
             model = object.__getattribute__(self, "model")
             return getattr(model, name)
         except AttributeError:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'") from None
 
 
 # =============================================================================
@@ -1301,7 +1301,7 @@ class ModelFactory:
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to get metadata for model '{name}': {e}", model_name=name
-            )
+            ) from e
 
         # Validate task compatibility
         if task_type not in metadata.supported_tasks:
@@ -1323,7 +1323,7 @@ class ModelFactory:
             except HyperparameterError as e:
                 raise HyperparameterError(
                     f"Hyperparameter validation failed for model '{name}': {e}", model_name=name
-                )
+                ) from e
 
         # Phase 4: Additional validation against actual model signature
         # This catches parameters that may have been introspected incorrectly
@@ -1352,7 +1352,7 @@ class ModelFactory:
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to get model class for '{name}': {e}", model_name=name
-            )
+            ) from e
 
         # =====================================================================
         # VALIDATE OPTIONAL DEPENDENCIES (DYNAMIC, PRODUCTION-READY)
@@ -1378,7 +1378,7 @@ class ModelFactory:
                 f"Failed to instantiate model '{name}': {e}",
                 model_name=name,
                 hyperparameters=processed_params,
-            )
+            ) from e
 
         # Wrap model for graph-level tasks
         # PyG BasicGNN models output node-level predictions [num_nodes, out_channels]
@@ -2214,7 +2214,7 @@ class ModelFactory:
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to parse architecture config: {e}", model_name="custom"
-            )
+            ) from e
 
         # Build model
         try:
@@ -2222,7 +2222,7 @@ class ModelFactory:
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to build custom architecture: {e}", model_name="custom"
-            )
+            ) from e
 
         # Move to device
         if device is not None:
@@ -2282,7 +2282,7 @@ class ModelFactory:
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to parse ensemble config: {e}", model_name="ensemble"
-            )
+            ) from e
 
         # Add models to ensemble from config
         if "models" in config and isinstance(config, dict):
@@ -2497,7 +2497,7 @@ class ModelFactory:
             except Exception as e:
                 raise ModelInstantiationError(
                     f"Failed to add models to ensemble: {e}", model_name="ensemble"
-                )
+                ) from e
 
         # Validate composition
         try:
@@ -2515,7 +2515,7 @@ class ModelFactory:
         try:
             model = composer.build()
         except Exception as e:
-            raise ModelInstantiationError(f"Failed to build ensemble: {e}", model_name="ensemble")
+            raise ModelInstantiationError(f"Failed to build ensemble: {e}", model_name="ensemble") from e
 
         # =====================================================================
         # WRAP ENSEMBLE FOR GRAPH-LEVEL TASKS
@@ -3369,7 +3369,7 @@ class ModelFactory:
                     f"hidden_channels={encoder_hidden_channels}, out_channels={encoder_out_channels}. "
                     f"Ensure encoder_type is a valid PyG BasicGNN model (GCN, GAT, GraphSAGE, GIN).",
                     model_name=metadata.name,
-                )
+                ) from e
 
             # -----------------------------------------------------------------
             # REMOVE ENCODER CONFIG PARAMS (not needed by GAE/VGAE constructor)
@@ -3533,7 +3533,7 @@ class ModelFactory:
                     f"hidden_channels={encoder_hidden_channels}, out_channels={encoder_out_channels}. "
                     f"Ensure encoder_type is a valid PyG BasicGNN model (GCN, GAT, GraphSAGE, GIN).",
                     model_name=metadata.name,
-                )
+                ) from e
 
             # -----------------------------------------------------------------
             # CREATE DISCRIMINATOR MODULE DYNAMICALLY
@@ -3577,7 +3577,7 @@ class ModelFactory:
                     f"Attempted with in_channels={encoder_out_channels}, "
                     f"hidden_channels={discriminator_hidden_channels}, out_channels={discriminator_out_channels}.",
                     model_name=metadata.name,
-                )
+                ) from e
 
             # -----------------------------------------------------------------
             # REMOVE CONFIG PARAMS (not needed by ARGA/ARGVA constructor)
@@ -3780,7 +3780,7 @@ class ModelFactory:
                 f"Could not load encoder backbone '{encoder_type}': {e}. "
                 f"Supported encoder types: GCN, GAT, GraphSAGE, GIN, PNA, EdgeCNN",
                 model_name=f"GAE/VGAE encoder ({encoder_type})",
-            )
+            ) from e
 
         if is_variational:
             # =================================================================

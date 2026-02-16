@@ -1982,7 +1982,7 @@ For more information, see: https://docs.example.com/milia-cli
                     except Exception as e:
                         raise CLIValidationError(
                             f"Cannot create output directory: {output_dir}. Error: {e}"
-                        )
+                        ) from e
 
                 # Check if output exists and force flag not set
                 if output_path.exists() and not getattr(args, "preprocess_force", False):
@@ -2090,7 +2090,7 @@ For more information, see: https://docs.example.com/milia-cli
             return self.config
 
         except Exception as e:
-            raise CLIValidationError(f"Failed to load configuration: {e}")
+            raise CLIValidationError(f"Failed to load configuration: {e}") from e
 
     def _apply_cli_overrides(self, args: argparse.Namespace) -> None:
         """
@@ -2326,7 +2326,7 @@ For more information, see: https://docs.example.com/milia-cli
                 except Exception as e:
                     raise CLIValidationError(
                         f"Cannot create predictions output directory: {preds_dir}. Error: {e}"
-                    )
+                    ) from e
 
             self.logger.debug(f"Resolved predictions path: {preds_path}")
             self.logger.debug("Prediction path validation completed successfully")
@@ -3443,10 +3443,10 @@ results = runner.run_experiment(
 
             if PLUGIN_SYSTEM_AVAILABLE and error_type == "PluginDiscoveryError":
                 self.logger.error(f"Plugin discovery failed: {e}")
-                raise CLIValidationError(f"Plugin discovery failed: {e}")
+                raise CLIValidationError(f"Plugin discovery failed: {e}") from e
             else:
                 self.logger.error(f"Unexpected error during discovery: {e}")
-                raise CLIValidationError(f"Discovery error: {e}")
+                raise CLIValidationError(f"Discovery error: {e}") from e
 
     def _list_plugins_operation(self, args: argparse.Namespace) -> None:
         """Execute list plugins operation."""
@@ -3497,7 +3497,7 @@ results = runner.run_experiment(
 
         except Exception as e:
             self.logger.error(f"Failed to list plugins: {e}")
-            raise CLIValidationError(f"List operation failed: {e}")
+            raise CLIValidationError(f"List operation failed: {e}") from e
 
     def _show_plugin_info_operation(self, plugin_name: str) -> None:
         """Execute show plugin info operation."""
@@ -3546,10 +3546,10 @@ results = runner.run_experiment(
                 print(f"  {info.description}")
 
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             self.logger.error(f"Failed to get plugin info: {e}")
-            raise CLIValidationError(f"Info operation failed: {e}")
+            raise CLIValidationError(f"Info operation failed: {e}") from e
 
     def _validate_plugin_operation(self, plugin_name: str, args: argparse.Namespace) -> None:
         """Execute basic plugin validation operation."""
@@ -3591,17 +3591,17 @@ results = runner.run_experiment(
                 print("  Review errors above before enabling.")
 
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             # Handle plugin-specific exceptions if plugin system is available
             error_type = type(e).__name__
 
             if PLUGIN_SYSTEM_AVAILABLE and error_type == "PluginValidationError":
                 self.logger.error(f"Plugin validation error: {e}")
-                raise CLIValidationError(f"Validation failed: {e}")
+                raise CLIValidationError(f"Validation failed: {e}") from e
             else:
                 self.logger.error(f"Unexpected validation error: {e}")
-                raise CLIValidationError(f"Validation error: {e}")
+                raise CLIValidationError(f"Validation error: {e}") from e
 
     def _validate_plugin_comprehensive_operation(
         self, plugin_name: str, args: argparse.Namespace
@@ -3658,12 +3658,12 @@ results = runner.run_experiment(
 
         except PluginValidationError as e:
             self.logger.error(f"Comprehensive validation error: {e}")
-            raise CLIValidationError(f"Validation failed: {e}")
+            raise CLIValidationError(f"Validation failed: {e}") from e
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             self.logger.error(f"Unexpected validation error: {e}")
-            raise CLIValidationError(f"Validation error: {e}")
+            raise CLIValidationError(f"Validation error: {e}") from e
 
     def _enable_plugin_operation(self, plugin_name: str) -> None:
         """Execute enable plugin operation."""
@@ -3671,10 +3671,10 @@ results = runner.run_experiment(
             PluginRegistry.enable_plugin(plugin_name)
             self.logger.info(f"✓ Enabled plugin: {plugin_name}")
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             self.logger.error(f"Failed to enable plugin: {e}")
-            raise CLIValidationError(f"Enable failed: {e}")
+            raise CLIValidationError(f"Enable failed: {e}") from e
 
     def _disable_plugin_operation(self, plugin_name: str) -> None:
         """Execute disable plugin operation."""
@@ -3682,10 +3682,10 @@ results = runner.run_experiment(
             PluginRegistry.disable_plugin(plugin_name)
             self.logger.info(f"○ Disabled plugin: {plugin_name}")
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             self.logger.error(f"Failed to disable plugin: {e}")
-            raise CLIValidationError(f"Disable failed: {e}")
+            raise CLIValidationError(f"Disable failed: {e}") from e
 
     def _trust_plugin_operation(self, plugin_name: str) -> None:
         """Execute trust plugin operation."""
@@ -3697,10 +3697,10 @@ results = runner.run_experiment(
                 "Trusted plugins bypass security checks. Only trust plugins from verified sources."
             )
         except KeyError:
-            raise CLIValidationError(f"Plugin '{plugin_name}' not found")
+            raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
             self.logger.error(f"Failed to trust plugin: {e}")
-            raise CLIValidationError(f"Trust operation failed: {e}")
+            raise CLIValidationError(f"Trust operation failed: {e}") from e
 
 
 def create_cli_manager(logger: logging.Logger | None = None) -> CLIManager:

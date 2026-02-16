@@ -579,7 +579,7 @@ class DFTDatasetHandler(DatasetHandler):
                                 property_name=key,
                                 reason=f"DFT scalar target '{key}' string cannot be converted to number",
                                 detail=f"Value: '{value}'",
-                            )
+                            ) from None
                     elif isinstance(value, (list, tuple)):
                         if len(value) == 1:
                             val_to_add = float(value[0])

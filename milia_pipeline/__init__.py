@@ -788,7 +788,7 @@ def initialize_pipeline(
             logger.error(f"Failed to load configuration: {e}")
             raise ConfigurationError(
                 message=f"Configuration loading failed: {e}", config_key=config_path, details=str(e)
-            )
+            ) from e
 
     # Discover plugins if enabled
     if enable_plugins:

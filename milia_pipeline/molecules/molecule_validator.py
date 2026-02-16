@@ -502,7 +502,7 @@ def validate_molecular_structure(
                     details=f"Handler validation failed for molecule {molecule_index}",
                     molecule_index=molecule_index,
                     original_error=e,
-                )
+                ) from e
 
             logger.debug(
                 f"Molecule {molecule_index} passed {handler.get_dataset_type()} structural validation"
@@ -675,7 +675,7 @@ def check_dataset_compatibility(
                 details=f"Molecule {molecule_index} failed validation: {str(e)}",
                 molecule_index=molecule_index,
                 original_error=e,
-            )
+            ) from e
         except Exception as e:
             # Convert other exceptions to handler operation errors
             raise HandlerOperationError(
@@ -1232,7 +1232,7 @@ def validate_molecule_with_handler(
                 details=f"Handler-specific validation failed for molecule {molecule_index}",
                 molecule_index=molecule_index,
                 original_error=e,
-            )
+            ) from e
 
         logger.debug(f"Molecule {molecule_index} passed comprehensive {dataset_type} validation")
         return True

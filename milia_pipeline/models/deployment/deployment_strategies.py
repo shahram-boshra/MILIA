@@ -319,7 +319,7 @@ def output_fn(prediction, response_content_type):
             return deployment_info
 
         except ImportError:
-            raise DeploymentError("AWS deployment requires: pip install boto3 sagemaker")
+            raise DeploymentError("AWS deployment requires: pip install boto3 sagemaker") from None
 
     def predict(self, input_data: Any, **kwargs) -> Any:
         """Make prediction using SageMaker endpoint."""

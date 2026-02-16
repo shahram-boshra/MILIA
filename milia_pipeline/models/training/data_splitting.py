@@ -181,7 +181,7 @@ class DataSplitter:
         except ImportError:
             raise DataError(
                 "stratified_split requires scikit-learn. Install with: pip install scikit-learn"
-            )
+            ) from None
 
         # Validation
         if abs(train_ratio + val_ratio + test_ratio - 1.0) > 1e-6:
@@ -205,7 +205,7 @@ class DataSplitter:
         try:
             labels = [label_getter(dataset[i]) for i in range(len(dataset))]
         except Exception as e:
-            raise DataError(f"Failed to extract labels: {e}")
+            raise DataError(f"Failed to extract labels: {e}") from e
 
         indices = list(range(n))
 
@@ -291,9 +291,9 @@ class DataSplitter:
             raise DataError(
                 f"Dataset samples missing '{time_field}' attribute. "
                 f"Provide custom time_getter function."
-            )
+            ) from None
         except Exception as e:
-            raise DataError(f"Failed to extract timestamps: {e}")
+            raise DataError(f"Failed to extract timestamps: {e}") from e
 
         # Sort by time
         sorted_indices = sorted(range(n), key=lambda i: times[i])
@@ -366,7 +366,7 @@ class DataSplitter:
             from rdkit import Chem
             from rdkit.Chem.Scaffolds import MurckoScaffold
         except ImportError:
-            raise DataError("scaffold_split requires rdkit. Install with: pip install rdkit")
+            raise DataError("scaffold_split requires rdkit. Install with: pip install rdkit") from None
 
         # Validation
         if abs(train_ratio + val_ratio + test_ratio - 1.0) > 1e-6:
@@ -400,7 +400,7 @@ class DataSplitter:
             except AttributeError:
                 raise DataError(
                     "Dataset samples missing 'mol' attribute. Provide custom mol_getter function."
-                )
+                ) from None
             except Exception as e:
                 logger.warning(f"Failed to generate scaffold for sample {idx}: {e}")
                 # Assign to unique scaffold

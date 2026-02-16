@@ -4755,7 +4755,7 @@ class TransformValidator:
                 try:
                     converted = target_type(value)
                 except ValueError:
-                    raise ValueError(f"Cannot convert string '{value}' to {target_type.__name__}")
+                    raise ValueError(f"Cannot convert string '{value}' to {target_type.__name__}") from None
             elif isinstance(value, complex):
                 raise ValueError("Complex numbers not supported")
             elif isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -4776,7 +4776,7 @@ class TransformValidator:
         try:
             return target_type(value)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Cannot convert {value} to {target_type.__name__}: {e}")
+            raise ValueError(f"Cannot convert {value} to {target_type.__name__}: {e}") from e
 
     def _validate_numeric_range(
         self, param_name: str, value: int | float, param_type: type
@@ -6581,7 +6581,7 @@ class GraphTransforms:
             raise TransformValidationError(
                 f"Cannot get parameter info: Transform '{transform_name}' not found",
                 transform_name=transform_name,
-            )
+            ) from None
 
         if parameter_name is not None:
             return self.validator.get_parameter_metadata(transform_name, parameter_name)

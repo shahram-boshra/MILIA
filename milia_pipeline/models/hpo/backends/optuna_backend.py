@@ -115,7 +115,7 @@ class OptunaBackend:
                 backend_name="optuna",
                 operation="create_study",
                 details=str(e),
-            )
+            ) from e
 
     def optimize(
         self,
@@ -170,7 +170,7 @@ class OptunaBackend:
                 backend_name="optuna",
                 operation="optimize",
                 details=str(e),
-            )
+            ) from e
 
     def get_best_params(self, study: "optuna.Study") -> dict[str, Any]:
         """Get best hyperparameters from study."""
@@ -180,7 +180,7 @@ class OptunaBackend:
             # No completed trials
             raise HPOError(
                 "No completed trials in study", study_name=study.study_name, details=str(e)
-            )
+            ) from e
 
     def get_best_value(self, study: "optuna.Study") -> float:
         """Get best objective value from study."""
@@ -189,7 +189,7 @@ class OptunaBackend:
         except ValueError as e:
             raise HPOError(
                 "No completed trials in study", study_name=study.study_name, details=str(e)
-            )
+            ) from e
 
     def get_all_trials(self, study: "optuna.Study") -> list[dict[str, Any]]:
         """Get information about all trials."""

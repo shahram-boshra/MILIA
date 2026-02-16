@@ -5225,7 +5225,7 @@ class miliaDataset(InMemoryDataset):
                         os.remove(destination_path)
                     raise RequestException(
                         f"Failed to download '{filename}' after {max_retries} retries."
-                    )
+                    ) from e
 
             except OSError as e:
                 if logger:
@@ -6483,7 +6483,7 @@ class miliaDataset(InMemoryDataset):
                 file_path=str(raw_npz_path),
                 operation="file_access",
                 details="Ensure the download step completed successfully and file exists.",
-            )
+            ) from None
         except PermissionError as e:
             raise DataProcessingError(
                 message=f"Permission denied accessing NPZ file at '{raw_npz_path}'",

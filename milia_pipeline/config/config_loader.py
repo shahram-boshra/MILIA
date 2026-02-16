@@ -614,13 +614,13 @@ def _load_and_merge_yaml_files(files: list[Path]) -> dict[str, Any]:
                 f"Error parsing configuration file {file_path}: {str(e)}",
                 config_key="yaml_parsing",
                 actual_value=str(file_path),
-            )
+            ) from e
         except UnicodeDecodeError as e:
             raise ConfigurationError(
                 f"Error reading configuration file {file_path}: {str(e)}",
                 config_key="file_encoding",
                 actual_value=str(file_path),
-            )
+            ) from e
 
     logger.info(f"Merged {len(loaded_files)} config files: {loaded_files}")
     return merged_config
@@ -794,13 +794,13 @@ def load_config(
                     f"Error parsing configuration file {config_path}: {str(e)}",
                     config_key="yaml_parsing",
                     actual_value=config_path,
-                )
+                ) from e
             except UnicodeDecodeError as e:
                 raise ConfigurationError(
                     f"Error reading configuration file {config_path}: {str(e)}",
                     config_key="file_encoding",
                     actual_value=config_path,
-                )
+                ) from e
 
             # Validate basic structure
             if not isinstance(config, dict):
@@ -918,7 +918,7 @@ def load_config(
                 f"An unexpected error occurred while loading config: {str(e)}",
                 config_key="config_loading",
                 actual_value=config_path,
-            )
+            ) from e
 
 
 def _detect_transformation_format(transforms_section: Any) -> str:
@@ -1819,11 +1819,11 @@ def get_enhanced_transformation_config(force_reload=False):
         raise ConfigurationError(
             f"Failed to load transformation configuration: {original_error}",
             config_key="transformations",
-        )
+        ) from e
     except Exception as e:
         raise ConfigurationError(
             f"Failed to load transformation configuration: {str(e)}", config_key="transformations"
-        )
+        ) from e
 
 
 def validate_config_file(
@@ -2206,7 +2206,7 @@ def migrate_legacy_config(
     except yaml.YAMLError as e:
         raise ConfigurationError(
             f"Failed to parse input configuration: {str(e)}", config_key="yaml_parsing"
-        )
+        ) from e
 
     if not isinstance(legacy_config, dict):
         raise ConfigurationError(
@@ -2281,7 +2281,7 @@ def migrate_legacy_config(
     except Exception as e:
         raise ConfigurationError(
             f"Migration failed: {str(e)}", config_key="migration_process", actual_value=input_path
-        )
+        ) from e
 
 
 def _migrate_legacy_transform_to_enhanced(transform_config):

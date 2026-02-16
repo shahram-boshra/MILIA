@@ -780,7 +780,7 @@ class CustomArchitecture(nn.Module):
                 else:
                     error_msg += "  Hint: Check the layer documentation for required parameters.\n"
 
-                raise ArchitectureError(error_msg)
+                raise ArchitectureError(error_msg) from e
 
             self.layers_list.append(layer)
             logger.debug(f"Built layer {layer_config.type} at position {layer_config.position}")
@@ -895,7 +895,7 @@ class CustomArchitecture(nn.Module):
                     f"  Layer metadata: requires_edge_index={metadata.requires_edge_index}, "
                     f"requires_batch={metadata.requires_batch}, "
                     f"is_functional={metadata.is_functional}"
-                )
+                ) from e
 
             # Store output BEFORE applying residual connections
             # This is the "clean" output of this layer

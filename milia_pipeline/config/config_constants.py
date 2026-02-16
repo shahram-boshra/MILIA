@@ -1073,7 +1073,7 @@ def get_handler_constants(handler_type: str) -> dict[str, Any]:
             f"Failed to get constants for handler '{handler_type}'",
             handler_type=handler_type,
             details=str(e),
-        )
+        ) from e
 
 
 def _get_handler_specific_constants(
@@ -1657,7 +1657,7 @@ def get_transformation_constants(include_registry_info: bool = False) -> dict[st
         raise ConfigurationError(
             f"Failed to get transformation constants: {e}",
             context={"phase": "Phase1_transformation_integration"},
-        )
+        ) from e
 
 
 def _check_transformation_system_availability() -> bool:
@@ -1882,7 +1882,7 @@ def validate_experimental_setup_for_handler(handler_type: str, setup_name: str) 
             f"Failed to validate experimental setup '{setup_name}' for handler '{handler_type}'",
             context={"setup_name": setup_name, "handler_type": handler_type},
             details=str(e),
-        )
+        ) from e
 
 
 # ==========================================
@@ -1940,7 +1940,7 @@ def create_handler_config_from_constants(handler_type: str) -> dict[str, Any]:
 
         raise HandlerConfigurationError(
             "Failed to create handler configuration", handler_type=handler_type, details=str(e)
-        )
+        ) from e
 
 
 def get_migration_compatibility_constants() -> dict[str, Any]:

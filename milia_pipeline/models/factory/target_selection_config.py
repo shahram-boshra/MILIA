@@ -693,7 +693,7 @@ class TargetSelectionConfig(BaseModel):
                 config_key="target_selection.indices",
                 actual_value=self.range_spec,
                 expected_value="Format: 'start:stop' or 'start:stop:step' (e.g., '0:3', '::2')",
-            )
+            ) from None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for model_info and logging."""

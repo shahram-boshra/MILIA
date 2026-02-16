@@ -337,7 +337,7 @@ class DistributedManager:
                 self._is_initialized = True
 
             except ImportError:
-                raise DistributedError("Horovod not installed. Install with: pip install horovod")
+                raise DistributedError("Horovod not installed. Install with: pip install horovod") from None
             except Exception as e:
                 raise DistributedError(f"Failed to initialize Horovod: {e}") from e
 
@@ -443,7 +443,7 @@ class DistributedManager:
             except ImportError:
                 raise DistributedError(
                     "FSDP requires PyTorch 1.12+. Upgrade PyTorch or use DDP instead."
-                )
+                ) from None
 
         elif strategy == DistributedStrategy.DEEPSPEED:
             # DeepSpeed (requires separate initialization)
@@ -461,7 +461,7 @@ class DistributedManager:
             except ImportError:
                 raise DistributedError(
                     "DeepSpeed not installed. Install with: pip install deepspeed"
-                )
+                ) from None
 
         elif strategy == DistributedStrategy.HOROVOD:
             # Horovod doesn't wrap model, but broadcasts state
@@ -480,7 +480,7 @@ class DistributedManager:
                 return model
 
             except ImportError:
-                raise DistributedError("Horovod not installed. Install with: pip install horovod")
+                raise DistributedError("Horovod not installed. Install with: pip install horovod") from None
 
         else:
             raise DistributedError(f"Unknown strategy: {strategy}")

@@ -341,7 +341,7 @@ class StudyAnalyzer:
                 f"Failed to load study: {e}",
                 study_name=study_name,
                 storage_url=storage,
-            )
+            ) from e
 
     # =========================================================================
     # TRIAL DATA ACCESS
@@ -541,7 +541,7 @@ class StudyAnalyzer:
                 f"Failed to calculate parameter importance: {e}",
                 study_name=self.study.study_name,
                 details=str(e),
-            )
+            ) from e
 
     def get_parameter_importance_ranking(
         self,
@@ -1039,7 +1039,7 @@ class StudyAnalyzer:
             raise HPOError(
                 "get_pareto_front() requires multi-objective study",
                 study_name=self.study.study_name,
-            )
+            ) from None
 
         # Get Pareto front from Optuna
         best_trials = self.study.best_trials
@@ -1098,7 +1098,7 @@ class StudyAnalyzer:
         except ImportError:
             raise HPOError(
                 "Hypervolume calculation requires Optuna >= 3.0", study_name=self.study.study_name
-            )
+            ) from None
 
     # =========================================================================
     # VISUALIZATION DATA PREPARATION

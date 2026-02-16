@@ -368,7 +368,7 @@ def parse_qm9_xyz_files(
                     f"Too many parsing failures ({failed_count}/{parsed_count + failed_count})",
                     operation="qm9_xyz_parsing",
                     details=f"First failures: {failed_files[:10]}",
-                )
+                ) from e
 
     if parsed_count == 0:
         raise DataProcessingError(

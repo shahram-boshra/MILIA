@@ -208,4 +208,4 @@ def get_backend(backend_name: str) -> HPOBackendProtocol:
             f"Backend '{backend_name}' dependencies not installed",
             backend_name=backend_name,
             details=str(e),
-        )
+        ) from e

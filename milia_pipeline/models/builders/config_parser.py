@@ -251,7 +251,7 @@ class ArchitectureConfigParser:
             except Exception as e:
                 raise ConfigurationError(
                     f"Error parsing layer {i} ({layer_spec.get('type', 'unknown')}): {e}"
-                )
+                ) from e
 
         # Parse residual connections if present
         if "residual_connections" in config:
@@ -269,7 +269,7 @@ class ArchitectureConfigParser:
                     builder.add_residual_connection(start, end, connection_type)
 
                 except Exception as e:
-                    raise ConfigurationError(f"Error parsing residual connection {rc_spec}: {e}")
+                    raise ConfigurationError(f"Error parsing residual connection {rc_spec}: {e}") from e
 
         logger.info(
             f"Parsed custom architecture '{name}' with {len(builder)} layers for task '{task}'"
@@ -340,7 +340,7 @@ class ArchitectureConfigParser:
             available = self.templates.list_templates()
             raise ConfigurationError(
                 f"Failed to load template '{template_name}': {e}\nAvailable templates: {available}"
-            )
+            ) from e
 
         # Apply additional layers if specified
         if "additional_layers" in config:
@@ -564,7 +564,7 @@ class ArchitectureConfigParser:
                     except json.JSONDecodeError as e:
                         raise ConfigurationError(
                             f"Failed to parse configuration as YAML or JSON: {e}"
-                        )
+                        ) from e
 
                 logger.debug("Loaded configuration from string")
 
@@ -579,7 +579,7 @@ class ArchitectureConfigParser:
         except ConfigurationError:
             raise
         except Exception as e:
-            raise ConfigurationError(f"Failed to load configuration: {e}")
+            raise ConfigurationError(f"Failed to load configuration: {e}") from e
 
     # =========================================================================
     # CONFIGURATION VALIDATION

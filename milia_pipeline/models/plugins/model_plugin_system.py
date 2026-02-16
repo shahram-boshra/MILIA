@@ -470,11 +470,11 @@ class ModelPluginLoader:
             return metadata
 
         except yaml.YAMLError as e:
-            raise PluginError(f"Invalid YAML in {plugin_yaml}: {e}")
+            raise PluginError(f"Invalid YAML in {plugin_yaml}: {e}") from e
         except KeyError as e:
-            raise PluginError(f"Missing required field in {plugin_yaml}: {e}")
+            raise PluginError(f"Missing required field in {plugin_yaml}: {e}") from e
         except Exception as e:
-            raise PluginError(f"Failed to load plugin metadata from {plugin_yaml}: {e}")
+            raise PluginError(f"Failed to load plugin metadata from {plugin_yaml}: {e}") from e
 
     # =========================================================================
     # PLUGIN VALIDATION
@@ -663,7 +663,7 @@ class ModelPluginLoader:
                 logger.error(f"Failed to load plugin '{plugin_name}': {e}")
                 raise PluginError(
                     f"Failed to load plugin '{plugin_name}': {e}", plugin_name=plugin_name
-                )
+                ) from e
 
     def _register_plugin_model(self, declaration: ModelDeclaration, plugin_dir: Path):
         """
@@ -730,17 +730,17 @@ class ModelPluginLoader:
             raise PluginError(
                 f"Failed to import model '{declaration.name}': {e}",
                 plugin_name=declaration.plugin_name,
-            )
+            ) from e
         except AttributeError as e:
             raise PluginError(
                 f"Model class '{declaration.class_name}' not found in module: {e}",
                 plugin_name=declaration.plugin_name,
-            )
+            ) from e
         except Exception as e:
             raise PluginError(
                 f"Failed to register model '{declaration.name}': {e}",
                 plugin_name=declaration.plugin_name,
-            )
+            ) from e
 
     def load_all_plugins(self, register_models: bool = True) -> dict[str, bool]:
         """

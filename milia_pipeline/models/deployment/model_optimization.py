@@ -645,7 +645,7 @@ class ModelOptimizer:
                 logger.info(f"Optimized model for mobile: {filepath}")
 
         except ImportError:
-            raise ExportError("Mobile optimization requires PyTorch with mobile support")
+            raise ExportError("Mobile optimization requires PyTorch with mobile support") from None
         except Exception as e:
             raise ExportError(f"Mobile optimization failed: {e}") from e
 

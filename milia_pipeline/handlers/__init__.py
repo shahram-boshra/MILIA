@@ -263,7 +263,7 @@ def __getattr__(name):
                 f"Handler class '{name}' not found. "
                 f"Import error: {e}. "
                 f"Ensure the handler is defined in handlers/implementations/"
-            )
+            ) from e
 
         # Handler class not found in implementations
         raise AttributeError(

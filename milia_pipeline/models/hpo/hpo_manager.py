@@ -1517,7 +1517,7 @@ class HPOManager:
                     f"Trial failed: {e}",
                     trial_number=trial_number,
                     original_error=str(e),
-                )
+                ) from None
 
         return objective
 
@@ -2115,7 +2115,7 @@ class HPOManager:
                 f"Failed to resume study: {e}",
                 study_name=study_name,
                 storage_url=storage,
-            )
+            ) from e
 
     # =========================================================================
     # RESULTS SAVING (Phase 5 Refactor)
@@ -2180,7 +2180,7 @@ class HPOManager:
         except Exception as e:
             raise HPOError(
                 f"Failed to save best parameters: {e}", details=f"Target path: {best_params_path}"
-            )
+            ) from e
 
         # Save study statistics
         statistics_path = output_path / statistics_filename
@@ -2193,7 +2193,7 @@ class HPOManager:
         except Exception as e:
             raise HPOError(
                 f"Failed to save study statistics: {e}", details=f"Target path: {statistics_path}"
-            )
+            ) from e
 
         # Save all trials
         trials_path = output_path / trials_filename
@@ -2204,7 +2204,7 @@ class HPOManager:
             saved_paths["trials_path"] = trials_path
             logger.info(f"All trials saved: {trials_path}")
         except Exception as e:
-            raise HPOError(f"Failed to save trials: {e}", details=f"Target path: {trials_path}")
+            raise HPOError(f"Failed to save trials: {e}", details=f"Target path: {trials_path}") from e
 
         return saved_paths
 

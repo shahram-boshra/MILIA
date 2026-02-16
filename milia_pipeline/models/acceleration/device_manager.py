@@ -321,7 +321,7 @@ class DeviceManager:
         except ImportError:
             raise DeviceNotAvailableError(
                 "TPU support requires torch_xla package. Install with: pip install torch_xla"
-            )
+            ) from None
 
     def _get_device_info(self, device: torch.device) -> DeviceInfo:
         """

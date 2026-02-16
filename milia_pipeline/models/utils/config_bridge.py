@@ -232,7 +232,7 @@ class ModelSelectionConfig(BaseModel):
             TaskType(v)
         except ValueError:
             valid_tasks = [t.value for t in TaskType]
-            raise ValueError(f"Invalid task_type '{v}'. Must be one of: {valid_tasks}")
+            raise ValueError(f"Invalid task_type '{v}'. Must be one of: {valid_tasks}") from None
         return v
 
     @field_validator("model_name")
@@ -267,7 +267,7 @@ class DataSplitConfig(BaseModel):
             DataSplitMethod(v)
         except ValueError:
             valid_methods = [m.value for m in DataSplitMethod]
-            raise ValueError(f"Invalid split method '{v}'. Must be one of: {valid_methods}")
+            raise ValueError(f"Invalid split method '{v}'. Must be one of: {valid_methods}") from None
         return v
 
     @model_validator(mode="after")
@@ -300,7 +300,7 @@ class LossConfig(BaseModel):
             LossFunction(v)
         except ValueError:
             valid_losses = [l.value for l in LossFunction]
-            raise ValueError(f"Invalid loss function '{v}'. Must be one of: {valid_losses}")
+            raise ValueError(f"Invalid loss function '{v}'. Must be one of: {valid_losses}") from None
         return v
 
     def validate(self):
@@ -322,7 +322,7 @@ class OptimizerConfig(BaseModel):
             OptimizerType(v)
         except ValueError:
             valid_optimizers = [o.value for o in OptimizerType]
-            raise ValueError(f"Invalid optimizer '{v}'. Must be one of: {valid_optimizers}")
+            raise ValueError(f"Invalid optimizer '{v}'. Must be one of: {valid_optimizers}") from None
         return v
 
     @model_validator(mode="after")
@@ -354,7 +354,7 @@ class SchedulerConfig(BaseModel):
                 valid_schedulers = [s.value for s in SchedulerType]
                 raise ValueError(
                     f"Invalid scheduler '{self.name}'. Must be one of: {valid_schedulers}"
-                )
+                ) from None
         return self
 
     def validate(self):
@@ -452,7 +452,7 @@ class DeviceConfig(BaseModel):
             DeviceType(v)
         except ValueError:
             valid_devices = [d.value for d in DeviceType]
-            raise ValueError(f"Invalid device type '{v}'. Must be one of: {valid_devices}")
+            raise ValueError(f"Invalid device type '{v}'. Must be one of: {valid_devices}") from None
         return v
 
     def validate(self):
@@ -510,7 +510,7 @@ class DistributedConfig(BaseModel):
                 raise ValueError(
                     f"Invalid distributed strategy '{self.strategy}'. "
                     f"Must be one of: {valid_strategies}"
-                )
+                ) from None
         return self
 
     def validate(self):
@@ -535,7 +535,7 @@ class MemoryConfig(BaseModel):
             MixedPrecision(v)
         except ValueError:
             valid_precision = [m.value for m in MixedPrecision]
-            raise ValueError(f"Invalid mixed precision '{v}'. Must be one of: {valid_precision}")
+            raise ValueError(f"Invalid mixed precision '{v}'. Must be one of: {valid_precision}") from None
         return v
 
     def validate(self):
@@ -695,7 +695,7 @@ class DeploymentConfig(BaseModel):
                 raise ValueError(
                     f"Invalid deployment strategy '{self.strategy}'. "
                     f"Must be one of: {valid_strategies}"
-                )
+                ) from None
         return self
 
     def validate(self):
@@ -1353,7 +1353,7 @@ class ModelConfig(BaseModel):
         try:
             full_config = load_config(config_path)
         except Exception as e:
-            raise ConfigurationError(f"Failed to load config: {e}")
+            raise ConfigurationError(f"Failed to load config: {e}") from e
 
         models_config = full_config.get("models", {})
 

@@ -1522,7 +1522,7 @@ class DatasetHandler(ABC):
                         detail=f"List content: {value[:3]}..."
                         if len(str(value)) > 50
                         else str(value),
-                    )
+                    ) from e
 
             # FIX: Wrap scalar in list to ensure shape (1,) instead of ()
             if isinstance(value, (int, float, np.number)):
@@ -1540,7 +1540,7 @@ class DatasetHandler(ABC):
                         property_name=property_name,
                         reason=f"Cannot convert string '{value}' to numeric tensor",
                         detail=f"String value: '{value}'",
-                    )
+                    ) from None
 
             raise PropertyEnrichmentError(
                 molecule_index=molecule_index,

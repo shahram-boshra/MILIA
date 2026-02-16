@@ -94,14 +94,14 @@ def __getattr__(name: str) -> Any:
             raise AttributeError(
                 f"Transform '{name}' not found in myplugins. "
                 f"Create it at: milia_pipeline/plugins/myplugins/transforms/{module_name}.py"
-            )
+            ) from e
 
         except AttributeError as e:
             logger.error(f"Module exists but class '{name}' not found: {e}")
             raise AttributeError(
                 f"Transform class '{name}' not found in module '{module_name}'. "
                 f"Check that the class is properly defined and exported."
-            )
+            ) from e
 
     # Not a known transform name
     raise AttributeError(f"'{__name__}' has no attribute '{name}'")

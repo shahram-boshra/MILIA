@@ -417,7 +417,7 @@ def _ensure_tensor(
                         operation="tensor_conversion",
                         molecule_index=molecule_index,
                         detail=f"String value: '{value}'",
-                    )
+                    ) from None
                 else:
                     raise PropertyEnrichmentError(
                         molecule_index=molecule_index,
@@ -425,7 +425,7 @@ def _ensure_tensor(
                         property_name=property_name,
                         reason=f"Cannot convert string '{value}' to numeric tensor",
                         detail=f"String value: '{value}'",
-                    )
+                    ) from None
 
         # Unsupported type
         raise PropertyEnrichmentError(
@@ -577,7 +577,7 @@ def add_scalar_graph_targets(
                         property_name=key,
                         reason=f"Scalar target '{key}' string cannot be converted to number",
                         detail=f"Value: '{value}'",
-                    )
+                    ) from None
             # CRITICAL FIX: Handle lists that should be scalars
             elif isinstance(value, (list, tuple)):
                 if len(value) == 1:
@@ -1405,7 +1405,7 @@ def _process_vibmodes(
                     property_name="vibmodes",
                     reason=f"Failed to convert vibmodes list to numpy array: {str(e)}",
                     detail=f"List length: {len(vibmodes_data)}, Content type: {type(vibmodes_data[0]) if vibmodes_data else 'empty'}",
-                )
+                ) from e
 
         else:
             raise PropertyEnrichmentError(

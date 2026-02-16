@@ -2172,7 +2172,7 @@ def convert_to_scalar(
                     message=f"Cannot convert string '{value_str}' to float",
                     validation_type="scalar_conversion",
                     data_context=error_context,
-                )
+                ) from None
 
     # Unknown type
     else:
