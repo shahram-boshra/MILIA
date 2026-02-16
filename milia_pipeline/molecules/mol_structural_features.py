@@ -33,6 +33,7 @@ Dependencies:
     - NumPy: Numerical operations for 3D geometry calculations
 """
 
+import contextlib
 import logging
 import math
 from typing import Any
@@ -100,10 +101,8 @@ def _ensure_conformer_and_charges(
             atom.SetDoubleProp("_MullikenCharge", float(charge))
     else:
         # Fallback to Gasteiger charges
-        try:
+        with contextlib.suppress(Exception):
             rdPartialCharges.ComputeGasteigerCharges(mol)
-        except Exception:
-            pass
 
 
 # --- Atom Feature Calculation Functions ---

@@ -421,14 +421,13 @@ class ModelMonitor:
         reference_data = reference_data or self.reference_data
 
         if reference_data is None:
-            warnings.warn("No reference data set for drift detection")
+            warnings.warn("No reference data set for drift detection", stacklevel=2)
             return 0.0
 
         drift_score = self._calculate_drift(new_data, reference_data)
 
-        if drift_score > self.config.drift_threshold:
-            if self.verbose:
-                logger.warning(f"Drift detected: score = {drift_score:.4f}")
+        if drift_score > self.config.drift_threshold and self.verbose:
+            logger.warning(f"Drift detected: score = {drift_score:.4f}")
 
         return drift_score
 
@@ -451,7 +450,7 @@ class ModelMonitor:
             elif method == "wasserstein":
                 return self._wasserstein_drift(new_data, reference_data)
             else:
-                warnings.warn(f"Unknown drift detection method: {method}")
+                warnings.warn(f"Unknown drift detection method: {method}", stacklevel=2)
                 return 0.0
         except Exception as e:
             logger.error(f"Drift calculation failed: {e}")

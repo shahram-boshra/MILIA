@@ -352,7 +352,7 @@ class TestDatasetRegistryThreadSafety:
 
         _, errors = run_threads_with_barrier(check, NUM_THREADS)
         assert errors == []
-        for idx, bools in results_map.items():
+        for _idx, bools in results_map.items():
             assert bools[:5] == [True] * 5
             assert bools[5:] == [False] * 5
 
@@ -926,7 +926,8 @@ class TestDescriptorRegistryThreadSafety:
 
         def register_one(idx):
             name = f"__test_plugin_desc_{idx}__"
-            func = lambda mol: float(idx)
+            def func(mol):
+                return float(idx)
             try:
                 registry.register_descriptor(
                     name=name,

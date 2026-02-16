@@ -138,10 +138,7 @@ class Predictor:
             Resolved absolute path
         """
         path = Path(path).expanduser()
-        if path.is_absolute():
-            result = path.resolve()
-        else:
-            result = (self._working_root_dir / path).resolve()
+        result = path.resolve() if path.is_absolute() else (self._working_root_dir / path).resolve()
 
         if create_parents:
             result.parent.mkdir(parents=True, exist_ok=True)
@@ -403,13 +400,12 @@ class Predictor:
                 and data.z is not None
                 and hasattr(data, "pos")
                 and data.pos is not None
-            ):
-                if not hasattr(data, "x") or data.x is None:
-                    z = data.z
-                    pos = data.pos
-                    batch = getattr(data, "batch", None)
-                    kwargs_3d = {"batch": batch} if batch is not None else {}
-                    return self.model(z, pos, **kwargs_3d)
+            ) and (not hasattr(data, "x") or data.x is None):
+                z = data.z
+                pos = data.pos
+                batch = getattr(data, "batch", None)
+                kwargs_3d = {"batch": batch} if batch is not None else {}
+                return self.model(z, pos, **kwargs_3d)
 
             # Fallback to standard GNN approach
             x = data.x

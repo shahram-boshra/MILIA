@@ -280,11 +280,7 @@ def model_accepts_kwargs(model_class: type) -> bool:
         logger.debug(f"Could not get signature for {model_class}: {e}")
         return False
 
-    for param in sig.parameters.values():
-        if param.kind == inspect.Parameter.VAR_KEYWORD:
-            return True
-
-    return False
+    return any(param.kind == inspect.Parameter.VAR_KEYWORD for param in sig.parameters.values())
 
 
 # =============================================================================
@@ -783,7 +779,7 @@ def generate_model_metadata(model_name: str, import_path: str) -> DynamicModelMe
         # Infer capabilities from parameters
         requires_edge_features = any(
             "edge" in p.lower() and any(x in p.lower() for x in ["dim", "channels", "features"])
-            for p in parameters.keys()
+            for p in parameters
         )
         requires_edge_weights = "edge_weight" in parameters
 

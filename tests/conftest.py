@@ -118,7 +118,7 @@ def synthetic_pyg_dataset():
     dataset: list[Data] = []
     generator = torch.Generator().manual_seed(42)
 
-    for i in range(30):
+    for _i in range(30):
         num_nodes = torch.randint(3, 9, (1,), generator=generator).item()
 
         # --- Node features (e.g. one-hot element + simple descriptors) ---

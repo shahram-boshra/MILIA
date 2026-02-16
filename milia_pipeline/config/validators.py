@@ -1169,9 +1169,8 @@ class TransformValidator:
             param_metadata = param_info[param_name]
             if not self._validate_parameter_constraints(
                 param_name, param_value, param_metadata, param_location
-            ):
-                if not collect_issues:
-                    return False
+            ) and not collect_issues:
+                return False
 
         # Check for required parameters
         for param_name, param_metadata in param_info.items():
@@ -1261,21 +1260,20 @@ class TransformValidator:
                 is_valid = False
 
         # Enum constraints
-        if "choices" in param_metadata:
-            if param_value not in param_metadata["choices"]:
-                self.issues.append(
-                    ValidationIssueDetail(
-                        severity=ValidationSeverity.ERROR,
-                        message=f"Parameter '{param_name}' has invalid value",
-                        location=location,
-                        parameter=param_name,
-                        constraint="choices",
-                        actual_value=param_value,
-                        expected_value=param_metadata["choices"],
-                        suggestion=f"Use one of: {param_metadata['choices']}",
-                    )
+        if "choices" in param_metadata and param_value not in param_metadata["choices"]:
+            self.issues.append(
+                ValidationIssueDetail(
+                    severity=ValidationSeverity.ERROR,
+                    message=f"Parameter '{param_name}' has invalid value",
+                    location=location,
+                    parameter=param_name,
+                    constraint="choices",
+                    actual_value=param_value,
+                    expected_value=param_metadata["choices"],
+                    suggestion=f"Use one of: {param_metadata['choices']}",
                 )
-                is_valid = False
+            )
+            is_valid = False
 
         return is_valid
 
@@ -1704,10 +1702,7 @@ def is_value_valid_and_not_nan(
         # Check if it's a numeric string
         try:
             float_val = float(value_str)
-            if check_finite:
-                result = np.isfinite(float_val)
-            else:
-                result = not np.isnan(float_val)
+            result = np.isfinite(float_val) if check_finite else not np.isnan(float_val)
             # FIXED: Always return Python bool, not numpy.bool_
             return bool(result)
         except (ValueError, TypeError):
@@ -1726,10 +1721,7 @@ def is_value_valid_and_not_nan(
 
     # Handle scalar numeric values
     if isinstance(value, (int, float, np.number)):
-        if check_finite:
-            result = np.isfinite(value)
-        else:
-            result = not np.isnan(value)
+        result = np.isfinite(value) if check_finite else not np.isnan(value)
         # FIXED: Always return Python bool, not numpy.bool_
         return bool(result)
 
@@ -2608,7 +2600,7 @@ def validate_array_shape(
             logger.debug(f"{name}: Shape mismatch - expected {expected_shape}, got {shape}")
             return False
 
-        for actual, expected in zip(shape, expected_shape):
+        for actual, expected in zip(shape, expected_shape, strict=False):
             if expected != -1 and actual != expected:
                 logger.debug(f"{name}: Shape mismatch - expected {expected_shape}, got {shape}")
                 return False
@@ -2954,7 +2946,7 @@ def validate_batch_consistency(
                             )
                         else:
                             for j, (actual, expected) in enumerate(
-                                zip(actual_shape, expected_shape)
+                                zip(actual_shape, expected_shape, strict=False)
                             ):
                                 if expected != -1 and actual != expected:
                                     errors.append(
@@ -3003,9 +2995,8 @@ def is_valid_molecule_identifier(identifier: str, identifier_type: str = "any") 
 
     identifier = identifier.strip()
 
-    if identifier_type in ["inchi", "any"]:
-        if identifier.startswith("InChI="):
-            return True
+    if identifier_type in ["inchi", "any"] and identifier.startswith("InChI="):
+        return True
 
     if identifier_type in ["smiles", "any"]:
         # Basic SMILES validation - contains valid SMILES characters
@@ -3807,12 +3798,11 @@ def validate_transformation_config(
                         errors.append(f"standard_transforms[{i}]: {error}")
 
     # Validate experimental_setups structure if present
-    if has_experimental_setups:
-        if not isinstance(experimental_setups, dict):
-            errors.append(
-                f"'experimental_setups' must be a dictionary, got {type(experimental_setups)}"
-            )
-            return False, errors
+    if has_experimental_setups and not isinstance(experimental_setups, dict):
+        errors.append(
+            f"'experimental_setups' must be a dictionary, got {type(experimental_setups)}"
+        )
+        return False, errors
 
     # At least one transform source must have content in strict mode
     if not experimental_setups and not standard_transforms:
@@ -4002,7 +3992,7 @@ def validate_descriptor_config(
                 )
 
         # Validate category configurations
-        for category in descriptor_config.categories.keys():
+        for category in descriptor_config.categories:
             if category not in valid_categories:
                 errors.append(f"Invalid category in configuration: {category}")
 
@@ -4337,7 +4327,7 @@ def run_validation_diagnostics() -> dict[str, Any]:
         else:
             # No registry available - feature queries should return False gracefully
             results["feature_query_dynamic"] = (
-                _get_dataset_feature("unknown_type", "uncertainty_handling") == False
+                not _get_dataset_feature("unknown_type", "uncertainty_handling")
             )
     except Exception as e:
         logger.error(f"Feature query tests failed: {e}")
@@ -4665,10 +4655,7 @@ if __name__ == "__main__":
         test_value = None
 
         # Pattern 1: Check before conversion
-        if test_value is None:
-            result1 = None
-        else:
-            result1 = convert_to_scalar(test_value, allow_none=False)
+        result1 = None if test_value is None else convert_to_scalar(test_value, allow_none=False)
 
         # Pattern 2: Use allow_none=True and check result
         result2 = convert_to_scalar(test_value, allow_none=True)
@@ -4694,7 +4681,7 @@ if __name__ == "__main__":
     ]
 
     edge_case_results = []
-    for value, description, expected_valid in edge_cases:
+    for value, description, _expected_valid in edge_cases:
         try:
             result = convert_to_scalar(value, allow_none=False, value_name=description)
             # Should not reach here for invalid values

@@ -425,13 +425,12 @@ class ModelComposer:
                     errors.append(f"No models assigned to level {level}")
 
         # Check fusion method compatibility
-        if self.fusion == "voting":
-            if "classification" not in self.task_type.lower():
-                warnings.append(
-                    f"Voting fusion is designed for classification tasks, "
-                    f"but task type is '{self.task_type}'"
-                )
-                suggestions.append("Use 'mean' or 'weighted' fusion for regression tasks")
+        if self.fusion == "voting" and "classification" not in self.task_type.lower():
+            warnings.append(
+                f"Voting fusion is designed for classification tasks, "
+                f"but task type is '{self.task_type}'"
+            )
+            suggestions.append("Use 'mean' or 'weighted' fusion for regression tasks")
 
         # Check weight normalization for weighted fusion
         if self.fusion == "weighted":
@@ -969,7 +968,7 @@ class ParallelEnsemble(nn.Module):
         # Get forward signature parameters
         try:
             sig = inspect.signature(inner_model.forward)
-            param_names = [name for name in sig.parameters.keys() if name != "self"]
+            param_names = [name for name in sig.parameters if name != "self"]
         except Exception:
             param_names = []
 
@@ -1078,10 +1077,7 @@ class ParallelEnsemble(nn.Module):
                     result = model(x, edge_index, edge_attr=edge_attr)
             else:
                 logger.debug("[DIAGNOSTIC] Strategy 2d: model(x, edge_index)")
-                if use_encode_method:
-                    result = model.encode(x, edge_index)
-                else:
-                    result = model(x, edge_index)
+                result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output from variational autoencoders (Fix 30)
             if isinstance(result, tuple):
                 logger.debug("[DIAGNOSTIC] Strategy 2: Got tuple output, using first element (mu)")
@@ -1115,10 +1111,7 @@ class ParallelEnsemble(nn.Module):
                 else:
                     result = model(x, edge_index, batch=batch)
             else:
-                if use_encode_method:
-                    result = model.encode(x, edge_index)
-                else:
-                    result = model(x, edge_index)
+                result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output from variational autoencoders (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]
@@ -1128,20 +1121,14 @@ class ParallelEnsemble(nn.Module):
 
         # Strategy 4: Minimal signature
         try:
-            if use_encode_method:
-                result = model.encode(x, edge_index)
-            else:
-                result = model(x, edge_index)
+            result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]
             return result
         except TypeError:
             # Final fallback
-            if use_encode_method:
-                result = model.encode(x)
-            else:
-                result = model(x)
+            result = model.encode(x) if use_encode_method else model(x)
             # Handle tuple output (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]
@@ -1347,7 +1334,7 @@ class ParallelEnsemble(nn.Module):
             if predictions.dim() < 3:
                 predictions = predictions.unsqueeze(-1)
 
-            batch_size = predictions.size(1)
+            predictions.size(1)
 
             preds_reshaped = predictions.permute(1, 0, 2)
             preds_mean = preds_reshaped.mean(dim=2)
@@ -1608,7 +1595,7 @@ class SequentialStack(nn.Module):
 
         try:
             sig = inspect.signature(inner_model.forward)
-            param_names = [name for name in sig.parameters.keys() if name != "self"]
+            param_names = [name for name in sig.parameters if name != "self"]
         except Exception:
             param_names = []
 
@@ -1686,7 +1673,7 @@ class SequentialStack(nn.Module):
         # Get forward signature parameters
         try:
             sig = inspect.signature(inner_model.forward)
-            param_names = [name for name in sig.parameters.keys() if name != "self"]
+            param_names = [name for name in sig.parameters if name != "self"]
         except Exception:
             param_names = []
 
@@ -1783,10 +1770,7 @@ class SequentialStack(nn.Module):
                     result = model(x, edge_index, edge_attr=edge_attr)
             else:
                 logger.debug("[SequentialStack] Strategy 2d: model(x, edge_index)")
-                if use_encode_method:
-                    result = model.encode(x, edge_index)
-                else:
-                    result = model(x, edge_index)
+                result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output from variational autoencoders (Fix 30)
             if isinstance(result, tuple):
                 logger.debug(
@@ -1816,10 +1800,7 @@ class SequentialStack(nn.Module):
                 else:
                     result = model(x, edge_index, batch=batch)
             else:
-                if use_encode_method:
-                    result = model.encode(x, edge_index)
-                else:
-                    result = model(x, edge_index)
+                result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output from variational autoencoders (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]
@@ -1829,20 +1810,14 @@ class SequentialStack(nn.Module):
 
         # Strategy 4: Minimal signature
         try:
-            if use_encode_method:
-                result = model.encode(x, edge_index)
-            else:
-                result = model(x, edge_index)
+            result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
             # Handle tuple output (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]
             return result
         except TypeError:
             # Final fallback
-            if use_encode_method:
-                result = model.encode(x)
-            else:
-                result = model(x)
+            result = model.encode(x) if use_encode_method else model(x)
             # Handle tuple output (Fix 30)
             if isinstance(result, tuple):
                 result = result[0]

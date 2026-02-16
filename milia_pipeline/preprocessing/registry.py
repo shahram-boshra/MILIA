@@ -145,7 +145,7 @@ class PreprocessorRegistry:
             return True
         # Defensive fallback: case-insensitive match for direct API calls
         dataset_type_upper = dataset_type.upper()
-        return any(k.upper() == dataset_type_upper for k in cls._preprocessors.keys())
+        return any(k.upper() == dataset_type_upper for k in cls._preprocessors)
 
     @classmethod
     def clear_registry(cls) -> None:

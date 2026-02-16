@@ -415,7 +415,7 @@ class DescriptorPluginLoader:
                             plugin_meta.registered_descriptors.add(declaration.name)
 
                     # Scan for undeclared descriptors
-                    bonus_count = self._scan_and_register_undeclared_descriptors(
+                    self._scan_and_register_undeclared_descriptors(
                         plugin_dir=plugin_yaml.parent, plugin_meta=plugin_meta
                     )
 

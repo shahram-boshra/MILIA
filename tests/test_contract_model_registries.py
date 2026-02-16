@@ -941,7 +941,7 @@ class TestMetricsRegistryContract:
         )
         assert isinstance(collection, MC)
         # All keys should start with "val_"
-        for key in collection.keys():
+        for key in collection:
             assert key.startswith("val_"), f"Metric key '{key}' does not have prefix 'val_'"
 
     @pytest.mark.skipif(not TORCHMETRICS_AVAILABLE, reason="TorchMetrics not installed")

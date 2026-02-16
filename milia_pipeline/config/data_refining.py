@@ -1642,7 +1642,7 @@ def refine_molecular_vibrations(
         "unique_pairs": 0,
     }
 
-    for freq, vibmode in zip(cleaned_freqs, cleaned_vibmodes):
+    for freq, vibmode in zip(cleaned_freqs, cleaned_vibmodes, strict=False):
         try:
             # Enhanced fingerprint creation for uniqueness detection
             vibmode_shape_str = (
@@ -2196,8 +2196,8 @@ def log_data_refinement_status(
 
     elif refinement_category == "vibrational":
         # Vibrational refinement (DFT, semi-empirical, etc.)
-        freqs_available = raw_properties_dict.get("freqs") is not None
-        vibmodes_available = raw_properties_dict.get("vibmodes") is not None
+        raw_properties_dict.get("freqs") is not None
+        raw_properties_dict.get("vibmodes") is not None
 
         log_vibration_refinement_status(
             raw_properties_dict.get("freqs"),

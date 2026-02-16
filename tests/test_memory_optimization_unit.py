@@ -1096,7 +1096,7 @@ class TestStepOptimization:
 
                 mock_empty.reset_mock()
 
-                for i in range(10):
+                for _i in range(10):
                     optimizer.step()
 
                 # Should be called at step 5 and 10
@@ -1110,7 +1110,7 @@ class TestStepOptimization:
             )
 
         with patch.object(optimizer, "run_garbage_collection") as mock_gc:
-            for i in range(9):
+            for _i in range(9):
                 optimizer.step()
 
             # Should be called at step 3, 6, 9
@@ -1124,7 +1124,7 @@ class TestStepOptimization:
 
                 mock_empty.reset_mock()
 
-                for i in range(10):
+                for _i in range(10):
                     optimizer.step()
 
                 mock_empty.assert_not_called()
@@ -1137,7 +1137,7 @@ class TestStepOptimization:
             )
 
         with patch.object(optimizer, "run_garbage_collection") as mock_gc:
-            for i in range(10):
+            for _i in range(10):
                 optimizer.step()
 
             mock_gc.assert_not_called()
@@ -1990,7 +1990,7 @@ class TestIntegrationScenarios:
         _model = optimizer.enable_gradient_checkpointing(simple_model)
 
         # Simulate training steps
-        for i in range(15):
+        for _i in range(15):
             with optimizer.autocast():
                 pass  # Forward pass would go here
             optimizer.step()

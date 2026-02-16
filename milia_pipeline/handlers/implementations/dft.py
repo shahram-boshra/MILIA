@@ -458,12 +458,11 @@ class DFTDatasetHandler(DatasetHandler):
             )
 
         # Recommend self-loops for graph convolutions
-        if "AddSelfLoops" not in transform_names:
-            if "GCNNorm" in transform_names:
-                recommendations.append(
-                    "GCNNorm typically requires AddSelfLoops before it. "
-                    "Add: transforms.AddSelfLoops() before GCNNorm"
-                )
+        if "AddSelfLoops" not in transform_names and "GCNNorm" in transform_names:
+            recommendations.append(
+                "GCNNorm typically requires AddSelfLoops before it. "
+                "Add: transforms.AddSelfLoops() before GCNNorm"
+            )
 
         # Augmentation recommendations
         augmentation_transforms = ["DropEdge", "DropNode", "MaskFeatures"]

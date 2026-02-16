@@ -89,7 +89,7 @@ class MinimalGNNModel(nn.Module):
 
     def forward(self, x, edge_index, batch=None):
         """Forward pass with optional batch for graph-level tasks."""
-        for i, layer in enumerate(self.layers[:-1]):
+        for _i, layer in enumerate(self.layers[:-1]):
             x = layer(x)
             x = self.act(x)
             if self.dropout > 0:
@@ -586,7 +586,7 @@ class TestTrainerHPOCallbackIntegration:
         assert hasattr(trainer, "_should_stop"), "Trainer should have _should_stop method"
 
         # Initially should_stop is False (mock returns False)
-        assert trainer._should_stop() == False
+        assert not trainer._should_stop()
 
 
 # =============================================================================

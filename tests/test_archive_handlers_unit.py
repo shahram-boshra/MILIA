@@ -1017,7 +1017,7 @@ class TestArchiveHandlersIntegration(unittest.TestCase):
             "test.tar": ("w:", "r:"),
         }
 
-        for filename, (write_mode, read_mode) in format_modes.items():
+        for filename, (write_mode, _read_mode) in format_modes.items():
             with self.subTest(filename=filename):
                 extract_dir = tempfile.mkdtemp(prefix=f"test_{filename}_")
                 try:

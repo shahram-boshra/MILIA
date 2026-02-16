@@ -159,7 +159,7 @@ class TestSchedulerRegistry:
     def test_list_available_includes_all_schedulers(self):
         """Test list_available includes all registered schedulers."""
         available = SchedulerRegistry.list_available()
-        for name in SchedulerRegistry._schedulers.keys():
+        for name in SchedulerRegistry._schedulers:
             assert name in available
 
 
@@ -1450,7 +1450,7 @@ class TestSchedulerIntegration:
         )
 
         # Simulate training loop
-        for epoch in range(5):
+        for _epoch in range(5):
             # Fake forward/backward pass
             inputs = torch.randn(32, 10)
             targets = torch.randn(32, 1)
@@ -1510,7 +1510,7 @@ class TestSchedulerIntegration:
         )
 
         lrs = []
-        for epoch in range(20):
+        for _epoch in range(20):
             lrs.append(optimizer.param_groups[0]["lr"])
             scheduler.step()
 
@@ -1544,7 +1544,7 @@ class TestModuleInitialization:
 
     def test_all_schedulers_are_pytorch_classes(self):
         """Test that all registered schedulers are from PyTorch."""
-        for name, sched_cls in SchedulerRegistry._schedulers.items():
+        for _name, sched_cls in SchedulerRegistry._schedulers.items():
             assert "torch.optim.lr_scheduler" in sched_cls.__module__
 
 

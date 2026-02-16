@@ -229,21 +229,17 @@ def check_data_compatibility(
     """
     missing = []
 
-    if requires_node_features:
-        if not hasattr(data, "x") or data.x is None:
-            missing.append("node features (x)")
+    if requires_node_features and (not hasattr(data, "x") or data.x is None):
+        missing.append("node features (x)")
 
-    if requires_edge_index:
-        if not hasattr(data, "edge_index") or data.edge_index is None:
-            missing.append("edge_index")
+    if requires_edge_index and (not hasattr(data, "edge_index") or data.edge_index is None):
+        missing.append("edge_index")
 
-    if requires_edge_features:
-        if not hasattr(data, "edge_attr") or data.edge_attr is None:
-            missing.append("edge features (edge_attr)")
+    if requires_edge_features and (not hasattr(data, "edge_attr") or data.edge_attr is None):
+        missing.append("edge features (edge_attr)")
 
-    if requires_edge_weights:
-        if not hasattr(data, "edge_weight") or data.edge_weight is None:
-            missing.append("edge weights (edge_weight)")
+    if requires_edge_weights and (not hasattr(data, "edge_weight") or data.edge_weight is None):
+        missing.append("edge weights (edge_weight)")
 
     return len(missing) == 0, missing
 

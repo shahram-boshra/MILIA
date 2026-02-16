@@ -2046,7 +2046,7 @@ class Test3DModelSupport:
         import inspect
 
         sig = inspect.signature(inner.forward)
-        param_names = [name for name in sig.parameters.keys() if name != "self"]
+        param_names = [name for name in sig.parameters if name != "self"]
 
         # Verify 3D signature detection
         assert "z" in param_names

@@ -29,6 +29,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import logging
 from unittest.mock import Mock, patch
 
@@ -1377,10 +1378,8 @@ class TestTransformationConfiguration:
 
     def test_get_experimental_setup_validation_failure(self, mock_load_config):
         """Test get_experimental_setup with validation failure."""
-        try:
+        with contextlib.suppress(BaseException):
             _result = get_experimental_setup("baseline", validate=True)
-        except:
-            pass
 
     def test_list_experimental_setups(self, mock_load_config):
         """Test list_experimental_setups returns list."""
@@ -1717,10 +1716,8 @@ class TestTransformationConfigurationExtended:
 
     def test_save_experimental_setup_overwrite(self, mock_load_config):
         """Test save_experimental_setup can overwrite existing."""
-        try:
+        with contextlib.suppress(BaseException):
             save_experimental_setup("baseline", [])
-        except:
-            pass
 
     def test_create_experimental_setup_with_invalid_dict(self):
         """Test create_experimental_setup_from_dict with missing keys."""

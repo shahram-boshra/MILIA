@@ -679,7 +679,7 @@ def initialize_plugins(load_external: bool = True) -> int:
 def _update_module_docstring():
     """Update module __doc__ with runtime dependency information."""
     deps = check_dependencies()
-    available = [name for name, status in deps.items() if status]
+    [name for name, status in deps.items() if status]
     unavailable = [name for name, status in deps.items() if not status]
 
     if unavailable:

@@ -267,16 +267,15 @@ class DeviceManager:
                     )
 
             # Validate specific GPU ID
-            if device.index is not None:
-                if device.index >= torch.cuda.device_count():
-                    if self.allow_fallback:
-                        logger.warning(f"CUDA device {device.index} not available, using cuda:0")
-                        return torch.device("cuda:0")
-                    else:
-                        raise DeviceNotAvailableError(
-                            f"CUDA device {device.index} not available. "
-                            f"Available devices: 0-{torch.cuda.device_count() - 1}"
-                        )
+            if device.index is not None and device.index >= torch.cuda.device_count():
+                if self.allow_fallback:
+                    logger.warning(f"CUDA device {device.index} not available, using cuda:0")
+                    return torch.device("cuda:0")
+                else:
+                    raise DeviceNotAvailableError(
+                        f"CUDA device {device.index} not available. "
+                        f"Available devices: 0-{torch.cuda.device_count() - 1}"
+                    )
 
         elif device.type == "mps":
             if not self._is_mps_available():

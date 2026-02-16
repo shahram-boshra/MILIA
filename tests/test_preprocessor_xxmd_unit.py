@@ -55,6 +55,8 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import contextlib
+
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.xxmd import (
@@ -980,9 +982,7 @@ class TestPreprocessCleanup(unittest.TestCase):
                 return True
             if self_path == output_p:
                 return False
-            if self_path == extracted:
-                return True
-            return False
+            return self_path == extracted
 
         with patch("pathlib.Path.exists", autospec=True, side_effect=cleanup_exists):
             preprocessor = _make_preprocessor(config=config)
@@ -1007,9 +1007,7 @@ class TestPreprocessCleanup(unittest.TestCase):
                 return True
             if self_path == output_p:
                 return False
-            if self_path == extracted:
-                return True
-            return False
+            return self_path == extracted
 
         with patch("pathlib.Path.exists", autospec=True, side_effect=cleanup_exists):
             preprocessor = _make_preprocessor(config=config)
@@ -1036,9 +1034,7 @@ class TestPreprocessCleanup(unittest.TestCase):
                 return True
             if self_path == output_p:
                 return False
-            if self_path == extracted:
-                return True
-            return False
+            return self_path == extracted
 
         with patch("pathlib.Path.exists", autospec=True, side_effect=cleanup_exists):
             preprocessor = _make_preprocessor(config=config)
@@ -1094,7 +1090,7 @@ class TestExtractArchive(unittest.TestCase):
                 (mol_dir / "train.xyz").write_text("placeholder")
             archive_path = Path(tmpdir) / "xxMD-main.zip"
             with zipfile.ZipFile(archive_path, "w") as zf:
-                for root, dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
+                for root, _dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
                     for f in files:
                         file_path = Path(root) / f
                         arcname = str(file_path.relative_to(tmpdir))
@@ -1157,7 +1153,7 @@ class TestExtractArchive(unittest.TestCase):
             (xxmd_dft_dir / "readme.txt").write_text("empty")
             archive_path = Path(tmpdir) / "xxMD-main.zip"
             with zipfile.ZipFile(archive_path, "w") as zf:
-                for root, dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
+                for root, _dirs, files in os.walk(Path(tmpdir) / "xxMD-main"):
                     for f in files:
                         file_path = Path(root) / f
                         arcname = str(file_path.relative_to(tmpdir))
@@ -1646,10 +1642,8 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
         with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
-            try:
+            with contextlib.suppress(Exception):
                 preprocessor.run()
-            except Exception:
-                pass
             mock_pp.assert_called_once()
 
     def test_has_run_method_from_base(self):

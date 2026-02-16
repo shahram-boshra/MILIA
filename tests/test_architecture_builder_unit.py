@@ -1784,9 +1784,9 @@ class TestCustomArchitecture:
         # Let's just verify the architecture can handle the case
         try:
             # Try calling without edge_index - may or may not raise depending on implementation
-            output = arch(x, edge_index=None)
+            arch(x, edge_index=None)
             # If it doesn't raise, that's also acceptable (implementation might handle it gracefully)
-            assert output is not None or True  # Just verify it executed
+            assert True  # Just verify it executed
         except ValueError as e:
             # If it does raise, verify it's the right error
             assert "edge_index" in str(e).lower()

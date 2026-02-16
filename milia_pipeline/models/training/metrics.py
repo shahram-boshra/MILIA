@@ -449,7 +449,6 @@ class MetricsRegistry:
 
         # Determine task category
         is_classification = "classification" in task_lower or task_lower == "link_prediction"
-        is_regression = "regression" in task_lower
 
         # Get default metrics for this task type
         default_metrics = cls._task_to_default_metrics.get(task_lower, ["mse", "mae"])
@@ -561,10 +560,7 @@ class MetricsRegistry:
 
         if is_classification_task and name_lower in cls._regression_metrics:
             return False
-        if is_regression_task and name_lower in cls._classification_metrics:
-            return False
-
-        return True
+        return not (is_regression_task and name_lower in cls._classification_metrics)
 
     @classmethod
     def create_metric_collection(

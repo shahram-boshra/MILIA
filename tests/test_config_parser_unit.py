@@ -882,13 +882,13 @@ class TestParseCustomArchitecture:
         config = {"name": "TestArch", "layers": [{"type": "GCNConv"}]}
 
         # Should succeed and warnings should be logged (not raised)
-        with patch("milia_pipeline.models.builders.config_parser.logger") as mock_logger:
+        with patch("milia_pipeline.models.builders.config_parser.logger"):
             result = parser.parse_custom_architecture(config, validate=True)
 
             assert result == mock_builder
             # Verify warning was logged (check warning method was called)
             assert (
-                mock_logger.warning.called or True
+                True
             )  # Logger may or may not be called depending on implementation
 
     def test_parse_with_template_delegates_to_template_based(self):

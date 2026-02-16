@@ -941,8 +941,8 @@ class SearchSpaceBuilder:
         """
         total = 1
 
-        for category, params in search_space.items():
-            for param_name, config in params.items():
+        for _category, params in search_space.items():
+            for _param_name, config in params.items():
                 if config.type == ParamType.CATEGORICAL:
                     total *= len(config.choices) if config.choices else 1
                 elif config.type == ParamType.INT:

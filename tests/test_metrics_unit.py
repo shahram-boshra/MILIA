@@ -1346,7 +1346,7 @@ class TestMetricsRegistryCreateMetricCollection:
         )
 
         # Check that metrics have the prefix
-        for key in collection.keys():
+        for key in collection:
             assert key.startswith("val_")
 
     def test_create_metric_collection_with_metric_names(self):
@@ -1399,7 +1399,7 @@ class TestMetricsRegistryCreateMetricCollection:
         )
 
         # No prefix should be added
-        for key in collection.keys():
+        for key in collection:
             assert not key.startswith("_")
 
 
@@ -2074,7 +2074,7 @@ class TestIntegration:
         results = collection.compute()
 
         # All keys should have prefix
-        for key in results.keys():
+        for key in results:
             assert key.startswith("test_")
 
     def test_custom_metric_registration_and_use(self, mock_metric_class, cleanup_registry):
@@ -2136,7 +2136,7 @@ class TestDeviceManagement:
         preds = torch.randn(10)
         targets = torch.randn(10)
 
-        for name, metric in metrics.items():
+        for _name, metric in metrics.items():
             result = metric(preds, targets)
             assert result.device.type == "cpu"
 

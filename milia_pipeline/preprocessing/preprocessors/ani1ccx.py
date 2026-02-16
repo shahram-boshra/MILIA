@@ -113,7 +113,7 @@ def iter_data_buckets_ccx(h5filename: str, keys: list[str] = None) -> dict[str, 
         keys = ["ccsd(t)_cbs.energy"] + list(keys)
 
     with h5py.File(h5filename, "r") as f:
-        for mol_name in f.keys():
+        for mol_name in f:
             mol_group = f[mol_name]
 
             # CRITICAL: Skip molecular groups that don't have ccsd(t)_cbs.energy

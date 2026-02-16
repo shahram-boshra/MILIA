@@ -43,6 +43,8 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import contextlib
+
 from milia_pipeline.config.config_constants import (
     ATOMIC_ENERGIES_HARTREE,
     HAR2EV,
@@ -1531,10 +1533,8 @@ class TestProcessVibrationalDataInternal(unittest.TestCase):
         handler = _make_handler()
         data = _make_pyg_data()
         props = {"freqs": np.array([1000.0]), "vibmodes": np.array([[[1, 0, 0]]])}
-        try:
+        with contextlib.suppress(DatasetSpecificHandlerError):
             handler._process_vibrational_data_internal(data, props, 0, "test")
-        except DatasetSpecificHandlerError:
-            pass
         self.assertGreater(DFTDatasetHandler._vibrational_error_count, 0)
 
     @patch(

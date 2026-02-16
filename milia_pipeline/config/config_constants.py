@@ -2612,7 +2612,7 @@ def __getattr__(name: str):
                 # Retry fetching config - it may not have been loaded on first attempt
                 from milia_pipeline.config.config_loader import load_config
 
-                config = load_config()
+                load_config()
                 dataset_config = _get_dataset_config_local()
                 raw_filename = _get_config_value(dataset_config, "raw_npz_filename", str)
                 if raw_filename:

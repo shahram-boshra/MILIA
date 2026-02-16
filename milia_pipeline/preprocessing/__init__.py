@@ -211,7 +211,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import wavefunction preprocessor: {e}. "
         "Wavefunction preprocessing will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
 
 # QM9 Preprocessor
@@ -221,7 +221,7 @@ except ImportError as e:
     _PREPROCESSOR_IMPORT_ERRORS.append(("qm9", str(e)))
     warnings.warn(
         f"Failed to import qm9 preprocessor: {e}. QM9 preprocessing will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
 
 # ANI1x Preprocessor
@@ -231,7 +231,7 @@ except ImportError as e:
     _PREPROCESSOR_IMPORT_ERRORS.append(("ani1x", str(e)))
     warnings.warn(
         f"Failed to import ani1x preprocessor: {e}. ANI1x preprocessing will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
 
 
@@ -252,7 +252,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import archive_handlers utilities: {e}. "
         "Archive extraction functions will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
     extract_from_targz = None
 
@@ -264,7 +264,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import format_parsers utilities: {e}. "
         "Format parsing functions will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
     parse_molden_files = None
 
@@ -276,7 +276,7 @@ except ImportError as e:
     warnings.warn(
         f"Failed to import npz_builders utilities: {e}. "
         "NPZ building and validation functions will not be available.",
-        ImportWarning,
+        ImportWarning, stacklevel=2,
     )
     build_npz = None
     validate_npz_structure = None

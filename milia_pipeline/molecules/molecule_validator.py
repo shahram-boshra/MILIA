@@ -448,7 +448,7 @@ def validate_molecular_structure(
         If raw_properties_dict is provided, performs full molecule validation including
         all required properties (Etot, etc.). Otherwise, performs structure-only validation.
         """
-        error_context = create_handler_error_context(
+        create_handler_error_context(
             handler.get_dataset_type(),
             "validate_molecular_structure",
             molecule_index,
@@ -639,7 +639,7 @@ def check_dataset_compatibility(
 
         PHASE 6: Uses feature-based error creation instead of handler class name checks.
         """
-        error_context = create_handler_error_context(
+        create_handler_error_context(
             handler.get_dataset_type(),
             "check_dataset_compatibility",
             molecule_index,
@@ -738,7 +738,7 @@ def validate_uncertainty_data(
 
         PHASE 6: Uses feature-based check instead of hardcoded DMC type check.
         """
-        error_context = create_handler_error_context(
+        create_handler_error_context(
             handler.get_dataset_type(),
             "validate_uncertainty_data",
             molecule_index,
@@ -883,7 +883,7 @@ def validate_pyg_data_completeness(
 
         PHASE 6: Uses feature-based validation enhancements instead of hardcoded type checks.
         """
-        error_context = create_handler_error_context(
+        create_handler_error_context(
             handler.get_dataset_type(), "validate_pyg_data_completeness", molecule_index
         )
 
@@ -1051,17 +1051,16 @@ def _original_validate_pyg_data_completeness(
     # PHASE 6: Feature-based metadata validation (replaces DMC type check)
     # ========================================================================
     # Check if dataset type supports uncertainty handling
-    if _get_dataset_feature(dataset_type, "uncertainty_handling"):
-        if is_uncertainty_enabled():
-            uncertainty_config = get_uncertainty_config()
-            uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")
-            has_uncertainty = (
-                hasattr(pyg_data, "uncertainty")
-                or hasattr(pyg_data, uncertainty_field)
-                or hasattr(pyg_data, "uncertainty_metadata")
-            )
-            if not has_uncertainty:
-                validation_results["has_metadata"] = False
+    if _get_dataset_feature(dataset_type, "uncertainty_handling") and is_uncertainty_enabled():
+        uncertainty_config = get_uncertainty_config()
+        uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")
+        has_uncertainty = (
+            hasattr(pyg_data, "uncertainty")
+            or hasattr(pyg_data, uncertainty_field)
+            or hasattr(pyg_data, "uncertainty_metadata")
+        )
+        if not has_uncertainty:
+            validation_results["has_metadata"] = False
 
     # Basic metadata
     basic_metadata = ["original_mol_idx", "dataset_type"]

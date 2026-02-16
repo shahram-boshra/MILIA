@@ -34,7 +34,7 @@ try:
     CONFIG_LOADER_AVAILABLE = True
 except ImportError:
     CONFIG_LOADER_AVAILABLE = False
-    warnings.warn("config_loader not available - using fallback YAML loading", UserWarning)
+    warnings.warn("config_loader not available - using fallback YAML loading", UserWarning, stacklevel=2)
     import yaml
 
     def load_config(config_path: Path | None = None) -> dict[str, Any]:

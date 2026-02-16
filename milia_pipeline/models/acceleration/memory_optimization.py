@@ -205,15 +205,14 @@ class MemoryOptimizer:
     def _validate_config(self):
         """Validate memory configuration."""
         # Check precision support
-        if self.config.precision == "bf16":
-            if self.device.type == "cuda":
-                if not torch.cuda.is_bf16_supported():
-                    warnings.warn("BF16 not supported on this device, falling back to FP16")
-                    self.config.precision = "fp16"
+        if self.config.precision == "bf16" and self.device.type == "cuda":
+            if not torch.cuda.is_bf16_supported():
+                warnings.warn("BF16 not supported on this device, falling back to FP16", stacklevel=2)
+                self.config.precision = "fp16"
 
         # Check if mixed precision is available
         if self.config.mixed_precision and self.device.type not in ["cuda", "cpu"]:
-            warnings.warn(f"Mixed precision not supported on {self.device.type}, disabling")
+            warnings.warn(f"Mixed precision not supported on {self.device.type}, disabling", stacklevel=2)
             self.config.mixed_precision = False
 
     # =========================================================================
@@ -594,7 +593,7 @@ class MemoryOptimizer:
             timeout=dataloader.timeout,
             worker_init_fn=dataloader.worker_init_fn,
             prefetch_factor=prefetch_factor,
-            persistent_workers=True if num_workers > 0 else False,
+            persistent_workers=num_workers > 0,
         )
 
         if self.verbose:

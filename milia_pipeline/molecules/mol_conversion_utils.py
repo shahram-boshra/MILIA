@@ -225,7 +225,7 @@ def _create_molecule_identifier_coordinate_based(
         Chem.Mol: RDKit molecule with QM coordinates
     """
     # Create error context for handler operations
-    error_context = create_handler_error_context(
+    create_handler_error_context(
         handler_type=dataset_type,
         operation="create_rdkit_mol_identifier_coordinate",
         molecule_index=molecule_index,

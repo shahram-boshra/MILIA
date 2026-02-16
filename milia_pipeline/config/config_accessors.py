@@ -63,7 +63,7 @@ try:
     CONTAINERS_AVAILABLE = True
 except ImportError:
     CONTAINERS_AVAILABLE = False
-    warnings.warn("config_containers not available - using basic dict structures")
+    warnings.warn("config_containers not available - using basic dict structures", stacklevel=2)
 try:
     from milia_pipeline.transformations.graph_transforms import (
         ConfigurationError,
@@ -3459,7 +3459,7 @@ def validate_transformation_system(
         if "transformations" not in config:
             return True, "No transformation configuration found (optional)"
 
-        transform_config = config["transformations"]
+        config["transformations"]
 
         # Try to initialize GraphTransforms
         try:

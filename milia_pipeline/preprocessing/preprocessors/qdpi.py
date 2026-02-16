@@ -143,7 +143,7 @@ def iter_data_buckets_qdpi(
         keys = ["energies"]
 
     with h5py.File(h5filename, "r") as f:
-        for formula_name in f.keys():
+        for formula_name in f:
             formula_group = f[formula_name]
 
             # Skip non-group entries (e.g., attributes at root level)
@@ -192,7 +192,7 @@ def iter_data_buckets_qdpi(
             # ============================================================
             # Find set.XXX directories containing actual data
             # ============================================================
-            set_dirs = sorted([k for k in formula_group.keys() if k.startswith("set.")])
+            set_dirs = sorted([k for k in formula_group if k.startswith("set.")])
 
             if not set_dirs:
                 logger.warning(f"Skipping {formula_name}: no set.XXX directories found")

@@ -355,10 +355,7 @@ class _SimpleGNN(nn.Module):
     def forward(self, x, edge_index, batch=None):
         x = torch.relu(self.conv1(x, edge_index))
         x = torch.relu(self.conv2(x, edge_index))
-        if batch is not None:
-            x = self.pool(x, batch)
-        else:
-            x = x.mean(dim=0, keepdim=True)
+        x = self.pool(x, batch) if batch is not None else x.mean(dim=0, keepdim=True)
         return self.lin(x)
 
 
@@ -500,7 +497,7 @@ class TestSyntheticDataCreation:
         """Same seed must produce identical datasets."""
         a = create_synthetic_dataset(num_graphs=20, seed=99)
         b = create_synthetic_dataset(num_graphs=20, seed=99)
-        for ga, gb in zip(a, b):
+        for ga, gb in zip(a, b, strict=False):
             assert torch.equal(ga.x, gb.x)
             assert torch.equal(ga.edge_index, gb.edge_index)
             assert torch.equal(ga.y, gb.y)

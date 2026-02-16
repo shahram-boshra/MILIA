@@ -1906,19 +1906,18 @@ For more information, see: https://docs.example.com/milia-cli
                 pass
 
             # Check for conflicting plugin options
-            if args.disable_plugin_system:
-                if any(
-                    [
-                        args.list_plugins,
-                        args.validate_plugin,
-                        args.validate_plugin_comprehensive,
-                        args.enable_plugin,
-                        args.disable_plugin,
-                    ]
-                ):
-                    raise CLIValidationError(
-                        "Cannot use --disable-plugin-system with other plugin operations"
-                    )
+            if args.disable_plugin_system and any(
+                [
+                    args.list_plugins,
+                    args.validate_plugin,
+                    args.validate_plugin_comprehensive,
+                    args.enable_plugin,
+                    args.disable_plugin,
+                ]
+            ):
+                raise CLIValidationError(
+                    "Cannot use --disable-plugin-system with other plugin operations"
+                )
 
         # Validate skip-validation conflicts
         if args.skip_validation:
@@ -2275,10 +2274,7 @@ For more information, see: https://docs.example.com/milia-cli
                 # Check in checkpoint directory first (same logic as main.py)
                 checkpoint_dir = working_root_dir / "checkpoints"
                 candidate = checkpoint_dir / model_path.name
-                if candidate.exists():
-                    model_path = candidate
-                else:
-                    model_path = working_root_dir / model_path
+                model_path = candidate if candidate.exists() else working_root_dir / model_path
 
             if not model_path.exists():
                 raise CLIValidationError(
@@ -2723,10 +2719,7 @@ For more information, see: https://docs.example.com/milia-cli
 
     def _prompt_string(self, prompt: str, default: str | None = None) -> str:
         """Prompt user for string input."""
-        if default:
-            prompt_text = f"{prompt} [{default}]: "
-        else:
-            prompt_text = f"{prompt}: "
+        prompt_text = f"{prompt} [{default}]: " if default else f"{prompt}: "
 
         value = input(prompt_text).strip()
         return value if value else default

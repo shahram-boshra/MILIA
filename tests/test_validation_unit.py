@@ -1465,7 +1465,7 @@ class TestEdgeCases:
         validator = ArchitectureValidator()
 
         layers = []
-        for i in range(100):
+        for _i in range(100):
             layers.append(LayerConfig(type="GCNConv", out_channels=64))
             layers.append(LayerConfig(type="ReLU"))
         layers.append(LayerConfig(type="Linear", params={"out_features": 1}))
@@ -1608,7 +1608,7 @@ class TestPerformance:
 
         # Create large architecture
         layers = []
-        for i in range(50):
+        for _i in range(50):
             layers.append(LayerConfig(type="GCNConv", out_channels=64))
             layers.append(LayerConfig(type="ReLU"))
         layers.append(LayerConfig(type="global_mean_pool"))

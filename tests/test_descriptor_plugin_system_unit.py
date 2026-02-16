@@ -458,7 +458,7 @@ class TestDescriptorPluginMetadata:
 
         assert meta != "not a metadata object"
         assert meta != 123
-        assert meta != None
+        assert meta is not None
         assert meta != {"plugin_name": "test", "version": "1.0.0"}
 
     def test_validation_empty_plugin_name_raises_error(self):

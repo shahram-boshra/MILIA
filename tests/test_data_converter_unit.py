@@ -537,7 +537,7 @@ class TestDataConverterRegistryThreadSafety:
 
         with ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(register_format, i) for i in range(100)]
-            for future in as_completed(futures):
+            for _future in as_completed(futures):
                 pass
 
         assert len(errors) == 0, f"Errors occurred: {errors}"
@@ -2883,7 +2883,7 @@ class TestPerformance:
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(convert_data, i) for i in range(50)]
-            for future in as_completed(futures):
+            for _future in as_completed(futures):
                 pass
 
         assert len(errors) == 0, f"Errors occurred: {errors}"
@@ -4277,7 +4277,7 @@ class TestConvertSdfToPygList:
         # Run concurrent operations
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(convert_sdf) for _ in range(20)]
-            for future in as_completed(futures):
+            for _future in as_completed(futures):
                 pass
 
         assert len(errors) == 0, f"Errors occurred: {errors}"

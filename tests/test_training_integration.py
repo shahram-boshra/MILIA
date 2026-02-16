@@ -191,7 +191,7 @@ class MinimalDataset:
         self.num_features = num_features
         self._data = []
 
-        for i in range(num_samples):
+        for _i in range(num_samples):
             num_nodes = np.random.randint(num_nodes_range[0], num_nodes_range[1] + 1)
             num_edges = np.random.randint(num_edges_range[0], num_edges_range[1] + 1)
             target_value = np.random.randn()  # Random target for regression
@@ -1380,7 +1380,7 @@ class TestTrainerIntegration(unittest.TestCase):
                 offset = 0
                 adjusted_edges = []
                 batch_indices = []
-                for i, (x, ei) in enumerate(zip(x_list, edge_index_list)):
+                for i, (x, ei) in enumerate(zip(x_list, edge_index_list, strict=False)):
                     adjusted_edges.append(ei + offset)
                     batch_indices.extend([i] * x.size(0))
                     offset += x.size(0)

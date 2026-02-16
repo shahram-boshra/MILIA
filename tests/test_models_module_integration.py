@@ -108,7 +108,7 @@ def mock_gnn_model():
             self.layers.append(nn.Linear(hidden_channels, out_channels))
 
         def forward(self, x, edge_index, batch=None):
-            for i, layer in enumerate(self.layers[:-1]):
+            for _i, layer in enumerate(self.layers[:-1]):
                 x = layer(x)
                 x = torch.relu(x)
                 if self.dropout > 0:

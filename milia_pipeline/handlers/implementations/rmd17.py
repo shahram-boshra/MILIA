@@ -736,7 +736,7 @@ class RMD17DatasetHandler(DatasetHandler):
         try:
             if isinstance(value, torch.Tensor):
                 return value.to(dtype)
-            elif isinstance(value, np.ndarray) or isinstance(value, (list, tuple)):
+            elif isinstance(value, (np.ndarray, list, tuple)):
                 return torch.tensor(value, dtype=dtype)
             elif isinstance(value, (int, float, np.number)):
                 return torch.tensor([value], dtype=dtype)
@@ -761,9 +761,7 @@ class RMD17DatasetHandler(DatasetHandler):
         """
         if value is None:
             return False
-        if isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0:
-            return False
-        return True
+        return not (isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0)
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]
@@ -994,12 +992,11 @@ class RMD17DatasetHandler(DatasetHandler):
             )
 
         # Recommend self-loops for graph convolutions
-        if "AddSelfLoops" not in transform_names:
-            if "GCNNorm" in transform_names:
-                recommendations.append(
-                    "GCNNorm typically requires AddSelfLoops before it. "
-                    "Add: transforms.AddSelfLoops() before GCNNorm"
-                )
+        if "AddSelfLoops" not in transform_names and "GCNNorm" in transform_names:
+            recommendations.append(
+                "GCNNorm typically requires AddSelfLoops before it. "
+                "Add: transforms.AddSelfLoops() before GCNNorm"
+            )
 
         # Geometric transform recommendations for rMD17
         geometric_transforms = ["RandomRotate", "RandomScale", "RandomTranslate"]

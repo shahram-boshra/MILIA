@@ -702,7 +702,7 @@ class Trainer:
 
             # Get forward method signature
             sig = inspect.signature(inner_model.forward)
-            params = [name for name in sig.parameters.keys() if name != "self"]
+            params = [name for name in sig.parameters if name != "self"]
 
             # Cache the result
             self._forward_params = params

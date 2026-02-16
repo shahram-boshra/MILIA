@@ -1281,9 +1281,7 @@ class DatasetHandler(ABC):
         # For string values, only reject obviously invalid ones
         if isinstance(value, str):
             value_str = value.strip().lower()
-            if value_str in ["missing", "invalid", "", "nan", "none"]:
-                return False
-            return True
+            return value_str not in ["missing", "invalid", "", "nan", "none"]
 
         return is_value_valid_and_not_nan(value)
 
@@ -1360,7 +1358,7 @@ class DatasetHandler(ABC):
                 self.logger.warning(f"Transform discovery failed: {e}")
 
             # Parameter validation for each transform
-            for i, transform in enumerate(transforms):
+            for _i, transform in enumerate(transforms):
                 transform_name = transform.__class__.__name__
                 try:
                     # Get expected parameters using get_transform_info

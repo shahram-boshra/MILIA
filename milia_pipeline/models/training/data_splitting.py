@@ -197,9 +197,10 @@ class DataSplitter:
         # Extract labels
         if label_getter is None:
             # Default: assume data.y is label
-            label_getter = lambda data: (
-                data.y.item() if data.y.dim() == 0 else data.y.argmax().item()
-            )
+            def label_getter(data):
+                return (
+                            data.y.item() if data.y.dim() == 0 else data.y.argmax().item()
+                        )
 
         try:
             labels = [label_getter(dataset[i]) for i in range(len(dataset))]
@@ -281,7 +282,8 @@ class DataSplitter:
 
         # Extract timestamps
         if time_getter is None:
-            time_getter = lambda data: getattr(data, time_field)
+            def time_getter(data):
+                return getattr(data, time_field)
 
         try:
             times = [time_getter(dataset[i]) for i in range(n)]
@@ -379,7 +381,8 @@ class DataSplitter:
 
         # Extract molecules and generate scaffolds
         if mol_getter is None:
-            mol_getter = lambda data: data.mol
+            def mol_getter(data):
+                return data.mol
 
         scaffolds = defaultdict(list)
 

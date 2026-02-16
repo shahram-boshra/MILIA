@@ -55,11 +55,11 @@ class TestDescriptorConfigSchema:
     def test_default_schema(self):
         """Test default schema creation."""
         schema = DescriptorConfigSchema()
-        assert schema.enabled == True
+        assert schema.enabled
         assert schema.default_categories == ["constitutional", "topological"]
         assert schema.error_handling == "warn"
         assert schema.validation_mode == "standard"
-        assert schema.cache_descriptors == True
+        assert schema.cache_descriptors
         assert schema.num_workers == 1
 
     def test_custom_schema(self):
@@ -71,10 +71,10 @@ class TestDescriptorConfigSchema:
             parallel_computation=True,
             error_handling="strict",
         )
-        assert schema.enabled == True
+        assert schema.enabled
         assert len(schema.default_categories) == 1
         assert schema.num_workers == 4
-        assert schema.parallel_computation == True
+        assert schema.parallel_computation
         assert schema.error_handling == "strict"
 
     def test_invalid_error_handling(self):
@@ -125,7 +125,7 @@ class TestDescriptorCategoryConfigSchema:
         """Test default category schema creation."""
         schema = DescriptorCategoryConfigSchema(category_name="constitutional")
         assert schema.category_name == "constitutional"
-        assert schema.enabled == True
+        assert schema.enabled
         assert schema.descriptors is None
         assert schema.options == {}
 
@@ -184,16 +184,16 @@ class TestDescriptorConfig:
     def test_default_config(self):
         """Test default configuration."""
         config = DescriptorConfig()
-        assert config.enabled == True
+        assert config.enabled
         assert config.error_handling == "warn"
-        assert config.should_use_cache() == True
-        assert config.should_use_parallel() == False
+        assert config.should_use_cache()
+        assert not config.should_use_parallel()
 
     def test_is_category_enabled(self):
         """Test category enabled checking."""
         config = DescriptorConfig(default_categories=["constitutional", "topological"])
-        assert config.is_category_enabled("constitutional") == True
-        assert config.is_category_enabled("geometric") == False
+        assert config.is_category_enabled("constitutional")
+        assert not config.is_category_enabled("geometric")
 
     def test_get_enabled_categories(self):
         """Test getting enabled categories."""
@@ -241,7 +241,7 @@ class TestDescriptorCategoryConfig:
         """Test default category config."""
         config = DescriptorCategoryConfig(category_name="constitutional")
         assert config.category_name == "constitutional"
-        assert config.enabled == True
+        assert config.enabled
         assert config.descriptors is None
         assert config.options == {}
 
@@ -282,14 +282,14 @@ class TestFactoryFunctions:
     def test_create_default_descriptor_config(self):
         """Test default config creation."""
         config = create_default_descriptor_config()
-        assert config.enabled == True
+        assert config.enabled
         assert len(config.default_categories) > 0
         assert config.error_handling == "warn"
 
     def test_create_minimal_descriptor_config(self):
         """Test minimal config creation."""
         config = create_minimal_descriptor_config()
-        assert config.enabled == True
+        assert config.enabled
         assert len(config.default_categories) == 1
         assert config.default_categories[0] == "constitutional"
 
@@ -305,7 +305,7 @@ molecular_descriptors:
 """
         yaml_data = yaml.safe_load(yaml_content)
         config = create_descriptor_config_from_yaml(yaml_data)
-        assert config.enabled == True
+        assert config.enabled
         assert "constitutional" in config.default_categories
 
     def test_create_from_yaml_missing_descriptors_key(self):
@@ -318,7 +318,7 @@ default_categories:
         yaml_data = yaml.safe_load(yaml_content)
         # Should return default config when 'molecular_descriptors' key is missing
         config = create_descriptor_config_from_yaml(yaml_data)
-        assert config.enabled == True
+        assert config.enabled
         assert len(config.default_categories) > 0
 
     def test_create_from_yaml_with_categories(self):
@@ -340,7 +340,7 @@ molecular_descriptors:
         config = create_descriptor_config_from_yaml(yaml_data)
         assert config.is_category_enabled("constitutional")
         options = config.get_category_options("constitutional")
-        assert options.get("include_hydrogens") == True
+        assert options.get("include_hydrogens")
 
 
 # =============================================================================
@@ -355,14 +355,14 @@ class TestValidationFunctions:
         """Test validation of valid configuration."""
         config = DescriptorConfig(enabled=True, default_categories=["constitutional"])
         is_valid, errors = validate_descriptor_config(config)
-        assert is_valid == True
+        assert is_valid
         assert len(errors) == 0
 
     def test_validate_disabled_config(self):
         """Test validation of disabled configuration."""
         config = DescriptorConfig(enabled=False)
         is_valid, errors = validate_descriptor_config(config)
-        assert is_valid == True
+        assert is_valid
         assert len(errors) == 0
 
     def test_validate_empty_categories(self):
@@ -370,7 +370,7 @@ class TestValidationFunctions:
         config = DescriptorConfig(enabled=True, default_categories=[])
         is_valid, errors = validate_descriptor_config(config)
         # Empty categories is actually valid - the validator doesn't enforce non-empty
-        assert is_valid == True
+        assert is_valid
         assert len(errors) == 0
 
     def test_validate_invalid_cache_path(self):
@@ -378,7 +378,7 @@ class TestValidationFunctions:
         is_valid, errors = validate_descriptor_cache_settings(
             cache_descriptors=True, cache_path="/nonexistent/path/to/cache"
         )
-        assert is_valid == False
+        assert not is_valid
         assert len(errors) > 0
 
     def test_validate_category_compatibility(self):
@@ -386,7 +386,7 @@ class TestValidationFunctions:
         is_compatible, errors, warnings = validate_descriptor_category_compatibility(
             category="electronic", dataset_type="Wavefunction"
         )
-        assert is_compatible == True
+        assert is_compatible
         assert len(errors) == 0
 
     def test_validate_invalid_category(self):
@@ -394,7 +394,7 @@ class TestValidationFunctions:
         is_compatible, errors, warnings = validate_descriptor_category_compatibility(
             category="invalid_category", dataset_type="DFT"
         )
-        assert is_compatible == False
+        assert not is_compatible
         assert len(errors) > 0
 
 
@@ -422,7 +422,7 @@ class TestDescriptorSchemaValidator:
         }
 
         result = validator.validate_descriptor_config(config)
-        assert result["valid"] == True
+        assert result["valid"]
         assert len(result["errors"]) == 0
 
     def test_validate_missing_enabled(self):
@@ -431,7 +431,7 @@ class TestDescriptorSchemaValidator:
         config = {"default_categories": ["constitutional"]}
 
         result = validator.validate_descriptor_config(config)
-        assert result["valid"] == False
+        assert not result["valid"]
         assert any("enabled" in error for error in result["errors"])
 
     def test_validate_invalid_category(self):
@@ -440,7 +440,7 @@ class TestDescriptorSchemaValidator:
         config = {"enabled": True, "default_categories": ["invalid_category"]}
 
         result = validator.validate_descriptor_config(config)
-        assert result["valid"] == False
+        assert not result["valid"]
         assert len(result["errors"]) > 0
 
     def test_validate_strict_mode(self):
@@ -449,7 +449,7 @@ class TestDescriptorSchemaValidator:
         config = {"enabled": True, "default_categories": []}
 
         result = validator.validate_descriptor_config(config, strict_mode=True)
-        assert result["valid"] == False
+        assert not result["valid"]
         assert any("default_categories" in error for error in result["errors"])
 
     def test_validate_category(self):
@@ -458,7 +458,7 @@ class TestDescriptorSchemaValidator:
         category_config = {"enabled": True, "descriptors": ["molecular_weight", "num_atoms"]}
 
         result = validator.validate_descriptor_category("constitutional", category_config)
-        assert result["valid"] == True
+        assert result["valid"]
         assert len(result["errors"]) == 0
 
     def test_validate_invalid_category_name(self):
@@ -467,7 +467,7 @@ class TestDescriptorSchemaValidator:
         category_config = {"enabled": True}
 
         result = validator.validate_descriptor_category("invalid_category", category_config)
-        assert result["valid"] == False
+        assert not result["valid"]
         assert len(result["errors"]) > 0
 
     def test_validate_with_dataset_type(self):
@@ -476,7 +476,7 @@ class TestDescriptorSchemaValidator:
         config = {"enabled": True, "default_categories": ["electronic"]}
 
         result = validator.validate_with_dataset_type(config, "Wavefunction")
-        assert result["valid"] == True
+        assert result["valid"]
         assert len(result["errors"]) == 0
 
     def test_validate_disabled_config_dataset_compat(self):
@@ -485,7 +485,7 @@ class TestDescriptorSchemaValidator:
         config = {"enabled": False, "default_categories": []}
 
         result = validator.validate_with_dataset_type(config, "DFT")
-        assert result["valid"] == True
+        assert result["valid"]
         assert len(result["compatibility_notes"]) > 0
 
 
@@ -529,14 +529,14 @@ molecular_descriptors:
 
         # Validate configuration
         is_valid, errors = validate_descriptor_config(config)
-        assert is_valid == True
+        assert is_valid
         assert len(errors) == 0
 
         # Check configuration properties
-        assert config.enabled == True
+        assert config.enabled
         assert len(config.get_enabled_categories()) >= 2
-        assert config.is_category_enabled("constitutional") == True
-        assert config.is_category_enabled("topological") == True
+        assert config.is_category_enabled("constitutional")
+        assert config.is_category_enabled("topological")
 
     def test_schema_to_container_roundtrip(self):
         """Test schema to container conversion."""
@@ -552,7 +552,7 @@ molecular_descriptors:
 
         # Validate container
         is_valid, errors = validate_descriptor_config(config)
-        assert is_valid == True
+        assert is_valid
         assert config.enabled == schema.enabled
         assert config.cache_descriptors == schema.cache_descriptors
 
@@ -568,7 +568,7 @@ molecular_descriptors:
         # Validate the descriptor config
         descriptor_config = bundle["descriptor_config"]
         assert isinstance(descriptor_config, DescriptorConfig)
-        assert descriptor_config.enabled == True
+        assert descriptor_config.enabled
 
 
 if __name__ == "__main__":

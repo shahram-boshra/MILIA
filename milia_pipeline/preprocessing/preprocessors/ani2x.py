@@ -87,7 +87,7 @@ def iter_data_buckets_ani2x(h5filename: str, keys: list[str] = None) -> dict[str
         keys = ["energies"]
 
     with h5py.File(h5filename, "r") as f:
-        for mol_name in f.keys():
+        for mol_name in f:
             mol_group = f[mol_name]
 
             # Get atomic numbers - ANI-2x may use 'species' or 'atomic_numbers'

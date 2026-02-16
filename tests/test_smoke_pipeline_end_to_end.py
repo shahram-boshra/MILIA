@@ -201,7 +201,7 @@ def synthetic_pyg_data_list() -> list:
     data_list = []
     rng = np.random.RandomState(42)
 
-    for i in range(10):
+    for _i in range(10):
         num_atoms = rng.randint(3, 10)
         num_edges = rng.randint(num_atoms, num_atoms * 3)
 
@@ -1272,12 +1272,7 @@ class TestTrainingComponentRegistriesSmoke:
 
             # If we reach here, no listing method was found at all
             available_attrs = [a for a in dir(metrics_mod) if not a.startswith("_")]
-            assert False, (
-                f"No listing function found in metrics.py. "
-                f"Searched module-level: {list_fn_candidates}. "
-                f"Searched MetricsRegistry class: {registry_list_candidates}. "
-                f"Available module attributes: {available_attrs}"
-            )
+            raise AssertionError(f"No listing function found in metrics.py. " f"Searched module-level: {list_fn_candidates}. " f"Searched MetricsRegistry class: {registry_list_candidates}. " f"Available module attributes: {available_attrs}")
 
         # If we found a module-level function, call it
         metrics = list_fn()

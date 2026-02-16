@@ -1163,7 +1163,7 @@ class TestExperimentRunner:
             evaluator=mock_evaluator,
         )
         assert len(experiment_runner.results) > 0
-        for variant_name, runs in experiment_runner.results.items():
+        for _variant_name, runs in experiment_runner.results.items():
             assert isinstance(runs, list)
             assert len(runs) > 0
 

@@ -2778,7 +2778,7 @@ class TestIntegration:
         """Test multiple setup/cleanup cycles."""
         manager = DistributedManager(strategy="none", verbose=False)
 
-        for i in range(3):
+        for _i in range(3):
             manager.setup()
             assert manager._is_initialized is True
 

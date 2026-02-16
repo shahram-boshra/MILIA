@@ -1754,7 +1754,7 @@ class TestEdgeCasesAndErrorHandling:
     def test_very_deep_model(self, basic_hyper_parameters, working_root_dir):
         """Test with very deep model."""
         layers = []
-        for i in range(20):
+        for _i in range(20):
             layers.append(nn.Linear(32, 32))
             layers.append(nn.ReLU())
         layers.append(nn.Linear(32, 1))

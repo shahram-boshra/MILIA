@@ -1085,7 +1085,7 @@ class TestWeightedTransfer:
         )
 
         # Weight should equal similarity when not weighted by performance
-        for i, trial in enumerate(result):
+        for _i, trial in enumerate(result):
             # Find the original index based on similarity
             assert trial.weight == trial.similarity
 
@@ -1343,9 +1343,8 @@ class TestFilteredTransfer:
             source_trials=[trial], target_search_space=sample_search_space
         )
 
-        if result:
-            if "lr" in result[0].params:
-                assert isinstance(result[0].params["lr"], float)
+        if result and "lr" in result[0].params:
+            assert isinstance(result[0].params["lr"], float)
 
 
 # =============================================================================

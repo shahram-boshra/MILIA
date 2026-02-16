@@ -390,7 +390,7 @@ class TestIntrospectModelSignature:
     def test_returns_parameter_info_instances(self):
         intro = pytest.importorskip(_MODULE_PATH)
         params = intro.introspect_model_signature(_FakeGCN)
-        for name, info in params.items():
+        for _name, info in params.items():
             assert isinstance(info, intro.ParameterInfo)
 
     def test_empty_result_for_broken_signature(self):
@@ -1088,7 +1088,7 @@ class TestDiscoverPygModels:
     def test_values_are_import_path_strings(self, fake_discovery_env):
         intro = pytest.importorskip(_MODULE_PATH)
         models = intro.discover_pyg_models()
-        for name, path in models.items():
+        for _name, path in models.items():
             assert isinstance(path, str)
             assert "torch_geometric" in path
 

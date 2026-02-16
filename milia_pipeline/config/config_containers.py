@@ -527,9 +527,8 @@ class FilterConfig(BaseModel, frozen=True):
             handler_filters["heavy_atom_filter"] = self.heavy_atom_filter
 
         # Add DMC-specific filters
-        if handler_type.upper() == "DMC":
-            if self.dmc_uncertainty_filter is not None:
-                handler_filters["uncertainty_filter"] = self.dmc_uncertainty_filter
+        if handler_type.upper() == "DMC" and self.dmc_uncertainty_filter is not None:
+            handler_filters["uncertainty_filter"] = self.dmc_uncertainty_filter
 
         return handler_filters
 
@@ -1684,7 +1683,7 @@ class DescriptorConfig(BaseModel, frozen=True):
                 enabled.append(category)
 
         # Check additional configured categories
-        for category in self.categories.keys():
+        for category in self.categories:
             if category not in enabled and self.is_category_enabled(category):
                 enabled.append(category)
 
@@ -1774,9 +1773,8 @@ class DescriptorCategoryConfig(BaseModel, frozen=True):
     @classmethod
     def initialize_dict_fields(cls, data: Any) -> Any:
         """Initialize None dict fields to empty dicts before field assignment."""
-        if isinstance(data, dict):
-            if data.get("options") is None:
-                data["options"] = {}
+        if isinstance(data, dict) and data.get("options") is None:
+            data["options"] = {}
         return data
 
     def to_dict(self) -> dict[str, Any]:
@@ -2677,7 +2675,6 @@ def _migrate_legacy_list_format(
 
     frame = inspect.currentframe()
     is_large_config_test = False
-    is_very_large_config_test = False
     try:
         # Look through the call stack for test method names
         while frame:
@@ -2688,7 +2685,6 @@ def _migrate_legacy_list_format(
                 is_large_config_test = True
                 break
             elif frame.f_code.co_name == "test_very_large_config_memory_usage":
-                is_very_large_config_test = True
                 break
             frame = frame.f_back
     finally:
@@ -4067,7 +4063,7 @@ def create_experimental_setup_from_dict(
 
         # Convert transform dictionaries to TransformSpec instances
         transforms = []
-        for i, transform_dict in enumerate(transforms_data):
+        for _i, transform_dict in enumerate(transforms_data):
             try:
                 if not isinstance(transform_dict, dict):
                     continue
@@ -4665,7 +4661,7 @@ def verify_container_registry_integration() -> dict[str, Any]:
         # Test DatasetConfig
         for dtype in results["valid_types"]:
             try:
-                dc = DatasetConfig(dataset_type=dtype)
+                DatasetConfig(dataset_type=dtype)
                 results["containers_verified"][f"DatasetConfig_{dtype}"] = True
             except Exception as e:
                 results["containers_verified"][f"DatasetConfig_{dtype}"] = str(e)
@@ -4673,7 +4669,7 @@ def verify_container_registry_integration() -> dict[str, Any]:
         # Test HandlerConfig
         for dtype in results["valid_types"]:
             try:
-                hc = HandlerConfig(handler_type=dtype)
+                HandlerConfig(handler_type=dtype)
                 results["containers_verified"][f"HandlerConfig_{dtype}"] = True
             except Exception as e:
                 results["containers_verified"][f"HandlerConfig_{dtype}"] = str(e)
@@ -4681,14 +4677,14 @@ def verify_container_registry_integration() -> dict[str, Any]:
         # Test factory functions
         for dtype in results["valid_types"]:
             try:
-                hc = create_handler_config(dtype)
+                create_handler_config(dtype)
                 results["factory_functions_verified"][f"create_handler_config_{dtype}"] = True
             except Exception as e:
                 results["factory_functions_verified"][f"create_handler_config_{dtype}"] = str(e)
 
         # Determine overall status
-        all_containers_ok = all(v == True for v in results["containers_verified"].values())
-        all_factories_ok = all(v == True for v in results["factory_functions_verified"].values())
+        all_containers_ok = all(v for v in results["containers_verified"].values())
+        all_factories_ok = all(v for v in results["factory_functions_verified"].values())
         results["overall_status"] = "ok" if (all_containers_ok and all_factories_ok) else "errors"
 
     except Exception as e:

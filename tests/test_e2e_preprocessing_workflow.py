@@ -1139,7 +1139,7 @@ class TestFullPipelineIntegrationE2E:
                 )
             )
         assert len(results) == 5
-        for i, d in enumerate(results):
+        for _i, d in enumerate(results):
             assert isinstance(d, Data) and hasattr(d, "z") and hasattr(d, "edge_index")
             assert hasattr(d, "pos") and hasattr(d, "y")
 

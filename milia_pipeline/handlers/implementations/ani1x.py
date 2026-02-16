@@ -777,7 +777,7 @@ class ANI1xDatasetHandler(DatasetHandler):
         try:
             if isinstance(value, torch.Tensor):
                 return value.to(dtype)
-            elif isinstance(value, np.ndarray) or isinstance(value, (list, tuple)):
+            elif isinstance(value, (np.ndarray, list, tuple)):
                 return torch.tensor(value, dtype=dtype)
             elif isinstance(value, (int, float, np.number)):
                 return torch.tensor([value], dtype=dtype)
@@ -807,9 +807,7 @@ class ANI1xDatasetHandler(DatasetHandler):
         """
         if value is None:
             return False
-        if isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0:
-            return False
-        return True
+        return not (isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0)
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]
@@ -1042,15 +1040,14 @@ class ANI1xDatasetHandler(DatasetHandler):
 
         # VirtualNode incompatibility with certain ANI-1x properties
         if "VirtualNode" in transform_names:
-            if hasattr(self.processing_config, "node_features"):
-                if any(
-                    c in self.processing_config.node_features
-                    for c in ["hirshfeld_charges", "cm5_charges"]
-                ):
-                    errors.append(
-                        "VirtualNode incompatible with precomputed charges - "
-                        "virtual node would need artificial charge"
-                    )
+            if hasattr(self.processing_config, "node_features") and any(
+                c in self.processing_config.node_features
+                for c in ["hirshfeld_charges", "cm5_charges"]
+            ):
+                errors.append(
+                    "VirtualNode incompatible with precomputed charges - "
+                    "virtual node would need artificial charge"
+                )
 
         return errors
 
@@ -1077,12 +1074,11 @@ class ANI1xDatasetHandler(DatasetHandler):
             )
 
         # Recommend self-loops for graph convolutions
-        if "AddSelfLoops" not in transform_names:
-            if "GCNNorm" in transform_names:
-                recommendations.append(
-                    "GCNNorm typically requires AddSelfLoops before it. "
-                    "Add: transforms.AddSelfLoops() before GCNNorm"
-                )
+        if "AddSelfLoops" not in transform_names and "GCNNorm" in transform_names:
+            recommendations.append(
+                "GCNNorm typically requires AddSelfLoops before it. "
+                "Add: transforms.AddSelfLoops() before GCNNorm"
+            )
 
         # Geometric transform recommendations for ANI-1x
         geometric_transforms = ["RandomRotate", "RandomScale", "RandomTranslate"]

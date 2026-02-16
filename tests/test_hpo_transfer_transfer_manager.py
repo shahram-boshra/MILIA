@@ -2168,7 +2168,7 @@ class TestFindSimilarStudies:
         )
 
         result = manager.find_similar_studies(mock_dataset)
-        for name, sim in result:
+        for _name, sim in result:
             assert sim >= 0.999
 
 

@@ -528,7 +528,7 @@ class miliaDataset(InMemoryDataset):
         # Handle config_path parameter
         if config_path is not None:
             # Load and apply configuration
-            config = load_config(config_path)
+            load_config(config_path)
 
         # REFACTORED: Use configuration containers with fallback to global config
         self._dataset_config = dataset_config or create_dataset_config_from_global()
@@ -1084,7 +1084,7 @@ class miliaDataset(InMemoryDataset):
         validation_errors = []
 
         try:
-            gt = get_graph_transforms()
+            get_graph_transforms()
 
             for i, transform_spec in enumerate(config):
                 transform_name = transform_spec.get("name")
@@ -1230,26 +1230,21 @@ class miliaDataset(InMemoryDataset):
                 converted_spec = {"name": str(transform_name).strip()}
 
                 # Enhanced kwargs detection
-                kwargs_found = False
 
                 # Try to find kwargs in various formats
                 if "kwargs" in transform_spec:
                     converted_spec["kwargs"] = transform_spec["kwargs"]
-                    kwargs_found = True
                 elif "parameters" in transform_spec:
                     converted_spec["kwargs"] = transform_spec["parameters"]
-                    kwargs_found = True
                     conversion_warnings.append(f"Transform {i}: Converted 'parameters' to 'kwargs'")
                 elif "args" in transform_spec:
                     # Try to convert positional args to kwargs if possible
                     converted_spec["kwargs"] = transform_spec["args"]
-                    kwargs_found = True
                     conversion_warnings.append(
                         f"Transform {i}: Converted 'args' to 'kwargs' (may need manual review)"
                     )
                 elif "options" in transform_spec:
                     converted_spec["kwargs"] = transform_spec["options"]
-                    kwargs_found = True
                     conversion_warnings.append(f"Transform {i}: Converted 'options' to 'kwargs'")
                 else:
                     # No kwargs found - create empty dict
@@ -1516,7 +1511,7 @@ class miliaDataset(InMemoryDataset):
                 return False
 
             # Check each transform
-            for cached, current in zip(cached_config, current_config):
+            for cached, current in zip(cached_config, current_config, strict=False):
                 if cached.get("name") != current.get("name"):
                     return False
                 if cached.get("kwargs", {}) != current.get("kwargs", {}):
@@ -1944,7 +1939,7 @@ class miliaDataset(InMemoryDataset):
         try:
             # Validate each transform
             for i, (transform, config) in enumerate(
-                zip(composed_transforms.transforms, validated_config)
+                zip(composed_transforms.transforms, validated_config, strict=False)
             ):
                 transform_info = {
                     "index": i,
@@ -3547,7 +3542,7 @@ class miliaDataset(InMemoryDataset):
         """
         try:
             handler_time = performance_stats.get("handler_processing_time", 0.0)
-            vaidation_time = performance_stats.get("validation_processing_time", 0.0)
+            performance_stats.get("validation_processing_time", 0.0)
             error_overhead = performance_stats.get("error_handling_overhead", 0.0)
 
             total_time = handler_time + fallback_time
@@ -5027,7 +5022,7 @@ class miliaDataset(InMemoryDataset):
             self.logger.info(f"Processing: {source_path.name} → {target_path.name}")
             self.logger.info("This may take several minutes depending on dataset size...")
 
-            result_path = preprocessor.preprocess()  # No parameters!
+            preprocessor.preprocess()  # No parameters!
 
             # Verify output was created successfully
             if target_path.exists() and target_path.stat().st_size > 0:

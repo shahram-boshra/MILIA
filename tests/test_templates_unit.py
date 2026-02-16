@@ -425,9 +425,9 @@ class TestAttentionNetworkTemplate:
         gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
         # First and middle layers concatenate
         if len(gat_layers) > 1:
-            assert gat_layers[0]["params"]["concat"] == True
+            assert gat_layers[0]["params"]["concat"]
         # Last layer averages
-        assert gat_layers[-1]["params"]["concat"] == False
+        assert not gat_layers[-1]["params"]["concat"]
 
     def test_attention_network_elu_activation(self, basic_params):
         """Test attention_network uses ELU activation."""

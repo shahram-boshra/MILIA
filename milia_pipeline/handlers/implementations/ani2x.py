@@ -700,7 +700,7 @@ class ANI2xDatasetHandler(DatasetHandler):
         try:
             if isinstance(value, torch.Tensor):
                 return value.to(dtype)
-            elif isinstance(value, np.ndarray) or isinstance(value, (list, tuple)):
+            elif isinstance(value, (np.ndarray, list, tuple)):
                 return torch.tensor(value, dtype=dtype)
             elif isinstance(value, (int, float, np.number)):
                 return torch.tensor([value], dtype=dtype)
@@ -725,9 +725,7 @@ class ANI2xDatasetHandler(DatasetHandler):
         """
         if value is None:
             return False
-        if isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0:
-            return False
-        return True
+        return not (isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0)
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]
@@ -765,11 +763,10 @@ class ANI2xDatasetHandler(DatasetHandler):
                 forces_configured = "forces" in self.processing_config.node_features
             if not forces_configured and hasattr(
                 self.processing_config, "variable_len_graph_properties"
-            ):
-                if self.processing_config.variable_len_graph_properties:
-                    forces_configured = (
-                        "forces" in self.processing_config.variable_len_graph_properties
-                    )
+            ) and self.processing_config.variable_len_graph_properties:
+                forces_configured = (
+                    "forces" in self.processing_config.variable_len_graph_properties
+                )
 
         stats["forces_configured"] = forces_configured
 

@@ -70,6 +70,7 @@ Version: 1.0
 Date: January 2026
 """
 
+import contextlib
 import logging
 import shutil
 import tempfile
@@ -176,7 +177,7 @@ def _parse_extended_xyz_with_ase(xyz_path: Path) -> list[dict[str, Any]]:
             frames = [frames]
 
         parsed_data = []
-        for frame_idx, atoms in enumerate(frames):
+        for _frame_idx, atoms in enumerate(frames):
             # Extract atomic numbers
             atomic_numbers = atoms.get_atomic_numbers()
 
@@ -188,20 +189,16 @@ def _parse_extended_xyz_with_ase(xyz_path: Path) -> list[dict[str, Any]]:
             if hasattr(atoms, "info") and "energy" in atoms.info:
                 energy = atoms.info["energy"]
             elif atoms.calc is not None:
-                try:
+                with contextlib.suppress(Exception):
                     energy = atoms.get_potential_energy()
-                except Exception:
-                    pass
 
             # Extract forces from atoms.arrays or calculator
             forces = None
             if hasattr(atoms, "arrays") and "forces" in atoms.arrays:
                 forces = atoms.arrays["forces"]
             elif atoms.calc is not None:
-                try:
+                with contextlib.suppress(Exception):
                     forces = atoms.get_forces()
-                except Exception:
-                    pass
 
             parsed_data.append(
                 {

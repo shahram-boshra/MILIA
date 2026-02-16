@@ -1819,7 +1819,7 @@ class TestCreateDefaultExperimentalSetups:
         setups = create_default_experimental_setups("DFT")
         assert isinstance(setups, dict)
         # All setups should be ExperimentalSetup instances
-        for name, setup in setups.items():
+        for _name, setup in setups.items():
             assert isinstance(setup, ExperimentalSetup)
             assert len(setup.transforms) > 0
 
@@ -1827,13 +1827,13 @@ class TestCreateDefaultExperimentalSetups:
         """Test creating setups for DMC dataset type."""
         setups = create_default_experimental_setups("DMC")
         assert isinstance(setups, dict)
-        for name, setup in setups.items():
+        for _name, setup in setups.items():
             assert isinstance(setup, ExperimentalSetup)
 
     def test_setups_have_valid_transforms(self):
         """Test that created setups have valid TransformSpec transforms."""
         setups = create_default_experimental_setups()
-        for name, setup in setups.items():
+        for _name, setup in setups.items():
             for transform in setup.transforms:
                 assert isinstance(transform, TransformSpec)
                 assert transform.name is not None

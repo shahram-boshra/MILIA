@@ -876,7 +876,7 @@ class HeterogeneousGNN(nn.Module):
         layer_configs = architecture["layers"]
         current_channels = in_channels
 
-        for i, layer_config in enumerate(layer_configs):
+        for _i, layer_config in enumerate(layer_configs):
             layer_type = layer_config["type"]
             hidden_channels = layer_config["hidden_channels"]
             heads = layer_config.get("heads", 1)

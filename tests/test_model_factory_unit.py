@@ -2888,7 +2888,7 @@ class TestGetPygFunctionDependencies:
     def test_all_keys_are_strings(self):
         """Test all keys in dict are strings."""
         result = _get_pyg_function_dependencies()
-        assert all(isinstance(k, str) for k in result.keys())
+        assert all(isinstance(k, str) for k in result)
 
 
 class TestDetectModelDependencies:

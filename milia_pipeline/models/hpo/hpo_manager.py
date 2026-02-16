@@ -111,6 +111,8 @@ except ImportError:
     _REGISTRY_AVAILABLE = False
 
 # Import HPO-specific modules
+import contextlib
+
 from milia_pipeline.exceptions import (
     HPOConfigurationError,
     HPOError,
@@ -754,10 +756,8 @@ def infer_task_type(
 
     # 3. Analyze target tensor
     if sample_data is None and hasattr(dataset, "__getitem__"):
-        try:
+        with contextlib.suppress(IndexError, TypeError):
             sample_data = dataset[0]
-        except (IndexError, TypeError):
-            pass
 
     if sample_data is not None and hasattr(sample_data, "y"):
         y = sample_data.y
@@ -2235,10 +2235,7 @@ def _flatten_params(params: dict[str, Any]) -> dict[str, Any]:
     flat = {}
     for key, value in params.items():
         # Remove category prefix if present
-        if "." in key:
-            flat_key = key.split(".")[-1]
-        else:
-            flat_key = key
+        flat_key = key.split(".")[-1] if "." in key else key
         flat[flat_key] = value
     return flat
 

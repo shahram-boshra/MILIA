@@ -2107,22 +2107,6 @@ class MoleculeDataConverter:
                                 )
 
             # REFINED: Skip internal PyG storage objects (don't try to convert these)
-            skip_attrs = {
-                "edge_stores",
-                "node_stores",
-                "stores",  # PyG internal storage
-                "_store",
-                "_edge_store",
-                "_node_store",  # PyG internal storage
-                "freqs",
-                "vibmodes",  # Special vibrational data
-                "inchi",
-                "smiles",
-                "dataset_type",  # String attributes
-                "original_mol_idx",
-                "num_nodes",
-                "num_edges",  # Scalar attributes
-            }
 
             # Special handling for vibrational data (should be list of tensors)
             self._handle_vibrational_data_tensors(pyg_data, molecule_index)

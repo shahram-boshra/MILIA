@@ -206,17 +206,17 @@ def imbalanced_labeled_dataset():
         def __init__(self):
             self.data = []
             # Class 0: 70 samples
-            for i in range(70):
+            for _i in range(70):
                 item = Mock()
                 item.y = torch.tensor(0)
                 self.data.append(item)
             # Class 1: 20 samples
-            for i in range(20):
+            for _i in range(20):
                 item = Mock()
                 item.y = torch.tensor(1)
                 self.data.append(item)
             # Class 2: 10 samples
-            for i in range(10):
+            for _i in range(10):
                 item = Mock()
                 item.y = torch.tensor(2)
                 self.data.append(item)
@@ -262,7 +262,7 @@ def molecular_dataset():
             self.size = size
             self.data = []
             # Create molecules with mock scaffolds
-            for i in range(size):
+            for _i in range(size):
                 item = Mock()
                 # Mock RDKit molecule
                 mol = Mock()
@@ -906,7 +906,7 @@ class TestTemporalSplit:
         class BadTimeDataset(Dataset):
             def __init__(self):
                 self.data = []
-                for i in range(10):
+                for _i in range(10):
                     item = Mock()
                     item.time = None
                     self.data.append(item)
@@ -1222,7 +1222,7 @@ class TestKFoldSplit:
 
         assert len(folds) == 10
 
-        for train, val in folds:
+        for _train, val in folds:
             # Each val fold should have ~10 samples
             assert 9 <= len(val) <= 11
 
@@ -1231,7 +1231,7 @@ class TestKFoldSplit:
         folds = DataSplitter.k_fold_split(simple_dataset, n_splits=5)
 
         all_val_indices = []
-        for train, val in folds:
+        for _train, val in folds:
             all_val_indices.extend(val.indices)
 
         # All indices should be covered exactly once
@@ -1251,7 +1251,7 @@ class TestKFoldSplit:
         folds1 = DataSplitter.k_fold_split(simple_dataset, n_splits=5, random_seed=42)
         folds2 = DataSplitter.k_fold_split(simple_dataset, n_splits=5, random_seed=42)
 
-        for (train1, val1), (train2, val2) in zip(folds1, folds2):
+        for (train1, val1), (train2, val2) in zip(folds1, folds2, strict=False):
             assert train1.indices == train2.indices
             assert val1.indices == val2.indices
 
@@ -1262,7 +1262,7 @@ class TestKFoldSplit:
 
         # At least one fold should differ
         different = False
-        for (train1, val1), (train2, val2) in zip(folds1, folds2):
+        for (train1, _val1), (train2, _val2) in zip(folds1, folds2, strict=False):
             if train1.indices != train2.indices:
                 different = True
                 break
@@ -1283,7 +1283,7 @@ class TestKFoldSplit:
 
         # Validation folds should be sequential
         expected_val = [list(range(i * 20, (i + 1) * 20)) for i in range(5)]
-        for i, (train, val) in enumerate(folds):
+        for i, (_train, val) in enumerate(folds):
             if i < 4:  # Last fold might be different size
                 assert val.indices == expected_val[i]
 
@@ -1695,7 +1695,7 @@ class TestDocumentationExamples:
         """Test k_fold_split example from docstring."""
         folds = DataSplitter.k_fold_split(simple_dataset, n_splits=5)
 
-        for fold_idx, (train, val) in enumerate(folds):
+        for _fold_idx, (train, val) in enumerate(folds):
             # Verify structure
             assert isinstance(train, Subset)
             assert isinstance(val, Subset)

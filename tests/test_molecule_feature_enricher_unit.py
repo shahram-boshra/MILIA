@@ -1720,7 +1720,7 @@ class TestPhase6RefactoredFunctions(unittest.TestCase):
 
     def test_08_all_handlers_work_with_feature_routing(self):
         """Test all handler types work correctly with feature-based routing."""
-        for handler, handler_type in [
+        for handler, _handler_type in [
             (self.dft_handler, "DFT"),
             (self.dmc_handler, "DMC"),
             (self.wf_handler, "Wavefunction"),

@@ -97,7 +97,7 @@ class ArchitectureTemplates:
         builder = ArchitectureBuilder(task_type, in_channels, out_channels, name="SimpleGCN")
 
         # Add GCN layers
-        for i in range(num_layers):
+        for _i in range(num_layers):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             if dropout > 0:
@@ -232,7 +232,7 @@ class ArchitectureTemplates:
         builder.add_layer("ReLU")
 
         # Residual blocks
-        for i in range(depth):
+        for _i in range(depth):
             start_pos = len(builder.layers)
 
             builder.add_layer("GCNConv", out_channels=hidden_channels)
@@ -382,7 +382,7 @@ class ArchitectureTemplates:
         )
 
         # Hierarchical levels
-        for i in range(num_levels):
+        for _i in range(num_levels):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             builder.add_layer("TopKPooling", in_channels=hidden_channels, ratio=pooling_ratio)
@@ -444,7 +444,7 @@ class ArchitectureTemplates:
         builder = ArchitectureBuilder(task_type, in_channels, out_channels, name="GraphSAGENetwork")
 
         # SAGE layers
-        for i in range(num_layers):
+        for _i in range(num_layers):
             builder.add_layer("SAGEConv", out_channels=hidden_channels, aggr=aggr)
             builder.add_layer("ReLU")
             if dropout > 0:
@@ -511,7 +511,7 @@ class ArchitectureTemplates:
 
         # GIN layers - using GCNConv as placeholder
         # In production, implement proper GINConv with MLP
-        for i in range(num_layers):
+        for _i in range(num_layers):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             if dropout > 0:
@@ -649,7 +649,7 @@ class ArchitectureTemplates:
             "node_classification", in_channels, num_classes, name="NodeClassification"
         )
 
-        for i in range(num_layers):
+        for _i in range(num_layers):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             builder.add_layer("Dropout", p=dropout)
@@ -706,7 +706,7 @@ class ArchitectureTemplates:
             "graph_classification", in_channels, num_classes, name="GraphClassification"
         )
 
-        for i in range(num_layers):
+        for _i in range(num_layers):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             builder.add_layer("Dropout", p=dropout)

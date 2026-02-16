@@ -180,7 +180,7 @@ class TestBaseDatasetSubclassContract:
 
     def test_is_not_abstract(self, registered_classes: dict[str, type[BaseDataset]]):
         """Registered classes must not have unresolved abstract methods."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             abstract_methods = getattr(cls, "__abstractmethods__", frozenset())
             assert not abstract_methods, (
                 f"{cls.__name__} has unresolved abstract methods: {abstract_methods}"
@@ -189,7 +189,7 @@ class TestBaseDatasetSubclassContract:
     def test_has_required_class_attributes(self, registered_classes: dict[str, type[BaseDataset]]):
         """Each class must have metadata, schema, features, config_key attributes."""
         required_attrs = ["metadata", "schema", "features", "config_key"]
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             for attr in required_attrs:
                 assert hasattr(cls, attr), f"{cls.__name__} missing required attribute '{attr}'"
 
@@ -206,7 +206,7 @@ class TestDatasetMetadataContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """metadata must be a DatasetMetadata instance."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.metadata, DatasetMetadata), (
                 f"{cls.__name__}.metadata is {type(cls.metadata).__name__}, "
                 f"expected DatasetMetadata"
@@ -216,7 +216,7 @@ class TestDatasetMetadataContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """metadata.name must be a non-empty string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.metadata.name, str), (
                 f"{cls.__name__}.metadata.name is not a string"
             )
@@ -236,7 +236,7 @@ class TestDatasetMetadataContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """metadata.version must be a non-empty string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.metadata.version, str) and cls.metadata.version, (
                 f"{cls.__name__}.metadata.version is empty or not a string"
             )
@@ -245,14 +245,14 @@ class TestDatasetMetadataContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """metadata.description must be a non-empty string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.metadata.description, str) and cls.metadata.description, (
                 f"{cls.__name__}.metadata.description is empty or not a string"
             )
 
     def test_metadata_is_frozen(self, registered_classes: dict[str, type[BaseDataset]]):
         """DatasetMetadata must be immutable (frozen dataclass)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             metadata = cls.metadata
             with pytest.raises((AttributeError, TypeError, Exception)):
                 # Pydantic V2 frozen dataclass raises on attribute assignment
@@ -271,7 +271,7 @@ class TestDatasetSchemaContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """schema must be a DatasetSchema instance."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.schema, DatasetSchema), (
                 f"{cls.__name__}.schema is {type(cls.schema).__name__}, expected DatasetSchema"
             )
@@ -280,7 +280,7 @@ class TestDatasetSchemaContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """schema.required_properties must be a non-empty tuple of strings."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             rp = cls.schema.required_properties
             assert isinstance(rp, tuple), (
                 f"{cls.__name__}.schema.required_properties is {type(rp).__name__}, expected tuple"
@@ -295,7 +295,7 @@ class TestDatasetSchemaContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """schema.optional_properties must be a tuple of strings (may be empty)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             op = cls.schema.optional_properties
             assert isinstance(op, tuple), (
                 f"{cls.__name__}.schema.optional_properties is {type(op).__name__}, expected tuple"
@@ -307,7 +307,7 @@ class TestDatasetSchemaContract:
 
     def test_identifier_keys_is_tuple(self, registered_classes: dict[str, type[BaseDataset]]):
         """schema.identifier_keys must be a tuple (may be empty for coordinate_based)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             ik = cls.schema.identifier_keys
             assert isinstance(ik, tuple), (
                 f"{cls.__name__}.schema.identifier_keys is {type(ik).__name__}, expected tuple"
@@ -317,7 +317,7 @@ class TestDatasetSchemaContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """Each identifier_keys entry must be a 2-tuple of (npz_key, identifier_type)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             for entry in cls.schema.identifier_keys:
                 assert isinstance(entry, tuple) and len(entry) == 2, (
                     f"{cls.__name__}.schema.identifier_keys entry {entry!r} is not a 2-tuple"
@@ -329,7 +329,7 @@ class TestDatasetSchemaContract:
 
     def test_coordinate_units_is_valid(self, registered_classes: dict[str, type[BaseDataset]]):
         """schema.coordinate_units must be one of the valid unit strings."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             cu = cls.schema.coordinate_units
             assert cu in VALID_COORDINATE_UNITS, (
                 f"{cls.__name__}.schema.coordinate_units = '{cu}' not in {VALID_COORDINATE_UNITS}"
@@ -337,7 +337,7 @@ class TestDatasetSchemaContract:
 
     def test_energy_units_is_valid(self, registered_classes: dict[str, type[BaseDataset]]):
         """schema.energy_units must be one of the valid unit strings."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             eu = cls.schema.energy_units
             assert eu in VALID_ENERGY_UNITS, (
                 f"{cls.__name__}.schema.energy_units = '{eu}' not in {VALID_ENERGY_UNITS}"
@@ -347,7 +347,7 @@ class TestDatasetSchemaContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """required_properties and optional_properties must not overlap."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             required = set(cls.schema.required_properties)
             optional = set(cls.schema.optional_properties)
             overlap = required & optional
@@ -357,7 +357,7 @@ class TestDatasetSchemaContract:
 
     def test_schema_is_frozen(self, registered_classes: dict[str, type[BaseDataset]]):
         """DatasetSchema must be immutable (frozen dataclass)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             schema = cls.schema
             with pytest.raises((AttributeError, TypeError, Exception)):
                 schema.coordinate_units = "MUTATED"  # type: ignore
@@ -386,7 +386,7 @@ class TestDatasetFeaturesContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """features must be a DatasetFeatures instance."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.features, DatasetFeatures), (
                 f"{cls.__name__}.features is {type(cls.features).__name__}, "
                 f"expected DatasetFeatures"
@@ -394,7 +394,7 @@ class TestDatasetFeaturesContract:
 
     def test_all_feature_flags_are_booleans(self, registered_classes: dict[str, type[BaseDataset]]):
         """Every feature flag must be a boolean value."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             d = cls.features.to_dict()
             for key, val in d.items():
                 assert isinstance(val, bool), (
@@ -404,7 +404,7 @@ class TestDatasetFeaturesContract:
 
     def test_to_dict_returns_all_8_keys(self, registered_classes: dict[str, type[BaseDataset]]):
         """to_dict() must return exactly the 8 expected feature keys."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             d = cls.features.to_dict()
             assert isinstance(d, dict), (
                 f"{cls.__name__}.features.to_dict() returned {type(d).__name__}, expected dict"
@@ -418,7 +418,7 @@ class TestDatasetFeaturesContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """supports(key) must agree with to_dict()[key] for every feature."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             d = cls.features.to_dict()
             for key, val in d.items():
                 assert cls.features.supports(key) == val, (
@@ -430,12 +430,12 @@ class TestDatasetFeaturesContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """supports() must return False for unrecognized feature names."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert cls.features.supports("nonexistent_feature_xyz") is False
 
     def test_features_is_frozen(self, registered_classes: dict[str, type[BaseDataset]]):
         """DatasetFeatures must be immutable (frozen dataclass)."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             features = cls.features
             with pytest.raises((AttributeError, TypeError, Exception)):
                 features.vibrational_analysis = True  # type: ignore
@@ -451,7 +451,7 @@ class TestConfigKeyContract:
 
     def test_config_key_is_non_empty_string(self, registered_classes: dict[str, type[BaseDataset]]):
         """config_key must be a non-empty string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert isinstance(cls.config_key, str) and cls.config_key, (
                 f"{cls.__name__}.config_key is empty or not a string"
             )
@@ -467,7 +467,7 @@ class TestConfigKeyContract:
 
     def test_config_key_ends_with_config(self, registered_classes: dict[str, type[BaseDataset]]):
         """config_key should follow the naming convention *_config."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert cls.config_key.endswith("_config"), (
                 f"{cls.__name__}.config_key = '{cls.config_key}' does not end with '_config'"
             )
@@ -485,7 +485,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_required_properties() must return List[str]."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_required_properties()
             assert isinstance(result, list), (
                 f"{cls.__name__}.get_required_properties() returned "
@@ -501,7 +501,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_required_properties() must match schema.required_properties."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             from_method = cls.get_required_properties()
             from_schema = list(cls.schema.required_properties)
             assert from_method == from_schema, (
@@ -513,7 +513,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_feature_support() must return Dict[str, bool]."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_feature_support()
             assert isinstance(result, dict), (
                 f"{cls.__name__}.get_feature_support() returned "
@@ -527,7 +527,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_feature_support() must match features.to_dict()."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             from_method = cls.get_feature_support()
             from_features = cls.features.to_dict()
             assert from_method == from_features, (
@@ -538,7 +538,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_molecule_creation_strategy() must return a valid strategy string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_molecule_creation_strategy()
             assert result in VALID_STRATEGIES, (
                 f"{cls.__name__}.get_molecule_creation_strategy() = '{result}' "
@@ -549,7 +549,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_optional_properties() must return List[str]."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_optional_properties()
             assert isinstance(result, list), (
                 f"{cls.__name__}.get_optional_properties() returned "
@@ -564,7 +564,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_identifier_keys() must return List[Tuple[str, str]]."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_identifier_keys()
             assert isinstance(result, list), (
                 f"{cls.__name__}.get_identifier_keys() returned "
@@ -577,7 +577,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_coordinate_units() must return a valid coordinate unit string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_coordinate_units()
             assert result in VALID_COORDINATE_UNITS
 
@@ -585,7 +585,7 @@ class TestAbstractMethodContract:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """get_energy_units() must return a valid energy unit string."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             result = cls.get_energy_units()
             assert result in VALID_ENERGY_UNITS
 
@@ -627,7 +627,7 @@ class TestCrossFieldConsistency:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """If strategy is 'identifier_coordinate_based', identifier_keys must not be empty."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             strategy = cls.get_molecule_creation_strategy()
             if strategy == "identifier_coordinate_based":
                 assert len(cls.schema.identifier_keys) > 0, (
@@ -639,7 +639,7 @@ class TestCrossFieldConsistency:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """If uncertainty_handling is True, 'std' should be in required_properties."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             if cls.features.uncertainty_handling:
                 assert "std" in cls.schema.required_properties, (
                     f"{cls.__name__} has uncertainty_handling=True but 'std' "
@@ -650,7 +650,7 @@ class TestCrossFieldConsistency:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """Every dataset must require 'atoms' and 'coordinates'."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             rp = cls.schema.required_properties
             assert "atoms" in rp, f"{cls.__name__} does not require 'atoms': {rp}"
             assert "coordinates" in rp, f"{cls.__name__} does not require 'coordinates': {rp}"
@@ -659,7 +659,7 @@ class TestCrossFieldConsistency:
         self, registered_classes: dict[str, type[BaseDataset]]
     ):
         """required_properties must have at least atoms, coordinates, and an energy/target."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert len(cls.schema.required_properties) >= 3, (
                 f"{cls.__name__}.schema.required_properties has only "
                 f"{len(cls.schema.required_properties)} entries (need >= 3)"
@@ -1023,7 +1023,8 @@ class TestIsolatedRegistry:
         """Removing a callback prevents it from being called."""
         reg = DatasetRegistry()
         called = []
-        cb = lambda: called.append(True)
+        def cb():
+            return called.append(True)
         reg.add_on_change_callback(cb)
         reg.remove_on_change_callback(cb)
 
@@ -1057,7 +1058,7 @@ class TestCreateHandlerContract:
 
     def test_create_handler_is_classmethod(self, registered_classes: dict[str, type[BaseDataset]]):
         """create_handler must be a classmethod on every registered dataset."""
-        for name, cls in registered_classes.items():
+        for _name, cls in registered_classes.items():
             assert hasattr(cls, "create_handler"), f"{cls.__name__} missing create_handler method"
             # classmethod descriptors are stored as classmethod objects in __dict__
             # but accessible as bound methods on the class

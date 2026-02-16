@@ -737,10 +737,7 @@ class StudyAnalyzer:
         is_minimize = direction == "MINIMIZE"
 
         if values:
-            if is_minimize:
-                best_value = min(values)
-            else:
-                best_value = max(values)
+            best_value = min(values) if is_minimize else max(values)
 
             # Find best trial
             best_trial = None
@@ -975,7 +972,7 @@ class StudyAnalyzer:
             mean_x = sum(x) / n
             mean_y = sum(y) / n
 
-            numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+            numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
 
             var_x = sum((xi - mean_x) ** 2 for xi in x)
             var_y = sum((yi - mean_y) ** 2 for yi in y)

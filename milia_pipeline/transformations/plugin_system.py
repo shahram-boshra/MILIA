@@ -498,7 +498,7 @@ class PluginRegistry:
                             plugin_meta.registered_transforms.add(declaration.name)
 
                     # Scan for undeclared transforms (bonus discoveries)
-                    bonus_count = instance._scan_and_register_undeclared_transforms(
+                    instance._scan_and_register_undeclared_transforms(
                         plugin_dir=plugin_yaml.parent, plugin_meta=plugin_meta
                     )
 
@@ -1062,7 +1062,7 @@ class PluginRegistry:
             metadata = PluginMetadata(**plugin_data)
 
             # Register transforms from this file
-            for name, obj in inspect.getmembers(module, inspect.isclass):
+            for _name, obj in inspect.getmembers(module, inspect.isclass):
                 if instance._is_custom_transform(obj):
                     instance._register_transform(obj, metadata)
 
@@ -1108,7 +1108,7 @@ class PluginRegistry:
                 spec.loader.exec_module(module)
                 # ---
                 # Find and register CustomTransformBase subclasses
-                for name, obj in inspect.getmembers(module, inspect.isclass):
+                for _name, obj in inspect.getmembers(module, inspect.isclass):
                     if instance._is_custom_transform(obj):
                         # DEBUG: Log transform class being registered
                         logger.debug(f"DEBUG: Registering transform class: {obj}")

@@ -178,10 +178,7 @@ class ArchitectureValidator:
                 if "heads" in layer_config.params:
                     heads = layer_config.params["heads"]
                     concat = layer_config.params.get("concat", True)
-                    if concat:
-                        current_channels = out_ch * heads
-                    else:
-                        current_channels = out_ch
+                    current_channels = out_ch * heads if concat else out_ch
                 else:
                     current_channels = out_ch
             # else: layer doesn't change channels
@@ -314,14 +311,14 @@ class ArchitectureValidator:
         try:
             with torch.no_grad():
                 if hasattr(sample_data, "batch"):
-                    out = architecture(
+                    architecture(
                         sample_data.x,
                         sample_data.edge_index,
                         getattr(sample_data, "edge_attr", None),
                         sample_data.batch,
                     )
                 else:
-                    out = architecture(
+                    architecture(
                         sample_data.x,
                         sample_data.edge_index,
                         getattr(sample_data, "edge_attr", None),

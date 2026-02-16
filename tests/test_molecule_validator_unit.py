@@ -2265,7 +2265,7 @@ class TestPhase6RefactoredFunctions(unittest.TestCase):
         atoms = np.array([6, 6, 1, 1, 1, 1])
         coordinates = np.random.rand(6, 3)
 
-        for handler, handler_type in [
+        for handler, _handler_type in [
             (self.dft_handler, "DFT"),
             (self.dmc_handler, "DMC"),
             (self.wf_handler, "Wavefunction"),

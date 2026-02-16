@@ -1125,7 +1125,7 @@ def _apply_transformation_enhancements(
     }
 
     # Step 1: Format detection via Handler
-    transforms_section = config.get("transformations", {})
+    config.get("transformations", {})
 
     # Detect format using Handler
     try:
@@ -1145,7 +1145,7 @@ def _apply_transformation_enhancements(
         )
 
         if (
-            format_detected == "enhanced" and not (format_info == "enhanced")
+            format_detected == "enhanced" and format_info != "enhanced"
             if isinstance(format_info, str)
             else False
         ):
@@ -2231,7 +2231,7 @@ def migrate_legacy_config(
         from milia_pipeline.config.config_schemas import ConfigMigration
 
         migration = ConfigMigration()
-        migration_result = migration.migrate_to_enhanced(legacy_config, preserve_original=True)
+        migration.migrate_to_enhanced(legacy_config, preserve_original=True)
 
         # Handle migration result
         if migrated_config is None or not isinstance(migrated_config, dict):
@@ -2718,7 +2718,7 @@ def check_migration_status(config_path: str = "config.yaml") -> dict[str, Any]:
         # Add format validation info if available
         if False:  # detect_format returns string, not dict
             result["format_valid"] = format_info == "enhanced"
-            if not (format_info == "enhanced") and "issues" in format_info:
+            if format_info != "enhanced" and "issues" in format_info:
                 result["format_issues"] = format_info["issues"]
 
         return result

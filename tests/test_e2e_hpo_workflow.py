@@ -218,7 +218,7 @@ class _SyntheticGraphDataset(torch.utils.data.Dataset):
         super().__init__()
         torch.manual_seed(seed)
         self._data_list: list[Data] = []
-        for i in range(n_graphs):
+        for _i in range(n_graphs):
             x = torch.randn(num_nodes, in_channels)
             # Simple fully-connected graph
             src = []

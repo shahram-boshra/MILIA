@@ -1668,7 +1668,7 @@ class TestModelMonitorAnomalyDetection:
         high_acc_output = sample_output_tensor.clone()
         high_acc_labels = high_acc_output.argmax(dim=-1)
 
-        for i in range(100):
+        for _i in range(100):
             monitor.log_prediction(
                 input_data=sample_input_tensor,
                 output=high_acc_output,
@@ -1679,7 +1679,7 @@ class TestModelMonitorAnomalyDetection:
         # Log predictions with low accuracy
         random_labels = torch.randint(0, 5, (32,))
 
-        for i in range(100):
+        for _i in range(100):
             monitor.log_prediction(
                 input_data=sample_input_tensor,
                 output=sample_output_tensor,
@@ -1841,7 +1841,7 @@ class TestModelMonitorMetrics:
     def test_reset_metrics(self, basic_monitor, sample_input_tensor, sample_output_tensor):
         """Test resetting all metrics."""
         # Log some data
-        for i in range(10):
+        for _i in range(10):
             basic_monitor.log_prediction(
                 input_data=sample_input_tensor, output=sample_output_tensor, latency=0.05
             )
@@ -2099,7 +2099,7 @@ class TestEdgeCases:
         config = MonitoringConfig(enable_performance_tracking=True, metrics_window_size=10000)
         monitor = ModelMonitor(config=config, verbose=False)
 
-        for i in range(100):
+        for _i in range(100):
             monitor.log_prediction(
                 input_data=sample_input_tensor, output=sample_output_tensor, latency=0.05
             )
@@ -2183,7 +2183,7 @@ class TestIntegrationScenarios:
         # Simulate model inference
         simple_model.eval()
 
-        for i in range(10):
+        for _i in range(10):
             start_time = time.time()
 
             try:
@@ -2216,7 +2216,7 @@ class TestIntegrationScenarios:
         high_acc_output = sample_output_tensor.clone()
         high_acc_labels = high_acc_output.argmax(dim=-1)
 
-        for i in range(100):
+        for _i in range(100):
             monitor.log_prediction(
                 input_data=sample_input_tensor,
                 output=high_acc_output,
@@ -2227,7 +2227,7 @@ class TestIntegrationScenarios:
         # Log predictions with degraded accuracy
         random_labels = torch.randint(0, 5, (32,))
 
-        for i in range(100):
+        for _i in range(100):
             monitor.log_prediction(
                 input_data=sample_input_tensor,
                 output=sample_output_tensor,

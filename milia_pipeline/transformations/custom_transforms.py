@@ -715,10 +715,7 @@ class MolecularTransformBase(CustomTransformBase):
 
         # Validate bond types
         if hasattr(data, "edge_attr") and data.edge_attr is not None:
-            if data.edge_attr.dim() > 1:
-                bond_types = data.edge_attr[:, 0]
-            else:
-                bond_types = data.edge_attr
+            bond_types = data.edge_attr[:, 0] if data.edge_attr.dim() > 1 else data.edge_attr
 
             # Check for invalid bond types
             invalid_bonds = [b.item() for b in bond_types if b.item() not in self.VALID_BOND_TYPES]
@@ -1431,10 +1428,7 @@ class StandardizeTargets(QuantumTransformBase):
             # "degrees of freedom <= 0" warning. Sample std (correction=1) is undefined
             # for n=1 since degrees of freedom would be 0. For single values, population
             # std is mathematically correct (std=0 for a single value).
-            if values.numel() == 1:
-                std = values.std(correction=0)
-            else:
-                std = values.std()
+            std = values.std(correction=0) if values.numel() == 1 else values.std()
 
             # Handle zero or near-zero std (constant values)
             if std < self.eps:
@@ -2393,7 +2387,7 @@ class DiscretizeTargets(QuantumTransformBase):
 
             # Log distribution info
             unique_classes, counts = torch.unique(class_indices, return_counts=True)
-            class_dist = {int(c): int(cnt) for c, cnt in zip(unique_classes, counts)}
+            class_dist = {int(c): int(cnt) for c, cnt in zip(unique_classes, counts, strict=False)}
             self._logger.debug(
                 f"Discretized {target_level}-level '{attr}' (shape {list(class_indices.shape)}) "
                 f"into {self.n_bins} classes using '{self.strategy}' strategy. "

@@ -1253,7 +1253,7 @@ class TestPlotTrainingSummary:
         visualizer = TrainingVisualizer(comprehensive_metrics_history)
         saved_paths = visualizer.plot_training_summary(output_dir=temp_output_dir)
 
-        for key, path in saved_paths.items():
+        for _key, path in saved_paths.items():
             assert isinstance(path, Path)
 
     def test_plot_training_summary_files_exist(
@@ -1265,7 +1265,7 @@ class TestPlotTrainingSummary:
         visualizer = TrainingVisualizer(comprehensive_metrics_history)
         saved_paths = visualizer.plot_training_summary(output_dir=temp_output_dir)
 
-        for key, path in saved_paths.items():
+        for _key, path in saved_paths.items():
             assert path.exists(), f"File {path} does not exist"
 
     def test_plot_training_summary_timestamp_in_filename(

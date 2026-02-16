@@ -151,7 +151,7 @@ class TestOptimizerRegistry:
     def test_list_available_includes_all_optimizers(self):
         """Test list_available includes all registered optimizers."""
         available = OptimizerRegistry.list_available()
-        for name in OptimizerRegistry._optimizers.keys():
+        for name in OptimizerRegistry._optimizers:
             assert name in available
 
     def test_optimizer_count(self):
@@ -1262,7 +1262,7 @@ class TestModuleInitialization:
 
     def test_all_optimizers_are_pytorch_classes(self):
         """Test that all registered optimizers are from PyTorch."""
-        for name, opt_cls in OptimizerRegistry._optimizers.items():
+        for _name, opt_cls in OptimizerRegistry._optimizers.items():
             assert "torch.optim" in opt_cls.__module__
 
 

@@ -191,14 +191,12 @@ class DescriptorValidator:
         missing = []
 
         # Check 3D coordinates requirement
-        if requires_3d_coordinates(descriptor_name):
-            if not self._has_3d_coordinates(mol):
-                missing.append("3D coordinates")
+        if requires_3d_coordinates(descriptor_name) and not self._has_3d_coordinates(mol):
+            missing.append("3D coordinates")
 
         # Check partial charges requirement
-        if requires_partial_charges(descriptor_name):
-            if not self._has_partial_charges(mol):
-                missing.append("partial charges")
+        if requires_partial_charges(descriptor_name) and not self._has_partial_charges(mol):
+            missing.append("partial charges")
 
         return len(missing) == 0, missing
 

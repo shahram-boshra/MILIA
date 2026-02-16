@@ -110,10 +110,7 @@ class CheckpointManager:
             Resolved absolute path
         """
         path = Path(path).expanduser()
-        if path.is_absolute():
-            result = path.resolve()
-        else:
-            result = (self._working_root_dir / path).resolve()
+        result = path.resolve() if path.is_absolute() else (self._working_root_dir / path).resolve()
 
         if create_parents:
             result.parent.mkdir(parents=True, exist_ok=True)

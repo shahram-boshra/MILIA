@@ -458,7 +458,7 @@ class ArchitectureBuilder:
         # Track current channel dimension
         current_channels = self.in_channels
 
-        for i, layer_config in enumerate(self.layers):
+        for _i, layer_config in enumerate(self.layers):
             metadata = self.registry.get_layer_metadata(layer_config.type)
 
             # Set in_channels (or in_features for Linear layers)
@@ -496,10 +496,7 @@ class ArchitectureBuilder:
                     heads = layer_config.params["heads"]
                     # Check if concatenating heads
                     concat = layer_config.params.get("concat", True)
-                    if concat:
-                        current_channels = out_ch * heads
-                    else:
-                        current_channels = out_ch
+                    current_channels = out_ch * heads if concat else out_ch
                 else:
                     current_channels = out_ch
             else:
@@ -864,7 +861,7 @@ class CustomArchitecture(nn.Module):
 
         # Forward through layers
         current = x
-        for i, (layer, config) in enumerate(zip(self.layers_list, self.layer_configs)):
+        for i, (layer, config) in enumerate(zip(self.layers_list, self.layer_configs, strict=False)):
             metadata = self.registry.get_layer_metadata(config.type)
 
             # Apply layer based on its requirements

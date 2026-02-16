@@ -615,7 +615,7 @@ class ParameterSweepBuilder:
 
         combinations = []
         for values in itertools.product(*value_lists):
-            combinations.append(dict(zip(keys, values)))
+            combinations.append(dict(zip(keys, values, strict=False)))
 
         return combinations
 

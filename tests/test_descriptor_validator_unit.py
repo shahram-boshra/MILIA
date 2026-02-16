@@ -237,8 +237,8 @@ class TestDescriptorValidator:
         assert "3D coordinates" in result["invalid"]["RadiusOfGyration"]
 
         # Check molecule flags
-        assert result["molecule_has_3d"] == False
-        assert result["molecule_has_charges"] == False
+        assert not result["molecule_has_3d"]
+        assert not result["molecule_has_charges"]
 
     def test_filter_by_requirements_3d_mol(self, validator, mol_with_3d):
         """Test filtering with 3D molecule"""
@@ -249,7 +249,7 @@ class TestDescriptorValidator:
         assert "MolWt" in result["valid"]
         assert "RadiusOfGyration" in result["valid"]
         assert len(result["invalid"]) == 0
-        assert result["molecule_has_3d"] == True
+        assert result["molecule_has_3d"]
 
     def test_filter_by_requirements_empty_list(self, validator, simple_mol):
         """Test filtering with empty descriptor list"""

@@ -75,6 +75,7 @@ project_root = Path("/app/milia")
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import contextlib
 import logging
 import unittest
 from unittest.mock import Mock, patch
@@ -2321,10 +2322,8 @@ class TestPhase6RefactoredFunctions(unittest.TestCase):
         dataset_config = DatasetConfig(dataset_type="DMC")
 
         with self.assertLogs("milia_pipeline.config.data_refining", level="WARNING") as log:
-            try:
+            with contextlib.suppress(Exception):
                 refine_molecular_vibrations(freqs, vibmodes, dataset_config=dataset_config)
-            except Exception:
-                pass
 
             # Check warning was logged about feature not enabled
             warning_found = any("vibrational_analysis" in msg for msg in log.output)

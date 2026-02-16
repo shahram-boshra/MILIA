@@ -332,9 +332,8 @@ class MockConfigMigration:
             transforms = config["transformations"]
             if isinstance(transforms, list):
                 return "legacy_list"
-            elif isinstance(transforms, dict):
-                if "experimental_setups" in transforms:
-                    return "enhanced"
+            elif isinstance(transforms, dict) and "experimental_setups" in transforms:
+                return "enhanced"
         return "unknown"
 
 

@@ -1567,7 +1567,7 @@ class TestValidationLevelsAndScopes:
         gt = GraphTransforms()
 
         # Test with each validation level
-        for level in [ValidationLevel.STRICT, ValidationLevel.STANDARD, ValidationLevel.PERMISSIVE]:
+        for _level in [ValidationLevel.STRICT, ValidationLevel.STANDARD, ValidationLevel.PERMISSIVE]:
             result = gt.validate_config(sample_transform_configs)
             assert isinstance(result, dict)
             assert "valid" in result

@@ -42,6 +42,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import logging
 from typing import Any
 
@@ -681,7 +682,7 @@ class TestFilterByDMCUncertainty:
         result = transform(data)
 
         assert hasattr(result, "is_high_uncertainty")
-        assert result.is_high_uncertainty == False
+        assert not result.is_high_uncertainty
 
     def test_high_uncertainty_flagging(self):
         """Test flagging high uncertainty data"""
@@ -690,7 +691,7 @@ class TestFilterByDMCUncertainty:
         result = transform(data)
 
         assert hasattr(result, "is_high_uncertainty")
-        assert result.is_high_uncertainty == True
+        assert result.is_high_uncertainty
 
     def test_high_uncertainty_removal(self):
         """Test removing high uncertainty data"""
@@ -708,7 +709,7 @@ class TestFilterByDMCUncertainty:
 
         assert result is not None
         assert hasattr(result, "is_high_uncertainty")
-        assert result.is_high_uncertainty == False
+        assert not result.is_high_uncertainty
 
     def test_missing_uncertainty(self):
         """Test handling of missing uncertainty attribute"""
@@ -726,7 +727,7 @@ class TestFilterByDMCUncertainty:
         result = transform(data)
 
         # At threshold, should be considered acceptable (<=)
-        assert result.is_high_uncertainty == False
+        assert not result.is_high_uncertainty
 
     def test_immutability(self):
         """Test that original data is not modified"""
@@ -1707,10 +1708,8 @@ class TestUsageStatistics:
         data = Data(x=torch.ones(3, 5), num_nodes=3)
 
         # Expect error
-        try:
+        with contextlib.suppress(TransformExecutionError):
             transform(data)
-        except TransformExecutionError:
-            pass
 
         stats = transform.get_usage_statistics()
         assert stats["error_count"] == 1
@@ -2071,7 +2070,7 @@ class TestPerformanceAndMemory:
 
         # Should be different objects
         assert id(result.x) != id(sample_graph_data.x)
-        assert not result.x.data_ptr() == sample_graph_data.x.data_ptr()
+        assert result.x.data_ptr() != sample_graph_data.x.data_ptr()
 
     def test_no_memory_leak_in_chain(self, quantum_graph_data):
         """Test that chained transforms don't cause memory issues"""

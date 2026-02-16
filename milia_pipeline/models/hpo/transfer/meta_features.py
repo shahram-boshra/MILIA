@@ -546,14 +546,11 @@ class MetaFeatureExtractor:
 
                 # Build adjacency for clustering computation
                 edge_index = data.edge_index
-                if hasattr(edge_index, "numpy"):
-                    edges = edge_index.numpy()
-                else:
-                    edges = np.array(edge_index)
+                edges = edge_index.numpy() if hasattr(edge_index, "numpy") else np.array(edge_index)
 
                 # Build adjacency set for each node
                 adj: dict[int, set[int]] = {i: set() for i in range(n_nodes)}
-                for src, dst in zip(edges[0], edges[1]):
+                for src, dst in zip(edges[0], edges[1], strict=False):
                     adj[int(src)].add(int(dst))
 
                 # Compute local clustering for each node

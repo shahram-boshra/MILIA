@@ -16,6 +16,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -953,10 +954,8 @@ class TestLegacyCompatibility:
                 "DATASET_ROOT_DIR_CACHED",
                 "PROCESSED_DATA_FILENAME",
             ]:
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(config_constants, attr)
-                except AttributeError:
-                    pass
 
     @patch("milia_pipeline.config.config_constants.get_handler_constants")
     @patch("milia_pipeline.config.config_constants.is_handler_type_supported")
@@ -992,10 +991,8 @@ class TestLegacyCompatibility:
                 "DATASET_ROOT_DIR_CACHED",
                 "PROCESSED_DATA_FILENAME",
             ]:
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(config_constants, attr)
-                except AttributeError:
-                    pass
 
     def test_ensure_handler_constant_compatibility(self):
         """Test ensuring handler constant compatibility."""
@@ -1031,10 +1028,8 @@ class TestLegacyCompatibility:
                 "RAW_NPZ_FILENAME_CACHED",
                 "DATASET_ROOT_DIR_CACHED",
             ]:
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(config_constants, attr)
-                except AttributeError:
-                    pass
 
 
 # ==========================================
@@ -1105,10 +1100,8 @@ class TestDebuggingDiagnostics:
                 "HAR2EV",
                 "PROCESSED_DATA_FILENAME",
             ]:
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(config_constants, attr)
-                except AttributeError:
-                    pass
 
     @patch("milia_pipeline.config.config_constants.validate_handler_environment")
     @patch("milia_pipeline.config.config_constants._check_transformation_system_availability")

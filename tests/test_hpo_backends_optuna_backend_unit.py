@@ -1694,7 +1694,7 @@ class TestBuildSamplerRegistryVersionCompatibility:
         registry = fresh_backend_instance._build_sampler_registry()
 
         # Every sampler in registry should exist in optuna.samplers
-        for sampler_type, sampler_cls in registry.items():
+        for _sampler_type, sampler_cls in registry.items():
             # The class should be an actual optuna sampler class
             assert sampler_cls is not None
 
@@ -2397,7 +2397,7 @@ class TestSuggestParamsBasic:
         params = backend_instance.suggest_params(mock_trial, simple_search_space_dict)
 
         # All keys should have format "category.param_name"
-        for key in params.keys():
+        for key in params:
             assert "." in key, f"Key '{key}' should have category prefix"
             parts = key.split(".")
             assert len(parts) == 2, f"Key '{key}' should have exactly one dot"
@@ -2998,7 +2998,7 @@ class TestIntegrationSamplerVersionCompatibility:
         # Get available samplers from registry
         registry = backend_instance._build_sampler_registry()
 
-        for sampler_type in registry.keys():
+        for sampler_type in registry:
             if sampler_type == "grid":
                 # Grid sampler needs search_space
                 continue

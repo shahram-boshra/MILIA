@@ -1108,7 +1108,7 @@ class TestValidationExceptions:
         assert error.source_module == "old_module"
         assert error.target_pattern == "new_pattern"
         assert error.migration_step == "step1"
-        assert error.rollback_available == False
+        assert not error.rollback_available
 
     def test_migration_error_str_method(self):
         """Test MigrationError __str__ method"""
@@ -2155,30 +2155,30 @@ class TestValidationFunction:
         """Test validation checks handler exceptions"""
         results = validate_exception_hierarchy()
         assert "HandlerError_inherits_BaseProjectError" in results
-        assert results["HandlerError_inherits_BaseProjectError"] == True
+        assert results["HandlerError_inherits_BaseProjectError"]
 
     def test_validate_exception_hierarchy_checks_molecules(self):
         """Test validation checks molecule exceptions"""
         results = validate_exception_hierarchy()
         assert "MoleculeProcessingError_inherits_BaseProjectError" in results
-        assert results["MoleculeProcessingError_inherits_BaseProjectError"] == True
+        assert results["MoleculeProcessingError_inherits_BaseProjectError"]
 
     def test_validate_exception_hierarchy_checks_plugins(self):
         """Test validation checks plugin exceptions"""
         results = validate_exception_hierarchy()
         assert "PluginError_inherits_BaseProjectError" in results
-        assert results["PluginError_inherits_BaseProjectError"] == True
+        assert results["PluginError_inherits_BaseProjectError"]
 
     def test_validate_exception_hierarchy_checks_generic_exceptions(self):
         """Test validation checks dynamic exceptions"""
         results = validate_exception_hierarchy()
         # DatasetSpecificHandlerError should be in handler exceptions
         assert "DatasetSpecificHandlerError_inherits_HandlerError" in results
-        assert results["DatasetSpecificHandlerError_inherits_HandlerError"] == True
+        assert results["DatasetSpecificHandlerError_inherits_HandlerError"]
 
         # UncertaintyProcessingError should be in molecule exceptions
         assert "UncertaintyProcessingError_inherits_MoleculeProcessingError" in results
-        assert results["UncertaintyProcessingError_inherits_MoleculeProcessingError"] == True
+        assert results["UncertaintyProcessingError_inherits_MoleculeProcessingError"]
 
     def test_validate_exception_hierarchy_dynamic_subclass_validation(self):
         """Test validation dynamically discovers and validates any runtime subclasses"""
@@ -2191,7 +2191,7 @@ class TestValidationFunction:
                 "inherits_DatasetSpecificHandlerError" in key
                 or "inherits_UncertaintyProcessingError" in key
             ):
-                assert value == True, f"Dynamic subclass validation failed: {key}"
+                assert value, f"Dynamic subclass validation failed: {key}"
 
     def test_validate_exception_hierarchy_registry_integration(self):
         """Test validation includes registry integration check"""
@@ -2201,7 +2201,7 @@ class TestValidationFunction:
         """Test validation checks model exceptions."""
         results = validate_exception_hierarchy()
         assert "ModelError_inherits_BaseProjectError" in results
-        assert results["ModelError_inherits_BaseProjectError"] == True
+        assert results["ModelError_inherits_BaseProjectError"]
 
     def test_validate_exception_hierarchy_checks_all_model_subclasses(self):
         """Test validation checks all model exception subclasses."""
@@ -2220,14 +2220,14 @@ class TestValidationFunction:
         for name in model_subclasses:
             key = f"{name}_inherits_ModelError"
             assert key in results, f"Missing validation for {name}"
-            assert results[key] == True, f"{name} should inherit from ModelError"
+            assert results[key], f"{name} should inherit from ModelError"
 
     def test_validate_exception_hierarchy_checks_hpo_subclasses(self):
         """Test validation checks HPO exception subclasses."""
         results = validate_exception_hierarchy()
         # HPOError inherits from ModelError, which inherits from BaseProjectError
         assert "ModelError_inherits_BaseProjectError" in results
-        assert results["ModelError_inherits_BaseProjectError"] == True
+        assert results["ModelError_inherits_BaseProjectError"]
 
     def test_validate_exception_hierarchy_checks_plugin_subclasses(self):
         """Test validation checks plugin exception subclasses."""
@@ -2243,7 +2243,7 @@ class TestValidationFunction:
         for name in plugin_subclasses:
             key = f"{name}_inherits_PluginError"
             assert key in results, f"Missing validation for {name}"
-            assert results[key] == True, f"{name} should inherit from PluginError"
+            assert results[key], f"{name} should inherit from PluginError"
 
     def test_validate_exception_hierarchy_checks_transform_exceptions(self):
         """Test validation checks transform exception subclasses."""
@@ -2257,13 +2257,13 @@ class TestValidationFunction:
         ]
         for check in transform_checks:
             assert check in results, f"Missing validation for {check}"
-            assert results[check] == True, f"{check} should be True"
+            assert results[check], f"{check} should be True"
 
     def test_validate_exception_hierarchy_dynamic_implementation_check(self):
         """Test validation checks dynamic exception implementation."""
         results = validate_exception_hierarchy()
         assert "dynamic_exceptions_implemented" in results
-        assert results["dynamic_exceptions_implemented"] == True
+        assert results["dynamic_exceptions_implemented"]
 
 
 # =============================================================================
@@ -2304,44 +2304,44 @@ class TestRegistryIntegration:
 
     def test_is_dataset_type_registered_for_dft(self):
         """Test _is_dataset_type_registered returns True for DFT"""
-        assert _is_dataset_type_registered("DFT") == True
+        assert _is_dataset_type_registered("DFT")
 
     def test_is_dataset_type_registered_for_dmc(self):
         """Test _is_dataset_type_registered returns True for DMC"""
-        assert _is_dataset_type_registered("DMC") == True
+        assert _is_dataset_type_registered("DMC")
 
     def test_is_dataset_type_registered_for_unknown(self):
         """Test _is_dataset_type_registered returns False for unknown type"""
-        assert _is_dataset_type_registered("UNKNOWN_TYPE_XYZ") == False
+        assert not _is_dataset_type_registered("UNKNOWN_TYPE_XYZ")
 
     def test_is_dataset_type_registered_empty_string(self):
         """Test _is_dataset_type_registered handles empty string"""
-        assert _is_dataset_type_registered("") == False
+        assert not _is_dataset_type_registered("")
 
     def test_get_dataset_feature_dmc_uncertainty(self):
         """Test _get_dataset_feature for DMC uncertainty_handling"""
         result = _get_dataset_feature("DMC", "uncertainty_handling")
-        assert result == True
+        assert result
 
     def test_get_dataset_feature_dft_vibrational(self):
         """Test _get_dataset_feature for DFT vibrational_analysis"""
         result = _get_dataset_feature("DFT", "vibrational_analysis")
-        assert result == True
+        assert result
 
     def test_get_dataset_feature_dft_uncertainty(self):
         """Test _get_dataset_feature for DFT uncertainty_handling (False)"""
         result = _get_dataset_feature("DFT", "uncertainty_handling")
-        assert result == False
+        assert not result
 
     def test_get_dataset_feature_unknown_feature(self):
         """Test _get_dataset_feature for unknown feature returns default"""
         result = _get_dataset_feature("DFT", "unknown_feature_xyz", default=False)
-        assert result == False
+        assert not result
 
     def test_get_dataset_feature_unknown_dataset(self):
         """Test _get_dataset_feature for unknown dataset returns default"""
         result = _get_dataset_feature("UNKNOWN", "uncertainty_handling", default=False)
-        assert result == False
+        assert not result
 
     def test_get_exception_registry_status_returns_dict(self):
         """Test get_exception_registry_status returns dict"""
@@ -2366,7 +2366,7 @@ class TestRegistryIntegration:
     def test_get_exception_registry_status_dynamic_integration_true(self):
         """Test get_exception_registry_status shows dynamic integration"""
         status = get_exception_registry_status()
-        assert status["dynamic_integration"] == True
+        assert status["dynamic_integration"]
 
     def test_get_exception_registry_status_available_types(self):
         """Test get_exception_registry_status includes available types"""
@@ -2517,7 +2517,7 @@ class TestLazyInitialization:
 
         _init_registry()
 
-        assert exc_module._REGISTRY_INITIALIZED == True
+        assert exc_module._REGISTRY_INITIALIZED
 
 
 # =============================================================================
@@ -2594,7 +2594,7 @@ class TestRegistryFallbackScenarios:
             with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
                 # Should check against dynamically discovered types or empty list
                 result = _is_dataset_type_registered("NONEXISTENT_XYZ")
-                assert result == False
+                assert not result
 
     def test_get_dataset_feature_with_registry_unavailable_returns_default(self):
         """Test _get_dataset_feature returns default when registry unavailable."""
@@ -2605,7 +2605,7 @@ class TestRegistryFallbackScenarios:
             with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
                 # With no registry and no legacy fallback, should return default (False)
                 result = _get_dataset_feature("SomeDataset", "uncertainty_handling")
-                assert result == False  # default value
+                assert not result  # default value
 
     def test_get_dataset_feature_with_registry_unavailable_custom_default(self):
         """Test _get_dataset_feature returns custom default when registry unavailable."""
@@ -2615,17 +2615,17 @@ class TestRegistryFallbackScenarios:
         with patch.object(exc_module, "_REGISTRY_AVAILABLE", False):
             with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
                 result = _get_dataset_feature("SomeDataset", "some_feature", default=True)
-                assert result == True  # custom default
+                assert result  # custom default
 
     def test_get_dataset_feature_unknown_feature_returns_default(self):
         """Test _get_dataset_feature for unknown feature returns default."""
         result = _get_dataset_feature("SomeDataset", "unknown_feature_xyz", default=False)
-        assert result == False
+        assert not result
 
     def test_get_dataset_feature_unknown_dataset_returns_default(self):
         """Test _get_dataset_feature for unknown dataset returns default."""
         result = _get_dataset_feature("UNKNOWN", "uncertainty_handling", default=False)
-        assert result == False
+        assert not result
 
 
 # =============================================================================
@@ -2674,7 +2674,7 @@ class TestExceptionUtilityFunctions:
 
         assert isinstance(summary, dict)
         assert summary["exception_type"] == "HandlerError"
-        assert summary["is_handler_exception"] == True
+        assert summary["is_handler_exception"]
         assert "message" in summary
 
     def test_format_handler_exception_summary_non_handler_exception(self):
@@ -2682,7 +2682,7 @@ class TestExceptionUtilityFunctions:
         error = ConfigurationError("Config error")
         summary = format_handler_exception_summary(error)
 
-        assert summary["is_handler_exception"] == False
+        assert not summary["is_handler_exception"]
 
     def test_format_handler_exception_summary_dataset_specific(self):
         """Test format_handler_exception_summary with DatasetSpecificHandlerError."""
@@ -2691,7 +2691,7 @@ class TestExceptionUtilityFunctions:
         )
         summary = format_handler_exception_summary(error)
 
-        assert summary["is_dataset_specific_handler_exception"] == True
+        assert summary["is_dataset_specific_handler_exception"]
         assert summary["dataset_type"] == "QMC"
         assert summary["property_name"] == "energy"
 
@@ -2788,58 +2788,58 @@ class TestExceptionUtilityFunctions:
     def test_is_recoverable_handler_error_not_available(self):
         """Test is_recoverable_handler_error returns False for HandlerNotAvailableError."""
         error = HandlerNotAvailableError(message="Not available", requested_dataset_type="UNKNOWN")
-        assert is_recoverable_handler_error(error) == False
+        assert not is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_configuration(self):
         """Test is_recoverable_handler_error returns True for HandlerConfigurationError."""
         error = HandlerConfigurationError(message="Config error", handler_type="DFT")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_operation(self):
         """Test is_recoverable_handler_error returns True for HandlerOperationError."""
         error = HandlerOperationError(message="Op error", handler_type="DMC", operation="process")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_dataset_specific(self):
         """Test is_recoverable_handler_error returns True for DatasetSpecificHandlerError."""
         error = DatasetSpecificHandlerError(message="Error", dataset_type="QMC")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_uncertainty_processing(self):
         """Test is_recoverable_handler_error returns True for UncertaintyProcessingError."""
         error = UncertaintyProcessingError(message="Error", dataset_type="QMC")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_migration_with_rollback(self):
         """Test is_recoverable_handler_error for MigrationError with rollback available."""
         error = MigrationError(
             message="Migration failed", migration_phase="phase1", rollback_available=True
         )
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_migration_no_rollback(self):
         """Test is_recoverable_handler_error for MigrationError without rollback."""
         error = MigrationError(
             message="Migration failed", migration_phase="phase1", rollback_available=False
         )
-        assert is_recoverable_handler_error(error) == False
+        assert not is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_molecule_filter_rejected(self):
         """Test is_recoverable_handler_error returns True for MoleculeFilterRejectedError."""
         error = MoleculeFilterRejectedError(
             molecule_index=5, inchi="InChI=1S/test", reason="Rejected"
         )
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_configuration_error(self):
         """Test is_recoverable_handler_error returns False for ConfigurationError."""
         error = ConfigurationError("Config error")
-        assert is_recoverable_handler_error(error) == False
+        assert not is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_data_processing_error(self):
         """Test is_recoverable_handler_error returns False for DataProcessingError."""
         error = DataProcessingError("Data error")
-        assert is_recoverable_handler_error(error) == False
+        assert not is_recoverable_handler_error(error)
 
 
 # =============================================================================
@@ -3269,19 +3269,19 @@ class TestRegistryContextAndErrorHandling:
     def test_create_handler_error_context_dft_is_registered(self):
         """Test create_handler_error_context reports DFT as registered."""
         context = create_handler_error_context(handler_type="DFT", operation="validate")
-        assert context["dataset_type_registered"] == True
+        assert context["dataset_type_registered"]
 
     def test_create_handler_error_context_unknown_type_not_registered(self):
         """Test create_handler_error_context reports unknown type as not registered."""
         context = create_handler_error_context(handler_type="UNKNOWN_TYPE_XYZ", operation="process")
-        assert context["dataset_type_registered"] == False
+        assert not context["dataset_type_registered"]
 
     def test_format_handler_exception_summary_handler_error(self):
         """Test format_handler_exception_summary with HandlerError."""
         error = HandlerError("Handler error", handler_type="DFT", handler_operation="validate")
         summary = format_handler_exception_summary(error)
 
-        assert summary["is_handler_exception"] == True
+        assert summary["is_handler_exception"]
         assert summary["handler_type"] == "DFT"
         assert summary["handler_operation"] == "validate"
 
@@ -3295,7 +3295,7 @@ class TestRegistryContextAndErrorHandling:
         assert "migration_phase" in summary
         assert summary["migration_phase"] == "schema_update"
         assert "rollback_available" in summary
-        assert summary["rollback_available"] == False
+        assert not summary["rollback_available"]
 
     def test_format_handler_exception_summary_validation_error(self):
         """Test format_handler_exception_summary with ValidationError."""
@@ -3326,22 +3326,22 @@ class TestRegistryContextAndErrorHandling:
     def test_is_recoverable_handler_error_handler_integration(self):
         """Test is_recoverable_handler_error for HandlerIntegrationError."""
         error = HandlerIntegrationError(message="Integration error", handler_type="DFT")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_legacy_code(self):
         """Test is_recoverable_handler_error for LegacyCodeError."""
         error = LegacyCodeError(message="Legacy code", legacy_pattern="old_pattern")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_generic_handler(self):
         """Test is_recoverable_handler_error for base HandlerError."""
         error = HandlerError(message="Generic handler error", handler_type="Test")
-        assert is_recoverable_handler_error(error) == True
+        assert is_recoverable_handler_error(error)
 
     def test_is_recoverable_handler_error_unknown_exception(self):
         """Test is_recoverable_handler_error returns False for unknown exception."""
         error = ValueError("Standard Python error")
-        assert is_recoverable_handler_error(error) == False
+        assert not is_recoverable_handler_error(error)
 
     def test_get_exception_recovery_suggestions_handler_compatibility(self):
         """Test get_exception_recovery_suggestions for HandlerCompatibilityError."""

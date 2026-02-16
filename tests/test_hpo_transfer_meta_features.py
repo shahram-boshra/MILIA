@@ -2160,7 +2160,7 @@ class TestExtractMolecularFeatures:
         result = extractor.extract_features(mock_dataset_molecular)
 
         # Should have atom fractions for common atoms
-        atom_fraction_keys = [k for k in result.keys() if k.startswith("atom_frac_")]
+        atom_fraction_keys = [k for k in result if k.startswith("atom_frac_")]
         assert len(atom_fraction_keys) > 0
 
     def test_molecular_features_heavy_atom_ratio(self, mock_dataset_molecular):

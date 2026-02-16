@@ -777,7 +777,7 @@ class LayerRegistry:
             return {
                 "total_layers": len(self._layers),
                 "by_category": by_category,
-                "categories": [cat.value for cat in self._by_category.keys()],
+                "categories": [cat.value for cat in self._by_category],
                 "functional_layers": functional_count,
                 "class_layers": len(self._layers) - functional_count,
             }

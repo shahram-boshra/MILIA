@@ -2175,7 +2175,7 @@ class TestConvenienceFunctions:
         )
 
         # Original x values should be unchanged (reference might change but values preserved)
-        for i, data in enumerate(original_data):
+        for _i, data in enumerate(original_data):
             assert data.x is not None
 
 

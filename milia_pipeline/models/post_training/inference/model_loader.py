@@ -251,7 +251,7 @@ class ModelLoader:
         saved_model_info = hyper_params.get("model_info", {})
 
         # Get wrapper info (FUTURE-PROOF wrapper support)
-        wrapper_info = hyper_params.get("wrapper_info", {})
+        hyper_params.get("wrapper_info", {})
 
         # Get target selection config if applicable
         target_selection_config = hyper_params.get("target_selection_config")
@@ -303,11 +303,11 @@ class ModelLoader:
         saved_state_dict = checkpoint["model_state_dict"]
 
         # Detect if saved state_dict has 'model.' prefix (from wrapped model)
-        saved_has_prefix = any(k.startswith("model.") for k in saved_state_dict.keys())
+        saved_has_prefix = any(k.startswith("model.") for k in saved_state_dict)
 
         # Detect if current model expects 'model.' prefix (is wrapped)
         model_state_dict = model.state_dict()
-        model_expects_prefix = any(k.startswith("model.") for k in model_state_dict.keys())
+        model_expects_prefix = any(k.startswith("model.") for k in model_state_dict)
 
         logger.debug(
             f"State dict alignment: saved_has_prefix={saved_has_prefix}, "
@@ -349,12 +349,12 @@ class ModelLoader:
         # ═══════════════════════════════════════════════════════════════
 
         # Check if checkpoint has output_projection keys
-        has_output_projection = any("output_projection" in k for k in aligned_state_dict.keys())
+        has_output_projection = any("output_projection" in k for k in aligned_state_dict)
 
         if has_output_projection:
             # Find the weight tensor to extract dimensions
             weight_key = None
-            for k in aligned_state_dict.keys():
+            for k in aligned_state_dict:
                 if "output_projection.weight" in k:
                     weight_key = k
                     break

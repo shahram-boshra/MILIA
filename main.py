@@ -243,6 +243,8 @@ except ImportError as e:
     PREPROCESSING_IMPORT_ERROR = str(e)
 
 # Dataset
+import contextlib
+
 from milia_pipeline.datasets.milia_dataset import miliaDataset
 
 # Exceptions
@@ -502,10 +504,8 @@ def _get_available_dataset_types() -> list[str]:
         try:
             return _registry_list_all()
         except Exception as e:
-            try:
+            with contextlib.suppress(NameError):
                 logger.debug(f"Registry list_all failed: {e}")
-            except NameError:
-                pass
     return _LEGACY_DATASET_TYPES.copy()
 
 
@@ -547,10 +547,8 @@ def _is_dataset_type_registered(dataset_type: str) -> bool:
         try:
             return _registry_is_registered(dataset_type)
         except Exception as e:
-            try:
+            with contextlib.suppress(NameError):
                 logger.debug(f"Registry is_registered failed: {e}")
-            except NameError:
-                pass
     # Simple check for legacy types (already canonical)
     return dataset_type in _LEGACY_DATASET_TYPES
 
@@ -591,10 +589,8 @@ def _get_dataset_feature(dataset_type: str, feature_name: str, default: bool = F
                     features_dict = features.to_dict()
                     return features_dict.get(feature_name, default)
         except Exception as e:
-            try:
+            with contextlib.suppress(NameError):
                 logger.debug(f"Feature query failed for {dataset_type}.{feature_name}: {e}")
-            except NameError:
-                pass
 
     # Legacy fallback (dataset_type already canonical)
     if dataset_type in _LEGACY_FEATURES:
@@ -626,10 +622,8 @@ def _get_dataset_config_key(dataset_type: str) -> str | None:
             if hasattr(dataset_class, "config_key"):
                 return dataset_class.config_key
         except Exception as e:
-            try:
+            with contextlib.suppress(NameError):
                 logger.debug(f"Config key query failed for {dataset_type}: {e}")
-            except NameError:
-                pass
 
     # Legacy fallback (dataset_type already canonical)
     return _LEGACY_CONFIG_KEYS.get(dataset_type)
@@ -665,10 +659,8 @@ def _get_dataset_schema_attribute(dataset_type: str, attr_name: str, default: An
                 if hasattr(schema, attr_name):
                     return getattr(schema, attr_name)
         except Exception as e:
-            try:
+            with contextlib.suppress(NameError):
                 logger.debug(f"Schema query failed for {dataset_type}.{attr_name}: {e}")
-            except NameError:
-                pass
 
     return default
 
@@ -3221,10 +3213,7 @@ def handle_predict_mode(
             # Check in checkpoint directory first
             checkpoint_dir = working_root_dir / "checkpoints"
             candidate = checkpoint_dir / model_path.name
-            if candidate.exists():
-                model_path = candidate
-            else:
-                model_path = working_root_dir / model_path
+            model_path = candidate if candidate.exists() else working_root_dir / model_path
         logger.info(f"Model checkpoint: {model_path}")
 
         # Resolve test path (--test-path)
@@ -3269,7 +3258,7 @@ def handle_predict_mode(
         include_inputs = getattr(args, "predict_include_inputs", False) or prediction_config.get(
             "include_inputs", False
         )
-        uncertainty = getattr(args, "predict_uncertainty", False) or prediction_config.get(
+        getattr(args, "predict_uncertainty", False) or prediction_config.get(
             "uncertainty", False
         )
 
@@ -3368,7 +3357,7 @@ def handle_predict_mode(
                 # We can infer count from any attribute's slice tensor
                 num_graphs = None
                 if slices is not None:
-                    for key, slice_tensor in slices.items():
+                    for _key, slice_tensor in slices.items():
                         if hasattr(slice_tensor, "__len__"):
                             num_graphs = len(slice_tensor) - 1
                             break
@@ -4814,7 +4803,7 @@ def main():
             args = cli_manager.run_interactive_mode()
 
         # Setup full logging after we have the arguments
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        datetime.now().strftime("%Y%m%d_%H%M%S")
         log_file = args.log_file
 
         logger = setup_logging(args.log_level, log_file)  # Back to args.log_level
@@ -5058,7 +5047,7 @@ def main():
             logger.info("Training workflow completed successfully")
 
         # Generate statistics
-        stats = analyze_dataset_statistics(dataset, logger, dataset_config=dataset_config)
+        analyze_dataset_statistics(dataset, logger, dataset_config=dataset_config)
 
         # Print final summary
         print_final_summary(
@@ -5278,7 +5267,7 @@ def handle_preprocessing_mode(args: argparse.Namespace, logger: logging.Logger) 
     preprocessor = preprocessor_class(config, logger)
 
     # Step 4: Execute preprocessing
-    output_path = preprocessor.run()
+    preprocessor.run()
 
     # Step 5: Validate output
     # (already done in preprocessor.run())
@@ -5324,7 +5313,7 @@ def handle_preprocessing_validation(args: argparse.Namespace, logger: logging.Lo
         preprocessor_class = PreprocessorRegistry.get_preprocessor(args.preprocess_dataset)
         logger.info(f"✅ Preprocessor class: {preprocessor_class.__name__}")
 
-        preprocessor = preprocessor_class(config, logger)
+        preprocessor_class(config, logger)
         logger.info("✅ Preprocessor instantiation successful")
 
         logger.info("=" * 80)

@@ -1506,7 +1506,8 @@ class TestInternalMethods:
         """Test _is_functional with lambda."""
         registry = LayerRegistry()
 
-        test_lambda = lambda x: x
+        def test_lambda(x):
+            return x
 
         assert registry._is_functional(test_lambda) is True
 
@@ -1729,7 +1730,7 @@ class TestGetStatisticsEdgeCases:
         stats = registry.get_statistics()
 
         # Keys in by_category should be string values (e.g., "convolutional")
-        for key in stats["by_category"].keys():
+        for key in stats["by_category"]:
             assert isinstance(key, str)
 
     def test_statistics_categories_are_strings(self):

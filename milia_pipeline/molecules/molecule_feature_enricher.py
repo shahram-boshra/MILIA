@@ -370,34 +370,32 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
                 # PHASE 6: Check vibrational refinement via feature query instead of type check
                 if _get_dataset_feature(
                     dataset_type_str, "vibrational_analysis"
-                ) and handler_capabilities.get("vibrational_refinement", False):
-                    if (
-                        hasattr(handler, "refine_vibrational_data")
-                        and hasattr(pyg_data, "freqs")
-                        and pyg_data.freqs is not None
-                    ):
-                        try:
-                            refined_freqs = handler.refine_vibrational_data(pyg_data.freqs)
-                            if refined_freqs is not None and hasattr(refined_freqs, "__len__"):
-                                properties["refined_vibrational_modes"] = len(refined_freqs)
-                        except Exception as e:
-                            logger.debug(f"Vibrational refinement failed: {e}")
+                ) and handler_capabilities.get("vibrational_refinement", False) and (
+                    hasattr(handler, "refine_vibrational_data")
+                    and hasattr(pyg_data, "freqs")
+                    and pyg_data.freqs is not None
+                ):
+                    try:
+                        refined_freqs = handler.refine_vibrational_data(pyg_data.freqs)
+                        if refined_freqs is not None and hasattr(refined_freqs, "__len__"):
+                            properties["refined_vibrational_modes"] = len(refined_freqs)
+                    except Exception as e:
+                        logger.debug(f"Vibrational refinement failed: {e}")
 
                 # PHASE 6: Check uncertainty processing via feature query instead of type check
                 if _get_dataset_feature(
                     dataset_type_str, "uncertainty_handling"
-                ) and handler_capabilities.get("uncertainty_processing", False):
-                    if (
-                        hasattr(handler, "process_uncertainty_data")
-                        and hasattr(pyg_data, "uncertainty")
-                        and pyg_data.uncertainty is not None
-                    ):
-                        try:
-                            uncertainty_info = handler.process_uncertainty_data(pyg_data)
-                            if uncertainty_info is not None:
-                                properties["processed_uncertainty"] = uncertainty_info
-                        except Exception as e:
-                            logger.debug(f"Uncertainty processing failed: {e}")
+                ) and handler_capabilities.get("uncertainty_processing", False) and (
+                    hasattr(handler, "process_uncertainty_data")
+                    and hasattr(pyg_data, "uncertainty")
+                    and pyg_data.uncertainty is not None
+                ):
+                    try:
+                        uncertainty_info = handler.process_uncertainty_data(pyg_data)
+                        if uncertainty_info is not None:
+                            properties["processed_uncertainty"] = uncertainty_info
+                    except Exception as e:
+                        logger.debug(f"Uncertainty processing failed: {e}")
 
             except HandlerError as e:
                 logger.warning(f"Handler-specific property estimation failed: {e}")
@@ -563,7 +561,7 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
 
         # Create appropriate exception based on context
         mol_idx = getattr(pyg_data, "original_mol_idx", "N/A")
-        mol_id = getattr(pyg_data, "smiles", getattr(pyg_data, "inchi", "N/A"))
+        getattr(pyg_data, "smiles", getattr(pyg_data, "inchi", "N/A"))
 
         # Get dataset type safely (may not be set if error occurred early)
         try:
@@ -810,7 +808,7 @@ def get_feature_extraction_diagnostics(pyg_data: Data, handler: DatasetHandler) 
     """
     try:
         # Get dataset type from handler
-        dataset_type_str = handler.get_dataset_type()
+        handler.get_dataset_type()
 
         diagnostics = {
             "extraction_success": True,
@@ -1572,27 +1570,25 @@ def create_handler_compatible_fingerprint(
         # PHASE 6: Use feature-based fingerprinting instead of type checks
         if _get_dataset_feature(handler_type, "vibrational_analysis") and handler_caps.get(
             "vibrational_processing", False
-        ):
-            if hasattr(pyg_data, "freqs") and pyg_data.freqs is not None:
-                if hasattr(handler, "analyze_vibrational_signature"):
-                    try:
-                        vib_signature = handler.analyze_vibrational_signature(pyg_data.freqs)
-                        if vib_signature is not None:
-                            fingerprint["vibrational_signature"] = vib_signature
-                    except Exception as e:
-                        logger.debug(f"Failed to analyze vibrational signature: {e}")
+        ) and hasattr(pyg_data, "freqs") and pyg_data.freqs is not None:
+            if hasattr(handler, "analyze_vibrational_signature"):
+                try:
+                    vib_signature = handler.analyze_vibrational_signature(pyg_data.freqs)
+                    if vib_signature is not None:
+                        fingerprint["vibrational_signature"] = vib_signature
+                except Exception as e:
+                    logger.debug(f"Failed to analyze vibrational signature: {e}")
 
         if _get_dataset_feature(handler_type, "uncertainty_handling") and handler_caps.get(
             "uncertainty_handling", False
-        ):
-            if hasattr(pyg_data, "uncertainty") and pyg_data.uncertainty is not None:
-                if hasattr(handler, "analyze_uncertainty_distribution"):
-                    try:
-                        uncertainty_dist = handler.analyze_uncertainty_distribution(pyg_data)
-                        if uncertainty_dist is not None:
-                            fingerprint["uncertainty_distribution"] = uncertainty_dist
-                    except Exception as e:
-                        logger.debug(f"Failed to analyze uncertainty distribution: {e}")
+        ) and hasattr(pyg_data, "uncertainty") and pyg_data.uncertainty is not None:
+            if hasattr(handler, "analyze_uncertainty_distribution"):
+                try:
+                    uncertainty_dist = handler.analyze_uncertainty_distribution(pyg_data)
+                    if uncertainty_dist is not None:
+                        fingerprint["uncertainty_distribution"] = uncertainty_dist
+                except Exception as e:
+                    logger.debug(f"Failed to analyze uncertainty distribution: {e}")
 
     except HandlerError as e:
         logger.warning(f"Handler fingerprint enhancement failed: {e}")
@@ -1777,7 +1773,7 @@ def validate_feature_extraction_with_handler(
         raise
     except Exception as e:
         mol_idx = getattr(pyg_data, "original_mol_idx", "N/A")
-        mol_id = getattr(pyg_data, "smiles", getattr(pyg_data, "inchi", "N/A"))
+        getattr(pyg_data, "smiles", getattr(pyg_data, "inchi", "N/A"))
 
         raise HandlerValidationError(
             message="Feature validation failed",

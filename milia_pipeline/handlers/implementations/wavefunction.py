@@ -778,13 +778,12 @@ class WavefunctionDatasetHandler(DatasetHandler):
         atom_counts = []
         for mol in processed_molecules:
             atoms = mol.get("atoms")
-            if atoms is not None:
-                if (
-                    isinstance(atoms, np.ndarray)
-                    or isinstance(atoms, (list, tuple))
-                    and len(atoms) > 0
-                ):
-                    atom_counts.append(len(atoms))
+            if atoms is not None and (
+                isinstance(atoms, np.ndarray)
+                or isinstance(atoms, (list, tuple))
+                and len(atoms) > 0
+            ):
+                atom_counts.append(len(atoms))
 
         if atom_counts:
             stats["atom_count_stats"] = {
@@ -948,9 +947,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
         """Check if a property value is valid (not None, not empty)."""
         if value is None:
             return False
-        if isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0:
-            return False
-        return True
+        return not (isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0)
 
     def _ensure_tensor(
         self,

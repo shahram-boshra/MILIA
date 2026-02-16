@@ -1400,7 +1400,6 @@ class SemanticValidator:
     ) -> None:
         """Validate data flow integrity"""
 
-        required_attrs = set()
         available_attrs = {"x", "edge_index", "pos", "batch"}  # Base attributes
 
         for i, name in enumerate(names):
@@ -1589,11 +1588,7 @@ class SemanticValidator:
 
         # Check if any non-structural transform comes before last structural
         last_structural = max(structural_indices)
-        for i in range(last_structural):
-            if names[i] not in structural:
-                return False
-
-        return True
+        return all(names[i] in structural for i in range(last_structural))
 
     def _check_normalization_after_features(self, configs: list[dict]) -> bool:
         """Check if normalization comes after feature modifications"""
@@ -2287,8 +2282,7 @@ class DynamicTransformDiscovery:
             "ComposeFilters": ["ComposeFilters"],
             "RemoveTrainingClasses": ["RemoveTrainingClasses"],
             # === SPECIAL TRANSFORMS ===
-            "ToSLIC": ["ToSLIC"],  # Superpixel segmentation
-            "NormalizeRotation": ["NormalizeRotation"],
+            "ToSLIC": ["ToSLIC"],
         }
 
     def _initialize_version_compatibility(self) -> dict[str, TransformCompatibility]:
@@ -2546,14 +2540,14 @@ class DynamicTransformDiscovery:
             return False
 
         # Should have __call__ method
-        if not hasattr(obj, "__call__"):
+        if not callable(obj):
             return False
 
         # Check if it has __init__ with reasonable signature
         try:
             sig = inspect.signature(obj.__init__)
             # Transforms typically have parameters beyond self
-            params = [p for p in sig.parameters.values() if p.name != "self"]
+            [p for p in sig.parameters.values() if p.name != "self"]
 
             # Very basic check - real transforms usually have some parameters or none
             # (some transforms like ToUndirected have no params)
@@ -4026,8 +4020,7 @@ def register_all_custom_transforms() -> int:
         from . import custom_transforms
 
         # FIX: Use the singleton registry instead of creating new instance
-        gt = get_graph_transforms()
-        registry_instance = gt.registry
+        get_graph_transforms()
 
         stats = register_custom_transforms(custom_transforms)
 
@@ -5584,7 +5577,6 @@ class TransformComposer:
         # EDGE-ATTR AWARE INJECTION: Apply parameter injection to configs
         # This modifies configs for transforms that need edge_attr handling
         if self._edge_attr_injector.has_edge_attr:
-            original_configs = transform_configs
             transform_configs = self._edge_attr_injector.inject_params_batch(transform_configs)
 
             # Track injections
@@ -6595,7 +6587,7 @@ class GraphTransforms:
 
         # Return all parameters
         metadata_dict = {}
-        for param_name in transform_info.parameters.keys():
+        for param_name in transform_info.parameters:
             metadata_dict[param_name] = self.validator.get_parameter_metadata(
                 transform_name, param_name
             )
@@ -6741,9 +6733,8 @@ class GraphTransforms:
             ValidationScope.SEMANTIC,
             ValidationScope.DATASET_SPECIFIC,
             ValidationScope.PRODUCTION,
-        ]:
-            if self.semantic_validator:
-                context = self.semantic_validator.validate_sequence(configs, context)
+        ] and self.semantic_validator:
+            context = self.semantic_validator.validate_sequence(configs, context)
 
         # Dataset-specific validation
         if validation_scope in [ValidationScope.DATASET_SPECIFIC, ValidationScope.PRODUCTION]:
@@ -8185,7 +8176,7 @@ def run_production_validation_tests() -> dict[str, Any]:
     def test_discovery_failure_handling():
         gt = get_graph_transforms()
         # Should not crash even if transform doesn't exist
-        info = gt.get_transform_info("NonExistentTransform") if False else None
+        gt.get_transform_info("NonExistentTransform") if False else None
         # Test discovery engine handles missing transforms gracefully
         engine = gt.registry._discovery_engine
         result = engine.get_transform_with_fallback("NonExistentTransform")

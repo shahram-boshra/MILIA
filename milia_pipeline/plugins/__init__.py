@@ -91,7 +91,7 @@ def _discover_subplugins() -> dict[str, Any]:
 
         package_path = Path(__file__).parent
 
-        for importer, modname, ispkg in pkgutil.iter_modules([str(package_path)]):
+        for _importer, modname, ispkg in pkgutil.iter_modules([str(package_path)]):
             if not ispkg:
                 # Skip non-package modules (standalone .py files at this level)
                 continue

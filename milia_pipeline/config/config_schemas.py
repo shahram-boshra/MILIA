@@ -823,7 +823,7 @@ def validate_wavefunction_config(config: dict[str, Any]) -> tuple[bool, list[str
     if schema_class is not None:
         # Use registry-provided schema class
         try:
-            schema = schema_class.from_dict(config_section)
+            schema_class.from_dict(config_section)
             logger.debug(f"Validated {dataset_type} config using registry schema")
             return True, []
         except ValueError as e:
@@ -835,7 +835,7 @@ def validate_wavefunction_config(config: dict[str, Any]) -> tuple[bool, list[str
     else:
         # FALLBACK: Use legacy WavefunctionConfigSchema
         try:
-            schema = WavefunctionConfigSchema.from_dict(config_section)
+            WavefunctionConfigSchema.from_dict(config_section)
             logger.debug("Validated Wavefunction config using legacy schema (registry unavailable)")
             return True, []
         except ValueError as e:
@@ -1621,13 +1621,13 @@ class PluginSchemaValidator:
         # Check for transform name conflicts (if we can access registry)
         if PLUGIN_SYSTEM_AVAILABLE and PluginRegistry is not None:
             try:
-                registry = PluginRegistry()
+                PluginRegistry()
 
                 # Get transforms from experimental setups
                 experimental_setups = transformation_config.get("experimental_setups", {})
                 used_transforms = set()
 
-                for setup_name, setup_config in experimental_setups.items():
+                for _setup_name, setup_config in experimental_setups.items():
                     if isinstance(setup_config, list):
                         # Legacy format
                         for transform in setup_config:
@@ -1925,9 +1925,8 @@ class DescriptorSchemaValidator:
                     result["errors"].append(f"Missing required field: {field}")
 
             # Validate 'enabled' field
-            if "enabled" in config:
-                if not isinstance(config["enabled"], bool):
-                    result["errors"].append("Field 'enabled' must be boolean")
+            if "enabled" in config and not isinstance(config["enabled"], bool):
+                result["errors"].append("Field 'enabled' must be boolean")
 
             # Validate 'default_categories' if present
             if "default_categories" in config:
@@ -1989,14 +1988,13 @@ class DescriptorSchemaValidator:
                         )
 
             # Strict mode validations
-            if strict_mode:
-                if config.get("enabled", False):
-                    if not config.get("default_categories"):
-                        result["errors"].append(
-                            "Strict mode: default_categories required when enabled=true"
-                        )
-                    if "categories" not in config or not config["categories"]:
-                        result["warnings"].append("Strict mode: No category configurations defined")
+            if strict_mode and config.get("enabled", False):
+                if not config.get("default_categories"):
+                    result["errors"].append(
+                        "Strict mode: default_categories required when enabled=true"
+                    )
+                if "categories" not in config or not config["categories"]:
+                    result["warnings"].append("Strict mode: No category configurations defined")
 
             # Build configuration summary
             result["config_summary"] = {
@@ -2080,12 +2078,11 @@ class DescriptorSchemaValidator:
                     )
 
             # Strict mode validations
-            if strict_mode:
-                if category_config.get("enabled", True):
-                    if "descriptors" not in category_config:
-                        result["warnings"].append(
-                            f"Strict mode: Category '{category_name}' has no descriptor specification"
-                        )
+            if strict_mode and category_config.get("enabled", True):
+                if "descriptors" not in category_config:
+                    result["warnings"].append(
+                        f"Strict mode: Category '{category_name}' has no descriptor specification"
+                    )
 
             result["valid"] = len(result["errors"]) == 0
 
@@ -2362,14 +2359,12 @@ def _load_transformation_config_enhanced(
         config_logger.debug(f"Detected configuration format: {format_type}")
 
         migrated_config = config_dict
-        migration_applied = False
 
         # Handle legacy formats
         if format_type in ["legacy_list", "legacy_dict"] and migrate_legacy:
             config_logger.info("Legacy transformation configuration detected - migrating...")
             try:
                 migrated_config, migration_warnings = migrator.migrate_to_enhanced(config_dict)
-                migration_applied = True
 
                 for warning in migration_warnings:
                     config_logger.warning(f"Config migration: {warning}")

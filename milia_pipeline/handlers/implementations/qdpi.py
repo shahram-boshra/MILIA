@@ -330,7 +330,7 @@ class QDPiDatasetHandler(DatasetHandler):
 
         # Multi-atom systems: look for patterns
         # Count alkali metals and halogens
-        alkali_count = sum(1 for z in atoms if z in [3, 11, 19])
+        sum(1 for z in atoms if z in [3, 11, 19])
 
         # Simple ion pair detection: 2 atoms, one alkali + one halogen
         if len(atoms) == 2:

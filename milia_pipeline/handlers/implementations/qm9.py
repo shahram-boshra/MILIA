@@ -114,11 +114,10 @@ class QM9DatasetHandler(DatasetHandler):
 
             # Validate energy ranges (QM9 energies typically negative in Hartree)
             u0 = raw_properties_dict.get("U0")
-            if u0 is not None and isinstance(u0, (int, float, np.number)):
-                if u0 > 0:
-                    self.logger.warning(
-                        f"QM9 molecule {molecule_index} has positive U0 energy: {u0}"
-                    )
+            if u0 is not None and isinstance(u0, (int, float, np.number)) and u0 > 0:
+                self.logger.warning(
+                    f"QM9 molecule {molecule_index} has positive U0 energy: {u0}"
+                )
 
         except (HandlerError, DatasetSpecificHandlerError):
             # Re-raise handler-specific errors
@@ -634,7 +633,7 @@ class QM9DatasetHandler(DatasetHandler):
         try:
             if isinstance(value, torch.Tensor):
                 return value.to(dtype)
-            elif isinstance(value, np.ndarray) or isinstance(value, (list, tuple)):
+            elif isinstance(value, (np.ndarray, list, tuple)):
                 return torch.tensor(value, dtype=dtype)
             elif isinstance(value, (int, float, np.number)):
                 return torch.tensor([value], dtype=dtype)
@@ -907,12 +906,11 @@ class QM9DatasetHandler(DatasetHandler):
             )
 
         # Recommend self-loops for graph convolutions
-        if "AddSelfLoops" not in transform_names:
-            if "GCNNorm" in transform_names:
-                recommendations.append(
-                    "GCNNorm typically requires AddSelfLoops before it. "
-                    "Add: transforms.AddSelfLoops() before GCNNorm"
-                )
+        if "AddSelfLoops" not in transform_names and "GCNNorm" in transform_names:
+            recommendations.append(
+                "GCNNorm typically requires AddSelfLoops before it. "
+                "Add: transforms.AddSelfLoops() before GCNNorm"
+            )
 
         # Augmentation recommendations
         augmentation_transforms = ["DropEdge", "DropNode", "MaskFeatures"]

@@ -477,7 +477,6 @@ class LossRegistry:
 
         # Determine task category
         is_classification = "classification" in task_lower
-        is_link_prediction = task_lower == "link_prediction"
         is_regression = "regression" in task_lower
 
         final_loss_name = None
@@ -558,10 +557,7 @@ class LossRegistry:
 
         if is_classification and name_lower in cls._regression_losses:
             return False
-        if is_regression and name_lower in cls._classification_losses:
-            return False
-
-        return True
+        return not (is_regression and name_lower in cls._classification_losses)
 
 
 # =============================================================================

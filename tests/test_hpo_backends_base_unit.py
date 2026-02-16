@@ -1630,7 +1630,8 @@ class TestProtocolMethodInvocation:
         backend = compliant_backend_class()
 
         mock_study = MagicMock()
-        mock_objective = lambda trial: 0.5
+        def mock_objective(trial):
+            return 0.5
 
         # Should not raise
         backend.optimize(study=mock_study, objective_fn=mock_objective, n_trials=10)

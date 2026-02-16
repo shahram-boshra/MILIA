@@ -4232,7 +4232,7 @@ class TestIntegrationScenarios:
         spaces = {preset: create_gnn_search_space(model_type=preset) for preset in presets}
 
         # All should be valid GNNArchitectureSpace instances
-        for preset, space in spaces.items():
+        for _preset, space in spaces.items():
             assert space.min_layers >= 1
             assert space.max_layers >= space.min_layers
             assert len(space.layer_types) >= 1

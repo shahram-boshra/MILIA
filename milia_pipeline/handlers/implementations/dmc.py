@@ -261,17 +261,16 @@ class DMCDatasetHandler(DatasetHandler):
                         ) from e
 
             # Handle energy conversion for DMC
-            if key == "Etot":
-                if isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                    try:
-                        return float(value)
-                    except ValueError:
-                        raise DatasetSpecificHandlerError(
-                            dataset_type="DMC",
-                            message=f"DMC energy is non-numeric string: '{value}'",
-                            operation="property_processing",
-                            details=f"Cannot convert '{value}' to float",
-                        )
+            if key == "Etot" and isinstance(value, (str, bytes, np.str_, np.bytes_)):
+                try:
+                    return float(value)
+                except ValueError:
+                    raise DatasetSpecificHandlerError(
+                        dataset_type="DMC",
+                        message=f"DMC energy is non-numeric string: '{value}'",
+                        operation="property_processing",
+                        details=f"Cannot convert '{value}' to float",
+                    )
 
             return value
 
@@ -350,25 +349,23 @@ class DMCDatasetHandler(DatasetHandler):
         )
 
         # VirtualNode incompatibility with uncertainty
-        if "VirtualNode" in transform_names:
-            if has_uncertainty:
-                errors.append(
-                    "VirtualNode incompatible with DMC uncertainties - "
-                    "virtual node would need artificial uncertainty value"
-                )
+        if "VirtualNode" in transform_names and has_uncertainty:
+            errors.append(
+                "VirtualNode incompatible with DMC uncertainties - "
+                "virtual node would need artificial uncertainty value"
+            )
 
         # DropNode incompatibility with uncertainty weighting
-        if "DropNode" in transform_names:
-            if has_uncertainty:
-                uncertainty_config = self.dataset_config.uncertainty_config
-                if (
-                    uncertainty_config
-                    and uncertainty_config.get("uncertainty_weighting") == "inverse_variance"
-                ):
-                    errors.append(
-                        "DropNode incompatible with inverse_variance uncertainty weighting - "
-                        "node dropping changes graph structure and weight distribution"
-                    )
+        if "DropNode" in transform_names and has_uncertainty:
+            uncertainty_config = self.dataset_config.uncertainty_config
+            if (
+                uncertainty_config
+                and uncertainty_config.get("uncertainty_weighting") == "inverse_variance"
+            ):
+                errors.append(
+                    "DropNode incompatible with inverse_variance uncertainty weighting - "
+                    "node dropping changes graph structure and weight distribution"
+                )
 
         return errors
 

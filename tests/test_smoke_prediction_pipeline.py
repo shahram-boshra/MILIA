@@ -190,10 +190,7 @@ class _MinimalGCN(nn.Module):
     def forward(self, x, edge_index, batch=None, **kwargs):
         x = torch.relu(self.conv1(x, edge_index))
         x = self.conv2(x, edge_index)
-        if batch is not None:
-            x = self.pool(x, batch)
-        else:
-            x = x.mean(dim=0, keepdim=True)
+        x = self.pool(x, batch) if batch is not None else x.mean(dim=0, keepdim=True)
         return self.head(x)
 
 
@@ -235,7 +232,7 @@ def synthetic_pyg_data_list() -> list:
     data_list = []
     rng = np.random.RandomState(42)
 
-    for i in range(5):
+    for _i in range(5):
         num_atoms = rng.randint(3, 8)
         num_edges = rng.randint(num_atoms, num_atoms * 3)
 

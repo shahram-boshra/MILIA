@@ -1953,7 +1953,7 @@ class TestIntegration:
 
         # Results should be consistent
         assert len(devices1) == len(devices2)
-        for d1, d2 in zip(devices1, devices2):
+        for d1, d2 in zip(devices1, devices2, strict=False):
             assert d1.device_type == d2.device_type
 
     def test_device_info_consistency(self):

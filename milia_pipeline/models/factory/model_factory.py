@@ -11,6 +11,7 @@ Author: milia Team
 Version: 1.2.0
 """
 
+import contextlib
 import logging
 from datetime import datetime
 from typing import Any
@@ -591,9 +592,7 @@ class EdgeLevelModelWrapper(torch.nn.Module):
         if task_lower == "edge_classification" and self.edge_out_channels is not None:
             return True
         # Use MLP for specific decoder methods
-        if self.decoder_method in ["concat_mlp", "hadamard_mlp"]:
-            return True
-        return False
+        return self.decoder_method in ["concat_mlp", "hadamard_mlp"]
 
     def _create_mlp_decoder(self):
         """Create MLP decoder for edge predictions."""
@@ -776,10 +775,7 @@ class EdgeLevelModelWrapper(torch.nn.Module):
                 else:
                     z = self.model(x, edge_index)
             except TypeError:
-                if use_encode_method:
-                    z = self.model.encode(x)
-                else:
-                    z = self.model(x)
+                z = self.model.encode(x) if use_encode_method else self.model(x)
 
         # Handle tuple output from variational encoders that don't use encode()
         # This is a safety net for edge cases
@@ -866,10 +862,7 @@ class EdgeLevelModelWrapper(torch.nn.Module):
                 else:
                     z = self.model(x, edge_index)
             except TypeError:
-                if use_encode_method:
-                    z = self.model.encode(x)
-                else:
-                    z = self.model(x)
+                z = self.model.encode(x) if use_encode_method else self.model(x)
 
         # Handle tuple output from variational encoders
         if isinstance(z, tuple):
@@ -999,13 +992,12 @@ class ModelValidator:
 
             # Type validation
             expected_type = spec.get("type")
-            if expected_type:
-                if not self._validate_type(value, expected_type, param):
-                    errors.append(
-                        f"Parameter '{param}' has invalid type. "
-                        f"Expected {expected_type}, got {type(value).__name__}"
-                    )
-                    continue
+            if expected_type and not self._validate_type(value, expected_type, param):
+                errors.append(
+                    f"Parameter '{param}' has invalid type. "
+                    f"Expected {expected_type}, got {type(value).__name__}"
+                )
+                continue
 
             # Range validation (for numeric types)
             if expected_type in ["integer", "float"]:
@@ -2057,13 +2049,12 @@ class ModelFactory:
                 extracted_params["hidden_channels"] = actual_model.hidden_channels
 
         # Extract num_layers if available
-        if hasattr(actual_model, "num_layers") and actual_model.num_layers is not None:
-            if (
-                "num_layers" not in processed_hyperparams
-                or processed_hyperparams.get("num_layers") != actual_model.num_layers
-            ):
-                processed_hyperparams["num_layers"] = actual_model.num_layers
-                extracted_params["num_layers"] = actual_model.num_layers
+        if hasattr(actual_model, "num_layers") and actual_model.num_layers is not None and (
+            "num_layers" not in processed_hyperparams
+            or processed_hyperparams.get("num_layers") != actual_model.num_layers
+        ):
+            processed_hyperparams["num_layers"] = actual_model.num_layers
+            extracted_params["num_layers"] = actual_model.num_layers
 
         # =====================================================================
         # FALLBACK: If in_channels still missing, try to get from sample_data
@@ -2430,13 +2421,12 @@ class ModelFactory:
                             num_classes_override is not None
                             and is_classification
                             and not is_edge_classification
-                        ):
-                            if "out_channels" not in model_hparams:
-                                model_hparams["out_channels"] = num_classes_override
-                                logger.debug(
-                                    f"Classification ensemble: {model_name} "
-                                    f"out_channels set to {num_classes_override} (num_classes)"
-                                )
+                        ) and "out_channels" not in model_hparams:
+                            model_hparams["out_channels"] = num_classes_override
+                            logger.debug(
+                                f"Classification ensemble: {model_name} "
+                                f"out_channels set to {num_classes_override} (num_classes)"
+                            )
 
                         # Determine if this model needs dimension chaining
                         # - Hierarchical: level > 0 gets chained from previous level
@@ -2941,43 +2931,40 @@ class ModelFactory:
             "link_"
         )
 
-        if "out_channels" in schema_params:
-            if "out_channels" not in processed:
-                # For edge-level tasks, models output embeddings - don't infer out_channels
-                # Let the model use hidden_channels as output dimension
-                if is_edge_level_task:
-                    logger.debug(
-                        f"Skipping out_channels inference for edge-level task '{task_type}': "
-                        f"Model will output embeddings (hidden_channels), not class logits."
-                    )
-                elif infer_out_channels is not None and sample_data is not None:
-                    out_channels = infer_out_channels(
-                        data=sample_data, task_type=task_type, default=None
-                    )
+        if "out_channels" in schema_params and "out_channels" not in processed:
+            # For edge-level tasks, models output embeddings - don't infer out_channels
+            # Let the model use hidden_channels as output dimension
+            if is_edge_level_task:
+                logger.debug(
+                    f"Skipping out_channels inference for edge-level task '{task_type}': "
+                    f"Model will output embeddings (hidden_channels), not class logits."
+                )
+            elif infer_out_channels is not None and sample_data is not None:
+                out_channels = infer_out_channels(
+                    data=sample_data, task_type=task_type, default=None
+                )
 
-                    if out_channels is not None:
-                        processed["out_channels"] = out_channels
-                        logger.debug(f"Inferred out_channels={out_channels} for {task_type}")
-                    else:
-                        logger.warning(
-                            f"Could not infer out_channels for task '{task_type}'. "
-                            f"Specify 'out_channels' explicitly in hyperparameters."
-                        )
+                if out_channels is not None:
+                    processed["out_channels"] = out_channels
+                    logger.debug(f"Inferred out_channels={out_channels} for {task_type}")
                 else:
-                    # Fallback if infer_out_channels not available or no sample_data
-                    if "regression" in task_type.lower():
-                        processed["out_channels"] = 1
-                        logger.debug("Inferred out_channels=1 for regression task (fallback)")
-                    elif "classification" in task_type.lower() and sample_data is not None:
-                        if hasattr(sample_data, "y") and sample_data.y is not None:
-                            y = sample_data.y
-                            if y.dim() > 1:
-                                processed["out_channels"] = y.size(-1)
-                            else:
-                                try:
-                                    processed["out_channels"] = len(torch.unique(y))
-                                except Exception:
-                                    pass
+                    logger.warning(
+                        f"Could not infer out_channels for task '{task_type}'. "
+                        f"Specify 'out_channels' explicitly in hyperparameters."
+                    )
+            else:
+                # Fallback if infer_out_channels not available or no sample_data
+                if "regression" in task_type.lower():
+                    processed["out_channels"] = 1
+                    logger.debug("Inferred out_channels=1 for regression task (fallback)")
+                elif "classification" in task_type.lower() and sample_data is not None:
+                    if hasattr(sample_data, "y") and sample_data.y is not None:
+                        y = sample_data.y
+                        if y.dim() > 1:
+                            processed["out_channels"] = y.size(-1)
+                        else:
+                            with contextlib.suppress(Exception):
+                                processed["out_channels"] = len(torch.unique(y))
 
         # =====================================================================
         # PNA-SPECIFIC PARAMETER HANDLING

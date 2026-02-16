@@ -520,7 +520,7 @@ class TestLossRegistry:
     def test_list_available_includes_all_losses(self):
         """Test list_available includes all registered losses."""
         available = LossRegistry.list_available()
-        for name in LossRegistry._losses.keys():
+        for name in LossRegistry._losses:
             assert name in available
 
     def test_loss_count(self):

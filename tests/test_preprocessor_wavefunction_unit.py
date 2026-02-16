@@ -43,6 +43,8 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import contextlib
+
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.wavefunction import WavefunctionPreprocessor
@@ -117,9 +119,7 @@ def _path_exists_factory(tar_path_str, output_path_str, temp_dir=None):
             return True
         if self_path == output_p:
             return False
-        if temp_dir and self_path == temp_dir:
-            return True
-        return False
+        return bool(temp_dir and self_path == temp_dir)
 
     return exists_side_effect
 
@@ -974,10 +974,8 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         preprocessor = _make_preprocessor(config=_make_config())
         with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
             with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
-                try:
+                with contextlib.suppress(Exception):
                     preprocessor.run()
-                except Exception:
-                    pass
                 mock_pp.assert_called_once()
 
     def test_has_run_method_from_base(self):

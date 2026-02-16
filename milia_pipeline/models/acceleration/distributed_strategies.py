@@ -632,10 +632,7 @@ class DistributedManager:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         # Get model state dict
-        if hasattr(model, "module"):
-            state_dict = model.module.state_dict()
-        else:
-            state_dict = model.state_dict()
+        state_dict = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
 
         checkpoint = {"model_state_dict": state_dict, "distributed_config": self.config.to_dict()}
 

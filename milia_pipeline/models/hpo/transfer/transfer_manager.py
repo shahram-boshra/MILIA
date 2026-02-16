@@ -303,9 +303,8 @@ class RegisteredStudyInfo(BaseModel):
     @classmethod
     def set_registration_timestamp(cls, data: Any) -> Any:
         """Set registration timestamp if not provided."""
-        if isinstance(data, dict):
-            if data.get("registered_at") is None:
-                data["registered_at"] = datetime.now().isoformat()
+        if isinstance(data, dict) and data.get("registered_at") is None:
+            data["registered_at"] = datetime.now().isoformat()
         return data
 
     def to_dict(self) -> dict[str, Any]:

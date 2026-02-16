@@ -192,7 +192,7 @@ class TestDescriptorMetadata:
 
         assert metadata != "TestDescriptor"
         assert metadata != 123
-        assert metadata != None
+        assert metadata is not None
         assert metadata != {"name": "TestDescriptor"}
 
     def test_metadata_to_dict(self):
@@ -1135,7 +1135,7 @@ class TestTypeSafety:
         """Test get_descriptor_count_by_category return type"""
         counts = get_descriptor_count_by_category()
         assert isinstance(counts, dict)
-        assert all(isinstance(k, str) for k in counts.keys())
+        assert all(isinstance(k, str) for k in counts)
         assert all(isinstance(v, int) for v in counts.values())
 
     def test_validate_descriptor_coverage_returns_dict(self):

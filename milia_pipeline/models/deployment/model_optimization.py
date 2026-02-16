@@ -413,7 +413,7 @@ class ModelOptimizer:
 
     def _magnitude_pruning(self, model: nn.Module, amount: float) -> nn.Module:
         """Apply magnitude-based pruning."""
-        for name, module in model.named_modules():
+        for _name, module in model.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 prune.l1_unstructured(module, name="weight", amount=amount)
 
@@ -423,7 +423,7 @@ class ModelOptimizer:
         """Apply unstructured pruning."""
         parameters_to_prune = []
 
-        for name, module in model.named_modules():
+        for _name, module in model.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 parameters_to_prune.append((module, "weight"))
 
@@ -435,7 +435,7 @@ class ModelOptimizer:
 
     def _structured_pruning(self, model: nn.Module, amount: float) -> nn.Module:
         """Apply structured pruning (remove entire channels)."""
-        for name, module in model.named_modules():
+        for _name, module in model.named_modules():
             if isinstance(module, nn.Conv2d):
                 # Prune output channels
                 prune.ln_structured(
@@ -450,7 +450,7 @@ class ModelOptimizer:
 
     def _remove_pruning_reparameterization(self, model: nn.Module) -> nn.Module:
         """Make pruning permanent by removing reparameterization."""
-        for name, module in model.named_modules():
+        for _name, module in model.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 try:
                     prune.remove(module, "weight")
@@ -553,7 +553,7 @@ class ModelOptimizer:
         # Users should implement their own student model creation
         warnings.warn(
             "create_student_model is a placeholder. "
-            "Implement custom student model based on your architecture."
+            "Implement custom student model based on your architecture.", stacklevel=2
         )
 
         # Return a copy for now

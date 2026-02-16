@@ -210,7 +210,7 @@ class TrainingVisualizer:
 
         # Filter metrics to plot (exclude loss by default)
         if metric_names is None:
-            metric_names = [k for k in self.metrics_history.keys() if "loss" not in k.lower()]
+            metric_names = [k for k in self.metrics_history if "loss" not in k.lower()]
 
         if not metric_names:
             logger.warning("No metrics to plot")
@@ -228,10 +228,7 @@ class TrainingVisualizer:
             dpi=self.style["dpi"],
         )
 
-        if n_metrics == 1:
-            axes = [axes]
-        else:
-            axes = axes.flatten()
+        axes = [axes] if n_metrics == 1 else axes.flatten()
 
         for idx, metric_name in enumerate(metric_names):
             ax = axes[idx]

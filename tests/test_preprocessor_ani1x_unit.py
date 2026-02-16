@@ -50,6 +50,8 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import contextlib
+
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.preprocessors.ani1x import (
@@ -793,10 +795,8 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         preprocessor = _make_preprocessor(config=_make_config())
         with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
             with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
-                try:
+                with contextlib.suppress(Exception):
                     preprocessor.run()
-                except Exception:
-                    pass
                 mock_pp.assert_called_once()
 
     def test_has_run_method_from_base(self):

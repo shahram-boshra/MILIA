@@ -1788,7 +1788,7 @@ class TestThreadSafety:
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(load_checkpoint, i) for i in range(20)]
-            for future in as_completed(futures):
+            for _future in as_completed(futures):
                 pass
 
         assert len(errors) == 0, f"Errors occurred: {errors}"
@@ -1885,7 +1885,7 @@ class TestTypeAnnotations:
 
         assert isinstance(result, dict)
         # All keys should be strings
-        assert all(isinstance(k, str) for k in result.keys())
+        assert all(isinstance(k, str) for k in result)
 
     @patch("milia_pipeline.models.post_training.inference.model_loader.load_model")
     def test_load_model_only_returns_nn_module(self, mock_load_model, tmp_path):
