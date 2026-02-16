@@ -243,10 +243,13 @@ import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import torch
+
+if TYPE_CHECKING:
+    from .config_containers import DescriptorConfig
 
 logger = logging.getLogger(__name__)
 

@@ -13,14 +13,20 @@ Author: MILIA Team
 Version: 2.0.0
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import torch
 import torch.nn as nn
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
+
+if TYPE_CHECKING:
+    import numpy
+    from torch_geometric.data import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +214,7 @@ class Predictor:
 
     def predict(
         self, data: Data | Batch, return_numpy: bool = False
-    ) -> Union[torch.Tensor, "numpy.ndarray"]:
+    ) -> Union[torch.Tensor, numpy.ndarray]:
         """
         Make prediction on PyG Data or Batch.
 
@@ -425,11 +431,11 @@ class Predictor:
 
     def predict_batch(
         self,
-        dataset: Union[list[Data], "Dataset"],
+        dataset: Union[list[Data], Dataset],
         batch_size: int = 32,
         num_workers: int = 0,
         return_numpy: bool = False,
-    ) -> Union[torch.Tensor, "numpy.ndarray"]:
+    ) -> Union[torch.Tensor, numpy.ndarray]:
         """
         Make predictions on entire dataset.
 
@@ -462,7 +468,7 @@ class Predictor:
 
     def save_predictions(
         self,
-        predictions: Union[torch.Tensor, "numpy.ndarray"],
+        predictions: Union[torch.Tensor, numpy.ndarray],
         output_path: str | Path,
         format: str = "csv",
         include_inputs: bool = False,
@@ -547,7 +553,7 @@ def predict(
     working_root_dir: Path,
     device: torch.device | None = None,
     return_numpy: bool = False,
-) -> Union[torch.Tensor, "numpy.ndarray"]:
+) -> Union[torch.Tensor, numpy.ndarray]:
     """
     Quick prediction from checkpoint.
 

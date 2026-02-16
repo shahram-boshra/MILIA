@@ -20,17 +20,22 @@ Author: milia Team
 Version: 1.2.0
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
+
+if TYPE_CHECKING:
+    from .callbacks import Callback
 
 # Import exceptions with fallback
 try:
@@ -105,13 +110,13 @@ class Trainer:
         optimizer: torch.optim.Optimizer | None = None,
         scheduler: Any | None = None,
         device: torch.device | None = None,
-        callbacks: list["Callback"] | None = None,
+        callbacks: list[Callback] | None = None,
         max_epochs: int = 100,
         log_every_n_steps: int = 50,
         checkpoint_dir: Path | None = None,
         gradient_clip_val: float | None = None,
         accumulate_grad_batches: int = 1,
-        hpo_callback: Optional["Callback"] = None,
+        hpo_callback: Optional[Callback] = None,
         model_info: dict[str, Any] | None = None,
         # NEW: Metrics for evaluation
         metrics: dict[str, "nn.Module"] | None = None,

@@ -30,10 +30,15 @@ Author: Milia Team
 Version: 1.2.0
 """
 
+from __future__ import annotations
+
 import logging
 import time
 from collections.abc import Callable
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Import existing modules with graceful fallbacks
 try:
@@ -2118,11 +2123,11 @@ class HPOManager:
 
     def save_results(
         self,
-        output_dir: Union[str, "Path"],
+        output_dir: Union[str, Path],
         best_params_filename: str = "best_params.json",
         statistics_filename: str = "study_statistics.json",
         trials_filename: str = "all_trials.json",
-    ) -> dict[str, "Path"]:
+    ) -> dict[str, Path]:
         """
         Save HPO results to output directory.
 
