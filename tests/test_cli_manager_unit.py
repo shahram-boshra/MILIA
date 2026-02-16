@@ -3861,8 +3861,12 @@ class TestWorkingRootDirResolution(unittest.TestCase):
         """Test fallback to current directory when config not set"""
         self.cli.config = {}
 
-        with patch.object(
-            cli_manager, "get_dataset_constants", side_effect=Exception("Not available")
+        # get_dataset_constants is imported locally inside
+        # _get_working_root_dir_for_validation (not a module-level attribute
+        # of cli_manager), so patch it at the source module.
+        with patch(
+            "milia_pipeline.config.config_accessors.get_dataset_constants",
+            side_effect=Exception("Not available"),
         ):
             result = self.cli._get_working_root_dir_for_validation()
 
