@@ -516,7 +516,7 @@ class TestDeviceManagerInitialization:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=True)
+                        _manager = DeviceManager(verbose=True)
 
         assert "DeviceManager initialized" in caplog.text
 
@@ -527,7 +527,7 @@ class TestDeviceManagerInitialization:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=False)
+                        _manager = DeviceManager(verbose=False)
 
         # Check for absence of specific verbose logs
         init_logs = [r for r in caplog.records if "DeviceManager initialized" in r.message]
@@ -603,7 +603,7 @@ class TestAutoDeviceDetection:
                     ):
                         with patch("torch.cuda.memory_allocated", return_value=0):
                             with patch("torch.cuda.set_device"):
-                                manager = DeviceManager(verbose=True)
+                                _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected CUDA device" in caplog.text
 
@@ -613,7 +613,7 @@ class TestAutoDeviceDetection:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=True):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=True)
+                        _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected MPS device" in caplog.text or "Apple Silicon" in caplog.text
 
@@ -628,7 +628,7 @@ class TestAutoDeviceDetection:
                         with patch.object(
                             DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
                         ):
-                            manager = DeviceManager(verbose=True)
+                            _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected TPU device" in caplog.text
 
@@ -638,7 +638,7 @@ class TestAutoDeviceDetection:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=True)
+                        _manager = DeviceManager(verbose=True)
 
         assert "No accelerator detected" in caplog.text or "using CPU" in caplog.text
 
@@ -695,7 +695,7 @@ class TestDeviceValidation:
         with patch("torch.cuda.is_available", return_value=True):
             with patch("torch.cuda.device_count", return_value=1):
                 with pytest.raises(DeviceNotAvailableError) as exc_info:
-                    manager = DeviceManager(device="cuda:5", allow_fallback=False, verbose=False)
+                    _manager = DeviceManager(device="cuda:5", allow_fallback=False, verbose=False)
 
         assert "CUDA device 5 not available" in str(exc_info.value)
 
@@ -712,7 +712,7 @@ class TestDeviceValidation:
         """Test CUDA validation raises error without fallback."""
         with patch("torch.cuda.is_available", return_value=False):
             with pytest.raises(DeviceNotAvailableError) as exc_info:
-                manager = DeviceManager(device="cuda", allow_fallback=False, verbose=False)
+                _manager = DeviceManager(device="cuda", allow_fallback=False, verbose=False)
 
         assert "CUDA requested but not available" in str(exc_info.value)
 
@@ -736,7 +736,7 @@ class TestDeviceValidation:
         """Test MPS validation raises error without fallback."""
         with patch.object(DeviceManager, "_is_mps_available", return_value=False):
             with pytest.raises(DeviceNotAvailableError) as exc_info:
-                manager = DeviceManager(device="mps", allow_fallback=False, verbose=False)
+                _manager = DeviceManager(device="mps", allow_fallback=False, verbose=False)
 
         assert "MPS requested but not available" in str(exc_info.value)
 
@@ -806,7 +806,7 @@ class TestDeviceValidation:
                         side_effect=DeviceNotAvailableError("TPU not available"),
                     ):
                         with pytest.raises(DeviceNotAvailableError) as exc_info:
-                            manager = DeviceManager(allow_fallback=False, verbose=False)
+                            _manager = DeviceManager(allow_fallback=False, verbose=False)
 
         assert "TPU" in str(exc_info.value) or "not available" in str(exc_info.value)
 
@@ -1176,7 +1176,7 @@ class TestMoveToDevice:
         with patch("torch.cuda.is_available", return_value=False):
             manager = DeviceManager(device="cpu", verbose=False)
 
-        result = manager.move_to_device(mock_model)
+        _result = manager.move_to_device(mock_model)
 
         mock_model.to.assert_called()
 
@@ -1185,7 +1185,7 @@ class TestMoveToDevice:
         with patch("torch.cuda.is_available", return_value=False):
             manager = DeviceManager(device="cpu", verbose=False)
 
-        result = manager.move_to_device(mock_model, non_blocking=True)
+        _result = manager.move_to_device(mock_model, non_blocking=True)
 
         # Verify .to() was called with non_blocking parameter
         mock_model.to.assert_called()
@@ -1497,7 +1497,7 @@ class TestDeviceContextManager:
 
         original_device = manager._device
 
-        with pytest.raises(ValueError), manager.device_context("cpu") as device:
+        with pytest.raises(ValueError), manager.device_context("cpu") as _device:
             raise ValueError("Test exception")
 
         assert manager._device == original_device
@@ -1515,7 +1515,7 @@ class TestDeviceContextManager:
 
         original_device = manager._device
 
-        with manager.device_context("cpu") as device:
+        with manager.device_context("cpu") as _device:
             assert manager._device == torch.device("cpu")
 
         assert manager._device == original_device
@@ -1641,7 +1641,7 @@ class TestConvenienceFunctions:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        device = get_default_device(verbose=True)
+                        _device = get_default_device(verbose=True)
 
         assert "DeviceManager initialized" in caplog.text
 
@@ -1847,7 +1847,7 @@ class TestEdgeCases:
                     # Empty string treated as auto
                     # torch.device("") would raise, but we handle None/"auto"
                     with pytest.raises(Exception):
-                        manager = DeviceManager(device="", verbose=False)
+                        _manager = DeviceManager(device="", verbose=False)
 
     def test_verbose_default_true(self):
         """Test verbose defaults to True."""
@@ -1988,7 +1988,7 @@ class TestLoggingConfiguration:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=True)
+                        _manager = DeviceManager(verbose=True)
 
         # Should have logged initialization info
         assert len(caplog.records) > 0
@@ -2000,7 +2000,7 @@ class TestLoggingConfiguration:
             with patch("torch.cuda.is_available", return_value=False):
                 with patch.object(DeviceManager, "_is_mps_available", return_value=False):
                     with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(verbose=False)
+                        _manager = DeviceManager(verbose=False)
 
         # Check for absence of specific verbose logs
         init_logs = [r for r in caplog.records if "DeviceManager initialized" in r.message]

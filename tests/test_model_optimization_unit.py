@@ -530,7 +530,7 @@ class TestModelOptimizerQuantization:
 
         with patch("torch.quantization.quantize_dynamic") as mock_quantize:
             mock_quantize.return_value = simple_linear_model
-            result = optimizer.quantize_model(simple_linear_model)
+            _result = optimizer.quantize_model(simple_linear_model)
 
             mock_quantize.assert_called_once()
             # Verify the model and dtypes were passed
@@ -543,7 +543,7 @@ class TestModelOptimizerQuantization:
             quantization_enabled=True, quantization_type="fp16", verbose=False
         )
 
-        result = optimizer.quantize_model(mock_model)
+        _result = optimizer.quantize_model(mock_model)
         mock_model.half.assert_called_once()
 
     def test_quantize_model_static_requires_calibration_data(self, simple_linear_model):
@@ -574,7 +574,7 @@ class TestModelOptimizerQuantization:
             mock_prepare.return_value = mock_prepared
             mock_convert.return_value = mock_model
 
-            result = optimizer.quantize_model(mock_model, calibration_data=calibration_data)
+            _result = optimizer.quantize_model(mock_model, calibration_data=calibration_data)
 
             mock_qconfig.assert_called_once()
             mock_fuse.assert_called_once()
@@ -595,7 +595,7 @@ class TestModelOptimizerQuantization:
             mock_fuse.return_value = mock_model
             mock_prepare_qat.return_value = mock_model
 
-            result = optimizer.quantize_model(mock_model)
+            _result = optimizer.quantize_model(mock_model)
 
             mock_model.train.assert_called()
             mock_qconfig.assert_called_once()
@@ -620,7 +620,7 @@ class TestModelOptimizerQuantization:
         with patch("torch.quantization.convert") as mock_convert:
             mock_convert.return_value = mock_model
 
-            result = optimizer.finalize_qat(mock_model)
+            _result = optimizer.finalize_qat(mock_model)
 
             mock_model.eval.assert_called()
             mock_convert.assert_called_once()
@@ -673,7 +673,7 @@ class TestModelOptimizerPruning:
         )
 
         with patch.object(prune, "global_unstructured") as mock_prune:
-            result = optimizer.prune_model(simple_linear_model)
+            _result = optimizer.prune_model(simple_linear_model)
             mock_prune.assert_called()
 
     def test_prune_model_structured(self, simple_conv_model):
@@ -683,7 +683,7 @@ class TestModelOptimizerPruning:
         )
 
         with patch.object(prune, "ln_structured") as mock_prune:
-            result = optimizer.prune_model(simple_conv_model)
+            _result = optimizer.prune_model(simple_conv_model)
             # Structured pruning is called for Conv2d layers
             assert mock_prune.call_count >= 0  # May be called for Conv2d layers
 
@@ -749,7 +749,7 @@ class TestModelOptimizerPruning:
         optimizer = ModelOptimizer(verbose=False)
 
         with patch.object(prune, "l1_unstructured") as mock_prune:
-            result = optimizer._magnitude_pruning(simple_linear_model, 0.3)
+            _result = optimizer._magnitude_pruning(simple_linear_model, 0.3)
             # Should be called for Linear layers
             assert mock_prune.call_count >= 0
 
@@ -758,14 +758,14 @@ class TestModelOptimizerPruning:
         optimizer = ModelOptimizer(verbose=False)
 
         with patch.object(prune, "global_unstructured") as mock_prune:
-            result = optimizer._unstructured_pruning(simple_linear_model, 0.3)
+            _result = optimizer._unstructured_pruning(simple_linear_model, 0.3)
             mock_prune.assert_called()
 
     def test_structured_pruning_internal(self, simple_conv_model):
         """Test internal _structured_pruning method."""
         optimizer = ModelOptimizer(verbose=False)
 
-        with patch.object(prune, "ln_structured") as mock_prune:
+        with patch.object(prune, "ln_structured") as _mock_prune:
             result = optimizer._structured_pruning(simple_conv_model, 0.3)
             # Should be called for Conv2d layers
             assert result is not None
@@ -893,7 +893,7 @@ class TestModelOptimizerDistillation:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            student = optimizer.create_student_model(simple_linear_model)
+            _student = optimizer.create_student_model(simple_linear_model)
 
             # Should issue a warning about placeholder implementation
             assert len(w) >= 1
@@ -1167,7 +1167,7 @@ class TestModelOptimizerMetrics:
         optimizer = ModelOptimizer(verbose=True)
 
         with caplog.at_level(logging.INFO):
-            comparison = optimizer.compare_models(simple_linear_model, simple_linear_model)
+            _comparison = optimizer.compare_models(simple_linear_model, simple_linear_model)
 
         # Logging output may or may not be captured depending on handler config
 
@@ -1251,20 +1251,20 @@ class TestConvenienceFunctions:
         """Test quantize_for_inference with dynamic quantization."""
         with patch("torch.quantization.quantize_dynamic") as mock_quantize:
             mock_quantize.return_value = simple_linear_model
-            result = quantize_for_inference(simple_linear_model, "dynamic")
+            _result = quantize_for_inference(simple_linear_model, "dynamic")
 
             mock_quantize.assert_called_once()
 
     def test_quantize_for_inference_fp16(self, mock_model):
         """Test quantize_for_inference with fp16."""
-        result = quantize_for_inference(mock_model, "fp16")
+        _result = quantize_for_inference(mock_model, "fp16")
         mock_model.half.assert_called()
 
     def test_quantize_for_inference_default_type(self, simple_linear_model):
         """Test quantize_for_inference uses dynamic by default."""
         with patch("torch.quantization.quantize_dynamic") as mock_quantize:
             mock_quantize.return_value = simple_linear_model
-            result = quantize_for_inference(simple_linear_model)
+            _result = quantize_for_inference(simple_linear_model)
 
             mock_quantize.assert_called_once()
 
@@ -1636,7 +1636,7 @@ class TestLoggingBehavior:
     def test_verbose_true_initialization(self, caplog):
         """Test verbose logging during initialization."""
         with caplog.at_level(logging.INFO):
-            optimizer = ModelOptimizer(
+            _optimizer = ModelOptimizer(
                 pruning_enabled=True, distillation_enabled=True, verbose=True
             )
 
@@ -1645,7 +1645,7 @@ class TestLoggingBehavior:
     def test_verbose_false_initialization(self, caplog):
         """Test reduced logging during initialization with verbose=False."""
         with caplog.at_level(logging.INFO):
-            optimizer = ModelOptimizer(pruning_enabled=True, verbose=False)
+            _optimizer = ModelOptimizer(pruning_enabled=True, verbose=False)
 
         # Should have fewer or no logs with verbose=False
 

@@ -493,7 +493,7 @@ class TestTrainerInitialization:
     def test_trainer_model_moved_to_device(self, mock_model, mock_train_loader, mock_optimizer):
         """Test that model is moved to the specified device."""
         device = torch.device("cpu")
-        trainer = Trainer(
+        _trainer = Trainer(
             model=mock_model,
             train_loader=mock_train_loader,
             optimizer=mock_optimizer,
@@ -518,7 +518,7 @@ class TestTrainerInitialization:
     ):
         """Test that checkpoint directory is created if it doesn't exist."""
         checkpoint_path = temp_checkpoint_dir / "new_dir"
-        trainer = Trainer(
+        _trainer = Trainer(
             model=mock_model,
             train_loader=mock_train_loader,
             optimizer=mock_optimizer,
@@ -780,7 +780,7 @@ class TestHPOCallback:
     ):
         """Test that HPO callback initialization is logged."""
         with caplog.at_level(logging.INFO):
-            trainer = Trainer(
+            _trainer = Trainer(
                 model=mock_model,
                 train_loader=mock_train_loader,
                 optimizer=mock_optimizer,
@@ -796,7 +796,7 @@ class TestHPOCallback:
     ):
         """Test that HPO is not mentioned in logs when hpo_callback is None."""
         with caplog.at_level(logging.INFO):
-            trainer = Trainer(
+            _trainer = Trainer(
                 model=mock_model,
                 train_loader=mock_train_loader,
                 optimizer=mock_optimizer,
@@ -932,7 +932,7 @@ class TestTrainingLoop:
         batches = [mock_pyg_batch for _ in range(4)]
         mock_train_loader.__iter__ = Mock(side_effect=lambda: iter(batches))
 
-        metrics = trainer._train_epoch()
+        _metrics = trainer._train_epoch()
 
         # With gradient accumulation, optimizer.step should be called at least once
         # Note: Due to trainer's batch processing, step count depends on accumulation logic
@@ -951,7 +951,7 @@ class TestTrainingLoop:
             gradient_clip_val=1.0,
         )
 
-        metrics = trainer._train_epoch()
+        _metrics = trainer._train_epoch()
 
         # Gradient clipping should be called for each optimizer step
         assert mock_clip.call_count >= 1
@@ -1876,7 +1876,7 @@ class TestCheckpoint:
             loss_fn=mock_loss_fn,
         )
 
-        extra = trainer2.load_checkpoint(checkpoint_path)
+        _extra = trainer2.load_checkpoint(checkpoint_path)
 
         assert trainer2.current_epoch == 5
         assert trainer2.global_step == 100
@@ -2098,7 +2098,7 @@ class TestEdgeCases:
             max_epochs=3,
         )
 
-        results = trainer.fit()
+        _results = trainer.fit()
 
         assert trainer.current_epoch == 2  # 0-indexed, so last epoch is 2
         assert trainer.training_time > 0
@@ -2190,7 +2190,7 @@ class TestIntegration:
         )
 
         initial_lr = optimizer.param_groups[0]["lr"]
-        results = trainer.fit()
+        _results = trainer.fit()
         final_lr = optimizer.param_groups[0]["lr"]
 
         # LR should have decreased
@@ -2279,7 +2279,7 @@ class TestAdvancedSchedulers:
             max_epochs=5,
         )
 
-        initial_lr = mock_optimizer.param_groups[0]["lr"]
+        _initial_lr = mock_optimizer.param_groups[0]["lr"]
         trainer.fit()
 
         # Verify scheduler was called
@@ -2998,7 +2998,7 @@ class TestCheckpointCorruptionAndEdgeCases:
         torch.save(minimal_checkpoint, checkpoint_path)
 
         # Should load with defaults
-        extra = trainer.load_checkpoint(checkpoint_path)
+        _extra = trainer.load_checkpoint(checkpoint_path)
         assert trainer.current_epoch == 0
         assert trainer.global_step == 0
         assert trainer.best_val_loss == float("inf")
@@ -3725,7 +3725,7 @@ class TestStressAndPerformance:
             max_epochs=1,
         )
 
-        results = trainer.fit()
+        _results = trainer.fit()
         # With 10 batches and accumulate=50, optimizer.step should not be called
         assert mock_optimizer.step.call_count == 0
 
@@ -3896,7 +3896,7 @@ class TestIntegrationExtended:
             max_epochs=3,
         )
 
-        results = trainer.fit()
+        _results = trainer.fit()
 
         # Both callback and scheduler should be active
         assert callback.on_epoch_end.call_count == 3
@@ -4035,7 +4035,7 @@ class TestMetricsParameter:
     ):
         """Test that metrics are moved to device."""
         metrics = {"test_metric": mock_metric}
-        trainer = Trainer(
+        _trainer = Trainer(
             model=mock_model,
             train_loader=mock_train_loader,
             optimizer=mock_optimizer,

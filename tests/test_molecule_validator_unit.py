@@ -626,7 +626,7 @@ class TestDatasetCompatibilityChecking(unittest.TestCase):
         # Pass DFT as dataset_type but handler is DMC
         # Should log warning but still work
         with self.assertLogs(level="WARNING"):
-            result = check_dataset_compatibility(
+            _result = check_dataset_compatibility(
                 raw_properties_dict=properties_dict,
                 dataset_type="DFT",  # Mismatch
                 molecule_index=self.molecule_index,
@@ -868,13 +868,13 @@ class TestDatasetRequirements(unittest.TestCase):
         with (
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_config_from_global"
-            ) as mock_dataset_config,
+            ) as _mock_dataset_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_filter_config_from_global"
-            ) as mock_filter_config,
+            ) as _mock_filter_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_processing_config_from_global"
-            ) as mock_proc_config,
+            ) as _mock_proc_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_handler"
             ) as mock_create_handler,
@@ -999,13 +999,13 @@ class TestDetailedFeedbackValidation(unittest.TestCase):
         with (
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_config_from_global"
-            ) as mock_dataset_config,
+            ) as _mock_dataset_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_filter_config_from_global"
-            ) as mock_filter_config,
+            ) as _mock_filter_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_processing_config_from_global"
-            ) as mock_proc_config,
+            ) as _mock_proc_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_handler"
             ) as mock_create_handler,
@@ -1013,7 +1013,7 @@ class TestDetailedFeedbackValidation(unittest.TestCase):
             mock_handler = MockDFTHandler()
             mock_create_handler.return_value = mock_handler
 
-            result = validate_with_detailed_feedback(
+            _result = validate_with_detailed_feedback(
                 raw_properties_dict=properties_dict,
                 molecule_index=self.molecule_index,
                 inchi=self.inchi,
@@ -1051,7 +1051,7 @@ class TestValidatorCreation(unittest.TestCase):
             mock_handler = MockDFTHandler()
             mock_create_handler.return_value = mock_handler
 
-            handler = create_validator_with_handler(dataset_config=None)
+            _handler = create_validator_with_handler(dataset_config=None)
 
             # Verify configs were created and handler was instantiated
             mock_dataset_config.assert_called_once()
@@ -1067,10 +1067,10 @@ class TestValidatorCreation(unittest.TestCase):
         with (
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_filter_config_from_global"
-            ) as mock_filter_config,
+            ) as _mock_filter_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_processing_config_from_global"
-            ) as mock_proc_config,
+            ) as _mock_proc_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_handler"
             ) as mock_create_handler,
@@ -1078,7 +1078,7 @@ class TestValidatorCreation(unittest.TestCase):
             mock_handler = MockDFTHandler()
             mock_create_handler.return_value = mock_handler
 
-            handler = create_validator_with_handler(dataset_config=mock_dataset_config)
+            _handler = create_validator_with_handler(dataset_config=mock_dataset_config)
 
             # Verify handler was created with provided config
             mock_create_handler.assert_called_once()
@@ -1126,13 +1126,13 @@ class TestHighLevelValidation(unittest.TestCase):
         with (
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_config_from_global"
-            ) as mock_dataset_config,
+            ) as _mock_dataset_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_filter_config_from_global"
-            ) as mock_filter_config,
+            ) as _mock_filter_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_processing_config_from_global"
-            ) as mock_proc_config,
+            ) as _mock_proc_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_handler"
             ) as mock_create_handler,
@@ -1140,7 +1140,7 @@ class TestHighLevelValidation(unittest.TestCase):
             mock_handler = MockDFTHandler()
             mock_create_handler.return_value = mock_handler
 
-            result = validate_molecule_with_handler(
+            _result = validate_molecule_with_handler(
                 raw_properties_dict=properties_dict,
                 molecule_index=self.molecule_index,
                 inchi=self.inchi,
@@ -1164,13 +1164,13 @@ class TestHighLevelValidation(unittest.TestCase):
             ) as mock_dataset_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_filter_config_from_global"
-            ) as mock_filter_config,
+            ) as _mock_filter_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_processing_config_from_global"
-            ) as mock_proc_config,
+            ) as _mock_proc_config,
             patch(
                 "milia_pipeline.molecules.molecule_validator.create_dataset_handler"
-            ) as mock_create_handler,
+            ) as _mock_create_handler,
         ):
             # Setup mocks to raise exception when trying to create from global config
             mock_dataset_config.side_effect = Exception("No global config available")

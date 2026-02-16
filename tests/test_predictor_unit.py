@@ -243,13 +243,13 @@ class TestPredictorInitialization:
 
     def test_init_sets_model_to_eval_mode(self, mock_model, working_root_dir):
         """Test that __init__ sets model to eval mode."""
-        predictor = Predictor(model=mock_model, working_root_dir=working_root_dir)
+        _predictor = Predictor(model=mock_model, working_root_dir=working_root_dir)
         mock_model.eval.assert_called_once()
 
     def test_init_moves_model_to_device(self, mock_model, working_root_dir):
         """Test that __init__ moves model to specified device."""
         device = torch.device("cpu")
-        predictor = Predictor(model=mock_model, working_root_dir=working_root_dir, device=device)
+        _predictor = Predictor(model=mock_model, working_root_dir=working_root_dir, device=device)
         mock_model.to.assert_called_with(device)
 
     def test_init_with_explicit_cpu_device(self, mock_model, working_root_dir):
@@ -350,7 +350,7 @@ class TestPredictorFromCheckpoint:
         mock_cm_instance.load.return_value = mock_checkpoint
         mock_cm_class.return_value = mock_cm_instance
 
-        predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
+        _predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
 
         mock_loader_class.load_from_checkpoint.assert_called_once()
 
@@ -368,7 +368,7 @@ class TestPredictorFromCheckpoint:
         mock_cm_class.return_value = mock_cm_instance
 
         device = torch.device("cpu")
-        predictor = Predictor.from_checkpoint(
+        _predictor = Predictor.from_checkpoint(
             "test.pt", working_root_dir=working_root_dir, device=device
         )
 
@@ -465,7 +465,7 @@ class TestPredictorFromCheckpoint:
         mock_cm_instance.load.return_value = mock_checkpoint
         mock_cm_class.return_value = mock_cm_instance
 
-        predictor = Predictor.from_checkpoint(
+        _predictor = Predictor.from_checkpoint(
             "test.pt", working_root_dir=working_root_dir, strict=False, model_name="GAT"
         )
 
@@ -530,7 +530,7 @@ class TestPredictorFromCheckpoint:
         mock_cm_instance.load.return_value = mock_checkpoint
         mock_cm_class.return_value = mock_cm_instance
 
-        predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
+        _predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
 
         mock_cm_class.assert_called_once_with(working_root_dir=working_root_dir)
 
@@ -547,7 +547,7 @@ class TestPredictorFromCheckpoint:
         mock_cm_instance.load.return_value = mock_checkpoint
         mock_cm_class.return_value = mock_cm_instance
 
-        predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
+        _predictor = Predictor.from_checkpoint("test.pt", working_root_dir=working_root_dir)
 
         call_kwargs = mock_loader_class.load_from_checkpoint.call_args[1]
         assert call_kwargs["working_root_dir"] == working_root_dir
@@ -574,7 +574,7 @@ class TestPredictorPredict:
         # Create data on CPU
         data = simple_pyg_data.clone()
 
-        result = predictor.predict(data)
+        _result = predictor.predict(data)
 
         # Model should have been called
         mock_model.assert_called()
@@ -1138,7 +1138,7 @@ class TestPredictConvenienceFunction:
         mock_predictor.predict.return_value = torch.tensor([[0.5]])
         mock_from_checkpoint.return_value = mock_predictor
 
-        result = predict("model.pt", simple_pyg_data, working_root_dir=working_root_dir)
+        _result = predict("model.pt", simple_pyg_data, working_root_dir=working_root_dir)
 
         mock_from_checkpoint.assert_called_once_with(
             "model.pt", working_root_dir=working_root_dir, device=None
@@ -1152,7 +1152,7 @@ class TestPredictConvenienceFunction:
         mock_from_checkpoint.return_value = mock_predictor
 
         device = torch.device("cpu")
-        result = predict(
+        _result = predict(
             "model.pt", simple_pyg_data, working_root_dir=working_root_dir, device=device
         )
 
@@ -1169,7 +1169,7 @@ class TestPredictConvenienceFunction:
         mock_predictor.predict.return_value = torch.tensor([[0.5]])
         mock_from_checkpoint.return_value = mock_predictor
 
-        result = predict("model.pt", simple_pyg_data, working_root_dir=working_root_dir)
+        _result = predict("model.pt", simple_pyg_data, working_root_dir=working_root_dir)
 
         mock_predictor.predict.assert_called_once_with(simple_pyg_data, return_numpy=False)
 
@@ -1182,7 +1182,7 @@ class TestPredictConvenienceFunction:
         mock_predictor.predict.return_value = np.array([[0.5]])
         mock_from_checkpoint.return_value = mock_predictor
 
-        result = predict(
+        _result = predict(
             "model.pt", simple_pyg_data, working_root_dir=working_root_dir, return_numpy=True
         )
 
@@ -1198,7 +1198,7 @@ class TestPredictConvenienceFunction:
         mock_from_checkpoint.return_value = mock_predictor
 
         checkpoint_path = Path("/path/to/model.pt")
-        result = predict(checkpoint_path, simple_pyg_data, working_root_dir=working_root_dir)
+        _result = predict(checkpoint_path, simple_pyg_data, working_root_dir=working_root_dir)
 
         assert mock_from_checkpoint.called
 

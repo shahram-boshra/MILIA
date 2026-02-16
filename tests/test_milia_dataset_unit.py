@@ -189,7 +189,7 @@ class TestHandlerCreation(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -262,7 +262,7 @@ class TestHandlerValidation(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -412,7 +412,7 @@ class TestHandlerValidation(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -446,7 +446,7 @@ class TestTransformSystem(BaseTestCase):
             with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
                 with patch.object(miliaDataset, "_download", return_value=None):
                     with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset(
+                        _dataset = miliaDataset(
                             root=str(self.test_dir),
                             dataset_config=self.dataset_config,
                             filter_config=self.filter_config,
@@ -459,12 +459,12 @@ class TestTransformSystem(BaseTestCase):
 
     def test_transform_config_priority_2_legacy(self):
         """Test Priority 2: Legacy pyg_pre_transforms_config."""
-        legacy_config = [{"name": "NormalizeEnergies", "kwargs": {}}]
+        _legacy_config = [{"name": "NormalizeEnergies", "kwargs": {}}]
 
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -487,7 +487,7 @@ class TestTransformSystem(BaseTestCase):
             with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
                 with patch.object(miliaDataset, "_download", return_value=None):
                     with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset(
+                        _dataset = miliaDataset(
                             root=str(self.test_dir),
                             dataset_config=self.dataset_config,
                             filter_config=self.filter_config,
@@ -2132,7 +2132,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -2164,7 +2164,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -2195,7 +2195,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -2223,7 +2223,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,
@@ -2338,7 +2338,7 @@ class TestStandardTransformsSupport(BaseTestCase):
             with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
                 with patch.object(miliaDataset, "_download", return_value=None):
                     with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset(
+                        _dataset = miliaDataset(
                             root=str(self.test_dir),
                             dataset_config=self.dataset_config,
                             filter_config=self.filter_config,
@@ -2376,7 +2376,7 @@ class TestStandardTransformsSupport(BaseTestCase):
             with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
                 with patch.object(miliaDataset, "_download", return_value=None):
                     with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset(
+                        _dataset = miliaDataset(
                             root=str(self.test_dir),
                             dataset_config=self.dataset_config,
                             filter_config=self.filter_config,
@@ -2518,7 +2518,7 @@ class TestDownloadFunctionality(BaseTestCase):
     def test_force_reload_triggers_redownload(self):
         """Test force_reload=True triggers reprocessing."""
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None) as mock_download:
+            with patch.object(miliaDataset, "_download", return_value=None) as _mock_download:
                 with patch.object(miliaDataset, "_process", return_value=None):
                     dataset = miliaDataset(
                         root=str(self.test_dir),
@@ -2760,7 +2760,7 @@ class TestNPZDataLoading(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
             with patch.object(miliaDataset, "_download", return_value=None):
                 with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
+                    _dataset = miliaDataset(
                         root=str(self.test_dir),
                         dataset_config=self.dataset_config,
                         filter_config=self.filter_config,

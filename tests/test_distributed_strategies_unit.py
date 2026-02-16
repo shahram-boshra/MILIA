@@ -682,7 +682,7 @@ class TestDistributedManagerInitialization:
     def test_verbose_logging_on_init(self, caplog, clean_env):
         """Test verbose=True produces logging during initialization."""
         with caplog.at_level(logging.INFO):
-            manager = DistributedManager(verbose=True)
+            _manager = DistributedManager(verbose=True)
 
         assert "DistributedManager initialized" in caplog.text
 
@@ -690,7 +690,7 @@ class TestDistributedManagerInitialization:
         """Test silent initialization when verbose=False."""
         with caplog.at_level(logging.INFO):
             caplog.clear()
-            manager = DistributedManager(verbose=False)
+            _manager = DistributedManager(verbose=False)
 
         init_logs = [r for r in caplog.records if "DistributedManager initialized" in r.message]
         assert len(init_logs) == 0
@@ -1056,7 +1056,7 @@ class TestWrapModel:
                     "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
                 ) as mock_dp:
                     mock_dp.return_value = MagicMock()
-                    wrapped = manager.wrap_model(simple_model)
+                    _wrapped = manager.wrap_model(simple_model)
 
         mock_dp.assert_called_once()
         call_args = mock_dp.call_args
@@ -1073,7 +1073,7 @@ class TestWrapModel:
                     "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
                 ) as mock_dp:
                     mock_dp.return_value = MagicMock()
-                    wrapped = manager.wrap_model(simple_model, device_ids=[0, 2])
+                    _wrapped = manager.wrap_model(simple_model, device_ids=[0, 2])
 
         call_args = mock_dp.call_args
         assert call_args[1]["device_ids"] == [0, 2]
@@ -1093,7 +1093,7 @@ class TestWrapModel:
                     "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
                 ) as mock_ddp:
                     mock_ddp.return_value = MagicMock()
-                    wrapped = manager.wrap_model(mock_model)
+                    _wrapped = manager.wrap_model(mock_model)
 
         mock_model.to.assert_called_once()
         mock_ddp.assert_called_once()
@@ -1119,7 +1119,7 @@ class TestWrapModel:
                     "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
                 ) as mock_ddp:
                     mock_ddp.return_value = MagicMock()
-                    wrapped = manager.wrap_model(mock_model)
+                    _wrapped = manager.wrap_model(mock_model)
 
         call_args = mock_ddp.call_args
         assert call_args[1]["find_unused_parameters"] is True
@@ -1497,7 +1497,7 @@ class TestAllReduce:
 
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
-                result = manager.all_reduce(tensor, op="sum")
+                _result = manager.all_reduce(tensor, op="sum")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1515,7 +1515,7 @@ class TestAllReduce:
 
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
-                result = manager.all_reduce(tensor, op="min")
+                _result = manager.all_reduce(tensor, op="min")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1533,7 +1533,7 @@ class TestAllReduce:
 
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
-                result = manager.all_reduce(tensor, op="max")
+                _result = manager.all_reduce(tensor, op="max")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1572,7 +1572,7 @@ class TestAllReduce:
             manager.setup()
 
             tensor = torch.tensor([1.0, 2.0, 3.0])
-            result = manager.all_reduce(tensor, op="sum")
+            _result = manager.all_reduce(tensor, op="sum")
 
             mock_hvd.allreduce.assert_called()
 
@@ -1664,7 +1664,7 @@ class TestAllGather:
             manager.setup()
 
             tensor = torch.tensor([1.0, 2.0])
-            result = manager.all_gather(tensor)
+            _result = manager.all_gather(tensor)
 
             mock_hvd.allgather.assert_called_once()
 
@@ -2357,7 +2357,7 @@ class TestAllReduceAdditional:
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
                 with patch.object(dist, "ReduceOp", mock_reduce_op):
-                    result = manager.all_reduce(tensor, op="avg")
+                    _result = manager.all_reduce(tensor, op="avg")
 
         mock_all_reduce.assert_called_once()
 
@@ -2381,7 +2381,7 @@ class TestAllReduceAdditional:
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
                 with patch.object(dist, "ReduceOp", MockReduceOp):
-                    result = manager.all_reduce(tensor, op="avg")
+                    _result = manager.all_reduce(tensor, op="avg")
 
         mock_all_reduce.assert_called_once()
 
@@ -2397,7 +2397,7 @@ class TestAllReduceAdditional:
 
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
-                result = manager.all_reduce(tensor, op="unknown_op")
+                _result = manager.all_reduce(tensor, op="unknown_op")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -2415,7 +2415,7 @@ class TestAllReduceAdditional:
 
         with patch.object(dist, "is_initialized", return_value=True):
             with patch.object(dist, "all_reduce") as mock_all_reduce:
-                result = manager.all_reduce(tensor, op="sum")
+                _result = manager.all_reduce(tensor, op="sum")
 
         mock_all_reduce.assert_called_once()
 
@@ -2440,7 +2440,7 @@ class TestAllReduceAdditional:
             manager.setup()
 
             tensor = torch.tensor([1.0, 2.0, 3.0])
-            result = manager.all_reduce(tensor, op="avg")
+            _result = manager.all_reduce(tensor, op="avg")
 
             mock_hvd.allreduce.assert_called()
 
@@ -2543,7 +2543,7 @@ class TestWrapModelEdgeCases:
                     mock_dp.return_value = MagicMock()
 
                     with caplog.at_level(logging.INFO):
-                        wrapped = manager.wrap_model(simple_model)
+                        _wrapped = manager.wrap_model(simple_model)
 
         assert "DataParallel" in caplog.text or "Wrapped model" in caplog.text
 
@@ -2675,7 +2675,7 @@ class TestIntegration:
                     mock_dp.return_value = MagicMock()
 
                     # Wrap model
-                    wrapped = manager.wrap_model(simple_model)
+                    _wrapped = manager.wrap_model(simple_model)
                     mock_dp.assert_called_once()
 
                 # All reduce (should return tensor unchanged)
@@ -2806,7 +2806,7 @@ class TestIntegration:
             ) as mock_ddp,
         ):
             mock_ddp.return_value = MagicMock()
-            wrapped = manager.wrap_model(mock_model)
+            _wrapped = manager.wrap_model(mock_model)
 
         mock_ddp.assert_called_once()
 
@@ -2901,7 +2901,7 @@ class TestEdgeCasesAndErrors:
         manager = DistributedManager(strategy="none", verbose=False)
         manager.setup()
 
-        wrapped = manager.wrap_model(simple_model)
+        _wrapped = manager.wrap_model(simple_model)
 
         assert manager._original_model is simple_model
 

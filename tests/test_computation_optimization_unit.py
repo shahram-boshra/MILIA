@@ -634,7 +634,7 @@ class TestComputationOptimizerInitialization:
         """Test verbose logging during initialization."""
         with caplog.at_level(logging.INFO):
             with patch("torch.cuda.is_available", return_value=False):
-                optimizer = ComputationOptimizer(verbose=True)
+                _optimizer = ComputationOptimizer(verbose=True)
 
         assert "ComputationOptimizer initialized" in caplog.text
 
@@ -644,7 +644,7 @@ class TestComputationOptimizerInitialization:
             with patch("torch.cuda.is_available", return_value=False):
                 # Clear any existing logs
                 caplog.clear()
-                optimizer = ComputationOptimizer(verbose=False)
+                _optimizer = ComputationOptimizer(verbose=False)
 
         # Check that no INFO logs about initialization were captured after clearing
         optimizer_init_logs = [
@@ -667,7 +667,7 @@ class TestGlobalOptimizations:
 
         with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
             with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                optimizer = ComputationOptimizer(device=device, operator_fusion=True, verbose=False)
+                _optimizer = ComputationOptimizer(device=device, operator_fusion=True, verbose=False)
 
         mock_exec.assert_called_once_with(True)
         mock_mode.assert_called_once_with(True)
@@ -715,7 +715,7 @@ class TestGlobalOptimizations:
         """Test operator fusion is enabled."""
         with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
             with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                optimizer = ComputationOptimizer(
+                _optimizer = ComputationOptimizer(
                     operator_fusion=True, verbose=False, device=torch.device("cpu")
                 )
 
@@ -726,7 +726,7 @@ class TestGlobalOptimizations:
         """Test operator fusion is not called when disabled."""
         with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
             with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                optimizer = ComputationOptimizer(
+                _optimizer = ComputationOptimizer(
                     operator_fusion=False, verbose=False, device=torch.device("cpu")
                 )
 
@@ -763,7 +763,7 @@ class TestModelCompilation:
             if hasattr(torch, "compile"):
                 delattr(torch, "compile")
 
-            with warnings.catch_warnings(record=True) as w:
+            with warnings.catch_warnings(record=True) as _w:
                 warnings.simplefilter("always")
                 # Need to mock hasattr to return False for 'compile'
                 original_hasattr = hasattr
@@ -799,7 +799,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model, mode="max-autotune")
+            _result = optimizer.compile_model(simple_model, mode="max-autotune")
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["mode"] == "max-autotune"
@@ -812,7 +812,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model, dynamic=True)
+            _result = optimizer.compile_model(simple_model, dynamic=True)
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["dynamic"] is True
@@ -825,7 +825,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model, fullgraph=True)
+            _result = optimizer.compile_model(simple_model, fullgraph=True)
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["fullgraph"] is True
@@ -841,7 +841,7 @@ class TestModelCompilation:
 
         for backend in backends:
             with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-                result = optimizer.compile_model(simple_model, backend=backend)
+                _result = optimizer.compile_model(simple_model, backend=backend)
 
             call_kwargs = mock_compile.call_args[1]
             assert call_kwargs["backend"] == backend
@@ -856,7 +856,7 @@ class TestModelCompilation:
         compiled_mock = Mock()
 
         with patch.object(torch, "compile", return_value=compiled_mock):
-            result = optimizer.compile_model(simple_model)
+            _result = optimizer.compile_model(simple_model)
 
         model_id = id(simple_model)
         assert model_id in optimizer._compiled_models
@@ -897,7 +897,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model)
+            _result = optimizer.compile_model(simple_model)
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["mode"] == compile_mode
@@ -911,7 +911,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model, backend=backend)
+            _result = optimizer.compile_model(simple_model, backend=backend)
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["backend"] == backend
@@ -933,7 +933,7 @@ class TestModelCompilation:
         )
 
         with patch.object(torch, "compile", return_value=simple_model) as mock_compile:
-            result = optimizer.compile_model(simple_model, fullgraph=fullgraph)
+            _result = optimizer.compile_model(simple_model, fullgraph=fullgraph)
 
         call_kwargs = mock_compile.call_args[1]
         assert call_kwargs["dynamic"] == dynamic
@@ -970,7 +970,7 @@ class TestJITCompilation:
             with patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_scripted
             ) as mock_optimize:
-                result = optimizer.jit_script_model(simple_model)
+                _result = optimizer.jit_script_model(simple_model)
 
         mock_script.assert_called_once_with(simple_model)
         mock_optimize.assert_called_once()
@@ -987,7 +987,7 @@ class TestJITCompilation:
             with patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_traced
             ) as mock_optimize:
-                result = optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
+                _result = optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
 
         mock_trace.assert_called_once()
         mock_optimize.assert_called_once()
@@ -1009,7 +1009,7 @@ class TestJITCompilation:
 
         with caplog.at_level(logging.WARNING):
             with patch.object(torch.jit, "script", side_effect=Exception("JIT failed")):
-                result = optimizer.jit_script_model(simple_model)
+                _result = optimizer.jit_script_model(simple_model)
 
         assert "JIT compilation failed" in caplog.text
 
@@ -1166,7 +1166,7 @@ class TestOptimizeModel:
         with patch.object(
             optimizer, "convert_to_channels_last", return_value=conv_model
         ) as mock_convert:
-            result = optimizer.optimize_model(conv_model)
+            _result = optimizer.optimize_model(conv_model)
 
         mock_convert.assert_called_once()
 
@@ -1183,7 +1183,7 @@ class TestOptimizeModel:
             patch.object(optimizer, "jit_script_model", return_value=mock_scripted) as mock_script,
             patch.object(optimizer, "jit_freeze_model", return_value=mock_frozen) as mock_freeze,
         ):
-            result = optimizer.optimize_model(simple_model)
+            _result = optimizer.optimize_model(simple_model)
 
         mock_script.assert_called_once()
         mock_freeze.assert_called_once()
@@ -1195,7 +1195,7 @@ class TestOptimizeModel:
         )
 
         with patch.object(optimizer, "compile_model", return_value=simple_model) as mock_compile:
-            result = optimizer.optimize_model(simple_model)
+            _result = optimizer.optimize_model(simple_model)
 
         mock_compile.assert_called_once()
 
@@ -1217,7 +1217,7 @@ class TestOptimizeModel:
             patch.object(optimizer, "jit_freeze_model", return_value=real_scripted),
             patch.object(optimizer, "compile_model", return_value=real_scripted) as mock_compile,
         ):
-            result = optimizer.optimize_model(simple_model)
+            _result = optimizer.optimize_model(simple_model)
 
         # compile_model should not be called for JIT scripted models
         mock_compile.assert_not_called()
@@ -1234,7 +1234,7 @@ class TestOptimizeModel:
             patch.object(optimizer, "jit_script_model", return_value=mock_scripted) as mock_script,
             patch.object(optimizer, "jit_freeze_model", return_value=mock_scripted),
         ):
-            result = optimizer.optimize_model(simple_model, example_inputs=(sample_input,))
+            _result = optimizer.optimize_model(simple_model, example_inputs=(sample_input,))
 
         # Verify example_inputs was passed as second positional argument
         # jit_script_model(model, example_inputs) - positional args
@@ -1678,7 +1678,7 @@ class TestCompareOptimizations:
         ]
 
         with caplog.at_level(logging.INFO):
-            results = optimizer.compare_optimizations(
+            _results = optimizer.compare_optimizations(
                 simple_model, sample_input, configs, num_iterations=5
             )
 
@@ -1775,7 +1775,7 @@ class TestGraphOptimization:
         with patch.object(torch._C, "_jit_pass_inline") as mock_inline:
             with patch.object(torch._C, "_jit_pass_constant_propagation") as mock_const:
                 with patch.object(torch._C, "_jit_pass_peephole") as mock_peep:
-                    result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
+                    _result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
 
         mock_inline.assert_called_once()
         mock_const.assert_called_once()
@@ -1789,7 +1789,7 @@ class TestGraphOptimization:
             with patch.object(torch._C, "_jit_pass_constant_propagation"):
                 with patch.object(torch._C, "_jit_pass_peephole"):
                     with patch.object(torch._C, "_jit_pass_fuse") as mock_fuse:
-                        result = optimizer.optimize_graph(
+                        _result = optimizer.optimize_graph(
                             mock_jit_script_module, optimization_level=2
                         )
 
@@ -1804,7 +1804,7 @@ class TestGraphOptimization:
                 with patch.object(torch._C, "_jit_pass_peephole"):
                     with patch.object(torch._C, "_jit_pass_fuse"):
                         with patch.object(torch._C, "_jit_pass_remove_mutation") as mock_remove:
-                            result = optimizer.optimize_graph(
+                            _result = optimizer.optimize_graph(
                                 mock_jit_script_module, optimization_level=3
                             )
 
@@ -1978,7 +1978,7 @@ class TestConvenienceFunctions:
             mock_instance.optimize_model.return_value = simple_model
             MockOptimizer.return_value = mock_instance
 
-            result = auto_optimize_model(simple_model, task_type="training", device=device)
+            _result = auto_optimize_model(simple_model, task_type="training", device=device)
 
         MockOptimizer.assert_called_once()
         mock_instance.optimize_model.assert_called_once_with(simple_model)
@@ -1994,7 +1994,7 @@ class TestConvenienceFunctions:
             mock_instance.optimize_model.return_value = simple_model
             MockOptimizer.return_value = mock_instance
 
-            result = auto_optimize_model(simple_model, task_type="inference", device=device)
+            _result = auto_optimize_model(simple_model, task_type="inference", device=device)
 
         MockOptimizer.assert_called_once()
 
@@ -2010,7 +2010,7 @@ class TestConvenienceFunctions:
             mock_instance.optimize_model.return_value = simple_model
             MockOptimizer.return_value = mock_instance
 
-            result = auto_optimize_model(simple_model)
+            _result = auto_optimize_model(simple_model)
 
         # Should use CPU device
         call_kwargs = MockOptimizer.call_args[1]
@@ -2087,7 +2087,7 @@ class TestDecorators:
             inference_mode_active[0] = torch.is_inference_mode_enabled()
             return model(data)
 
-        result = predict(simple_model, sample_input)
+        _result = predict(simple_model, sample_input)
 
         assert inference_mode_active[0] is True
 
@@ -2664,7 +2664,7 @@ class TestLoggingConfiguration:
         """Test verbose=True produces INFO logs."""
         with caplog.at_level(logging.INFO):
             with patch("torch.cuda.is_available", return_value=False):
-                optimizer = ComputationOptimizer(verbose=True)
+                _optimizer = ComputationOptimizer(verbose=True)
 
         # Should have logged initialization info
         assert len(caplog.records) > 0
@@ -2674,7 +2674,7 @@ class TestLoggingConfiguration:
         with caplog.at_level(logging.INFO):
             caplog.clear()
             with patch("torch.cuda.is_available", return_value=False):
-                optimizer = ComputationOptimizer(verbose=False)
+                _optimizer = ComputationOptimizer(verbose=False)
 
         # Check for absence of specific verbose logs
         init_logs = [r for r in caplog.records if "ComputationOptimizer initialized" in r.message]

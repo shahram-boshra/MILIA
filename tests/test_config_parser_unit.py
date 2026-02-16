@@ -734,7 +734,7 @@ class TestParseCustomArchitecture:
             "residual_connections": [{"start": 0, "end": 1, "type": "add"}],
         }
 
-        result = parser.parse_custom_architecture(config, validate=False)
+        _result = parser.parse_custom_architecture(config, validate=False)
 
         mock_builder.add_residual_connection.assert_called_once_with(0, 1, "add")
 
@@ -770,7 +770,7 @@ class TestParseCustomArchitecture:
             "layers": [{"type": "GCNConv"}],
         }
 
-        result = parser.parse_custom_architecture(
+        _result = parser.parse_custom_architecture(
             config, task_type="node_classification", validate=False
         )
 
@@ -789,7 +789,7 @@ class TestParseCustomArchitecture:
 
         config = {"layers": [{"type": "GCNConv"}]}
 
-        result = parser.parse_custom_architecture(config, validate=False)
+        _result = parser.parse_custom_architecture(config, validate=False)
 
         call_args = mock_builder_class.call_args
         assert call_args[1]["name"] == "CustomArchitecture"
@@ -808,7 +808,7 @@ class TestParseCustomArchitecture:
 
         config = {"name": "TestArch", "layers": [{"type": "GCNConv", "out_channels": 64}]}
 
-        result = parser.parse_custom_architecture(config, validate=False)
+        _result = parser.parse_custom_architecture(config, validate=False)
 
         # Should move out_channels to params
         call_args = mock_builder.add_layer.call_args
@@ -898,7 +898,7 @@ class TestParseCustomArchitecture:
 
         config = {"template": "gcn_basic", "task_type": "graph_regression"}
 
-        result = parser.parse_custom_architecture(config)
+        _result = parser.parse_custom_architecture(config)
 
         parser._parse_template_based.assert_called_once()
 
@@ -917,7 +917,7 @@ task_type: graph_regression
             temp_path = f.name
 
         try:
-            result = parser.parse_custom_architecture(temp_path)
+            _result = parser.parse_custom_architecture(temp_path)
             parser._parse_template_based.assert_called_once()
         finally:
             os.unlink(temp_path)
@@ -932,7 +932,7 @@ template: gcn_basic
 task_type: graph_regression
 """
 
-        result = parser.parse_custom_architecture(yaml_string)
+        _result = parser.parse_custom_architecture(yaml_string)
         parser._parse_template_based.assert_called_once()
 
 
@@ -975,7 +975,7 @@ class TestParseTemplateBased:
             "params": {"hidden_channels": 128, "num_layers": 4},
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         call_args = parser.templates.get_template.call_args
         assert call_args[1]["hidden_channels"] == 128
@@ -998,7 +998,7 @@ class TestParseTemplateBased:
             "params": {"hidden_channels": 128},
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         call_args = parser.templates.get_template.call_args
         assert call_args[1]["in_channels"] == 32
@@ -1016,7 +1016,7 @@ class TestParseTemplateBased:
 
         config = {"template": "gcn_basic", "task_type": "graph_regression"}
 
-        result = parser._parse_template_based(config, "node_classification", False)
+        _result = parser._parse_template_based(config, "node_classification", False)
 
         call_args = parser.templates.get_template.call_args
         assert call_args[1]["task_type"] == "node_classification"
@@ -1038,7 +1038,7 @@ class TestParseTemplateBased:
             ],
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         assert mock_builder.add_layer.call_count == 2
         mock_builder.add_layer.assert_any_call("Dropout", p=0.5)
@@ -1058,7 +1058,7 @@ class TestParseTemplateBased:
             "modifications": {"insert": [{"position": 1, "type": "Dropout", "params": {"p": 0.5}}]},
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         mock_builder.insert_layer.assert_called_once_with(1, "Dropout", p=0.5)
 
@@ -1076,7 +1076,7 @@ class TestParseTemplateBased:
             "modifications": {"remove": [2, 3, 5]},
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         # Should remove in reverse order
         assert mock_builder.remove_layer.call_count == 3
@@ -1101,7 +1101,7 @@ class TestParseTemplateBased:
             },
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         mock_builder.replace_layer.assert_called_once_with(1, "LeakyReLU", negative_slope=0.2)
 
@@ -1140,7 +1140,7 @@ class TestParseTemplateBased:
             },
         }
 
-        result = parser._parse_template_based(config, None, False)
+        _result = parser._parse_template_based(config, None, False)
 
         # Verify insert was called for both entries
         assert mock_builder.insert_layer.call_count == 2
@@ -1200,7 +1200,7 @@ class TestParseEnsemble:
 
         config = {"name": "TestEnsemble"}
 
-        result = parser.parse_ensemble(config, validate=False)
+        _result = parser.parse_ensemble(config, validate=False)
 
         call_args = mock_composer_class.call_args
         assert call_args[1]["task_type"] == "graph_regression"
@@ -1218,7 +1218,7 @@ class TestParseEnsemble:
 
         config = {"name": "TestEnsemble", "task_type": "graph_regression"}
 
-        result = parser.parse_ensemble(config, task_type="node_classification", validate=False)
+        _result = parser.parse_ensemble(config, task_type="node_classification", validate=False)
 
         call_args = mock_composer_class.call_args
         assert call_args[1]["task_type"] == "node_classification"
@@ -1725,7 +1725,7 @@ class TestConvenienceFunctions:
 
         config = {"name": "TestArch", "layers": []}
 
-        result = parse_custom_architecture(config)
+        _result = parse_custom_architecture(config)
 
         mock_parser.parse_custom_architecture.assert_called_once_with(config, None, True)
 
@@ -1738,7 +1738,7 @@ class TestConvenienceFunctions:
 
         config = {"name": "TestArch", "layers": []}
 
-        result = parse_custom_architecture(config, task_type="node_classification", validate=False)
+        _result = parse_custom_architecture(config, task_type="node_classification", validate=False)
 
         mock_parser.parse_custom_architecture.assert_called_once_with(
             config, "node_classification", False
@@ -1753,7 +1753,7 @@ class TestConvenienceFunctions:
 
         config = {"name": "TestEnsemble"}
 
-        result = parse_ensemble(config)
+        _result = parse_ensemble(config)
 
         mock_parser.parse_ensemble.assert_called_once_with(config, None, True)
 
@@ -1766,7 +1766,7 @@ class TestConvenienceFunctions:
 
         config = {"name": "TestEnsemble"}
 
-        result = parse_ensemble(config, task_type="graph_classification", validate=False)
+        _result = parse_ensemble(config, task_type="graph_classification", validate=False)
 
         mock_parser.parse_ensemble.assert_called_once_with(config, "graph_classification", False)
 
@@ -1815,7 +1815,7 @@ class TestConvenienceFunctions:
 
         config = {"name": "TestEnsemble"}
 
-        result = validate_config(config, config_type="ensemble")
+        _result = validate_config(config, config_type="ensemble")
 
         mock_parser.validate_config.assert_called_once_with(config, "ensemble")
 
@@ -1887,7 +1887,7 @@ class TestEdgeCasesAndErrorHandling:
             ],
         }
 
-        result = parser.parse_custom_architecture(config, validate=False)
+        _result = parser.parse_custom_architecture(config, validate=False)
 
         mock_builder.add_residual_connection.assert_called_once_with(0, 2, "add")
 
@@ -2037,7 +2037,7 @@ class TestEdgeCasesAndErrorHandling:
         config = {"name": None, "layers": [{"type": "GCNConv"}]}
 
         # Should handle None and use defaults
-        result = parser.parse_custom_architecture(config, validate=False)
+        _result = parser.parse_custom_architecture(config, validate=False)
 
         # name should default to 'CustomArchitecture' when None
         call_args = mock_builder_class.call_args

@@ -529,7 +529,7 @@ class TestMemoryOptimizerInitialization:
         """Test verbose=True produces logging during initialization."""
         with patch("torch.cuda.is_available", return_value=False):
             with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(verbose=True)
+                _optimizer = MemoryOptimizer(verbose=True)
 
         assert "MemoryOptimizer initialized" in caplog.text
 
@@ -538,7 +538,7 @@ class TestMemoryOptimizerInitialization:
         with caplog.at_level(logging.INFO):
             caplog.clear()
             with patch("torch.cuda.is_available", return_value=False):
-                optimizer = MemoryOptimizer(verbose=False)
+                _optimizer = MemoryOptimizer(verbose=False)
 
         init_logs = [r for r in caplog.records if "MemoryOptimizer initialized" in r.message]
         assert len(init_logs) == 0
@@ -626,7 +626,7 @@ class TestMixedPrecisionTraining:
             optimizer = MemoryOptimizer(mixed_precision=True, verbose=False)
 
         with patch("torch.cuda.amp.autocast") as mock_autocast:
-            mock_context = MagicMock()
+            _mock_context = MagicMock()
             mock_autocast.return_value.__enter__ = Mock(return_value=None)
             mock_autocast.return_value.__exit__ = Mock(return_value=None)
 
@@ -722,7 +722,7 @@ class TestGradientScaling:
         loss = torch.tensor(1.0, requires_grad=True)
 
         with patch.object(optimizer._grad_scaler, "scale", return_value=loss * 2) as mock_scale:
-            scaled_loss = optimizer.scale_loss(loss)
+            _scaled_loss = optimizer.scale_loss(loss)
             mock_scale.assert_called_once_with(loss)
 
     def test_scale_loss_without_scaler(self):
@@ -874,7 +874,7 @@ class TestGradientCheckpointing:
         with patch("torch.cuda.is_available", return_value=False):
             optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=False)
 
-        result = optimizer.enable_gradient_checkpointing(mock_model, checkpoint_segments=4)
+        _result = optimizer.enable_gradient_checkpointing(mock_model, checkpoint_segments=4)
 
         mock_model.gradient_checkpointing_enable.assert_called_once()
 
@@ -896,7 +896,7 @@ class TestGradientCheckpointing:
             mock_checkpoint.return_value = torch.randn(4, 10)
 
             input_tensor = torch.randn(4, 10, requires_grad=True)
-            result = optimizer.checkpoint_sequential(functions, 2, input_tensor)
+            _result = optimizer.checkpoint_sequential(functions, 2, input_tensor)
 
             mock_checkpoint.assert_called_once()
 
@@ -1312,7 +1312,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader)
+            _result = optimizer.optimize_dataloader(mock_dataloader)
 
             mock_dl_class.assert_called_once()
 
@@ -1323,7 +1323,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader, num_workers=8)
+            _result = optimizer.optimize_dataloader(mock_dataloader, num_workers=8)
 
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["num_workers"] == 8
@@ -1336,7 +1336,7 @@ class TestDataLoaderOptimization:
         with patch("torch.get_num_threads", return_value=8):
             with patch("torch.utils.data.DataLoader") as mock_dl_class:
                 mock_dl_class.return_value = MagicMock()
-                result = optimizer.optimize_dataloader(mock_dataloader)
+                _result = optimizer.optimize_dataloader(mock_dataloader)
 
                 call_kwargs = mock_dl_class.call_args[1]
                 # min(4, 8) = 4
@@ -1349,7 +1349,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader, prefetch_factor=4)
+            _result = optimizer.optimize_dataloader(mock_dataloader, prefetch_factor=4)
 
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["prefetch_factor"] == 4
@@ -1361,7 +1361,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader)
+            _result = optimizer.optimize_dataloader(mock_dataloader)
 
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["pin_memory"] is True
@@ -1373,7 +1373,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader)
+            _result = optimizer.optimize_dataloader(mock_dataloader)
 
             call_args = mock_dl_class.call_args[0]
             assert call_args[0] is mock_dataloader.dataset
@@ -1385,7 +1385,7 @@ class TestDataLoaderOptimization:
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
-            result = optimizer.optimize_dataloader(mock_dataloader)
+            _result = optimizer.optimize_dataloader(mock_dataloader)
 
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["batch_size"] == 32
@@ -1399,12 +1399,12 @@ class TestDataLoaderOptimization:
             mock_dl_class.return_value = MagicMock()
 
             # With num_workers > 0
-            result = optimizer.optimize_dataloader(mock_dataloader, num_workers=4)
+            _result = optimizer.optimize_dataloader(mock_dataloader, num_workers=4)
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["persistent_workers"] is True
 
             # With num_workers = 0
-            result = optimizer.optimize_dataloader(mock_dataloader, num_workers=0)
+            _result = optimizer.optimize_dataloader(mock_dataloader, num_workers=0)
             call_kwargs = mock_dl_class.call_args[1]
             assert call_kwargs["persistent_workers"] is False
 
@@ -1417,7 +1417,7 @@ class TestDataLoaderOptimization:
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
             with caplog.at_level(logging.INFO):
-                result = optimizer.optimize_dataloader(mock_dataloader)
+                _result = optimizer.optimize_dataloader(mock_dataloader)
 
         assert "Optimized DataLoader" in caplog.text
 
@@ -1862,7 +1862,7 @@ class TestEdgeCasesAndErrors:
 
             input_tensor = torch.randn(4, 10, requires_grad=True)
             # This should handle empty sequential
-            result = optimizer.checkpoint_sequential(functions, 0, input_tensor)
+            _result = optimizer.checkpoint_sequential(functions, 0, input_tensor)
 
     def test_memory_stats_zero_total_memory(self):
         """Test get_memory_stats handles zero total memory gracefully."""
@@ -1940,7 +1940,7 @@ class TestLogging:
         """Test MemoryOptimizer init logs on verbose."""
         with patch("torch.cuda.is_available", return_value=False):
             with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(verbose=True)
+                _optimizer = MemoryOptimizer(verbose=True)
 
         assert any("MemoryOptimizer initialized" in record.message for record in caplog.records)
 
@@ -1987,7 +1987,7 @@ class TestIntegrationScenarios:
             )
 
         # Enable gradient checkpointing
-        model = optimizer.enable_gradient_checkpointing(simple_model)
+        _model = optimizer.enable_gradient_checkpointing(simple_model)
 
         # Simulate training steps
         for i in range(15):
