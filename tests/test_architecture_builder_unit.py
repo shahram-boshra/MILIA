@@ -125,18 +125,35 @@ def setup_module(module):
     from milia_pipeline.models.builders.architecture_builder import (
         ResidualConnection as _ResidualConnection,
     )
-    from milia_pipeline.models.builders.layer_registry import (
+    # CRITICAL: Import FunctionalLayerWrapper from architecture_builder (the
+    # module under test), NOT from layer_registry (the mocked dependency).
+    # architecture_builder.py:871 uses isinstance(layer, FunctionalLayerWrapper)
+    # with its own bound reference to the real class.
+    from milia_pipeline.models.builders.architecture_builder import (
         FunctionalLayerWrapper as _FunctionalLayerWrapper,
     )
 
     # --- Import mocked dependencies ---
-    from milia_pipeline.models.builders.layer_registry import (
+    # CRITICAL: Import LayerCategory from architecture_builder (the module under
+    # test), NOT from layer_registry (the mocked dependency). When the full suite
+    # runs, architecture_builder is already cached with the REAL LayerCategory
+    # enum bound. validate_architecture() compares metadata.category against real
+    # enum members, so mock metadata must use the same enum — not string fakes.
+    from milia_pipeline.models.builders.architecture_builder import (
         LayerCategory as _LayerCategory,
     )
     from milia_pipeline.models.builders.layer_registry import (
         LayerMetadata as _LayerMetadata,
     )
-    from milia_pipeline.models.builders.layer_registry import (
+
+    # CRITICAL: Import LayerNotFoundError from architecture_builder (the module
+    # under test), NOT from layer_registry (the mocked dependency).
+    # When the full suite runs, architecture_builder may already be cached in
+    # sys.modules with the REAL LayerNotFoundError bound. Importing from the
+    # mock layer_registry would give us a different class than what
+    # architecture_builder.py:308 actually raises, causing pytest.raises()
+    # to miss the exception.
+    from milia_pipeline.models.builders.architecture_builder import (
         LayerNotFoundError as _LayerNotFoundError,
     )
 
@@ -165,6 +182,17 @@ def setup_module(module):
     module.LayerMetadata = LayerMetadata
     module.LayerNotFoundError = LayerNotFoundError
     module.FunctionalLayerWrapper = FunctionalLayerWrapper
+
+    # --- Sync mock_layer_category with real enum values ---
+    # When the full suite runs, architecture_builder is already cached with the
+    # real LayerCategory enum. validate_architecture() compares against real enum
+    # members, so mock metadata .category attributes must also use them.
+    mock_layer_category.CONV = _LayerCategory.CONVOLUTIONAL
+    mock_layer_category.POOLING = _LayerCategory.POOLING
+    mock_layer_category.ACTIVATION = _LayerCategory.ACTIVATION
+    mock_layer_category.NORMALIZATION = _LayerCategory.NORMALIZATION
+    mock_layer_category.DROPOUT = _LayerCategory.DROPOUT
+    mock_layer_category.LINEAR = _LayerCategory.LINEAR
 
 
 def teardown_module(module):
@@ -1787,8 +1815,9 @@ class TestCustomArchitecture:
             arch(x, edge_index=None)
             # If it doesn't raise, that's also acceptable (implementation might handle it gracefully)
             assert True  # Just verify it executed
-        except ValueError as e:
-            # If it does raise, verify it's the right error
+        except (ValueError, ArchitectureError) as e:
+            # ValueError: direct check at line 878 of architecture_builder.py
+            # ArchitectureError: ValueError wrapped by the outer except at line 891
             assert "edge_index" in str(e).lower()
 
     @patch("milia_pipeline.models.builders.architecture_builder.layer_registry")
