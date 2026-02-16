@@ -471,7 +471,7 @@ class TestMoleculeDataConverterHandlers(unittest.TestCase):
         dataset_config = Mock(spec=DatasetConfig)
         dataset_config.dataset_type = "DFT"
 
-        converter = MoleculeDataConverter(
+        _converter = MoleculeDataConverter(
             dataset_config=dataset_config,
             filter_config=self.filter_config,
             processing_config=self.processing_config,
@@ -1222,7 +1222,7 @@ class TestMoleculeDataConverterDatasetTypes(unittest.TestCase):
         dft_config = Mock(spec=DatasetConfig)
         dft_config.dataset_type = "DFT"
 
-        converter = MoleculeDataConverter(
+        _converter = MoleculeDataConverter(
             dataset_config=dft_config,
             filter_config=self.filter_config,
             processing_config=self.processing_config,
@@ -1242,7 +1242,7 @@ class TestMoleculeDataConverterDatasetTypes(unittest.TestCase):
         dmc_config = Mock(spec=DatasetConfig)
         dmc_config.dataset_type = "DMC"
 
-        converter = MoleculeDataConverter(
+        _converter = MoleculeDataConverter(
             dataset_config=dmc_config,
             filter_config=self.filter_config,
             processing_config=self.processing_config,

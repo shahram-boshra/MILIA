@@ -933,7 +933,7 @@ class TestCreateStudyLogging:
 
         # Resume study and check logging
         with patch("milia_pipeline.models.hpo.backends.optuna_backend.logger") as mock_logger:
-            study2 = backend_instance.create_study(
+            _study2 = backend_instance.create_study(
                 study_name=study_name, direction="minimize", storage=storage, load_if_exists=True
             )
 
@@ -1637,7 +1637,7 @@ class TestBuildSamplerRegistryCaching:
         fresh_backend_instance._build_sampler_registry()
 
         # Patch hasattr to track if it's called (which would indicate rebuilding)
-        with patch.object(optuna, "samplers") as mock_samplers:
+        with patch.object(optuna, "samplers") as _mock_samplers:
             # Second call should use cache, not access optuna.samplers
             registry = fresh_backend_instance._build_sampler_registry()
 

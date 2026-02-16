@@ -326,7 +326,7 @@ class TestLoggingSetup(unittest.TestCase):
             temp_log_file = f.name
 
         try:
-            logger = setup_logging(log_file=temp_log_file)
+            _logger = setup_logging(log_file=temp_log_file)
 
             # File handler is added to ROOT logger, not milia_Main logger
             # The milia_Main logger inherits from root via propagation
@@ -772,7 +772,7 @@ class TestDatasetStatistics(unittest.TestCase):
         mock_get_feature.return_value = True
 
         # Should collect uncertainty statistics
-        stats = analyze_dataset_statistics(dataset, logger, dataset.dataset_config)
+        _stats = analyze_dataset_statistics(dataset, logger, dataset.dataset_config)
 
         #  Should call _get_dataset_feature
         mock_get_feature.assert_called()
@@ -2525,7 +2525,7 @@ class TestCallbackCreationNullHandling(unittest.TestCase):
         mock_checkpoint = Mock()
         mock_callback_factory.from_config.return_value = [mock_early_stopping, mock_checkpoint]
 
-        result = _create_callbacks(
+        _result = _create_callbacks(
             self.training_config_with_null, self.mock_logger, config=self.full_config
         )
 
@@ -2560,7 +2560,7 @@ class TestCallbackCreationNullHandling(unittest.TestCase):
             }
         }
 
-        result = _create_callbacks(
+        _result = _create_callbacks(
             config_with_explicit_path, self.mock_logger, config=self.full_config
         )
 
@@ -2601,7 +2601,7 @@ class TestCallbackCreationNullHandling(unittest.TestCase):
             }
         }
 
-        result = _create_callbacks(
+        _result = _create_callbacks(
             config_missing_dirpath, self.mock_logger, config=self.full_config
         )
 
@@ -2706,7 +2706,7 @@ class TestCallbackCreationNullHandling(unittest.TestCase):
             }
         }
 
-        result = _create_callbacks(config_with_tilde, self.mock_logger, config=self.full_config)
+        _result = _create_callbacks(config_with_tilde, self.mock_logger, config=self.full_config)
 
         mock_callback_factory.from_config.assert_called_once()
         call_kwargs = mock_callback_factory.from_config.call_args[1]
@@ -2732,7 +2732,7 @@ class TestCallbackCreationNullHandling(unittest.TestCase):
             }
         }
 
-        result = _create_callbacks(
+        _result = _create_callbacks(
             self.training_config_with_null,  # null dirpath triggers auto-generation
             self.mock_logger,
             config=config_with_tilde_root,

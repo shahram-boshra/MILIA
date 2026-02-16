@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Smoke Test: Pipeline End-to-End
 ===============================

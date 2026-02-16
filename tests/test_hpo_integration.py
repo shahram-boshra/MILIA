@@ -501,7 +501,7 @@ class TestTrainerHPOCallbackIntegration:
         )
 
         # Train for a couple epochs
-        results = trainer.fit()
+        _results = trainer.fit()
 
         # Verify trial.report was called with actual metrics
         assert mock_optuna_trial.report.called, "trial.report() should be called during training"
@@ -932,7 +932,7 @@ class TestHPOManagerFactoryIntegration:
         manager = HPOManager(config)
 
         # Run optimization with minimal dataset
-        mock_dataset = [MagicMock()]
+        _mock_dataset = [MagicMock()]
 
         # The optimize should attempt to use factory
         # This test verifies the integration point exists

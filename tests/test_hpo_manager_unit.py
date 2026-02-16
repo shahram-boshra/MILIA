@@ -409,7 +409,7 @@ class TestHPOManagerInit:
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
             config = MockHPOConfig(enabled=False)
-            manager = HPOManager(config)
+            _manager = HPOManager(config)
 
             mock_logger.warning.assert_called()
             assert "disabled" in str(mock_logger.warning.call_args).lower()
@@ -437,7 +437,7 @@ class TestHPOManagerInit:
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
             config = MockHPOConfig(enabled=True, backend="optuna")
-            manager = HPOManager(config)
+            _manager = HPOManager(config)
 
             mock_get_backend.assert_called_once_with("optuna")
 
@@ -451,7 +451,7 @@ class TestHPOManagerInit:
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
             config = MockHPOConfig(enabled=True, n_trials=50, backend="optuna")
-            manager = HPOManager(config)
+            _manager = HPOManager(config)
 
             mock_logger.info.assert_called()
             call_args_str = str(mock_logger.info.call_args)
@@ -508,7 +508,7 @@ class TestHPOManagerFromConfig:
                 from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
                 config_dict = {"enabled": True, "n_trials": 50}
-                manager = HPOManager.from_config(config_dict)
+                _manager = HPOManager.from_config(config_dict)
 
                 mock_hpoconfig_cls.from_dict.assert_called_once_with(config_dict)
 
@@ -3767,7 +3767,7 @@ class TestPrepareClassificationDataHpo:
                 # Should raise HPOError when discretization is needed but unavailable
                 # Note: Need to test with actual float tensor
                 try:
-                    result = _prepare_classification_data_hpo(
+                    _result = _prepare_classification_data_hpo(
                         train_data, val_data, "graph_classification"
                     )
                 except HPOError as e:

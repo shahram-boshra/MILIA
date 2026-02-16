@@ -1650,7 +1650,7 @@ class TestModelMonitorAnomalyDetection:
             )
 
         # Check for latency alerts
-        latency_alerts = [a for a in monitor.alerts if a.metric_type == "latency"]
+        _latency_alerts = [a for a in monitor.alerts if a.metric_type == "latency"]
         # May or may not trigger depending on implementation thresholds
 
     def test_check_for_anomalies_accuracy_degradation(
@@ -1688,7 +1688,7 @@ class TestModelMonitorAnomalyDetection:
             )
 
         # Check for accuracy degradation alerts
-        degradation_alerts = [
+        _degradation_alerts = [
             a
             for a in monitor.alerts
             if "degradation" in a.metric_type.lower() or "accuracy" in a.metric_type.lower()
@@ -2051,7 +2051,7 @@ class TestEdgeCases:
         identical_data = reference_data.clone()
 
         # Mock _calculate_drift to avoid the internal tensor boolean issue
-        with patch.object(full_monitor, "_calculate_drift", return_value=0.0) as mock_calc:
+        with patch.object(full_monitor, "_calculate_drift", return_value=0.0) as _mock_calc:
             drift_score = full_monitor.detect_drift(identical_data)
 
             # Should have minimal drift (close to 0)
@@ -2236,7 +2236,7 @@ class TestIntegrationScenarios:
             )
 
         # Check for critical alerts
-        critical_alerts = monitor.get_alerts(severity=AlertSeverity.CRITICAL)
+        _critical_alerts = monitor.get_alerts(severity=AlertSeverity.CRITICAL)
         # May or may not have alerts depending on accuracy degradation amount
 
 
@@ -2307,14 +2307,14 @@ class TestLoggingBehavior:
     def test_verbose_true_logs(self, caplog):
         """Test verbose logging during operations."""
         with caplog.at_level(logging.INFO):
-            monitor = ModelMonitor(model_name="verbose_test", verbose=True)
+            _monitor = ModelMonitor(model_name="verbose_test", verbose=True)
 
         # Logging may or may not be captured depending on handler configuration
 
     def test_verbose_false_reduced_logs(self, caplog):
         """Test reduced logging with verbose=False."""
         with caplog.at_level(logging.INFO):
-            monitor = ModelMonitor(model_name="quiet_test", verbose=False)
+            _monitor = ModelMonitor(model_name="quiet_test", verbose=False)
 
         # Should have fewer logs with verbose=False
 

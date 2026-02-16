@@ -1187,7 +1187,7 @@ class TestModelFactoryParameterFiltering:
         original_keys = set(hyperparameters.keys())
         original_values = hyperparameters.copy()
 
-        model = factory.create_model(
+        _model = factory.create_model(
             name="TestModel", hyperparameters=hyperparameters, task_type="graph_regression"
         )
 
@@ -1381,7 +1381,7 @@ class TestModelFactoryParameterFiltering:
             "epochs": 100,
         }
 
-        model = factory.create_model(
+        _model = factory.create_model(
             name="TestModel", hyperparameters=hyperparameters, task_type="graph_regression"
         )
 
@@ -2377,7 +2377,7 @@ class TestModelFactoryEnsembleModel:
 
         # Based on the code, it checks if validation['errors'] exists and raises
         try:
-            model = factory.create_model(
+            _model = factory.create_model(
                 name="ensemble",
                 hyperparameters={"ensemble_config": config},
                 task_type="graph_regression",

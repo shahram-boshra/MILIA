@@ -2270,9 +2270,9 @@ class TestRegistryStateIsolation:
 
     def test_registry_state_preserved_after_modification(self, mock_metric_class, cleanup_registry):
         """Test that cleanup_registry properly restores state."""
-        original_metric_count = len(MetricsRegistry._metrics)
-        original_classification_count = len(MetricsRegistry._classification_metrics)
-        original_regression_count = len(MetricsRegistry._regression_metrics)
+        _original_metric_count = len(MetricsRegistry._metrics)
+        _original_classification_count = len(MetricsRegistry._classification_metrics)
+        _original_regression_count = len(MetricsRegistry._regression_metrics)
 
         # Modify registry
         MetricsRegistry.register_custom_metric(

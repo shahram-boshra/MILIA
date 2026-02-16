@@ -1819,7 +1819,7 @@ class TestEdgeCasesAndErrors(unittest.TestCase):
 
     def test_very_large_vibmode_values_rejected(self):
         """Test that extremely large vibmode values are rejected"""
-        freqs = [100.0]
+        _freqs = [100.0]
         # Values > 1e100 indicate data corruption
         vibmodes = [np.array([[1e150, 0.0, 0.0]])]
 
@@ -2909,7 +2909,7 @@ class TestRefineMolecularDataMainEntry(unittest.TestCase):
 
     def test_refine_molecular_data_dmc(self):
         """Test refine_molecular_data with DMC handler and data - uses internal delegation."""
-        dmc_config = DatasetConfig(dataset_type="DMC")
+        _dmc_config = DatasetConfig(dataset_type="DMC")
         dmc_props = {"Etot": -100.5, "std": 0.01}
 
         # Use the internal delegation function directly to avoid parameter name mismatch

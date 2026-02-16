@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Test Suite: Regression — Featurization Consistency (Section 4.3)
 
@@ -179,7 +180,7 @@ def synthetic_pyg_data():
     """Minimal synthetic PyG Data object representing a simple molecule (ethanol-like)."""
     from torch_geometric.data import Data
 
-    num_atoms = 3
+    _num_atoms = 3
     # Node features: [atomic_num_one_hot (simplified)]
     x = torch.tensor([[6.0], [6.0], [8.0]], dtype=torch.float)
     # Edges: fully connected bidirectional for 3 atoms
@@ -1003,7 +1004,7 @@ class TestEndToEndFeaturizationChain:
         # Simulate what ModelLoader does: load checkpoint, extract data_info
         checkpoint = torch.load(ckpt_path, weights_only=False)
         loaded_data_info = checkpoint["data_info"]
-        loaded_config = loaded_data_info["structural_features_config"]
+        _loaded_config = loaded_data_info["structural_features_config"]
 
         # Simulate what Predictor does: model_info = {..., 'data_info': loaded_data_info}
         model_info = {

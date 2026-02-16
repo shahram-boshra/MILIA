@@ -535,7 +535,7 @@ class TestHPOManagerLossRegistryIntegration:
 
         mock_loss_registry.get_loss.return_value = nn.BCEWithLogitsLoss()
 
-        loss_fn = _create_loss_from_registry("link_prediction", None)
+        _loss_fn = _create_loss_from_registry("link_prediction", None)
 
         mock_loss_registry.get_loss.assert_called_once()
         call_args = mock_loss_registry.get_loss.call_args
@@ -548,7 +548,7 @@ class TestHPOManagerLossRegistryIntegration:
 
         mock_loss_registry.get_loss.return_value = nn.CrossEntropyLoss()
 
-        loss_fn = _create_loss_from_registry("graph_classification", None)
+        _loss_fn = _create_loss_from_registry("graph_classification", None)
 
         mock_loss_registry.get_loss.assert_called_once()
         call_args = mock_loss_registry.get_loss.call_args
@@ -606,7 +606,7 @@ class TestHPOManagerOptimizerRegistryIntegration:
 
         hpo_params = {"lr": 0.001, "weight_decay": 1e-5}
 
-        optimizer = _create_optimizer_from_registry(
+        _optimizer = _create_optimizer_from_registry(
             mock_model.parameters(), optimizer_params=hpo_params, optimizer_name="adam"
         )
 
@@ -667,7 +667,7 @@ class TestHPOManagerSchedulerRegistryIntegration:
         optimizer = torch.optim.Adam(mock_model.parameters())
         scheduler_params = {"patience": 10, "factor": 0.5}
 
-        scheduler = _create_scheduler_from_registry(
+        _scheduler = _create_scheduler_from_registry(
             optimizer, scheduler_params=scheduler_params, scheduler_name="reduce_on_plateau"
         )
 
@@ -932,7 +932,7 @@ class TestEndToEndHPOWorkflow:
 
         from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-        manager = HPOManager(mock_hpo_config)
+        _manager = HPOManager(mock_hpo_config)
 
         # Verify backend was retrieved
         mock_get_backend.assert_called_once()
@@ -1921,7 +1921,7 @@ class TestTaskTypeMappingCompleteness:
         """Test all task types are handled in data preparation."""
         from milia_pipeline.models.hpo.hpo_manager import _prepare_data_for_task_hpo
 
-        task_types = [
+        _task_types = [
             "graph_regression",
             "graph_classification",
             "node_regression",
@@ -2439,7 +2439,7 @@ class TestHPOManagerFromYamlIntegration:
         with patch.object(HPOManager, "from_config") as mock_from_config:
             mock_from_config.return_value = MagicMock()
 
-            manager = HPOManager.from_yaml("config.yaml", section="models.hpo")
+            _manager = HPOManager.from_yaml("config.yaml", section="models.hpo")
 
             mock_from_config.assert_called_once()
 

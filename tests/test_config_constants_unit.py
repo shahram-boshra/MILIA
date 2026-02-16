@@ -1384,7 +1384,7 @@ class TestRegistryInitialization:
             config_constants._REGISTRY_AVAILABLE = False
 
             with patch("builtins.__import__", side_effect=ImportError("Test import error")):
-                result = config_constants._init_registry()
+                _result = config_constants._init_registry()
                 # Should return False on import error
                 assert config_constants._REGISTRY_INITIALIZED is True
         finally:
@@ -1596,7 +1596,7 @@ class TestCacheInvalidation:
                 "milia_pipeline.config.config_constants.get_default_registry",
                 return_value=mock_registry,
             ):
-                result = config_constants._setup_registry_cache_invalidation()
+                _result = config_constants._setup_registry_cache_invalidation()
 
                 if mock_registry is not None:
                     mock_registry.add_on_change_callback.assert_called_once()

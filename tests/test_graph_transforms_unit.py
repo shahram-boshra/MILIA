@@ -939,7 +939,7 @@ class TestTransformComposerEdgeAttrIntegration:
 
             try:
                 # Call with sample_data parameter
-                compose = composer.compose_transforms(configs, sample_data=mock_data_with_edge_attr)
+                _compose = composer.compose_transforms(configs, sample_data=mock_data_with_edge_attr)
                 # Injection should have occurred
                 assert composer._edge_attr_injector.has_edge_attr is True
             except Exception:
@@ -1091,7 +1091,7 @@ class TestConfigurationValidator:
         # FIXED: ConfigurationValidator takes no arguments in __init__
         config_validator = ConfigurationValidator()
 
-        setup = {
+        _setup = {
             "transforms": [{"name": "AddSelfLoops"}],
             "research_context": "molecular_property_prediction",
         }

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # tests/test_smoke_imports.py
 
 """

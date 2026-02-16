@@ -1560,8 +1560,8 @@ class TestXXMDIntegrationFlow(unittest.TestCase):
         handler.validate_molecule_data(props, 0, "test")
 
         # Step 2: Process properties
-        processed_atoms = handler.process_property_value("atoms", props["atoms"], 0)
-        processed_energy = handler.process_property_value("energy", props["energy"], 0)
+        _processed_atoms = handler.process_property_value("atoms", props["atoms"], 0)
+        _processed_energy = handler.process_property_value("energy", props["energy"], 0)
 
         # Step 3: Enrich
         data = _make_pyg_data()

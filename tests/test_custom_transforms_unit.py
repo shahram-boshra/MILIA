@@ -612,7 +612,7 @@ class TestNormalizeVibrationalModes:
         transform = NormalizeVibrationalModes()
         # Empty vibmodes should raise error due to reshape issue
         with pytest.raises(TransformExecutionError):
-            result = transform(data)
+            _result = transform(data)
 
     def test_immutability(self):
         """Test that original data is not modified"""
@@ -1126,7 +1126,7 @@ class TestNormalizeTargets:
         original_copy = data.y.clone()
 
         transform = NormalizeTargets()
-        result = transform(data)
+        _result = transform(data)
 
         assert torch.allclose(data.y, original_copy)
 
@@ -1268,7 +1268,7 @@ class TestDiscretizeTargets:
         original_copy = data.y.clone()
 
         transform = DiscretizeTargets()
-        result = transform(data)
+        _result = transform(data)
 
         assert torch.allclose(data.y, original_copy)
 
@@ -1828,7 +1828,7 @@ class TestTransformIntegration:
 
         # First standardize (for intermediate processing/analysis)
         standardize = StandardizeTargets(attrs=["y"])
-        standardized = standardize(data)
+        _standardized = standardize(data)
 
         # Then discretize (for classification)
         discretize = DiscretizeTargets(n_bins=5)

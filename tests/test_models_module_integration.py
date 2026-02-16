@@ -949,7 +949,7 @@ class TestPerformanceIntegration:
         start = time.time()
 
         for _ in range(10):
-            model = factory.create_model(
+            _model = factory.create_model(
                 name="MockGNN",
                 hyperparameters={"hidden_channels": 64},
                 task_type="graph_regression",
@@ -1083,7 +1083,7 @@ class TestRegistryFactoryAdvancedIntegration:
         fresh_registry.register_model("TestModel", mock_gnn_model, mock_model_metadata)
 
         # Try to register again (should replace or fail gracefully)
-        result = fresh_registry.register_model("TestModel", mock_gnn_model, mock_model_metadata)
+        _result = fresh_registry.register_model("TestModel", mock_gnn_model, mock_model_metadata)
 
         # Should handle replacement appropriately
         assert fresh_registry.has_model("TestModel")
@@ -1169,7 +1169,7 @@ class TestConfigBridgeAdvancedIntegration:
 
         # Should either raise exception or handle gracefully
         try:
-            config = get_models_config()
+            _config = get_models_config()
             validate_models_config()
         except Exception:
             # Expected to catch validation errors

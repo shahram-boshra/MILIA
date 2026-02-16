@@ -2662,7 +2662,7 @@ class TestEdgeCasesAndErrorHandling:
         # Whitespace should be part of the lookup (case-insensitive)
         # This tests that the format is used as-is (lowercased)
         try:
-            result = convert_to_pyg(valid_dict_data, format="  dict  ")
+            _result = convert_to_pyg(valid_dict_data, format="  dict  ")
         except ValueError:
             pass  # Expected if whitespace isn't trimmed
 
@@ -3261,7 +3261,7 @@ class TestEnsure3DConformerForPrediction:
         mol = Chem.MolFromSmiles("C")  # Methane
 
         with patch("rdkit.Chem.AllChem.EmbedMolecule", return_value=-1):
-            result = _ensure_3d_conformer_for_prediction(mol, structural_features_config_with_3d)
+            _result = _ensure_3d_conformer_for_prediction(mol, structural_features_config_with_3d)
             # Should return False when embedding fails
             # Note: actual behavior depends on fallback logic
 
@@ -3361,7 +3361,7 @@ class TestEnsure3DConformerForPrediction:
 
         with patch.object(AllChem, "EmbedMolecule", side_effect=mock_embed):
             with caplog.at_level(logging.DEBUG):
-                result = _ensure_3d_conformer_for_prediction(
+                _result = _ensure_3d_conformer_for_prediction(
                     mol, structural_features_config_with_3d
                 )
 
@@ -3721,7 +3721,7 @@ class TestSMILESConverterStructuralFeatures:
     ):
         """Test logs featurization info when structural_features_config provided."""
         with caplog.at_level(logging.INFO):
-            converter = SMILESConverter(structural_features_config=structural_features_config_basic)
+            _converter = SMILESConverter(structural_features_config=structural_features_config_basic)
 
         assert any(
             "SMILESConverter using checkpoint featurization" in record.message

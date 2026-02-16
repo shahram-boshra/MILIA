@@ -299,7 +299,7 @@ class TestBasePreprocessorRun(unittest.TestCase):
         ConcreteCls = _make_concrete_preprocessor_class()
         preprocessor = ConcreteCls(config=_make_config(), logger=_make_logger())
 
-        original_preprocess = preprocessor.preprocess
+        _original_preprocess = preprocessor.preprocess
 
         def tracked_preprocess():
             call_order.append("preprocess")
@@ -432,7 +432,7 @@ class TestBasePreprocessorRun(unittest.TestCase):
         preprocessor = ConcreteCls(config=_make_config(), logger=_make_logger())
 
         with self.assertRaises(DataProcessingError):
-            result = preprocessor.run()
+            _result = preprocessor.run()
             self.fail("run() should not reach this point")
 
     def test_run_wraps_data_processing_error_from_preprocess(self):
@@ -774,7 +774,7 @@ class TestBasePreprocessorIntegrationScenarios(unittest.TestCase):
         def preprocess_impl(self):
             return Path(self._tmpdir) / "never_created.npz"
 
-        ConcreteCls = _make_concrete_preprocessor_class(preprocess_impl=preprocess_impl)
+        _ConcreteCls = _make_concrete_preprocessor_class(preprocess_impl=preprocess_impl)
         # Bind self._tmpdir into the preprocess function scope
         tmpdir = self._tmpdir
 

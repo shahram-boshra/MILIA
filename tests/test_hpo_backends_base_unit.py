@@ -1563,8 +1563,8 @@ class TestEdgeCases:
         with patch.dict(
             "sys.modules", {"milia_pipeline.models.hpo.backends.optuna_backend": mock_module}
         ):
-            backend1 = get_backend("optuna")
-            backend2 = get_backend("optuna")
+            _backend1 = get_backend("optuna")
+            _backend2 = get_backend("optuna")
 
             assert mock_optuna_cls.call_count == 2
 
@@ -1781,7 +1781,7 @@ class TestBackendFactoryPatterns:
             backend = get_backend("optuna")
 
             # Backend should be usable through protocol interface
-            study = backend.create_study("test", "minimize")
+            _study = backend.create_study("test", "minimize")
             backend.create_study.assert_called_once_with("test", "minimize")
 
 

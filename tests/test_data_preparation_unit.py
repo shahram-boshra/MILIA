@@ -1728,7 +1728,7 @@ class TestExtractTargetsFromSource:
             for _ in range(3)
         ]
 
-        result = TaskDataPreparer._extract_targets_from_source(
+        _result = TaskDataPreparer._extract_targets_from_source(
             data, "x", [0, 1, 2], "y", mock_logger, "train"
         )
 
@@ -1745,7 +1745,7 @@ class TestExtractTargetsFromSource:
             for _ in range(3)
         ]
 
-        result = TaskDataPreparer._extract_targets_from_source(
+        _result = TaskDataPreparer._extract_targets_from_source(
             data, "x", None, "y", mock_logger, "train"
         )
 
@@ -1764,7 +1764,7 @@ class TestExtractTargetsFromSource:
             for _ in range(3)
         ]
 
-        result = TaskDataPreparer._extract_targets_from_source(
+        _result = TaskDataPreparer._extract_targets_from_source(
             data, "edge_attr", None, "edge_y", mock_logger, "train"
         )
 
@@ -2071,7 +2071,7 @@ class TestConvenienceFunctions:
         with patch.object(TaskDataPreparer, "prepare_for_task") as mock_prepare:
             mock_prepare.return_value = (train_data_list, val_data_list, test_data_list, None)
 
-            result = prepare_data_for_task(
+            _result = prepare_data_for_task(
                 train_data_list, val_data_list, test_data_list, task_type="graph_regression"
             )
 
@@ -2168,7 +2168,7 @@ class TestConvenienceFunctions:
         ]
 
         # Store original x values
-        original_x_values = [data.x.clone() for data in original_data]
+        _original_x_values = [data.x.clone() for data in original_data]
 
         train, val, test, num_classes = prepare_data_for_task(
             original_data, original_data[:3], original_data[:2], task_type="graph_classification"

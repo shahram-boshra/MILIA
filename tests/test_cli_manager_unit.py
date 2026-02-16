@@ -1018,7 +1018,7 @@ class TestArgumentValidation(unittest.TestCase):
         """Test basic configuration validation success"""
         mock_load_config.return_value = create_test_config()
         args = self._parse_only([])
-        config = self.cli.load_and_merge_config(args)
+        _config = self.cli.load_and_merge_config(args)
 
         # Should not raise any exception
         result = self.cli.validate_configuration(args)
@@ -1077,7 +1077,7 @@ class TestPluginOperations(unittest.TestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_plugin_info_operation_success(self, mock_stdout):
         """Test plugin info operation success"""
-        args = self._parse_only(["--plugin-info", "test_plugin_1"])
+        _args = self._parse_only(["--plugin-info", "test_plugin_1"])
 
         self.cli._show_plugin_info_operation("test_plugin_1")
 
@@ -1089,7 +1089,7 @@ class TestPluginOperations(unittest.TestCase):
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)
     def test_plugin_info_operation_not_found(self):
         """Test plugin info operation with non-existent plugin"""
-        args = self._parse_only(["--plugin-info", "nonexistent"])
+        _args = self._parse_only(["--plugin-info", "nonexistent"])
 
         with self.assertRaises(CLIValidationError):
             self.cli._show_plugin_info_operation("nonexistent")
@@ -1395,7 +1395,7 @@ class TestComprehensiveIntegration(unittest.TestCase):
         mock_load_config.return_value = create_test_config()
 
         # Parse arguments for plugin operations
-        args = self._parse_only(["--enable-plugin", "test_plugin_1"])
+        _args = self._parse_only(["--enable-plugin", "test_plugin_1"])
 
         # Execute plugin operation
         self.cli._enable_plugin_operation("test_plugin_1")
@@ -4011,7 +4011,7 @@ class TestPredictionPathValidation(unittest.TestCase):
             ]
         )
 
-        config = self.cli.load_and_merge_config(args)
+        _config = self.cli.load_and_merge_config(args)
 
         # Directory should be created
         self.assertTrue(new_output_dir.exists())
@@ -4030,7 +4030,7 @@ class TestPredictionPathValidation(unittest.TestCase):
         )
 
         # Should succeed but log warning
-        with patch.object(self.cli.logger, "warning") as mock_warning:
+        with patch.object(self.cli.logger, "warning") as _mock_warning:
             config = self.cli.load_and_merge_config(args)
             # Warning should have been called about .pt extension
             # Note: This depends on implementation details

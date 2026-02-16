@@ -1786,7 +1786,7 @@ class TestPluginRegistryAddPluginPath:
     def test_add_plugin_path_success(self, reset_plugin_registry, tmp_path):
         """Test adding a valid plugin directory path"""
         registry = PluginRegistry()
-        original_paths_count = len(registry._plugin_paths)
+        _original_paths_count = len(registry._plugin_paths)
         PluginRegistry.add_plugin_path(tmp_path)
         assert tmp_path.resolve() in registry._plugin_paths
         assert str(tmp_path.resolve()) in sys.path
@@ -1795,7 +1795,7 @@ class TestPluginRegistryAddPluginPath:
         """Test that adding the same path twice doesn't duplicate"""
         registry = PluginRegistry()
         PluginRegistry.add_plugin_path(tmp_path)
-        count_after_first = len(registry._plugin_paths)
+        _count_after_first = len(registry._plugin_paths)
         PluginRegistry.add_plugin_path(tmp_path)
         # Should NOT add a duplicate
         assert len([p for p in registry._plugin_paths if p == tmp_path.resolve()]) == 1
@@ -2287,7 +2287,7 @@ class TestEdgeCases:
     def test_empty_plugin_name(self, reset_plugin_registry):
         """Test handling of empty plugin name - should raise error in __post_init__"""
         with pytest.raises(PluginError, match="Plugin name is required"):
-            metadata = PluginMetadata(plugin_name="", version="1.0.0", author="Author")
+            _metadata = PluginMetadata(plugin_name="", version="1.0.0", author="Author")
 
     def test_special_characters_in_plugin_name(self, reset_plugin_registry):
         """Test handling of special characters in plugin name"""
@@ -2365,7 +2365,7 @@ class TestPerformance:
         # Lookup should be fast (O(1))
         start_time = time.time()
         for _ in range(1000):
-            info = PluginRegistry.get_plugin_info("plugin_50")
+            _info = PluginRegistry.get_plugin_info("plugin_50")
         elapsed = time.time() - start_time
 
         # Should be very fast

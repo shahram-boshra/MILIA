@@ -533,7 +533,7 @@ class TestModelCheckpoint:
     def test_save_top_k_zero_warning(self, temp_checkpoint_dir, caplog):
         """Test warning when save_top_k is 0."""
         with caplog.at_level(logging.WARNING):
-            mc = ModelCheckpoint(dirpath=temp_checkpoint_dir, save_top_k=0)
+            _mc = ModelCheckpoint(dirpath=temp_checkpoint_dir, save_top_k=0)
 
         assert "save_top_k=0, no checkpoints will be saved" in caplog.text
 
@@ -541,7 +541,7 @@ class TestModelCheckpoint:
         """Test that checkpoint directory is created."""
         with tempfile.TemporaryDirectory() as temp_dir:
             checkpoint_dir = Path(temp_dir) / "new_dir" / "checkpoints"
-            mc = ModelCheckpoint(dirpath=checkpoint_dir)
+            _mc = ModelCheckpoint(dirpath=checkpoint_dir)
             assert checkpoint_dir.exists()
 
     def test_save_checkpoint_basic(self, mock_trainer, temp_checkpoint_dir):
@@ -1104,7 +1104,7 @@ class TestTensorBoardLogger:
                 "milia_pipeline.models.training.callbacks._is_tensorboard_available",
                 return_value=True,
             ):
-                tb = TensorBoardLogger(log_dir=log_dir)
+                _tb = TensorBoardLogger(log_dir=log_dir)
                 assert log_dir.exists()
 
     def test_on_train_begin_creates_writer(self, mock_trainer, temp_tensorboard_dir):
@@ -1132,7 +1132,7 @@ class TestTensorBoardLogger:
             patch.object(tb, "_tensorboard_available", True),
             patch(
                 "milia_pipeline.models.training.callbacks.TensorBoardLogger.on_train_begin"
-            ) as mock_method,
+            ) as _mock_method,
         ):
             # Call the actual method but verify behavior
             tb._tensorboard_available = True
@@ -1602,7 +1602,7 @@ class TestEdgeCases:
     def test_model_checkpoint_path_with_special_characters(self, temp_checkpoint_dir):
         """Test ModelCheckpoint with special characters in paths."""
         subdir = temp_checkpoint_dir / "test-model_v1.0"
-        mc = ModelCheckpoint(dirpath=subdir, verbose=False)
+        _mc = ModelCheckpoint(dirpath=subdir, verbose=False)
         assert subdir.exists()
 
     def test_callbacks_with_empty_metrics(self, mock_trainer):
@@ -1913,7 +1913,7 @@ class TestCallbackFactory:
             "progress_bar": {"enabled": True},
         }
         with caplog.at_level(logging.INFO):
-            callbacks = CallbackFactory.from_config(
+            _callbacks = CallbackFactory.from_config(
                 callback_config=config, working_root_dir=temp_working_dir
             )
 

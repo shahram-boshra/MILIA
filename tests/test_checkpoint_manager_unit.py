@@ -496,7 +496,7 @@ class TestResolvePathMethod:
         # Ensure parent doesn't exist
         assert not expected_parent.exists()
 
-        result = checkpoint_manager._resolve_path(nested_path, create_parents=True)
+        _result = checkpoint_manager._resolve_path(nested_path, create_parents=True)
 
         assert expected_parent.exists()
         assert expected_parent.is_dir()
@@ -506,7 +506,7 @@ class TestResolvePathMethod:
         nested_path = "another/nested/path/file.pt"
         expected_parent = temp_checkpoint_dir / "another/nested/path"
 
-        result = checkpoint_manager._resolve_path(nested_path, create_parents=False)
+        _result = checkpoint_manager._resolve_path(nested_path, create_parents=False)
 
         # Parent should NOT be created
         assert not expected_parent.exists()

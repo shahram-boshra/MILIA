@@ -335,7 +335,7 @@ class TestDependencyAvailability:
             from milia_pipeline.models.training.visualization import TrainingVisualizer
 
             with caplog.at_level(logging.WARNING):
-                visualizer = TrainingVisualizer(basic_metrics_history)
+                _visualizer = TrainingVisualizer(basic_metrics_history)
 
             assert "matplotlib not available" in caplog.text.lower()
 
@@ -345,7 +345,7 @@ class TestDependencyAvailability:
             from milia_pipeline.models.training.visualization import TrainingVisualizer
 
             with caplog.at_level(logging.WARNING):
-                visualizer = TrainingVisualizer(basic_metrics_history)
+                _visualizer = TrainingVisualizer(basic_metrics_history)
 
             assert "plotly not available" in caplog.text.lower()
 
@@ -1171,7 +1171,7 @@ class TestPlotTrainingSummary:
         assert not new_dir.exists()
 
         visualizer = TrainingVisualizer(comprehensive_metrics_history)
-        saved_paths = visualizer.plot_training_summary(output_dir=new_dir)
+        _saved_paths = visualizer.plot_training_summary(output_dir=new_dir)
 
         assert new_dir.exists()
 
@@ -1802,8 +1802,8 @@ class TestIntegration:
         # Generate all plots
         if MATPLOTLIB_AVAILABLE:
             loss_fig = visualizer.plot_loss_curves(save_path=temp_output_dir / "loss.png")
-            metrics_fig = visualizer.plot_metrics(save_path=temp_output_dir / "metrics.png")
-            lr_fig = visualizer.plot_learning_rate(save_path=temp_output_dir / "lr.png")
+            _metrics_fig = visualizer.plot_metrics(save_path=temp_output_dir / "metrics.png")
+            _lr_fig = visualizer.plot_learning_rate(save_path=temp_output_dir / "lr.png")
 
             assert loss_fig is not None
 
@@ -1827,7 +1827,7 @@ class TestIntegration:
         individual_dir.mkdir(parents=True, exist_ok=True)
 
         # Then generate individual plots
-        individual_paths = {
+        _individual_paths = {
             "loss": visualizer.plot_loss_curves(save_path=individual_dir / "loss.png"),
             "lr": visualizer.plot_learning_rate(save_path=individual_dir / "lr.png"),
         }

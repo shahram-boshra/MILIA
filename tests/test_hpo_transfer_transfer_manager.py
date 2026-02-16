@@ -1226,7 +1226,7 @@ class TestHPOTransferManagerInit:
 
         mock_meta_features.return_value = (MockMetaFeatureExtractor, MockMetaFeatureConfig)
 
-        manager = HPOTransferManager()
+        _manager = HPOTransferManager()
 
         mock_meta_features.assert_called_once()
 
@@ -1255,7 +1255,7 @@ class TestHPOTransferManagerInit:
             MockTransferredTrial,
         )
 
-        manager = HPOTransferManager()
+        _manager = HPOTransferManager()
 
         mock_warm_start.assert_called_once()
 
@@ -1279,7 +1279,7 @@ class TestHPOTransferManagerInit:
 
         mock_hpo_error.return_value = MockHPOError
 
-        manager = HPOTransferManager()
+        _manager = HPOTransferManager()
 
         mock_hpo_error.assert_called_once()
 
@@ -1334,7 +1334,7 @@ class TestHPOTransferManagerInit:
         )
 
         config = TransferConfig(persist_meta_db=True, meta_db_path="/path/to/meta_db.json")
-        manager = HPOTransferManager(config)
+        _manager = HPOTransferManager(config)
 
         # Should have attempted to check if file exists
         mock_exists.assert_called()

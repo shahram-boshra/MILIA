@@ -485,7 +485,7 @@ class TestFineTunerFromCheckpoint:
 
         mock_loader_class.load_from_checkpoint.return_value = (simple_linear_model, {})
 
-        fine_tuner = FineTuner.from_checkpoint(checkpoint_path, working_root_dir=working_root_dir)
+        _fine_tuner = FineTuner.from_checkpoint(checkpoint_path, working_root_dir=working_root_dir)
 
         mock_loader_class.load_from_checkpoint.assert_called_once_with(
             checkpoint_path=checkpoint_path, working_root_dir=working_root_dir, device=None
@@ -512,7 +512,7 @@ class TestFineTunerFromCheckpoint:
 
         mock_loader_class.load_from_checkpoint.return_value = (simple_linear_model, {})
 
-        fine_tuner = FineTuner.from_checkpoint(
+        _fine_tuner = FineTuner.from_checkpoint(
             checkpoint_path, working_root_dir=working_root_dir, device=cpu_device
         )
 
@@ -768,7 +768,7 @@ class TestPrepareForFinetuning:
         self, simple_linear_model, basic_hyper_parameters, working_root_dir
     ):
         """Test prepare_for_finetuning replaces output head with new dimensions."""
-        original_out = simple_linear_model.fc2.out_features
+        _original_out = simple_linear_model.fc2.out_features
         new_out_channels = 5
 
         fine_tuner = FineTuner(
@@ -1479,7 +1479,7 @@ class TestReplaceOutputHead:
         )
 
         with caplog.at_level(logging.WARNING):
-            result = fine_tuner._replace_output_head(model, 5)
+            _result = fine_tuner._replace_output_head(model, 5)
 
         assert any("No linear layer found" in record.message for record in caplog.records)
 
@@ -1742,7 +1742,7 @@ class TestEdgeCasesAndErrorHandling:
         )
 
         # First call - freeze encoder
-        result1 = fine_tuner.prepare_for_finetuning(freeze_strategy=FreezeStrategy.ALL_BUT_LAST)
+        _result1 = fine_tuner.prepare_for_finetuning(freeze_strategy=FreezeStrategy.ALL_BUT_LAST)
 
         # Second call - unfreeze all
         result2 = fine_tuner.prepare_for_finetuning(freeze_strategy=FreezeStrategy.NONE)
@@ -1851,7 +1851,7 @@ class TestDeviceHandling:
 
         mock_loader_class.load_from_checkpoint.return_value = (simple_linear_model, {})
 
-        fine_tuner = FineTuner.from_checkpoint(
+        _fine_tuner = FineTuner.from_checkpoint(
             checkpoint_path, working_root_dir=working_root_dir, device=cpu_device
         )
 
@@ -1879,7 +1879,7 @@ class TestDeviceHandling:
 
         mock_loader_class.load_from_checkpoint.return_value = (simple_linear_model, {})
 
-        fine_tuner = FineTuner.from_checkpoint(
+        _fine_tuner = FineTuner.from_checkpoint(
             checkpoint_path, working_root_dir=working_root_dir, device=None
         )
 

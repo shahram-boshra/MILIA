@@ -1263,7 +1263,7 @@ class TestSchedulerFunctionality:
             after_scheduler_params={"step_size": 2, "gamma": 0.5},
         )
 
-        initial_lr = simple_optimizer.param_groups[0]["lr"]
+        _initial_lr = simple_optimizer.param_groups[0]["lr"]
 
         # During warmup, LR should increase
         scheduler.step()
@@ -1274,7 +1274,7 @@ class TestSchedulerFunctionality:
 
         # After warmup (step 3), should reach initial_lr
         scheduler.step()
-        lr_after_warmup = simple_optimizer.param_groups[0]["lr"]
+        _lr_after_warmup = simple_optimizer.param_groups[0]["lr"]
 
         # Then step_lr takes over
         scheduler.step()
@@ -1403,7 +1403,7 @@ class TestEdgeCases:
         """Test that PyTorch raises error for optimizer with empty parameters."""
         # PyTorch explicitly raises ValueError for empty parameter list
         with pytest.raises(ValueError, match="optimizer got an empty parameter list"):
-            optimizer = optim.SGD([], lr=0.1)
+            _optimizer = optim.SGD([], lr=0.1)
 
     def test_very_large_t_max(self, simple_optimizer):
         """Test cosine annealing with very large T_max."""

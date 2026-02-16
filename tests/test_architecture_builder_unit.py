@@ -1894,7 +1894,7 @@ class TestCustomArchitecture:
         )
 
         x = torch.randn(10, 16)
-        output = arch(x)
+        _output = arch(x)
 
         # Projection should be created dynamically
         assert "rc_0" in arch.projections
@@ -1954,7 +1954,7 @@ class TestCustomArchitecture:
         batch = torch.tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
         edge_index = torch.tensor([[0, 1], [1, 0]], dtype=torch.long)
 
-        output = arch(x, edge_index=edge_index, batch=batch)
+        _output = arch(x, edge_index=edge_index, batch=batch)
 
         # Verify functional layer was called with all available arguments
         mock_layer.assert_called_once()
@@ -1997,7 +1997,7 @@ class TestCustomArchitecture:
         # The layer receives x, edge_index, edge_attr - verify they were passed
         # Check either positional or keyword arguments
         all_args = list(call_args.args)
-        all_kwargs = dict(call_args.kwargs)
+        _all_kwargs = dict(call_args.kwargs)
 
         # At minimum, x (current tensor) should be passed
         assert len(all_args) >= 1
@@ -2112,7 +2112,7 @@ class TestCustomArchitecture:
         assert isinstance(arch.projections, nn.ModuleDict)
 
         x = torch.randn(10, 16)
-        output = arch(x)
+        _output = arch(x)
 
         # After forward, projection should be in ModuleDict
         assert "rc_0" in arch.projections

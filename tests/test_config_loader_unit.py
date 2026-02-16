@@ -485,9 +485,9 @@ class TestPhase5RegistryIntegration(unittest.TestCase):
         from milia_pipeline.config.config_loader import _init_registry
 
         # Mock the registry module imports
-        with patch("milia_pipeline.datasets.registry.list_all") as mock_list_all:
-            with patch("milia_pipeline.datasets.registry.get") as mock_get:
-                with patch("milia_pipeline.datasets.registry.is_registered") as mock_is_registered:
+        with patch("milia_pipeline.datasets.registry.list_all") as _mock_list_all:
+            with patch("milia_pipeline.datasets.registry.get") as _mock_get:
+                with patch("milia_pipeline.datasets.registry.is_registered") as _mock_is_registered:
                     result = _init_registry()
 
                     # Should return True and set flags

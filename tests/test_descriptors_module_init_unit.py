@@ -188,7 +188,7 @@ class TestModuleInitialization:
         """Test version follows semantic versioning (SemVer 2.0.0)"""
         # Semantic versioning pattern: MAJOR.MINOR.PATCH with optional pre-release/build metadata
         # Reference: https://semver.org/
-        semver_pattern = r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+        _semver_pattern = r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 
         # For simpler validation, at minimum check MAJOR.MINOR.PATCH
         version_parts = __version__.split(".")
@@ -1006,8 +1006,8 @@ class TestValidatorComponents:
         result = filter_by_requirements(mock_mol, ["MolWt"])
 
         # Should have expected keys
-        expected_keys = {"valid", "invalid", "molecule_has_3d"}
-        actual_keys = set(result.keys())
+        _expected_keys = {"valid", "invalid", "molecule_has_3d"}
+        _actual_keys = set(result.keys())
 
         # At minimum should have valid/invalid
         assert "valid" in result or len(result) > 0
@@ -1398,8 +1398,8 @@ class TestIntegration:
 
         if meta is not None:
             # Check requirements
-            requires_3d = meta.requires_3d
-            requires_charges = meta.requires_charges
+            _requires_3d = meta.requires_3d
+            _requires_charges = meta.requires_charges
 
             # Filter descriptors
             test_list = ["MolWt", "RadiusOfGyration"]
@@ -1572,7 +1572,7 @@ class TestEdgeCases:
 
         # Modifying the returned list should not affect the constant
         if isinstance(names, list):
-            names_copy = names.copy()  # Work with a copy
+            _names_copy = names.copy()  # Work with a copy
             assert len(ALL_DESCRIPTORS) == original_length, "Constant should not be modified"
 
     def test_calculator_with_none_molecule(self):

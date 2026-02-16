@@ -332,7 +332,7 @@ class TestOptunaPruningCallbackInit:
                 OptunaPruningCallback,
             )
 
-            callback = OptunaPruningCallback(trial=mock_trial, monitor="val_mae", report_every=3)
+            _callback = OptunaPruningCallback(trial=mock_trial, monitor="val_mae", report_every=3)
 
             mock_logger.debug.assert_called()
             debug_calls = [str(c) for c in mock_logger.debug.call_args_list]
@@ -1657,7 +1657,7 @@ class TestLogging:
                 OptunaPruningCallback,
             )
 
-            callback = OptunaPruningCallback(trial=mock_trial)
+            _callback = OptunaPruningCallback(trial=mock_trial)
 
             mock_logger.debug.assert_called()
             mock_logger.info.assert_not_called()

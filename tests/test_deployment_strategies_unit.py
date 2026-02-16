@@ -1101,7 +1101,7 @@ class TestLocalDeploymentStrategy:
             strategy.deploy(save_path)
 
         input_data = torch.randn(1, 10)
-        result = strategy.predict(input_data)
+        _result = strategy.predict(input_data)
 
         mock_loaded_model.assert_called_once_with(input_data)
 
@@ -1565,11 +1565,11 @@ class TestEdgeCases:
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
         # First deploy
-        result1 = strategy.deploy(temp_dir)
+        _result1 = strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
 
         # Second deploy (should still work)
-        result2 = strategy.deploy(temp_dir)
+        _result2 = strategy.deploy(temp_dir)
         assert strategy.is_deployed is True
 
     def test_teardown_multiple_times(self, temp_dir):
@@ -1648,7 +1648,7 @@ class TestPathHandling:
         nested_path = temp_dir / "level1" / "level2" / "level3"
 
         with patch.object(torch, "save"):
-            result = strategy.prepare_model(mock_model, nested_path)
+            _result = strategy.prepare_model(mock_model, nested_path)
 
         assert nested_path.exists()
 

@@ -1420,7 +1420,7 @@ class TestLoadModelOnlyFunction:
         mock_model = MagicMock(spec=nn.Module)
         mock_load_model.return_value = (mock_model, {"info": "discarded"})
 
-        model = load_model_only("test.pt", working_root_dir=tmp_path)
+        _model = load_model_only("test.pt", working_root_dir=tmp_path)
 
         mock_load_model.assert_called_once()
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # test_regression_checkpoint_compatibility.py
 # Section 4.2: Regression Test — Checkpoint Compatibility
 # Category: Regression | Priority: HIGH | Est. CI Time: ~15s

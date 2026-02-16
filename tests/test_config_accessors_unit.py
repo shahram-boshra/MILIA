@@ -263,12 +263,12 @@ class TestRegistryIntegration:
         accessors_module._REGISTRY_INITIALIZED = False
 
         # The function imports from registry module, so we patch the import
-        with patch("milia_pipeline.datasets.registry.list_all") as mock_list_all:
-            with patch("milia_pipeline.datasets.registry.get") as mock_get:
-                with patch("milia_pipeline.datasets.registry.is_registered") as mock_is_registered:
+        with patch("milia_pipeline.datasets.registry.list_all") as _mock_list_all:
+            with patch("milia_pipeline.datasets.registry.get") as _mock_get:
+                with patch("milia_pipeline.datasets.registry.is_registered") as _mock_is_registered:
                     with patch(
                         "milia_pipeline.datasets.registry.get_default_registry"
-                    ) as mock_get_default_registry:
+                    ) as _mock_get_default_registry:
                         result = _init_registry()
 
                         # Should return True and set the registry available flag
@@ -509,7 +509,7 @@ class TestDatasetConfigAccessors:
     def test_get_dataset_config_missing_config(self, mock_load_config):
         """Test get_dataset_config with missing config section."""
         with pytest.raises(ConfigurationError):
-            config = get_dataset_config("MISSING_TYPE")
+            _config = get_dataset_config("MISSING_TYPE")
 
     def test_get_dataset_config_with_defaults(self, mock_load_config):
         """Test get_dataset_config applies defaults."""
@@ -1345,14 +1345,14 @@ class TestTransformationConfiguration:
     def test_get_transformation_config_missing_default_setup(self, mock_load_config):
         """Test get_transformation_config with missing default setup."""
         try:
-            result = get_transformation_config()
+            _result = get_transformation_config()
         except ConfigurationError:
             pass  # Expected
 
     def test_get_transformation_config_empty_setups(self, mock_load_config):
         """Test get_transformation_config with empty setups."""
         # Function creates default setup instead of raising
-        result = get_transformation_config()
+        _result = get_transformation_config()
 
     def test_get_experimental_setup_success(self, mock_load_config):
         """Test get_experimental_setup returns setup."""
@@ -1378,7 +1378,7 @@ class TestTransformationConfiguration:
     def test_get_experimental_setup_validation_failure(self, mock_load_config):
         """Test get_experimental_setup with validation failure."""
         try:
-            result = get_experimental_setup("baseline", validate=True)
+            _result = get_experimental_setup("baseline", validate=True)
         except:
             pass
 
@@ -1522,7 +1522,7 @@ class TestTransformationConfiguration:
     def test_create_experimental_setup_from_dict(self):
         """Test create_experimental_setup_from_dict."""
         setup_dict = {"name": "AddSelfLoops", "kwargs": {}, "enabled": True}
-        result = create_experimental_setup_from_dict("test_setup", setup_dict)
+        _result = create_experimental_setup_from_dict("test_setup", setup_dict)
         # Function may return None if creation fails
 
         # Check that it executed without raising
@@ -1725,7 +1725,7 @@ class TestTransformationConfigurationExtended:
     def test_create_experimental_setup_with_invalid_dict(self):
         """Test create_experimental_setup_from_dict with missing keys."""
         try:
-            result = create_experimental_setup_from_dict({"invalid": "data"})
+            _result = create_experimental_setup_from_dict({"invalid": "data"})
         except Exception:
             pass  # Expected
 
@@ -2280,7 +2280,7 @@ class TestBackwardCompatibility:
         try:
             from milia_pipeline.config.config_accessors import get_transform
 
-            result = get_transform({}, "AddSelfLoops")
+            _result = get_transform({}, "AddSelfLoops")
         except (ImportError, AttributeError):
             pass  # Function may not exist
         except:
@@ -2291,7 +2291,7 @@ class TestBackwardCompatibility:
         try:
             from milia_pipeline.config.config_accessors import get_parameter
 
-            result = get_parameter({}, "AddSelfLoops", "param", default="value")
+            _result = get_parameter({}, "AddSelfLoops", "param", default="value")
         except (ImportError, AttributeError):
             pass  # Function may not exist
         except:
@@ -2302,7 +2302,7 @@ class TestBackwardCompatibility:
         try:
             from milia_pipeline.config.config_accessors import get_setup
 
-            result = get_setup({}, "baseline")
+            _result = get_setup({}, "baseline")
         except (ImportError, AttributeError):
             pass  # Function may not exist
         except:

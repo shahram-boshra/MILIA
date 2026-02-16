@@ -644,8 +644,8 @@ class TestMaskFeatures:
         result = transform(simple_graph)
 
         # Some features should be exactly 0 (masked)
-        num_zeros = (result.x == 0.0).sum().item()
-        original_zeros = (original_x == 0.0).sum().item()
+        _num_zeros = (result.x == 0.0).sum().item()
+        _original_zeros = (original_x == 0.0).sum().item()
 
         # Should have more zeros than original (unless p=0)
         # This is probabilistic, so we just check shape
@@ -659,7 +659,7 @@ class TestMaskFeatures:
         result = transform(simple_graph)
 
         # Should contain the mask value
-        has_mask_value = (result.x == -999.0).any().item()
+        _has_mask_value = (result.x == -999.0).any().item()
         # With p=0.8, very likely to have at least one masked value
         assert result.x.shape == simple_graph.x.shape
 
@@ -707,7 +707,7 @@ class TestMaskFeatures:
         """Test MaskFeatures doesn't modify original data in-place initially"""
         transform = MaskFeatures(p=0.5)
 
-        original_x = simple_graph.x.clone()
+        _original_x = simple_graph.x.clone()
         result = transform(simple_graph)
 
         # Original and result should be different objects

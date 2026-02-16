@@ -1458,7 +1458,7 @@ class TestStandardTransformsValidation(unittest.TestCase):
         result = validators.validate_transformation_config(config)
         # Should generate errors for missing 'name' field
         if isinstance(result, tuple):
-            is_valid, errors = result[0], result[1]
+            is_valid, _errors = result[0], result[1]
             # The config should fail or have errors due to missing name
             self.assertIsInstance(is_valid, bool)
         else:
@@ -1931,7 +1931,7 @@ class TestPitfallHandlingUtilities(unittest.TestCase):
         def mock_validation(*args, **kwargs):
             return (True, [])
 
-        result = validators.validate_and_require(mock_validation, "test_data")
+        _result = validators.validate_and_require(mock_validation, "test_data")
         # Should not raise exception
         self.assertTrue(True)
 
@@ -2032,7 +2032,7 @@ class TestValidationContextManager(unittest.TestCase):
             self.assertTrue(hasattr(validators, "is_value_valid_and_not_nan"))
             return
 
-        with validators.ValidationContext("Test context", logger) as ctx:
+        with validators.ValidationContext("Test context", logger) as _ctx:
             # Don't call check() or require()
             pass
         # Should log warning but not raise
@@ -2060,14 +2060,14 @@ class TestEdgeCasesAndErrorHandling(unittest.TestCase):
 
     def test_validation_with_nested_structures(self):
         """Test validation with nested data structures"""
-        nested_data = {"level1": {"level2": {"value": 42.0}}}
+        _nested_data = {"level1": {"level2": {"value": 42.0}}}
         # Validator should handle or reject nested structures appropriately
         # The exact behavior depends on implementation
         self.assertTrue(True)
 
     def test_validation_with_unicode_strings(self):
         """Test validation with unicode strings"""
-        data = {"name": "molecule_测试_🧪", "value": 42.0}
+        _data = {"name": "molecule_测试_🧪", "value": 42.0}
         # Should handle unicode gracefully
         self.assertTrue(True)
 
