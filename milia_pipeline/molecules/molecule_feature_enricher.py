@@ -280,7 +280,7 @@ def _get_dataset_enrichment_category(dataset_type: str) -> str:
 # ============================================================================
 
 
-def estimate_molecular_properties(pyg_data: Data, handler: "DatasetHandler") -> dict[str, float]:
+def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> dict[str, float]:
     """
     Molecular property estimation using DatasetHandler.
 
@@ -581,7 +581,7 @@ def estimate_molecular_properties(pyg_data: Data, handler: "DatasetHandler") -> 
         ) from e
 
 
-def get_molecule_identifiers(pyg_data: Data, handler: "DatasetHandler") -> dict[str, Any]:
+def get_molecule_identifiers(pyg_data: Data, handler: DatasetHandler) -> dict[str, Any]:
     """
     Extract molecule identifiers from PyG Data object using DatasetHandler.
 
@@ -627,7 +627,7 @@ def get_molecule_identifiers(pyg_data: Data, handler: "DatasetHandler") -> dict[
     return identifiers
 
 
-def get_structural_feature_summary(pyg_data: Data, handler: "DatasetHandler") -> dict[str, Any]:
+def get_structural_feature_summary(pyg_data: Data, handler: DatasetHandler) -> dict[str, Any]:
     """
     Structural feature summary using DatasetHandler.
 
@@ -794,7 +794,7 @@ def get_structural_feature_summary(pyg_data: Data, handler: "DatasetHandler") ->
         ) from e
 
 
-def get_feature_extraction_diagnostics(pyg_data: Data, handler: "DatasetHandler") -> dict[str, Any]:
+def get_feature_extraction_diagnostics(pyg_data: Data, handler: DatasetHandler) -> dict[str, Any]:
     """
     Feature extraction diagnostics using DatasetHandler.
 
@@ -926,7 +926,7 @@ def get_feature_extraction_diagnostics(pyg_data: Data, handler: "DatasetHandler"
         ) from e
 
 
-def analyze_structural_feature_capabilities(handler: "DatasetHandler") -> dict[str, Any]:
+def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str, Any]:
     """
     Capability analysis using DatasetHandler.
 
@@ -1442,7 +1442,7 @@ def create_molecular_fingerprint(pyg_data: Data) -> dict[str, Any]:
 
 
 @wrap_handler_operation("UNKNOWN", "estimate_properties")
-def estimate_properties_with_handler(handler: "DatasetHandler", pyg_data: Data) -> dict[str, float]:
+def estimate_properties_with_handler(handler: DatasetHandler, pyg_data: Data) -> dict[str, float]:
     """
     NEW: Estimate molecular properties using a dataset handler.
 
@@ -1463,7 +1463,7 @@ def estimate_properties_with_handler(handler: "DatasetHandler", pyg_data: Data) 
 
 
 @wrap_handler_operation("UNKNOWN", "analyze_capabilities")
-def analyze_capabilities_with_handler(handler: "DatasetHandler") -> dict[str, Any]:
+def analyze_capabilities_with_handler(handler: DatasetHandler) -> dict[str, Any]:
     """
     NEW: Analyze structural feature capabilities using a dataset handler.
 
@@ -1484,7 +1484,7 @@ def analyze_capabilities_with_handler(handler: "DatasetHandler") -> dict[str, An
 
 @wrap_handler_operation("UNKNOWN", "create_fingerprint")
 def create_handler_compatible_fingerprint(
-    handler: "DatasetHandler", pyg_data: Data
+    handler: DatasetHandler, pyg_data: Data
 ) -> dict[str, Any]:
     """
     NEW: Create molecular fingerprint with handler-specific enhancements.
@@ -1606,7 +1606,7 @@ def create_handler_compatible_fingerprint(
 
 @wrap_handler_operation("UNKNOWN", "validate_features")
 def validate_feature_extraction_with_handler(
-    handler: "DatasetHandler", pyg_data: Data
+    handler: DatasetHandler, pyg_data: Data
 ) -> dict[str, Any]:
     """
     NEW: Validate feature extraction using handler requirements.

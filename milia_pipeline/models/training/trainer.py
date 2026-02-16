@@ -27,7 +27,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
@@ -116,10 +116,10 @@ class Trainer:
         checkpoint_dir: Path | None = None,
         gradient_clip_val: float | None = None,
         accumulate_grad_batches: int = 1,
-        hpo_callback: Optional[Callback] = None,
+        hpo_callback: Callback | None = None,
         model_info: dict[str, Any] | None = None,
         # NEW: Metrics for evaluation
-        metrics: dict[str, "nn.Module"] | None = None,
+        metrics: dict[str, nn.Module] | None = None,
     ):
         """
         Initialize trainer.

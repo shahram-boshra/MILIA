@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
@@ -155,7 +155,7 @@ class Predictor:
         working_root_dir: Path,
         device: torch.device | None = None,
         **loader_kwargs,
-    ) -> "Predictor":
+    ) -> Predictor:
         """
         Create predictor from checkpoint.
 
@@ -214,7 +214,7 @@ class Predictor:
 
     def predict(
         self, data: Data | Batch, return_numpy: bool = False
-    ) -> Union[torch.Tensor, numpy.ndarray]:
+    ) -> torch.Tensor | numpy.ndarray:
         """
         Make prediction on PyG Data or Batch.
 
@@ -431,11 +431,11 @@ class Predictor:
 
     def predict_batch(
         self,
-        dataset: Union[list[Data], Dataset],
+        dataset: list[Data] | Dataset,
         batch_size: int = 32,
         num_workers: int = 0,
         return_numpy: bool = False,
-    ) -> Union[torch.Tensor, numpy.ndarray]:
+    ) -> torch.Tensor | numpy.ndarray:
         """
         Make predictions on entire dataset.
 
@@ -468,7 +468,7 @@ class Predictor:
 
     def save_predictions(
         self,
-        predictions: Union[torch.Tensor, numpy.ndarray],
+        predictions: torch.Tensor | numpy.ndarray,
         output_path: str | Path,
         format: str = "csv",
         include_inputs: bool = False,
@@ -553,7 +553,7 @@ def predict(
     working_root_dir: Path,
     device: torch.device | None = None,
     return_numpy: bool = False,
-) -> Union[torch.Tensor, numpy.ndarray]:
+) -> torch.Tensor | numpy.ndarray:
     """
     Quick prediction from checkpoint.
 

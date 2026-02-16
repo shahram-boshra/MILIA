@@ -35,7 +35,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -138,7 +138,7 @@ def _prepare_data_for_task_hpo(
     val_data,
     task_type: str,
     discretize_config: dict[str, Any] | None = None,
-    target_selection_config: Optional["TargetSelectionConfig"] = None,
+    target_selection_config: TargetSelectionConfig | None = None,
 ) -> tuple[Any, Any, int | None]:
     """
     Prepare split data for specific task types in HPO context.
@@ -375,7 +375,7 @@ def _prepare_link_prediction_data_hpo(train_data, val_data):
 def _prepare_edge_regression_data_hpo(
     train_data,
     val_data,
-    target_selection_config: Optional["TargetSelectionConfig"] = None,
+    target_selection_config: TargetSelectionConfig | None = None,
 ) -> tuple[Any, Any]:
     """
     Prepare data for edge regression task in HPO context.
@@ -492,7 +492,7 @@ def _prepare_node_level_data_hpo(
     train_data,
     val_data,
     task_type: str,
-    target_selection_config: Optional["TargetSelectionConfig"] = None,
+    target_selection_config: TargetSelectionConfig | None = None,
 ) -> tuple[Any, Any]:
     """
     Prepare data for node-level tasks in HPO context.
@@ -1005,7 +1005,7 @@ class HPOManager:
             )
 
     @classmethod
-    def from_config(cls, config: HPOConfig | dict[str, Any]) -> "HPOManager":
+    def from_config(cls, config: HPOConfig | dict[str, Any]) -> HPOManager:
         """
         Create HPOManager from configuration.
 
@@ -1034,7 +1034,7 @@ class HPOManager:
         return cls(config)
 
     @classmethod
-    def from_yaml(cls, config_path: str, section: str = "models.hpo") -> "HPOManager":
+    def from_yaml(cls, config_path: str, section: str = "models.hpo") -> HPOManager:
         """
         Create HPOManager from YAML configuration file.
 
@@ -2123,7 +2123,7 @@ class HPOManager:
 
     def save_results(
         self,
-        output_dir: Union[str, Path],
+        output_dir: str | Path,
         best_params_filename: str = "best_params.json",
         statistics_filename: str = "study_statistics.json",
         trials_filename: str = "all_trials.json",
@@ -2349,7 +2349,7 @@ def _run_cross_validation(
     factory,
     task_type: str,
     discretize_config: dict[str, Any] | None = None,
-    target_selection_config: Optional["TargetSelectionConfig"] = None,
+    target_selection_config: TargetSelectionConfig | None = None,
 ) -> float:
     """
     Run k-fold cross-validation for a trial.

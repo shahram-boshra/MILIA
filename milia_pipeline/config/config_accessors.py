@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from milia_pipeline.config.config_loader import load_config
 
@@ -683,7 +683,7 @@ class EnhancedConfigAccessor:
 
     def __init__(
         self,
-        config: Union[dict[str, Any], BaseModel],
+        config: dict[str, Any] | BaseModel,
         validation_level: ValidationLevel = ValidationLevel.STANDARD,
         auto_validate: bool = True,
         dataset_context: str | None = None,
@@ -914,7 +914,7 @@ class EnhancedConfigAccessor:
 
 
 def get_transform_config(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     transform_name: str,
     validate: bool = True,
     use_intelligent_defaults: bool = True,
@@ -1008,7 +1008,7 @@ def get_transform_config(
 
 
 def get_transform_parameter(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     transform_name: str,
     parameter_name: str,
     default: Any = None,
@@ -1142,7 +1142,7 @@ def get_transform_parameter(
 
 
 def get_dataset_specific_config(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     dataset_type: str,
     config_key: str,
     default: Any = None,
@@ -1189,7 +1189,7 @@ def get_dataset_specific_config(
 
 
 def get_all_transforms(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     validate_each: bool = True,
     dataset_context: str | None = None,
 ) -> list[dict[str, Any]]:
@@ -1238,7 +1238,7 @@ def get_all_transforms(
 
 
 def get_config_with_fallback(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     keys: list[str],
     default: Any = None,
     expected_type: type | None = None,
@@ -1281,7 +1281,7 @@ def get_config_with_fallback(
 
 
 def validate_config_structure(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     required_keys: list[str] | None = None,
     dataset_context: str | None = None,
     validation_level: ValidationLevel = ValidationLevel.STANDARD,
@@ -2234,7 +2234,7 @@ def get_transformation_config() -> TransformationConfig:
 
 
 def get_experimental_setup(
-    config: Union[dict[str, Any], BaseModel],
+    config: dict[str, Any] | BaseModel,
     setup_name: str,
     validate: bool = True,
     dataset_context: str | None = None,
@@ -2396,7 +2396,7 @@ def get_default_experimental_setup() -> ExperimentalSetup | None:
         return None
 
 
-def get_standard_transforms() -> list["TransformSpec"]:
+def get_standard_transforms() -> list[TransformSpec]:
     """
     Get list of standard transforms from transformation configuration.
 
@@ -2444,7 +2444,7 @@ def get_standard_transforms_as_dicts() -> list[dict[str, Any]]:
         return []
 
 
-def get_combined_transforms(setup_name: str | None = None) -> list["TransformSpec"]:
+def get_combined_transforms(setup_name: str | None = None) -> list[TransformSpec]:
     """
     Get combined standard + experimental setup transforms.
 
