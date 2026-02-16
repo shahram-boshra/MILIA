@@ -1659,9 +1659,9 @@ class MoleculeDataConverter:
         if uncertainty_value is not None:
             try:
                 validated_uncertainty = validate_uncertainty_data(
-                    value,
+                    uncertainty_value,
                     molecule_index=molecule_index,
-                    uncertainty_field_name=key,
+                    uncertainty_field_name=uncertainty_field,
                     require_positive=True,
                 )
                 if validated_uncertainty is not None:

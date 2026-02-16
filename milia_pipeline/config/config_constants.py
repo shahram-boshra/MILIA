@@ -2225,8 +2225,8 @@ def ensure_handler_constant_compatibility() -> bool:
             bool(const_module.ATOMIC_ENERGIES_HARTREE),
             bool(const_module.HEAVY_ATOM_SYMBOLS_TO_Z),
             bool(const_module.HAR2EV),
-            bool(RAW_NPZ_FILENAME_CACHED),
-            bool(DATASET_ROOT_DIR_CACHED),
+            bool(const_module.RAW_NPZ_FILENAME_CACHED),
+            bool(const_module.DATASET_ROOT_DIR_CACHED),
         ]
 
         # Check handler constants can be created
@@ -2267,7 +2267,7 @@ def get_complete_constants_debug_info() -> dict[str, Any]:
     debug_info = {
         "config_status": {
             "temp_config_loaded": bool(_TEMP_CONFIG),
-            "dataset_constants_available": bool(_dataset_constants),
+            "dataset_constants_available": bool(const_module._dataset_constants),
         },
         "handler_support": {
             "supported_types": get_supported_handler_types(),
@@ -2288,7 +2288,7 @@ def get_complete_constants_debug_info() -> dict[str, Any]:
             "atomic_energies_count": len(const_module.ATOMIC_ENERGIES_HARTREE),
             "heavy_atoms_count": len(const_module.HEAVY_ATOM_SYMBOLS_TO_Z),
             "conversion_factor": const_module.HAR2EV,
-            "processed_filename": PROCESSED_DATA_FILENAME,
+            "processed_filename": const_module.PROCESSED_DATA_FILENAME,
         },
         "registry_integration": {
             "available": _REGISTRY_AVAILABLE,
@@ -2439,7 +2439,7 @@ if __name__ == "__main__":
     print(f"  Atomic energies available: {len(const_module.ATOMIC_ENERGIES_HARTREE)}")
     print(f"  Heavy atoms mapping: {len(const_module.HEAVY_ATOM_SYMBOLS_TO_Z)}")
     print(f"  Conversion factor (HAR2EV): {const_module.HAR2EV}")
-    print(f"  Dataset filename: {PROCESSED_DATA_FILENAME}")
+    print(f"  Dataset filename: {const_module.PROCESSED_DATA_FILENAME}")
 
     # Test dynamic handler support
     print("\nHandler Support (Dynamic):")

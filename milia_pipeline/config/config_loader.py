@@ -2231,7 +2231,10 @@ def migrate_legacy_config(
         from milia_pipeline.config.config_schemas import ConfigMigration
 
         migration = ConfigMigration()
-        migration.migrate_to_enhanced(legacy_config, preserve_original=True)
+        format_detected = migration.detect_format(legacy_config)
+        migrated_config, migration_warnings = migration.migrate_to_enhanced(
+            legacy_config, preserve_original=True
+        )
 
         # Handle migration result
         if migrated_config is None or not isinstance(migrated_config, dict):

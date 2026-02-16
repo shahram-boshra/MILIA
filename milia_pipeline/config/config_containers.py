@@ -45,6 +45,10 @@ from typing_extensions import Self
 # - Inconsistent canonical name resolution
 # ============================================================================
 
+# Module-level logger for functions that don't receive a logger parameter.
+# Safe at module level — returns a no-op logger until handlers are configured.
+logger = logging.getLogger(__name__)
+
 # Registry availability flag - set after attempting to get registry from config_loader
 _REGISTRY_AVAILABLE = False
 
@@ -297,12 +301,6 @@ def _resolve_canonical_dataset_type(dataset_type: str) -> str:
         type_lookup = {t.upper(): t for t in all_types}
         if dataset_type.upper() in type_lookup:
             return type_lookup[dataset_type.upper()]
-
-    # No match found - return original (validation will catch invalid types)
-    return dataset_type
-    type_lookup = {t.upper(): t for t in discovered_types}
-    if dataset_type.upper() in type_lookup:
-        return type_lookup[dataset_type.upper()]
 
     # No match found - return original (validation will catch invalid types)
     return dataset_type
@@ -2416,7 +2414,8 @@ def create_transformation_config_from_global(
             migration_metadata.update(
                 {
                     "fallback_used": True,
-                    "migration_errors": migration_metadata.get("migration_errors", []) + [str(e)],
+                    "migration_errors": migration_metadata.get("migration_errors", [])
+                    + ["No experimental setups created through any migration path"],
                 }
             )
             return _create_guaranteed_fallback_config(migration_metadata)
@@ -2471,7 +2470,7 @@ def create_transformation_config_from_global(
             }
         )
 
-        return _create_fallback_transformation_config(migration_metadata)
+        return _create_guaranteed_fallback_config(migration_metadata)
 
 
 def create_descriptor_config_from_yaml(
@@ -3445,6 +3444,8 @@ def _create_guaranteed_fallback_config(migration_metadata: dict) -> Transformati
     … GUARANTEED: This function will ALWAYS return a valid TransformationConfig.
     It has triple-layered fallback logic to ensure success.
     """
+    from milia_pipeline.exceptions import ConfigurationError
+
     # Layer 1: Try to create normal fallback
     try:
         fallback_transform = TransformSpec(

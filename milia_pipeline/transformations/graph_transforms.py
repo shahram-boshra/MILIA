@@ -283,6 +283,7 @@ from typing import (
     Union,
     get_args,
     get_origin,
+    get_type_hints,
 )
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -3188,12 +3189,12 @@ class TransformRegistry:
         if name in self._transforms:
             self._logger.warning(f"Transform '{name}' already registered, overwriting")
 
-        self.register_transform(
+        self._register_transform_with_enhanced_metadata(
             name=name,
             transform_class=transform_class,
-            category="custom",
-            research_applicability=metadata.research_applicability if metadata else None,
-            performance_notes=metadata.description if metadata else None,
+            category=category,
+            research_applicability=research_applicability,
+            performance_notes=performance_notes,
         )
 
         self._logger.info(f"Registered custom transform '{name}' in category '{category}'")

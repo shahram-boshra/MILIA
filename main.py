@@ -376,6 +376,12 @@ except ImportError:
     TargetSelectionConfig = None
 
 
+# Module-level logger for registry utility functions.
+# These functions may be called before setup_logging() configures the main logger.
+# logging.getLogger() is safe at module level — returns a no-op logger until handlers are added.
+logger = logging.getLogger(__name__)
+
+
 # Registry Integration for Dynamic Dataset Type Support
 # This section adds lazy initialization infrastructure for registry imports,
 # following the exact pattern from dataset_handlers.py, exceptions.py

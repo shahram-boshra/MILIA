@@ -55,6 +55,7 @@ from tqdm import tqdm
 
 from milia_pipeline.config.config_accessors import (
     # Standard transforms accessors
+    get_combined_transforms_as_dicts,
     get_data_config,
     get_dataset_constants,
     get_experimental_setup,
@@ -3542,7 +3543,8 @@ class miliaDataset(InMemoryDataset):
         """
         try:
             handler_time = performance_stats.get("handler_processing_time", 0.0)
-            performance_stats.get("validation_processing_time", 0.0)
+            fallback_time = performance_stats.get("fallback_processing_time", 0.0)
+            validation_time = performance_stats.get("validation_processing_time", 0.0)
             error_overhead = performance_stats.get("error_handling_overhead", 0.0)
 
             total_time = handler_time + fallback_time

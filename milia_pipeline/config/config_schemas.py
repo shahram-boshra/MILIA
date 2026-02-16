@@ -2730,7 +2730,7 @@ def get_enhanced_transformation_config(
     # Lazy import - see _get_load_config() function
 
     try:
-        config = _get__get_load_config()()()
+        config = _get_load_config()()
         if config is None:
             logger.warning("Config loading failed, returning empty transformation config")
             return {}
@@ -2757,7 +2757,7 @@ def validate_current_config(validation_config: ValidationConfig | None = None) -
     # Lazy import - see _get_load_config() function
 
     try:
-        config = _get__get_load_config()()()
+        config = _get_load_config()()
         if config is None:
             raise ConfigurationError("No configuration loaded", config_key="global_config")
 
