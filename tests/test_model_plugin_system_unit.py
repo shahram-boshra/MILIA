@@ -1932,7 +1932,7 @@ class TestEdgeCases:
 
         loader = ModelPluginLoader()
 
-        result_permissive = loader._validate_plugin(sample_plugin_metadata, level="permissive")
+        _result_permissive = loader._validate_plugin(sample_plugin_metadata, level="permissive")
         result_standard = loader._validate_plugin(sample_plugin_metadata, level="standard")
         assert (
             "missing" in str(result_standard["warnings"]).lower()

@@ -561,7 +561,7 @@ class TestOptimizerConfig:
 
         Note: Warning is logged during Pydantic construction via @model_validator.
         """
-        config = OptimizerConfig(name="adam", params={})
+        _config = OptimizerConfig(name="adam", params={})
         # Should log a warning during construction
         mock_logger.warning.assert_called()
 

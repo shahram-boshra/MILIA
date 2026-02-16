@@ -275,7 +275,7 @@ class TestAddDescriptorsToPygData:
 
     def test_empty_descriptors_returns_unchanged(self, basic_pyg_data):
         """Test that empty descriptors dict returns the data object unchanged."""
-        original_keys = set(basic_pyg_data.keys())
+        _original_keys = set(basic_pyg_data.keys())
         result = add_descriptors_to_pyg_data(basic_pyg_data, {})
         assert result is basic_pyg_data
         # No new attributes should be added

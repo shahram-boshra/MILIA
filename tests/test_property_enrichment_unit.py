@@ -1735,7 +1735,7 @@ class TestEnrichPyGDataWithProperties(unittest.TestCase):
         mock_handler = MockDFTHandler()
         mock_handler.enrich_pyg_data = Mock(return_value=pyg_data)
 
-        result = enrich_pyg_data_with_properties(
+        _result = enrich_pyg_data_with_properties(
             pyg_data=pyg_data,
             mol_idx=self.molecule_index,
             raw_properties_dict=self.raw_props,

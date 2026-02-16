@@ -1214,7 +1214,7 @@ class TestEndToEndTrainingWorkflow:
             device=torch.device("cpu"),
             max_epochs=3,
         )
-        results = trainer.fit()
+        _results = trainer.fit()
 
         # Save and reload
         cm = CheckpointManager(working_root_dir=working_dir)

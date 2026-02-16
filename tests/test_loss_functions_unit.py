@@ -1808,7 +1808,7 @@ class TestErrorHandling:
         targets = torch.randint(0, 2, (10,)).float()
 
         with pytest.raises((TypeError, RuntimeError)):
-            loss = loss_fn(logits, targets)
+            _loss = loss_fn(logits, targets)
 
     def test_get_loss_invalid_type_error_propagation(self):
         """Test that TypeError from loss constructor is wrapped in ValueError.

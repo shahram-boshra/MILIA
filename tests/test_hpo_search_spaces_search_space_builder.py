@@ -2771,7 +2771,7 @@ class TestSearchSpaceBuilderFromDict:
     def test_from_dict_returns_search_space_param_configs(self, search_space_builder_module):
         """Test from_dict returns SearchSpaceParamConfig objects."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
-        SearchSpaceParamConfig = search_space_builder_module["SearchSpaceParamConfig"]
+        _SearchSpaceParamConfig = search_space_builder_module["SearchSpaceParamConfig"]
 
         space_dict = {"hyperparameters": {"param": {"type": "int", "low": 1, "high": 10}}}
 

@@ -1033,7 +1033,7 @@ class TestCreateDatasetHandler(unittest.TestCase):
         mock_ds = MagicMock()
         mock_ds.create_handler.return_value = MagicMock(spec=DatasetHandler)
         mock_get.return_value = mock_ds
-        result = create_dataset_handler(
+        _result = create_dataset_handler(
             _make_mock_dataset_config("DFT"),
             _make_mock_filter_config(),
             _make_mock_processing_config(),

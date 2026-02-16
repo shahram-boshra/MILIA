@@ -1866,7 +1866,7 @@ class TestGetTrials:
         analyzer = StudyAnalyzer(mock_study)
 
         # Call with states - should not set cache
-        trials = analyzer.get_trials(states=["COMPLETE"], use_cache=True)
+        _trials = analyzer.get_trials(states=["COMPLETE"], use_cache=True)
 
         # Cache should still be None since states was specified
         assert analyzer._trials_cache is None

@@ -741,7 +741,7 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
             with patch("pathlib.Path.stat") as mock_stat:
                 mock_stat.return_value = MagicMock(st_size=1024 * 1024)
                 preprocessor = _make_preprocessor(config=config)
-                result = preprocessor.preprocess()
+                _result = preprocessor.preprocess()
         mock_extract.assert_not_called()
 
     @patch.object(XXMDPreprocessor, "_extract_archive")

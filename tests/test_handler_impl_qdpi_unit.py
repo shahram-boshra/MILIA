@@ -1234,7 +1234,7 @@ class TestEnrichForces(unittest.TestCase):
         """Missing forces leaves no forces attribute on PyG data."""
         handler = _make_handler()
         data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
+        _result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
         # forces is set if present in props; if not in raw_properties, it won't be set
         # (the default _make_raw_properties does not include forces)
 

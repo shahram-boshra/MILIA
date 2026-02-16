@@ -651,7 +651,7 @@ class TestCoverageValidation:
     def test_coverage_validation_actual_meets_expected(self):
         """Test actual counts are correctly reported"""
         coverage = validate_descriptor_coverage()
-        expected = coverage["expected"]
+        _expected = coverage["expected"]
         actual = coverage["actual"]
 
         # Verify actual counts match what we know

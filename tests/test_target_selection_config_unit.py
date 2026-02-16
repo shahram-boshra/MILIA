@@ -696,7 +696,7 @@ class TestResolveForTask:
         with caplog.at_level(logging.INFO):
             config.resolve_for_task("node_regression")
 
-        first_call_info_count = len([r for r in caplog.records if r.levelno == logging.INFO])
+        _first_call_info_count = len([r for r in caplog.records if r.levelno == logging.INFO])
         assert config.resolved_level == TargetLevel.NODE
         assert config.resolved_source == TargetSource.Y
 

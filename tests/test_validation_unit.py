@@ -444,7 +444,7 @@ class TestValidateMethod:
             mock_task.return_value = {"errors": [], "warnings": [], "suggestions": []}
             mock_order.return_value = {"errors": [], "warnings": [], "suggestions": []}
 
-            result = validator.validate(
+            _result = validator.validate(
                 layers=simple_layers, task_type="graph_regression", in_channels=16, out_channels=1
             )
 

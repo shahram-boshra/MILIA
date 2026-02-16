@@ -622,7 +622,7 @@ class TestBuildNpzEdgeCases(unittest.TestCase):
         output_path = Path(self._tmp_dir) / "overwrite.npz"
         features = _build_minimal_features(num_molecules=2)
         build_npz(features, _build_sample_metadata(), output_path, logger=self._logger)
-        size_first = output_path.stat().st_size
+        _size_first = output_path.stat().st_size
 
         features_v2 = _build_minimal_features(num_molecules=5)
         build_npz(features_v2, _build_sample_metadata(), output_path, logger=self._logger)

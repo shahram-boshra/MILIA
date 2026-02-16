@@ -1038,7 +1038,7 @@ class TestExperimentRunner:
     def test_initialization_creates_output_directory(self, sample_experiment_config, tmp_path):
         """Test that initialization creates output directory."""
         nested_dir = tmp_path / "deep" / "nested" / "dir"
-        runner = ExperimentRunner(sample_experiment_config, nested_dir)
+        _runner = ExperimentRunner(sample_experiment_config, nested_dir)
         assert nested_dir.exists()
 
     def test_initialization_default_seed(self, sample_experiment_config, tmp_path):

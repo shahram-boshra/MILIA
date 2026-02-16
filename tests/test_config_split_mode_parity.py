@@ -994,7 +994,7 @@ class TestCacheIsolation:
             enable_validation=False,
         )
 
-        cfg1 = load_config(config_path=str(single_file_config_path), **load_kwargs)
+        _cfg1 = load_config(config_path=str(single_file_config_path), **load_kwargs)
 
         # Modify the file on disk
         with open(single_file_config_path) as f:

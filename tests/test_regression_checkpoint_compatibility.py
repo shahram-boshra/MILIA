@@ -1074,7 +1074,7 @@ class TestModelLoaderFromCheckpoint:
         mock_get_factory.return_value = mock_factory
 
         # Create v1.0 checkpoint (no hyper_parameters)
-        manager = CheckpointManager(working_root_dir=tmp_working_dir)
+        _manager = CheckpointManager(working_root_dir=tmp_working_dir)
         v1_path = tmp_working_dir / "checkpoints" / "v1_model.pt"
         v1_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(

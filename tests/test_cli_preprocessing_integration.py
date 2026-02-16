@@ -1619,7 +1619,7 @@ class TestDefaultModeBehavior:
         """Test that validation modes prevent default --process."""
         # These modes should prevent auto-enabling process mode
         for mode_arg in ["--list-preprocessors", "--list-plugins", "--list-descriptors"]:
-            args = self.cli.parse_args([mode_arg])
+            _args = self.cli.parse_args([mode_arg])
             # These specific flags don't change process mode directly
             # but the logic in _process_arguments handles this
 

@@ -1795,7 +1795,7 @@ class TestContractConfigLoaderRegistryFlags:
         the init function should have been called).
         """
         available = config_pkg._LOADER_REGISTRY_AVAILABLE
-        initialized = config_pkg._LOADER_REGISTRY_INITIALIZED
+        _initialized = config_pkg._LOADER_REGISTRY_INITIALIZED
         error = config_pkg._LOADER_REGISTRY_IMPORT_ERROR
 
         if available:

@@ -856,7 +856,7 @@ class TestParseMoldenFilesHappyPath(unittest.TestCase):
     @patch("iodata.load_one")
     def test_load_one_called_per_file(self, mock_load_one):
         """load_one is called once per .molden file."""
-        files = self._setup_molden_files(4)
+        _files = self._setup_molden_files(4)
         mock_load_one.return_value = _build_h2o_mol_data()
         parse_molden_files(self._molden_dir, "basic")
         self.assertEqual(mock_load_one.call_count, 4)

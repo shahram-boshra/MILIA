@@ -1980,7 +1980,7 @@ class TestHPOManagerIntegration(unittest.TestCase):
         disabled_config = self.HPOConfig(enabled=False)
 
         with self.assertLogs(level="WARNING") as log:
-            manager = self.HPOManager(disabled_config)
+            _manager = self.HPOManager(disabled_config)
 
         # Should have warning about disabled HPO
         self.assertTrue(any("disabled" in msg.lower() for msg in log.output))

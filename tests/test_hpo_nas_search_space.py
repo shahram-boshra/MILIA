@@ -1801,7 +1801,7 @@ class TestLayerConfigFromDict:
             "hidden_channels": 64,
         }
 
-        original_dict = config_dict.copy()
+        _original_dict = config_dict.copy()
         LayerConfig.from_dict(config_dict)
 
         # Original dict keys should be unchanged

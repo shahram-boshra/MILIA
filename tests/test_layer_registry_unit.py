@@ -1687,7 +1687,7 @@ class TestListLayersEdgeCases:
         # The method should return an empty list for any category not in _by_category
         # Since all standard categories are populated, we verify the return type
         # and that sorting an empty set returns an empty list
-        all_categories = registry.list_categories()
+        _all_categories = registry.list_categories()
         for category in LayerCategory:
             result = registry.list_layers(category)
             assert isinstance(result, list)

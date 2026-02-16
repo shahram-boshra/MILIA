@@ -459,7 +459,7 @@ class TestLazyImportTorch:
         # Patch the import inside the function
         with patch("builtins.__import__", side_effect=ImportError("No torch")):
             # Call the function directly, which tries to import torch
-            result = meta_features._lazy_import_torch()
+            _result = meta_features._lazy_import_torch()
             # Should return None on ImportError
             # Note: This may not work perfectly due to caching
 

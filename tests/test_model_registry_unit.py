@@ -482,7 +482,7 @@ class TestAutoDiscovery:
         # First discovery
         isolated_registry._auto_discovered = False
         with patch.object(registry_module, "get_introspector", return_value=mock_introspector):
-            count1 = isolated_registry.auto_discover_pyg_models()
+            _count1 = isolated_registry.auto_discover_pyg_models()
 
         assert isolated_registry._auto_discovered is True
         first_call_count = mock_introspector.get_all_model_names.call_count

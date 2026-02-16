@@ -1243,7 +1243,7 @@ class TestContractPreprocessorAutoRegistration:
         registered = set(preprocessing_pkg.PreprocessorRegistry.list_preprocessors())
         failed_modules = {name for name, _error in preprocessing_pkg._PREPROCESSOR_IMPORT_ERRORS}
         # Verify no overlap — a module can't both succeed and fail
-        overlap = registered & failed_modules
+        _overlap = registered & failed_modules
         # Note: registered uses type names (e.g., "Wavefunction"), while
         # failed uses module names (e.g., "wavefunction"). These won't
         # actually overlap, but we verify the tracking lists are consistent.

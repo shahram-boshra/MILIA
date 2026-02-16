@@ -2195,7 +2195,7 @@ class TestValidationFunction:
 
     def test_validate_exception_hierarchy_registry_integration(self):
         """Test validation includes registry integration check"""
-        results = validate_exception_hierarchy()
+        _results = validate_exception_hierarchy()
 
     def test_validate_exception_hierarchy_checks_models(self):
         """Test validation checks model exceptions."""
