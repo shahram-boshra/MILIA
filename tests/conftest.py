@@ -506,6 +506,194 @@ def mutable_config(minimal_config) -> dict[str, Any]:
 
 
 # ============================================================================
+# PROTECTION: Prevent module reload/deletion AND registry clearing pollution
+# ============================================================================
+# ROOT CAUSE (Module pollution): Some test files use setup_module()/
+# teardown_module() to inject mocks into sys.modules. During teardown they
+# may delete or reload core modules. This causes:
+#   - Category C: isinstance() fails (exception class identity mismatch)
+#   - Category D: func.__globals__ points to stale module dict after reload
+#   - KeyError: module removed from sys.modules entirely
+#
+# ROOT CAUSE (Registry pollution): Some test files/classes call .clear() on
+# global registry singletons (dataset registry, descriptor registry) for test
+# isolation but fail to restore the original contents, leaving subsequent
+# tests with empty registries. This causes:
+#   - Category B: list_all()/list_descriptors() returns [] → assertion failures
+#
+# FIX: After each test item's complete teardown phase:
+#   1. Restore any deleted/reloaded core modules in sys.modules
+#   2. Restore any cleared/mutated registry contents from snapshots
+
+
+def _build_core_module_snapshot() -> dict:
+    """Capture references to core modules that must not be reloaded/deleted.
+
+    Only snapshots modules that are already loaded — does not force imports.
+    """
+    _CRITICAL_PREFIXES = (
+        "milia_pipeline.exceptions",
+        "milia_pipeline.datasets.registry",
+        "milia_pipeline.datasets.base",
+        "milia_pipeline.datasets.implementations",
+        "milia_pipeline.descriptors",
+        "milia_pipeline.models.registry",
+    )
+    snapshot = {}
+    for key, mod in list(sys.modules.items()):
+        if mod is not None and any(key == p or key.startswith(p + ".") for p in _CRITICAL_PREFIXES):
+            snapshot[key] = mod
+    return snapshot
+
+
+def _build_registry_snapshot() -> dict:
+    """Snapshot the contents of known global registry singletons.
+
+    Returns a dict of {registry_name: snapshot_data} where snapshot_data
+    contains enough information to detect and repair clearing.
+    Only snapshots registries that are already loaded — does not force imports.
+    """
+    snapshots = {}
+
+    # 1. Dataset registry: milia_pipeline.datasets.registry._default_registry
+    try:
+        reg_mod = sys.modules.get("milia_pipeline.datasets.registry")
+        if reg_mod is not None:
+            default_reg = getattr(reg_mod, "_default_registry", None)
+            if default_reg is not None:
+                datasets_dict = getattr(default_reg, "_datasets", None)
+                if datasets_dict is not None and len(datasets_dict) > 0:
+                    snapshots["dataset_registry"] = {
+                        "obj": default_reg,
+                        "attr": "_datasets",
+                        "snapshot": dict(datasets_dict),
+                    }
+    except Exception:
+        pass
+
+    # 2. Descriptor registry: DescriptorRegistry singleton
+    #    Module: milia_pipeline.descriptors.descriptor_registry
+    #    Uses __new__-based singleton with _instances class dict.
+    #    Internal storage: _descriptors (dict), _by_category (defaultdict)
+    try:
+        desc_mod = sys.modules.get("milia_pipeline.descriptors.descriptor_registry")
+        if desc_mod is not None:
+            desc_registry_cls = getattr(desc_mod, "DescriptorRegistry", None)
+            if desc_registry_cls is not None:
+                instances = getattr(desc_registry_cls, "_instances", None)
+                if instances and desc_registry_cls in instances:
+                    instance = instances[desc_registry_cls]
+                    descriptors_dict = getattr(instance, "_descriptors", None)
+                    by_category = getattr(instance, "_by_category", None)
+                    if descriptors_dict is not None and len(descriptors_dict) > 0:
+                        snapshots["descriptor_registry"] = {
+                            "obj": instance,
+                            "attr": "_descriptors",
+                            "snapshot": dict(descriptors_dict),
+                        }
+                    if by_category is not None and len(by_category) > 0:
+                        snapshots["descriptor_by_category"] = {
+                            "obj": instance,
+                            "attr": "_by_category",
+                            "snapshot": {k: set(v) for k, v in by_category.items()},
+                        }
+    except Exception:
+        pass
+
+    # 3. Model registry: ModelRegistry singleton
+    #    Likely same __new__-based singleton pattern with _instances.
+    try:
+        model_mod = sys.modules.get("milia_pipeline.models.registry.model_registry")
+        if model_mod is not None:
+            model_registry_cls = getattr(model_mod, "ModelRegistry", None)
+            if model_registry_cls is not None:
+                # Try _instances dict pattern (same as DescriptorRegistry)
+                instances = getattr(model_registry_cls, "_instances", None)
+                instance = None
+                if instances and model_registry_cls in instances:
+                    instance = instances[model_registry_cls]
+                # Fallback: try _instance attribute
+                if instance is None:
+                    instance = getattr(model_registry_cls, "_instance", None)
+                if instance is not None:
+                    # Try common internal dict attribute names
+                    for attr_name in ("_models", "_registry", "_registered"):
+                        internal = getattr(instance, attr_name, None)
+                        if isinstance(internal, dict) and len(internal) > 0:
+                            snapshots["model_registry"] = {
+                                "obj": instance,
+                                "attr": attr_name,
+                                "snapshot": dict(internal),
+                            }
+                            break
+    except Exception:
+        pass
+
+    return snapshots
+
+
+def _restore_registries(snapshots: dict) -> None:
+    """Restore registry contents if they were cleared since the snapshot."""
+    for _name, info in snapshots.items():
+        obj = info["obj"]
+        attr = info["attr"]
+        original = info["snapshot"]
+        current = getattr(obj, attr, None)
+        if current is not None and len(current) == 0 and len(original) > 0:
+            # Registry was cleared — restore the snapshot.
+            # For defaultdict(set), copy the set values to avoid sharing refs.
+            for k, v in original.items():
+                current[k] = copy.copy(v) if isinstance(v, set) else v
+
+
+# Populated after collection, before test execution
+_CORE_MODULE_SNAPSHOT: dict = {}
+_REGISTRY_SNAPSHOT: dict = {}
+
+
+def pytest_collection_finish(session):
+    """Hook: called after collection, before test execution.
+
+    At this point all test modules have been collected, which triggers imports
+    of the modules-under-test. We snapshot the core modules and registry
+    contents NOW so they contain the real, fully-initialized state.
+    """
+    global _CORE_MODULE_SNAPSHOT, _REGISTRY_SNAPSHOT
+    _CORE_MODULE_SNAPSHOT = _build_core_module_snapshot()
+    _REGISTRY_SNAPSHOT = _build_registry_snapshot()
+
+
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_teardown(item, nextitem):
+    """Hook (wrapper): runs AFTER each test item's full teardown phase.
+
+    By using hookwrapper=True, the ``yield`` waits for the entire teardown
+    phase to complete — including ``teardown_module()`` for the last test
+    in a module, ``tearDown()`` for unittest classes, and fixture finalizers.
+    Only then does it check and repair pollution.
+    """
+    yield
+    global _CORE_MODULE_SNAPSHOT, _REGISTRY_SNAPSHOT
+
+    # Lazily build snapshots if not yet populated (modules may not have
+    # been imported during collection but are now loaded).
+    if not _CORE_MODULE_SNAPSHOT:
+        _CORE_MODULE_SNAPSHOT = _build_core_module_snapshot()
+    if not _REGISTRY_SNAPSHOT:
+        _REGISTRY_SNAPSHOT = _build_registry_snapshot()
+
+    # Post-teardown 1: restore any removed/reloaded core modules
+    if _CORE_MODULE_SNAPSHOT:
+        for key, original_mod in _CORE_MODULE_SNAPSHOT.items():
+            current = sys.modules.get(key)
+            if current is not original_mod:
+                sys.modules[key] = original_mod
+    # Post-teardown 2: restore any cleared registry contents
+    if _REGISTRY_SNAPSHOT:
+        _restore_registries(_REGISTRY_SNAPSHOT)
+
+
+# ============================================================================
 # pytest_configure — Markers + Warning Filters
 # ============================================================================
 

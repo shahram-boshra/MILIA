@@ -81,6 +81,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import numpy as np
+import pytest
 
 # Import module under test from config/data_refining.py
 try:
@@ -204,6 +205,56 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _ensure_default_registry_populated():
+    """
+    Ensure the default dataset registry has its datasets registered.
+
+    In the full test suite, a prior test may have called .clear() on the
+    default DatasetRegistry instance, leaving list_all() returning [].
+    This function detects that condition and re-registers dataset classes
+    that are already loaded in memory (from their initial @register import).
+
+    This is a dynamic, non-hardcoded fix: it discovers dataset classes from
+    the already-imported implementation modules and re-registers them on the
+    default registry instance.
+    """
+    try:
+        from milia_pipeline.datasets.registry import _default_registry, list_all
+
+        if list_all():
+            return  # Registry is already populated — nothing to do
+
+        # Default registry is empty — re-register dataset classes from
+        # already-loaded implementation modules in sys.modules
+        import sys
+
+        from milia_pipeline.datasets.base import BaseDataset
+
+        for mod_name, mod in list(sys.modules.items()):
+            if not mod_name.startswith("milia_pipeline.datasets.implementations."):
+                continue
+            if mod is None or not hasattr(mod, "__dict__"):
+                continue
+            for attr_name in dir(mod):
+                if attr_name.startswith("_"):
+                    continue
+                cls = getattr(mod, attr_name, None)
+                if (
+                    cls is not None
+                    and isinstance(cls, type)
+                    and issubclass(cls, BaseDataset)
+                    and cls is not BaseDataset
+                    and hasattr(cls, "metadata")
+                    and hasattr(cls.metadata, "name")
+                ):
+                    try:
+                        _default_registry.register(cls)
+                    except Exception:
+                        pass  # Already registered or other issue — skip
+    except Exception:
+        pass  # Registry or base class not available — fallback will handle it
+
+
 def reset_registry_state():
     """
     Reset registry state to uninitialized for testing.
@@ -211,6 +262,9 @@ def reset_registry_state():
 
     This function ensures complete cleanup of module-level registry state
     to prevent test pollution between test methods and test classes.
+    After resetting data_refining's internal state, it also ensures the
+    default dataset registry is populated so that _init_registry() will
+    bind to working function pointers on re-initialization.
     """
     try:
         import milia_pipeline.config.data_refining as data_refining_module
@@ -223,6 +277,10 @@ def reset_registry_state():
         data_refining_module._registry_is_registered = None
     except (ImportError, AttributeError):
         pass  # Module may not have been imported yet
+
+    # Ensure the default dataset registry is populated so that when
+    # _init_registry() re-runs, list_all()/get()/is_registered() work.
+    _ensure_default_registry_populated()
 
 
 def setUpModule():
@@ -256,6 +314,64 @@ def tearDownModule():
 # ==============================================================================
 # TEST FIXTURES AND HELPERS
 # ==============================================================================
+
+# Known valid dataset types for testing
+_VALID_TEST_TYPES = {
+    "DFT",
+    "DMC",
+    "QM9",
+    "ANI1x",
+    "ANI1ccx",
+    "ANI2x",
+    "Wavefunction",
+    "XXMD",
+    "QDPi",
+    "RMD17",
+}
+
+
+@pytest.fixture(autouse=True)
+def _isolate_pydantic_validator(monkeypatch):
+    """Isolate DatasetConfig Pydantic validator from real registry.
+
+    In the full suite, config_containers._is_valid_dataset_type() can fail
+    because config_loader's registry state is inconsistent from earlier tests.
+    Also patches config_constants registry to prevent Mock pollution.
+    """
+    try:
+        import milia_pipeline.config.config_containers as containers_module
+
+        monkeypatch.setattr(
+            containers_module,
+            "_is_valid_dataset_type",
+            lambda dt: (
+                dt in _VALID_TEST_TYPES or dt.upper() in {t.upper() for t in _VALID_TEST_TYPES}
+            ),
+        )
+        monkeypatch.setattr(
+            containers_module,
+            "_get_valid_dataset_types",
+            lambda: sorted(_VALID_TEST_TYPES),
+        )
+        if hasattr(containers_module, "_CACHED_REGISTRY_TYPES"):
+            monkeypatch.setattr(containers_module, "_CACHED_REGISTRY_TYPES", None)
+    except ImportError:
+        pass
+
+    # Also ensure config_constants has real registry functions
+    # First ensure the default registry is populated (prior tests may have cleared it)
+    _ensure_default_registry_populated()
+    try:
+        import milia_pipeline.config.config_constants as constants
+        from milia_pipeline.datasets.registry import get, is_registered, list_all
+
+        monkeypatch.setattr(constants, "_REGISTRY_INITIALIZED", True)
+        monkeypatch.setattr(constants, "_REGISTRY_AVAILABLE", True)
+        monkeypatch.setattr(constants, "_registry_get", get)
+        monkeypatch.setattr(constants, "_registry_list_all", list_all)
+        monkeypatch.setattr(constants, "_registry_is_registered", is_registered)
+    except ImportError:
+        pass
 
 
 class MockDFTHandler:

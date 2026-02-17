@@ -39,11 +39,6 @@ from milia_pipeline.datasets.base import (
 )
 from milia_pipeline.datasets.registry import (
     DatasetRegistry,
-    get,
-    get_default_registry,
-    is_registered,
-    list_all,
-    register,
 )
 from milia_pipeline.exceptions import DatasetNotFoundError, DatasetRegistrationError
 
@@ -904,13 +899,46 @@ class TestRegistryThreadSafety(unittest.TestCase):
 
 
 class TestModuleLevelFunctions(unittest.TestCase):
-    """Test module-level convenience functions that operate on the default registry."""
+    """Test module-level convenience functions that operate on the default registry.
+
+    Category D fix: In the full suite, a prior test file may reload the registry
+    module, creating a new module object in sys.modules with a new _default_registry.
+    Top-level imports (get_default_registry, register, etc.) retain __globals__
+    bound to the OLD module dict. To avoid stale-reference failures, this class
+    accesses all module-level functions and the _default_registry via the CURRENT
+    sys.modules entry for milia_pipeline.datasets.registry.
+    """
+
+    def _current_registry_module(self):
+        """Get the current registry module from sys.modules (not stale import).
+
+        If a prior test file removed the module from sys.modules during
+        teardown, re-import it to get the current version.
+        """
+        import sys
+
+        key = "milia_pipeline.datasets.registry"
+        if key not in sys.modules:
+            import importlib
+
+            importlib.import_module(key)
+        return sys.modules[key]
 
     def setUp(self):
         """Save default registry state and clear for isolation."""
-        self.default_reg = get_default_registry()
+        reg_mod = self._current_registry_module()
+        self.default_reg = reg_mod._default_registry
         self._saved_datasets = dict(self.default_reg._datasets)
         self.default_reg.clear()
+        # Bind current module-level functions and class for use in tests.
+        # After a module reload, the top-level imports (DatasetRegistry, register,
+        # etc.) have __globals__ and class identity from the OLD module.
+        self._register = reg_mod.register
+        self._get = reg_mod.get
+        self._list_all = reg_mod.list_all
+        self._is_registered = reg_mod.is_registered
+        self._get_default_registry = reg_mod.get_default_registry
+        self._DatasetRegistry = reg_mod.DatasetRegistry
 
     def tearDown(self):
         """Restore default registry state after each test."""
@@ -919,53 +947,56 @@ class TestModuleLevelFunctions(unittest.TestCase):
 
     def test_get_default_registry_returns_dataset_registry(self):
         """get_default_registry() returns a DatasetRegistry instance."""
-        reg = get_default_registry()
-        self.assertIsInstance(reg, DatasetRegistry)
+        reg = self._get_default_registry()
+        self.assertIsInstance(reg, self._DatasetRegistry)
 
     def test_get_default_registry_same_instance(self):
         """get_default_registry() always returns the same instance."""
-        reg1 = get_default_registry()
-        reg2 = get_default_registry()
+        reg1 = self._get_default_registry()
+        reg2 = self._get_default_registry()
         self.assertIs(reg1, reg2)
 
     def test_module_register_adds_to_default(self):
         """Module-level register() adds to the default registry."""
         cls = _build_concrete_dataset_class(metadata_name=_next_class_name("ModReg"))
-        register(cls)
+        self._register(cls)
         self.assertIn(cls.metadata.name, self.default_reg.list_all())
 
     def test_module_register_returns_class(self):
         """Module-level register() returns the class (for decorator use)."""
         cls = _build_concrete_dataset_class(metadata_name=_next_class_name("ModRegRet"))
-        result = register(cls)
+        result = self._register(cls)
         self.assertIs(result, cls)
 
     def test_module_register_as_decorator_pattern(self):
         """register() works as a decorator — class is returned and registered."""
         cls = _build_concrete_dataset_class(metadata_name=_next_class_name("ModDec"))
-        decorated = register(cls)
+        decorated = self._register(cls)
         self.assertIs(decorated, cls)
-        self.assertTrue(is_registered(cls.metadata.name))
+        self.assertTrue(self._is_registered(cls.metadata.name))
 
     def test_module_get_retrieves_from_default(self):
         """Module-level get() retrieves from the default registry."""
         name = _next_class_name("ModGet")
         cls = _build_concrete_dataset_class(metadata_name=name)
-        register(cls)
-        retrieved = get(name)
+        self._register(cls)
+        retrieved = self._get(name)
         self.assertIs(retrieved, cls)
 
     def test_module_get_nonexistent_raises(self):
         """Module-level get() raises DatasetNotFoundError for unknown name."""
-        with self.assertRaises(DatasetNotFoundError):
-            get("NonexistentModuleDS")
+        # Category C: get the exact exception class from the function's __globals__
+        # to match the class identity that self._get will actually raise.
+        _DatasetNotFoundError = self._get.__globals__["DatasetNotFoundError"]
+        with self.assertRaises(_DatasetNotFoundError):
+            self._get("NonexistentModuleDS")
 
     def test_module_list_all_returns_list(self):
         """Module-level list_all() returns a list of strings."""
         name = _next_class_name("ModList")
         cls = _build_concrete_dataset_class(metadata_name=name)
-        register(cls)
-        result = list_all()
+        self._register(cls)
+        result = self._list_all()
         self.assertIsInstance(result, list)
         self.assertIn(name, result)
 
@@ -973,22 +1004,21 @@ class TestModuleLevelFunctions(unittest.TestCase):
         """Module-level is_registered() returns True for registered dataset."""
         name = _next_class_name("ModIsReg")
         cls = _build_concrete_dataset_class(metadata_name=name)
-        register(cls)
-        self.assertTrue(is_registered(name))
+        self._register(cls)
+        self.assertTrue(self._is_registered(name))
 
     def test_module_is_registered_false(self):
         """Module-level is_registered() returns False for unregistered name."""
-        self.assertFalse(is_registered("NeverRegisteredModule"))
+        self.assertFalse(self._is_registered("NeverRegisteredModule"))
 
     def test_module_list_all_empty_after_clear(self):
         """Module-level list_all() returns empty list after clearing default registry."""
-        self.assertEqual(list_all(), [])
+        self.assertEqual(self._list_all(), [])
 
     def test_default_registry_is_not_new_instance(self):
         """The default registry is a module-level pre-created instance, not created on call."""
-        from milia_pipeline.datasets import registry as reg_module
-
-        self.assertIs(get_default_registry(), reg_module._default_registry)
+        reg_mod = self._current_registry_module()
+        self.assertIs(self._get_default_registry(), reg_mod._default_registry)
 
 
 # ============================================================================

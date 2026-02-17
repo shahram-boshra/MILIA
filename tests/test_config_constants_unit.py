@@ -1325,9 +1325,13 @@ class TestRegistryInitialization:
 
     def test_init_registry_first_call(self):
         """Test _init_registry on first call."""
-        # Save original state
+        # Save original state — must include function references set by _init_registry
         original_initialized = config_constants._REGISTRY_INITIALIZED
         original_available = config_constants._REGISTRY_AVAILABLE
+        original_list_all = config_constants._registry_list_all
+        original_get = config_constants._registry_get
+        original_is_registered = config_constants._registry_is_registered
+        original_get_default = config_constants._registry_get_default
 
         try:
             # Reset state for testing
@@ -1342,9 +1346,13 @@ class TestRegistryInitialization:
                     assert isinstance(result, bool)
                     assert config_constants._REGISTRY_INITIALIZED is True
         finally:
-            # Restore original state
+            # Restore ALL original state including function references
             config_constants._REGISTRY_INITIALIZED = original_initialized
             config_constants._REGISTRY_AVAILABLE = original_available
+            config_constants._registry_list_all = original_list_all
+            config_constants._registry_get = original_get
+            config_constants._registry_is_registered = original_is_registered
+            config_constants._registry_get_default = original_get_default
 
     def test_init_registry_cached(self):
         """Test that _init_registry returns cached result on subsequent calls."""
@@ -1366,10 +1374,14 @@ class TestRegistryInitialization:
 
     def test_init_registry_import_error(self):
         """Test _init_registry handles ImportError gracefully."""
-        # Save original state
+        # Save ALL original state — _init_registry modifies these globals
         original_initialized = config_constants._REGISTRY_INITIALIZED
         original_available = config_constants._REGISTRY_AVAILABLE
         original_error = config_constants._REGISTRY_IMPORT_ERROR
+        original_list_all = config_constants._registry_list_all
+        original_get = config_constants._registry_get
+        original_is_registered = config_constants._registry_is_registered
+        original_get_default = config_constants._registry_get_default
 
         try:
             # Reset state
@@ -1381,10 +1393,14 @@ class TestRegistryInitialization:
                 # Should return False on import error
                 assert config_constants._REGISTRY_INITIALIZED is True
         finally:
-            # Restore original state
+            # Restore ALL original state
             config_constants._REGISTRY_INITIALIZED = original_initialized
             config_constants._REGISTRY_AVAILABLE = original_available
             config_constants._REGISTRY_IMPORT_ERROR = original_error
+            config_constants._registry_list_all = original_list_all
+            config_constants._registry_get = original_get
+            config_constants._registry_is_registered = original_is_registered
+            config_constants._registry_get_default = original_get_default
 
 
 class TestDynamicDatasetDiscovery:
