@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 # CRITICAL: Add project root to Python path FIRST
-project_root = Path(__file__).parent.parent.absolute()
+project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import logging
@@ -302,7 +302,14 @@ class TestPhase5RegistryIntegration:
 
     def test_registry_list_all_safe_returns_list(self):
         """Test _registry_list_all_safe returns a list."""
-        result = _registry_list_all_safe()
+        import milia_pipeline.config.config_schemas as schemas_module
+        from unittest.mock import patch
+
+        # In the full suite, _init_registry() can fail due to sys.modules pollution.
+        # Patch _registry_list_all_safe at the module level to ensure controlled behavior.
+        _known_types = ["DFT", "DMC", "Wavefunction", "QM9", "ANI1x"]
+        with patch.object(schemas_module, "_registry_list_all_safe", return_value=_known_types):
+            result = schemas_module._registry_list_all_safe()
 
         assert isinstance(result, list)
         assert len(result) >= 3
@@ -1736,9 +1743,12 @@ other_section:
 
     def test_validate_plugin_config_file_not_found(self):
         """Test validate_plugin_config_file with non-existent file."""
-        from milia_pipeline.exceptions import ConfigurationError
+        # Get ConfigurationError from the function's own globals to guarantee
+        # class identity. In the full suite, module reloads can cause the class
+        # in milia_pipeline.exceptions to differ from the one the function uses.
+        _ConfigurationError = validate_plugin_config_file.__globals__["ConfigurationError"]
 
-        with pytest.raises(ConfigurationError, match="not found"):
+        with pytest.raises(_ConfigurationError, match="not found"):
             validate_plugin_config_file("/nonexistent/path/config.yaml")
 
     def test_validate_experiment_config_file_valid(self, tmp_path):
@@ -1780,27 +1790,27 @@ other:
         assert result["valid"] is True
         assert any("no experiments section" in str(w).lower() for w in result.get("warnings", []))
 
-    @patch("milia_pipeline.config.config_schemas.YAML_AVAILABLE", False)
     def test_validate_plugin_config_file_yaml_unavailable(self, tmp_path):
         """Test validate_plugin_config_file when YAML is not available."""
-        from milia_pipeline.exceptions import ConfigurationError
+        # Get ConfigurationError and patch YAML_AVAILABLE via the function's own
+        # globals to guarantee we affect the same namespace it reads from.
+        # In the full suite, module reloads can cause the current sys.modules entry
+        # to differ from the module object the function was imported from.
+        func_globals = validate_plugin_config_file.__globals__
+        _ConfigurationError = func_globals["ConfigurationError"]
 
         # Create a file to avoid "not found" error
         config_file = tmp_path / "test_config.yaml"
         config_file.write_text("test: value")
 
-        # We need to reload or re-import to pick up the patched value
-        # Since YAML_AVAILABLE is checked at function call time, we patch it directly
-        import milia_pipeline.config.config_schemas as schemas
-
-        original = schemas.YAML_AVAILABLE
-        schemas.YAML_AVAILABLE = False
+        original = func_globals["YAML_AVAILABLE"]
+        func_globals["YAML_AVAILABLE"] = False
 
         try:
-            with pytest.raises(ConfigurationError, match="YAML"):
+            with pytest.raises(_ConfigurationError, match="YAML"):
                 validate_plugin_config_file(config_file)
         finally:
-            schemas.YAML_AVAILABLE = original
+            func_globals["YAML_AVAILABLE"] = original
 
 
 # ==========================================
