@@ -97,6 +97,17 @@ def setup_module(module):
             _original_modules[module_name] = sys.modules[module_name]
         sys.modules[module_name] = _mock_modules[module_name]
 
+    # --- Force reload config_parser so it picks up the mock dependencies ---
+    # In the full suite, config_parser may already be cached from an earlier
+    # import with real ArchitectureBuilder, ModelComposer, etc. Without reload,
+    # isinstance checks inside config_parser fail against Mock objects.
+    import importlib
+
+    config_parser_key = "milia_pipeline.models.builders.config_parser"
+    if config_parser_key in sys.modules:
+        _original_modules[config_parser_key] = sys.modules[config_parser_key]
+        importlib.reload(sys.modules[config_parser_key])
+
     # --- Import config_parser ---
     from milia_pipeline.models.builders.config_parser import (
         ArchitectureConfigParser as _ACP,
@@ -121,18 +132,27 @@ def setup_module(module):
     validate_config = _VC
 
     # --- Import ConfigurationError ---
+    # CRITICAL: Get ConfigurationError from the SAME source as config_parser uses.
+    # In the full suite, importing from milia_pipeline.exceptions directly can
+    # yield a different class object than the one config_parser.py bound at its
+    # own import time. Using config_parser's module reference guarantees identity.
     try:
-        from milia_pipeline.exceptions import ConfigurationError as _CE
+        import milia_pipeline.models.builders.config_parser as _cp_module
 
-        ConfigurationError = _CE
-    except (ImportError, ModuleNotFoundError):
+        ConfigurationError = _cp_module.ConfigurationError
+    except (ImportError, AttributeError):
+        try:
+            from milia_pipeline.exceptions import ConfigurationError as _CE
 
-        class _FallbackCE(Exception):
-            """Configuration error."""
+            ConfigurationError = _CE
+        except (ImportError, ModuleNotFoundError):
 
-            pass
+            class _FallbackCE(Exception):
+                """Configuration error."""
 
-        ConfigurationError = _FallbackCE
+                pass
+
+            ConfigurationError = _FallbackCE
 
     # --- Publish into module namespace ---
     module.ArchitectureConfigParser = ArchitectureConfigParser
@@ -156,6 +176,11 @@ def teardown_module(module):
             else:
                 # Remove mock module
                 del sys.modules[module_name]
+
+    # Restore config_parser if it was reloaded during setup_module
+    config_parser_key = "milia_pipeline.models.builders.config_parser"
+    if config_parser_key in _original_modules:
+        sys.modules[config_parser_key] = _original_modules[config_parser_key]
 
 
 # =============================================================================
