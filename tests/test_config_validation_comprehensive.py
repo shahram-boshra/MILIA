@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 test_config_validation_comprehensive.py — Section 5.1
 
@@ -602,11 +603,12 @@ class TestValidationResult:
 
     def test_invalid_result_raises_on_data_access(self):
         from milia_pipeline.config.validators import ValidationResult
-        from milia_pipeline.exceptions import ValidationError
 
         result = ValidationResult(is_valid=False, errors=["bad value"])
         assert result.is_valid is False
-        with pytest.raises(ValidationError):
+        # Get ValidationError from the method's own globals to guarantee class identity
+        _ValidationError = result.get_validated_data.__func__.__globals__["ValidationError"]
+        with pytest.raises(_ValidationError):
             result.get_validated_data()
 
     def test_unchecked_result_raises_on_data_access(self):
@@ -615,10 +617,10 @@ class TestValidationResult:
         Evidence: validators.py lines 692-698.
         """
         from milia_pipeline.config.validators import ValidationResult
-        from milia_pipeline.exceptions import ValidationError
 
         result = ValidationResult(is_valid=True, errors=[], data="x")
-        with pytest.raises(ValidationError, match="must be checked"):
+        _ValidationError = result.get_validated_data.__func__.__globals__["ValidationError"]
+        with pytest.raises(_ValidationError, match="must be checked"):
             result.get_validated_data()
 
 
@@ -1454,9 +1456,9 @@ class TestLoadAndMergeYamlFiles:
         Evidence: config_loader.py lines 574-579.
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
-        from milia_pipeline.exceptions import ConfigurationError
 
-        with pytest.raises(ConfigurationError, match="No configuration files"):
+        _ConfigurationError = _load_and_merge_yaml_files.__globals__["ConfigurationError"]
+        with pytest.raises(_ConfigurationError, match="No configuration files"):
             _load_and_merge_yaml_files([])
 
     def test_invalid_yaml_raises(self, tmp_path):
@@ -1465,11 +1467,11 @@ class TestLoadAndMergeYamlFiles:
         Evidence: config_loader.py lines 609-614.
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
-        from milia_pipeline.exceptions import ConfigurationError
 
+        _ConfigurationError = _load_and_merge_yaml_files.__globals__["ConfigurationError"]
         bad = tmp_path / "bad.yaml"
         bad.write_text("key: [unclosed bracket\n")
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(_ConfigurationError):
             _load_and_merge_yaml_files([bad])
 
     def test_non_dict_yaml_raises(self, tmp_path):
@@ -1478,11 +1480,11 @@ class TestLoadAndMergeYamlFiles:
         Evidence: config_loader.py lines 599-604.
         """
         from milia_pipeline.config.config_loader import _load_and_merge_yaml_files
-        from milia_pipeline.exceptions import ConfigurationError
 
+        _ConfigurationError = _load_and_merge_yaml_files.__globals__["ConfigurationError"]
         f = tmp_path / "list.yaml"
         f.write_text("- item1\n- item2\n")
-        with pytest.raises(ConfigurationError, match="dictionary"):
+        with pytest.raises(_ConfigurationError, match="dictionary"):
             _load_and_merge_yaml_files([f])
 
 
@@ -1513,9 +1515,9 @@ class TestLoadConfig:
         Evidence: config_loader.py lines 748-753.
         """
         from milia_pipeline.config.config_loader import load_config
-        from milia_pipeline.exceptions import ConfigurationError
 
-        with pytest.raises(ConfigurationError, match="not found"):
+        _ConfigurationError = load_config.__globals__["ConfigurationError"]
+        with pytest.raises(_ConfigurationError, match="not found"):
             load_config(config_path=str(tmp_path / "nonexistent.yaml"), force_reload=True)
 
     def test_load_empty_file_raises(self, tmp_path):
@@ -1524,11 +1526,11 @@ class TestLoadConfig:
         Evidence: config_loader.py lines 775-779.
         """
         from milia_pipeline.config.config_loader import load_config
-        from milia_pipeline.exceptions import ConfigurationError
 
+        _ConfigurationError = load_config.__globals__["ConfigurationError"]
         empty = tmp_path / "empty.yaml"
         empty.write_text("")
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(_ConfigurationError):
             load_config(config_path=str(empty), force_reload=True)
 
     def test_load_non_dict_config_raises(self, tmp_path):
@@ -1537,11 +1539,11 @@ class TestLoadConfig:
         Evidence: config_loader.py lines 797-802.
         """
         from milia_pipeline.config.config_loader import load_config
-        from milia_pipeline.exceptions import ConfigurationError
 
+        _ConfigurationError = load_config.__globals__["ConfigurationError"]
         f = tmp_path / "list_root.yaml"
         f.write_text("- a\n- b\n")
-        with pytest.raises(ConfigurationError, match="dictionary"):
+        with pytest.raises(_ConfigurationError, match="dictionary"):
             load_config(config_path=str(f), force_reload=True)
 
     def test_load_split_mode(self, tmp_config_dir):
