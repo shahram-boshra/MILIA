@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 # CRITICAL: Add project root to Python path FIRST
-project_root = Path(__file__).parent.parent.absolute()
+project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 
@@ -57,6 +57,41 @@ from milia_pipeline.config.config_containers import (
 # ==========================================
 # TEST FIXTURES
 # ==========================================
+
+# Known valid dataset types for testing (matches real registry canonical names)
+_VALID_TEST_TYPES = {
+    "DFT", "DMC", "QM9", "ANI1x", "ANI1ccx", "ANI2x",
+    "Wavefunction", "XXMD", "QDPi", "RMD17",
+}
+
+
+@pytest.fixture(autouse=True)
+def _isolate_pydantic_validator(monkeypatch):
+    """Isolate DatasetConfig Pydantic validator from real registry.
+
+    The @field_validator("dataset_type") in config_containers.py calls
+    _is_valid_dataset_type() which reaches config_loader's registry.
+    In the full suite, config_loader's registry state can be inconsistent
+    due to earlier test files' setup_module/teardown_module cycles.
+
+    This patches the MODULE-LEVEL attribute (used by Pydantic validator)
+    without affecting directly-imported function references (used by
+    TestRegistryFunctions tests).
+    """
+    import milia_pipeline.config.config_containers as containers_module
+
+    monkeypatch.setattr(
+        containers_module,
+        "_is_valid_dataset_type",
+        lambda dt: dt in _VALID_TEST_TYPES or dt.upper() in {t.upper() for t in _VALID_TEST_TYPES},
+    )
+    monkeypatch.setattr(
+        containers_module,
+        "_get_valid_dataset_types",
+        lambda: sorted(_VALID_TEST_TYPES),
+    )
+    # Clear cached registry types to prevent stale state from earlier tests
+    monkeypatch.setattr(containers_module, "_CACHED_REGISTRY_TYPES", None)
 
 
 @pytest.fixture
