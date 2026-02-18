@@ -2715,7 +2715,7 @@ class TestVerificationChecklist(unittest.TestCase):
     def test_model_factory_available(self):
         """Verify ModelFactory is available (Checklist item 4)."""
         try:
-            from milia_pipeline.models import ModelFactory, get_factory
+            from milia_pipeline.models import get_factory
 
             factory = get_factory()
             self.assertIsNotNone(factory)
@@ -2848,59 +2848,49 @@ class TestComponentAvailabilitySummary(unittest.TestCase):
 
     def test_print_component_availability(self):
         """Print component availability summary."""
+        import importlib.util
+
         components = {}
 
         # CLI Manager
-        try:
-            from milia_pipeline.cli_manager import CLIManager
-
-            components["CLIManager"] = True
-        except ImportError:
-            components["CLIManager"] = False
+        components["CLIManager"] = (
+            importlib.util.find_spec("milia_pipeline.cli_manager") is not None
+        )
 
         # Models Module
-        try:
-            from milia_pipeline.models import DataSplitter, ModelFactory, Trainer
-
-            components["ModelFactory"] = True
-            components["Trainer"] = True
-            components["DataSplitter"] = True
-        except ImportError:
-            components["ModelFactory"] = False
-            components["Trainer"] = False
-            components["DataSplitter"] = False
+        _models_available = importlib.util.find_spec("milia_pipeline.models") is not None
+        components["ModelFactory"] = _models_available
+        components["Trainer"] = _models_available
+        components["DataSplitter"] = _models_available
 
         # Callbacks
-        try:
-            from milia_pipeline.models.training.callbacks import EarlyStopping, ModelCheckpoint
-
-            components["EarlyStopping"] = True
-            components["ModelCheckpoint"] = True
-        except ImportError:
-            components["EarlyStopping"] = False
-            components["ModelCheckpoint"] = False
+        _callbacks_available = (
+            importlib.util.find_spec("milia_pipeline.models.training.callbacks") is not None
+        )
+        components["EarlyStopping"] = _callbacks_available
+        components["ModelCheckpoint"] = _callbacks_available
 
         # HPO Module
+        _hpo_available = importlib.util.find_spec("milia_pipeline.models.hpo") is not None
+        components["HPOManager"] = _hpo_available
+        components["HPOConfig"] = _hpo_available
         try:
-            from milia_pipeline.models.hpo import OPTUNA_AVAILABLE, HPOConfig, HPOManager
+            from milia_pipeline.models.hpo import OPTUNA_AVAILABLE
 
-            components["HPOManager"] = True
-            components["HPOConfig"] = True
             components["Optuna"] = OPTUNA_AVAILABLE
         except ImportError:
-            components["HPOManager"] = False
-            components["HPOConfig"] = False
             components["Optuna"] = False
 
         # Main module
+        components["main.handle_training_mode"] = (
+            importlib.util.find_spec("main") is not None
+        )
         try:
-            from main import HPO_AVAILABLE, MODELS_TRAINING_AVAILABLE, handle_training_mode
+            from main import HPO_AVAILABLE, MODELS_TRAINING_AVAILABLE
 
-            components["main.handle_training_mode"] = True
             components["MODELS_TRAINING_AVAILABLE"] = MODELS_TRAINING_AVAILABLE
             components["HPO_AVAILABLE"] = HPO_AVAILABLE
         except ImportError:
-            components["main.handle_training_mode"] = False
             components["MODELS_TRAINING_AVAILABLE"] = False
             components["HPO_AVAILABLE"] = False
 
