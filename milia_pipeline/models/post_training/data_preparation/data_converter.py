@@ -491,12 +491,9 @@ class SMILESConverter(BaseDataConverter):
 
     @property
     def is_available(self) -> bool:
-        try:
-            from rdkit import Chem
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("rdkit") is not None
 
     def can_convert(self, input_data: Any) -> bool:
         if not isinstance(input_data, str):
@@ -663,12 +660,9 @@ class InChIConverter(BaseDataConverter):
 
     @property
     def is_available(self) -> bool:
-        try:
-            from rdkit.Chem.inchi import MolFromInchi
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("rdkit.Chem.inchi") is not None
 
     def can_convert(self, input_data: Any) -> bool:
         if not isinstance(input_data, str):
@@ -745,12 +739,9 @@ class XYZConverter(BaseDataConverter):
 
     @property
     def is_available(self) -> bool:
-        try:
-            import ase.io
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("ase.io") is not None
 
     def can_convert(self, input_data: Any) -> bool:
         # Check if it's an XYZ file path
@@ -800,12 +791,9 @@ class ASEAtomsConverter(BaseDataConverter):
 
     @property
     def is_available(self) -> bool:
-        try:
-            import ase
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("ase") is not None
 
     def can_convert(self, input_data: Any) -> bool:
         try:
@@ -865,12 +853,9 @@ class SDFConverter(BaseDataConverter):
 
     @property
     def is_available(self) -> bool:
-        try:
-            from rdkit import Chem
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("rdkit") is not None
 
     def can_convert(self, input_data: Any) -> bool:
         if isinstance(input_data, (str, Path)):
