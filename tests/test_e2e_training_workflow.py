@@ -123,7 +123,6 @@ except ImportError:
 
 try:
     from milia_pipeline.models.training.callbacks import (
-        Callback,
         EarlyStopping,
         ModelCheckpoint,
     )
@@ -133,11 +132,7 @@ except ImportError:
     _CALLBACKS_AVAILABLE = False
 
 try:
-    from milia_pipeline.models.factory.model_factory import (
-        ModelFactory,
-        create_model,
-        get_factory,
-    )
+    from milia_pipeline.models.factory.model_factory import get_factory
 
     _MODEL_FACTORY_AVAILABLE = True
 except ImportError:
@@ -146,9 +141,7 @@ except ImportError:
 try:
     from milia_pipeline.models.factory.target_selection_config import (
         SelectionMode,
-        TargetLevel,
         TargetSelectionConfig,
-        TargetSource,
     )
 
     _TARGET_SELECTION_AVAILABLE = True
@@ -165,12 +158,14 @@ try:
 except ImportError:
     _CHECKPOINT_MANAGER_AVAILABLE = False
 
-try:
-    from milia_pipeline.models.post_training.inference.model_loader import ModelLoader
+import importlib.util
 
-    _MODEL_LOADER_AVAILABLE = True
-except ImportError:
-    _MODEL_LOADER_AVAILABLE = False
+_MODEL_LOADER_AVAILABLE = (
+    importlib.util.find_spec(
+        "milia_pipeline.models.post_training.inference.model_loader"
+    )
+    is not None
+)
 
 try:
     from milia_pipeline.models.post_training.inference.predictor import Predictor
