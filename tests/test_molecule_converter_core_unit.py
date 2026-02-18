@@ -63,13 +63,7 @@ try:
     from milia_pipeline.exceptions import (
         ConfigurationError,
         HandlerConfigurationError,
-        HandlerError,
         HandlerNotAvailableError,
-        MoleculeProcessingError,
-        PyGDataCreationError,
-        RDKitConversionError,
-        TransformationError,
-        TransformConfigurationError,
     )
     from milia_pipeline.molecules.molecule_converter_core import MoleculeDataConverter
 
@@ -83,9 +77,6 @@ except ImportError as e:
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.molecules.molecule_converter_core import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _get_available_dataset_types,
         _get_dataset_feature,
         _get_dataset_molecule_creation_strategy,
