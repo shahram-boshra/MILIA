@@ -538,6 +538,10 @@ def _build_core_module_snapshot() -> dict:
         "milia_pipeline.datasets.implementations",
         "milia_pipeline.descriptors",
         "milia_pipeline.models.registry",
+        "milia_pipeline.transformations.plugin_system",
+        "milia_pipeline.transformations.custom_transforms",
+        "milia_pipeline.transformations.graph_transforms",
+        "milia_pipeline.molecules.mol_conversion_utils",
     )
     snapshot = {}
     for key, mod in list(sys.modules.items()):

@@ -2266,7 +2266,7 @@ class TestStandardTransformsSupport(BaseTestCase):
 
         # Mock get_combined_transforms_as_dicts to return experimental only (old behavior)
         with patch(
-            "milia_pipeline.datasets.milia_dataset.get_combined_transforms_as_dicts"
+            "milia_pipeline.config.config_accessors.get_combined_transforms_as_dicts"
         ) as mock_combined:
             mock_combined.return_value = [
                 {"name": "LegacyTransform", "kwargs": {}, "enabled": True}
@@ -2321,7 +2321,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         """Test that combined transforms are always in list format."""
         with (
             patch(
-                "milia_pipeline.datasets.milia_dataset.get_combined_transforms_as_dicts"
+                "milia_pipeline.config.config_accessors.get_combined_transforms_as_dicts"
             ) as mock_combined,
             patch("milia_pipeline.datasets.milia_dataset.get_experimental_setup") as mock_setup,
         ):
@@ -2358,7 +2358,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         """Test that standard transforms come before experimental in combined result."""
         with (
             patch(
-                "milia_pipeline.datasets.milia_dataset.get_combined_transforms_as_dicts"
+                "milia_pipeline.config.config_accessors.get_combined_transforms_as_dicts"
             ) as mock_combined,
             patch("milia_pipeline.datasets.milia_dataset.get_experimental_setup") as mock_setup,
         ):

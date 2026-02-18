@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # tests/test_contract_dataset_handler_protocol.py
 
 """
@@ -179,6 +180,79 @@ def _make_mock_filter_config():
     fc.dmc_uncertainty_filter = None
     fc.handler_filters = {}
     return fc
+
+
+@pytest.fixture(autouse=True)
+def _ensure_real_registry():
+    """Ensure config_constants uses the REAL dataset registry, not Mocks.
+
+    Handler call chain: base_handler.get_common_required_properties()
+    → config_accessors.get_required_properties()
+    → config_constants.get_handler_constants()
+    → config_constants.get_handler_required_properties()
+    → config_constants.registry_get()
+    → config_constants._registry_get()   ← THIS is the one that matters
+
+    config_constants has its OWN _init_registry / _registry_get / etc.,
+    completely independent from config_accessors'. Earlier test files'
+    reset_registry_state fixtures can leave config_constants._registry_get
+    pointing to a MagicMock.
+    """
+    try:
+        from milia_pipeline.datasets.registry import get, is_registered, list_all
+    except ImportError:
+        yield
+        return
+
+    # Patch config_constants (the actual path used by handlers)
+    try:
+        import milia_pipeline.config.config_constants as constants
+
+        orig_constants = {
+            "_REGISTRY_INITIALIZED": constants._REGISTRY_INITIALIZED,
+            "_REGISTRY_AVAILABLE": constants._REGISTRY_AVAILABLE,
+            "_registry_list_all": getattr(constants, "_registry_list_all", None),
+            "_registry_get": getattr(constants, "_registry_get", None),
+            "_registry_is_registered": getattr(constants, "_registry_is_registered", None),
+        }
+
+        constants._REGISTRY_INITIALIZED = True
+        constants._REGISTRY_AVAILABLE = True
+        constants._registry_list_all = list_all
+        constants._registry_get = get
+        constants._registry_is_registered = is_registered
+    except ImportError:
+        orig_constants = None
+
+    # Also patch config_accessors for completeness
+    try:
+        import milia_pipeline.config.config_accessors as accessors
+
+        orig_accessors = {
+            "_REGISTRY_INITIALIZED": accessors._REGISTRY_INITIALIZED,
+            "_REGISTRY_AVAILABLE": accessors._REGISTRY_AVAILABLE,
+            "_registry_list_all": getattr(accessors, "_registry_list_all", None),
+            "_registry_get": getattr(accessors, "_registry_get", None),
+            "_registry_is_registered": getattr(accessors, "_registry_is_registered", None),
+        }
+
+        accessors._REGISTRY_INITIALIZED = True
+        accessors._REGISTRY_AVAILABLE = True
+        accessors._registry_list_all = list_all
+        accessors._registry_get = get
+        accessors._registry_is_registered = is_registered
+    except ImportError:
+        orig_accessors = None
+
+    yield
+
+    # Restore
+    if orig_constants:
+        for attr, val in orig_constants.items():
+            setattr(constants, attr, val)
+    if orig_accessors:
+        for attr, val in orig_accessors.items():
+            setattr(accessors, attr, val)
 
 
 @pytest.fixture

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 End-to-End Test: Preprocessing Workflow
 =======================================
@@ -505,10 +506,6 @@ class TestMoleculeConversionE2E:
         )
 
         with (
-            patch(
-                "milia_pipeline.molecules.molecule_converter_core.load_config",
-                return_value=minimal_config,
-            ),
             patch(
                 "milia_pipeline.molecules.molecule_converter_core.get_dataset_appropriate_structural_features",
                 return_value={"enabled": False},

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Contract Tests for Dataset Base Classes (Section 2.2)
 
@@ -927,9 +928,10 @@ class TestIsolatedRegistry:
 
     def test_get_nonexistent_raises(self, isolated_registry: DatasetRegistry):
         """Getting a non-existent dataset must raise DatasetNotFoundError."""
-        from milia_pipeline.exceptions import DatasetNotFoundError
+        # Get exception class from registry.get's own globals to guarantee class identity
+        _DatasetNotFoundError = isolated_registry.get.__func__.__globals__["DatasetNotFoundError"]
 
-        with pytest.raises(DatasetNotFoundError):
+        with pytest.raises(_DatasetNotFoundError):
             isolated_registry.get("NonExistent")
 
     def test_get_or_none_returns_none(self, isolated_registry: DatasetRegistry):
@@ -959,12 +961,13 @@ class TestIsolatedRegistry:
 
     def test_duplicate_registration_different_class_raises(self):
         """Registering a different class with the same name must raise."""
-        from milia_pipeline.exceptions import DatasetRegistrationError
-
         reg = DatasetRegistry()
         from milia_pipeline.datasets.implementations.dft import DFTDataset
 
         reg.register(DFTDataset)
+
+        # Get exception class from registry.register's own globals to guarantee class identity
+        _DatasetRegistrationError = reg.register.__func__.__globals__["DatasetRegistrationError"]
 
         # Create a minimal valid dataset with the same metadata.name
         class FakeDFT(BaseDataset):
@@ -985,7 +988,7 @@ class TestIsolatedRegistry:
             def get_molecule_creation_strategy(cls):
                 return "coordinate_based"
 
-        with pytest.raises(DatasetRegistrationError):
+        with pytest.raises(_DatasetRegistrationError):
             reg.register(FakeDFT)
 
     def test_contains_operator(self):

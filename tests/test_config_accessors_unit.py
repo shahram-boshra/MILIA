@@ -1489,7 +1489,7 @@ class TestTransformationConfiguration:
         try:
             result = get_experimental_setup("baseline")
             assert result is not None
-        except:
+        except Exception:
             pass
 
     def test_get_experimental_setup_not_found(self, mock_load_config):
@@ -1502,7 +1502,7 @@ class TestTransformationConfiguration:
         try:
             result = get_experimental_setup("baseline", validate=True)
             assert result is not None
-        except:
+        except Exception:
             pass
 
     def test_get_experimental_setup_validation_failure(self, mock_load_config):
@@ -1666,7 +1666,7 @@ class TestTransformationConfiguration:
         """Test save_experimental_setup."""
         try:
             save_experimental_setup("test_setup", [])
-        except:
+        except Exception:
             pass  # May not be implemented
 
 
@@ -1789,7 +1789,7 @@ class TestTransformationConfigurationExtended:
         try:
             result = get_experimental_setups_for_dataset("DFT")
             assert isinstance(result, dict)
-        except:
+        except Exception:
             pass
 
     def test_transformation_config_with_invalid_transform(self, mock_load_config):
@@ -1797,7 +1797,7 @@ class TestTransformationConfigurationExtended:
         try:
             setup = get_experimental_setup("baseline")
             assert setup is not None
-        except:
+        except Exception:
             pass
 
     def test_transformation_config_validation_strict(self, mock_load_config):
@@ -1807,7 +1807,7 @@ class TestTransformationConfigurationExtended:
             assert isinstance(
                 result, (bool, tuple, dict)
             )  # Can return dict with validation results
-        except:
+        except Exception:
             pass
 
     def test_transformation_config_validation_lenient(self, mock_load_config):
@@ -1817,7 +1817,7 @@ class TestTransformationConfigurationExtended:
             assert isinstance(
                 result, (bool, tuple, dict)
             )  # Can return dict with validation results
-        except:
+        except Exception:
             pass
 
     def test_get_transform_categories(self):
@@ -1920,7 +1920,7 @@ class TestTransformationConfigurationExtended:
         try:
             config = get_transformation_config()
             assert config is None or isinstance(config, (dict, object))
-        except:
+        except Exception:
             pass
 
 
@@ -2169,7 +2169,7 @@ class TestEdgeCasesAndErrorHandling:
             try:
                 result = get_optional_properties("DFT")
                 assert isinstance(result, list)
-            except:
+            except Exception:
                 pass  # Acceptable if no fallback exists
 
     def test_type_safety_all_accessors(self, mock_registry_class, mock_load_config):
@@ -2286,7 +2286,7 @@ class TestIntegrationAndSystem:
         # Get transformation config
         try:
             transform_config = get_transformation_config()
-        except:
+        except Exception:
             transform_config = None
 
         # Get descriptor config
@@ -2332,7 +2332,7 @@ class TestIntegrationAndSystem:
             # System should recover gracefully
             try:
                 get_required_properties("DFT")
-            except:
+            except Exception:
                 pass  # Expected
 
     def test_multi_dataset_type_support(self, mock_registry_class, mock_load_config):
@@ -2371,7 +2371,7 @@ class TestIntegrationAndSystem:
             # System should still function in degraded mode
             try:
                 get_available_transforms()
-            except:
+            except Exception:
                 pass  # Acceptable
 
     def test_comprehensive_coverage(self, mock_registry_class, mock_load_config):
@@ -2431,7 +2431,7 @@ class TestBackwardCompatibility:
             _result = get_transform({}, "AddSelfLoops")
         except (ImportError, AttributeError):
             pass  # Function may not exist
-        except:
+        except Exception:
             pass  # Expected
 
     def test_get_parameter_wrapper(self):
@@ -2442,7 +2442,7 @@ class TestBackwardCompatibility:
             _result = get_parameter({}, "AddSelfLoops", "param", default="value")
         except (ImportError, AttributeError):
             pass  # Function may not exist
-        except:
+        except Exception:
             pass  # Expected
 
     def test_get_setup_wrapper(self):
@@ -2453,7 +2453,7 @@ class TestBackwardCompatibility:
             _result = get_setup({}, "baseline")
         except (ImportError, AttributeError):
             pass  # Function may not exist
-        except:
+        except Exception:
             pass  # Expected
 
     def test_legacy_registry_functions(self):
@@ -2835,7 +2835,7 @@ class TestLoggingAndMonitoring:
         ):
             try:
                 get_dataset_type()
-            except:
+            except Exception:
                 pass  # Error should be logged
 
     def test_warning_logging(self, mock_registry_class):
@@ -2853,7 +2853,7 @@ class TestLoggingAndMonitoring:
         ):
             try:
                 get_required_properties("DFT")
-            except:
+            except Exception:
                 pass  # Warning should be logged
 
     def test_info_logging(self, mock_load_config):

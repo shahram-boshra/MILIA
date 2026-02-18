@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # test_config_split_mode_parity.py — Config + Regression Test (Section 5.2)
 
 """

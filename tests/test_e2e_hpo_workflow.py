@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 End-to-End HPO Workflow Test Suite
 

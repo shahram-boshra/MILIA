@@ -1,10 +1,10 @@
 # MILIA Pipeline: Mock Pollution Prevention Guide
 
 **Project:** MILIA Pipeline
-**Version:** 1.0.0
-**Date:** 2026-02-11
-**Evidence Base:** 8 polluter files hardened, 1,132 tests verified, 22,575 full-suite collection with 0 errors
-**Companion Document:** `MILIA_Test_Infrastructure_Tracker.md` §4.3–§4.4
+**Version:** 2.0.0
+**Date:** 2026-02-18
+**Evidence Base:** 8 polluter files hardened, 1,132 tests verified, 22,601 full-suite collection with 0 errors; 18 additional failures fixed (8 pre-existing + 10 pollution)
+**Companion Document:** `MILIA_Test_Infrastructure_Tracker.md` §4.3–§4.4, `TEST_SUITE_POLLUTION_TRACKER.md`
 
 ---
 
@@ -130,7 +130,7 @@ If the output says `CLEAN`, the file is safe. If `POLLUTED`, apply the Rule 2 fi
 # Step 1 — Isolation collection (no errors):
 pytest tests/test_NEW_FILE.py --collect-only 2>&1 | tail -5
 
-# Step 2 — Full suite collection (must remain at 22,575+ tests, 0 errors):
+# Step 2 — Full suite collection (must remain at 22,601+ tests, 0 errors):
 pytest tests/ --collect-only 2>&1 | tail -5
 
 # Step 3 — Isolation run (all pass):
@@ -151,6 +151,159 @@ Never use `Path('/app/milia')`, `Path(__file__).parent.parent.absolute()`, or an
 
 ---
 
+## Rule 7: `mock.patch()` Must Target Where the Name Is Looked Up
+
+Python's `mock.patch()` replaces an attribute on a **module object**. The patch target must be the module where the name is resolved at runtime — not necessarily where the function is defined.
+
+### Module-Level Imports
+
+When the module under test imports at the top of its file:
+```python
+# source_module.py
+def my_function(): ...
+
+# consumer_module.py
+from source_module import my_function   # <-- module-level import
+```
+Patch at the **consumer**: `@patch("consumer_module.my_function")` — because `consumer_module.__dict__["my_function"]` is where the name resolves.
+
+### Local Imports (Inside Function Bodies)
+
+When the module under test imports inside a function:
+```python
+# consumer_module.py
+def some_method(self):
+    from source_module import my_function   # <-- local import
+    my_function()
+```
+Patch at the **source**: `@patch("source_module.my_function")` — because `from source_module import my_function` re-fetches from `sys.modules["source_module"]` at each call. Patching the consumer has no effect because the name never exists in the consumer's `__dict__`.
+
+### How to Determine Which Case Applies
+
+1. Open the module under test.
+2. Search for the function name in the **top-level imports** (outside any function/class body).
+3. If found → patch at the consumer (`module_under_test.function_name`).
+4. If NOT found → check if it's imported locally inside a function body → patch at the source (`source_module.function_name`).
+5. If NOT found anywhere → the attribute doesn't exist on the module; the `@patch` is invalid and will raise `AttributeError`.
+
+### Common Errors (from MILIA test suite — 8 failures fixed)
+
+| Error | Root Cause | Fix |
+|-------|-----------|-----|
+| `AttributeError: module 'milia_dataset' does not have attribute 'get_combined_transforms_as_dicts'` | Function only imported locally inside method bodies, not at module level | Patch at source: `config_accessors.get_combined_transforms_as_dicts` |
+| `AttributeError: module 'nas_manager' does not have attribute 'SearchSpaceError'` | Exception class never imported by `nas_manager.py` (only appears in docstrings) | Patch at source: `milia_pipeline.exceptions.SearchSpaceError` |
+| `AttributeError: module 'qdpi' does not have attribute 'HAR2EV'` | Constant never imported by `qdpi.py`; used only in `milia_dataset.py` | Patch at source: `config_constants.HAR2EV` |
+| `AttributeError: module 'molecule_converter_core' does not have attribute 'load_config'` | Function never imported by `molecule_converter_core.py` at all | Remove the invalid patch entirely |
+
+---
+
+## Rule 8: Execution-Time Pollution Categories and Fixes
+
+Beyond collection-time pollution (Rules 1–3), tests can corrupt state **during execution**. Three categories exist:
+
+### Category B — Registry Singleton Cleared
+
+A test calls `.clear()` or `.reset()` on a global singleton registry (dataset, descriptor, or model) for isolation, but does not restore contents. Subsequent tests find empty registries.
+
+**Symptoms**: `list_all()` returns `[]`, `is_registered("DFT")` returns `False`, handler tests get empty required-property lists.
+
+**Fix**: Tests that call `.clear()` must save and restore the registry dict in a `try/finally` block. The `conftest.py` hook provides a safety net (see Rule 9).
+
+### Category C — Class Identity Mismatch After Module Reload
+
+A test reloads a module (or deletes it from `sys.modules`, causing reimport). The new module creates NEW class objects. `isinstance()` and `issubclass()` checks fail because `old_module.MyClass is not new_module.MyClass`.
+
+**Symptoms**: `except ConfigurationError:` doesn't catch, `isinstance(handler, DatasetHandler)` returns `False`, `issubclass` checks fail silently.
+
+**Fix**: Protect critical modules via `conftest.py` `_CRITICAL_PREFIXES` (see Rule 9). The hook restores original module objects after each test.
+
+### Category D — Stale `func.__globals__` After Module Reload
+
+Functions imported at the top of a test file retain `__globals__` bound to the OLD module's `__dict__` after reload. `mock.patch()` patches the NEW module's `__dict__`, but the function resolves names from the OLD dict. Mocks become invisible.
+
+**Symptoms**: `mock.patch` appears to have no effect; functions use real implementations instead of mocks; tests pass solo but fail in suite.
+
+**Fix**: Either protect the module via `conftest.py` `_CRITICAL_PREFIXES`, or re-fetch functions from `sys.modules` in `setUp()`:
+```python
+def setUp(self):
+    mod = sys.modules["milia_pipeline.some_module"]
+    self.my_function = getattr(mod, "my_function")
+```
+
+---
+
+## Rule 9: `conftest.py` Module and Registry Protection
+
+The `tests/conftest.py` provides automatic protection against execution-time pollution via two hooks:
+
+### How It Works
+
+1. **`pytest_collection_finish`**: After collection (all imports done), snapshots:
+   - `sys.modules` entries for critical module prefixes (original module objects)
+   - Registry singleton contents (dataset, descriptor, model dicts)
+
+2. **`pytest_runtest_teardown` (hookwrapper, trylast)**: After EACH test's complete teardown:
+   - Restores any deleted/reloaded modules in `sys.modules`
+   - Restores any cleared registry contents from snapshots
+
+### Protected Module Prefixes (`_CRITICAL_PREFIXES`)
+
+```python
+_CRITICAL_PREFIXES = (
+    "milia_pipeline.exceptions",
+    "milia_pipeline.datasets.registry",
+    "milia_pipeline.datasets.base",
+    "milia_pipeline.datasets.implementations",
+    "milia_pipeline.descriptors",
+    "milia_pipeline.models.registry",
+    "milia_pipeline.transformations.plugin_system",
+    "milia_pipeline.transformations.custom_transforms",
+    "milia_pipeline.transformations.graph_transforms",
+    "milia_pipeline.molecules.mol_conversion_utils",
+)
+```
+
+### When to Add a New Prefix
+
+Add a module to `_CRITICAL_PREFIXES` when:
+1. Tests in a file pass solo but fail in the full suite (pollution symptom)
+2. The failing tests use `mock.patch()` targeting attributes on that module
+3. The module is NOT manipulated via `setup_module()`/`teardown_module()` by any test file
+
+**Do NOT add a prefix** if test files legitimately use `setup_module()` to inject mocks into that module's `sys.modules` entry. Protecting such modules prevents the legitimate mocks from taking effect. This is why `milia_pipeline.handlers` and `milia_pipeline.config` are NOT in the protected list — `test_config_loader_unit.py` uses `setup_module()` injection for these.
+
+### Registry Snapshots
+
+| Registry | Module Path | Singleton Access | Internal Dict |
+|----------|------------|-----------------|---------------|
+| Dataset | `milia_pipeline.datasets.registry` | `_default_registry` | `._datasets` |
+| Descriptor | `milia_pipeline.descriptors.descriptor_registry` | `DescriptorRegistry._instances[cls]` | `._descriptors`, `._by_category` |
+| Model | `milia_pipeline.models.registry.model_registry` | `ModelRegistry._instances[cls]` | `._models` |
+
+---
+
+## Rule 10: Four-Step Verification After Every Test Fix
+
+Extends Rule 5 with a full-suite execution check:
+
+```bash
+# Step 1 — Isolation collection (no errors):
+pytest tests/test_NEW_FILE.py --collect-only 2>&1 | tail -5
+
+# Step 2 — Full suite collection (must remain at 22,601+ tests, 0 errors):
+pytest tests/ --collect-only 2>&1 | tail -5
+
+# Step 3 — Isolation run (all pass):
+pytest tests/test_NEW_FILE.py -v --tb=short 2>&1 | tail -10
+
+# Step 4 — Full suite run for specific tests (pollution check):
+pytest tests/ -k "test_name_1 or test_name_2" -v --tb=short 2>&1 | tail -15
+```
+
+Step 4 is **critical for pollution fixes** — a test can pass in Steps 1–3 while still failing when preceded by a polluter in the full suite. Only Step 4 catches this.
+
+---
+
 ## Evidence: Files Hardened Using This Pattern
 
 | # | File | Tests | Pattern Applied |
@@ -167,3 +320,14 @@ Never use `Path('/app/milia')`, `Path(__file__).parent.parent.absolute()`, or an
 | 11 | `test_validators_unit.py` | 165 | 9 injections + `importlib` loading + Phase 6 extraction → `setup_module()` |
 | — | `test_preprocessing_init_unit.py` | 2 | **False positive** — `sys.modules` writes already inside function body + autouse fixture isolation |
 | **Total** | | **1,132** | |
+
+### Phase 2 Fixes (2026-02-18): Pre-Existing + Pollution
+
+| # | File | Tests Fixed | Fix Applied |
+|---|------|------------|-------------|
+| 1 | `test_milia_dataset_unit.py` | 3 | Corrected `mock.patch()` paths: local imports → patch at source module (Rule 7) |
+| 2 | `test_hpo_nas_nas_manager.py` | 3 | Corrected `mock.patch()` paths: attributes not imported by consumer (Rule 7) |
+| 3 | `test_handler_impl_qdpi_unit.py` | 1 | Corrected `mock.patch()` path: `HAR2EV` not imported by `qdpi.py` (Rule 7) |
+| 4 | `test_e2e_preprocessing_workflow.py` | 1 | Removed invalid `mock.patch()`: `load_config` never imported by target module (Rule 7) |
+| 5 | `tests/conftest.py` | 10 | Added 4 modules to `_CRITICAL_PREFIXES` for Category C/D protection (Rule 9) |
+| **Total** | | **18** | |

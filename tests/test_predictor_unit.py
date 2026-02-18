@@ -1061,7 +1061,7 @@ class TestPredictorPredictBatch:
                 with patch.object(DataLoader, "__len__", return_value=0):
                     try:
                         predictor.predict_batch(pyg_dataset, batch_size=8, num_workers=2)
-                    except:
+                    except Exception:
                         pass  # Expected to fail, we just want to check DL init
 
                     # Check DataLoader was initialized with correct params

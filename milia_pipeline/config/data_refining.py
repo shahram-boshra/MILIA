@@ -405,7 +405,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                         float_val = float(val)
                         if np.isfinite(float_val):
                             extracted_values.append(float_val)
-                    except:
+                    except (TypeError, ValueError):
                         pass
                 return
 
@@ -426,7 +426,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                     for element in obj.flat:
                         _milia_pattern_extractor(element, depth + 1)
                     return
-                except:
+                except (TypeError, ValueError):
                     pass
 
             # Handle regular numeric arrays
@@ -436,7 +436,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                         if np.isfinite(val):
                             extracted_values.append(float(val))
                     return
-                except:
+                except (TypeError, ValueError):
                     pass
 
             # Try to iterate anyway for mixed types
@@ -444,7 +444,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                 for element in obj.flat:
                     _milia_pattern_extractor(element, depth + 1)
                 return
-            except:
+            except (TypeError, ValueError):
                 pass
 
         # VQM24 PATTERN 3: Handle np.float64 and other numpy scalars directly
@@ -453,7 +453,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                 val = float(obj)
                 if np.isfinite(val):
                     extracted_values.append(val)
-            except:
+            except (TypeError, ValueError):
                 pass
             return
 
@@ -463,7 +463,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                 val = float(obj)
                 if np.isfinite(val):
                     extracted_values.append(val)
-            except:
+            except (TypeError, ValueError):
                 pass
             return
 
@@ -473,7 +473,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                 val = float(obj.strip())
                 if np.isfinite(val):
                     extracted_values.append(val)
-            except:
+            except (TypeError, ValueError):
                 pass
             return
 
@@ -489,7 +489,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                 val = float(obj.item())
                 if np.isfinite(val):
                     extracted_values.append(val)
-            except:
+            except (TypeError, ValueError):
                 pass
             return
 
@@ -512,9 +512,9 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                             float_val = float(val)
                             if np.isfinite(float_val):
                                 extracted_values.append(float_val)
-                    except:
+                    except (TypeError, ValueError):
                         continue
-        except:
+        except (TypeError, ValueError):
             pass
 
         # Fallback 2: Try recursive numpy array conversion with object handling
@@ -538,7 +538,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                                             float_val = float(sub_element)
                                             if np.isfinite(float_val):
                                                 extracted_values.append(float_val)
-                                    except:
+                                    except (TypeError, ValueError):
                                         continue
                             else:
                                 try:
@@ -546,7 +546,7 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                                         float_val = float(element)
                                         if np.isfinite(float_val):
                                             extracted_values.append(float_val)
-                                except:
+                                except (TypeError, ValueError):
                                     continue
 
                     _extract_from_object_array(item)
@@ -561,9 +561,9 @@ def _extract_numeric_from_nested_structure(item: Any) -> list[float]:
                                 float_val = float(val)
                                 if np.isfinite(float_val):
                                     extracted_values.append(float_val)
-                        except:
+                        except (TypeError, ValueError):
                             continue
-            except:
+            except (TypeError, ValueError):
                 pass
 
     logger.debug(f"VQM24 extraction extracted {len(extracted_values)} values from {type(item)}")
@@ -676,7 +676,7 @@ def _resolve_count_mismatch(
                             if test_vibmode is not None and test_vibmode.size > 0:
                                 meaningful_vibmode_count += 1
                                 sample_vibmodes.append(vibmode_item)
-                        except:
+                        except Exception:
                             continue
             else:
                 for vibmode_item in vibmodes:
@@ -687,7 +687,7 @@ def _resolve_count_mismatch(
                         if test_vibmode is not None and test_vibmode.size > 0:
                             meaningful_vibmode_count += 1
                             sample_vibmodes.append(vibmode_item)
-                    except:
+                    except Exception:
                         continue
 
         logger.debug(
@@ -849,9 +849,9 @@ def _validate_and_reshape_vibmode_data(
                                 float_val = float(val)
                                 if np.isfinite(float_val):
                                     extracted_values.append(float_val)
-                        except:
+                        except (TypeError, ValueError):
                             continue
-            except:
+            except (TypeError, ValueError):
                 pass
 
         if not extracted_values:
@@ -873,7 +873,7 @@ def _validate_and_reshape_vibmode_data(
                                             float_val = float(sub_element)
                                             if np.isfinite(float_val):
                                                 extracted_values.append(float_val)
-                                    except:
+                                    except (TypeError, ValueError):
                                         continue
                             else:
                                 try:
@@ -881,7 +881,7 @@ def _validate_and_reshape_vibmode_data(
                                         float_val = float(element)
                                         if np.isfinite(float_val):
                                             extracted_values.append(float_val)
-                                except:
+                                except (TypeError, ValueError):
                                     continue
 
                     _extract_from_object_array(vibmode_raw)
@@ -895,9 +895,9 @@ def _validate_and_reshape_vibmode_data(
                                 float_val = float(val)
                                 if np.isfinite(float_val):
                                     extracted_values.append(float_val)
-                        except:
+                        except (TypeError, ValueError):
                             continue
-            except:
+            except (TypeError, ValueError):
                 pass
 
         if not extracted_values:
@@ -1009,7 +1009,7 @@ def _validate_and_reshape_vibmode_data(
                                     f"used raw shape, max displacement: {max_val:.2e}"
                                 )
                                 return reshaped
-        except:
+        except (TypeError, ValueError):
             pass
 
         return None
@@ -1456,7 +1456,7 @@ def refine_molecular_vibrations(
                     )
                     if test_vibmode is not None and test_vibmode.size > 0:
                         meaningful_vibmode_count += 1
-                except:
+                except Exception:
                     continue
 
     # Compare meaningful counts instead of raw array lengths

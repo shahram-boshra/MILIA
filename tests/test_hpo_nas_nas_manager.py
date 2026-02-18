@@ -2349,8 +2349,8 @@ class TestNASManagerBuildModel:
 class TestNASManagerGetBestArchitecture:
     """Test NASManager.get_best_architecture() method."""
 
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.ConfigurationError", MockConfigurationError)
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOError", MockHPOError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOManager", MockHPOManager)
     def test_get_best_architecture_before_search_raises_error(self):
@@ -2410,8 +2410,8 @@ class TestNASManagerGetBestArchitecture:
 class TestNASManagerGetBestParams:
     """Test NASManager.get_best_params() method."""
 
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.ConfigurationError", MockConfigurationError)
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOError", MockHPOError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOManager", MockHPOManager)
     def test_get_best_params_before_search_raises_error(self):
@@ -3323,8 +3323,8 @@ class TestModuleImports:
 class TestIntegration:
     """Integration tests for NASManager."""
 
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.ConfigurationError", MockConfigurationError)
-    @patch("milia_pipeline.models.hpo.nas.nas_manager.SearchSpaceError", MockSearchSpaceError)
+    @patch("milia_pipeline.exceptions.ConfigurationError", MockConfigurationError)
+    @patch("milia_pipeline.exceptions.SearchSpaceError", MockSearchSpaceError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOError", MockHPOError)
     @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOManager", MockHPOManager)
     def test_full_workflow_search_and_build(self, mock_dataset):

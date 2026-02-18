@@ -1042,7 +1042,7 @@ class TestHandlerBasedRefinement(unittest.TestCase):
                 raw_properties_dict={"freqs": [], "vibmodes": []},
                 molecule_index=0,
             )
-        except:
+        except Exception:
             pass  # May fail due to mock, but we're checking if it was called
 
         # Check if refinement function was called

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Test Contract: Registry Consistency
 ====================================
@@ -625,13 +626,10 @@ class TestCreateDatasetHandlerContract:
         create_dataset_handler() must raise an appropriate error
         (HandlerNotAvailableError) for an unregistered dataset type.
         """
-        try:
-            from milia_pipeline.exceptions import HandlerNotAvailableError
-
-            expected_error = HandlerNotAvailableError
-        except ImportError:
-            # If the custom exception is not importable, accept any Exception
-            expected_error = Exception
+        # Get exception class from the function's own globals to guarantee class identity
+        expected_error = _create_dataset_handler.__globals__.get(
+            "HandlerNotAvailableError", Exception
+        )
 
         mock_dataset_config = MagicMock(spec=_DatasetConfig)
         mock_dataset_config.dataset_type = "__completely_invalid_dataset_type__"
@@ -898,12 +896,10 @@ class TestRegistryErrorHandling:
     @pytest.mark.skipif(not _DATASET_REGISTRY_AVAILABLE, reason=SKIP_NO_DATASET_REGISTRY)
     def test_dataset_registry_get_raises_on_missing(self, isolated_dataset_registry):
         """get() on DatasetRegistry raises DatasetNotFoundError for unknown name."""
-        try:
-            from milia_pipeline.exceptions import DatasetNotFoundError
-
-            expected_exc = DatasetNotFoundError
-        except ImportError:
-            expected_exc = Exception
+        # Get exception class from the registry method's own globals
+        expected_exc = isolated_dataset_registry.get.__func__.__globals__.get(
+            "DatasetNotFoundError", Exception
+        )
 
         with pytest.raises(expected_exc):
             isolated_dataset_registry.get("__nonexistent__")
@@ -911,12 +907,10 @@ class TestRegistryErrorHandling:
     @pytest.mark.skipif(not _HANDLER_REGISTRY_AVAILABLE, reason=SKIP_NO_HANDLER_REGISTRY)
     def test_handler_registry_get_raises_on_missing(self, isolated_handler_registry):
         """get() on HandlerRegistry raises HandlerNotFoundError for unknown name."""
-        try:
-            from milia_pipeline.handlers.handler_registry import HandlerNotFoundError
-
-            expected_exc = HandlerNotFoundError
-        except ImportError:
-            expected_exc = Exception
+        # Get exception class from the registry method's own globals
+        expected_exc = isolated_handler_registry.get.__func__.__globals__.get(
+            "HandlerNotFoundError", Exception
+        )
 
         with pytest.raises(expected_exc):
             isolated_handler_registry.get("__nonexistent__")

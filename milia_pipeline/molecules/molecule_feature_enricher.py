@@ -566,7 +566,7 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
         # Get dataset type safely (may not be set if error occurred early)
         try:
             handler_type = handler.get_dataset_type()
-        except:
+        except Exception:
             handler_type = "unknown"
 
         # Handler is now always required - use handler error
@@ -1177,7 +1177,7 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
         # Get dataset type safely
         try:
             dataset_type_str_ref = handler.get_dataset_type()
-        except:
+        except Exception:
             dataset_type_str_ref = "unknown"
 
         # Handler is always available now - use handler error

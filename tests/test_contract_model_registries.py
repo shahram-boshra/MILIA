@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Contract Tests: Model Registries (Section 2.4)
 

@@ -1394,7 +1394,7 @@ class TestAtomizationEnergy(unittest.TestCase):
             if hasattr(result, "atomization_energy"):
                 self.assertIsNotNone(result.atomization_energy)
 
-    @patch("milia_pipeline.handlers.implementations.qdpi.HAR2EV", None)
+    @patch("milia_pipeline.config.config_constants.HAR2EV", None)
     def test_missing_har2ev_no_atomization(self):
         """When HAR2EV constant is None, atomization energy is not computed."""
         pc = _make_processing_config(

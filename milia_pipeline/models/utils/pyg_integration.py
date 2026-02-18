@@ -327,7 +327,7 @@ def infer_num_features(data: Data | Dataset | DataLoader) -> dict[str, int | Non
                                             else [data[i].y.item()]
                                         )
                             dims["num_classes"] = len(set(all_labels)) if all_labels else None
-                        except:
+                        except Exception:
                             dims["num_classes"] = None
                 else:
                     # Regression - multi-output

@@ -299,7 +299,7 @@ try:
         import torch_geometric
 
         TORCH_GEOMETRIC_VERSION = torch_geometric.__version__
-    except:
+    except Exception:
         TORCH_GEOMETRIC_VERSION = "unknown"
 except ImportError as e:
     TORCH_GEOMETRIC_AVAILABLE = False
@@ -474,7 +474,7 @@ class TransformCompatibility(BaseModel):
                     return False
 
             return True
-        except:
+        except (ImportError, ValueError):
             return True  # Assume compatible if version parsing fails
 
 

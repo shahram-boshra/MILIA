@@ -699,7 +699,7 @@ class TestScalarConversion(unittest.TestCase):
             try:
                 result = validators.convert_to_scalar(tensor.numpy())
                 self.assertIsInstance(result, (int, float, np.number))
-            except:
+            except Exception:
                 # Really doesn't work, but that's an edge case
                 # Just verify function exists
                 self.assertTrue(hasattr(validators, "convert_to_scalar"))
