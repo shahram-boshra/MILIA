@@ -134,9 +134,6 @@ except ImportError as e:
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.config.data_refining import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _get_available_dataset_types,
         _get_dataset_feature,
         _get_dataset_refinement_category,
@@ -157,8 +154,6 @@ try:
     from milia_pipeline.config.config_containers import (
         DatasetConfig,
         ProcessingConfig,
-        create_dataset_config_from_global,
-        create_processing_config_from_global,
     )
     from milia_pipeline.exceptions import (
         ConfigurationError,
@@ -169,7 +164,6 @@ try:
         HandlerError,
         HandlerNotAvailableError,
         HandlerOperationError,
-        HandlerValidationError,
         LegacyCodeError,
         MigrationError,
         PropertyEnrichmentError,
