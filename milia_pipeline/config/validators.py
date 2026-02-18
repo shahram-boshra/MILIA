@@ -352,9 +352,7 @@ except ImportError:
 # Parameter introspection support
 try:
     from milia_pipeline.transformations.graph_transforms import (
-        DynamicTransformDiscovery,
         TransformRegistry,
-        get_parameter_constraints,
         get_transform_metadata,
     )
 
@@ -363,16 +361,11 @@ except ImportError:
     TRANSFORM_INTROSPECTION_AVAILABLE = False
 
 # Validation reporting
-try:
-    from milia_pipeline.transformations.graph_transforms import (
-        IssueSeverity,
-        ValidationIssue,
-        ValidationReporter,
-    )
+import importlib.util
 
-    VALIDATION_REPORTING_AVAILABLE = True
-except ImportError:
-    VALIDATION_REPORTING_AVAILABLE = False
+VALIDATION_REPORTING_AVAILABLE = (
+    importlib.util.find_spec("milia_pipeline.transformations.graph_transforms") is not None
+)
 
 # Pydantic V2 integration for runtime validation
 # Phase 4: Enables conversion between Pydantic ValidationError and MILIA ValidationResult
