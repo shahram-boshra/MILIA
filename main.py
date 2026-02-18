@@ -200,12 +200,9 @@ try:
     from milia_pipeline.config.config_accessors import (
         get_combined_transforms_as_dicts,
         get_experimental_setup,
-        get_standard_transforms,
         get_transformation_config,
-        has_standard_transforms,
-        list_available_transforms,
-        list_experimental_setups,
-        validate_transform_config,
+        list_available_transforms,  # noqa: F401 — module-level attr for mock.patch in tests
+        list_experimental_setups,  # noqa: F401 — module-level attr for mock.patch in tests
     )
     from milia_pipeline.transformations.graph_transforms import get_graph_transforms
 
@@ -217,11 +214,7 @@ except ImportError as e:
 
 try:
     from milia_pipeline.config.config_accessors import get_config_value
-    from milia_pipeline.transformations.plugin_system import (
-        PluginMetadata,
-        PluginRegistry,
-        PluginValidator,
-    )
+    from milia_pipeline.transformations.plugin_system import PluginRegistry
 
     PLUGIN_SYSTEM_AVAILABLE = True
     PLUGIN_SYSTEM_IMPORT_ERROR = None
@@ -272,7 +265,6 @@ from milia_pipeline.exceptions import (
 # Handlers
 try:
     from milia_pipeline.handlers import DatasetHandler, create_dataset_handler
-    from milia_pipeline.handlers.dataset_handler_integration import DatasetHandlerIntegrator
 
     HANDLERS_AVAILABLE = True
 except ImportError as e:
@@ -283,11 +275,8 @@ except ImportError as e:
 try:
     from milia_pipeline.models import (
         DataSplitter,
-        # Factory
-        ModelFactory,
         # Training
         Trainer,
-        create_model,
         get_factory,
     )
 
@@ -302,15 +291,13 @@ try:
         OptimizerRegistry,
         SchedulerRegistry,
         TaskDataPreparer,
-        TrainingVisualizer,
         # NEW: Metrics and Visualization (Phase 5)
         get_metrics_for_task,
-        plot_training_summary,
     )
     from milia_pipeline.models.training.callbacks import (
         CallbackFactory,
-        EarlyStopping,
-        ModelCheckpoint,
+        EarlyStopping,  # noqa: F401 — module-level attr for mock.patch in tests
+        ModelCheckpoint,  # noqa: F401 — module-level attr for mock.patch in tests
     )
 
     MODELS_TRAINING_AVAILABLE = True
@@ -333,10 +320,6 @@ try:
         OPTUNA_AVAILABLE,
         HPOConfig,
         HPOManager,
-        OptunaPruningCallback,
-        create_hpo_callback,
-        create_hpo_manager,
-        is_hpo_enabled,
     )
 
     HPO_AVAILABLE = True
@@ -351,12 +334,9 @@ try:
     from milia_pipeline.models.post_training import (
         # Inference
         Predictor,
-        convert_batch_to_pyg,
         convert_sdf_to_pyg_list,  # FIX 24: Multi-molecule SDF support
         # Data conversion
         convert_to_pyg,
-        list_available_formats,
-        load_model,
     )
 
     POST_TRAINING_AVAILABLE = True
@@ -1263,10 +1243,7 @@ def validate_handler_availability(logger: logging.Logger) -> bool:
     try:
         # Verify handler system is available by checking core handler classes
         try:
-            from milia_pipeline.handlers import (
-                DatasetHandler,
-                create_dataset_handler,
-            )
+            from milia_pipeline.handlers import create_dataset_handler
         except ImportError as e:
             raise HandlerNotAvailableError(
                 message="Handler module not available",
