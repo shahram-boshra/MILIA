@@ -121,6 +121,11 @@ temporal_split = _ds_module.temporal_split
 scaffold_split = _ds_module.scaffold_split
 k_fold_split = _ds_module.k_fold_split
 
+# Optional dependency availability flags (using importlib.util.find_spec per Ruff F401)
+import importlib.util
+
+_SKLEARN_AVAILABLE = importlib.util.find_spec("sklearn.model_selection") is not None
+
 
 # =============================================================================
 # MODULE TEARDOWN - Prevent sys.modules pollution
@@ -529,23 +534,21 @@ class TestStratifiedSplit:
         a context manager that mocks the import. Tests using this fixture
         will work regardless of sklearn installation status.
         """
-        try:
+        import importlib.util
+
+        if importlib.util.find_spec("sklearn.model_selection") is not None:
             # sklearn is available, yield a no-op context manager
             from contextlib import nullcontext
 
-            import sklearn.model_selection
-
             yield nullcontext()
-        except ImportError:
+        else:
             # sklearn not available, provide a mock context
             yield None
 
     def test_stratified_split_default_ratios(self, labeled_dataset):
         """Test stratified split with default ratios."""
         # Try with real sklearn first, fall back to mock
-        try:
-            from sklearn.model_selection import train_test_split
-
+        if _SKLEARN_AVAILABLE:
             train, val, test = DataSplitter.stratified_split(labeled_dataset)
 
             assert isinstance(train, Subset)
@@ -554,7 +557,7 @@ class TestStratifiedSplit:
             assert len(train) == 80
             assert len(val) == 10
             assert len(test) == 10
-        except ImportError:
+        else:
             # sklearn not installed - test the error message
             with pytest.raises(DataError) as exc_info:
                 DataSplitter.stratified_split(labeled_dataset)
@@ -562,117 +565,105 @@ class TestStratifiedSplit:
 
     def test_stratified_split_maintains_class_distribution(self, labeled_dataset):
         """Test that stratified split maintains class distribution."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train, val, test = DataSplitter.stratified_split(
-                labeled_dataset, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, random_seed=42
-            )
-
-            # Extract labels from each split
-            def get_labels(subset):
-                labels = []
-                for idx in subset.indices:
-                    labels.append(subset.dataset[idx].y.item())
-                return labels
-
-            train_labels = get_labels(train)
-            val_labels = get_labels(val)
-            test_labels = get_labels(test)
-
-            # Check that each class appears in each split
-            assert len(set(train_labels)) == 3
-            assert len(set(val_labels)) == 3
-            assert len(set(test_labels)) == 3
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping class distribution test")
+
+        train, val, test = DataSplitter.stratified_split(
+            labeled_dataset, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, random_seed=42
+        )
+
+        # Extract labels from each split
+        def get_labels(subset):
+            labels = []
+            for idx in subset.indices:
+                labels.append(subset.dataset[idx].y.item())
+            return labels
+
+        train_labels = get_labels(train)
+        val_labels = get_labels(val)
+        test_labels = get_labels(test)
+
+        # Check that each class appears in each split
+        assert len(set(train_labels)) == 3
+        assert len(set(val_labels)) == 3
+        assert len(set(test_labels)) == 3
 
     def test_stratified_split_custom_ratios(self, labeled_dataset):
         """Test stratified split with custom ratios."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train, val, test = DataSplitter.stratified_split(
-                labeled_dataset, train_ratio=0.6, val_ratio=0.25, test_ratio=0.15
-            )
-
-            # Check approximate sizes
-            assert 55 <= len(train) <= 65
-            assert 20 <= len(val) <= 30
-            assert 10 <= len(test) <= 20
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping custom ratios test")
+
+        train, val, test = DataSplitter.stratified_split(
+            labeled_dataset, train_ratio=0.6, val_ratio=0.25, test_ratio=0.15
+        )
+
+        # Check approximate sizes
+        assert 55 <= len(train) <= 65
+        assert 20 <= len(val) <= 30
+        assert 10 <= len(test) <= 20
 
     def test_stratified_split_reproducibility(self, labeled_dataset):
         """Test reproducibility with same seed."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train1, val1, test1 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
-            train2, val2, test2 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
-
-            assert train1.indices == train2.indices
-            assert val1.indices == val2.indices
-            assert test1.indices == test2.indices
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping reproducibility test")
+
+        train1, val1, test1 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
+        train2, val2, test2 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
+
+        assert train1.indices == train2.indices
+        assert val1.indices == val2.indices
+        assert test1.indices == test2.indices
 
     def test_stratified_split_different_seeds(self, labeled_dataset):
         """Test different seeds produce different splits."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train1, val1, test1 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
-            train2, val2, test2 = DataSplitter.stratified_split(labeled_dataset, random_seed=123)
-
-            assert train1.indices != train2.indices
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping different seeds test")
+
+        train1, val1, test1 = DataSplitter.stratified_split(labeled_dataset, random_seed=42)
+        train2, val2, test2 = DataSplitter.stratified_split(labeled_dataset, random_seed=123)
+
+        assert train1.indices != train2.indices
 
     def test_stratified_split_custom_label_getter(self, labeled_dataset):
         """Test stratified split with custom label getter."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            def custom_getter(data):
-                return data.y.item()
-
-            train, val, test = DataSplitter.stratified_split(
-                labeled_dataset, label_getter=custom_getter
-            )
-
-            assert len(train) + len(val) + len(test) == len(labeled_dataset)
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping custom label getter test")
+
+        def custom_getter(data):
+            return data.y.item()
+
+        train, val, test = DataSplitter.stratified_split(
+            labeled_dataset, label_getter=custom_getter
+        )
+
+        assert len(train) + len(val) + len(test) == len(labeled_dataset)
 
     def test_stratified_split_multidimensional_labels(self):
         """Test stratified split with multi-dimensional labels using argmax."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            class MultiDimDataset(Dataset):
-                def __init__(self):
-                    self.data = []
-                    for i in range(100):
-                        item = Mock()
-                        # One-hot encoded labels
-                        label = torch.zeros(3)
-                        label[i % 3] = 1
-                        item.y = label
-                        self.data.append(item)
-
-                def __len__(self):
-                    return len(self.data)
-
-                def __getitem__(self, idx):
-                    return self.data[idx]
-
-            dataset = MultiDimDataset()
-            train, val, test = DataSplitter.stratified_split(dataset)
-
-            assert len(train) + len(val) + len(test) == 100
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping multidimensional labels test")
+
+        class MultiDimDataset(Dataset):
+            def __init__(self):
+                self.data = []
+                for i in range(100):
+                    item = Mock()
+                    # One-hot encoded labels
+                    label = torch.zeros(3)
+                    label[i % 3] = 1
+                    item.y = label
+                    self.data.append(item)
+
+            def __len__(self):
+                return len(self.data)
+
+            def __getitem__(self, idx):
+                return self.data[idx]
+
+        dataset = MultiDimDataset()
+        train, val, test = DataSplitter.stratified_split(dataset)
+
+        assert len(train) + len(val) + len(test) == 100
 
     def test_stratified_split_invalid_ratios(self, labeled_dataset):
         """Test error when ratios don't sum to 1.0."""
@@ -727,26 +718,22 @@ class TestStratifiedSplit:
 
         dataset = NoLabelDataset()
 
-        try:
-            from sklearn.model_selection import train_test_split
-
-            with pytest.raises(DataError) as exc_info:
-                DataSplitter.stratified_split(dataset)
-
-            assert "Failed to extract labels" in str(exc_info.value)
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping label extraction failure test")
+
+        with pytest.raises(DataError) as exc_info:
+            DataSplitter.stratified_split(dataset)
+
+        assert "Failed to extract labels" in str(exc_info.value)
 
     def test_stratified_split_with_imbalanced_data(self, imbalanced_labeled_dataset):
         """Test stratified split with imbalanced class distribution."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train, val, test = DataSplitter.stratified_split(imbalanced_labeled_dataset)
-
-            assert len(train) + len(val) + len(test) == len(imbalanced_labeled_dataset)
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping imbalanced data test")
+
+        train, val, test = DataSplitter.stratified_split(imbalanced_labeled_dataset)
+
+        assert len(train) + len(val) + len(test) == len(imbalanced_labeled_dataset)
 
 
 # =============================================================================
@@ -961,13 +948,12 @@ class TestTemporalSplit:
 
 def _rdkit_available():
     """Check if rdkit is available for import."""
-    try:
-        from rdkit import Chem
-        from rdkit.Chem.Scaffolds import MurckoScaffold
+    import importlib.util
 
-        return True
-    except ImportError:
-        return False
+    return (
+        importlib.util.find_spec("rdkit") is not None
+        and importlib.util.find_spec("rdkit.Chem.Scaffolds") is not None
+    )
 
 
 class TestScaffoldSplit:
@@ -1371,15 +1357,13 @@ class TestConvenienceFunctions:
 
     def test_stratified_split_convenience_function(self, labeled_dataset):
         """Test stratified_split convenience function."""
-        try:
-            from sklearn.model_selection import train_test_split
-
+        if _SKLEARN_AVAILABLE:
             train, val, test = stratified_split(labeled_dataset)
 
             assert isinstance(train, Subset)
             assert isinstance(val, Subset)
             assert isinstance(test, Subset)
-        except ImportError:
+        else:
             # sklearn not available - verify error is raised
             with pytest.raises(DataError) as exc_info:
                 stratified_split(labeled_dataset)
@@ -1387,16 +1371,14 @@ class TestConvenienceFunctions:
 
     def test_stratified_split_convenience_custom_params(self, labeled_dataset):
         """Test stratified_split convenience function with custom parameters."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train, val, test = stratified_split(
-                labeled_dataset, train_ratio=0.7, val_ratio=0.2, test_ratio=0.1, random_seed=999
-            )
-
-            assert len(train) + len(val) + len(test) == len(labeled_dataset)
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping convenience custom params test")
+
+        train, val, test = stratified_split(
+            labeled_dataset, train_ratio=0.7, val_ratio=0.2, test_ratio=0.1, random_seed=999
+        )
+
+        assert len(train) + len(val) + len(test) == len(labeled_dataset)
 
     def test_temporal_split_convenience_function(self, temporal_dataset):
         """Test temporal_split convenience function."""
@@ -1672,16 +1654,14 @@ class TestDocumentationExamples:
 
     def test_stratified_split_example(self, labeled_dataset):
         """Test stratified_split example from docstring."""
-        try:
-            from sklearn.model_selection import train_test_split
-
-            train, val, test = DataSplitter.stratified_split(
-                labeled_dataset, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15
-            )
-
-            assert len(train) + len(val) + len(test) == len(labeled_dataset)
-        except ImportError:
+        if not _SKLEARN_AVAILABLE:
             pytest.skip("sklearn not installed - skipping stratified split doc example test")
+
+        train, val, test = DataSplitter.stratified_split(
+            labeled_dataset, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15
+        )
+
+        assert len(train) + len(val) + len(test) == len(labeled_dataset)
 
     def test_temporal_split_example(self, temporal_dataset):
         """Test temporal_split example from docstring."""
