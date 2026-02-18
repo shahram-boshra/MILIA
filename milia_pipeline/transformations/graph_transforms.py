@@ -289,7 +289,7 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 try:
-    import torch_geometric.transforms as T
+    import torch_geometric.transforms as T  # noqa: F401 — module-level attr for mock.patch in tests
     from torch_geometric.transforms import Compose
 
     TORCH_GEOMETRIC_AVAILABLE = True
@@ -306,19 +306,11 @@ except ImportError as e:
     TORCH_GEOMETRIC_IMPORT_ERROR = str(e)
     TORCH_GEOMETRIC_VERSION = None
 
-try:
-    import psutil
+import importlib.util
 
-    PSUTIL_AVAILABLE = True
-except ImportError:
-    PSUTIL_AVAILABLE = False
+PSUTIL_AVAILABLE = importlib.util.find_spec("psutil") is not None
 
-try:
-    import yaml
-
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
+YAML_AVAILABLE = importlib.util.find_spec("yaml") is not None
 
 # Import ALL exceptions from centralized exceptions.py
 from milia_pipeline.exceptions import (
@@ -4077,21 +4069,19 @@ class ProductionMetricsCollector:
         if not self.enable_external_metrics:
             return
 
-        try:
-            import prometheus_client
+        import importlib.util
 
+        if importlib.util.find_spec("prometheus_client") is not None:
             self._prometheus_enabled = True
             self._prometheus_metrics = {}
             self._logger.info("Prometheus metrics integration enabled")
-        except ImportError:
+        else:
             self._logger.debug("Prometheus not available - skipping integration")
 
-        try:
-            import datadog
-
+        if importlib.util.find_spec("datadog") is not None:
             self._datadog_enabled = True
             self._logger.info("DataDog metrics integration enabled")
-        except ImportError:
+        else:
             self._logger.debug("DataDog not available - skipping integration")
 
     def increment_counter(
