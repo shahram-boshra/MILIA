@@ -291,7 +291,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Count GCN layers
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == num_layers
 
     def test_simple_gcn_custom_hidden_channels(self, basic_params):
@@ -304,7 +304,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check that GCN layers have correct hidden channels
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         for layer in gcn_layers:
             assert layer["params"]["out_channels"] == hidden_channels
 
@@ -316,7 +316,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check dropout layers exist
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 3  # One per GCN layer
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -328,7 +328,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check no dropout layers
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_simple_gcn_graph_task_has_pooling(self, basic_params):
@@ -338,7 +338,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check pooling layer exists
-        pooling_layers = [l for l in builder.layers if "pool" in l["type"].lower()]
+        pooling_layers = [layer for layer in builder.layers if "pool" in layer["type"].lower()]
         assert len(pooling_layers) > 0
 
     def test_simple_gcn_node_task_no_pooling(self, node_task_params):
@@ -350,7 +350,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check no global pooling layer (node-level tasks don't need it)
-        global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pooling) == 0
 
     def test_simple_gcn_has_linear_output(self, basic_params):
@@ -370,7 +370,7 @@ class TestSimpleGCNTemplate:
         )
 
         # Check ReLU layers exist
-        relu_layers = [l for l in builder.layers if l["type"] == "ReLU"]
+        relu_layers = [layer for layer in builder.layers if layer["type"] == "ReLU"]
         assert len(relu_layers) == 3  # One per GCN layer
 
 
@@ -400,7 +400,7 @@ class TestAttentionNetworkTemplate:
         )
 
         # Count GAT layers
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         assert len(gat_layers) == num_layers
 
     def test_attention_network_multi_head(self, basic_params):
@@ -411,7 +411,7 @@ class TestAttentionNetworkTemplate:
         )
 
         # Check heads parameter
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         for layer in gat_layers:
             assert layer["params"]["heads"] == heads
 
@@ -422,7 +422,7 @@ class TestAttentionNetworkTemplate:
         )
 
         # First layers should concatenate heads
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         # First and middle layers concatenate
         if len(gat_layers) > 1:
             assert gat_layers[0]["params"]["concat"]
@@ -436,7 +436,7 @@ class TestAttentionNetworkTemplate:
         )
 
         # Check ELU layers exist
-        elu_layers = [l for l in builder.layers if l["type"] == "ELU"]
+        elu_layers = [layer for layer in builder.layers if layer["type"] == "ELU"]
         assert len(elu_layers) == 3
 
     def test_attention_network_with_dropout(self, basic_params):
@@ -447,12 +447,12 @@ class TestAttentionNetworkTemplate:
         )
 
         # Check dropout in GAT layers and as separate layers
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         for layer in gat_layers:
             assert layer["params"]["dropout"] == dropout
 
         # Also check Dropout layers
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 2  # Exactly one per GAT layer
 
     def test_attention_network_single_layer_concat(self, basic_params):
@@ -461,7 +461,7 @@ class TestAttentionNetworkTemplate:
             basic_params["in_channels"], basic_params["out_channels"], num_layers=1
         )
 
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         assert len(gat_layers) == 1
         # Single layer: i=0, num_layers-1=0, so concat = (0 < 0) = False
         assert gat_layers[0]["params"]["concat"] is False
@@ -474,7 +474,7 @@ class TestAttentionNetworkTemplate:
             task_type="node_classification",
         )
 
-        global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pooling) == 0
 
 
@@ -558,7 +558,7 @@ class TestDeepResidualTemplate:
             basic_params["in_channels"], basic_params["out_channels"], depth=depth, dropout=dropout
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         # Each residual block adds one Dropout layer when dropout > 0
         assert len(dropout_layers) == depth
         for layer in dropout_layers:
@@ -570,7 +570,7 @@ class TestDeepResidualTemplate:
             basic_params["in_channels"], basic_params["out_channels"], depth=3, dropout=0.0
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_deep_residual_block_internal_structure(self, basic_params):
@@ -584,7 +584,7 @@ class TestDeepResidualTemplate:
         # each block without dropout: GCNConv, ReLU, GCNConv, ReLU = 4 layers
         # Then final: pool + Linear = 2 layers
         # Total GCNConv = 1 (initial) + 2*depth (blocks)
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 1 + 2 * depth
 
     def test_deep_residual_residual_connection_positions_valid(self, basic_params):
@@ -608,7 +608,7 @@ class TestDeepResidualTemplate:
             task_type="node_classification",
         )
 
-        global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pooling) == 0
 
 
@@ -641,15 +641,15 @@ class TestHybridConvAttentionTemplate:
         )
 
         # Count layer types
-        gcn_count = len([l for l in builder.layers if l["type"] == "GCNConv"])
-        gat_count = len([l for l in builder.layers if l["type"] == "GATConv"])
+        gcn_count = len([layer for layer in builder.layers if layer["type"] == "GCNConv"])
+        gat_count = len([layer for layer in builder.layers if layer["type"] == "GATConv"])
 
         assert gcn_count == conv_layers
         assert gat_count == attention_layers
 
         # Find first GCN and first GAT positions
-        first_gcn_pos = next(i for i, l in enumerate(builder.layers) if l["type"] == "GCNConv")
-        first_gat_pos = next(i for i, l in enumerate(builder.layers) if l["type"] == "GATConv")
+        first_gcn_pos = next(i for i, layer in enumerate(builder.layers) if layer["type"] == "GCNConv")
+        first_gat_pos = next(i for i, layer in enumerate(builder.layers) if layer["type"] == "GATConv")
 
         # GCN should come before GAT
         assert first_gcn_pos < first_gat_pos
@@ -663,8 +663,8 @@ class TestHybridConvAttentionTemplate:
             attention_layers=4,
         )
 
-        gcn_count = len([l for l in builder.layers if l["type"] == "GCNConv"])
-        gat_count = len([l for l in builder.layers if l["type"] == "GATConv"])
+        gcn_count = len([layer for layer in builder.layers if layer["type"] == "GCNConv"])
+        gat_count = len([layer for layer in builder.layers if layer["type"] == "GATConv"])
 
         assert gcn_count == 3
         assert gat_count == 4
@@ -679,8 +679,8 @@ class TestHybridConvAttentionTemplate:
         )
 
         # Should have ReLU for GCN and ELU for GAT
-        relu_count = len([l for l in builder.layers if l["type"] == "ReLU"])
-        elu_count = len([l for l in builder.layers if l["type"] == "ELU"])
+        relu_count = len([layer for layer in builder.layers if layer["type"] == "ReLU"])
+        elu_count = len([layer for layer in builder.layers if layer["type"] == "ELU"])
 
         assert relu_count >= 2  # From conv layers
         assert elu_count >= 2  # From attention layers
@@ -698,7 +698,7 @@ class TestHybridConvAttentionTemplate:
             dropout=dropout,
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         # One Dropout per conv layer + one per attention layer
         assert len(dropout_layers) == conv_layers + attention_layers
         for layer in dropout_layers:
@@ -710,7 +710,7 @@ class TestHybridConvAttentionTemplate:
             basic_params["in_channels"], basic_params["out_channels"], dropout=0.0
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_hybrid_conv_attention_gat_concat_behavior(self, basic_params):
@@ -719,7 +719,7 @@ class TestHybridConvAttentionTemplate:
             basic_params["in_channels"], basic_params["out_channels"], attention_layers=3
         )
 
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         assert len(gat_layers) == 3
         # First two: concat=True, last: concat=False
         assert gat_layers[0]["params"]["concat"] is True
@@ -734,7 +734,7 @@ class TestHybridConvAttentionTemplate:
             task_type="node_classification",
         )
 
-        global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pooling) == 0
 
 
@@ -763,7 +763,7 @@ class TestHierarchicalPoolingTemplate:
         )
 
         # Count TopKPooling layers
-        topk_layers = [l for l in builder.layers if l["type"] == "TopKPooling"]
+        topk_layers = [layer for layer in builder.layers if layer["type"] == "TopKPooling"]
         assert len(topk_layers) == num_levels
 
     def test_hierarchical_pooling_custom_ratio(self, basic_params):
@@ -774,7 +774,7 @@ class TestHierarchicalPoolingTemplate:
         )
 
         # Check pooling ratio
-        topk_layers = [l for l in builder.layers if l["type"] == "TopKPooling"]
+        topk_layers = [layer for layer in builder.layers if layer["type"] == "TopKPooling"]
         for layer in topk_layers:
             assert layer["params"]["ratio"] == pooling_ratio
 
@@ -785,7 +785,7 @@ class TestHierarchicalPoolingTemplate:
         )
 
         # Should have global_mean_pool
-        global_pool_layers = [l for l in builder.layers if l["type"] == "global_mean_pool"]
+        global_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_mean_pool"]
         assert len(global_pool_layers) > 0
 
     def test_hierarchical_pooling_topk_in_channels(self, basic_params):
@@ -797,7 +797,7 @@ class TestHierarchicalPoolingTemplate:
             hidden_channels=hidden_channels,
         )
 
-        topk_layers = [l for l in builder.layers if l["type"] == "TopKPooling"]
+        topk_layers = [layer for layer in builder.layers if layer["type"] == "TopKPooling"]
         for layer in topk_layers:
             assert layer["params"]["in_channels"] == hidden_channels
 
@@ -808,7 +808,7 @@ class TestHierarchicalPoolingTemplate:
             basic_params["in_channels"], basic_params["out_channels"], num_levels=num_levels
         )
 
-        topk_layers = [l for l in builder.layers if l["type"] == "TopKPooling"]
+        topk_layers = [layer for layer in builder.layers if layer["type"] == "TopKPooling"]
         assert len(topk_layers) == num_levels
 
 
@@ -837,7 +837,7 @@ class TestGraphSAGENetworkTemplate:
         )
 
         # Count SAGE layers
-        sage_layers = [l for l in builder.layers if l["type"] == "SAGEConv"]
+        sage_layers = [layer for layer in builder.layers if layer["type"] == "SAGEConv"]
         assert len(sage_layers) == num_layers
 
     def test_graph_sage_network_aggregation_types(self, basic_params):
@@ -848,7 +848,7 @@ class TestGraphSAGENetworkTemplate:
             )
 
             # Check aggregation parameter
-            sage_layers = [l for l in builder.layers if l["type"] == "SAGEConv"]
+            sage_layers = [layer for layer in builder.layers if layer["type"] == "SAGEConv"]
             for layer in sage_layers:
                 assert layer["params"]["aggr"] == aggr
 
@@ -863,7 +863,7 @@ class TestGraphSAGENetworkTemplate:
             dropout=dropout,
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == num_layers
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -874,7 +874,7 @@ class TestGraphSAGENetworkTemplate:
             basic_params["in_channels"], basic_params["out_channels"], dropout=0.0
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_graph_sage_network_graph_task_has_pooling(self, basic_params):
@@ -883,7 +883,7 @@ class TestGraphSAGENetworkTemplate:
             basic_params["in_channels"], basic_params["out_channels"], task_type="graph_regression"
         )
 
-        pooling_layers = [l for l in builder.layers if "global" in l["type"].lower()]
+        pooling_layers = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(pooling_layers) > 0
 
     def test_graph_sage_network_node_task_no_pooling(self, node_task_params):
@@ -894,7 +894,7 @@ class TestGraphSAGENetworkTemplate:
             task_type="node_classification",
         )
 
-        global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pooling) == 0
 
 
@@ -922,7 +922,7 @@ class TestGINNetworkTemplate:
         )
 
         # Default is 5 layers
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 5
 
     def test_gin_network_uses_sum_pooling(self, basic_params):
@@ -932,7 +932,7 @@ class TestGINNetworkTemplate:
         )
 
         # Should use global_add_pool (sum pooling)
-        sum_pool_layers = [l for l in builder.layers if l["type"] == "global_add_pool"]
+        sum_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_add_pool"]
         assert len(sum_pool_layers) > 0
 
     def test_gin_network_custom_depth(self, basic_params):
@@ -943,7 +943,7 @@ class TestGINNetworkTemplate:
         )
 
         # Note: Uses GCNConv as placeholder
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == num_layers
 
     def test_gin_network_with_dropout(self, basic_params):
@@ -957,7 +957,7 @@ class TestGINNetworkTemplate:
             dropout=dropout,
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == num_layers
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -968,14 +968,14 @@ class TestGINNetworkTemplate:
             basic_params["in_channels"], basic_params["out_channels"], dropout=0.0
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_gin_network_node_task_no_sum_pooling(self):
         """Test gin_network for node task has no global_add_pool."""
         builder = ArchitectureTemplates.gin_network(16, 10, task_type="node_classification")
 
-        sum_pool_layers = [l for l in builder.layers if l["type"] == "global_add_pool"]
+        sum_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_add_pool"]
         assert len(sum_pool_layers) == 0
 
 
@@ -1003,8 +1003,8 @@ class TestMolecularNetworkTemplate:
         )
 
         # Should have both GCN and GAT layers
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
 
         assert len(gcn_layers) > 0
         assert len(gat_layers) > 0
@@ -1016,7 +1016,7 @@ class TestMolecularNetworkTemplate:
         )
 
         # Should have multiple Linear layers at the end
-        linear_layers = [l for l in builder.layers if l["type"] == "Linear"]
+        linear_layers = [layer for layer in builder.layers if layer["type"] == "Linear"]
         assert len(linear_layers) >= 2  # MLP readout
 
     def test_molecular_network_default_dropout(self, basic_params):
@@ -1026,7 +1026,7 @@ class TestMolecularNetworkTemplate:
         )
 
         # Should have dropout layers
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) > 0
 
     def test_molecular_network_higher_hidden_channels(self, basic_params):
@@ -1039,7 +1039,7 @@ class TestMolecularNetworkTemplate:
         )
 
         # Check conv layers have correct hidden channels
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         for layer in gcn_layers:
             assert layer["params"]["out_channels"] == hidden_channels
 
@@ -1050,7 +1050,7 @@ class TestMolecularNetworkTemplate:
         builder = ArchitectureTemplates.molecular_network(16, 1, num_layers=4)
 
         # Extract only conv layers (GCNConv or GATConv) in order
-        conv_layers = [l for l in builder.layers if l["type"] in ("GCNConv", "GATConv")]
+        conv_layers = [layer for layer in builder.layers if layer["type"] in ("GCNConv", "GATConv")]
         # Initial GCN + loop: GCN, GAT, GCN = [GCN, GCN, GAT, GCN]
         assert conv_layers[0]["type"] == "GCNConv"  # Initial
         assert conv_layers[1]["type"] == "GCNConv"  # i=0 even
@@ -1061,7 +1061,7 @@ class TestMolecularNetworkTemplate:
         """Test molecular_network GAT layers use heads=4 and concat=False."""
         builder = ArchitectureTemplates.molecular_network(16, 1, num_layers=4)
 
-        gat_layers = [l for l in builder.layers if l["type"] == "GATConv"]
+        gat_layers = [layer for layer in builder.layers if layer["type"] == "GATConv"]
         for layer in gat_layers:
             assert layer["params"]["heads"] == 4
             assert layer["params"]["concat"] is False
@@ -1071,7 +1071,7 @@ class TestMolecularNetworkTemplate:
         # molecular_network doesn't conditionally add pooling — it always adds it
         for task_type in ["graph_regression", "node_regression", "link_prediction"]:
             builder = ArchitectureTemplates.molecular_network(16, 1, task_type=task_type)
-            global_pool = [l for l in builder.layers if l["type"] == "global_mean_pool"]
+            global_pool = [layer for layer in builder.layers if layer["type"] == "global_mean_pool"]
             assert len(global_pool) == 1, (
                 f"molecular_network should always have global_mean_pool, failed for {task_type}"
             )
@@ -1081,7 +1081,7 @@ class TestMolecularNetworkTemplate:
         dropout = 0.5
         builder = ArchitectureTemplates.molecular_network(16, 1, dropout=dropout)
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) > 0
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -1091,7 +1091,7 @@ class TestMolecularNetworkTemplate:
         builder = ArchitectureTemplates.molecular_network(16, 1, num_layers=1)
 
         # Only initial GCN, no loop iterations (range(0))
-        conv_layers = [l for l in builder.layers if l["type"] in ("GCNConv", "GATConv")]
+        conv_layers = [layer for layer in builder.layers if layer["type"] in ("GCNConv", "GATConv")]
         assert len(conv_layers) == 1
         assert conv_layers[0]["type"] == "GCNConv"
 
@@ -1117,7 +1117,7 @@ class TestNodeClassificationNetworkTemplate:
         builder = ArchitectureTemplates.node_classification_network(in_channels=32, num_classes=10)
 
         # Should not have global pooling
-        global_pool_layers = [l for l in builder.layers if "global" in l["type"].lower()]
+        global_pool_layers = [layer for layer in builder.layers if "global" in layer["type"].lower()]
         assert len(global_pool_layers) == 0
 
     def test_node_classification_network_high_dropout(self):
@@ -1125,7 +1125,7 @@ class TestNodeClassificationNetworkTemplate:
         builder = ArchitectureTemplates.node_classification_network(in_channels=32, num_classes=10)
 
         # Should have dropout layers with p=0.5
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) > 0
         for layer in dropout_layers:
             assert layer["params"]["p"] == 0.5
@@ -1146,7 +1146,7 @@ class TestNodeClassificationNetworkTemplate:
         builder = ArchitectureTemplates.node_classification_network(in_channels=32, num_classes=10)
 
         # Default is 2 layers
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 2
 
     def test_node_classification_network_custom_num_layers(self):
@@ -1156,7 +1156,7 @@ class TestNodeClassificationNetworkTemplate:
             in_channels=64, num_classes=5, num_layers=num_layers
         )
 
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == num_layers
 
     def test_node_classification_network_custom_dropout(self):
@@ -1166,7 +1166,7 @@ class TestNodeClassificationNetworkTemplate:
             in_channels=32, num_classes=10, dropout=dropout
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) > 0
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -1178,7 +1178,7 @@ class TestNodeClassificationNetworkTemplate:
             in_channels=32, num_classes=10, hidden_channels=hidden_channels
         )
 
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         for layer in gcn_layers:
             assert layer["params"]["out_channels"] == hidden_channels
 
@@ -1204,7 +1204,7 @@ class TestGraphClassificationNetworkTemplate:
         builder = ArchitectureTemplates.graph_classification_network(in_channels=9, num_classes=2)
 
         # Should have global pooling
-        global_pool_layers = [l for l in builder.layers if l["type"] == "global_mean_pool"]
+        global_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_mean_pool"]
         assert len(global_pool_layers) > 0
 
     def test_graph_classification_network_output_dimension(self):
@@ -1223,7 +1223,7 @@ class TestGraphClassificationNetworkTemplate:
         builder = ArchitectureTemplates.graph_classification_network(in_channels=9, num_classes=2)
 
         # Default is 3 layers
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 3
 
     def test_graph_classification_network_custom_dropout(self):
@@ -1233,7 +1233,7 @@ class TestGraphClassificationNetworkTemplate:
             in_channels=9, num_classes=2, dropout=dropout
         )
 
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) > 0
         for layer in dropout_layers:
             assert layer["params"]["p"] == dropout
@@ -1245,7 +1245,7 @@ class TestGraphClassificationNetworkTemplate:
             in_channels=9, num_classes=2, num_layers=num_layers
         )
 
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == num_layers
 
     def test_graph_classification_network_custom_hidden_channels(self):
@@ -1255,7 +1255,7 @@ class TestGraphClassificationNetworkTemplate:
             in_channels=20, num_classes=5, hidden_channels=hidden_channels
         )
 
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         for layer in gcn_layers:
             assert layer["params"]["out_channels"] == hidden_channels
 
@@ -1461,25 +1461,25 @@ class TestTemplateConfigurations:
     def test_templates_with_single_layer(self):
         """Test templates with single layer (minimum)."""
         builder = ArchitectureTemplates.simple_gcn(16, 1, num_layers=1)
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 1
 
     def test_templates_with_many_layers(self):
         """Test templates with many layers."""
         builder = ArchitectureTemplates.simple_gcn(16, 1, num_layers=20)
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert len(gcn_layers) == 20
 
     def test_templates_with_large_hidden_channels(self):
         """Test templates with large hidden dimension."""
         builder = ArchitectureTemplates.simple_gcn(16, 1, hidden_channels=1024)
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert gcn_layers[0]["params"]["out_channels"] == 1024
 
     def test_templates_with_small_hidden_channels(self):
         """Test templates with small hidden dimension."""
         builder = ArchitectureTemplates.simple_gcn(16, 1, hidden_channels=8)
-        gcn_layers = [l for l in builder.layers if l["type"] == "GCNConv"]
+        gcn_layers = [layer for layer in builder.layers if layer["type"] == "GCNConv"]
         assert gcn_layers[0]["params"]["out_channels"] == 8
 
     def test_templates_different_task_types(self):
@@ -1505,7 +1505,7 @@ class TestTemplateConfigurations:
         """
         for task_type in ["link_prediction", "edge_regression"]:
             builder = ArchitectureTemplates.simple_gcn(16, 1, task_type=task_type)
-            global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+            global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
             assert len(global_pooling) == 0, (
                 f"Task type '{task_type}' should not have global pooling"
             )
@@ -1514,7 +1514,7 @@ class TestTemplateConfigurations:
         """Test that graph_regression and graph_classification tasks always get pooling."""
         for task_type in ["graph_regression", "graph_classification"]:
             builder = ArchitectureTemplates.simple_gcn(16, 1, task_type=task_type)
-            global_pooling = [l for l in builder.layers if "global" in l["type"].lower()]
+            global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
             assert len(global_pooling) > 0, f"Task type '{task_type}' should have global pooling"
 
 
@@ -1630,7 +1630,7 @@ class TestTemplateEdgeCases:
         )
 
         # Should have no dropout layers
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         assert len(dropout_layers) == 0
 
     def test_high_dropout(self, basic_params):
@@ -1640,7 +1640,7 @@ class TestTemplateEdgeCases:
         )
 
         # Should have dropout layers with high rate
-        dropout_layers = [l for l in builder.layers if l["type"] == "Dropout"]
+        dropout_layers = [layer for layer in builder.layers if layer["type"] == "Dropout"]
         for layer in dropout_layers:
             assert layer["params"]["p"] == 0.9
 
@@ -1720,7 +1720,7 @@ class TestTemplateConsistency:
             builder = method(**params)
 
             # Should have at least one Linear layer
-            linear_layers = [l for l in builder.layers if l["type"] == "Linear"]
+            linear_layers = [layer for layer in builder.layers if layer["type"] == "Linear"]
             assert len(linear_layers) > 0, f"{method_name} has no Linear layer"
 
     def test_all_templates_non_empty(self):

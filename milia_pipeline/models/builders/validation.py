@@ -215,8 +215,8 @@ class ArchitectureValidator:
         if "graph" in task_type.lower():
             # Must have pooling layer
             has_pooling = any(
-                self.registry.get_layer_metadata(l.type).category == LayerCategory.POOLING
-                for l in layers
+                self.registry.get_layer_metadata(layer.type).category == LayerCategory.POOLING
+                for layer in layers
             )
 
             if not has_pooling:
@@ -229,9 +229,9 @@ class ArchitectureValidator:
         elif "node" in task_type.lower():
             # Should not have pooling
             pooling_layers = [
-                (i, l.type)
-                for i, l in enumerate(layers)
-                if self.registry.get_layer_metadata(l.type).category == LayerCategory.POOLING
+                (i, layer.type)
+                for i, layer in enumerate(layers)
+                if self.registry.get_layer_metadata(layer.type).category == LayerCategory.POOLING
             ]
 
             if pooling_layers:

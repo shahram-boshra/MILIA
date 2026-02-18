@@ -141,7 +141,7 @@ class TestTargetLevelEnum:
     def test_levels_are_unique(self):
         """Test all levels have unique values."""
         levels = [TargetLevel.GRAPH, TargetLevel.NODE, TargetLevel.EDGE]
-        values = [l.value for l in levels]
+        values = [level.value for level in levels]
         assert len(values) == len(set(values))
 
     def test_level_value_types(self):

@@ -184,7 +184,7 @@ class ArchitectureConfig(BaseModel):
             task_type=data["task_type"],
             in_channels=data["in_channels"],
             out_channels=data["out_channels"],
-            layers=[LayerConfig.from_dict(l) for l in data.get("layers", [])],
+            layers=[LayerConfig.from_dict(layer_data) for layer_data in data.get("layers", [])],
             residual_connections=[
                 ResidualConnection.from_dict(rc) for rc in data.get("residual_connections", [])
             ],
@@ -566,8 +566,8 @@ class ArchitectureBuilder:
         if "graph" in self.task_type:
             # Graph-level tasks need pooling
             has_pooling = any(
-                self.registry.get_layer_metadata(l.type).category == LayerCategory.POOLING
-                for l in self.layers
+                self.registry.get_layer_metadata(layer.type).category == LayerCategory.POOLING
+                for layer in self.layers
             )
             if not has_pooling:
                 errors.append(

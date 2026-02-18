@@ -299,7 +299,7 @@ class LossConfig(BaseModel):
         try:
             LossFunction(v)
         except ValueError:
-            valid_losses = [l.value for l in LossFunction]
+            valid_losses = [loss.value for loss in LossFunction]
             raise ValueError(f"Invalid loss function '{v}'. Must be one of: {valid_losses}") from None
         return v
 
