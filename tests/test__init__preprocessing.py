@@ -1277,7 +1277,9 @@ class TestContractGetPreprocessorReturnType:
         """
         ``get_preprocessor()`` raises an exception for an unknown type.
         """
-        with pytest.raises(Exception):
+        from milia_pipeline.exceptions import DataProcessingError
+
+        with pytest.raises(DataProcessingError):
             preprocessing_pkg.PreprocessorRegistry.get_preprocessor(
                 "NonExistentDatasetType_XYZ_12345"
             )

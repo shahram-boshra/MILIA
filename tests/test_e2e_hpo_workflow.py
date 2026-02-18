@@ -176,6 +176,14 @@ try:
 except ImportError:
     EXCEPTIONS_AVAILABLE = False
 
+try:
+    from pydantic import ValidationError as PydanticValidationError
+
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PydanticValidationError = Exception  # Fallback
+    PYDANTIC_AVAILABLE = False
+
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -412,7 +420,7 @@ class TestHPOConfigConstruction:
     def test_hpoconfig_frozen_immutability(self):
         """HPOConfig instances must be frozen (Pydantic V2 frozen=True)."""
         cfg = HPOConfig(enabled=True, n_trials=5)
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             # Pydantic V2 frozen model raises ValidationError on attribute set
             cfg.n_trials = 99
 
@@ -455,13 +463,13 @@ class TestHPOConfigConstruction:
     @pytest.mark.skipif(not HPO_CONFIG_AVAILABLE, reason="hpo_config not importable")
     def test_hpoconfig_invalid_backend_raises(self):
         """HPOConfig rejects unknown backends at construction time."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             HPOConfig(enabled=True, backend="nonexistent_backend")
 
     @pytest.mark.skipif(not HPO_CONFIG_AVAILABLE, reason="hpo_config not importable")
     def test_hpoconfig_invalid_n_trials_raises(self):
         """HPOConfig rejects n_trials < 1."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             HPOConfig(enabled=True, n_trials=0)
 
     @pytest.mark.skipif(not PARAM_TYPES_AVAILABLE, reason="param_types not importable")
@@ -482,13 +490,13 @@ class TestHPOConfigConstruction:
     @pytest.mark.skipif(not PARAM_TYPES_AVAILABLE, reason="param_types not importable")
     def test_search_space_param_config_numeric_validation(self):
         """Numeric SearchSpaceParamConfig requires low < high."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             SearchSpaceParamConfig(type=ParamType.INT, low=10, high=5)
 
     @pytest.mark.skipif(not PARAM_TYPES_AVAILABLE, reason="param_types not importable")
     def test_search_space_param_config_categorical_requires_choices(self):
         """Categorical SearchSpaceParamConfig requires non-empty choices."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             SearchSpaceParamConfig(type=ParamType.CATEGORICAL, choices=[])
 
 
@@ -526,7 +534,7 @@ class TestSearchSpaceBuilder:
         builder = SearchSpaceBuilder()
         builder.add_int("x", 1, 10, category="hyperparameters")
         _ = builder.build()
-        with pytest.raises(Exception):
+        with pytest.raises(SearchSpaceError):
             builder.add_int("y", 1, 10, category="hyperparameters")
 
     @pytest.mark.skipif(
@@ -655,7 +663,7 @@ class TestOptunaBackend:
         """get_best_params on empty study raises HPOError."""
         backend = OptunaBackend()
         study = backend.create_study("empty_study", "minimize")
-        with pytest.raises(Exception):
+        with pytest.raises(HPOError):
             backend.get_best_params(study)
 
 
@@ -1301,20 +1309,20 @@ class TestStudyAnalyzerE2E:
         if not HPO_MANAGER_AVAILABLE:
             pytest.skip("hpo_manager not importable")
         mgr = HPOManager(HPOConfig(enabled=False))
-        with pytest.raises(Exception):
+        with pytest.raises(HPOError):
             StudyAnalyzer.from_manager(mgr)
 
     @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analysis_config_validation(self):
         """AnalysisConfig validates convergence_window >= 1."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             AnalysisConfig(convergence_window=0)
 
     @pytest.mark.skipif(not STUDY_ANALYZER_AVAILABLE, reason="study_analyzer not importable")
     def test_analysis_config_frozen(self):
         """AnalysisConfig is frozen (Pydantic V2 frozen=True)."""
         cfg = AnalysisConfig()
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             cfg.convergence_window = 99
 
 

@@ -316,7 +316,7 @@ class TestDatasetConfig:
     def test_frozen_immutability(self):
         """Test that DatasetConfig is frozen and immutable."""
         config = DatasetConfig(dataset_type="DFT")
-        with pytest.raises(Exception):  # FrozenInstanceError in dataclasses
+        with pytest.raises(PydanticValidationError):
             config.dataset_type = "DMC"
 
 
@@ -667,7 +667,7 @@ class TestTransformSpec:
     def test_frozen_immutability(self):
         """Test that TransformSpec is frozen."""
         spec = TransformSpec(name="Test")
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             spec.name = "NewName"
 
     # ==========================================
@@ -1718,7 +1718,7 @@ class TestDescriptorConfig:
     def test_frozen_immutability(self):
         """Test that DescriptorConfig is frozen."""
         config = DescriptorConfig()
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             config.enabled = False
 
 

@@ -46,6 +46,10 @@ from milia_pipeline.datasets.protocols import (
     DatasetValidatorProtocol,
 )
 
+from dataclasses import FrozenInstanceError
+
+from pydantic import ValidationError as PydanticValidationError
+
 # ============================================================================
 # HELPER: Reusable valid fixtures for building test subclasses
 # ============================================================================
@@ -192,15 +196,15 @@ class TestDatasetMetadataConstruction(unittest.TestCase):
     def test_frozen_cannot_set_name(self):
         """Frozen dataclass rejects attribute mutation."""
         meta = _make_valid_metadata()
-        with self.assertRaises(Exception):
-            # Pydantic V2 frozen dataclass raises either FrozenInstanceError
-            # or dataclasses.FrozenInstanceError — both are subclasses of Exception
+        with self.assertRaises(FrozenInstanceError):
+            # Pydantic V2 frozen dataclass raises FrozenInstanceError
+            # (subclass of AttributeError) on attribute mutation
             meta.name = "Other"
 
     def test_frozen_cannot_set_version(self):
         """Frozen dataclass rejects attribute mutation on version."""
         meta = _make_valid_metadata()
-        with self.assertRaises(Exception):
+        with self.assertRaises(FrozenInstanceError):
             meta.version = "2.0.0"
 
     # --- validation: empty / missing ---
@@ -224,17 +228,17 @@ class TestDatasetMetadataConstruction(unittest.TestCase):
 
     def test_non_string_name_raises(self):
         """Non-string name is rejected (Pydantic validation or __post_init__)."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(PydanticValidationError):
             DatasetMetadata(name=123, version="1.0", description="desc")
 
     def test_non_string_version_raises(self):
         """Non-string version is rejected."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(PydanticValidationError):
             DatasetMetadata(name="X", version=123, description="desc")
 
     def test_non_string_description_raises(self):
         """Non-string description is rejected."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(PydanticValidationError):
             DatasetMetadata(name="X", version="1.0", description=42)
 
     # --- optional fields ---
@@ -304,13 +308,13 @@ class TestDatasetSchemaConstruction(unittest.TestCase):
     def test_frozen_cannot_set_required(self):
         """Frozen dataclass rejects mutation of required_properties."""
         schema = _make_valid_schema()
-        with self.assertRaises(Exception):
+        with self.assertRaises(FrozenInstanceError):
             schema.required_properties = ("other",)
 
     def test_frozen_cannot_set_coordinate_units(self):
         """Frozen dataclass rejects mutation of coordinate_units."""
         schema = _make_valid_schema()
-        with self.assertRaises(Exception):
+        with self.assertRaises(FrozenInstanceError):
             schema.coordinate_units = "bohr"
 
     # --- required_properties validation ---
@@ -450,7 +454,7 @@ class TestDatasetFeaturesConstruction(unittest.TestCase):
     def test_frozen_cannot_set_flag(self):
         """Frozen dataclass rejects mutation of a feature flag."""
         feat = DatasetFeatures()
-        with self.assertRaises(Exception):
+        with self.assertRaises(FrozenInstanceError):
             feat.vibrational_analysis = True
 
     # --- to_dict ---

@@ -1218,7 +1218,7 @@ class TestGetLossForTask:
         loss2 = LossRegistry.get_loss_for_task("Graph_Classification")
         loss3 = LossRegistry.get_loss_for_task("graph_classification")
 
-        assert type(loss1) == type(loss2) == type(loss3)
+        assert type(loss1) is type(loss2) is type(loss3)
 
     def test_get_loss_for_task_unknown_task_falls_back_to_mse(self):
         """Test unknown task type falls back to MSE."""
@@ -1485,7 +1485,7 @@ class TestTaskAwareConvenienceFunctions:
         # get_loss_for_task
         loss1 = get_loss_for_task("graph_classification")
         loss2 = LossRegistry.get_loss_for_task("graph_classification")
-        assert type(loss1) == type(loss2)
+        assert type(loss1) is type(loss2)
 
         # get_default_loss_for_task
         default1 = get_default_loss_for_task("graph_classification")
@@ -1670,7 +1670,7 @@ class TestConvenienceFunctions:
         # get_loss
         loss1 = get_loss("mse")
         loss2 = LossRegistry.get_loss("mse")
-        assert type(loss1) == type(loss2)
+        assert type(loss1) is type(loss2)
 
         # list_losses
         list1 = list_losses()
@@ -1680,7 +1680,7 @@ class TestConvenienceFunctions:
         # get_loss_for_task
         loss3 = get_loss_for_task("graph_classification")
         loss4 = LossRegistry.get_loss_for_task("graph_classification")
-        assert type(loss3) == type(loss4)
+        assert type(loss3) is type(loss4)
 
         # get_default_loss_for_task
         default1 = get_default_loss_for_task("graph_regression")

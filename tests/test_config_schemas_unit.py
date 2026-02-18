@@ -1452,8 +1452,10 @@ class TestDescriptorCategoryConfigSchema:
 
     def test_immutability(self):
         """Test schema is immutable (frozen=True)."""
+        from pydantic import ValidationError as PydanticValidationError
+
         schema = DescriptorCategoryConfigSchema(category_name="topological")
-        with pytest.raises(Exception):  # ValidationError or AttributeError
+        with pytest.raises(PydanticValidationError):
             schema.category_name = "geometric"
 
 

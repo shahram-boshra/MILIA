@@ -1529,7 +1529,7 @@ class TestLossRegistryAdvancedFeatures:
         l1_loss = LossRegistry.get_loss("l1")
         mae_loss = LossRegistry.get_loss("mae")
 
-        assert type(l1_loss) == type(mae_loss)
+        assert type(l1_loss) is type(mae_loss)
 
     def test_all_regression_losses_available(self):
         """Test all regression losses are available."""

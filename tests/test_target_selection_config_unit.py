@@ -977,13 +977,13 @@ class TestResolveMethod:
     def test_all_invalid_indices_strict_raises(self):
         """Test all indices invalid in strict mode raises (lines 641-647)."""
         config = TargetSelectionConfig(mode=SelectionMode.INDICES, indices=[100, 200], strict=True)
-        with pytest.raises(Exception):
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 5)
 
     def test_all_invalid_indices_non_strict_still_raises_when_empty(self):
         """Test all indices invalid in non-strict mode still raises when none resolved (lines 641-647)."""
         config = TargetSelectionConfig(mode=SelectionMode.INDICES, indices=[100, 200], strict=False)
-        with pytest.raises(Exception):
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 5)
 
     def test_range_resolves_names_when_available(self):
@@ -1002,7 +1002,7 @@ class TestResolveMethod:
     def test_range_four_colons_raises(self):
         """Test RANGE mode with 4+ colon parts raises error (line 671)."""
         config = TargetSelectionConfig(mode=SelectionMode.RANGE, range_spec="0:3:1:2")
-        with pytest.raises(Exception):
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 10)
 
 
@@ -1189,7 +1189,7 @@ class TestEdgeCasesAndErrors:
     def test_invalid_indices_strict_mode_raises(self):
         """Test invalid indices in strict mode raises error."""
         config = TargetSelectionConfig(mode=SelectionMode.INDICES, indices=[10, 20], strict=True)
-        with pytest.raises(Exception):  # ConfigurationError
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 5)
 
     def test_invalid_indices_non_strict_mode_skips(self, caplog):
@@ -1210,7 +1210,7 @@ class TestEdgeCasesAndErrors:
         config = TargetSelectionConfig(
             mode=SelectionMode.PROPERTIES, properties=["nonexistent"], strict=True
         )
-        with pytest.raises(Exception):  # ConfigurationError
+        with pytest.raises(ConfigurationError):
             config.resolve(["a", "b", "c"], 3)
 
     def test_properties_without_names_strict_raises(self):
@@ -1218,7 +1218,7 @@ class TestEdgeCasesAndErrors:
         config = TargetSelectionConfig(
             mode=SelectionMode.PROPERTIES, properties=["gap"], strict=True
         )
-        with pytest.raises(Exception):  # ConfigurationError
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 5)
 
     def test_empty_range_raises(self):
@@ -1227,13 +1227,13 @@ class TestEdgeCasesAndErrors:
             mode=SelectionMode.RANGE,
             range_spec="5:3",  # Empty range
         )
-        with pytest.raises(Exception):  # ConfigurationError
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 10)
 
     def test_invalid_range_format_raises(self):
         """Test invalid range format raises error."""
         config = TargetSelectionConfig(mode=SelectionMode.RANGE, range_spec="invalid")
-        with pytest.raises(Exception):  # ConfigurationError
+        with pytest.raises(ConfigurationError):
             config.resolve(None, 10)
 
     def test_no_valid_properties_raises_even_non_strict(self):
@@ -1241,7 +1241,7 @@ class TestEdgeCasesAndErrors:
         config = TargetSelectionConfig(
             mode=SelectionMode.PROPERTIES, properties=["nonexistent"], strict=False
         )
-        with pytest.raises(Exception):
+        with pytest.raises(ConfigurationError):
             config.resolve(["a", "b", "c"], 3)
 
 

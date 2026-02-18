@@ -310,7 +310,7 @@ class TestConfigurationExceptions:
         error = ConfigurationError(
             "Value mismatch", config_key="epochs", expected_value=int, actual_value="100"
         )
-        assert error.expected_value == int
+        assert error.expected_value is int
         error_str = str(error)
         assert "int" in error_str.lower() or "Expected" in error_str
 
@@ -1238,7 +1238,7 @@ class TestTransformExceptions:
         )
         assert isinstance(error, ValidationError)
         assert error.parameter_name == "degrees"
-        assert error.expected_type == int
+        assert error.expected_type is int
         # TransformValidationError sets validation_type automatically to "transform_parameter"
         assert error.validation_type == "transform_parameter"
 

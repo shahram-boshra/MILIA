@@ -424,6 +424,8 @@ validators = None
 IMPORTS_SUCCESSFUL = False
 IMPORT_ERROR = None
 ValidationError = MockValidationError
+StructuralFeatureError = Exception  # Populated in setup_module()
+DMCProcessingError = Exception  # Populated in setup_module()
 PHASE6_IMPORTS_SUCCESSFUL = False
 PHASE6_IMPORT_ERROR = None
 _init_registry = None
@@ -445,7 +447,7 @@ def setup_module(module):
     polluting sys.modules for other test files collected afterward.
     """
     global validators, IMPORTS_SUCCESSFUL, IMPORT_ERROR
-    global ValidationError
+    global ValidationError, StructuralFeatureError, DMCProcessingError
     global PHASE6_IMPORTS_SUCCESSFUL, PHASE6_IMPORT_ERROR
     global _init_registry, _get_available_dataset_types
     global _is_dataset_type_registered, _get_dataset_feature
@@ -490,6 +492,21 @@ def setup_module(module):
         ValidationError = _VE
     except ImportError:
         ValidationError = MockValidationError
+
+    # --- Import StructuralFeatureError and DMCProcessingError ---
+    try:
+        from milia_pipeline.exceptions import StructuralFeatureError as _SFE
+
+        StructuralFeatureError = _SFE
+    except ImportError:
+        StructuralFeatureError = Exception
+
+    try:
+        from milia_pipeline.exceptions import DMCProcessingError as _DPE
+
+        DMCProcessingError = _DPE
+    except ImportError:
+        DMCProcessingError = Exception
 
     # --- Phase 6: Extract registry integration functions ---
     try:
@@ -827,7 +844,7 @@ class TestMolecularStructureValidation(unittest.TestCase):
         coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
 
         # This function raises StructuralFeatureError for mismatched lengths
-        with self.assertRaises(Exception):  # Could be StructuralFeatureError
+        with self.assertRaises(StructuralFeatureError):
             validators.validate_molecular_structure(atoms, coords, 0, "mol_0")
 
     def test_validate_molecular_structure_with_invalid_coords_shape(self):
@@ -836,7 +853,7 @@ class TestMolecularStructureValidation(unittest.TestCase):
         coords = np.array([0.0, 0.0, 0.0])  # Wrong shape
 
         # This function raises StructuralFeatureError for invalid shape
-        with self.assertRaises(Exception):  # Could be StructuralFeatureError
+        with self.assertRaises(StructuralFeatureError):
             validators.validate_molecular_structure(atoms, coords, 0, "mol_0")
 
     def test_validate_molecular_structure_with_nan_in_coords(self):
@@ -845,7 +862,7 @@ class TestMolecularStructureValidation(unittest.TestCase):
         coords = np.array([[0.0, 0.0, 0.0], [np.nan, 0.0, 0.0]])
 
         # This function raises StructuralFeatureError for NaN values
-        with self.assertRaises(Exception):  # Could be StructuralFeatureError
+        with self.assertRaises(StructuralFeatureError):
             validators.validate_molecular_structure(atoms, coords, 0, "mol_0")
 
     def test_validate_molecular_structure_with_invalid_atomic_numbers(self):
@@ -854,7 +871,7 @@ class TestMolecularStructureValidation(unittest.TestCase):
         coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
 
         # This function raises StructuralFeatureError for invalid data
-        with self.assertRaises(Exception):  # Could be StructuralFeatureError
+        with self.assertRaises(StructuralFeatureError):
             validators.validate_molecular_structure(atoms, coords, 0, "mol_0")
 
 
@@ -978,7 +995,7 @@ class TestUncertaintyDataValidation(unittest.TestCase):
     def test_validate_uncertainty_data_with_negative(self):
         """Test with negative uncertainty (should fail if require_positive)"""
         # Function raises DMCProcessingError for negative values when require_positive=True
-        with self.assertRaises(Exception):  # Could be DMCProcessingError or ValidationError
+        with self.assertRaises(DMCProcessingError):
             validators.validate_uncertainty_data(-0.05, 0, "uncertainty", require_positive=True)
 
     def test_validate_uncertainty_data_with_nan(self):
@@ -1941,7 +1958,7 @@ class TestPitfallHandlingUtilities(unittest.TestCase):
             def mock_validation(*args, **kwargs):
                 return (False, ["Error 1", "Error 2"])
 
-            with self.assertRaises(Exception):
+            with self.assertRaises(ValidationError):
                 validators.validate_and_require(mock_validation, "test_data")
         except (AttributeError, NameError):
             self.skipTest("validate_and_require not available")
@@ -2011,7 +2028,7 @@ class TestValidationContextManager(unittest.TestCase):
     def test_validation_context_require_invalid(self):
         """Test ValidationContext.require with invalid data"""
         try:
-            with self.assertRaises(Exception):
+            with self.assertRaises(ValidationError):
                 with validators.ValidationContext("Test context") as ctx:
                     is_valid = False
                     errors = ["Error 1"]

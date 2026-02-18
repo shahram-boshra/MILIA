@@ -79,6 +79,7 @@ except ImportError:
     HANDLERS_AVAILABLE = False
 
 from milia_pipeline.exceptions import (
+    DataProcessingError,
     HandlerCompatibilityError,
     HandlerConfigurationError,
     HandlerIntegrationError,
@@ -2683,7 +2684,7 @@ class TestNPZDataLoading(BaseTestCase):
         nonexistent_path = Path(self.test_dir) / "nonexistent.npz"
 
         # The actual method is _load_and_prepare_data (not _load_and_prepare_data_from_npz)
-        with self.assertRaises(Exception):  # DataProcessingError or FileNotFoundError
+        with self.assertRaises((DataProcessingError, FileNotFoundError, OSError)):
             dataset._load_and_prepare_data(
                 nonexistent_path, self.dataset_config, self.processing_config
             )
@@ -2707,7 +2708,7 @@ class TestNPZDataLoading(BaseTestCase):
                     )
 
         # The actual method is _load_and_prepare_data (not _load_and_prepare_data_from_npz)
-        with self.assertRaises(Exception):
+        with self.assertRaises((DataProcessingError, FileNotFoundError, OSError, ValueError)):
             dataset._load_and_prepare_data(
                 corrupted_path, self.dataset_config, self.processing_config
             )

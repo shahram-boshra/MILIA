@@ -64,6 +64,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+try:
+    from milia_pipeline.exceptions import SearchSpaceError
+except ImportError:
+    SearchSpaceError = Exception
+
+try:
+    from pydantic import ValidationError as PydanticValidationError
+except ImportError:
+    PydanticValidationError = Exception
+
 # =============================================================================
 # MOCK CLASSES FOR EXCEPTIONS
 # =============================================================================
@@ -2765,7 +2775,7 @@ class TestSearchSpaceBuilderFromDict:
         """Test from_dict with empty dict raises error."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        with pytest.raises(Exception):
+        with pytest.raises(SearchSpaceError):
             SearchSpaceBuilder.from_dict({})
 
     def test_from_dict_returns_search_space_param_configs(self, search_space_builder_module):
@@ -3611,12 +3621,12 @@ class TestSearchSpaceBuilderEdgeCases:
 
     def test_add_int_with_equal_bounds_raises_error(self, builder):
         """Test add_int with low == high raises error."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             builder.add_int("param", 10, 10)
 
     def test_add_float_with_equal_bounds_raises_error(self, builder):
         """Test add_float with low == high raises error."""
-        with pytest.raises(Exception):
+        with pytest.raises(PydanticValidationError):
             builder.add_float("param", 0.5, 0.5)
 
     def test_add_loguniform_with_very_small_positive(self, builder):
@@ -3647,7 +3657,7 @@ class TestSearchSpaceBuilderEdgeCases:
         builder.add_int("param", 1, 10)
         builder.remove_param("param")
 
-        with pytest.raises(Exception):
+        with pytest.raises(SearchSpaceError):
             builder.build()
 
     def test_large_search_space(self, search_space_builder_module):

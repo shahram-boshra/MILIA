@@ -216,10 +216,8 @@ class TestCreateRdkitMol(unittest.TestCase):
     @patch("milia_pipeline.molecules.mol_conversion_utils.validate_molecular_structure")
     @patch("milia_pipeline.molecules.mol_conversion_utils.Chem")
     @patch("milia_pipeline.molecules.mol_conversion_utils.create_handler_error_context")
-    @patch("milia_pipeline.molecules.mol_conversion_utils.HandlerValidationError")
     def test_create_rdkit_mol_atom_count_mismatch(
         self,
-        mock_error_class,
         mock_context,
         mock_chem,
         mock_validate_structure,
@@ -229,6 +227,8 @@ class TestCreateRdkitMol(unittest.TestCase):
         logger = logging.getLogger("test")
         mock_handler = Mock()
         mock_handler.get_dataset_type.return_value = "DFT"
+        mock_handler.get_molecule_creation_strategy.return_value = "identifier_coordinate_based"
+        mock_handler.get_molecular_charge.return_value = 0
 
         coordinates = np.array([[0.0, 0.0, 0.0], [0.96, 0.0, 0.0], [-0.24, 0.93, 0.0]])
         atomic_numbers = np.array([8, 1, 1])
@@ -240,12 +240,9 @@ class TestCreateRdkitMol(unittest.TestCase):
         mock_chem.MolFromInchi.return_value = mock_mol
         mock_chem.AddHs.return_value = mock_mol
 
-        mock_error_instance = Exception("Atom count mismatch")
-        mock_error_class.return_value = mock_error_instance
-
         from milia_pipeline.molecules.mol_conversion_utils import create_rdkit_mol
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(vqm_exceptions.HandlerValidationError):
             create_rdkit_mol(
                 mol_identifier="InChI=1S/H2O/h1H2",
                 coordinates=coordinates,
@@ -607,7 +604,7 @@ class TestMolToPygData(unittest.TestCase):
 
         from milia_pipeline.molecules.mol_conversion_utils import mol_to_pyg_data
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(vqm_exceptions.HandlerOperationError):
             mol_to_pyg_data(
                 rdkit_mol=mock_mol, logger=self.logger, molecule_index=0, handler=self.mock_handler
             )

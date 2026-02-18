@@ -953,7 +953,9 @@ class TestCreateStudyErrorHandling:
     @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
     def test_create_study_invalid_direction_raises_error(self, backend_instance):
         """Test create_study with invalid direction raises error."""
-        with pytest.raises(Exception):  # Optuna raises ValueError
+        from milia_pipeline.exceptions import BackendError
+
+        with pytest.raises(BackendError):
             backend_instance.create_study(
                 study_name="test_invalid_direction", direction="invalid_direction"
             )

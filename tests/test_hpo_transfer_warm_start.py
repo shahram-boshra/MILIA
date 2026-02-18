@@ -351,7 +351,7 @@ class TestLazyImportOptuna:
         result2 = _lazy_import_optuna()
 
         # Should return same type both times
-        assert type(result1) == type(result2)
+        assert type(result1) is type(result2)
 
     def test_lazy_import_optuna_handles_import_error(self):
         """Test _lazy_import_optuna handles ImportError gracefully."""

@@ -1864,9 +1864,11 @@ class TestHPOConfiguration(unittest.TestCase):
 
     def test_hpo_config_frozen(self):
         """Test HPOConfig is immutable (frozen)."""
+        from pydantic import ValidationError as PydanticValidationError
+
         config = self.HPOConfig(enabled=True)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(PydanticValidationError):
             config.enabled = False
 
     def test_search_space_param_config_int(self):

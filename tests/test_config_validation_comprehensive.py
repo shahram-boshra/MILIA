@@ -681,7 +681,9 @@ class TestDatasetConfig:
             from milia_pipeline.config.config_containers import DatasetConfig
 
             dc = DatasetConfig(dataset_type="DFT")
-            with pytest.raises(Exception):  # Pydantic frozen model raises ValidationError
+            from pydantic import ValidationError as PydanticValidationError
+
+            with pytest.raises(PydanticValidationError):
                 dc.dataset_type = "DMC"
 
     def test_uncertainty_auto_compute(self):
@@ -901,10 +903,12 @@ class TestDatasetMetadata:
             DatasetMetadata(name="DS", version="1.0.0", description="")
 
     def test_frozen_immutability(self):
+        from dataclasses import FrozenInstanceError
+
         from milia_pipeline.datasets.base import DatasetMetadata
 
         md = DatasetMetadata(name="DS", version="1.0", description="Desc")
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             md.name = "OtherDS"
 
 

@@ -593,7 +593,7 @@ class TestHPOBackendProtocolReturnTypeAnnotations:
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.get_best_value)
-        assert sig.return_annotation == float
+        assert sig.return_annotation is float
 
     def test_get_all_trials_returns_list(self):
         """Test get_all_trials return annotation is List[Dict[str, Any]]."""
@@ -807,70 +807,70 @@ class TestProtocolMethodParameterTypes:
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_study)
-        assert sig.parameters["study_name"].annotation == str
+        assert sig.parameters["study_name"].annotation is str
 
     def test_create_study_direction_is_str(self):
         """Test create_study direction parameter is annotated as str."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_study)
-        assert sig.parameters["direction"].annotation == str
+        assert sig.parameters["direction"].annotation is str
 
     def test_optimize_n_trials_is_int(self):
         """Test optimize n_trials parameter is annotated as int."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.optimize)
-        assert sig.parameters["n_trials"].annotation == int
+        assert sig.parameters["n_trials"].annotation is int
 
     def test_optimize_n_jobs_is_int(self):
         """Test optimize n_jobs parameter is annotated as int."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.optimize)
-        assert sig.parameters["n_jobs"].annotation == int
+        assert sig.parameters["n_jobs"].annotation is int
 
     def test_optimize_catch_is_tuple(self):
         """Test optimize catch parameter is annotated as tuple."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.optimize)
-        assert sig.parameters["catch"].annotation == tuple
+        assert sig.parameters["catch"].annotation is tuple
 
     def test_create_pruner_pruner_type_is_str(self):
         """Test create_pruner pruner_type parameter is annotated as str."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_pruner)
-        assert sig.parameters["pruner_type"].annotation == str
+        assert sig.parameters["pruner_type"].annotation is str
 
     def test_create_pruner_n_startup_trials_is_int(self):
         """Test create_pruner n_startup_trials parameter is annotated as int."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_pruner)
-        assert sig.parameters["n_startup_trials"].annotation == int
+        assert sig.parameters["n_startup_trials"].annotation is int
 
     def test_create_pruner_n_warmup_steps_is_int(self):
         """Test create_pruner n_warmup_steps parameter is annotated as int."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_pruner)
-        assert sig.parameters["n_warmup_steps"].annotation == int
+        assert sig.parameters["n_warmup_steps"].annotation is int
 
     def test_create_sampler_sampler_type_is_str(self):
         """Test create_sampler sampler_type parameter is annotated as str."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_sampler)
-        assert sig.parameters["sampler_type"].annotation == str
+        assert sig.parameters["sampler_type"].annotation is str
 
     def test_create_sampler_n_startup_trials_is_int(self):
         """Test create_sampler n_startup_trials parameter is annotated as int."""
         from milia_pipeline.models.hpo.backends.base import HPOBackendProtocol
 
         sig = inspect.signature(HPOBackendProtocol.create_sampler)
-        assert sig.parameters["n_startup_trials"].annotation == int
+        assert sig.parameters["n_startup_trials"].annotation is int
 
 
 # =============================================================================
@@ -1931,7 +1931,7 @@ class TestGetBackendFunctionSignature:
         from milia_pipeline.models.hpo.backends.base import get_backend
 
         sig = inspect.signature(get_backend)
-        assert sig.parameters["backend_name"].annotation == str
+        assert sig.parameters["backend_name"].annotation is str
 
     def test_get_backend_return_annotation_is_protocol(self):
         """Test get_backend return annotation is HPOBackendProtocol."""

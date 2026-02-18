@@ -799,11 +799,13 @@ class TestTransferConfig:
     )
     def test_transfer_config_is_frozen(self, *mocks):
         """Test TransferConfig is a frozen dataclass."""
+        from pydantic import ValidationError as PydanticValidationError
+
         from milia_pipeline.models.hpo.transfer.transfer_manager import TransferConfig
 
         config = TransferConfig()
 
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(PydanticValidationError):
             config.n_warm_start_trials = 20
 
     @patch(

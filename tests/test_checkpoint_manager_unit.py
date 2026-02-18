@@ -33,6 +33,7 @@ project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
 import logging
+import pickle
 import shutil
 import tempfile
 from datetime import datetime
@@ -1703,7 +1704,7 @@ class TestEdgeCasesAndErrorHandling:
         with open(filepath, "wb") as f:
             f.write(b"not a valid pytorch checkpoint")
 
-        with pytest.raises(Exception):  # Could be various exceptions
+        with pytest.raises((RuntimeError, ValueError, OSError, pickle.UnpicklingError)):
             checkpoint_manager.load(filepath)
 
     def test_save_hyper_parameters_with_none_values(

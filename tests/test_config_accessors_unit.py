@@ -1659,7 +1659,7 @@ class TestTransformationConfiguration:
 
     def test_create_experimental_setup_from_dict_error(self):
         """Test create_experimental_setup_from_dict with error."""
-        with pytest.raises(Exception):
+        with pytest.raises(TypeError):
             create_experimental_setup_from_dict({})
 
     def test_save_experimental_setup(self, mock_load_config):

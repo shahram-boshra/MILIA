@@ -1823,7 +1823,7 @@ class TestParameterMetadata:
         )
 
         assert metadata.name == "p"
-        assert metadata.type_hint == float
+        assert metadata.type_hint is float
         assert metadata.default_value == 0.5
         assert metadata.required is False
         assert metadata.description == "Probability of dropping edges"
@@ -1859,7 +1859,7 @@ class TestParameterMetadata:
         metadata = ParameterMetadata(name="p", type_hint=float)
 
         base_type = metadata.get_base_type()
-        assert base_type == float
+        assert base_type is float
 
     def test_parameter_metadata_get_base_type_with_none(self):
         """Test get_base_type returns None when type_hint is None"""

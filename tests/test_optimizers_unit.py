@@ -909,7 +909,7 @@ class TestConvenienceFunctions:
         opt1 = get_optimizer("adam", simple_model.parameters(), {"lr": 0.001})
         opt2 = OptimizerRegistry.get_optimizer("adam", simple_model.parameters(), {"lr": 0.001})
 
-        assert type(opt1) == type(opt2)
+        assert type(opt1) is type(opt2)
         assert opt1.param_groups[0]["lr"] == opt2.param_groups[0]["lr"]
 
 

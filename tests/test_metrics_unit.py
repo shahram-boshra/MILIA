@@ -409,7 +409,7 @@ class TestMetricsRegistryGetMetric:
         metric_upper = MetricsRegistry.get_metric("RMSE")
         metric_mixed = MetricsRegistry.get_metric("RmSe")
 
-        assert type(metric_lower) == type(metric_upper) == type(metric_mixed)
+        assert type(metric_lower) is type(metric_upper) is type(metric_mixed)
 
     def test_get_metric_unknown_raises_value_error(self):
         """Test that unknown metric name raises ValueError."""

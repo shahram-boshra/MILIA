@@ -391,9 +391,9 @@ class TestCustomTransformBase:
         assert isinstance(constraints, dict)
         assert "param1" in constraints
         assert "param2" in constraints
-        assert constraints["param1"]["type"] == float
+        assert constraints["param1"]["type"] is float
         assert constraints["param1"]["default"] == 1.0
-        assert constraints["param2"]["type"] == str
+        assert constraints["param2"]["type"] is str
 
     def test_transform_execution(self, sample_graph_data):
         """Test basic transform execution"""
@@ -552,8 +552,8 @@ class TestNormalizeVibrationalModes:
         constraints = NormalizeVibrationalModes.get_parameter_constraints()
         assert "normalize_per_mode" in constraints
         assert "epsilon" in constraints
-        assert constraints["normalize_per_mode"]["type"] == bool
-        assert constraints["epsilon"]["type"] == float
+        assert constraints["normalize_per_mode"]["type"] is bool
+        assert constraints["epsilon"]["type"] is float
 
     def test_normalize_per_mode_true(self):
         """Test normalization per mode"""
@@ -672,8 +672,8 @@ class TestFilterByDMCUncertainty:
         constraints = FilterByDMCUncertainty.get_parameter_constraints()
         assert "max_uncertainty" in constraints
         assert "remove" in constraints
-        assert constraints["max_uncertainty"]["type"] == float
-        assert constraints["remove"]["type"] == bool
+        assert constraints["max_uncertainty"]["type"] is float
+        assert constraints["remove"]["type"] is bool
 
     def test_low_uncertainty_flagging(self):
         """Test flagging low uncertainty data"""
@@ -782,9 +782,9 @@ class TestScaleMullikenCharges:
         constraints = ScaleMullikenCharges.get_parameter_constraints()
         assert "scale_factor" in constraints
         assert "center" in constraints
-        assert constraints["scale_factor"]["type"] == float
+        assert constraints["scale_factor"]["type"] is float
         assert constraints["scale_factor"]["range"] == (0.0, 10.0)
-        assert constraints["center"]["type"] == bool
+        assert constraints["center"]["type"] is bool
 
     def test_simple_scaling(self):
         """Test simple charge scaling without centering"""
@@ -944,8 +944,8 @@ class TestStandardizeTargets:
         constraints = StandardizeTargets.get_parameter_constraints()
         assert "attrs" in constraints
         assert "eps" in constraints
-        assert constraints["attrs"]["type"] == list
-        assert constraints["eps"]["type"] == float
+        assert constraints["attrs"]["type"] is list
+        assert constraints["eps"]["type"] is float
 
     def test_basic_standardization(self):
         """Test basic z-score standardization"""

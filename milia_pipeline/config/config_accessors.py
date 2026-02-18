@@ -878,7 +878,7 @@ class EnhancedConfigAccessor:
         try:
             self._stats["type_casts_performed"] += 1
 
-            if target_type == bool:
+            if target_type is bool:
                 if isinstance(value, str):
                     return value.lower() in ("true", "1", "yes", "on")
                 return bool(value)
@@ -886,7 +886,7 @@ class EnhancedConfigAccessor:
             elif target_type in (int, float):
                 return target_type(value)
 
-            elif target_type == str:
+            elif target_type is str:
                 return str(value)
 
             elif target_type in (list, tuple, set):
@@ -894,7 +894,7 @@ class EnhancedConfigAccessor:
                     return target_type(value)
                 return target_type([value])
 
-            elif target_type == dict:
+            elif target_type is dict:
                 if isinstance(value, dict):
                     return value
                 raise ValueError(f"Cannot cast {type(value).__name__} to dict")

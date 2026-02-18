@@ -75,6 +75,8 @@ from milia_pipeline.models.utils.pyg_integration import (
     validate_pyg_data,
 )
 
+from milia_pipeline.exceptions import ModelError
+
 # =============================================================================
 # TEST FIXTURES - MOCK MODELS
 # =============================================================================
@@ -350,7 +352,7 @@ class TestRegistryFactoryIntegration:
         """Test factory handles missing models appropriately."""
         factory = ModelFactory()
 
-        with pytest.raises(Exception):  # Should raise ModelError or similar
+        with pytest.raises(ModelError):
             factory.create_model(
                 name="NonExistentModel", hyperparameters={}, task_type="graph_regression"
             )
@@ -837,7 +839,7 @@ class TestCrossComponentErrorHandling:
         factory = ModelFactory()
 
         # Try to create model that doesn't exist
-        with pytest.raises(Exception):
+        with pytest.raises(ModelError):
             factory.create_model(
                 name="NonExistent", hyperparameters={}, task_type="graph_regression"
             )
@@ -852,7 +854,7 @@ class TestCrossComponentErrorHandling:
         validator = factory.validator
 
         # Invalid hyperparameters
-        with pytest.raises(Exception):
+        with pytest.raises(ModelError):
             validator.validate_hyperparameters(
                 {"hidden_channels": -1},  # Invalid: negative value
                 mock_model_metadata.hyperparameters,
@@ -1600,7 +1602,7 @@ class TestValidatorIntegration:
             "num_layers": 3,
         }
 
-        with pytest.raises(Exception):
+        with pytest.raises(ModelError):
             validator.validate_hyperparameters(hparams, mock_model_metadata.hyperparameters)
 
     def test_hyperparameter_validation_failure_out_of_range(self, mock_model_metadata):
@@ -1612,7 +1614,7 @@ class TestValidatorIntegration:
             "num_layers": 3,
         }
 
-        with pytest.raises(Exception):
+        with pytest.raises(ModelError):
             validator.validate_hyperparameters(hparams, mock_model_metadata.hyperparameters)
 
 

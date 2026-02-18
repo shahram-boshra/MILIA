@@ -4699,7 +4699,7 @@ class TransformValidator:
 
             errors = []
             for union_type in param_type.__args__:
-                if union_type == type(None):
+                if union_type is type(None):
                     continue
 
                 try:
@@ -4719,7 +4719,7 @@ class TransformValidator:
             return value
 
         if value is None:
-            if target_type == type(None):
+            if target_type is type(None):
                 return None
             raise ValueError(f"None not allowed for {target_type}")
 
@@ -4730,7 +4730,7 @@ class TransformValidator:
                     f"Invalid string value: '{value}' cannot be converted to {target_type.__name__}"
                 )
 
-        if target_type == bool:
+        if target_type is bool:
             if isinstance(value, bool):
                 return value
             if isinstance(value, str):
@@ -4766,7 +4766,7 @@ class TransformValidator:
             self._validate_numeric_range(param_name, converted, target_type)
             return converted
 
-        if target_type == str:
+        if target_type is str:
             if isinstance(value, str):
                 return value
             if isinstance(value, (int, float, bool)):
@@ -5311,13 +5311,13 @@ class TransformValidator:
         # Type-based examples if none yet
         if not examples and type_hint is not None:
             base_type = self._get_base_type(type_hint)
-            if base_type == int:
+            if base_type is int:
                 examples = [0, 1, 10]
-            elif base_type == float:
+            elif base_type is float:
                 examples = [0.0, 0.5, 1.0]
-            elif base_type == bool:
+            elif base_type is bool:
                 examples = [True, False]
-            elif base_type == str:
+            elif base_type is str:
                 examples = ["example"]
 
         # Remove duplicates
@@ -6627,13 +6627,13 @@ class GraphTransforms:
 
         if metadata.type_hint:
             base_type = metadata.get_base_type()
-            if base_type == int:
+            if base_type is int:
                 return 1
-            elif base_type == float:
+            elif base_type is float:
                 return 0.5
-            elif base_type == bool:
+            elif base_type is bool:
                 return True
-            elif base_type == str:
+            elif base_type is str:
                 return ""
 
         return None

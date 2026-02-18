@@ -471,7 +471,7 @@ class TestLazyImportTorch:
         result2 = _lazy_import_torch()
 
         # Should return same type both times
-        assert type(result1) == type(result2)
+        assert type(result1) is type(result2)
 
 
 class TestLazyImportTorchGeometric:

@@ -51,6 +51,8 @@ import pytest
 import torch
 from pydantic import BaseModel
 
+from milia_pipeline.exceptions import ModelError
+
 # Import the module under test
 from milia_pipeline.models.registry.model_registry import (
     # Pydantic model (Phase 24: migrated from dataclass)
@@ -214,10 +216,10 @@ class TestModelRegistrationPydanticModel:
         """Test field type annotations are correct using Pydantic model_fields."""
         fields_info = ModelRegistration.model_fields
 
-        assert fields_info["name"].annotation == str
+        assert fields_info["name"].annotation is str
         assert fields_info["model_class"].annotation == type[torch.nn.Module]
         assert fields_info["metadata"].annotation == ModelMetadata
-        assert fields_info["is_builtin"].annotation == bool
+        assert fields_info["is_builtin"].annotation is bool
         assert fields_info["plugin_name"].annotation == Optional[str]
         assert fields_info["registered_at"].annotation == Optional[str]
 
@@ -649,7 +651,7 @@ class TestModelRegistration:
         class NotAModule:
             pass
 
-        with pytest.raises(Exception):  # Should raise ModelError
+        with pytest.raises(ModelError):
             fresh_registry.register_model("NotModule", NotAModule, sample_metadata)
 
     def test_register_updates_category(self, fresh_registry, mock_torch_module, sample_metadata):

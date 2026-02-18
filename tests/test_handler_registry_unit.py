@@ -168,7 +168,7 @@ class TestHandlerRegistrationError(unittest.TestCase):
 
     def test_is_catchable_as_exception(self):
         """Can be caught as a generic Exception."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(HandlerRegistrationError):
             raise HandlerRegistrationError(message="boom", handler_name="X")
 
 
@@ -202,7 +202,7 @@ class TestHandlerNotFoundError(unittest.TestCase):
 
     def test_is_catchable_as_exception(self):
         """Can be caught as a generic Exception."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(HandlerNotFoundError):
             raise HandlerNotFoundError(message="boom", handler_name="X")
 
     def test_handler_name_preserved_in_error(self):

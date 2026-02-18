@@ -1846,7 +1846,7 @@ class TestEdgeCases:
                 with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
                     # Empty string treated as auto
                     # torch.device("") would raise, but we handle None/"auto"
-                    with pytest.raises(Exception):
+                    with pytest.raises((RuntimeError, ValueError, DeviceNotAvailableError)):
                         _manager = DeviceManager(device="", verbose=False)
 
     def test_verbose_default_true(self):
