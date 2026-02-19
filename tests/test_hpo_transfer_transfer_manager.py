@@ -2409,8 +2409,8 @@ class TestComputeSimilarity:
 # =============================================================================
 
 
-class TestComputeDatasetSimilarity:
-    """Test HPOTransferManager.compute_dataset_similarity() method."""
+class TestComputeDatasetSimilarityExtended:
+    """Test HPOTransferManager.compute_dataset_similarity() method — extended."""
 
     @patch(
         "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_hpo_error",
@@ -3044,101 +3044,6 @@ class TestFilterParams:
 
 
 # =============================================================================
-# _FLATTEN_SEARCH_SPACE TESTS
-# =============================================================================
-
-
-class TestFlattenSearchSpace:
-    """Test HPOTransferManager._flatten_search_space() method."""
-
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_hpo_error",
-        return_value=None,
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_warm_start",
-        return_value=(None, None, None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_meta_features",
-        return_value=(None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_optuna", return_value=None
-    )
-    def test_flatten_search_space_nested(
-        self, mock_optuna, mock_meta_features, mock_warm_start, mock_hpo_error
-    ):
-        """Test _flatten_search_space flattens nested search space."""
-        from milia_pipeline.models.hpo.transfer.transfer_manager import HPOTransferManager
-
-        sample_search_space = get_sample_search_space()
-        manager = HPOTransferManager()
-        result = manager._flatten_search_space(sample_search_space)
-
-        assert isinstance(result, dict)
-        # Check that all param configs are accessible (keys may be flattened with dots or just param names)
-        # The actual implementation may use "hyperparameters.hidden_dim" or "hidden_dim" format
-        all_keys_str = str(result.keys())
-        assert "hidden_dim" in all_keys_str
-        assert "dropout" in all_keys_str
-        assert "lr" in all_keys_str
-
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_hpo_error",
-        return_value=None,
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_warm_start",
-        return_value=(None, None, None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_meta_features",
-        return_value=(None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_optuna", return_value=None
-    )
-    def test_flatten_search_space_already_flat(
-        self, mock_optuna, mock_meta_features, mock_warm_start, mock_hpo_error
-    ):
-        """Test _flatten_search_space handles already flat space."""
-        from milia_pipeline.models.hpo.transfer.transfer_manager import HPOTransferManager
-
-        flat_search_space = get_flat_search_space()
-        manager = HPOTransferManager()
-        result = manager._flatten_search_space(flat_search_space)
-
-        assert "hidden_dim" in result
-        assert result["hidden_dim"]["type"] == "int"
-
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_hpo_error",
-        return_value=None,
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_warm_start",
-        return_value=(None, None, None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_meta_features",
-        return_value=(None, None),
-    )
-    @patch(
-        "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_optuna", return_value=None
-    )
-    def test_flatten_search_space_empty(
-        self, mock_optuna, mock_meta_features, mock_warm_start, mock_hpo_error
-    ):
-        """Test _flatten_search_space handles empty space."""
-        from milia_pipeline.models.hpo.transfer.transfer_manager import HPOTransferManager
-
-        manager = HPOTransferManager()
-        result = manager._flatten_search_space({})
-        assert result == {}
-
-
-# =============================================================================
 # _ADD_NOISE_TO_PARAMS TESTS
 # =============================================================================
 
@@ -3281,8 +3186,8 @@ class TestAddNoiseToParams:
 # =============================================================================
 
 
-class TestExtractMetaFeatures:
-    """Test HPOTransferManager._extract_meta_features() method."""
+class TestExtractMetaFeaturesEnhanced:
+    """Test HPOTransferManager._extract_meta_features() method — enhanced."""
 
     @patch(
         "milia_pipeline.models.hpo.transfer.transfer_manager._lazy_import_hpo_error",
