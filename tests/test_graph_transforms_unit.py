@@ -2577,8 +2577,8 @@ class TestGraphTransformsSampleDataAPI:
 # =============================================================================
 
 
-class TestModuleLevelEdgeAttrFunctions:
-    """Test module-level edge_attr convenience functions."""
+class TestModuleLevelEdgeAttrFunctionsEnhanced:
+    """Test module-level edge_attr convenience functions — production-ready enhancement."""
 
     def test_get_edge_attr_aware_transform_info_function(self):
         """Test get_edge_attr_aware_transform_info function"""

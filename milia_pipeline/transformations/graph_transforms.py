@@ -306,8 +306,6 @@ except ImportError as e:
     TORCH_GEOMETRIC_IMPORT_ERROR = str(e)
     TORCH_GEOMETRIC_VERSION = None
 
-import importlib.util
-
 PSUTIL_AVAILABLE = importlib.util.find_spec("psutil") is not None
 
 YAML_AVAILABLE = importlib.util.find_spec("yaml") is not None
@@ -4674,34 +4672,6 @@ class TransformValidator:
 
         return validated_kwargs
 
-    def validate_parameter(self, param_name: str, value: Any, param_info: dict[str, Any]) -> Any:
-        """STRICT parameter validation - returns validated value"""
-
-        param_type = param_info.get("type", Any)
-
-        if param_type == Any or param_type is None:
-            return value
-
-        # Handle Union types
-        if hasattr(param_type, "__origin__") and param_type.__origin__ is Union:
-            if value is None and type(None) in param_type.__args__:
-                return None
-
-            errors = []
-            for union_type in param_type.__args__:
-                if union_type is type(None):
-                    continue
-
-                try:
-                    return self._convert_to_type(value, union_type, param_name)
-                except (ValueError, TypeError) as e:
-                    errors.append(str(e))
-                    continue
-
-            raise ValueError(f"Cannot convert {value}: {'; '.join(errors)}")
-
-        return self._convert_to_type(value, param_type, param_name)
-
     def _convert_to_type(self, value: Any, target_type: type, param_name: str) -> Any:
         """STRICT type conversion"""
 
@@ -8591,35 +8561,6 @@ def get_research_recommendations(
     return recommendations
 
 
-def create_experimental_setup(
-    self,
-    setup_name: str,
-    transforms: list[dict[str, Any]],
-    description: str | None = None,
-    research_context: str | None = None,
-    expected_effects: list[str] | None = None,
-) -> Compose | None:
-    """Complete experimental setup creation"""
-
-    if not self._initialized:
-        self._logger.error("Cannot create experimental setup - system not initialized")
-        return None
-
-    setup = ExperimentalSetup(
-        name=setup_name,
-        transforms=transforms,
-        description=description,
-        research_context=research_context,
-        expected_effects=expected_effects,
-    )
-
-    try:
-        return self.composer.create_experimental_setup(setup)
-    except TransformCompositionError as e:
-        self._logger.error(f"Experimental setup creation failed: {e.message}")
-        return None
-
-
 # ---part 5
 # =============================================================================
 # COMPLETE TRANSFORMCOMPOSER CLASS - MISSING METHODS
@@ -9181,20 +9122,6 @@ def _perform_health_check(self) -> dict[str, str]:
     return self._system_health
 
 
-def export_metrics(self, format_type: str = "prometheus") -> str:
-    """Export metrics for external monitoring systems"""
-
-    self._metrics.increment_counter("metrics.export_requests", 1)
-
-    try:
-        exported_metrics = self._metrics.export_metrics_for_monitoring(format_type)
-        self._metrics.increment_counter("metrics.export_successes", 1)
-        return exported_metrics
-    except Exception:
-        self._metrics.increment_counter("metrics.export_failures", 1)
-        raise
-
-
 def add_custom_metrics_handler(
     self, handler: Callable[[str, str, float, dict[str, str] | None], None]
 ):
@@ -9202,41 +9129,6 @@ def add_custom_metrics_handler(
 
     self._metrics.add_custom_handler(handler)
     self._logger.info("Added custom metrics handler for external integration")
-
-
-def optimize_performance(self, target_cache_hit_rate: float = 0.8) -> dict[str, Any]:
-    """Optimize system performance based on usage patterns"""
-
-    self._metrics.increment_counter("system.performance_optimization_requests", 1)
-
-    cache_optimization = self.composer.optimize_cache_settings(target_cache_hit_rate)
-
-    cache_stats = self.composer._cache_manager.get_statistics()
-    if cache_stats.get("memory_pressure", False):
-        gc.collect()
-        self._metrics.increment_counter("system.garbage_collections", 1)
-
-    optimization_result = {
-        "cache_optimization": cache_optimization,
-        "memory_cleanup_performed": cache_stats.get("memory_pressure", False),
-        "current_performance_metrics": self.composer.get_composition_statistics().get(
-            "performance_metrics", {}
-        ),
-        "recommendations": [],
-    }
-
-    perf_metrics = optimization_result["current_performance_metrics"]
-    if perf_metrics.get("cache_efficiency", 0) < 0.6:
-        optimization_result["recommendations"].append(
-            "Consider increasing cache size or reviewing caching patterns"
-        )
-
-    if perf_metrics.get("error_recovery_rate", 0) < 0.8:
-        optimization_result["recommendations"].append(
-            "Review error handling and recovery mechanisms"
-        )
-
-    return optimization_result
 
 
 # =============================================================================
