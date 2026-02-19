@@ -44,7 +44,6 @@ sys.path.insert(0, str(project_root))
 import threading
 import time
 from datetime import datetime
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -220,8 +219,8 @@ class TestModelRegistrationPydanticModel:
         assert fields_info["model_class"].annotation == type[torch.nn.Module]
         assert fields_info["metadata"].annotation == ModelMetadata
         assert fields_info["is_builtin"].annotation is bool
-        assert fields_info["plugin_name"].annotation == Optional[str]
-        assert fields_info["registered_at"].annotation == Optional[str]
+        assert fields_info["plugin_name"].annotation == str | None
+        assert fields_info["registered_at"].annotation == str | None
 
     def test_arbitrary_types_allowed(self):
         """Test that arbitrary_types_allowed is set in model_config.
