@@ -769,7 +769,7 @@ class ValidationResult:
 
 
 # Backward compatibility: Allow returning tuple OR ValidationResult
-ValidationReturn = Union[tuple[bool, list[str]], ValidationResult]
+ValidationReturn = tuple[bool, list[str]] | ValidationResult
 
 
 # ============================================================================
