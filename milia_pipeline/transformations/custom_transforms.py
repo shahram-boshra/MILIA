@@ -694,10 +694,8 @@ class MolecularTransformBase(CustomTransformBase):
 
         # Validate atomic numbers
         if hasattr(data, "x") and data.x is not None:
-            if data.x.dim() > 1:
-                atomic_nums = data.x[:, 0]  # Assume first column is atomic number
-            else:
-                atomic_nums = data.x
+            # First column is atomic number for multi-feature tensors
+            atomic_nums = data.x[:, 0] if data.x.dim() > 1 else data.x
 
             # Check for invalid atomic numbers
             invalid_atoms = [
