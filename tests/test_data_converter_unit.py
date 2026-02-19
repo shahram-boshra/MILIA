@@ -1005,9 +1005,11 @@ class TestRegisterConverterDecorator:
 
             @register_converter(name)
             class DynamicConverter(BaseDataConverter):
+                _format_name = name  # bind at class definition time
+
                 @property
                 def format_name(self) -> str:
-                    return name
+                    return self._format_name
 
                 @property
                 def is_available(self) -> bool:
