@@ -2350,8 +2350,7 @@ class ModelFactory:
 
                 # Process levels in order
                 for level in sorted(models_by_level.keys()):
-                    model_index_in_level = 0
-                    for model_spec in models_by_level[level]:
+                    for model_index_in_level, model_spec in enumerate(models_by_level[level]):
                         model_name = model_spec.get("name")
                         model_hparams = model_spec.get("hyperparameters", {}).copy()
                         weight = model_spec.get("weight", 1.0)
@@ -2488,8 +2487,6 @@ class ModelFactory:
                                 # For sequential: every model's output feeds next model
                                 # For hierarchical: each level's output feeds next level
                                 prev_out_channels = model_out
-
-                        model_index_in_level += 1
 
             except Exception as e:
                 raise ModelInstantiationError(
