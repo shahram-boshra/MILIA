@@ -78,6 +78,7 @@ except ImportError:
 
 # Import HPO-specific modules
 from milia_pipeline.exceptions import (
+    HPOConfigurationError,  # noqa: F401 — required as module attr for test mock.patch
     HPOError,
     StudyNotFoundError,
 )
