@@ -419,12 +419,6 @@ def mock_hpo_error():
 
 
 @pytest.fixture
-def mock_arch_space():
-    """Create a mock GNNArchitectureSpace for testing."""
-    return MockGNNArchitectureSpace()
-
-
-@pytest.fixture
 def mock_hpo_config():
     """Create a mock HPOConfig for testing."""
     return MockHPOConfig(enabled=True)
