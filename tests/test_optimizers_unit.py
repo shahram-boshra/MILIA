@@ -1537,7 +1537,7 @@ class TestAllOptimizers:
             input_data = torch.randn(5, 10)
             target = torch.randn(5, 5)
 
-            def closure():
+            def closure(optimizer=optimizer, model=model, input_data=input_data, target=target):
                 optimizer.zero_grad()
                 output = model(input_data)
                 loss = nn.functional.mse_loss(output, target)
