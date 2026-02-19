@@ -1261,9 +1261,12 @@ class DatasetHandler(ABC):
             )
 
     def _validate_filter_config(self) -> None:
-        """Validate filter configuration."""
-        # Basic filter config validation - can be extended by subclasses
-        pass
+        """Validate filter configuration.
+
+        Default no-op implementation. Subclasses can override to add
+        dataset-specific filter config validation.
+        """
+        return None
 
     def _is_valid_property(self, value: Any) -> bool:
         """
