@@ -308,7 +308,7 @@ class ArchitectureTemplates:
         )
 
         # GCN layers
-        for i in range(conv_layers):
+        for _ in range(conv_layers):
             builder.add_layer("GCNConv", out_channels=hidden_channels)
             builder.add_layer("ReLU")
             if dropout > 0:
