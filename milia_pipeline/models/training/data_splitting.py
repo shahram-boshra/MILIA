@@ -418,7 +418,7 @@ class DataSplitter:
         train_size = int(n * train_ratio)
         val_size = int(n * val_ratio)
 
-        for scaffold, indices in scaffold_sets:
+        for _, indices in scaffold_sets:
             if len(train_idx) < train_size:
                 train_idx.extend(indices)
             elif len(val_idx) < val_size:
