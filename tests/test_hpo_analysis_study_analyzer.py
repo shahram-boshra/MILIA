@@ -2733,11 +2733,8 @@ def sample_converged_trials():
     base_time = datetime.now()
     trials = []
     for i in range(15):
-        # Value improves for first 5 trials, then stays constant
-        if i < 5:
-            value = 0.5 - i * 0.05  # 0.5, 0.45, 0.4, 0.35, 0.3
-        else:
-            value = 0.3 + (i - 5) * 0.01  # 0.3, 0.31, 0.32, ... (no improvement)
+        # Value improves for first 5 trials (0.5→0.3), then plateaus (0.3, 0.31, 0.32, ...)
+        value = 0.5 - i * 0.05 if i < 5 else 0.3 + (i - 5) * 0.01
 
         trials.append(
             MockFrozenTrial(
@@ -2811,6 +2808,27 @@ def mock_study_empty():
         study_name="test_study_empty",
         direction=MockStudyDirection.MINIMIZE,
         trials=[],
+    )
+
+
+@pytest.fixture
+def mock_study_single_trial():
+    """Create a mock study with only 1 completed trial (insufficient for importance)."""
+    base_time = datetime.now()
+    trials = [
+        MockFrozenTrial(
+            number=0,
+            params={"lr": 0.01, "hidden_channels": 32},
+            value=0.5,
+            state=MockTrialState.COMPLETE,
+            datetime_start=base_time,
+            datetime_complete=base_time + timedelta(seconds=60),
+        ),
+    ]
+    return MockStudy(
+        study_name="test_study_single",
+        direction=MockStudyDirection.MINIMIZE,
+        trials=trials,
     )
 
 
