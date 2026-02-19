@@ -1624,7 +1624,7 @@ class TestIntegration:
         assert len(results) == 3
 
         # Sizes should be consistent
-        for fold_idx, train_size, val_size in results:
+        for _, train_size, val_size in results:
             assert train_size + val_size == len(simple_dataset)
 
 
