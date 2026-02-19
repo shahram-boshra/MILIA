@@ -2350,7 +2350,7 @@ class ModelFactory:
 
                 # Process levels in order
                 for level in sorted(models_by_level.keys()):
-                    for model_index_in_level, model_spec in enumerate(models_by_level[level]):
+                    for model_spec in models_by_level[level]:
                         model_name = model_spec.get("name")
                         model_hparams = model_spec.get("hyperparameters", {}).copy()
                         weight = model_spec.get("weight", 1.0)
