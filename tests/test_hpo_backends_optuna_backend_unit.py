@@ -51,6 +51,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import importlib.util
 import inspect
 import logging
 from typing import Any
@@ -66,10 +67,10 @@ import pytest
 def is_optuna_installed() -> bool:
     """Check if optuna is actually installed in the environment."""
     try:
-        import optuna
-
-        return True
-    except ImportError:
+        return importlib.util.find_spec("optuna") is not None
+    except ValueError:
+        # find_spec raises ValueError if the module is in sys.modules
+        # but __spec__ is not set or is None (documented CPython behavior)
         return False
 
 

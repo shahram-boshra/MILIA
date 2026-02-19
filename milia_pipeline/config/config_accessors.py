@@ -3451,10 +3451,11 @@ def validate_transformation_system(
     if logger is None:
         logger = logging.getLogger(__name__)
 
-    try:
-        # Import here to avoid circular dependencies
-        from milia_pipeline.transformations.graph_transforms import get_graph_transforms
+    if not GRAPH_TRANSFORMS_AVAILABLE:
+        logger.warning("Cannot import GraphTransforms: module not available")
+        return True, "Transformation system not available (optional)"
 
+    try:
         # Check if transformations section exists
         if "transformations" not in config:
             return True, "No transformation configuration found (optional)"
@@ -3486,10 +3487,6 @@ def validate_transformation_system(
         except Exception as e:
             logger.warning(f"Transformation system validation error: {e}")
             return True, f"Transformation system validation skipped: {e}"
-
-    except ImportError as e:
-        logger.warning(f"Cannot import GraphTransforms: {e}")
-        return True, "Transformation system not available (optional)"
 
     except Exception as e:
         logger.error(f"Unexpected error in transformation validation: {e}")

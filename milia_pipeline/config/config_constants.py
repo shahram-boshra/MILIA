@@ -33,6 +33,7 @@ Registry Integration (MILIA_Dataset_Architecture_Refactoring_Plan_v2.1.0):
 - Updated cache management with registry integration status
 """
 
+import importlib.util
 import logging
 import warnings
 from functools import lru_cache
@@ -1667,22 +1668,29 @@ def _check_transformation_system_availability() -> bool:
     if TRANSFORMATION_SYSTEM_AVAILABLE is not None:
         return TRANSFORMATION_SYSTEM_AVAILABLE
 
+    # Check all three required modules via find_spec (no side-effect imports)
+    modules_required = [
+        "milia_pipeline.transformations.graph_transforms",
+        "milia_pipeline.config.config_accessors",
+        "milia_pipeline.config.config_containers",
+    ]
+
     try:
-        # Check for graph_transforms module
-        import graph_transforms
-
-        # Check for enhanced config_accessors functions
-        from milia_pipeline.config.config_accessors import get_transformation_config
-
-        # Check for transformation containers
-        from milia_pipeline.config.config_containers import ExperimentalSetup, TransformationConfig
-
-        TRANSFORMATION_SYSTEM_AVAILABLE = True
-        logger.debug("Transformation system is available")
-
-    except ImportError as e:
+        if all(importlib.util.find_spec(mod) is not None for mod in modules_required):
+            TRANSFORMATION_SYSTEM_AVAILABLE = True
+            logger.debug("Transformation system is available")
+        else:
+            TRANSFORMATION_SYSTEM_AVAILABLE = False
+            missing = [
+                mod for mod in modules_required
+                if importlib.util.find_spec(mod) is None
+            ]
+            logger.debug(f"Transformation system not available: missing {missing}")
+    except ValueError:
+        # find_spec raises ValueError if a module is in sys.modules
+        # but __spec__ is not set or is None (documented CPython behavior)
         TRANSFORMATION_SYSTEM_AVAILABLE = False
-        logger.debug(f"Transformation system not available: {e}")
+        logger.debug("Transformation system not available: module spec resolution error")
 
     return TRANSFORMATION_SYSTEM_AVAILABLE
 

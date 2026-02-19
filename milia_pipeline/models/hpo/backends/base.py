@@ -7,14 +7,15 @@ Enables swapping between Optuna and Ray Tune without code changes.
 
 from abc import abstractmethod
 from collections.abc import Callable
+import importlib.util
 from typing import Any, Protocol, runtime_checkable
 
-# Import types for type hints
+# Check optuna availability without importing it
 try:
-    import optuna
-
-    OPTUNA_AVAILABLE = True
-except ImportError:
+    OPTUNA_AVAILABLE = importlib.util.find_spec("optuna") is not None
+except ValueError:
+    # find_spec raises ValueError if the module is in sys.modules
+    # but __spec__ is not set or is None (documented CPython behavior)
     OPTUNA_AVAILABLE = False
 
 

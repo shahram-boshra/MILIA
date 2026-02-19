@@ -23,6 +23,7 @@ Author: milia Team
 Version: 1.1.0
 """
 
+import importlib.util
 import logging
 from contextlib import contextmanager
 from enum import Enum
@@ -305,11 +306,11 @@ class DeviceManager:
     def _is_tpu_available(self) -> bool:
         """Check if TPU is available."""
         try:
-            import torch_xla
-            import torch_xla.core.xla_model as xm
-
-            return True
-        except ImportError:
+            return importlib.util.find_spec("torch_xla") is not None
+        except ValueError:
+            # find_spec raises ValueError if the module is in sys.modules
+            # but __spec__ is not set or is None (documented CPython behavior,
+            # also occurs with mocked modules in test environments)
             return False
 
     def _get_tpu_device(self) -> torch.device:
@@ -667,10 +668,11 @@ def get_device_capabilities() -> dict[str, bool]:
 
     # Check TPU
     try:
-        import torch_xla
-
-        capabilities["tpu_available"] = True
-    except ImportError:
+        if importlib.util.find_spec("torch_xla") is not None:
+            capabilities["tpu_available"] = True
+    except ValueError:
+        # find_spec raises ValueError if torch_xla is in sys.modules
+        # but __spec__ is not set or is None (documented CPython behavior)
         pass
 
     return capabilities

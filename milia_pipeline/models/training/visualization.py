@@ -12,6 +12,7 @@ Author: milia Team
 Version: 1.0.0
 """
 
+import importlib.util
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -37,10 +38,10 @@ except ImportError:
     PLOTLY_AVAILABLE = False
 
 try:
-    import kaleido
-
-    KALEIDO_AVAILABLE = True
-except ImportError:
+    KALEIDO_AVAILABLE = importlib.util.find_spec("kaleido") is not None
+except ValueError:
+    # find_spec raises ValueError if the module is in sys.modules
+    # but __spec__ is not set or is None (documented CPython behavior)
     KALEIDO_AVAILABLE = False
 
 

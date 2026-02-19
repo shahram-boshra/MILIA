@@ -102,9 +102,6 @@ from milia_pipeline.molecules.molecule_validator import (
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.molecules.molecule_validator import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _create_handler_specific_error,
         _get_available_dataset_types,
         _get_dataset_feature,

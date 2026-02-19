@@ -24,6 +24,7 @@ Author: milia Team
 Version: 1.1.0
 """
 
+import importlib.util
 import logging
 import os
 from enum import Enum
@@ -448,8 +449,15 @@ class DistributedManager:
         elif strategy == DistributedStrategy.DEEPSPEED:
             # DeepSpeed (requires separate initialization)
             try:
-                import deepspeed
+                _deepspeed_available = (
+                    importlib.util.find_spec("deepspeed") is not None
+                )
+            except ValueError:
+                # find_spec raises ValueError if deepspeed is in sys.modules
+                # but __spec__ is not set or is None (documented CPython behavior)
+                _deepspeed_available = True
 
+            if _deepspeed_available:
                 # DeepSpeed requires config file and separate initialization
                 # This is a placeholder - actual implementation needs config
                 raise DistributedError(
@@ -457,11 +465,10 @@ class DistributedManager:
                     "Use deepspeed.initialize() directly with config file. "
                     "See: https://www.deepspeed.ai/getting-started/"
                 )
-
-            except ImportError:
+            else:
                 raise DistributedError(
                     "DeepSpeed not installed. Install with: pip install deepspeed"
-                ) from None
+                )
 
         elif strategy == DistributedStrategy.HOROVOD:
             # Horovod doesn't wrap model, but broadcasts state

@@ -1283,9 +1283,13 @@ class PluginRegistry:
 
         # Check PyG version
         try:
-            import torch_geometric
-            # Version check logic would go here
-        except ImportError:
+            _pyg_available = importlib.util.find_spec("torch_geometric") is not None
+        except ValueError:
+            # find_spec raises ValueError if module is in sys.modules
+            # but __spec__ is not set or is None (documented CPython behavior)
+            _pyg_available = False
+
+        if not _pyg_available:
             missing.append("PyTorch Geometric not installed")
 
         # Check additional dependencies

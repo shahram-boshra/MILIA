@@ -129,6 +129,7 @@ milia_pipeline.transformations.plugin_system : Plugin management system
 """
 
 import argparse
+import importlib.util
 import logging
 import sys
 from datetime import datetime
@@ -154,10 +155,10 @@ except ImportError:
 
 # Transformation system
 try:
-    from milia_pipeline.transformations.graph_transforms import get_graph_transforms
-
-    TRANSFORMS_AVAILABLE = True
-except ImportError:
+    TRANSFORMS_AVAILABLE = (
+        importlib.util.find_spec("milia_pipeline.transformations.graph_transforms") is not None
+    )
+except ValueError:
     TRANSFORMS_AVAILABLE = False
 
 # Plugin system (Plugin management support)
@@ -3040,7 +3041,6 @@ For more information, see: https://docs.example.com/milia-cli
         try:
             from milia_pipeline.transformations.research_api import (
                 get_experiment,
-                list_available_experiments,
                 load_experiments_from_config,
             )
         except ImportError as e:

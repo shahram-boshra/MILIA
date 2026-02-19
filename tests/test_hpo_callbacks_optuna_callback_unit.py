@@ -199,7 +199,7 @@ class TestOptunaAvailableFlag:
     def test_optuna_available_true_when_optuna_installed(self):
         """Test OPTUNA_AVAILABLE is True when optuna is installed."""
         try:
-            import optuna
+            import optuna  # noqa: F401 — availability check; except also covers subsequent import
 
             from milia_pipeline.models.hpo.callbacks.optuna_callback import OPTUNA_AVAILABLE
 

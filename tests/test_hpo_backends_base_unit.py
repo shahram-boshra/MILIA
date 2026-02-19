@@ -214,7 +214,7 @@ class TestOptunaAvailableFlag:
         """Test OPTUNA_AVAILABLE is True when optuna is installed."""
         # This test assumes optuna is installed in the test environment
         try:
-            import optuna
+            import optuna  # noqa: F401 — availability check; except also covers subsequent import
 
             from milia_pipeline.models.hpo.backends.base import OPTUNA_AVAILABLE
 
@@ -228,7 +228,7 @@ class TestOptunaAvailableFlag:
 
         # Check consistency with actual import
         try:
-            import optuna
+            import optuna  # noqa: F401 — availability check; sets optuna_importable flag
 
             optuna_importable = True
         except ImportError:

@@ -75,10 +75,7 @@ except ImportError:
 
 # Import builders module (conditional for backward compatibility)
 try:
-    from ..builders.architecture_builder import ArchitectureBuilder
     from ..builders.config_parser import parse_custom_architecture, parse_ensemble
-    from ..builders.model_composer import ModelComposer
-    from ..builders.validation import validate_architecture
 
     _BUILDERS_AVAILABLE = True
 except ImportError:

@@ -127,9 +127,6 @@ except ImportError as e:
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.molecules.molecule_feature_enricher import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _get_available_dataset_types,
         _get_dataset_enrichment_category,
         _get_dataset_feature,

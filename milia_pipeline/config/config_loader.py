@@ -39,6 +39,7 @@ PHASE 5 REFACTORING:
 
 import copy
 import hashlib
+import importlib.util
 import logging
 import os
 import shutil
@@ -2470,16 +2471,17 @@ def _initialize_enhanced_config_loader():
     """Initialize the enhanced config loader with system checks"""
 
     try:
-        # Check if enhancement modules are available
-        from milia_pipeline.config.config_schemas import YAMLSchemaValidator
+        if importlib.util.find_spec("milia_pipeline.config.config_schemas") is not None:
+            logger.info("Enhanced configuration system initialized successfully")
+            return True
+    except ValueError:
+        # find_spec raises ValueError if the module is in sys.modules
+        # but __spec__ is not set or is None (documented CPython behavior)
+        pass
 
-        logger.info("Enhanced configuration system initialized successfully")
-        return True
-
-    except ImportError as e:
-        logger.warning(f"Enhanced configuration features not available: {str(e)}")
-        logger.warning("Falling back to basic configuration loading")
-        return False
+    logger.warning("Enhanced configuration features not available")
+    logger.warning("Falling back to basic configuration loading")
+    return False
 
 
 # Initialize on module import

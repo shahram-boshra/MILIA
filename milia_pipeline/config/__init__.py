@@ -281,14 +281,11 @@ from .config_accessors import (
 from .config_accessors import (
     # Enhanced Config Accessor Class
     EnhancedConfigAccessor,
-    # Registry Initialization
-    _init_registry,
     check_transformation_system_compatibility,
     # Container Creation Functions
     create_dataset_config_container,
     # Handler Creation
     create_dataset_handler,
-    create_experimental_setup_from_dict,
     create_filter_config_container,
     # Phase 5: Configuration Helpers (NEW)
     create_handler_compatible_config,
@@ -401,7 +398,6 @@ from .config_accessors import (
     validate_dataset_type,
     validate_structural_features_for_dataset,
     validate_transform_config,
-    validate_transformation_config,
     validate_transformation_system,
 )
 
@@ -887,7 +883,6 @@ __all__ = [
     "get_transformation_cache_key",
     "get_transformation_performance_metrics",
     "get_transformation_config_summary",
-    "validate_transformation_config",
     "create_transforms_from_config",
     "validate_transformation_system",
     # Transform Registry
@@ -908,7 +903,6 @@ __all__ = [
     "list_enabled_experimental_setups",
     "get_default_experimental_setup",
     "get_experimental_setups_for_dataset",
-    "create_experimental_setup_from_dict",
     "save_experimental_setup",
     # Standard Transforms (NEW)
     "get_standard_transforms",
@@ -965,7 +959,6 @@ __all__ = [
     "get_molecule_creation_strategy",
     "create_handler_compatible_config",
     "validate_dataset_config",
-    "_init_registry",
     "_ACCESSORS_REGISTRY_AVAILABLE",
     "_ACCESSORS_REGISTRY_INITIALIZED",
     "_ACCESSORS_REGISTRY_IMPORT_ERROR",

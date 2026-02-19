@@ -47,7 +47,7 @@ def _is_tensorboard_available() -> bool:
         is not installed. TensorBoard is an OPTIONAL dependency of MILIA.
     """
     try:
-        from torch.utils.tensorboard import SummaryWriter
+        from torch.utils.tensorboard import SummaryWriter  # noqa: F401 — import tests full dependency chain (torch shim → tensorboard package)
 
         return True
     except ImportError:

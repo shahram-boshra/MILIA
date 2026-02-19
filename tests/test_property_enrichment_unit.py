@@ -121,9 +121,6 @@ from milia_pipeline.molecules.property_enrichment import (
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.molecules.property_enrichment import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _get_available_dataset_types,
         _get_dataset_feature,
         _init_registry,

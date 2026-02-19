@@ -1261,12 +1261,8 @@ class TestErrorHandlingE2E:
                 HandlerNotAvailableError,
                 HandlerOperationError,
                 MoleculeProcessingError,
-                PropertyEnrichmentError,
                 PyGDataCreationError,
                 RDKitConversionError,
-                StructuralFeatureError,
-                TransformCompositionError,
-                TransformError,
             )
 
             assert issubclass(ConfigurationError, BaseProjectError)

@@ -78,9 +78,6 @@ from milia_pipeline.molecules.molecule_filters import (
 # Phase 6: Import registry integration functions
 try:
     from milia_pipeline.molecules.molecule_filters import (
-        _REGISTRY_AVAILABLE,
-        _REGISTRY_IMPORT_ERROR,
-        _REGISTRY_INITIALIZED,
         _get_available_dataset_types,
         _get_dataset_feature,
         _get_handler_error_type_for_dataset,

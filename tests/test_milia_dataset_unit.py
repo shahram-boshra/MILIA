@@ -48,6 +48,7 @@ _extract_dft_specific_insights) removed; tests now verify Phase 6 generalized re
 Phase 6.2 alignment: Registry-only feature query pattern (no legacy_features fallback).
 """
 
+import importlib.util
 import logging
 import shutil
 import sys
@@ -69,13 +70,12 @@ from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig,
 from milia_pipeline.datasets.milia_dataset import miliaDataset
 
 try:
-    from milia_pipeline.handlers.dataset_handlers import (
-        create_dataset_handler,
-        validate_dataset_handler_compatibility,
+    HANDLERS_AVAILABLE = (
+        importlib.util.find_spec("milia_pipeline.handlers.dataset_handlers") is not None
     )
-
-    HANDLERS_AVAILABLE = True
-except ImportError:
+except ValueError:
+    # find_spec raises ValueError if the module is in sys.modules
+    # but __spec__ is not set or is None (documented CPython behavior)
     HANDLERS_AVAILABLE = False
 
 from milia_pipeline.exceptions import (

@@ -89,10 +89,6 @@ try:
         is_descriptors_enabled,
     )
     from milia_pipeline.descriptors.descriptor_calculator import DescriptorCalculator
-    from milia_pipeline.descriptors.descriptor_integration import (
-        add_descriptors_to_pyg_data,
-        get_descriptor_statistics,
-    )
     from milia_pipeline.descriptors.descriptor_registry import DescriptorRegistry
 
     DESCRIPTORS_AVAILABLE = True

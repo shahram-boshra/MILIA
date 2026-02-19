@@ -51,7 +51,7 @@ import torch
 import torch.nn as nn
 
 try:
-    from torch_geometric.data import Batch, Data, InMemoryDataset
+    from torch_geometric.data import Data
     from torch_geometric.loader import DataLoader as PyGDataLoader
 
     TORCH_GEOMETRIC_AVAILABLE = True
@@ -97,7 +97,6 @@ except ImportError:
 try:
     from milia_pipeline.models.hpo.search_spaces.search_space_builder import (
         SearchSpaceBuilder,
-        build_search_space,
         validate_search_space,
     )
 
@@ -126,7 +125,6 @@ try:
     from milia_pipeline.models.hpo.analysis.study_analyzer import (
         AnalysisConfig,
         ExportFormat,
-        ImportanceMethod,
         StudyAnalyzer,
     )
 

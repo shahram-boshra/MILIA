@@ -21,7 +21,6 @@ import torch.nn as nn
 
 # TorchMetrics imports - MUST be available (added to environment.yml)
 try:
-    import torchmetrics
     from torchmetrics import Metric, MetricCollection
     from torchmetrics.classification import (
         AUROC,

@@ -878,20 +878,15 @@ class TestContractAllCompleteness:
     def test_all_contains_no_duplicates(self, all_names):
         """``__all__`` has no unexpected duplicate entries.
 
-        Known duplicates in the source ``__init__.py`` (harmless, caused by
-        the same name being re-exported from multiple submodules or listed
-        in multiple ``__all__`` sections):
+        Previously, three names were duplicated across submodule re-exports:
             - ``create_experimental_setup_from_dict`` (config_containers + config_accessors)
             - ``_init_registry`` (config_constants + config_accessors)
             - ``validate_transformation_config`` (config_accessors + validators)
 
-        This test asserts that no *unexpected* duplicates are introduced.
+        These were resolved by removing the shadowed (dead) import from
+        config_accessors and the corresponding duplicate ``__all__`` entry.
         """
-        KNOWN_DUPLICATES = {
-            "create_experimental_setup_from_dict",
-            "_init_registry",
-            "validate_transformation_config",
-        }
+        KNOWN_DUPLICATES: set[str] = set()
 
         seen = set()
         duplicates = []

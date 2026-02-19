@@ -24,6 +24,7 @@ Author: milia Team
 Version: 1.1.0
 """
 
+import importlib.util
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -299,27 +300,36 @@ def output_fn(prediction, response_content_type):
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy to AWS SageMaker."""
         try:
-            import boto3
-            import sagemaker
+            _boto3_available = importlib.util.find_spec("boto3") is not None
+        except ValueError:
+            # find_spec raises ValueError if module is in sys.modules but
+            # __spec__ is not set or is None (documented CPython behavior).
+            # Being in sys.modules means it was imported → available.
+            _boto3_available = True
 
-            # This is a placeholder - actual implementation requires AWS credentials
-            logger.warning(
-                "AWS deployment requires valid AWS credentials and SageMaker setup. "
-                "This is a template implementation."
-            )
+        try:
+            _sagemaker_available = importlib.util.find_spec("sagemaker") is not None
+        except ValueError:
+            _sagemaker_available = True
 
-            deployment_info = {
-                "target": "aws",
-                "model_path": str(model_path),
-                "status": "prepared",
-                "message": "Model prepared for SageMaker. Deploy using AWS SDK.",
-            }
+        if not (_boto3_available and _sagemaker_available):
+            raise DeploymentError("AWS deployment requires: pip install boto3 sagemaker")
 
-            self.is_deployed = True
-            return deployment_info
+        # This is a placeholder - actual implementation requires AWS credentials
+        logger.warning(
+            "AWS deployment requires valid AWS credentials and SageMaker setup. "
+            "This is a template implementation."
+        )
 
-        except ImportError:
-            raise DeploymentError("AWS deployment requires: pip install boto3 sagemaker") from None
+        deployment_info = {
+            "target": "aws",
+            "model_path": str(model_path),
+            "status": "prepared",
+            "message": "Model prepared for SageMaker. Deploy using AWS SDK.",
+        }
+
+        self.is_deployed = True
+        return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
         """Make prediction using SageMaker endpoint."""

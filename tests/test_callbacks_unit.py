@@ -240,7 +240,7 @@ class TestTensorBoardAvailability:
         # This test verifies the function works correctly when tensorboard IS installed
         # The actual result depends on the test environment
         try:
-            from torch.utils.tensorboard import SummaryWriter
+            from torch.utils.tensorboard import SummaryWriter  # noqa: F401 — import tests full dependency chain (torch shim → tensorboard package)
 
             # TensorBoard is available in this environment
             assert _is_tensorboard_available() is True

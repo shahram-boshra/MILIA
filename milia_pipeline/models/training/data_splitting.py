@@ -363,7 +363,6 @@ class DataSplitter:
             ... )
         """
         try:
-            from rdkit import Chem
             from rdkit.Chem.Scaffolds import MurckoScaffold
         except ImportError:
             raise DataError("scaffold_split requires rdkit. Install with: pip install rdkit") from None
