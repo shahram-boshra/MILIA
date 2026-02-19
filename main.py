@@ -5057,9 +5057,6 @@ def main():
     except (TransformConfigurationError, ExperimentalSetupError, TransformCompositionError) as e:
         handle_transform_error(e, logger)
         sys.exit(1)
-    except (TransformConfigurationError, ExperimentalSetupError, TransformCompositionError) as e:
-        handle_transform_error(e, logger)
-        sys.exit(1)
 
     # ========================================================================
     # Plugin System Integration: Plugin-Specific Exception Handling
