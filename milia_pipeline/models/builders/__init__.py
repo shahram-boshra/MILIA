@@ -33,8 +33,6 @@ Public API:
 Version: 1.0.0
 """
 
-from typing import Any, Dict, List, Optional
-
 # Import architecture builder components
 from .architecture_builder import (
     ArchitectureBuilder,
