@@ -592,7 +592,7 @@ class ParameterMetadata(BaseModel):
             non_none_args = [arg for arg in args if arg is not type(None)]
             if len(non_none_args) == 1:
                 return non_none_args[0]
-            return Union[tuple(non_none_args)]
+            return Union[tuple(non_none_args)]  # noqa: UP007 — dynamic Union (ruff#21347)
         return self.type_hint
 
 
