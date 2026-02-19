@@ -970,10 +970,8 @@ class DMCDatasetHandler(DatasetHandler):
         # For string values, only reject obviously invalid ones
         if isinstance(value, str):
             value_str = value.strip().lower()
-            if value_str in ["missing", "missing_etot", "invalid", "", "nan"]:
-                return False
             # Don't reject numeric strings - let the specific validation handle conversion
-            return True
+            return value_str not in ["missing", "missing_etot", "invalid", "", "nan"]
 
         return is_value_valid_and_not_nan(value)
 
