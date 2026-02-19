@@ -66,7 +66,7 @@ from milia_pipeline.config.config_containers import (
     create_processing_config_from_global,
     create_transformation_config_from_global,
 )
-from milia_pipeline.config.validators import is_value_valid_and_not_nan, validate_uncertainty_data
+from milia_pipeline.config.validators import is_value_valid_and_not_nan
 from milia_pipeline.exceptions import (
     ConfigurationError,
     HandlerCompatibilityError,
