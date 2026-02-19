@@ -596,7 +596,7 @@ class NASManager:
             layer_type = params.get("layer_type", "gcn")
             heads = params.get("heads", 1)
 
-            for i in range(num_layers):
+            for _ in range(num_layers):
                 layer_config = {
                     "type": layer_type,
                     "hidden_channels": hidden_channels,
