@@ -14,7 +14,6 @@ Module location: milia_pipeline/models/registry/pyg_introspector.py
 
 import inspect
 import types
-from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -263,10 +262,11 @@ def mock_nn_module():
     Patch torch.nn.Module at the test level so that issubclass checks in
     discover_pyg_models work with our fake model classes.
     """
+    intro = pytest.importorskip(_MODULE_PATH)
     fake_nn = types.ModuleType("torch.nn")
     fake_nn.Module = _FakeModule
 
-    with patch.dict("sys.modules", {"torch.nn": fake_nn}), patch(f"{_MODULE_PATH}.nn", fake_nn):
+    with patch.dict("sys.modules", {"torch.nn": fake_nn}), patch.object(intro, "nn", fake_nn):
         yield fake_nn
 
 
@@ -275,6 +275,10 @@ def fake_discovery_env(mock_nn_module):
     """
     Patch importlib.import_module so that discover_pyg_models() finds our
     fake model classes instead of requiring real torch_geometric.
+
+    Also patches sys.modules so that raw ``import`` statements inside
+    discover_pyg_models (e.g. ``import torch_geometric.nn.models``)
+    resolve to the fakes.
     """
     intro = pytest.importorskip(_MODULE_PATH)
 
@@ -283,6 +287,18 @@ def fake_discovery_env(mock_nn_module):
     fake_nn_top.GCN = _FakeGCN
     fake_nn_top.GAT = _FakeGAT
     fake_nn_top.GraphSAGE = _FakeGraphSAGE
+
+    # Build a minimal torch_geometric package hierarchy so that raw
+    # ``import torch_geometric.nn.models`` resolves via sys.modules.
+    fake_tg = types.ModuleType("torch_geometric")
+    fake_tg.nn = fake_nn_top
+    fake_nn_top.models = fake_models_mod
+
+    sys_modules_patch = {
+        "torch_geometric": fake_tg,
+        "torch_geometric.nn": fake_nn_top,
+        "torch_geometric.nn.models": fake_models_mod,
+    }
 
     original_import = intro.importlib.import_module
 
@@ -295,7 +311,9 @@ def fake_discovery_env(mock_nn_module):
             raise ImportError(f"No module named '{name}'")
         return original_import(name)
 
-    with patch.object(intro.importlib, "import_module", side_effect=_patched_import):
+    with patch.dict("sys.modules", sys_modules_patch), patch.object(
+        intro.importlib, "import_module", side_effect=_patched_import
+    ):
         yield fake_models_mod
 
 
@@ -603,7 +621,7 @@ class TestTypeInference:
 
     def test_hint_optional(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        assert intro._type_hint_to_string(Optional[int]) == "optional"
+        assert intro._type_hint_to_string(int | None) == "optional"
 
     def test_name_convention_channels(self):
         intro = pytest.importorskip(_MODULE_PATH)
