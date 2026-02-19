@@ -2241,7 +2241,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         import milia_pipeline.datasets.milia_dataset as module
 
         # Check if module imports the function
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("get_combined_transforms_as_dicts", source)
         print("✅ get_combined_transforms_as_dicts imported")
 
@@ -2250,7 +2250,7 @@ class TestStandardTransformsSupport(BaseTestCase):
         import milia_pipeline.datasets.milia_dataset as module
 
         # Check if module imports the function
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("has_standard_transforms", source)
         print("✅ has_standard_transforms imported")
 
@@ -3248,7 +3248,7 @@ class TestCollationAndBatching(BaseTestCase):
         import milia_pipeline.datasets.milia_dataset as module
 
         # Check module imports pad_sequence
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("pad_sequence", source)
         print("✅ pad_sequence imported")
 
@@ -3484,7 +3484,7 @@ class TestPathAndFileHandling(BaseTestCase):
         """Test PROCESSED_DATA_FILENAME is used."""
         import milia_pipeline.datasets.milia_dataset as module
 
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("PROCESSED_DATA_FILENAME", source)
         print("✅ PROCESSED_DATA_FILENAME used")
 
@@ -3507,7 +3507,7 @@ class TestPathAndFileHandling(BaseTestCase):
         """Test Path objects are used correctly."""
         import milia_pipeline.datasets.milia_dataset as module
 
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("from pathlib import Path", source)
         print("✅ pathlib.Path imported")
 
@@ -3515,7 +3515,7 @@ class TestPathAndFileHandling(BaseTestCase):
         """Test shutil is imported for directory cleanup."""
         import milia_pipeline.datasets.milia_dataset as module
 
-        source = open(module.__file__).read()
+        source = Path(module.__file__).read_text()
         self.assertIn("import shutil", source)
         print("✅ shutil imported for cleanup")
 
