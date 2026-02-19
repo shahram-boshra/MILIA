@@ -1515,10 +1515,7 @@ class miliaDataset(InMemoryDataset):
 
             # Check if cache is recent (within 1 hour)
             cache_age = time.time() - cached_entry.get("creation_time", 0)
-            if cache_age > 3600:  # 1 hour
-                return False
-
-            return True
+            return cache_age <= 3600  # 1 hour
 
         except Exception as e:
             self.logger.debug(f"Cache validation failed: {e}")
@@ -4552,7 +4549,7 @@ class miliaDataset(InMemoryDataset):
             num_descriptors_list = []
             descriptor_sizes = []
 
-            for i, data in enumerate(data_list):
+            for data in data_list:
                 # Handle descriptor_vector
                 if hasattr(data, "descriptor_vector") and data.descriptor_vector is not None:
                     descriptor_vectors.append(data.descriptor_vector)
