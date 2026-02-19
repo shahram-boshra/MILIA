@@ -181,8 +181,15 @@ def setup_module(module):
 
     g = globals()
     # Skip module objects, test classes, fixtures, and builtins
-    _skip = {"_live_module", "_original_refs", "_skip", "setup_module",
-             "teardown_module", "reset_registry_state", "g"}
+    _skip = {
+        "_live_module",
+        "_original_refs",
+        "_skip",
+        "setup_module",
+        "teardown_module",
+        "reset_registry_state",
+        "g",
+    }
     for name in list(g.keys()):
         if name.startswith("__") or name in _skip:
             continue
@@ -304,13 +311,23 @@ def mock_load_config():
     _mock_dataset_class.get_required_properties.return_value = ["Etot", "atoms", "coordinates"]
     _mock_dataset_class.get_optional_properties.return_value = ["freqs", "vibmodes", "dipoles"]
     _mock_dataset_class.get_feature_support.return_value = {
-        "scalar": True, "vector": True, "matrix": False, "tensor": False,
-        "graph": True, "sequence": False, "uncertainty": True, "multiconfig": False,
+        "scalar": True,
+        "vector": True,
+        "matrix": False,
+        "tensor": False,
+        "graph": True,
+        "sequence": False,
+        "uncertainty": True,
+        "multiconfig": False,
     }
     _mock_dataset_class.get_supported_structural_features.return_value = {
-        "charge": ["gasteiger", "formal"], "connectivity": ["degree", "valence"],
+        "charge": ["gasteiger", "formal"],
+        "connectivity": ["degree", "valence"],
     }
-    _mock_dataset_class.get_identifier_keys.return_value = [("inchi", "inchi"), ("graphs", "smiles")]
+    _mock_dataset_class.get_identifier_keys.return_value = [
+        ("inchi", "inchi"),
+        ("graphs", "smiles"),
+    ]
     _mock_dataset_class.get_molecule_creation_strategy.return_value = "identifier_coordinate_based"
     _mock_dataset_class.get_coordinate_units.return_value = "angstrom"
     _mock_dataset_class.get_energy_units.return_value = "hartree"
@@ -480,7 +497,8 @@ class TestRegistryIntegration:
         with (
             patch.object(accessors_module, "_registry_get_safe", return_value=None),
             patch.object(
-                accessors_module, "_registry_list_all_safe",
+                accessors_module,
+                "_registry_list_all_safe",
                 return_value=["DFT", "DMC"],
             ),
         ):
@@ -520,7 +538,8 @@ class TestRegistryIntegration:
         import milia_pipeline.config.config_accessors as accessors_module
 
         with patch.object(
-            accessors_module, "_registry_list_all_safe",
+            accessors_module,
+            "_registry_list_all_safe",
             return_value=["DFT", "DMC"],
         ):
             result = accessors_module._get_valid_dataset_types()
@@ -531,9 +550,7 @@ class TestRegistryIntegration:
         """Test _is_valid_dataset_type returns True for valid type."""
         import milia_pipeline.config.config_accessors as accessors_module
 
-        with patch.object(
-            accessors_module, "_registry_is_registered_safe", return_value=True
-        ):
+        with patch.object(accessors_module, "_registry_is_registered_safe", return_value=True):
             result = accessors_module._is_valid_dataset_type("DFT")
 
             assert result is True
@@ -543,7 +560,8 @@ class TestRegistryIntegration:
         import milia_pipeline.config.config_accessors as accessors_module
 
         with patch.object(
-            accessors_module, "_registry_is_registered_safe",
+            accessors_module,
+            "_registry_is_registered_safe",
             return_value=False,
         ):
             result = accessors_module._is_valid_dataset_type("INVALID")
@@ -2163,7 +2181,8 @@ class TestEdgeCasesAndErrorHandling:
     def test_fallback_chain_completeness(self, mock_registry_class):
         """Test all fallback chains are complete."""
         with patch(
-            "milia_pipeline.config.config_accessors._registry_get_safe", side_effect=Exception("Error")
+            "milia_pipeline.config.config_accessors._registry_get_safe",
+            side_effect=Exception("Error"),
         ):
             # Should not raise, should use fallback
             try:
@@ -3765,8 +3784,8 @@ class TestContainerCreationFunctions:
             pass
 
 
-class TestEdgeCasesAndErrorHandling:
-    """Test edge cases and error handling."""
+class TestEdgeCasesGracefulDegradation:
+    """Test edge cases and error handling — graceful degradation and concurrency."""
 
     def test_registry_functions_handle_concurrent_access(self):
         """Test registry functions handle concurrent initialization."""
