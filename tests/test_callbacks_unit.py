@@ -31,7 +31,6 @@ import logging
 import shutil
 import tempfile
 import time
-from abc import ABC
 from collections import defaultdict
 from datetime import datetime
 from unittest.mock import Mock, patch
@@ -166,16 +165,19 @@ def temp_working_dir():
 
 
 class TestCallbackBase:
-    """Test Callback abstract base class."""
+    """Test Callback base class."""
 
-    def test_is_abstract_base_class(self):
-        """Test that Callback is an abstract base class."""
-        assert issubclass(Callback, ABC)
+    def test_is_base_class_with_hooks(self):
+        """Test that Callback is a proper base class with expected hook methods."""
+        assert hasattr(Callback, "set_trainer")
+        assert hasattr(Callback, "on_train_begin")
+        assert hasattr(Callback, "on_epoch_end")
+        assert hasattr(Callback, "on_train_end")
 
-    def test_cannot_instantiate_directly(self):
-        """Test that Callback cannot be instantiated directly."""
-        # ABC can be instantiated if no abstract methods are defined
-        # In this case, all methods have default implementations
+    def test_can_instantiate_directly(self):
+        """Test that Callback can be instantiated as a base with default no-op hooks."""
+        # Callback is a concrete base class with default no-op implementations
+        # Subclasses override only the hooks they need
         callback = Callback()
         assert isinstance(callback, Callback)
 

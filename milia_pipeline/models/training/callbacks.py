@@ -9,7 +9,6 @@ Version: 1.0.0
 """
 
 import logging
-from abc import ABC
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -59,9 +58,9 @@ def _is_tensorboard_available() -> bool:
 # =============================================================================
 
 
-class Callback(ABC):
+class Callback:
     """
-    Abstract base class for training callbacks.
+    Base class for training callbacks.
 
     Callbacks provide hooks into the training process to:
     - Monitor metrics
@@ -97,30 +96,39 @@ class Callback(ABC):
         """
         Called at the beginning of training.
 
+        Default no-op implementation. Subclasses can override to add
+        custom logic at training start.
+
         Args:
             trainer: Trainer instance
         """
-        pass
+        return None
 
     def on_epoch_end(self, trainer, epoch: int, metrics: dict[str, float]):
         """
         Called at the end of each epoch.
+
+        Default no-op implementation. Subclasses can override to add
+        custom logic at epoch end.
 
         Args:
             trainer: Trainer instance
             epoch: Current epoch number
             metrics: Dictionary of metrics for this epoch
         """
-        pass
+        return None
 
     def on_train_end(self, trainer):
         """
         Called at the end of training.
 
+        Default no-op implementation. Subclasses can override to add
+        custom logic at training end.
+
         Args:
             trainer: Trainer instance
         """
-        pass
+        return None
 
 
 # =============================================================================
