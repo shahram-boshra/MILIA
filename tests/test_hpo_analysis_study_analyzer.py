@@ -400,67 +400,12 @@ def mock_study(sample_completed_trials):
 
 
 @pytest.fixture
-def mock_study_maximize(sample_completed_trials):
-    """Create a mock study with MAXIMIZE direction."""
-    # Adjust values for maximize scenario
-    for trial in sample_completed_trials:
-        trial.value = 1.0 - trial.value if trial.value else None
-    return MockStudy(
-        study_name="test_study_maximize",
-        direction=MockStudyDirection.MAXIMIZE,
-        trials=sample_completed_trials,
-    )
-
-
-@pytest.fixture
 def mock_study_mixed(sample_mixed_trials):
     """Create a mock study with mixed trial states."""
     return MockStudy(
         study_name="test_study_mixed",
         direction=MockStudyDirection.MINIMIZE,
         trials=sample_mixed_trials,
-    )
-
-
-@pytest.fixture
-def mock_study_empty():
-    """Create a mock study with no trials."""
-    return MockStudy(
-        study_name="test_study_empty",
-        direction=MockStudyDirection.MINIMIZE,
-        trials=[],
-    )
-
-
-@pytest.fixture
-def mock_multi_objective_study():
-    """Create a mock multi-objective study."""
-    base_time = datetime.now()
-    trials = [
-        MockFrozenTrial(
-            number=0,
-            params={"lr": 0.01, "hidden_channels": 32},
-            values=(0.5, 0.3),
-            state=MockTrialState.COMPLETE,
-            datetime_start=base_time,
-            datetime_complete=base_time + timedelta(seconds=60),
-        ),
-        MockFrozenTrial(
-            number=1,
-            params={"lr": 0.001, "hidden_channels": 64},
-            values=(0.3, 0.5),
-            state=MockTrialState.COMPLETE,
-            datetime_start=base_time + timedelta(seconds=61),
-            datetime_complete=base_time + timedelta(seconds=120),
-        ),
-    ]
-
-    return MockStudy(
-        study_name="test_multi_objective",
-        direction=MockStudyDirection.MINIMIZE,
-        directions=[MockStudyDirection.MINIMIZE, MockStudyDirection.MINIMIZE],
-        trials=trials,
-        best_trials=trials,
     )
 
 
@@ -2856,43 +2801,6 @@ def mock_study_converged(sample_converged_trials):
         study_name="test_study_converged",
         direction=MockStudyDirection.MINIMIZE,
         trials=sample_converged_trials,
-    )
-
-
-@pytest.fixture
-def mock_study_maximize():
-    """Create a mock study with MAXIMIZE direction."""
-    base_time = datetime.now()
-    trials = [
-        MockFrozenTrial(
-            number=0,
-            params={"lr": 0.01, "hidden_channels": 32},
-            value=0.5,  # Lower is worse for MAXIMIZE
-            state=MockTrialState.COMPLETE,
-            datetime_start=base_time,
-            datetime_complete=base_time + timedelta(seconds=60),
-        ),
-        MockFrozenTrial(
-            number=1,
-            params={"lr": 0.001, "hidden_channels": 64},
-            value=0.7,  # Improvement
-            state=MockTrialState.COMPLETE,
-            datetime_start=base_time + timedelta(seconds=61),
-            datetime_complete=base_time + timedelta(seconds=120),
-        ),
-        MockFrozenTrial(
-            number=2,
-            params={"lr": 0.0001, "hidden_channels": 128},
-            value=0.9,  # Best
-            state=MockTrialState.COMPLETE,
-            datetime_start=base_time + timedelta(seconds=121),
-            datetime_complete=base_time + timedelta(seconds=180),
-        ),
-    ]
-    return MockStudy(
-        study_name="test_study_maximize",
-        direction=MockStudyDirection.MAXIMIZE,
-        trials=trials,
     )
 
 
