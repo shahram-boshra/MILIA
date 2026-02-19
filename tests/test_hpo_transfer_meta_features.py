@@ -398,27 +398,9 @@ def mock_degree_fn():
 
 
 @pytest.fixture
-def mock_dataset():
-    """Create mock PyG-like dataset."""
-    return MockDataset()
-
-
-@pytest.fixture
-def mock_dataset_small():
-    """Create small mock dataset for quick tests."""
-    return MockDataset(size=10, mean_nodes=10, mean_edges=20)
-
-
-@pytest.fixture
 def mock_dataset_with_molecular():
     """Create mock dataset with molecular features."""
     return MockDataset(size=50, has_z=True, mean_nodes=15)
-
-
-@pytest.fixture
-def mock_empty_dataset():
-    """Create empty mock dataset."""
-    return MockDataset(size=0)
 
 
 @pytest.fixture
