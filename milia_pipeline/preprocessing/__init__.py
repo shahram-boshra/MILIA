@@ -171,7 +171,6 @@ License: See project LICENSE file
 # ============================================================================
 import logging
 import warnings
-from typing import List, Optional
 
 # ============================================================================
 # Core Component Imports
@@ -481,7 +480,7 @@ __all__.extend(
 # ============================================================================
 
 # Clean up internal variables that shouldn't be part of public API
-del logging, warnings, Optional, List
+del logging, warnings
 
 
 # ============================================================================
