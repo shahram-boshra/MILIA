@@ -751,7 +751,7 @@ def _resolve_count_mismatch(
 
         # Process frequencies - handle complex arrays
         if hasattr(freqs, "__len__"):
-            for i, freq_item in enumerate(freqs):
+            for freq_item in freqs:
                 if _is_value_valid_and_not_nan(freq_item) and not np.isclose(
                     freq_item, 0.0, atol=comparison_tolerance
                 ):
@@ -2196,9 +2196,6 @@ def log_data_refinement_status(
 
     elif refinement_category == "vibrational":
         # Vibrational refinement (DFT, semi-empirical, etc.)
-        raw_properties_dict.get("freqs") is not None
-        raw_properties_dict.get("vibmodes") is not None
-
         log_vibration_refinement_status(
             raw_properties_dict.get("freqs"),
             raw_properties_dict.get("vibmodes"),
