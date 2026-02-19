@@ -4309,7 +4309,7 @@ def create_ablation_study_setups(
     )
 
     # Single transform ablations
-    for i, transform in enumerate(base_transforms):
+    for transform in base_transforms:
         if transform.enabled:
             setup_name = f"only_{transform.name.lower()}"
             setups[setup_name] = ExperimentalSetup(
