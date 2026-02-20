@@ -384,18 +384,20 @@ class TestRegistryIntegration:
         # function call operate on the SAME module instance. In the full suite,
         # sys.modules swaps can cause the top-level import to reference a
         # different module object.
-        with patch("milia_pipeline.datasets.registry.list_all") as _mock_list_all:
-            with patch("milia_pipeline.datasets.registry.get") as _mock_get:
-                with patch("milia_pipeline.datasets.registry.is_registered") as _mock_is_registered:
-                    with patch(
-                        "milia_pipeline.datasets.registry.get_default_registry"
-                    ) as _mock_get_default_registry:
-                        result = accessors_module._init_registry()
+        with (
+            patch("milia_pipeline.datasets.registry.list_all") as _mock_list_all,
+            patch("milia_pipeline.datasets.registry.get") as _mock_get,
+            patch("milia_pipeline.datasets.registry.is_registered") as _mock_is_registered,
+            patch(
+                "milia_pipeline.datasets.registry.get_default_registry"
+                ) as _mock_get_default_registry,
+        ):
+            result = accessors_module._init_registry()
 
-                        # Should return True and set the registry available flag
-                        assert result is True
-                        assert accessors_module._REGISTRY_AVAILABLE is True
-                        assert accessors_module._REGISTRY_INITIALIZED is True
+            # Should return True and set the registry available flag
+            assert result is True
+            assert accessors_module._REGISTRY_AVAILABLE is True
+            assert accessors_module._REGISTRY_INITIALIZED is True
 
     def test_init_registry_import_error(self):
         """Test registry initialization with ImportError."""
@@ -436,12 +438,14 @@ class TestRegistryIntegration:
         # Mock the function pointer that gets set during init
         mock_list_func = Mock(return_value=["DFT", "DMC", "Wavefunction"])
 
-        with patch.object(accessors_module, "_registry_list_all", mock_list_func):
-            with patch.object(accessors_module, "_init_registry", return_value=True):
-                result = accessors_module.registry_list_all()
+        with (
+            patch.object(accessors_module, "_registry_list_all", mock_list_func),
+            patch.object(accessors_module, "_init_registry", return_value=True),
+        ):
+            result = accessors_module.registry_list_all()
 
-                assert result == ["DFT", "DMC", "Wavefunction"]
-                mock_list_func.assert_called_once()
+            assert result == ["DFT", "DMC", "Wavefunction"]
+            mock_list_func.assert_called_once()
 
     def test_registry_list_all_not_available(self):
         """Test registry_list_all when registry not available - uses dynamic discovery fallback."""
@@ -449,14 +453,16 @@ class TestRegistryIntegration:
 
         # When registry is not available, it should use dynamic filesystem discovery
         # The actual fallback in implementation does NOT use hardcoded list
-        with patch.object(accessors_module, "_registry_list_all", None):
-            with patch.object(accessors_module, "_init_registry", return_value=False):
-                result = accessors_module.registry_list_all()
+        with (
+            patch.object(accessors_module, "_registry_list_all", None),
+            patch.object(accessors_module, "_init_registry", return_value=False),
+        ):
+            result = accessors_module.registry_list_all()
 
-                # Should return a list (empty or with dynamically discovered types)
-                assert isinstance(result, list)
-                # The fallback uses dynamic filesystem discovery, so result may vary
-                # but should never raise an exception
+            # Should return a list (empty or with dynamically discovered types)
+            assert isinstance(result, list)
+            # The fallback uses dynamic filesystem discovery, so result may vary
+            # but should never raise an exception
 
     def test_registry_get_success(self):
         """Test registry_get returns dataset class."""
@@ -465,12 +471,14 @@ class TestRegistryIntegration:
         mock_class = Mock()
         mock_get_func = Mock(return_value=mock_class)
 
-        with patch.object(accessors_module, "_registry_get", mock_get_func):
-            with patch.object(accessors_module, "_init_registry", return_value=True):
-                result = accessors_module.registry_get("DFT")
+        with (
+            patch.object(accessors_module, "_registry_get", mock_get_func),
+            patch.object(accessors_module, "_init_registry", return_value=True),
+        ):
+            result = accessors_module.registry_get("DFT")
 
-                assert result == mock_class
-                mock_get_func.assert_called_once_with("DFT")
+            assert result == mock_class
+            mock_get_func.assert_called_once_with("DFT")
 
     def test_registry_get_with_caching(self):
         """Test registry_get - no caching per Phase 5 design."""
@@ -479,15 +487,17 @@ class TestRegistryIntegration:
         mock_class = Mock()
         mock_get_func = Mock(return_value=mock_class)
 
-        with patch.object(accessors_module, "_registry_get", mock_get_func):
-            with patch.object(accessors_module, "_init_registry", return_value=True):
-                # Call twice
-                accessors_module.registry_get("DFT")
-                accessors_module.registry_get("DFT")
+        with (
+            patch.object(accessors_module, "_registry_get", mock_get_func),
+            patch.object(accessors_module, "_init_registry", return_value=True),
+        ):
+            # Call twice
+            accessors_module.registry_get("DFT")
+            accessors_module.registry_get("DFT")
 
-                # Phase 5: No caching implemented per blueprint
-                # Each call should go through
-                assert mock_get_func.call_count == 2
+            # Phase 5: No caching implemented per blueprint
+            # Each call should go through
+            assert mock_get_func.call_count == 2
 
     def test_registry_get_not_available(self):
         """Test registry_get when registry not available."""
@@ -515,11 +525,13 @@ class TestRegistryIntegration:
 
         mock_is_registered_func = Mock(return_value=True)
 
-        with patch.object(accessors_module, "_registry_is_registered", mock_is_registered_func):
-            with patch.object(accessors_module, "_init_registry", return_value=True):
-                result = accessors_module.registry_is_registered("DFT")
+        with (
+            patch.object(accessors_module, "_registry_is_registered", mock_is_registered_func),
+            patch.object(accessors_module, "_init_registry", return_value=True),
+        ):
+            result = accessors_module.registry_is_registered("DFT")
 
-                assert result is True
+            assert result is True
 
     def test_registry_is_registered_false(self):
         """Test registry_is_registered returns False for unregistered type."""
@@ -527,11 +539,13 @@ class TestRegistryIntegration:
 
         mock_is_registered_func = Mock(return_value=False)
 
-        with patch.object(accessors_module, "_registry_is_registered", mock_is_registered_func):
-            with patch.object(accessors_module, "_init_registry", return_value=True):
-                result = accessors_module.registry_is_registered("INVALID")
+        with (
+            patch.object(accessors_module, "_registry_is_registered", mock_is_registered_func),
+            patch.object(accessors_module, "_init_registry", return_value=True),
+        ):
+            result = accessors_module.registry_is_registered("INVALID")
 
-                assert result is False
+            assert result is False
 
     def test_get_valid_dataset_types(self):
         """Test _get_valid_dataset_types returns list of types."""
@@ -1417,14 +1431,16 @@ class TestUtilityFunctions:
 
     def test_accessor_functions_with_none_handler_type(self, mock_registry_class):
         """Test accessor functions handle None handler type gracefully."""
-        with patch("milia_pipeline.config.config_accessors.get_handler_type", return_value="DFT"):
-            with patch(
+        with (
+            patch("milia_pipeline.config.config_accessors.get_handler_type", return_value="DFT"),
+            patch(
                 "milia_pipeline.config.config_accessors._registry_get_safe",
                 return_value=mock_registry_class,
-            ):
-                result = get_required_properties("DFT")  # handler_type not supported
+                ),
+        ):
+            result = get_required_properties("DFT")  # handler_type not supported
 
-                assert isinstance(result, list)
+            assert isinstance(result, list)
 
     def test_structural_features_with_empty_requested(self, mock_registry_class):
         """Test structural features functions with empty requested dict."""
@@ -2105,18 +2121,22 @@ class TestEdgeCasesAndErrorHandling:
 
     def test_empty_config_handling(self):
         """Test handling of completely empty config."""
-        with patch("milia_pipeline.config.config_accessors.load_config", return_value={}):
-            with contextlib.suppress(ConfigurationError):  # Expected
-                get_dataset_type()
+        with (
+            patch("milia_pipeline.config.config_accessors.load_config", return_value={}),
+            contextlib.suppress(ConfigurationError),  # Expected
+        ):
+            get_dataset_type()
 
     def test_malformed_config_handling(self):
         """Test handling of malformed config."""
-        with patch(
-            "milia_pipeline.config.config_accessors.load_config",
-            return_value={"invalid": "structure"},
+        with (
+            patch(
+                "milia_pipeline.config.config_accessors.load_config",
+                return_value={"invalid": "structure"},
+            ),
+            contextlib.suppress(ConfigurationError),  # Expected
         ):
-            with contextlib.suppress(ConfigurationError):  # Expected
-                get_dataset_config("DFT")
+            get_dataset_config("DFT")
 
     def test_none_values_in_config(self, mock_load_config):
         """Test handling of None values in config."""
@@ -2337,10 +2357,10 @@ class TestIntegrationAndSystem:
                 "milia_pipeline.config.config_accessors._registry_get_safe",
                 side_effect=Exception("Error"),
             ),
+            contextlib.suppress(Exception),  # Expected
         ):
             # System should recover gracefully
-            with contextlib.suppress(Exception):  # Expected
-                get_required_properties("DFT")
+            get_required_properties("DFT")
 
     def test_multi_dataset_type_support(self, mock_registry_class, mock_load_config):
         """Test support for multiple dataset types."""
@@ -2374,10 +2394,11 @@ class TestIntegrationAndSystem:
 
     def test_graceful_degradation(self):
         """Test system degrades gracefully with missing components."""
-        with patch("milia_pipeline.config.config_accessors._init_registry", return_value=False):
-            # System should still function in degraded mode
-            with contextlib.suppress(Exception):  # Acceptable
-                get_available_transforms()
+        with (
+            patch("milia_pipeline.config.config_accessors._init_registry", return_value=False),
+            contextlib.suppress(Exception),
+        ):
+            get_available_transforms()
 
     def test_comprehensive_coverage(self, mock_registry_class, mock_load_config):
         """Test comprehensive coverage of all systems."""
@@ -2834,12 +2855,14 @@ class TestLoggingAndMonitoring:
 
     def test_error_logging(self):
         """Test errors are logged appropriately."""
-        with patch(
-            "milia_pipeline.config.config_accessors.load_config",
-            side_effect=Exception("Test error"),
+        with (
+            patch(
+                "milia_pipeline.config.config_accessors.load_config",
+                side_effect=Exception("Test error"),
+                ),
+            contextlib.suppress(Exception),
         ):
-            with contextlib.suppress(Exception):  # Error should be logged
-                get_dataset_type()
+            get_dataset_type()
 
     def test_warning_logging(self, mock_registry_class):
         """Test warnings are logged appropriately."""
@@ -2853,9 +2876,9 @@ class TestLoggingAndMonitoring:
                 "milia_pipeline.config.config_accessors._registry_get_safe",
                 return_value=mock_registry_class,
             ),
+            contextlib.suppress(Exception),  # Warning should be logged
         ):
-            with contextlib.suppress(Exception):  # Warning should be logged
-                get_required_properties("DFT")
+            get_required_properties("DFT")
 
     def test_info_logging(self, mock_load_config):
         """Test info messages are logged appropriately."""
@@ -3538,15 +3561,15 @@ class TestStructuralFeaturesAccessors:
                 return_value={"atom": [], "bond": []},
             ),
             patch("milia_pipeline.config.config_accessors.create_dataset_config_container"),
+            patch("milia_pipeline.config.config_accessors.create_filter_config_container"),
+            patch(
+                "milia_pipeline.config.config_accessors.create_processing_config_container"
+            ),
         ):
-            with patch("milia_pipeline.config.config_accessors.create_filter_config_container"):
-                with patch(
-                    "milia_pipeline.config.config_accessors.create_processing_config_container"
-                ):
-                    result = get_feature_compatibility_report("DFT")
-                    assert isinstance(result, dict)
-                    assert "dataset_type" in result
-                    assert "compatibility_status" in result
+            result = get_feature_compatibility_report("DFT")
+            assert isinstance(result, dict)
+            assert "dataset_type" in result
+            assert "compatibility_status" in result
 
 
 class TestConfigValueAccessors:
