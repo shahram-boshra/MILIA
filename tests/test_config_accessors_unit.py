@@ -1492,10 +1492,8 @@ class TestTransformationConfiguration:
 
     def test_get_transformation_config_missing_default_setup(self, mock_load_config):
         """Test get_transformation_config with missing default setup."""
-        try:
+        with contextlib.suppress(ConfigurationError):  # Expected
             _result = get_transformation_config()
-        except ConfigurationError:
-            pass  # Expected
 
     def test_get_transformation_config_empty_setups(self, mock_load_config):
         """Test get_transformation_config with empty setups."""
@@ -1682,10 +1680,8 @@ class TestTransformationConfiguration:
 
     def test_save_experimental_setup(self, mock_load_config):
         """Test save_experimental_setup."""
-        try:
+        with contextlib.suppress(Exception):  # May not be implemented
             save_experimental_setup("test_setup", [])
-        except Exception:
-            pass  # May not be implemented
 
 
 # ============================================================================
@@ -1868,10 +1864,8 @@ class TestTransformationConfigurationExtended:
 
     def test_create_experimental_setup_with_invalid_dict(self):
         """Test create_experimental_setup_from_dict with missing keys."""
-        try:
+        with contextlib.suppress(Exception):  # Expected
             _result = create_experimental_setup_from_dict({"invalid": "data"})
-        except Exception:
-            pass  # Expected
 
     def test_list_experimental_setups_empty(self):
         """Test list_experimental_setups with no setups configured."""
@@ -2112,10 +2106,8 @@ class TestEdgeCasesAndErrorHandling:
     def test_empty_config_handling(self):
         """Test handling of completely empty config."""
         with patch("milia_pipeline.config.config_accessors.load_config", return_value={}):
-            try:
+            with contextlib.suppress(ConfigurationError):  # Expected
                 get_dataset_type()
-            except ConfigurationError:
-                pass  # Expected
 
     def test_malformed_config_handling(self):
         """Test handling of malformed config."""
@@ -2123,10 +2115,8 @@ class TestEdgeCasesAndErrorHandling:
             "milia_pipeline.config.config_accessors.load_config",
             return_value={"invalid": "structure"},
         ):
-            try:
+            with contextlib.suppress(ConfigurationError):  # Expected
                 get_dataset_config("DFT")
-            except ConfigurationError:
-                pass  # Expected
 
     def test_none_values_in_config(self, mock_load_config):
         """Test handling of None values in config."""
@@ -2349,10 +2339,8 @@ class TestIntegrationAndSystem:
             ),
         ):
             # System should recover gracefully
-            try:
+            with contextlib.suppress(Exception):  # Expected
                 get_required_properties("DFT")
-            except Exception:
-                pass  # Expected
 
     def test_multi_dataset_type_support(self, mock_registry_class, mock_load_config):
         """Test support for multiple dataset types."""
@@ -2388,10 +2376,8 @@ class TestIntegrationAndSystem:
         """Test system degrades gracefully with missing components."""
         with patch("milia_pipeline.config.config_accessors._init_registry", return_value=False):
             # System should still function in degraded mode
-            try:
+            with contextlib.suppress(Exception):  # Acceptable
                 get_available_transforms()
-            except Exception:
-                pass  # Acceptable
 
     def test_comprehensive_coverage(self, mock_registry_class, mock_load_config):
         """Test comprehensive coverage of all systems."""
@@ -2852,10 +2838,8 @@ class TestLoggingAndMonitoring:
             "milia_pipeline.config.config_accessors.load_config",
             side_effect=Exception("Test error"),
         ):
-            try:
+            with contextlib.suppress(Exception):  # Error should be logged
                 get_dataset_type()
-            except Exception:
-                pass  # Error should be logged
 
     def test_warning_logging(self, mock_registry_class):
         """Test warnings are logged appropriately."""
@@ -2870,10 +2854,8 @@ class TestLoggingAndMonitoring:
                 return_value=mock_registry_class,
             ),
         ):
-            try:
+            with contextlib.suppress(Exception):  # Warning should be logged
                 get_required_properties("DFT")
-            except Exception:
-                pass  # Warning should be logged
 
     def test_info_logging(self, mock_load_config):
         """Test info messages are logged appropriately."""
