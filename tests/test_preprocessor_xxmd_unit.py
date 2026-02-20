@@ -739,22 +739,26 @@ class TestPreprocessEarlyReturn(unittest.TestCase):
     def test_early_return_when_output_exists(self, mock_extract):
         """preprocess() returns early without extraction when output exists."""
         config = _make_config()
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.stat") as mock_stat:
-                mock_stat.return_value = MagicMock(st_size=1024 * 1024)
-                preprocessor = _make_preprocessor(config=config)
-                _result = preprocessor.preprocess()
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.stat") as mock_stat,
+        ):
+            mock_stat.return_value = MagicMock(st_size=1024 * 1024)
+            preprocessor = _make_preprocessor(config=config)
+            _result = preprocessor.preprocess()
         mock_extract.assert_not_called()
 
     @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_early_return_returns_output_path(self, mock_extract):
         """Early return provides the output_npz_path."""
         config = _make_config()
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.stat") as mock_stat:
-                mock_stat.return_value = MagicMock(st_size=1024 * 1024)
-                preprocessor = _make_preprocessor(config=config)
-                result = preprocessor.preprocess()
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.stat") as mock_stat,
+        ):
+            mock_stat.return_value = MagicMock(st_size=1024 * 1024)
+            preprocessor = _make_preprocessor(config=config)
+            result = preprocessor.preprocess()
         self.assertEqual(result, Path(config["output_npz_path"]))
 
     @patch.object(XXMDPreprocessor, "_build_npz")
@@ -853,9 +857,11 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, "exists", return_value=False):
-                with self.assertRaises(DataProcessingError):
-                    preprocessor.preprocess()
+            with (
+                patch.object(Path, "exists", return_value=False),
+                self.assertRaises(DataProcessingError),
+            ):
+                preprocessor.preprocess()
 
     @patch.object(XXMDPreprocessor, "_build_npz")
     @patch.object(XXMDPreprocessor, "_parse_xxmd_xyz_files")
@@ -869,9 +875,11 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, "exists", return_value=False):
-                with self.assertRaises(DataProcessingError):
-                    preprocessor.preprocess()
+            with (
+                patch.object(Path, "exists", return_value=False),
+                self.assertRaises(DataProcessingError),
+            ):
+                preprocessor.preprocess()
 
     @patch.object(XXMDPreprocessor, "_extract_archive")
     def test_wrapped_error_preserves_cause(self, mock_extract):
@@ -1627,9 +1635,11 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         def mock_validate_output(path):
             call_order.append("validate_output")
 
-        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
-            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
-                preprocessor.run()
+        with (
+            patch.object(preprocessor, "preprocess", side_effect=mock_preprocess),
+            patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output),
+        ):
+            preprocessor.run()
         self.assertEqual(call_order, ["preprocess", "validate_output"])
 
     def test_run_raises_on_invalid_config(self):
