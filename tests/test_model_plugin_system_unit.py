@@ -1278,15 +1278,15 @@ class TestModelPluginLoaderLoading:
         with pytest.raises(PluginError, match="is disabled"):
             loader.load_plugin("test_plugin")
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", False)
     def test_load_plugin_no_models_available(self, sample_plugin_metadata):
         """Test loading plugin when ModelRegistry not available."""
-        loader = ModelPluginLoader()
-        loader._plugins["test_plugin"] = sample_plugin_metadata
+        with patch.object(model_plugin_system, "MODELS_AVAILABLE", False):
+            loader = ModelPluginLoader()
+            loader._plugins["test_plugin"] = sample_plugin_metadata
 
-        result = loader.load_plugin("test_plugin", register_models=False)
-        assert result is True
-        assert sample_plugin_metadata.loaded is True
+            result = loader.load_plugin("test_plugin", register_models=False)
+            assert result is True
+            assert sample_plugin_metadata.loaded is True
 
     def test_load_all_plugins_empty(self):
         """Test loading all plugins when none discovered."""
@@ -1532,120 +1532,140 @@ class TestModelPluginLoaderManagement:
 class TestModelPluginLoaderRegistration:
     """Test suite for model registration functionality."""
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", False)
     def test_register_plugin_model_no_registry(self, sample_model_declaration, temp_plugin_dir):
         """Test model registration when ModelRegistry not available."""
-        loader = ModelPluginLoader()
+        with patch.object(model_plugin_system, "MODELS_AVAILABLE", False):
+            loader = ModelPluginLoader()
 
-        with pytest.raises(PluginError, match="ModelRegistry not available"):
-            loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
+            with pytest.raises(PluginError, match="ModelRegistry not available"):
+                loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
-    @patch.object(model_plugin_system, "ModelMetadata")
     def test_register_plugin_model_import_error(
-        self, mock_metadata_class, mock_registry, sample_model_declaration, temp_plugin_dir
+        self, sample_model_declaration, temp_plugin_dir
     ):
         """Test model registration with import error."""
-        loader = ModelPluginLoader()
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry"),
+            patch.object(model_plugin_system, "ModelMetadata"),
+        ):
+            loader = ModelPluginLoader()
 
-        with patch("importlib.import_module", side_effect=ImportError("Module not found")):
-            with pytest.raises(PluginError, match="Failed to import model"):
+            with (
+                patch("importlib.import_module", side_effect=ImportError("Module not found")),
+                pytest.raises(PluginError, match="Failed to import model"),
+            ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
-    @patch.object(model_plugin_system, "ModelMetadata")
     def test_register_plugin_model_class_not_found(
-        self, mock_metadata_class, mock_registry, sample_model_declaration, temp_plugin_dir
+        self, sample_model_declaration, temp_plugin_dir
     ):
         """Test model registration when class not found in module."""
-        loader = ModelPluginLoader()
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry"),
+            patch.object(model_plugin_system, "ModelMetadata"),
+        ):
+            loader = ModelPluginLoader()
 
-        mock_module = Mock()
-        # Use spec to make getattr raise AttributeError
-        del mock_module.TestModelClass
+            mock_module = Mock()
+            # Use spec to make getattr raise AttributeError
+            del mock_module.TestModelClass
 
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(PluginError, match="not found in module"):
+            with (
+                patch("importlib.import_module", return_value=mock_module),
+                pytest.raises(PluginError, match="not found in module"),
+            ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
-    @patch.object(model_plugin_system, "ModelMetadata")
     def test_register_plugin_model_not_nn_module(
-        self, mock_metadata_class, mock_registry, sample_model_declaration, temp_plugin_dir
+        self, sample_model_declaration, temp_plugin_dir
     ):
         """Test model registration when class doesn't inherit from nn.Module."""
-        loader = ModelPluginLoader()
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry"),
+            patch.object(model_plugin_system, "ModelMetadata"),
+        ):
+            loader = ModelPluginLoader()
 
-        class NotNNModule:
-            pass
+            class NotNNModule:
+                pass
 
-        mock_module = Mock()
-        mock_module.TestModelClass = NotNNModule
+            mock_module = Mock()
+            mock_module.TestModelClass = NotNNModule
 
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(PluginError, match="must inherit from nn.Module"):
+            with (
+                patch("importlib.import_module", return_value=mock_module),
+                pytest.raises(PluginError, match="must inherit from nn.Module"),
+            ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
     def test_register_plugin_model_success(
-        self, mock_registry, sample_model_declaration, temp_plugin_dir, mock_model_class
+        self, sample_model_declaration, temp_plugin_dir, mock_model_class
     ):
         """Test successful model registration."""
-        loader = ModelPluginLoader()
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry") as mock_registry,
+        ):
+            loader = ModelPluginLoader()
 
-        mock_module = Mock()
-        mock_module.TestModelClass = mock_model_class
+            mock_module = Mock()
+            mock_module.TestModelClass = mock_model_class
 
-        with patch("importlib.import_module", return_value=mock_module):
-            loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
-
-        mock_registry.register_model.assert_called_once()
-        call_args = mock_registry.register_model.call_args
-
-        assert call_args[1]["name"] == "TestModel"
-        assert call_args[1]["model_class"] == mock_model_class
-        assert call_args[1]["plugin_name"] == "test_plugin"
-
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
-    @patch.object(model_plugin_system, "ModelMetadata", None)
-    def test_register_plugin_model_metadata_none(
-        self, mock_registry, sample_model_declaration, temp_plugin_dir, mock_model_class
-    ):
-        """Test model registration when ModelMetadata class is None."""
-        loader = ModelPluginLoader()
-
-        mock_module = Mock()
-        mock_module.TestModelClass = mock_model_class
-
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(PluginError, match="ModelMetadata not available"):
+            with patch("importlib.import_module", return_value=mock_module):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    @patch.object(model_plugin_system, "MODELS_AVAILABLE", True)
-    @patch.object(model_plugin_system, "registry")
-    @patch.object(model_plugin_system, "ModelMetadata")
+            mock_registry.register_model.assert_called_once()
+            call_args = mock_registry.register_model.call_args
+
+            assert call_args[1]["name"] == "TestModel"
+            assert call_args[1]["model_class"] == mock_model_class
+            assert call_args[1]["plugin_name"] == "test_plugin"
+
+    def test_register_plugin_model_metadata_none(
+        self, sample_model_declaration, temp_plugin_dir, mock_model_class
+    ):
+        """Test model registration when ModelMetadata class is None."""
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry"),
+            patch.object(model_plugin_system, "ModelMetadata", None),
+        ):
+            loader = ModelPluginLoader()
+
+            mock_module = Mock()
+            mock_module.TestModelClass = mock_model_class
+
+            with (
+                patch("importlib.import_module", return_value=mock_module),
+                pytest.raises(PluginError, match="ModelMetadata not available"),
+            ):
+                loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
+
     def test_register_plugin_model_registry_error(
         self,
-        mock_metadata,
-        mock_registry,
         sample_model_declaration,
         temp_plugin_dir,
         mock_model_class,
     ):
         """Test model registration when registry raises exception."""
-        loader = ModelPluginLoader()
+        with (
+            patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
+            patch.object(model_plugin_system, "registry") as mock_registry,
+            patch.object(model_plugin_system, "ModelMetadata"),
+        ):
+            loader = ModelPluginLoader()
 
-        mock_module = Mock()
-        mock_module.TestModelClass = mock_model_class
-        mock_registry.register_model.side_effect = RuntimeError("Registry error")
+            mock_module = Mock()
+            mock_module.TestModelClass = mock_model_class
+            mock_registry.register_model.side_effect = RuntimeError("Registry error")
 
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(PluginError, match="Failed to register model"):
+            with (
+                patch("importlib.import_module", return_value=mock_module),
+                pytest.raises(PluginError, match="Failed to register model"),
+            ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
 
