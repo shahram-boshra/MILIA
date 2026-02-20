@@ -3237,15 +3237,16 @@ class TestEnsure3DConformerForPrediction:
         mock_mol = MagicMock()
         mock_mol.GetNumConformers.return_value = 0
 
-        with patch.dict("sys.modules", {"rdkit": None, "rdkit.Chem": None}):
-            # Force ImportError path by mocking the import
-            with patch(
+        with (
+            patch.dict("sys.modules", {"rdkit": None, "rdkit.Chem": None}),
+            patch(
                 "milia_pipeline.models.post_training.data_preparation.data_converter._requires_3d_conformer",
                 return_value=True,
-            ):
-                # This will attempt to import rdkit and fail
-                # The function should catch this and return False gracefully
-                pass
+                ),
+        ):
+            # This will attempt to import rdkit and fail
+            # The function should catch this and return False gracefully
+            pass
 
     def test_returns_false_for_difficult_molecules(self, structural_features_config_with_3d):
         """Test returns False for molecules that fail embedding."""
@@ -3302,14 +3303,16 @@ class TestEnsure3DConformerForPrediction:
         assert mol.GetNumConformers() == 0
 
         # Mock both optimization methods to fail
-        with patch.object(AllChem, "MMFFOptimizeMolecule", side_effect=Exception("MMFF failed")):
-            with patch.object(AllChem, "UFFOptimizeMolecule", side_effect=Exception("UFF failed")):
-                result = _ensure_3d_conformer_for_prediction(
-                    mol, structural_features_config_with_3d
-                )
-                # Should still succeed with unoptimized conformer
-                assert result is True
-                assert mol.GetNumConformers() > 0
+        with (
+            patch.object(AllChem, "MMFFOptimizeMolecule", side_effect=Exception("MMFF failed")),
+            patch.object(AllChem, "UFFOptimizeMolecule", side_effect=Exception("UFF failed")),
+        ):
+            result = _ensure_3d_conformer_for_prediction(
+                mol, structural_features_config_with_3d
+            )
+            # Should still succeed with unoptimized conformer
+            assert result is True
+            assert mol.GetNumConformers() > 0
 
     def test_conformer_coordinates_transferred_correctly(self, structural_features_config_with_3d):
         """Test conformer coordinates are transferred to original molecule correctly."""
@@ -3360,11 +3363,13 @@ class TestEnsure3DConformerForPrediction:
                 return -1  # First call fails
             return original_embed(mol, params)  # Second call with useRandomCoords succeeds
 
-        with patch.object(AllChem, "EmbedMolecule", side_effect=mock_embed):
-            with caplog.at_level(logging.DEBUG):
-                _result = _ensure_3d_conformer_for_prediction(
-                    mol, structural_features_config_with_3d
-                )
+        with (
+            patch.object(AllChem, "EmbedMolecule", side_effect=mock_embed),
+            caplog.at_level(logging.DEBUG),
+        ):
+            _result = _ensure_3d_conformer_for_prediction(
+                mol, structural_features_config_with_3d
+            )
 
         # Should have attempted twice (initial + random coords fallback)
         assert call_count[0] == 2
@@ -3381,11 +3386,13 @@ class TestEnsure3DConformerForPrediction:
 
         mol = Chem.MolFromSmiles("CCO")
 
-        with patch.object(AllChem, "ETKDGv3", side_effect=RuntimeError("Unexpected error")):
-            with caplog.at_level(logging.WARNING):
-                result = _ensure_3d_conformer_for_prediction(
-                    mol, structural_features_config_with_3d
-                )
+        with (
+            patch.object(AllChem, "ETKDGv3", side_effect=RuntimeError("Unexpected error")),
+            caplog.at_level(logging.WARNING),
+        ):
+            result = _ensure_3d_conformer_for_prediction(
+                mol, structural_features_config_with_3d
+            )
 
         assert result is False
         # Should log a warning
