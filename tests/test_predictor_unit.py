@@ -1057,19 +1057,21 @@ class TestPredictorPredictBatch:
         )
 
         # Patch DataLoader to verify parameters
-        with patch.object(DataLoader, "__init__", return_value=None) as mock_dl_init:
-            with patch.object(DataLoader, "__iter__", return_value=iter([])):
-                with patch.object(DataLoader, "__len__", return_value=0):
-                    with contextlib.suppress(Exception):
-                        # Expected to fail, we just want to check DL init
-                        predictor.predict_batch(pyg_dataset, batch_size=8, num_workers=2)
+        with (
+            patch.object(DataLoader, "__init__", return_value=None) as mock_dl_init,
+            patch.object(DataLoader, "__iter__", return_value=iter([])),
+            patch.object(DataLoader, "__len__", return_value=0),
+        ):
+            with contextlib.suppress(Exception):
+                # Expected to fail, we just want to check DL init
+                predictor.predict_batch(pyg_dataset, batch_size=8, num_workers=2)
 
-                    # Check DataLoader was initialized with correct params
-                    if mock_dl_init.called:
-                        call_kwargs = mock_dl_init.call_args[1]
-                        assert call_kwargs.get("batch_size") == 8
-                        assert call_kwargs.get("shuffle") is False
-                        assert call_kwargs.get("num_workers") == 2
+            # Check DataLoader was initialized with correct params
+            if mock_dl_init.called:
+                call_kwargs = mock_dl_init.call_args[1]
+                assert call_kwargs.get("batch_size") == 8
+                assert call_kwargs.get("shuffle") is False
+                assert call_kwargs.get("num_workers") == 2
 
     def test_predict_batch_with_small_dataset(self, simple_pyg_model, cpu_device, working_root_dir):
         """Test predict_batch with dataset smaller than batch_size."""
