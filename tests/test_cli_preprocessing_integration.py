@@ -348,12 +348,14 @@ class TestPreprocessingValidation:
             mock_feature.side_effect = feature_side_effect
 
             # Also mock _get_dataset_input_format to return 'tar.gz'
-            with patch(
-                "milia_pipeline.cli_manager._get_dataset_input_format", return_value="tar.gz"
-            ):
+            with (
+                patch(
+                    "milia_pipeline.cli_manager._get_dataset_input_format", return_value="tar.gz"
+                ),
                 # Now validation should fail with tar.gz requirement message
-                with pytest.raises(CLIValidationError, match="tar.gz"):
-                    cli._validate_arguments(parsed_args)
+                pytest.raises(CLIValidationError, match="tar.gz"),
+            ):
+                cli._validate_arguments(parsed_args)
 
     def test_validate_input_format_skipped_when_feature_not_set(self, cli, temp_config_dir):
         """Test input format validation is skipped when requires_archive_input is False.
