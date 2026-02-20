@@ -241,10 +241,9 @@ def _ensure_default_registry_populated():
                     and hasattr(cls, "metadata")
                     and hasattr(cls.metadata, "name")
                 ):
-                    try:
+                    with contextlib.suppress(Exception):
+                        # Already registered or other issue — skip
                         _default_registry.register(cls)
-                    except Exception:
-                        pass  # Already registered or other issue — skip
     except Exception:
         pass  # Registry or base class not available — fallback will handle it
 
@@ -1030,14 +1029,13 @@ class TestHandlerBasedRefinement(unittest.TestCase):
         mock_data.freqs = [100.0]
         mock_data.vibmodes = [np.array([[1.0, 0.0, 0.0]])]
 
-        try:
+        with contextlib.suppress(Exception):
+            # May fail due to mock, but we're checking if it was called
             refine_molecular_data_with_handler(
                 handler=self.mock_handler,
                 raw_properties_dict={"freqs": [], "vibmodes": []},
                 molecule_index=0,
             )
-        except Exception:
-            pass  # May fail due to mock, but we're checking if it was called
 
         # Check if refinement function was called
         self.assertTrue(mock_refine.called or True)  # Flexible check
@@ -2408,10 +2406,9 @@ class TestPhase6RefactoredFunctions(unittest.TestCase):
 
         dataset_config = DatasetConfig(dataset_type="DFT")
 
-        try:
+        with contextlib.suppress(Exception):
+            # May fail due to data validation, but feature query should be called
             refine_molecular_vibrations(freqs, vibmodes, dataset_config=dataset_config)
-        except Exception:
-            pass  # May fail due to data validation, but feature query should be called
 
         # Verify feature query was called with correct arguments
         mock_feature.assert_called()
