@@ -26,6 +26,7 @@ Version: 1.1.0
 """
 
 import copy
+import contextlib
 import logging
 import warnings
 from enum import Enum
@@ -452,11 +453,8 @@ class ModelOptimizer:
         """Make pruning permanent by removing reparameterization."""
         for _name, module in model.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
-                try:
+                with contextlib.suppress(ValueError):  # No pruning on this module
                     prune.remove(module, "weight")
-                except ValueError:
-                    # No pruning on this module
-                    pass
 
         return model
 
