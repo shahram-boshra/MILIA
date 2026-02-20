@@ -648,10 +648,12 @@ class TestGetDataPath(unittest.TestCase):
         mock_tar = MagicMock()
         mock_tarfile_open.return_value.__enter__ = MagicMock(return_value=mock_tar)
         mock_tarfile_open.return_value.__exit__ = MagicMock(return_value=False)
-        with patch.object(Path, "is_dir", return_value=False):
-            with patch.object(Path, "exists", return_value=True):
-                with patch.object(Path, "mkdir"):
-                    _make_preprocessor()._get_data_path(Path("/tmp/fake.tar.gz"))
+        with (
+            patch.object(Path, "is_dir", return_value=False),
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "mkdir"),
+        ):
+            _make_preprocessor()._get_data_path(Path("/tmp/fake.tar.gz"))
         mock_tarfile_open.assert_called_once()
 
     def test_directory_is_dir_check(self):
