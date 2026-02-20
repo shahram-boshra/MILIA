@@ -435,10 +435,12 @@ class TestDeviceManagerInitialization:
 
     def test_minimal_initialization_no_accelerator(self):
         """Test DeviceManager initialization with no accelerators."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         assert manager._device == torch.device("cpu")
         assert manager.allow_fallback is True
@@ -446,19 +448,23 @@ class TestDeviceManagerInitialization:
 
     def test_initialization_with_auto_device(self):
         """Test DeviceManager initialization with device=None (auto)."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(device=None, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(device=None, verbose=False)
 
         assert manager._device == torch.device("cpu")
 
     def test_initialization_with_auto_string(self):
         """Test DeviceManager initialization with device='auto'."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(device="auto", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(device="auto", verbose=False)
 
         assert manager._device == torch.device("cpu")
 
@@ -512,11 +518,13 @@ class TestDeviceManagerInitialization:
 
     def test_verbose_logging_on_init(self, caplog):
         """Test verbose=True produces logging during initialization."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         assert "DeviceManager initialized" in caplog.text
 
@@ -524,10 +532,12 @@ class TestDeviceManagerInitialization:
         """Test silent initialization when verbose=False."""
         with caplog.at_level(logging.INFO):
             caplog.clear()
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=False)
+            with (
+                patch("torch.cuda.is_available", return_value=False),
+                patch.object(DeviceManager, "_is_mps_available", return_value=False),
+                patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+            ):
+                _manager = DeviceManager(verbose=False)
 
         # Check for absence of specific verbose logs
         init_logs = [r for r in caplog.records if "DeviceManager initialized" in r.message]
@@ -544,21 +554,25 @@ class TestAutoDeviceDetection:
 
     def test_auto_detect_cuda_when_available(self, mock_cuda_properties):
         """Test auto-detection selects CUDA when available."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager = DeviceManager(verbose=False)
 
         assert manager._device.type == "cuda"
 
     def test_auto_detect_mps_when_cuda_unavailable(self):
         """Test auto-detection selects MPS when CUDA unavailable."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=True):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=True),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         assert manager._device.type == "mps"
 
@@ -566,22 +580,26 @@ class TestAutoDeviceDetection:
         """Test auto-detection selects TPU when CUDA and MPS unavailable."""
         mock_tpu_device = torch.device("cpu")  # TPU device mock
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                    with patch.object(
-                        DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                    ):
-                        manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
+                ),
+        ):
+            manager = DeviceManager(verbose=False)
 
         assert manager._device == mock_tpu_device
 
     def test_auto_detect_cpu_fallback(self):
         """Test auto-detection falls back to CPU when no accelerator available."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         assert manager._device == torch.device("cpu")
 
@@ -595,25 +613,29 @@ class TestAutoDeviceDetection:
 
     def test_auto_detect_logs_cuda(self, caplog, mock_cuda_properties):
         """Test auto-detection logs when CUDA detected."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=True):
-                with patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"):
-                    with patch(
-                        "torch.cuda.get_device_properties", return_value=mock_cuda_properties
-                    ):
-                        with patch("torch.cuda.memory_allocated", return_value=0):
-                            with patch("torch.cuda.set_device"):
-                                _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
+            patch(
+                "torch.cuda.get_device_properties", return_value=mock_cuda_properties
+                ),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected CUDA device" in caplog.text
 
     def test_auto_detect_logs_mps(self, caplog):
         """Test auto-detection logs when MPS detected."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=True):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=True),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected MPS device" in caplog.text or "Apple Silicon" in caplog.text
 
@@ -621,24 +643,28 @@ class TestAutoDeviceDetection:
         """Test auto-detection logs when TPU detected."""
         mock_tpu_device = torch.device("cpu")
 
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                        with patch.object(
-                            DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                        ):
-                            _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
+                ),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         assert "Auto-detected TPU device" in caplog.text
 
     def test_auto_detect_logs_cpu_fallback(self, caplog):
         """Test auto-detection logs when falling back to CPU."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         assert "No accelerator detected" in caplog.text or "using CPU" in caplog.text
 
@@ -653,66 +679,78 @@ class TestDeviceValidation:
 
     def test_validate_cuda_when_available(self, mock_cuda_properties):
         """Test CUDA validation passes when available."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
         assert manager._device.type == "cuda"
 
     def test_validate_cuda_with_index(self, mock_cuda_properties):
         """Test CUDA validation with specific device index."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            manager = DeviceManager(device="cuda:1", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager = DeviceManager(device="cuda:1", verbose=False)
 
         assert manager._device == torch.device("cuda:1")
 
     def test_validate_cuda_invalid_index_fallback(self, mock_cuda_properties, caplog):
         """Test CUDA validation falls back for invalid device index."""
-        with caplog.at_level(logging.WARNING):
-            with patch("torch.cuda.is_available", return_value=True):
-                with patch("torch.cuda.device_count", return_value=1):
-                    with patch(
-                        "torch.cuda.get_device_properties", return_value=mock_cuda_properties
-                    ):
-                        with patch("torch.cuda.memory_allocated", return_value=0):
-                            with patch("torch.cuda.set_device"):
-                                manager = DeviceManager(
-                                    device="cuda:5", allow_fallback=True, verbose=True
-                                )
+        with (
+            caplog.at_level(logging.WARNING),
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch(
+                "torch.cuda.get_device_properties", return_value=mock_cuda_properties
+                ),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager = DeviceManager(
+                device="cuda:5", allow_fallback=True, verbose=True
+            )
 
         assert manager._device == torch.device("cuda:0")
         assert "not available" in caplog.text
 
     def test_validate_cuda_invalid_index_no_fallback(self):
         """Test CUDA validation raises error for invalid index without fallback."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with pytest.raises(DeviceNotAvailableError) as exc_info:
-                    _manager = DeviceManager(device="cuda:5", allow_fallback=False, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            pytest.raises(DeviceNotAvailableError) as exc_info,
+        ):
+            _manager = DeviceManager(device="cuda:5", allow_fallback=False, verbose=False)
 
         assert "CUDA device 5 not available" in str(exc_info.value)
 
     def test_validate_cuda_unavailable_fallback_cpu(self, caplog):
         """Test CUDA validation falls back to CPU when unavailable."""
-        with caplog.at_level(logging.WARNING):
-            with patch("torch.cuda.is_available", return_value=False):
-                manager = DeviceManager(device="cuda", allow_fallback=True, verbose=True)
+        with (
+            caplog.at_level(logging.WARNING),
+            patch("torch.cuda.is_available", return_value=False),
+        ):
+            manager = DeviceManager(device="cuda", allow_fallback=True, verbose=True)
 
         assert manager._device == torch.device("cpu")
         assert "CUDA not available" in caplog.text
 
     def test_validate_cuda_unavailable_no_fallback(self):
         """Test CUDA validation raises error without fallback."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with pytest.raises(DeviceNotAvailableError) as exc_info:
-                _manager = DeviceManager(device="cuda", allow_fallback=False, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            pytest.raises(DeviceNotAvailableError) as exc_info,
+        ):
+            _manager = DeviceManager(device="cuda", allow_fallback=False, verbose=False)
 
         assert "CUDA requested but not available" in str(exc_info.value)
 
@@ -725,18 +763,22 @@ class TestDeviceValidation:
 
     def test_validate_mps_unavailable_fallback_cpu(self, caplog):
         """Test MPS validation falls back to CPU when unavailable."""
-        with caplog.at_level(logging.WARNING):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                manager = DeviceManager(device="mps", allow_fallback=True, verbose=True)
+        with (
+            caplog.at_level(logging.WARNING),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+        ):
+            manager = DeviceManager(device="mps", allow_fallback=True, verbose=True)
 
         assert manager._device == torch.device("cpu")
         assert "MPS not available" in caplog.text
 
     def test_validate_mps_unavailable_no_fallback(self):
         """Test MPS validation raises error without fallback."""
-        with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-            with pytest.raises(DeviceNotAvailableError) as exc_info:
-                _manager = DeviceManager(device="mps", allow_fallback=False, verbose=False)
+        with (
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            pytest.raises(DeviceNotAvailableError) as exc_info,
+        ):
+            _manager = DeviceManager(device="mps", allow_fallback=False, verbose=False)
 
         assert "MPS requested but not available" in str(exc_info.value)
 
@@ -751,13 +793,15 @@ class TestDeviceValidation:
         mock_tpu_device.type = "xla"
 
         # Test via auto-detection path instead, which properly handles TPU
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                    with patch.object(
-                        DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                    ):
-                        manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
+                ),
+        ):
+            manager = DeviceManager(verbose=False)
 
         # TPU path - the device was set via auto-detection
         assert manager._device == mock_tpu_device
@@ -771,12 +815,13 @@ class TestDeviceValidation:
         # We test the fallback behavior via auto-detection instead.
 
         # Use INFO level since the log message is at INFO level
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    # TPU not available - should fall back to CPU
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        manager = DeviceManager(allow_fallback=True, verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(allow_fallback=True, verbose=True)
 
         assert manager._device == torch.device("cpu")
         # Verify CPU fallback occurred (the device is CPU when no accelerator is available)
@@ -797,16 +842,18 @@ class TestDeviceValidation:
 
         # When TPU is the only accelerator detected but _get_tpu_device fails,
         # DeviceNotAvailableError should be raised
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                    with patch.object(
-                        DeviceManager,
-                        "_get_tpu_device",
-                        side_effect=DeviceNotAvailableError("TPU not available"),
-                    ):
-                        with pytest.raises(DeviceNotAvailableError) as exc_info:
-                            _manager = DeviceManager(allow_fallback=False, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager,
+                "_get_tpu_device",
+                side_effect=DeviceNotAvailableError("TPU not available"),
+                ),
+            pytest.raises(DeviceNotAvailableError) as exc_info,
+        ):
+            _manager = DeviceManager(allow_fallback=False, verbose=False)
 
         assert "TPU" in str(exc_info.value) or "not available" in str(exc_info.value)
 
@@ -827,9 +874,11 @@ class TestDeviceAvailabilityChecking:
 
     def test_is_mps_available_true(self):
         """Test _is_mps_available returns True when MPS available."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         mock_backends = MagicMock()
         mock_backends.mps.is_available.return_value = True
@@ -846,9 +895,11 @@ class TestDeviceAvailabilityChecking:
 
         mock_backends = MagicMock(spec=[])  # No 'mps' attribute
 
-        with patch.object(torch, "backends", mock_backends):
-            with patch("builtins.hasattr", return_value=False):
-                result = manager._is_mps_available()
+        with (
+            patch.object(torch, "backends", mock_backends),
+            patch("builtins.hasattr", return_value=False),
+        ):
+            result = manager._is_mps_available()
 
         assert result is False
 
@@ -898,9 +949,11 @@ class TestDeviceAvailabilityChecking:
         mock_xm = MagicMock()
         mock_xm.xla_device.return_value = mock_device
 
-        with patch.dict("sys.modules", {"torch_xla.core.xla_model": mock_xm}):
-            with patch.object(manager, "_get_tpu_device", return_value=mock_device):
-                result = manager._get_tpu_device()
+        with (
+            patch.dict("sys.modules", {"torch_xla.core.xla_model": mock_xm}),
+            patch.object(manager, "_get_tpu_device", return_value=mock_device),
+        ):
+            result = manager._get_tpu_device()
 
         assert result == mock_device
 
@@ -936,14 +989,16 @@ class TestGetDeviceInfo:
 
     def test_get_device_info_cuda(self, mock_cuda_properties):
         """Test _get_device_info for CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=1 * (1024**3)):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=1 * (1024**3)),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         info = manager._device_info
 
@@ -979,20 +1034,24 @@ class TestGetDeviceInfo:
 
     def test_get_cuda_available_memory_success(self, mock_cuda_properties):
         """Test _get_cuda_available_memory returns correct value."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)):
-                    with patch("torch.cuda.set_device"):
-                        available = manager._get_cuda_available_memory(0)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
+            patch("torch.cuda.set_device"),
+        ):
+            available = manager._get_cuda_available_memory(0)
 
         expected = mock_cuda_properties.total_memory - 4 * (1024**3)
         assert available == expected
@@ -1009,18 +1068,22 @@ class TestGetDeviceInfo:
 
     def test_get_cuda_available_memory_exception(self, mock_cuda_properties):
         """Test _get_cuda_available_memory returns 0 on exception."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.set_device", side_effect=Exception("CUDA error")):
-                available = manager._get_cuda_available_memory(0)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.set_device", side_effect=Exception("CUDA error")),
+        ):
+            available = manager._get_cuda_available_memory(0)
 
         assert available == 0
 
@@ -1054,10 +1117,12 @@ class TestPublicAPI:
 
     def test_get_available_devices_all_types(self):
         """Test get_available_devices returns all available devices."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         devices = manager.get_available_devices()
 
@@ -1078,22 +1143,26 @@ class TestPublicAPI:
 
     def test_get_available_devices_filter_cuda(self, mock_cuda_properties):
         """Test get_available_devices with cuda filter."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            devices = manager.get_available_devices(device_type="cuda")
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            devices = manager.get_available_devices(device_type="cuda")
 
         assert len(devices) == 2
         for device in devices:
@@ -1101,11 +1170,13 @@ class TestPublicAPI:
 
     def test_get_available_devices_filter_mps(self):
         """Test get_available_devices with mps filter."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=True):
-                manager = DeviceManager(verbose=False)
-                # Call get_available_devices within the patch context
-                devices = manager.get_available_devices(device_type="mps")
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=True),
+        ):
+            manager = DeviceManager(verbose=False)
+            # Call get_available_devices within the patch context
+            devices = manager.get_available_devices(device_type="mps")
 
         assert len(devices) == 1
         assert devices[0].device_type == "mps"
@@ -1115,37 +1186,43 @@ class TestPublicAPI:
         mock_tpu_device = MagicMock()
         mock_tpu_device.type = "xla"
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                    with patch.object(
-                        DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                    ):
-                        manager = DeviceManager(verbose=False)
-                        # Call get_available_devices within the patch context
-                        devices = manager.get_available_devices(device_type="tpu")
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
+                ),
+        ):
+            manager = DeviceManager(verbose=False)
+            # Call get_available_devices within the patch context
+            devices = manager.get_available_devices(device_type="tpu")
 
         assert len(devices) == 1
         assert devices[0].device_type == "tpu"
 
     def test_get_available_devices_cuda_multiple_gpus(self, mock_cuda_properties):
         """Test get_available_devices returns all CUDA devices."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=4):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=4),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=4):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            devices = manager.get_available_devices(device_type="cuda")
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=4),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            devices = manager.get_available_devices(device_type="cuda")
 
         assert len(devices) == 4
         for i, device in enumerate(devices):
@@ -1234,20 +1311,24 @@ class TestMemoryInfo:
 
     def test_get_memory_info_cuda(self, mock_cuda_properties):
         """Test get_memory_info on CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)):
-                    with patch("torch.cuda.memory_reserved", return_value=6 * (1024**3)):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
+            patch("torch.cuda.memory_reserved", return_value=6 * (1024**3)),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-            with patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)):
-                with patch("torch.cuda.memory_reserved", return_value=6 * (1024**3)):
-                    info = manager.get_memory_info()
+        with (
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
+            patch("torch.cuda.memory_reserved", return_value=6 * (1024**3)),
+        ):
+            info = manager.get_memory_info()
 
         assert "device" in info
         assert "total_memory" in info
@@ -1266,20 +1347,24 @@ class TestMemoryInfo:
         reserved = 6 * (1024**3)
         free = total - reserved
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=allocated):
-                    with patch("torch.cuda.memory_reserved", return_value=reserved):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=allocated),
+            patch("torch.cuda.memory_reserved", return_value=reserved),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-            with patch("torch.cuda.memory_allocated", return_value=allocated):
-                with patch("torch.cuda.memory_reserved", return_value=reserved):
-                    info = manager.get_memory_info()
+        with (
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=allocated),
+            patch("torch.cuda.memory_reserved", return_value=reserved),
+        ):
+            info = manager.get_memory_info()
 
         assert info["total_memory"] == total
         assert info["allocated_memory"] == allocated
@@ -1288,15 +1373,17 @@ class TestMemoryInfo:
 
     def test_get_memory_info_cuda_no_index(self, mock_cuda_properties):
         """Test get_memory_info works when device has no index."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.memory_reserved", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.memory_reserved", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
         # Device index should default to 0
         assert manager._device.index is None or manager._device.index == 0
@@ -1312,14 +1399,16 @@ class TestMemoryManagement:
 
     def test_reset_peak_memory_stats_cuda(self, mock_cuda_properties):
         """Test reset_peak_memory_stats on CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         with patch("torch.cuda.reset_peak_memory_stats") as mock_reset:
             manager.reset_peak_memory_stats()
@@ -1338,14 +1427,16 @@ class TestMemoryManagement:
 
     def test_reset_peak_memory_stats_logging(self, mock_cuda_properties, caplog):
         """Test reset_peak_memory_stats logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=True)
 
         with caplog.at_level(logging.INFO), patch("torch.cuda.reset_peak_memory_stats"):
             manager.reset_peak_memory_stats()
@@ -1354,14 +1445,16 @@ class TestMemoryManagement:
 
     def test_empty_cache_cuda(self, mock_cuda_properties):
         """Test empty_cache on CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         with patch("torch.cuda.empty_cache") as mock_empty:
             manager.empty_cache()
@@ -1380,14 +1473,16 @@ class TestMemoryManagement:
 
     def test_empty_cache_logging(self, mock_cuda_properties, caplog):
         """Test empty_cache logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=True)
 
         with caplog.at_level(logging.INFO), patch("torch.cuda.empty_cache"):
             manager.empty_cache()
@@ -1396,14 +1491,16 @@ class TestMemoryManagement:
 
     def test_synchronize_cuda(self, mock_cuda_properties):
         """Test synchronize on CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         with patch("torch.cuda.synchronize") as mock_sync:
             manager.synchronize()
@@ -1426,13 +1523,15 @@ class TestMemoryManagement:
         mock_tpu_device.type = "tpu"
 
         # Create manager via auto-detection (device="tpu" string is invalid for torch.device)
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=True):
-                    with patch.object(
-                        DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                    ):
-                        manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=True),
+            patch.object(
+                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
+                ),
+        ):
+            manager = DeviceManager(verbose=False)
 
         # Verify the device was set to our mock TPU device
         assert manager._device == mock_tpu_device
@@ -1504,14 +1603,16 @@ class TestDeviceContextManager:
 
     def test_device_context_temporary_switch(self, mock_cuda_properties):
         """Test device_context allows temporary device switch."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         original_device = manager._device
 
@@ -1531,10 +1632,12 @@ class TestPrintDeviceSummary:
 
     def test_print_device_summary_cpu(self, capsys):
         """Test print_device_summary on CPU."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(device="cpu", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(device="cpu", verbose=False)
 
         manager.print_device_summary()
 
@@ -1545,22 +1648,26 @@ class TestPrintDeviceSummary:
 
     def test_print_device_summary_cuda(self, capsys, mock_cuda_properties):
         """Test print_device_summary with CUDA device."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            manager.print_device_summary()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager.print_device_summary()
 
         captured = capsys.readouterr()
         assert "Device Summary" in captured.out
@@ -1569,44 +1676,52 @@ class TestPrintDeviceSummary:
 
     def test_print_device_summary_memory_info(self, capsys, mock_cuda_properties):
         """Test print_device_summary shows memory info for CUDA."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)):
-                        with patch("torch.cuda.set_device"):
-                            manager.print_device_summary()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
+            patch("torch.cuda.set_device"),
+        ):
+            manager.print_device_summary()
 
         captured = capsys.readouterr()
         assert "Memory:" in captured.out
 
     def test_print_device_summary_compute_capability(self, capsys, mock_cuda_properties):
         """Test print_device_summary shows compute capability for CUDA."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            manager.print_device_summary()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            manager.print_device_summary()
 
         captured = capsys.readouterr()
         assert "Compute Capability" in captured.out
@@ -1622,10 +1737,12 @@ class TestConvenienceFunctions:
 
     def test_get_default_device_auto(self):
         """Test get_default_device with auto-detection."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    device = get_default_device()
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            device = get_default_device()
 
         assert device == torch.device("cpu")
 
@@ -1637,20 +1754,24 @@ class TestConvenienceFunctions:
 
     def test_get_default_device_verbose(self, caplog):
         """Test get_default_device with verbose logging."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _device = get_default_device(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            _device = get_default_device(verbose=True)
 
         assert "DeviceManager initialized" in caplog.text
 
     def test_list_available_devices(self):
         """Test list_available_devices returns list of DeviceInfo."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    devices = list_available_devices()
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            devices = list_available_devices()
 
         assert isinstance(devices, list)
         assert len(devices) >= 1  # At least CPU
@@ -1678,17 +1799,18 @@ class TestConvenienceFunctions:
 
     def test_get_device_capabilities_cuda_available(self, mock_cuda_properties):
         """Test get_device_capabilities when CUDA available."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                with patch.object(torch.backends.cudnn, "is_available", return_value=True):
-                    # Use PropertyMock for the 'enabled' property
-                    with patch.object(
-                        type(torch.backends.cudnn),
-                        "enabled",
-                        new_callable=PropertyMock,
-                        return_value=True,
-                    ):
-                        capabilities = get_device_capabilities()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+            patch.object(torch.backends.cudnn, "is_available", return_value=True),
+            patch.object(
+                type(torch.backends.cudnn),
+                "enabled",
+                new_callable=PropertyMock,
+                return_value=True,
+                ),
+        ):
+            capabilities = get_device_capabilities()
 
         assert capabilities["cuda_available"] is True
         assert capabilities["cuda_device_count"] == 2
@@ -1711,9 +1833,11 @@ class TestConvenienceFunctions:
         mock_backends.mps.is_available.return_value = True
         mock_backends.cudnn.is_available.return_value = False
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(torch, "backends", mock_backends):
-                capabilities = get_device_capabilities()
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(torch, "backends", mock_backends),
+        ):
+            capabilities = get_device_capabilities()
 
         assert capabilities["mps_available"] is True
 
@@ -1721,10 +1845,12 @@ class TestConvenienceFunctions:
         """Test get_device_capabilities when TPU available."""
         mock_torch_xla = MagicMock()
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.dict("sys.modules", {"torch_xla": mock_torch_xla}):
-                # The function checks import, simulate successful import
-                capabilities = get_device_capabilities()
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.dict("sys.modules", {"torch_xla": mock_torch_xla}),
+        ):
+            # The function checks import, simulate successful import
+            capabilities = get_device_capabilities()
 
         # Note: actual behavior depends on import success
         assert "tpu_available" in capabilities
@@ -1811,15 +1937,17 @@ class TestEdgeCases:
 
     def test_cuda_device_with_no_index(self, mock_cuda_properties):
         """Test CUDA device without index defaults to device 0."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=1):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=1),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
         assert manager._device.type == "cuda"
         # Index may be None but defaults to 0 in operations
@@ -1841,13 +1969,13 @@ class TestEdgeCases:
     def test_empty_device_string(self):
         """Test handling of empty device string (should raise or fallback)."""
         # Empty string device would cause issues
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    # Empty string treated as auto
-                    # torch.device("") would raise, but we handle None/"auto"
-                    with pytest.raises((RuntimeError, ValueError, DeviceNotAvailableError)):
-                        _manager = DeviceManager(device="", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+            pytest.raises((RuntimeError, ValueError, DeviceNotAvailableError)),
+        ):
+            _manager = DeviceManager(device="", verbose=False)
 
     def test_verbose_default_true(self):
         """Test verbose defaults to True."""
@@ -1869,23 +1997,27 @@ class TestEdgeCases:
 
     def test_get_memory_info_cuda_default_device_id(self, mock_cuda_properties):
         """Test get_memory_info uses device_id 0 when index is None."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.memory_reserved", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.memory_reserved", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda", verbose=False)
 
         # Force device.index to be None
         manager._device = torch.device("cuda")
 
-        with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-            with patch("torch.cuda.memory_allocated", return_value=0):
-                with patch("torch.cuda.memory_reserved", return_value=0):
-                    info = manager.get_memory_info()
+        with (
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.memory_reserved", return_value=0),
+        ):
+            info = manager.get_memory_info()
 
         # Should succeed with default device_id 0
         assert "total_memory" in info
@@ -1901,10 +2033,12 @@ class TestIntegration:
 
     def test_full_workflow_cpu(self, simple_model, sample_input):
         """Test full workflow on CPU."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         # Get device
         device = manager.get_device()
@@ -1943,10 +2077,12 @@ class TestIntegration:
 
     def test_multiple_get_available_devices_calls(self):
         """Test multiple calls to get_available_devices."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                    manager = DeviceManager(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            manager = DeviceManager(verbose=False)
 
         devices1 = manager.get_available_devices()
         devices2 = manager.get_available_devices()
@@ -1984,11 +2120,13 @@ class TestLoggingConfiguration:
 
     def test_verbose_true_logs_info(self, caplog):
         """Test verbose=True produces INFO logs."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+            patch.object(DeviceManager, "_is_mps_available", return_value=False),
+            patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+        ):
+            _manager = DeviceManager(verbose=True)
 
         # Should have logged initialization info
         assert len(caplog.records) > 0
@@ -1997,10 +2135,12 @@ class TestLoggingConfiguration:
         """Test verbose=False reduces logging."""
         with caplog.at_level(logging.INFO):
             caplog.clear()
-            with patch("torch.cuda.is_available", return_value=False):
-                with patch.object(DeviceManager, "_is_mps_available", return_value=False):
-                    with patch.object(DeviceManager, "_is_tpu_available", return_value=False):
-                        _manager = DeviceManager(verbose=False)
+            with (
+                patch("torch.cuda.is_available", return_value=False),
+                patch.object(DeviceManager, "_is_mps_available", return_value=False),
+                patch.object(DeviceManager, "_is_tpu_available", return_value=False),
+            ):
+                _manager = DeviceManager(verbose=False)
 
         # Check for absence of specific verbose logs
         init_logs = [r for r in caplog.records if "DeviceManager initialized" in r.message]
@@ -2017,14 +2157,16 @@ class TestCUDASpecific:
 
     def test_cuda_device_properties_retrieved(self, mock_cuda_properties):
         """Test CUDA device properties are correctly retrieved."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.set_device"):
-                        with patch(
-                            "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                        ):
-                            manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
         info = manager.get_device_info()
 
@@ -2038,20 +2180,24 @@ class TestCUDASpecific:
         allocated = 4 * (1024**3)
         reserved = 8 * (1024**3)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                with patch("torch.cuda.memory_allocated", return_value=allocated):
-                    with patch("torch.cuda.memory_reserved", return_value=reserved):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=allocated),
+            patch("torch.cuda.memory_reserved", return_value=reserved),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-            with patch("torch.cuda.memory_allocated", return_value=allocated):
-                with patch("torch.cuda.memory_reserved", return_value=reserved):
-                    info = manager.get_memory_info()
+        with (
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=allocated),
+            patch("torch.cuda.memory_reserved", return_value=reserved),
+        ):
+            info = manager.get_memory_info()
 
         assert info["total_memory"] == total
         assert info["allocated_memory"] == allocated
@@ -2060,22 +2206,26 @@ class TestCUDASpecific:
 
     def test_multi_gpu_detection(self, mock_cuda_properties):
         """Test multi-GPU detection."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=4):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            with patch(
-                                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                            ):
-                                manager = DeviceManager(device="cuda:0", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=4),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+            patch(
+                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
+                ),
+        ):
+            manager = DeviceManager(device="cuda:0", verbose=False)
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=4):
-                with patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties):
-                    with patch("torch.cuda.memory_allocated", return_value=0):
-                        with patch("torch.cuda.set_device"):
-                            devices = manager.get_available_devices(device_type="cuda")
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=4),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.set_device"),
+        ):
+            devices = manager.get_available_devices(device_type="cuda")
 
         assert len(devices) == 4
         for i, device in enumerate(devices):
