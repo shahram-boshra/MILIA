@@ -22,6 +22,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import logging
 import shutil
 import tempfile
@@ -2663,10 +2664,8 @@ class TestEdgeCasesAndErrorHandling:
         """Test format names with whitespace are handled."""
         # Whitespace should be part of the lookup (case-insensitive)
         # This tests that the format is used as-is (lowercased)
-        try:
+        with contextlib.suppress(ValueError):  # Expected if whitespace isn't trimmed
             _result = convert_to_pyg(valid_dict_data, format="  dict  ")
-        except ValueError:
-            pass  # Expected if whitespace isn't trimmed
 
     def test_unicode_data_in_dict(self):
         """Test handling of unicode strings in dict data."""
