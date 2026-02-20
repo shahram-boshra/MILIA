@@ -427,18 +427,22 @@ class TestPreprocessOutputExists(unittest.TestCase):
     def test_existing_output_skips_h5_parsing(self, mock_exists):
         """When output .npz exists, HDF5 parsing is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, "_parse_ani1ccx_h5") as mock_parse:
-                preprocessor.preprocess()
+        with (
+            patch.object(Path, "stat", return_value=Mock(st_size=1024)),
+            patch.object(preprocessor, "_parse_ani1ccx_h5") as mock_parse,
+        ):
+            preprocessor.preprocess()
         mock_parse.assert_not_called()
 
     @patch("pathlib.Path.exists", return_value=True)
     def test_existing_output_skips_npz_build(self, mock_exists):
         """When output .npz exists, NPZ building is never called."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, "_build_npz") as mock_build:
-                preprocessor.preprocess()
+        with (
+            patch.object(Path, "stat", return_value=Mock(st_size=1024)),
+            patch.object(preprocessor, "_build_npz") as mock_build,
+        ):
+            preprocessor.preprocess()
         mock_build.assert_not_called()
 
 
@@ -799,9 +803,11 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         def mock_validate_output(path):
             call_order.append("validate_output")
 
-        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
-            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
-                preprocessor.run()
+        with (
+            patch.object(preprocessor, "preprocess", side_effect=mock_preprocess),
+            patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output),
+        ):
+            preprocessor.run()
 
         self.assertEqual(call_order, ["preprocess", "validate_output"])
 
@@ -814,11 +820,13 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
     def test_run_calls_preprocess(self, mock_exists):
         """run() calls preprocess after validation."""
         preprocessor = _make_preprocessor(config=_make_config())
-        with patch.object(Path, "stat", return_value=Mock(st_size=1024)):
-            with patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp:
-                with contextlib.suppress(Exception):
-                    preprocessor.run()
-                mock_pp.assert_called_once()
+        with (
+            patch.object(Path, "stat", return_value=Mock(st_size=1024)),
+            patch.object(preprocessor, "preprocess", wraps=preprocessor.preprocess) as mock_pp,
+        ):
+            with contextlib.suppress(Exception):
+                preprocessor.run()
+            mock_pp.assert_called_once()
 
     def test_has_run_method_from_base(self):
         """ANI1ccxPreprocessor inherits run() from BasePreprocessor."""
@@ -861,7 +869,11 @@ class TestIterDataBucketsCcx(unittest.TestCase):
             mock_h5py_module with .File() returning a context manager.
         """
         mock_file = MagicMock()
-        mock_file.keys.return_value = list(mol_groups.keys())
+        group_names = list(mol_groups.keys())
+        mock_file.keys.return_value = group_names
+        # h5py File/Group objects are dict-like: iterating yields keys (group names).
+        # MagicMock.__iter__ defaults to empty, so we must wire it explicitly.
+        mock_file.__iter__ = Mock(side_effect=lambda: iter(group_names))
 
         group_mocks = {}
         for group_name, datasets in mol_groups.items():
