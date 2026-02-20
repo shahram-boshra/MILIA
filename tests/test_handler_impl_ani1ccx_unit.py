@@ -408,11 +408,13 @@ class TestValidateMoleculeDataErrors(unittest.TestCase):
 
     def test_unexpected_error_wraps(self):
         handler = _make_handler()
-        with patch.object(handler, "_is_valid_property", side_effect=TypeError("boom")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.validate_molecule_data(
-                    _make_raw_properties(), molecule_index=0, identifier="test"
-                )
+        with (
+            patch.object(handler, "_is_valid_property", side_effect=TypeError("boom")),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.validate_molecule_data(
+                _make_raw_properties(), molecule_index=0, identifier="test"
+            )
 
 
 # ============================================================================
@@ -797,11 +799,13 @@ class TestAddScalarTargetsInternal(unittest.TestCase):
         pc = _make_processing_config(scalar_graph_targets=["ccsd_energy"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
-            with self.assertRaises((DatasetSpecificHandlerError, PropertyEnrichmentError)):
-                handler._add_scalar_targets_internal(
-                    data, _make_raw_properties(ccsd_energy=-40.518), 0, "test"
-                )
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")),
+            self.assertRaises((DatasetSpecificHandlerError, PropertyEnrichmentError)),
+        ):
+            handler._add_scalar_targets_internal(
+                data, _make_raw_properties(ccsd_energy=-40.518), 0, "test"
+            )
 
 
 # ============================================================================
@@ -854,11 +858,13 @@ class TestAddVectorPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(vector_graph_properties=["dipole"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
-            with self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)):
-                handler._add_vector_properties_internal(
-                    data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test"
-                )
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")),
+            self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)),
+        ):
+            handler._add_vector_properties_internal(
+                data, _make_raw_properties(dipole=np.array([1.0, 2.0, 3.0])), 0, "test"
+            )
 
     def test_no_vector_properties_configured_is_noop(self):
         pc = _make_processing_config(vector_graph_properties=[])
@@ -958,14 +964,16 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
         pc = _make_processing_config(variable_len_graph_properties=["forces"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        with patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")):
-            with self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)):
-                handler._add_variable_length_properties_internal(
-                    data,
-                    _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)),
-                    0,
-                    "test",
-                )
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=RuntimeError("boom")),
+            self.assertRaises((PropertyEnrichmentError, DatasetSpecificHandlerError)),
+        ):
+            handler._add_variable_length_properties_internal(
+                data,
+                _make_raw_properties(forces=np.random.randn(5, 3).astype(np.float32)),
+                0,
+                "test",
+            )
 
 
 # ============================================================================
