@@ -62,6 +62,7 @@ Markers:
     contract  — Interface/contract validation tests (§2)
 """
 
+import contextlib
 import importlib
 import inspect
 import logging
@@ -417,11 +418,9 @@ class TestSmokeLogInitializationStatusExecution:
         """
         # May raise RuntimeError if no preprocessors registered — that's OK
         # We just verify it doesn't raise unexpected exceptions
-        try:
-            preprocessing_pkg._validate_critical_components()
-        except RuntimeError:
+        with contextlib.suppress(RuntimeError):
             # Expected when preprocessors are not fully available
-            pass
+            preprocessing_pkg._validate_critical_components()
 
 
 # ===================================================================
