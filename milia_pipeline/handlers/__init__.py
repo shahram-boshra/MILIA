@@ -98,6 +98,8 @@ Phase 7 - Registry Integration for Integration Module:
 # are now in base_handler.py, and all handler classes are in implementations/.
 # =============================================================================
 
+import contextlib
+
 # Handler class names for lazy loading - LEGACY FALLBACK ONLY
 # NOTE: This set is used ONLY as a fallback when implementations/ is unavailable.
 # Dynamic discovery from implementations/__init__.py takes priority.
@@ -685,13 +687,11 @@ def get_handler_info(handler_type: str) -> dict:
             }
             # Try to get molecule creation strategy from handler
             if hasattr(handler_class, "get_molecule_creation_strategy"):
-                try:
+                with contextlib.suppress(Exception):
                     # Create temp instance or use class method
                     info["molecule_creation_strategy"] = (
                         "coordinate_based"  # Default for new handlers
                     )
-                except Exception:
-                    pass
             return info
     except (ImportError, AttributeError):
         pass
