@@ -135,9 +135,11 @@ def isolated_registry():
     ModelRegistry._instances.clear()
 
     # Create new instance
-    with patch.object(ModelRegistry, "auto_discover_pyg_models", return_value=0):
-        with patch.object(ModelRegistry, "log_availability_summary"):
-            reg = ModelRegistry()
+    with (
+        patch.object(ModelRegistry, "auto_discover_pyg_models", return_value=0),
+        patch.object(ModelRegistry, "log_availability_summary"),
+    ):
+        reg = ModelRegistry()
 
     yield reg
 
