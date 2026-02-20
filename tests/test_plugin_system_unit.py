@@ -1338,27 +1338,31 @@ class TestPluginRegistryUtilities:
                 "get_metadata": classmethod(lambda cls: Mock()),
             },
         )
-        with patch("milia_pipeline.transformations.plugin_system.CustomTransformBase", base):
-            with patch(
+        with (
+            patch("milia_pipeline.transformations.plugin_system.CustomTransformBase", base),
+            patch(
                 "milia_pipeline.transformations.plugin_system.MolecularTransformBase",
                 type("MTB", (), {}),
-            ):
-                with patch(
-                    "milia_pipeline.transformations.plugin_system.QuantumTransformBase",
-                    type("QTB", (), {}),
-                ):
-                    result = PluginRegistry._is_custom_transform(base)
-                    assert result is False
+            ),
+            patch(
+                "milia_pipeline.transformations.plugin_system.QuantumTransformBase",
+                type("QTB", (), {}),
+            ),
+        ):
+            result = PluginRegistry._is_custom_transform(base)
+            assert result is False
 
     def test_is_custom_transform_when_custom_transform_base_none(self):
         """Test _is_custom_transform returns False when CustomTransformBase is None"""
-        with patch("milia_pipeline.transformations.plugin_system.CustomTransformBase", None):
-            with patch(
+        with (
+            patch("milia_pipeline.transformations.plugin_system.CustomTransformBase", None),
+            patch(
                 "milia_pipeline.transformations.plugin_system._import_custom_transforms",
                 return_value=False,
-            ):
-                result = PluginRegistry._is_custom_transform(object)
-                assert result is False
+                ),
+        ):
+            result = PluginRegistry._is_custom_transform(object)
+            assert result is False
 
 
 # =============================================================================
@@ -1621,19 +1625,21 @@ class TestPluginRegistryFallbackRegistration:
         )
         plugin_meta = PluginMetadata(plugin_name="test", version="1.0.0", author="A")
 
-        with patch("milia_pipeline.transformations.plugin_system._import_graph_transforms"):
-            with patch("milia_pipeline.transformations.plugin_system.TransformRegistry", mock_tr):
-                # We need to patch the module-level TransformRegistry that the instance method uses
-                import milia_pipeline.transformations.plugin_system as ps
+        with (
+            patch("milia_pipeline.transformations.plugin_system._import_graph_transforms"),
+            patch("milia_pipeline.transformations.plugin_system.TransformRegistry", mock_tr),
+        ):
+            # We need to patch the module-level TransformRegistry that the instance method uses
+            import milia_pipeline.transformations.plugin_system as ps
 
-                original_tr = ps.TransformRegistry
-                ps.TransformRegistry = mock_tr
-                try:
-                    result = registry._register_transform_with_fallback(
-                        declaration=decl, plugin_dir=tmp_path, plugin_meta=plugin_meta
-                    )
-                finally:
-                    ps.TransformRegistry = original_tr
+            original_tr = ps.TransformRegistry
+            ps.TransformRegistry = mock_tr
+            try:
+                result = registry._register_transform_with_fallback(
+                    declaration=decl, plugin_dir=tmp_path, plugin_meta=plugin_meta
+                )
+            finally:
+                ps.TransformRegistry = original_tr
 
         assert result["registered"] is True
         assert result["source"] == "pyg"
