@@ -1466,18 +1466,20 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
     def test_process_property_unexpected_exception_wrapped(self):
         """Unexpected exception in process_property_value wraps in DatasetSpecificHandlerError."""
         handler = _make_handler()
-        with patch.object(
-            handler,
-            "process_property_value",
-            wraps=handler.process_property_value,
-        ):
+        with (
+            patch.object(
+                handler,
+                "process_property_value",
+                wraps=handler.process_property_value,
+            ),
             # Force an unexpected error
-            with patch(
+            patch(
                 "milia_pipeline.handlers.implementations.wavefunction.is_value_valid_and_not_nan",
                 side_effect=RuntimeError("boom"),
-            ):
-                with self.assertRaises(DatasetSpecificHandlerError):
-                    handler.process_property_value("homo_lumo_gap_eV", 4.56, 0)
+            ),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("homo_lumo_gap_eV", 4.56, 0)
 
 
 # ============================================================================
