@@ -114,6 +114,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -874,10 +875,9 @@ class TestHPOManagerCreateObjective:
                 additional_callbacks=[],
             )
 
-            try:
+            with contextlib.suppress(Exception):
+                # May fail on trainer but should call suggest_params
                 objective(mock_trial)
-            except Exception:
-                pass  # May fail on trainer but should call suggest_params
 
             mock_backend.suggest_params.assert_called()
 
@@ -3788,15 +3788,14 @@ class TestPrepareClassificationDataHpo:
 
         # Test that default discretize_config is applied
         # The function should not fail with None discretize_config
-        try:
+        with contextlib.suppress(Exception):
+            # May fail without DiscretizeTargets but should try
             result_train, result_val, num_classes = _prepare_classification_data_hpo(
                 train_data,
                 val_data,
                 "graph_classification",
                 discretize_config=None,  # Should use defaults
             )
-        except Exception:
-            pass  # May fail without DiscretizeTargets but should try
 
     def test_multiple_samples_compute_combined_num_classes(self):
         """Test num_classes is computed from all samples combined."""
