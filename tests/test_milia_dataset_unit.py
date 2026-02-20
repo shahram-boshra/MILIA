@@ -131,15 +131,17 @@ class TestHandlerCreation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         mock_create.assert_called_once()
         self.assertTrue(dataset._handler_enabled)
@@ -150,30 +152,34 @@ class TestHandlerCreation(BaseTestCase):
         """Test graceful degradation when handler returns None."""
         mock_create.return_value = None
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Graceful degradation on None")
 
     def test_handlers_not_available(self):
         """Test behavior when handlers module not available."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Handlers not available")
@@ -187,15 +193,17 @@ class TestHandlerCreation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         args = mock_create.call_args[0]
         self.assertEqual(len(args), 4)
@@ -214,15 +222,17 @@ class TestHandlerCreation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=dmc_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=dmc_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.dataset_type, "DMC")
         self.assertTrue(dataset._handler_enabled)
@@ -260,15 +270,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         mock_validate.assert_called_once()
         print("✅ Validation called")
@@ -280,15 +292,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Missing get_dataset_type detected")
@@ -300,15 +314,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_dataset_type.return_value = "DFT"
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Missing get_required_properties detected")
@@ -322,15 +338,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(dataset._handler_enabled)
         print("✅ Type mismatch detected")
@@ -344,15 +362,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_create.return_value = mock_handler
         mock_validate.side_effect = Exception("Incompatible")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Compatibility failure handled")
@@ -366,15 +386,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = ["Etot", "forces"]
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(dataset._handler_enabled)
         print("✅ Required properties validated")
@@ -388,15 +410,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = None
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(dataset._handler_enabled)
         print("✅ None properties detected")
@@ -410,15 +434,17 @@ class TestHandlerValidation(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         mock_handler.get_dataset_type.assert_called()
         mock_handler.get_required_properties.assert_called()
@@ -444,16 +470,18 @@ class TestTransformSystem(BaseTestCase):
             mock_setup.transforms = [mock_transform]
             mock_get.return_value = mock_setup
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        _dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="test_setup",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                _dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="test_setup",
+                )
 
         mock_get.assert_called()
         print("✅ Priority 1: Experimental setup")
@@ -462,15 +490,17 @@ class TestTransformSystem(BaseTestCase):
         """Test Priority 2: Legacy pyg_pre_transforms_config."""
         _legacy_config = [{"name": "NormalizeEnergies", "kwargs": {}}]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         print("✅ Priority 2: Legacy config")
 
@@ -485,75 +515,85 @@ class TestTransformSystem(BaseTestCase):
             mock_setup.transforms = [mock_transform]
             mock_get.return_value = mock_setup
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        _dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="test",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                _dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="test",
+                )
 
         print("✅ ExperimentalSetup converted to list")
 
     def test_switch_experimental_setup_exists(self):
         """Test switch_experimental_setup method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "switch_experimental_setup"))
         print("✅ Switch experimental setup exists")
 
     def test_get_available_experimental_setups(self):
         """Test get_available_experimental_setups method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_available_experimental_setups"))
         print("✅ Get available setups")
 
     def test_get_current_experimental_setup(self):
         """Test get_current_experimental_setup method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_current_experimental_setup"))
         print("✅ Get current setup")
 
     def test_transform_caching_methods(self):
         """Test transform caching methods exist."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_cached_sequences"))
         self.assertTrue(hasattr(dataset, "clear_transform_cache"))
@@ -561,45 +601,51 @@ class TestTransformSystem(BaseTestCase):
 
     def test_get_transform_info(self):
         """Test get_transform_info method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_transform_info"))
         print("✅ Get transform info")
 
     def test_get_transform_validation_report(self):
         """Test get_transform_validation_report method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_transform_validation_report"))
         print("✅ Get validation report")
 
     def test_validate_transform_configuration(self):
         """Test validate_transform_configuration method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "validate_transform_configuration"))
         print("✅ Validate transform config")
@@ -620,15 +666,17 @@ class TestErrorHandling(BaseTestCase):
             message="Handler not available", requested_dataset_type="DFT"
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ HandlerNotAvailableError")
@@ -640,15 +688,17 @@ class TestErrorHandling(BaseTestCase):
             message="Invalid config", handler_type="DFT"
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ HandlerConfigurationError")
@@ -660,15 +710,17 @@ class TestErrorHandling(BaseTestCase):
             message="Incompatible", handler_type="DFT", incompatible_features=["feature1"]
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ HandlerCompatibilityError")
@@ -680,15 +732,17 @@ class TestErrorHandling(BaseTestCase):
             message="Integration failed", handler_type="DFT", integration_point="init"
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ HandlerIntegrationError")
@@ -698,45 +752,51 @@ class TestErrorHandling(BaseTestCase):
         """Test unexpected error graceful degradation."""
         mock_create.side_effect = ValueError("Unexpected")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         print("✅ Unexpected error")
 
     def test_error_context_captured(self):
         """Test error context is captured."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_handler_error_context"))
         print("✅ Error context captured")
 
     def test_error_tracking_list(self):
         """Test error tracking list exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_handler_processing_errors"))
         self.assertIsInstance(dataset._handler_processing_errors, list)
@@ -747,15 +807,17 @@ class TestErrorHandling(BaseTestCase):
         """Test error statistics are updated on failure."""
         mock_create.return_value = None
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIn("error_statistics", dataset._processing_statistics)
         print("✅ Error statistics updated")
@@ -769,15 +831,17 @@ class TestErrorHandling(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(dataset._handler_enabled)
         print("✅ Multiple errors handled")
@@ -790,15 +854,17 @@ class TestErrorHandling(BaseTestCase):
             message="Not available", requested_dataset_type="DFT"
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertFalse(dataset._handler_enabled)
         self.assertIsNone(dataset._dataset_handler)
@@ -815,16 +881,18 @@ class TestConfigurationManagement(BaseTestCase):
 
     def test_create_with_containers(self):
         """Test factory method create_with_containers."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset.create_with_containers(
-                        root=str(self.test_dir),
-                        logger=self.logger,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset.create_with_containers(
+                root=str(self.test_dir),
+                logger=self.logger,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsNotNone(dataset)
         self.assertEqual(dataset.dataset_type, "DFT")
@@ -832,15 +900,17 @@ class TestConfigurationManagement(BaseTestCase):
 
     def test_dataset_type_dft(self):
         """Test DFT dataset type configuration."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.dataset_type, "DFT")
         print("✅ DFT dataset type")
@@ -849,15 +919,17 @@ class TestConfigurationManagement(BaseTestCase):
         """Test DMC dataset type configuration."""
         dmc_config = DatasetConfig(dataset_type="DMC")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=dmc_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=dmc_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.dataset_type, "DMC")
         print("✅ DMC dataset type")
@@ -866,15 +938,17 @@ class TestConfigurationManagement(BaseTestCase):
         """Test filter configuration for atom counts."""
         filter_config = FilterConfig(min_atoms=5, max_atoms=50)
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset._filter_config.min_atoms, 5)
         self.assertEqual(dataset._filter_config.max_atoms, 50)
@@ -887,15 +961,17 @@ class TestConfigurationManagement(BaseTestCase):
             heavy_atom_filter={"enabled": True, "symbols": ["C", "N", "O"]}
         )
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsNotNone(dataset._filter_config.heavy_atom_filter)
         print("✅ Filter heavy atoms")
@@ -904,31 +980,35 @@ class TestConfigurationManagement(BaseTestCase):
         """Test processing configuration for scalar targets."""
         processing_config = ProcessingConfig(scalar_graph_targets=["Etot", "forces"])
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=processing_config,
+            )
 
         self.assertIn("Etot", dataset._processing_config.scalar_graph_targets)
         print("✅ Processing scalar targets")
 
     def test_chunk_size_configuration(self):
         """Test chunk size configuration."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        chunk_size=2000,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                chunk_size=2000,
+            )
 
         self.assertEqual(dataset.chunk_size, 2000)
         print("✅ Chunk size configuration")
@@ -951,15 +1031,17 @@ class TestStatisticsAndMonitoring(BaseTestCase):
         mock_handler.get_required_properties.return_value = []
         mock_create.return_value = mock_handler
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", True),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsNotNone(dataset._processing_statistics)
         self.assertIn("handler_enabled", dataset._processing_statistics)
@@ -967,15 +1049,17 @@ class TestStatisticsAndMonitoring(BaseTestCase):
 
     def test_error_statistics_structure(self):
         """Test error statistics structure."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         error_stats = dataset._processing_statistics["error_statistics"]
         self.assertIn("handler_processing_errors", error_stats)
@@ -984,15 +1068,17 @@ class TestStatisticsAndMonitoring(BaseTestCase):
 
     def test_performance_metrics_structure(self):
         """Test performance metrics structure."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         perf_metrics = dataset._processing_statistics["performance_metrics"]
         self.assertIn("handler_processing_time", perf_metrics)
@@ -1001,45 +1087,51 @@ class TestStatisticsAndMonitoring(BaseTestCase):
 
     def test_get_processing_summary_exists(self):
         """Test get_processing_summary method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_processing_summary"))
         print("✅ Get processing summary exists")
 
     def test_get_handler_info_exists(self):
         """Test get_handler_info method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_handler_info"))
         print("✅ Get handler info exists")
 
     def test_transform_statistics_initialized(self):
         """Test transform statistics are initialized."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         transform_stats = dataset._processing_statistics["transform_statistics"]
         self.assertIn("experimental_setup", transform_stats)
@@ -1057,60 +1149,68 @@ class TestDataPipelineMethods(BaseTestCase):
 
     def test_download_method_exists(self):
         """Test download method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "download"))
         print("✅ Download method exists")
 
     def test_process_method_exists(self):
         """Test process method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "process"))
         print("✅ Process method exists")
 
     def test_collate_method_exists(self):
         """Test collate method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "collate"))
         print("✅ Collate method exists")
 
     def test_file_name_properties(self):
         """Test raw and processed file name properties."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "raw_file_names"))
         self.assertTrue(hasattr(dataset, "processed_file_names"))
@@ -1381,60 +1481,68 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_extract_uncertainty_specific_insights_exists(self):
         """Test _extract_uncertainty_specific_insights method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_uncertainty_specific_insights"))
         print("✅ _extract_uncertainty_specific_insights exists")
 
     def test_extract_vibrational_specific_insights_exists(self):
         """Test _extract_vibrational_specific_insights method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_vibrational_specific_insights"))
         print("✅ _extract_vibrational_specific_insights exists")
 
     def test_extract_orbital_specific_insights_exists(self):
         """Test _extract_orbital_specific_insights method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_orbital_specific_insights"))
         print("✅ _extract_orbital_specific_insights exists")
 
     def test_extract_uncertainty_insights_with_stats(self):
         """Test _extract_uncertainty_specific_insights with handler stats."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {
@@ -1454,15 +1562,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_extract_vibrational_insights_with_stats(self):
         """Test _extract_vibrational_specific_insights with handler stats."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {
@@ -1479,15 +1589,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_extract_orbital_insights_with_stats(self):
         """Test _extract_orbital_specific_insights with handler stats."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {
@@ -1508,15 +1620,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_uncertainty_insights_phase6_key_structure(self):
         """Test _extract_uncertainty_specific_insights uses generalized key only (Phase 6.3 removed legacy dmc_insights)."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {"uncertainty_statistics": {"count": 100, "mean": 0.05}}
@@ -1533,15 +1647,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_vibrational_insights_phase6_key_structure(self):
         """Test _extract_vibrational_specific_insights uses generalized key only (Phase 6.3 removed legacy dft_insights)."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {"vibrational_refinement": {"molecules_refined": 50}}
@@ -1559,15 +1675,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_orbital_insights_backward_compatibility(self):
         """Test _extract_orbital_specific_insights populates wavefunction_insights for backward compatibility."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         statistics = {}
         handler_stats = {"orbital_statistics": {"molecules_with_orbitals": 75}}
@@ -1581,15 +1699,17 @@ class TestPhase6InsightExtractionMethods(BaseTestCase):
 
     def test_insight_extraction_handles_errors(self):
         """Test insight extraction methods handle errors gracefully."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Pass invalid stats that might cause errors
         statistics = {}
@@ -1611,60 +1731,68 @@ class TestPhase6MetadataExtractionMethods(BaseTestCase):
 
     def test_extract_uncertainty_metadata_fallback_exists(self):
         """Test _extract_uncertainty_metadata_fallback_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_uncertainty_metadata_fallback_enhanced"))
         print("✅ _extract_uncertainty_metadata_fallback_enhanced exists")
 
     def test_extract_vibrational_metadata_fallback_exists(self):
         """Test _extract_vibrational_metadata_fallback_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_vibrational_metadata_fallback_enhanced"))
         print("✅ _extract_vibrational_metadata_fallback_enhanced exists")
 
     def test_extract_orbital_metadata_fallback_exists(self):
         """Test _extract_orbital_metadata_fallback_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_orbital_metadata_fallback_enhanced"))
         print("✅ _extract_orbital_metadata_fallback_enhanced exists")
 
     def test_orbital_metadata_extraction_with_pyg_data(self):
         """Test _extract_orbital_metadata_fallback_enhanced with PyG data."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Create mock PyG data with HOMO-LUMO gap
         pyg_data = Mock()
@@ -1679,15 +1807,17 @@ class TestPhase6MetadataExtractionMethods(BaseTestCase):
 
     def test_orbital_metadata_extraction_handles_missing_attrs(self):
         """Test _extract_orbital_metadata_fallback_enhanced handles missing attributes."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Create mock PyG data without orbital attributes
         pyg_data = Mock(spec=[])  # Empty spec means no attributes
@@ -1700,45 +1830,51 @@ class TestPhase6MetadataExtractionMethods(BaseTestCase):
 
     def test_legacy_dmc_metadata_method_still_exists(self):
         """Test legacy _extract_dmc_metadata_fallback_enhanced method still exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_dmc_metadata_fallback_enhanced"))
         print("✅ Legacy DMC metadata method exists")
 
     def test_legacy_dft_metadata_method_still_exists(self):
         """Test legacy _extract_dft_metadata_fallback_enhanced method still exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_extract_dft_metadata_fallback_enhanced"))
         print("✅ Legacy DFT metadata method exists")
 
     def test_uncertainty_metadata_delegates_to_dmc(self):
         """Test _extract_uncertainty_metadata_fallback_enhanced delegates to DMC method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Mock the DMC method to verify delegation
         pyg_data = Mock()
@@ -1761,30 +1897,34 @@ class TestPhase6RegistryStatusMethod(BaseTestCase):
 
     def test_get_registry_integration_status_exists(self):
         """Test get_registry_integration_status method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_registry_integration_status"))
         print("✅ get_registry_integration_status exists")
 
     def test_get_registry_integration_status_returns_dict(self):
         """Test get_registry_integration_status returns a dictionary."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_registry_integration_status()
         self.assertIsInstance(result, dict)
@@ -1792,15 +1932,17 @@ class TestPhase6RegistryStatusMethod(BaseTestCase):
 
     def test_registry_status_contains_required_keys(self):
         """Test registry status contains all required keys."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_registry_integration_status()
 
@@ -1819,15 +1961,17 @@ class TestPhase6RegistryStatusMethod(BaseTestCase):
 
     def test_registry_status_phase_6_complete_flag(self):
         """Test registry status has phase_6_complete = True."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_registry_integration_status()
         self.assertTrue(result["phase_6_complete"])
@@ -1835,15 +1979,17 @@ class TestPhase6RegistryStatusMethod(BaseTestCase):
 
     def test_registry_status_includes_dataset_features(self):
         """Test registry status includes dataset_features for registered types."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_registry_integration_status()
 
@@ -1854,15 +2000,17 @@ class TestPhase6RegistryStatusMethod(BaseTestCase):
 
     def test_registry_status_includes_insight_types(self):
         """Test registry status includes insight_types for registered types."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_registry_integration_status()
 
@@ -1884,15 +2032,17 @@ class TestPhase6BackwardCompatibility(BaseTestCase):
         """Test dmc_specific flag is still set in statistics for DMC datasets."""
         dmc_config = DatasetConfig(dataset_type="DMC")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=dmc_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=dmc_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The legacy code path should still work
         self.assertEqual(dataset.dataset_type, "DMC")
@@ -1900,15 +2050,17 @@ class TestPhase6BackwardCompatibility(BaseTestCase):
 
     def test_dft_specific_flag_still_set(self):
         """Test dft_specific flag is still set in statistics for DFT datasets."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.dataset_type, "DFT")
         print("✅ DFT dataset type preserved")
@@ -1936,15 +2088,17 @@ class TestPhase6BackwardCompatibility(BaseTestCase):
 
     def test_existing_method_signatures_unchanged(self):
         """Test existing method signatures are unchanged."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Check key methods still exist with expected signatures
         self.assertTrue(hasattr(dataset, "get_handler_info"))
@@ -1955,15 +2109,17 @@ class TestPhase6BackwardCompatibility(BaseTestCase):
 
     def test_legacy_dmc_insights_replaced_by_uncertainty_insights(self):
         """Test legacy _extract_dmc_specific_insights removed in Phase 6.3, replaced by generalized method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Phase 6.3 removed the dead legacy method; the generalized replacement must exist
         self.assertTrue(hasattr(dataset, "_extract_uncertainty_specific_insights"))
@@ -1980,15 +2136,17 @@ class TestPhase6BackwardCompatibility(BaseTestCase):
 
     def test_legacy_dft_insights_replaced_by_vibrational_insights(self):
         """Test legacy _extract_dft_specific_insights removed in Phase 6.3, replaced by generalized method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Phase 6.3 removed the dead legacy method; the generalized replacement must exist
         self.assertTrue(hasattr(dataset, "_extract_vibrational_specific_insights"))
@@ -2023,30 +2181,34 @@ class TestStandardTransformsSupport(BaseTestCase):
 
     def test_get_transform_configuration_info_exists(self):
         """Test get_transform_configuration_info method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get_transform_configuration_info"))
         print("✅ get_transform_configuration_info exists")
 
     def test_get_transform_configuration_info_returns_dict(self):
         """Test get_transform_configuration_info returns dictionary."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_transform_configuration_info()
         self.assertIsInstance(result, dict)
@@ -2054,15 +2216,17 @@ class TestStandardTransformsSupport(BaseTestCase):
 
     def test_get_transform_configuration_info_has_required_keys(self):
         """Test get_transform_configuration_info has required keys."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.get_transform_configuration_info()
         required_keys = [
@@ -2078,16 +2242,18 @@ class TestStandardTransformsSupport(BaseTestCase):
 
     def test_get_transform_configuration_info_current_setup(self):
         """Test get_transform_configuration_info tracks current_setup."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        experimental_setup="test_setup",
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                experimental_setup="test_setup",
+            )
 
         result = dataset.get_transform_configuration_info()
         self.assertEqual(result["current_setup"], "test_setup")
@@ -2095,15 +2261,17 @@ class TestStandardTransformsSupport(BaseTestCase):
 
     def test_get_transform_configuration_info_error_fallback(self):
         """Test get_transform_configuration_info handles errors gracefully."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Mock get_transformation_config to raise exception
         with patch("milia_pipeline.datasets.milia_dataset.get_transformation_config") as mock_get:
@@ -2130,16 +2298,18 @@ class TestStandardTransformsSupport(BaseTestCase):
             {"name": "TestTransform", "kwargs": {}, "enabled": True},
         ]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        experimental_setup="test_setup",
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                experimental_setup="test_setup",
+            )
 
         # Verify get_combined_transforms_as_dicts was called
         mock_get_combined.assert_called_with("test_setup")
@@ -2162,15 +2332,17 @@ class TestStandardTransformsSupport(BaseTestCase):
 
         mock_get_combined.return_value = [{"name": "AddSelfLoops", "kwargs": {}, "enabled": True}]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Verify get_combined_transforms_as_dicts was called with default_setup
         mock_get_combined.assert_called()
@@ -2193,16 +2365,18 @@ class TestStandardTransformsSupport(BaseTestCase):
             {"name": "ExpTransform", "kwargs": {}, "enabled": True},  # experimental
         ]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        experimental_setup="test_setup",
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                experimental_setup="test_setup",
+            )
 
         mock_get_combined.assert_called()
         print("✅ Combined transforms include standard + experimental")
@@ -2221,16 +2395,18 @@ class TestStandardTransformsSupport(BaseTestCase):
             {"name": "NormalizeFeatures", "kwargs": {}, "enabled": True},
         ]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        experimental_setup="baseline",
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                experimental_setup="baseline",
+            )
 
         # Should still get standard transforms even with empty experimental
         mock_get_combined.assert_called_with("baseline")
@@ -2273,16 +2449,18 @@ class TestStandardTransformsSupport(BaseTestCase):
                 {"name": "LegacyTransform", "kwargs": {}, "enabled": True}
             ]
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="legacy_setup",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="legacy_setup",
+                )
 
         # Should work without errors
         self.assertIsNotNone(dataset)
@@ -2290,15 +2468,17 @@ class TestStandardTransformsSupport(BaseTestCase):
 
     def test_get_transform_configuration_info_with_mocked_config(self):
         """Test get_transform_configuration_info with mocked transform config."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Mock the transformation config
         mock_config = Mock()
@@ -2336,16 +2516,18 @@ class TestStandardTransformsSupport(BaseTestCase):
                 {"name": "Transform2", "kwargs": {}, "enabled": True},
             ]
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        _dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="test",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                _dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="test",
+                )
 
         # Verify list format is returned
         result = mock_combined.return_value
@@ -2374,16 +2556,18 @@ class TestStandardTransformsSupport(BaseTestCase):
                 {"name": "Experimental_Custom", "kwargs": {}, "enabled": True},
             ]
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        _dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="test",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                _dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="test",
+                )
 
         result = mock_combined.return_value
         # Standard transforms should come first
@@ -2397,17 +2581,19 @@ class TestStandardTransformsSupport(BaseTestCase):
         with patch("milia_pipeline.datasets.milia_dataset.get_experimental_setup") as mock_setup:
             mock_setup.return_value = None  # Setup not found
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        # Should not raise exception
-                        dataset = miliaDataset(
-                            root=str(self.test_dir),
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="nonexistent_setup",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                # Should not raise exception
+                dataset = miliaDataset(
+                    root=str(self.test_dir),
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="nonexistent_setup",
+                )
 
         # Should handle gracefully
         self.assertIsNotNone(dataset)
@@ -2424,30 +2610,34 @@ class TestDownloadFunctionality(BaseTestCase):
 
     def test_download_method_callable(self):
         """Test download method is callable."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(callable(getattr(dataset, "download", None)))
         print("✅ Download method callable")
 
     def test_raw_file_names_property(self):
         """Test raw_file_names property returns list."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         raw_files = dataset.raw_file_names
         self.assertIsInstance(raw_files, (list, tuple))
@@ -2455,15 +2645,17 @@ class TestDownloadFunctionality(BaseTestCase):
 
     def test_processed_file_names_property(self):
         """Test processed_file_names property returns appropriate type."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         processed_files = dataset.processed_file_names
         # processed_file_names can be a string or list depending on PyG version
@@ -2475,16 +2667,17 @@ class TestDownloadFunctionality(BaseTestCase):
         """Test download handles ConnectionError gracefully."""
         mock_get.side_effect = ConnectionError("Network unreachable")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_process", return_value=None):
-                # Test that connection errors are handled via the static download_file method
-                with self.assertRaises((ConnectionError, RequestException, Exception)):
-                    miliaDataset.download_file(
-                        url="http://example.com/test.npz",
-                        filename="test.npz",
-                        raw_dir=str(self.test_dir),
-                        logger=logging.getLogger(__name__),
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_process", return_value=None),
+            self.assertRaises((ConnectionError, RequestException, Exception)),
+        ):
+            miliaDataset.download_file(
+                url="http://example.com/test.npz",
+                filename="test.npz",
+                raw_dir=str(self.test_dir),
+                logger=logging.getLogger(__name__),
+            )
         print("✅ Download handles ConnectionError")
 
     @patch("milia_pipeline.datasets.milia_dataset.requests.get")
@@ -2492,15 +2685,16 @@ class TestDownloadFunctionality(BaseTestCase):
         """Test download handles Timeout gracefully."""
         mock_get.side_effect = Timeout("Connection timed out")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            # Test that timeout errors are handled via the static download_file method
-            with self.assertRaises((Timeout, RequestException, Exception)):
-                miliaDataset.download_file(
-                    url="http://example.com/test.npz",
-                    filename="test.npz",
-                    raw_dir=str(self.test_dir),
-                    logger=logging.getLogger(__name__),
-                )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            self.assertRaises((Timeout, RequestException, Exception)),
+        ):
+            miliaDataset.download_file(
+                url="http://example.com/test.npz",
+                filename="test.npz",
+                raw_dir=str(self.test_dir),
+                logger=logging.getLogger(__name__),
+            )
         print("✅ Download handles Timeout")
 
     def test_extract_filename_from_url(self):
@@ -2518,61 +2712,69 @@ class TestDownloadFunctionality(BaseTestCase):
 
     def test_force_reload_triggers_redownload(self):
         """Test force_reload=True triggers reprocessing."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None) as _mock_download:
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        force_reload=True,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None) as _mock_download,
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                force_reload=True,
+            )
 
         self.assertTrue(dataset.force_reload)
         print("✅ force_reload parameter works")
 
     def test_raw_dir_property(self):
         """Test raw_dir property returns correct path."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIn("raw", str(dataset.raw_dir))
         print("✅ raw_dir property works")
 
     def test_processed_dir_property(self):
         """Test processed_dir property returns correct path."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIn("processed", str(dataset.processed_dir))
         print("✅ processed_dir property works")
 
     def test_download_url_configuration(self):
         """Test download URL is configured from dataset config."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # raw_npz_download_url should be set (may be None if not configured)
         self.assertTrue(hasattr(dataset, "raw_npz_download_url"))
@@ -2589,15 +2791,17 @@ class TestNPZDataLoading(BaseTestCase):
 
     def test_load_and_prepare_data_method_exists(self):
         """Test _load_and_prepare_data method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The actual method name is _load_and_prepare_data (not _load_and_prepare_data_from_npz)
         self.assertTrue(hasattr(dataset, "_load_and_prepare_data"))
@@ -2605,15 +2809,17 @@ class TestNPZDataLoading(BaseTestCase):
 
     def test_determine_required_keys_method_exists(self):
         """Test _determine_required_keys_via_handler_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_determine_required_keys_via_handler_enhanced"))
         print("✅ _determine_required_keys_via_handler_enhanced exists")
@@ -2624,15 +2830,17 @@ class TestNPZDataLoading(BaseTestCase):
         mock_handler.get_required_properties.return_value = ["Etot", "forces", "coordinates"]
         mock_handler.get_identifier_keys.return_value = [("smiles", "smiles"), ("inchi", "inchi")]
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         dataset._dataset_handler = mock_handler
         result = dataset._determine_required_keys_via_handler_enhanced(
@@ -2645,15 +2853,17 @@ class TestNPZDataLoading(BaseTestCase):
 
     def test_determine_required_keys_without_handler(self):
         """Test _determine_required_keys_via_handler_enhanced without handler."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         dataset._dataset_handler = None
 
@@ -2671,15 +2881,17 @@ class TestNPZDataLoading(BaseTestCase):
 
     def test_npz_loading_handles_missing_file(self):
         """Test NPZ loading raises appropriate error for missing file."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         nonexistent_path = Path(self.test_dir) / "nonexistent.npz"
 
@@ -2697,15 +2909,17 @@ class TestNPZDataLoading(BaseTestCase):
         with open(corrupted_path, "wb") as f:
             f.write(b"not a valid npz file content")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The actual method is _load_and_prepare_data (not _load_and_prepare_data_from_npz)
         with self.assertRaises((DataProcessingError, FileNotFoundError, OSError, ValueError)):
@@ -2718,30 +2932,34 @@ class TestNPZDataLoading(BaseTestCase):
         """Test test_molecule_limit is applied when configured."""
         processing_config = ProcessingConfig(scalar_graph_targets=[], test_molecule_limit=100)
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=processing_config,
+            )
 
         self.assertEqual(dataset._processing_config.test_molecule_limit, 100)
         print("✅ test_molecule_limit applied")
 
     def test_npz_key_validation(self):
         """Test NPZ key validation logic."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Method should handle missing keys gracefully
         self.assertTrue(hasattr(dataset, "_determine_required_keys_via_handler_enhanced"))
@@ -2758,15 +2976,17 @@ class TestNPZDataLoading(BaseTestCase):
         }
         np.savez(npz_path, **test_data)
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    _dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            _dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The file exists and should be loadable
         self.assertTrue(npz_path.exists())
@@ -2774,15 +2994,17 @@ class TestNPZDataLoading(BaseTestCase):
 
     def test_preloaded_data_structure(self):
         """Test preloaded data structure is correct."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Method should return tuple of (dict, int, list)
         # The actual method name is _load_and_prepare_data
@@ -2793,30 +3015,34 @@ class TestNPZDataLoading(BaseTestCase):
         """Test feature tier detection for Wavefunction datasets."""
         wavefunction_config = DatasetConfig(dataset_type="Wavefunction")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=wavefunction_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=wavefunction_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.dataset_type, "Wavefunction")
         print("✅ Feature tier detection for Wavefunction")
 
     def test_npz_memory_mapping(self):
         """Test NPZ file is loaded with memory mapping."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Method uses mmap_mode='r' for efficient loading
         # The actual method name is _load_and_prepare_data
@@ -2834,15 +3060,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_convert_single_molecule_method_exists(self):
         """Test _process_molecule_batch method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The actual method is _process_molecule_batch (batch processing pattern)
         self.assertTrue(hasattr(dataset, "_process_molecule_batch"))
@@ -2850,15 +3078,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_process_chunk_method_exists(self):
         """Test _track_molecule_processing method exists for chunk tracking."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # The actual method is _track_molecule_processing for chunk processing tracking
         self.assertTrue(hasattr(dataset, "_track_molecule_processing"))
@@ -2866,45 +3096,51 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_enhanced_property_validation_method_exists(self):
         """Test _enhanced_property_validation method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_enhanced_property_validation"))
         print("✅ _enhanced_property_validation exists")
 
     def test_process_property_with_handler_method_exists(self):
         """Test _process_property_with_handler method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_process_property_with_handler"))
         print("✅ _process_property_with_handler exists")
 
     def test_filter_rejection_tracking(self):
         """Test filter rejection is tracked in statistics."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Statistics should track filter rejections
         self.assertIn("error_statistics", dataset._processing_statistics)
@@ -2912,15 +3148,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_conversion_error_handling(self):
         """Test conversion errors are handled gracefully."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Dataset should have error handling for conversions
         self.assertIn(
@@ -2930,15 +3168,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_chunk_processing_with_tqdm(self):
         """Test chunk processing uses progress bar."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # tqdm is imported and used
         self.assertTrue(hasattr(dataset, "chunk_size"))
@@ -2946,15 +3186,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_processed_chunk_dir_created(self):
         """Test processed chunk directory path is set."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "processed_chunk_dir"))
         self.assertIn("processed_chunks", str(dataset.processed_chunk_dir))
@@ -2962,15 +3204,17 @@ class TestMoleculeProcessing(BaseTestCase):
 
     def test_molecule_metadata_tracking(self):
         """Test molecule metadata is tracked during processing."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Statistics should track processed molecules
         self.assertIsInstance(dataset._processing_statistics, dict)
@@ -2994,45 +3238,51 @@ class TestTransformValidationAndCaching(BaseTestCase):
 
     def test_validate_config_structure_method_exists(self):
         """Test _validate_config_structure method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_validate_config_structure"))
         print("✅ _validate_config_structure exists")
 
     def test_create_cache_key_method_exists(self):
         """Test _create_cache_key method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_create_cache_key"))
         print("✅ _create_cache_key exists")
 
     def test_create_cache_key_deterministic(self):
         """Test cache key creation is deterministic."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         config = [{"name": "TestTransform", "kwargs": {"param": "value"}}]
         key1 = dataset._create_cache_key(config, "test_setup")
@@ -3043,45 +3293,51 @@ class TestTransformValidationAndCaching(BaseTestCase):
 
     def test_cached_transform_sequences_initialized(self):
         """Test _cached_transform_sequences is initialized."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsInstance(dataset._cached_transform_sequences, dict)
         print("✅ Cached transform sequences initialized")
 
     def test_validate_cached_sequence_method_exists(self):
         """Test _validate_cached_sequence method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_validate_cached_sequence"))
         print("✅ _validate_cached_sequence exists")
 
     def test_clear_transform_cache_works(self):
         """Test clear_transform_cache method works."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Add something to cache
         dataset._cached_transform_sequences["test_key"] = {"test": "value"}
@@ -3094,30 +3350,34 @@ class TestTransformValidationAndCaching(BaseTestCase):
 
     def test_transform_parameter_schemas_initialized(self):
         """Test _transform_parameter_schemas is initialized."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsInstance(dataset._transform_parameter_schemas, dict)
         print("✅ Transform parameter schemas initialized")
 
     def test_get_parameter_schemas_method(self):
         """Test get_parameter_schemas method returns copy."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         schemas = dataset.get_parameter_schemas()
         self.assertIsInstance(schemas, dict)
@@ -3125,15 +3385,17 @@ class TestTransformValidationAndCaching(BaseTestCase):
 
     def test_list_available_transforms_by_category(self):
         """Test list_available_transforms_by_category method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         result = dataset.list_available_transforms_by_category()
         self.assertIsInstance(result, dict)
@@ -3141,15 +3403,17 @@ class TestTransformValidationAndCaching(BaseTestCase):
 
     def test_validate_transform_configuration_method(self):
         """Test validate_transform_configuration returns validation result."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         config = [{"name": "AddSelfLoops", "kwargs": {}}]
         result = dataset.validate_transform_configuration(config)
@@ -3169,45 +3433,51 @@ class TestCollationAndBatching(BaseTestCase):
 
     def test_collate_method_exists(self):
         """Test collate method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "collate"))
         print("✅ collate method exists")
 
     def test_get_method_exists(self):
         """Test get method exists (for indexing)."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "get"))
         print("✅ get method exists")
 
     def test_len_method_exists(self):
         """Test __len__ method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "__len__"))
         self.assertIsInstance(len(dataset), int)
@@ -3215,30 +3485,34 @@ class TestCollationAndBatching(BaseTestCase):
 
     def test_slices_attribute_exists(self):
         """Test slices attribute exists for InMemoryDataset."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "slices"))
         print("✅ slices attribute exists")
 
     def test_data_attribute_exists(self):
         """Test data attribute exists for InMemoryDataset."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "data"))
         print("✅ data attribute exists")
@@ -3254,30 +3528,34 @@ class TestCollationAndBatching(BaseTestCase):
 
     def test_chunk_files_property(self):
         """Test chunk file handling during processing."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "processed_chunk_dir"))
         print("✅ Chunk file handling exists")
 
     def test_merge_chunks_logic(self):
         """Test chunk merging logic exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # collate method handles chunk merging
         self.assertTrue(callable(getattr(dataset, "collate", None)))
@@ -3294,75 +3572,85 @@ class TestDescriptorSystem(BaseTestCase):
 
     def test_descriptor_enabled_attribute(self):
         """Test _descriptor_enabled attribute exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_descriptor_enabled"))
         print("✅ _descriptor_enabled attribute exists")
 
     def test_initialize_descriptor_system_method(self):
         """Test _initialize_descriptor_system method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_initialize_descriptor_system"))
         print("✅ _initialize_descriptor_system exists")
 
     def test_descriptor_calculator_attribute(self):
         """Test _descriptor_calculator attribute initialization."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_descriptor_calculator"))
         print("✅ _descriptor_calculator attribute exists")
 
     def test_selected_descriptors_attribute(self):
         """Test _selected_descriptors attribute initialization."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_selected_descriptors"))
         print("✅ _selected_descriptors attribute exists")
 
     def test_descriptor_statistics_in_processing_stats(self):
         """Test descriptor statistics are tracked."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIn("descriptor_statistics", dataset._processing_statistics)
         print("✅ Descriptor statistics tracked")
@@ -3376,15 +3664,17 @@ class TestDescriptorSystem(BaseTestCase):
 
     def test_descriptor_system_handles_import_error(self):
         """Test descriptor system handles import errors gracefully."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Should not raise even if descriptors unavailable
         self.assertIsNotNone(dataset)
@@ -3392,15 +3682,17 @@ class TestDescriptorSystem(BaseTestCase):
 
     def test_processing_summary_includes_descriptor_stats(self):
         """Test get_processing_summary includes descriptor statistics."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         summary = dataset.get_processing_summary()
         self.assertIn("descriptor_statistics", summary)
@@ -3417,15 +3709,17 @@ class TestPathAndFileHandling(BaseTestCase):
 
     def test_root_path_normalization(self):
         """Test root path is normalized correctly."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Root should be an absolute path
         self.assertTrue(Path(dataset.root).is_absolute())
@@ -3433,16 +3727,18 @@ class TestPathAndFileHandling(BaseTestCase):
 
     def test_tilde_expansion_in_root(self):
         """Test tilde expansion in root path."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    # Use actual test_dir to avoid creating dirs in home
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            # Use actual test_dir to avoid creating dirs in home
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         # Should not contain ~ in final path
         self.assertNotIn("~", dataset.root)
@@ -3450,32 +3746,36 @@ class TestPathAndFileHandling(BaseTestCase):
 
     def test_none_root_creates_temp_dir(self):
         """Test None root creates temporary directory."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=None,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=None,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(Path(dataset.root).exists())
         print("✅ None root creates temp dir")
 
     def test_config_path_parameter(self):
         """Test config_path parameter is accepted."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    # config_path is optional, should work without it
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        config_path=None,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            # config_path is optional, should work without it
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                config_path=None,
+            )
 
         self.assertIsNotNone(dataset)
         print("✅ config_path parameter accepted")
@@ -3490,15 +3790,17 @@ class TestPathAndFileHandling(BaseTestCase):
 
     def test_raw_data_filename_attribute(self):
         """Test raw_data_filename attribute is set."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "raw_data_filename"))
         print("✅ raw_data_filename attribute set")
@@ -3535,16 +3837,18 @@ class TestFactoryMethods(BaseTestCase):
 
     def test_create_with_containers_returns_dataset(self):
         """Test create_with_containers returns miliaDataset instance."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset.create_with_containers(
-                        root=str(self.test_dir),
-                        logger=self.logger,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset.create_with_containers(
+                root=str(self.test_dir),
+                logger=self.logger,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsInstance(dataset, miliaDataset)
         print("✅ create_with_containers returns miliaDataset")
@@ -3559,34 +3863,38 @@ class TestFactoryMethods(BaseTestCase):
             mock_setup.transforms = []
             mock_get_setup.return_value = mock_setup
 
-            with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-                with patch.object(miliaDataset, "_download", return_value=None):
-                    with patch.object(miliaDataset, "_process", return_value=None):
-                        dataset = miliaDataset.create_with_containers(
-                            root=str(self.test_dir),
-                            logger=self.logger,
-                            dataset_config=self.dataset_config,
-                            filter_config=self.filter_config,
-                            processing_config=self.processing_config,
-                            experimental_setup="test_setup",
-                        )
+            with (
+                patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+                patch.object(miliaDataset, "_download", return_value=None),
+                patch.object(miliaDataset, "_process", return_value=None),
+            ):
+                dataset = miliaDataset.create_with_containers(
+                    root=str(self.test_dir),
+                    logger=self.logger,
+                    dataset_config=self.dataset_config,
+                    filter_config=self.filter_config,
+                    processing_config=self.processing_config,
+                    experimental_setup="test_setup",
+                )
 
         self.assertEqual(dataset.experimental_setup, "test_setup")
         print("✅ create_with_containers accepts experimental_setup")
 
     def test_create_with_containers_accepts_chunk_size(self):
         """Test create_with_containers accepts chunk_size parameter."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset.create_with_containers(
-                        root=str(self.test_dir),
-                        logger=self.logger,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                        chunk_size=3000,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset.create_with_containers(
+                root=str(self.test_dir),
+                logger=self.logger,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+                chunk_size=3000,
+            )
 
         self.assertEqual(dataset.chunk_size, 3000)
         print("✅ create_with_containers accepts chunk_size")
@@ -3595,39 +3903,43 @@ class TestFactoryMethods(BaseTestCase):
         """Test create_with_containers uses the provided logger."""
         custom_logger = logging.getLogger("test_custom_logger")
 
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset.create_with_containers(
-                        root=str(self.test_dir),
-                        logger=custom_logger,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset.create_with_containers(
+                root=str(self.test_dir),
+                logger=custom_logger,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset.logger, custom_logger)
         print("✅ create_with_containers uses provided logger")
 
     def test_direct_init_equivalent_to_factory(self):
         """Test direct __init__ produces same result as factory method."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset1 = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset1 = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
-                    dataset2 = miliaDataset.create_with_containers(
-                        root=str(self.test_dir),
-                        logger=self.logger,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+            dataset2 = miliaDataset.create_with_containers(
+                root=str(self.test_dir),
+                logger=self.logger,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertEqual(dataset1.dataset_type, dataset2.dataset_type)
         print("✅ Direct init equivalent to factory")
@@ -3643,15 +3955,17 @@ class TestLoggingAndDebugInfo(BaseTestCase):
 
     def test_logger_attribute_exists(self):
         """Test logger attribute is set."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "logger"))
         self.assertIsNotNone(dataset.logger)
@@ -3659,76 +3973,86 @@ class TestLoggingAndDebugInfo(BaseTestCase):
 
     def test_default_logger_created(self):
         """Test default logger is created when none provided."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        logger=None,
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                logger=None,
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertIsNotNone(dataset.logger)
         print("✅ Default logger created")
 
     def test_log_handler_statistics_method_exists(self):
         """Test _log_handler_statistics method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_log_handler_statistics"))
         print("✅ _log_handler_statistics exists")
 
     def test_log_handler_insights_method_exists(self):
         """Test _log_handler_insights_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_log_handler_insights_enhanced"))
         print("✅ _log_handler_insights_enhanced exists")
 
     def test_log_dataset_specific_insights_method_exists(self):
         """Test _log_dataset_specific_insights_enhanced method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_log_dataset_specific_insights_enhanced"))
         print("✅ _log_dataset_specific_insights_enhanced exists")
 
     def test_log_validation_report_method_exists(self):
         """Test _log_validation_report method exists."""
-        with patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False):
-            with patch.object(miliaDataset, "_download", return_value=None):
-                with patch.object(miliaDataset, "_process", return_value=None):
-                    dataset = miliaDataset(
-                        root=str(self.test_dir),
-                        dataset_config=self.dataset_config,
-                        filter_config=self.filter_config,
-                        processing_config=self.processing_config,
-                    )
+        with (
+            patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch.object(miliaDataset, "_download", return_value=None),
+            patch.object(miliaDataset, "_process", return_value=None),
+        ):
+            dataset = miliaDataset(
+                root=str(self.test_dir),
+                dataset_config=self.dataset_config,
+                filter_config=self.filter_config,
+                processing_config=self.processing_config,
+            )
 
         self.assertTrue(hasattr(dataset, "_log_validation_report"))
         print("✅ _log_validation_report exists")
