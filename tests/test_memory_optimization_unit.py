@@ -162,21 +162,23 @@ def mock_cuda_unavailable():
 @pytest.fixture
 def mock_cuda_device():
     """Create mock CUDA device with all required methods."""
-    with patch("torch.cuda.is_available", return_value=True):
-        with patch("torch.cuda.is_bf16_supported", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.memory_allocated", return_value=1024**3):
-                    with patch("torch.cuda.memory_reserved", return_value=2 * 1024**3):
-                        with patch("torch.cuda.max_memory_allocated", return_value=1.5 * 1024**3):
-                            with patch(
-                                "torch.cuda.max_memory_reserved", return_value=2.5 * 1024**3
-                            ):
-                                mock_props = MagicMock()
-                                mock_props.total_memory = 8 * 1024**3
-                                with patch(
-                                    "torch.cuda.get_device_properties", return_value=mock_props
-                                ):
-                                    yield
+    with (
+        patch("torch.cuda.is_available", return_value=True),
+        patch("torch.cuda.is_bf16_supported", return_value=True),
+        patch("torch.cuda.synchronize"),
+        patch("torch.cuda.memory_allocated", return_value=1024**3),
+        patch("torch.cuda.memory_reserved", return_value=2 * 1024**3),
+        patch("torch.cuda.max_memory_allocated", return_value=1.5 * 1024**3),
+        patch(
+            "torch.cuda.max_memory_reserved", return_value=2.5 * 1024**3
+            ),
+    ):
+        mock_props = MagicMock()
+        mock_props.total_memory = 8 * 1024**3
+        with patch(
+            "torch.cuda.get_device_properties", return_value=mock_props
+        ):
+            yield
 
 
 @pytest.fixture
@@ -527,9 +529,11 @@ class TestMemoryOptimizerInitialization:
 
     def test_verbose_logging_on_init(self, caplog):
         """Test verbose=True produces logging during initialization."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                _optimizer = MemoryOptimizer(verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            _optimizer = MemoryOptimizer(verbose=True)
 
         assert "MemoryOptimizer initialized" in caplog.text
 
@@ -554,23 +558,27 @@ class TestConfigValidation:
 
     def test_validate_bf16_supported(self):
         """Test BF16 validation when supported."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.is_bf16_supported", return_value=True):
-                optimizer = MemoryOptimizer(precision="bf16", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.is_bf16_supported", return_value=True),
+        ):
+            optimizer = MemoryOptimizer(precision="bf16", verbose=False)
 
         assert optimizer.config.precision == "bf16"
 
     def test_validate_bf16_not_supported_fallback(self):
         """Test BF16 validation falls back to FP16 when not supported."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.is_bf16_supported", return_value=False):
-                with warnings.catch_warnings(record=True) as w:
-                    warnings.simplefilter("always")
-                    optimizer = MemoryOptimizer(precision="bf16", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.is_bf16_supported", return_value=False),
+            warnings.catch_warnings(record=True) as w,
+        ):
+            warnings.simplefilter("always")
+            optimizer = MemoryOptimizer(precision="bf16", verbose=False)
 
-                    assert optimizer.config.precision == "fp16"
-                    assert len(w) >= 1
-                    assert "BF16 not supported" in str(w[0].message)
+            assert optimizer.config.precision == "fp16"
+            assert len(w) >= 1
+            assert "BF16 not supported" in str(w[0].message)
 
     def test_validate_mixed_precision_unsupported_device(self):
         """Test mixed precision disabled for unsupported device types."""
@@ -578,14 +586,16 @@ class TestConfigValidation:
         mock_device = MagicMock()
         mock_device.type = "xla"
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                optimizer = MemoryOptimizer(mixed_precision=True, device=mock_device, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            warnings.catch_warnings(record=True) as w,
+        ):
+            warnings.simplefilter("always")
+            optimizer = MemoryOptimizer(mixed_precision=True, device=mock_device, verbose=False)
 
-                assert optimizer.config.mixed_precision is False
-                assert len(w) >= 1
-                assert "Mixed precision not supported" in str(w[0].message)
+            assert optimizer.config.mixed_precision is False
+            assert len(w) >= 1
+            assert "Mixed precision not supported" in str(w[0].message)
 
     def test_validate_fp16_on_cuda(self):
         """Test FP16 validation on CUDA device."""
@@ -655,9 +665,11 @@ class TestMixedPrecisionTraining:
 
     def test_get_autocast_dtype_bf16(self):
         """Test _get_autocast_dtype returns bfloat16 for bf16."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.is_bf16_supported", return_value=True):
-                optimizer = MemoryOptimizer(precision="bf16", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.is_bf16_supported", return_value=True),
+        ):
+            optimizer = MemoryOptimizer(precision="bf16", verbose=False)
 
         dtype = optimizer._get_autocast_dtype()
         assert dtype == torch.bfloat16
@@ -742,14 +754,16 @@ class TestGradientScaling:
 
         mock_optimizer = MagicMock()
 
-        with patch.object(optimizer._grad_scaler, "unscale_") as mock_unscale:
-            with patch.object(optimizer._grad_scaler, "step") as mock_step:
-                with patch.object(optimizer._grad_scaler, "update") as mock_update:
-                    optimizer.step_optimizer(mock_optimizer, scaler_unscale=True)
+        with (
+            patch.object(optimizer._grad_scaler, "unscale_") as mock_unscale,
+            patch.object(optimizer._grad_scaler, "step") as mock_step,
+            patch.object(optimizer._grad_scaler, "update") as mock_update,
+        ):
+            optimizer.step_optimizer(mock_optimizer, scaler_unscale=True)
 
-                    mock_unscale.assert_called_once_with(mock_optimizer)
-                    mock_step.assert_called_once_with(mock_optimizer)
-                    mock_update.assert_called_once()
+            mock_unscale.assert_called_once_with(mock_optimizer)
+            mock_step.assert_called_once_with(mock_optimizer)
+            mock_update.assert_called_once()
 
     def test_step_optimizer_with_scaler_no_unscale(self):
         """Test step_optimizer with gradient scaler without unscaling."""
@@ -758,14 +772,16 @@ class TestGradientScaling:
 
         mock_optimizer = MagicMock()
 
-        with patch.object(optimizer._grad_scaler, "unscale_") as mock_unscale:
-            with patch.object(optimizer._grad_scaler, "step") as mock_step:
-                with patch.object(optimizer._grad_scaler, "update") as mock_update:
-                    optimizer.step_optimizer(mock_optimizer, scaler_unscale=False)
+        with (
+            patch.object(optimizer._grad_scaler, "unscale_") as mock_unscale,
+            patch.object(optimizer._grad_scaler, "step") as mock_step,
+            patch.object(optimizer._grad_scaler, "update") as mock_update,
+        ):
+            optimizer.step_optimizer(mock_optimizer, scaler_unscale=False)
 
-                    mock_unscale.assert_not_called()
-                    mock_step.assert_called_once_with(mock_optimizer)
-                    mock_update.assert_called_once()
+            mock_unscale.assert_not_called()
+            mock_step.assert_called_once_with(mock_optimizer)
+            mock_update.assert_called_once()
 
     def test_step_optimizer_without_scaler(self):
         """Test step_optimizer without gradient scaler."""
@@ -837,10 +853,12 @@ class TestGradientCheckpointing:
         mock_model = MagicMock()
         mock_model.gradient_checkpointing_enable = MagicMock()
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
-                optimizer.enable_gradient_checkpointing(mock_model)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
+            optimizer.enable_gradient_checkpointing(mock_model)
 
         assert "PyG method" in caplog.text
 
@@ -850,19 +868,23 @@ class TestGradientCheckpointing:
         del mock_model.gradient_checkpointing_enable
         mock_model.enable_gradient_checkpointing = MagicMock()
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
-                optimizer.enable_gradient_checkpointing(mock_model)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
+            optimizer.enable_gradient_checkpointing(mock_model)
 
         assert "Transformers method" in caplog.text
 
     def test_enable_gradient_checkpointing_logs_manual(self, caplog, simple_model):
         """Test enable_gradient_checkpointing logs manual wrapper usage."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
-                optimizer.enable_gradient_checkpointing(simple_model)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
+            optimizer.enable_gradient_checkpointing(simple_model)
 
         assert "manual wrapper" in caplog.text
 
@@ -979,12 +1001,14 @@ class TestMemoryMonitoring:
 
     def test_reset_peak_memory_stats_cuda(self):
         """Test reset_peak_memory_stats calls CUDA reset."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.reset_peak_memory_stats") as mock_reset:
-                optimizer = MemoryOptimizer(verbose=False)
-                optimizer.reset_peak_memory_stats()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.reset_peak_memory_stats") as mock_reset,
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
+            optimizer.reset_peak_memory_stats()
 
-                mock_reset.assert_called_once()
+            mock_reset.assert_called_once()
 
     def test_reset_peak_memory_stats_cpu(self):
         """Test reset_peak_memory_stats is no-op for CPU."""
@@ -996,11 +1020,13 @@ class TestMemoryMonitoring:
 
     def test_reset_peak_memory_stats_logs(self, caplog):
         """Test reset_peak_memory_stats logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.reset_peak_memory_stats"):
-                with caplog.at_level(logging.DEBUG):
-                    optimizer = MemoryOptimizer(verbose=True)
-                    optimizer.reset_peak_memory_stats()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            caplog.at_level(logging.DEBUG),
+        ):
+            optimizer = MemoryOptimizer(verbose=True)
+            optimizer.reset_peak_memory_stats()
 
         assert "Reset peak memory statistics" in caplog.text
 
@@ -1015,12 +1041,14 @@ class TestCacheManagement:
 
     def test_empty_cache_cuda(self):
         """Test empty_cache calls CUDA empty_cache."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.empty_cache") as mock_empty:
-                optimizer = MemoryOptimizer(verbose=False)
-                optimizer.empty_cache()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.empty_cache") as mock_empty,
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
+            optimizer.empty_cache()
 
-                mock_empty.assert_called_once()
+            mock_empty.assert_called_once()
 
     def test_empty_cache_cpu(self):
         """Test empty_cache is no-op for CPU."""
@@ -1032,11 +1060,13 @@ class TestCacheManagement:
 
     def test_empty_cache_logs(self, caplog):
         """Test empty_cache logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.empty_cache"):
-                with caplog.at_level(logging.DEBUG):
-                    optimizer = MemoryOptimizer(verbose=True)
-                    optimizer.empty_cache()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.empty_cache"),
+            caplog.at_level(logging.DEBUG),
+        ):
+            optimizer = MemoryOptimizer(verbose=True)
+            optimizer.empty_cache()
 
         assert "Emptied CUDA cache" in caplog.text
 
@@ -1051,20 +1081,24 @@ class TestCacheManagement:
 
     def test_run_garbage_collection_cuda(self):
         """Test run_garbage_collection also empties CUDA cache."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.empty_cache") as mock_empty:
-                with patch("gc.collect"):
-                    optimizer = MemoryOptimizer(verbose=False)
-                    optimizer.run_garbage_collection()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.empty_cache") as mock_empty,
+            patch("gc.collect"),
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
+            optimizer.run_garbage_collection()
 
-                    mock_empty.assert_called_once()
+            mock_empty.assert_called_once()
 
     def test_run_garbage_collection_logs(self, caplog):
         """Test run_garbage_collection logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=False), patch("gc.collect"):
-            with caplog.at_level(logging.DEBUG):
-                optimizer = MemoryOptimizer(device=torch.device("cpu"), verbose=True)
-                optimizer.run_garbage_collection()
+        with (
+            patch("torch.cuda.is_available", return_value=False), patch("gc.collect"),
+            caplog.at_level(logging.DEBUG),
+        ):
+            optimizer = MemoryOptimizer(device=torch.device("cpu"), verbose=True)
+            optimizer.run_garbage_collection()
 
         assert "Ran garbage collection" in caplog.text
 
@@ -1090,17 +1124,19 @@ class TestStepOptimization:
 
     def test_step_empty_cache_interval(self):
         """Test step method triggers cache clearing at interval."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.empty_cache") as mock_empty:
-                optimizer = MemoryOptimizer(empty_cache_interval=5, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.empty_cache") as mock_empty,
+        ):
+            optimizer = MemoryOptimizer(empty_cache_interval=5, verbose=False)
 
-                mock_empty.reset_mock()
+            mock_empty.reset_mock()
 
-                for _i in range(10):
-                    optimizer.step()
+            for _i in range(10):
+                optimizer.step()
 
-                # Should be called at step 5 and 10
-                assert mock_empty.call_count == 2
+            # Should be called at step 5 and 10
+            assert mock_empty.call_count == 2
 
     def test_step_garbage_collect_interval(self):
         """Test step method triggers garbage collection at interval."""
@@ -1118,16 +1154,18 @@ class TestStepOptimization:
 
     def test_step_no_cache_clear_when_interval_zero(self):
         """Test step method doesn't clear cache when interval is 0."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.empty_cache") as mock_empty:
-                optimizer = MemoryOptimizer(empty_cache_interval=0, verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.empty_cache") as mock_empty,
+        ):
+            optimizer = MemoryOptimizer(empty_cache_interval=0, verbose=False)
 
-                mock_empty.reset_mock()
+            mock_empty.reset_mock()
 
-                for _i in range(10):
-                    optimizer.step()
+            for _i in range(10):
+                optimizer.step()
 
-                mock_empty.assert_not_called()
+            mock_empty.assert_not_called()
 
     def test_step_no_gc_when_interval_zero(self):
         """Test step method doesn't run GC when interval is 0."""
@@ -1160,41 +1198,45 @@ class TestStepOptimization:
 
     def test_check_memory_usage_above_threshold(self):
         """Test check_memory_usage returns False when above threshold."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.memory_allocated", return_value=9 * 1024**3):
-                    with patch("torch.cuda.memory_reserved", return_value=9 * 1024**3):
-                        with patch("torch.cuda.max_memory_allocated", return_value=9 * 1024**3):
-                            with patch("torch.cuda.max_memory_reserved", return_value=9 * 1024**3):
-                                mock_props = MagicMock()
-                                mock_props.total_memory = 10 * 1024**3
-                                with patch(
-                                    "torch.cuda.get_device_properties", return_value=mock_props
-                                ):
-                                    optimizer = MemoryOptimizer(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.memory_allocated", return_value=9 * 1024**3),
+            patch("torch.cuda.memory_reserved", return_value=9 * 1024**3),
+            patch("torch.cuda.max_memory_allocated", return_value=9 * 1024**3),
+            patch("torch.cuda.max_memory_reserved", return_value=9 * 1024**3),
+        ):
+            mock_props = MagicMock()
+            mock_props.total_memory = 10 * 1024**3
+            with patch(
+                "torch.cuda.get_device_properties", return_value=mock_props
+            ):
+                optimizer = MemoryOptimizer(verbose=False)
 
-                                    # Utilization is 90%, threshold is 80%
-                                    result = optimizer.check_memory_usage(threshold=0.8)
-                                    assert result is False
+                # Utilization is 90%, threshold is 80%
+                result = optimizer.check_memory_usage(threshold=0.8)
+                assert result is False
 
     def test_check_memory_usage_logs_warning(self, caplog):
         """Test check_memory_usage logs warning when above threshold."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.memory_allocated", return_value=9 * 1024**3):
-                    with patch("torch.cuda.memory_reserved", return_value=9 * 1024**3):
-                        with patch("torch.cuda.max_memory_allocated", return_value=9 * 1024**3):
-                            with patch("torch.cuda.max_memory_reserved", return_value=9 * 1024**3):
-                                mock_props = MagicMock()
-                                mock_props.total_memory = 10 * 1024**3
-                                with (
-                                    patch(
-                                        "torch.cuda.get_device_properties", return_value=mock_props
-                                    ),
-                                    caplog.at_level(logging.WARNING),
-                                ):
-                                    optimizer = MemoryOptimizer(verbose=True)
-                                    optimizer.check_memory_usage(threshold=0.8)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.memory_allocated", return_value=9 * 1024**3),
+            patch("torch.cuda.memory_reserved", return_value=9 * 1024**3),
+            patch("torch.cuda.max_memory_allocated", return_value=9 * 1024**3),
+            patch("torch.cuda.max_memory_reserved", return_value=9 * 1024**3),
+        ):
+            mock_props = MagicMock()
+            mock_props.total_memory = 10 * 1024**3
+            with (
+                patch(
+                    "torch.cuda.get_device_properties", return_value=mock_props
+                ),
+                caplog.at_level(logging.WARNING),
+            ):
+                optimizer = MemoryOptimizer(verbose=True)
+                optimizer.check_memory_usage(threshold=0.8)
 
         assert "Memory usage high" in caplog.text
 
@@ -1219,56 +1261,62 @@ class TestMemoryProfiling:
 
     def test_profile_memory_cuda(self):
         """Test profile_memory uses profiler for CUDA."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.profiler.profile") as mock_profiler:
-                        mock_context = MagicMock()
-                        mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
-                        mock_profiler.return_value.__exit__ = Mock(return_value=None)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.profiler.profile") as mock_profiler,
+        ):
+            mock_context = MagicMock()
+            mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
+            mock_profiler.return_value.__exit__ = Mock(return_value=None)
 
-                        optimizer = MemoryOptimizer(verbose=False)
+            optimizer = MemoryOptimizer(verbose=False)
 
-                        with optimizer.profile_memory():
-                            pass
+            with optimizer.profile_memory():
+                pass
 
-                        mock_profiler.assert_called_once()
+            mock_profiler.assert_called_once()
 
     def test_profile_memory_record_shapes(self):
         """Test profile_memory with record_shapes parameter."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.profiler.profile") as mock_profiler:
-                        mock_context = MagicMock()
-                        mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
-                        mock_profiler.return_value.__exit__ = Mock(return_value=None)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.profiler.profile") as mock_profiler,
+        ):
+            mock_context = MagicMock()
+            mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
+            mock_profiler.return_value.__exit__ = Mock(return_value=None)
 
-                        optimizer = MemoryOptimizer(verbose=False)
+            optimizer = MemoryOptimizer(verbose=False)
 
-                        with optimizer.profile_memory(record_shapes=True):
-                            pass
+            with optimizer.profile_memory(record_shapes=True):
+                pass
 
-                        call_kwargs = mock_profiler.call_args[1]
-                        assert call_kwargs["record_shapes"] is True
+            call_kwargs = mock_profiler.call_args[1]
+            assert call_kwargs["record_shapes"] is True
 
     def test_profile_memory_with_stack(self):
         """Test profile_memory with with_stack parameter."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.profiler.profile") as mock_profiler:
-                        mock_context = MagicMock()
-                        mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
-                        mock_profiler.return_value.__exit__ = Mock(return_value=None)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.profiler.profile") as mock_profiler,
+        ):
+            mock_context = MagicMock()
+            mock_profiler.return_value.__enter__ = Mock(return_value=mock_context)
+            mock_profiler.return_value.__exit__ = Mock(return_value=None)
 
-                        optimizer = MemoryOptimizer(verbose=False)
+            optimizer = MemoryOptimizer(verbose=False)
 
-                        with optimizer.profile_memory(with_stack=True):
-                            pass
+            with optimizer.profile_memory(with_stack=True):
+                pass
 
-                        call_kwargs = mock_profiler.call_args[1]
-                        assert call_kwargs["with_stack"] is True
+            call_kwargs = mock_profiler.call_args[1]
+            assert call_kwargs["with_stack"] is True
 
     def test_get_memory_snapshot_cpu(self):
         """Test get_memory_snapshot returns message for CPU."""
@@ -1333,14 +1381,16 @@ class TestDataLoaderOptimization:
         with patch("torch.cuda.is_available", return_value=False):
             optimizer = MemoryOptimizer(verbose=False)
 
-        with patch("torch.get_num_threads", return_value=8):
-            with patch("torch.utils.data.DataLoader") as mock_dl_class:
-                mock_dl_class.return_value = MagicMock()
-                _result = optimizer.optimize_dataloader(mock_dataloader)
+        with (
+            patch("torch.get_num_threads", return_value=8),
+            patch("torch.utils.data.DataLoader") as mock_dl_class,
+        ):
+            mock_dl_class.return_value = MagicMock()
+            _result = optimizer.optimize_dataloader(mock_dataloader)
 
-                call_kwargs = mock_dl_class.call_args[1]
-                # min(4, 8) = 4
-                assert call_kwargs["num_workers"] == 4
+            call_kwargs = mock_dl_class.call_args[1]
+            # min(4, 8) = 4
+            assert call_kwargs["num_workers"] == 4
 
     def test_optimize_dataloader_prefetch_factor(self, mock_dataloader):
         """Test optimize_dataloader with custom prefetch_factor."""
@@ -1410,9 +1460,11 @@ class TestDataLoaderOptimization:
 
     def test_optimize_dataloader_logs(self, caplog, mock_dataloader):
         """Test optimize_dataloader logs when verbose."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(verbose=True)
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
@@ -1446,17 +1498,19 @@ class TestMemoryLeakDetection:
         mock_model.eval = Mock(return_value=mock_model)
         mock_model.__call__ = Mock(return_value=torch.randn(4, 1))
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.cuda.memory_allocated", return_value=1024**3):
-                        with patch("torch.cuda.empty_cache"):
-                            optimizer = MemoryOptimizer(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.cuda.memory_allocated", return_value=1024**3),
+            patch("torch.cuda.empty_cache"),
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
 
-                            dummy_input = torch.randn(4, 10)
-                            result = optimizer.detect_memory_leaks(
-                                mock_model, dummy_input, num_iterations=5
-                            )
+            dummy_input = torch.randn(4, 10)
+            result = optimizer.detect_memory_leaks(
+                mock_model, dummy_input, num_iterations=5
+            )
 
         assert "iterations" in result
         assert "avg_usage_mb" in result
@@ -1472,15 +1526,17 @@ class TestMemoryLeakDetection:
         mock_model.eval = Mock(return_value=mock_model)
         mock_model.__call__ = Mock(return_value=torch.randn(4, 1))
 
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.cuda.memory_allocated", return_value=1024**3):
-                        with patch("torch.cuda.empty_cache"):
-                            optimizer = MemoryOptimizer(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.cuda.memory_allocated", return_value=1024**3),
+            patch("torch.cuda.empty_cache"),
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
 
-                            dummy_input = torch.randn(4, 10)
-                            optimizer.detect_memory_leaks(mock_model, dummy_input, num_iterations=3)
+            dummy_input = torch.randn(4, 10)
+            optimizer.detect_memory_leaks(mock_model, dummy_input, num_iterations=3)
 
         mock_model.eval.assert_called_once()
 
@@ -1491,17 +1547,19 @@ class TestMemoryLeakDetection:
         mock_model.__call__ = Mock(return_value=torch.randn(4, 1))
 
         # Return same memory allocation each time (no leak)
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.reset_peak_memory_stats"):
-                    with patch("torch.cuda.memory_allocated", return_value=1024**3):
-                        with patch("torch.cuda.empty_cache"):
-                            optimizer = MemoryOptimizer(verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.reset_peak_memory_stats"),
+            patch("torch.cuda.memory_allocated", return_value=1024**3),
+            patch("torch.cuda.empty_cache"),
+        ):
+            optimizer = MemoryOptimizer(verbose=False)
 
-                            dummy_input = torch.randn(4, 10)
-                            result = optimizer.detect_memory_leaks(
-                                mock_model, dummy_input, num_iterations=5
-                            )
+            dummy_input = torch.randn(4, 10)
+            result = optimizer.detect_memory_leaks(
+                mock_model, dummy_input, num_iterations=5
+            )
 
         # When memory is stable, is_leaking should be False
         # (0 - 0) * 1.1 = 0, so not leaking
@@ -1825,14 +1883,16 @@ class TestEdgeCasesAndErrors:
         mock_device = MagicMock()
         mock_device.type = "xla"
 
-        with patch("torch.cuda.is_available", return_value=False):
-            with warnings.catch_warnings(record=True):
-                warnings.simplefilter("always")
-                optimizer = MemoryOptimizer(
-                    mixed_precision=False,  # Disabled to avoid warning
-                    device=mock_device,
-                    verbose=False,
-                )
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            warnings.catch_warnings(record=True),
+        ):
+            warnings.simplefilter("always")
+            optimizer = MemoryOptimizer(
+                mixed_precision=False,  # Disabled to avoid warning
+                device=mock_device,
+                verbose=False,
+            )
 
         # Should just yield without any autocast
         with optimizer.autocast():
@@ -1866,19 +1926,21 @@ class TestEdgeCasesAndErrors:
 
     def test_memory_stats_zero_total_memory(self):
         """Test get_memory_stats handles zero total memory gracefully."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.synchronize"):
-                with patch("torch.cuda.memory_allocated", return_value=0):
-                    with patch("torch.cuda.memory_reserved", return_value=0):
-                        with patch("torch.cuda.max_memory_allocated", return_value=0):
-                            with patch("torch.cuda.max_memory_reserved", return_value=0):
-                                mock_props = MagicMock()
-                                mock_props.total_memory = 0
-                                with patch(
-                                    "torch.cuda.get_device_properties", return_value=mock_props
-                                ):
-                                    optimizer = MemoryOptimizer(verbose=False)
-                                    stats = optimizer.get_memory_stats()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.synchronize"),
+            patch("torch.cuda.memory_allocated", return_value=0),
+            patch("torch.cuda.memory_reserved", return_value=0),
+            patch("torch.cuda.max_memory_allocated", return_value=0),
+            patch("torch.cuda.max_memory_reserved", return_value=0),
+        ):
+            mock_props = MagicMock()
+            mock_props.total_memory = 0
+            with patch(
+                "torch.cuda.get_device_properties", return_value=mock_props
+            ):
+                optimizer = MemoryOptimizer(verbose=False)
+                stats = optimizer.get_memory_stats()
 
         # Should handle zero total gracefully
         assert stats["utilization"] == 0
@@ -1938,26 +2000,32 @@ class TestLogging:
 
     def test_optimizer_init_logs_on_verbose(self, caplog):
         """Test MemoryOptimizer init logs on verbose."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                _optimizer = MemoryOptimizer(verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            _optimizer = MemoryOptimizer(verbose=True)
 
         assert any("MemoryOptimizer initialized" in record.message for record in caplog.records)
 
     def test_gradient_checkpointing_logs(self, caplog, simple_model):
         """Test gradient checkpointing logs on verbose."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
-                optimizer.enable_gradient_checkpointing(simple_model)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(gradient_checkpointing=True, verbose=True)
+            optimizer.enable_gradient_checkpointing(simple_model)
 
         assert any("gradient checkpointing" in record.message.lower() for record in caplog.records)
 
     def test_dataloader_optimization_logs(self, caplog, mock_dataloader):
         """Test dataloader optimization logs on verbose."""
-        with patch("torch.cuda.is_available", return_value=False):
-            with caplog.at_level(logging.INFO):
-                optimizer = MemoryOptimizer(verbose=True)
+        with (
+            patch("torch.cuda.is_available", return_value=False),
+            caplog.at_level(logging.INFO),
+        ):
+            optimizer = MemoryOptimizer(verbose=True)
 
         with patch("torch.utils.data.DataLoader") as mock_dl_class:
             mock_dl_class.return_value = MagicMock()
