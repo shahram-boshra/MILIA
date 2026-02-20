@@ -32,6 +32,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import json
 import logging
 import shutil
@@ -1059,10 +1060,9 @@ class TestPredictorPredictBatch:
         with patch.object(DataLoader, "__init__", return_value=None) as mock_dl_init:
             with patch.object(DataLoader, "__iter__", return_value=iter([])):
                 with patch.object(DataLoader, "__len__", return_value=0):
-                    try:
+                    with contextlib.suppress(Exception):
+                        # Expected to fail, we just want to check DL init
                         predictor.predict_batch(pyg_dataset, batch_size=8, num_workers=2)
-                    except Exception:
-                        pass  # Expected to fail, we just want to check DL init
 
                     # Check DataLoader was initialized with correct params
                     if mock_dl_init.called:
