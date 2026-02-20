@@ -918,11 +918,13 @@ class TestParseMoldenFilesErrors(unittest.TestCase):
         _create_dummy_molden_files(self._molden_dir, 1)
         # Setting sys.modules['iodata'] to None causes `from iodata import load_one`
         # to raise ModuleNotFoundError (subclass of ImportError).
-        with patch.dict(sys.modules, {"iodata": None}):
+        with (
+            patch.dict(sys.modules, {"iodata": None}),
             # Current behavior: TypeError escapes due to constructor mismatch
             # Expected behavior after fix: MissingDependencyError is raised
-            with self.assertRaises((MissingDependencyError, TypeError)):
-                parse_molden_files(self._molden_dir, "basic")
+            self.assertRaises((MissingDependencyError, TypeError)),
+        ):
+            parse_molden_files(self._molden_dir, "basic")
 
     def test_no_molden_files_raises(self):
         """Empty directory (no .molden files) raises DataProcessingError."""
