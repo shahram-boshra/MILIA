@@ -312,6 +312,7 @@ import warnings
 warnings.filterwarnings("ignore", message="config_schemas not available.*", category=UserWarning)
 
 # Now safe to import other modules
+import contextlib
 import copy
 import shutil
 import tempfile
@@ -2797,13 +2798,10 @@ class TestErrorHandling(unittest.TestCase):
             try:
                 # Try to load - should raise ConfigurationError
                 # But some systems/environments may still allow reading
-                try:
+                with contextlib.suppress(ConfigurationError):
                     load_config(self.config_path)
                     # If no error raised, the system allows reading despite permissions
                     # This is acceptable in some environments (like root in Docker)
-                except ConfigurationError:
-                    # This is the expected behavior
-                    pass
             finally:
                 # Restore permission for cleanup
                 os.chmod(self.config_path, 0o644)
@@ -2856,11 +2854,9 @@ class TestEdgeCases(unittest.TestCase):
     def test_load_config_with_none_path(self):
         """Test loading config with None path"""
         # Should use default path
-        try:
-            load_config(None)
-        except ConfigurationError:
+        with contextlib.suppress(ConfigurationError):
             # Expected if default config doesn't exist
-            pass
+            load_config(None)
 
     def test_load_very_large_config(self):
         """Test loading very large configuration"""
@@ -3858,10 +3854,8 @@ def setup_module(module):
     module.get_migration_report = get_migration_report
 
     # Ensure config cache is cleared before any tests run
-    try:
+    with contextlib.suppress(Exception):  # May fail if module not fully loaded yet
         clear_config_cache()
-    except Exception:
-        pass  # May fail if module not fully loaded yet
 
 
 if __name__ == "__main__":
