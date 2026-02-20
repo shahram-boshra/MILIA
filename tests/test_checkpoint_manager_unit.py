@@ -356,15 +356,17 @@ class TestCreateVersionInfo:
 
     def test_create_version_info_with_pyg_installed(self, checkpoint_manager):
         """Test pyg_version when torch_geometric is available."""
-        with patch.dict("sys.modules", {"torch_geometric": MagicMock(__version__="2.4.0")}):
+        with (
+            patch.dict("sys.modules", {"torch_geometric": MagicMock(__version__="2.4.0")}),
             # Need to reimport or mock at the module level
-            with patch(
+            patch(
                 "milia_pipeline.models.post_training.checkpoint.checkpoint_manager.torch_geometric",
                 create=True,
-            ) as mock_pyg:
-                mock_pyg.__version__ = "2.4.0"
-                # Since the import is inside the function, we need a different approach
-                pass
+            ) as mock_pyg,
+        ):
+            mock_pyg.__version__ = "2.4.0"
+            # Since the import is inside the function, we need a different approach
+            pass
 
         # Test the actual current behavior
         version_info = checkpoint_manager.create_version_info()
