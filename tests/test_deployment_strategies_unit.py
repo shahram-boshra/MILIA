@@ -550,10 +550,12 @@ class TestAWSDeploymentStrategy:
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
 
         # Mock the import to fail
-        with patch.dict(sys.modules, {"boto3": None}):
-            with patch("builtins.__import__", side_effect=ImportError("No module named 'boto3'")):
-                with pytest.raises(DeploymentError, match="AWS deployment requires"):
-                    strategy.deploy(temp_dir)
+        with (
+            patch.dict(sys.modules, {"boto3": None}),
+            patch("builtins.__import__", side_effect=ImportError("No module named 'boto3'")),
+            pytest.raises(DeploymentError, match="AWS deployment requires"),
+        ):
+            strategy.deploy(temp_dir)
 
     def test_predict_without_deployment_raises_error(self, aws_config):
         """Test predict raises error when not deployed."""
@@ -797,9 +799,11 @@ class TestEdgeDeploymentStrategy:
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
         save_path = temp_dir / "edge_model"
 
-        with patch.object(torch, "save"):
-            with patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")):
-                result = strategy.prepare_model(mock_model, save_path)
+        with (
+            patch.object(torch, "save"),
+            patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")),
+        ):
+            result = strategy.prepare_model(mock_model, save_path)
 
         assert save_path.exists()
         assert result == save_path
@@ -809,10 +813,12 @@ class TestEdgeDeploymentStrategy:
         strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
         save_path = temp_dir / "edge_model"
 
-        with patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")):
-            with patch.object(torch, "save") as mock_save:
-                strategy.prepare_model(mock_model, save_path)
-                mock_save.assert_called_once()
+        with (
+            patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")),
+            patch.object(torch, "save") as mock_save,
+        ):
+            strategy.prepare_model(mock_model, save_path)
+            mock_save.assert_called_once()
 
     def test_prepare_model_with_mobile_optimization(self, edge_config, mock_model, temp_dir):
         """Test prepare_model with mobile optimization."""
@@ -1365,9 +1371,11 @@ class TestConvenienceFunctions:
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
 
-        with patch.object(torch, "save", side_effect=create_model_file):
-            with patch.object(torch, "load", return_value=mock_loaded_model):
-                manager = deploy_locally(mock_model, save_path)
+        with (
+            patch.object(torch, "save", side_effect=create_model_file),
+            patch.object(torch, "load", return_value=mock_loaded_model),
+        ):
+            manager = deploy_locally(mock_model, save_path)
 
         assert isinstance(manager, DeploymentManager)
         assert manager.strategy.is_deployed is True
@@ -1384,9 +1392,11 @@ class TestConvenienceFunctions:
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
 
-        with patch.object(torch, "save", side_effect=create_model_file) as mock_save:
-            with patch.object(torch, "load", return_value=mock_loaded_model) as mock_load:
-                manager = deploy_locally(mock_model, save_path)
+        with (
+            patch.object(torch, "save", side_effect=create_model_file) as mock_save,
+            patch.object(torch, "load", return_value=mock_loaded_model) as mock_load,
+        ):
+            manager = deploy_locally(mock_model, save_path)
 
         # Should have saved the model
         mock_save.assert_called_once()
@@ -1408,9 +1418,11 @@ class TestConvenienceFunctions:
             save_path.mkdir(parents=True, exist_ok=True)
             (save_path / "model.pth").touch()
 
-        with patch.object(torch, "save", side_effect=create_model_file):
-            with patch.object(torch, "load", return_value=mock_loaded_model):
-                manager = deploy_locally(mock_model, save_path_str)
+        with (
+            patch.object(torch, "save", side_effect=create_model_file),
+            patch.object(torch, "load", return_value=mock_loaded_model),
+        ):
+            manager = deploy_locally(mock_model, save_path_str)
 
         assert isinstance(manager, DeploymentManager)
 
