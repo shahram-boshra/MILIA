@@ -700,9 +700,11 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, "exists", return_value=False):
-                with self.assertRaises(DataProcessingError):
-                    preprocessor.preprocess()
+            with (
+                patch.object(Path, "exists", return_value=False),
+                self.assertRaises(DataProcessingError),
+            ):
+                preprocessor.preprocess()
 
     @patch.object(RMD17Preprocessor, "_build_npz")
     @patch.object(RMD17Preprocessor, "_parse_rmd17_npz_files")
@@ -717,9 +719,11 @@ class TestPreprocessErrorWrapping(unittest.TestCase):
         exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, "exists", return_value=False):
-                with self.assertRaises(DataProcessingError):
-                    preprocessor.preprocess()
+            with (
+                patch.object(Path, "exists", return_value=False),
+                self.assertRaises(DataProcessingError),
+            ):
+                preprocessor.preprocess()
 
     @patch.object(RMD17Preprocessor, "_extract_archive")
     def test_wrapped_error_preserves_cause(self, mock_extract):
@@ -881,9 +885,11 @@ class TestPreprocessCleanup(unittest.TestCase):
         exists_fn = _path_exists_factory(config["raw_archive_path"], config["output_npz_path"])
         with patch("pathlib.Path.exists", autospec=True, side_effect=exists_fn):
             preprocessor = _make_preprocessor(config=config)
-            with patch.object(Path, "exists", return_value=True):
-                with self.assertRaises(DataProcessingError):
-                    preprocessor.preprocess()
+            with (
+                patch.object(Path, "exists", return_value=True),
+                self.assertRaises(DataProcessingError),
+            ):
+                preprocessor.preprocess()
 
         mock_rmtree.assert_called_once()
 
@@ -1388,9 +1394,11 @@ class TestBasePreprocessorRunIntegration(unittest.TestCase):
         def mock_validate_output(path):
             call_order.append("validate_output")
 
-        with patch.object(preprocessor, "preprocess", side_effect=mock_preprocess):
-            with patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output):
-                preprocessor.run()
+        with (
+            patch.object(preprocessor, "preprocess", side_effect=mock_preprocess),
+            patch.object(preprocessor, "_validate_output", side_effect=mock_validate_output),
+        ):
+            preprocessor.run()
 
         self.assertEqual(call_order, ["preprocess", "validate_output"])
 
