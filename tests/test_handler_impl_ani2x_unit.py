@@ -704,16 +704,20 @@ class TestProcessPropertyValueOther(unittest.TestCase):
             message="test error",
             operation="test_op",
         )
-        with patch("numpy.asarray", side_effect=err):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2], 0)
+        with (
+            patch("numpy.asarray", side_effect=err),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2], 0)
 
     def test_unexpected_error_wrapped_in_dataset_specific(self):
         """Unexpected exception wraps into DatasetSpecificHandlerError."""
         handler = _make_handler()
-        with patch("numpy.asarray", side_effect=RuntimeError("boom")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2], 0)
+        with (
+            patch("numpy.asarray", side_effect=RuntimeError("boom")),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2], 0)
 
 
 # ============================================================================
@@ -1150,9 +1154,11 @@ class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
             reason="test error",
             detail="test detail",
         )
-        with patch.object(handler, "_ensure_tensor", side_effect=err):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler._add_variable_length_properties_internal(data, props, 0, "test")
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=err),
+            self.assertRaises(PropertyEnrichmentError),
+        ):
+            handler._add_variable_length_properties_internal(data, props, 0, "test")
 
     def test_outer_unexpected_error_wrapped(self):
         """Outer unexpected error wraps into DatasetSpecificHandlerError."""
