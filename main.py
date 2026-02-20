@@ -453,26 +453,20 @@ def _init_registry() -> bool:
         _registry_is_registered = is_registered
         _REGISTRY_AVAILABLE = True
         # Use module-level logger if available, otherwise defer logging
-        try:
+        with contextlib.suppress(NameError):  # Logger not yet available at module load time
             logger.debug("Dataset registry initialized successfully for main.py")
-        except NameError:
-            pass  # Logger not yet available at module load time
         return True
 
     except ImportError as e:
         _REGISTRY_IMPORT_ERROR = str(e)
-        try:
+        with contextlib.suppress(NameError):  # Logger not yet available at module load time
             logger.debug(f"Dataset registry not available - using legacy validation: {e}")
-        except NameError:
-            pass  # Logger not yet available at module load time
         return False
 
     except Exception as e:
         _REGISTRY_IMPORT_ERROR = str(e)
-        try:
+        with contextlib.suppress(NameError):  # Logger not yet available at module load time
             logger.debug(f"Dataset registry import failed - using legacy validation: {e}")
-        except NameError:
-            pass  # Logger not yet available at module load time
         return False
 
 
