@@ -2028,11 +2028,13 @@ class TestValidationContextManager(unittest.TestCase):
     def test_validation_context_require_invalid(self):
         """Test ValidationContext.require with invalid data"""
         try:
-            with self.assertRaises(ValidationError):
-                with validators.ValidationContext("Test context") as ctx:
-                    is_valid = False
-                    errors = ["Error 1"]
-                    ctx.require(is_valid, errors)
+            with (
+                self.assertRaises(ValidationError),
+                validators.ValidationContext("Test context") as ctx,
+            ):
+                is_valid = False
+                errors = ["Error 1"]
+                ctx.require(is_valid, errors)
         except (AttributeError, NameError):
             self.skipTest("ValidationContext not available")
 
