@@ -700,9 +700,11 @@ class TestModelCheckpoint:
         mc = ModelCheckpoint(dirpath=temp_checkpoint_dir, verbose=False)
 
         # Make torch.save fail
-        with patch("torch.save", side_effect=Exception("Save failed")):
-            with caplog.at_level(logging.ERROR):
-                mc.on_epoch_end(mock_trainer, 0, {"val_loss": 0.5})
+        with (
+            patch("torch.save", side_effect=Exception("Save failed")),
+            caplog.at_level(logging.ERROR),
+        ):
+            mc.on_epoch_end(mock_trainer, 0, {"val_loss": 0.5})
 
         assert "Failed to save checkpoint" in caplog.text
 
@@ -710,9 +712,11 @@ class TestModelCheckpoint:
         """Test error handling when saving final checkpoint fails."""
         mc = ModelCheckpoint(dirpath=temp_checkpoint_dir, save_last=True, verbose=False)
 
-        with patch.object(mc, "_save_checkpoint", side_effect=Exception("Save failed")):
-            with caplog.at_level(logging.ERROR):
-                mc.on_train_end(mock_trainer)
+        with (
+            patch.object(mc, "_save_checkpoint", side_effect=Exception("Save failed")),
+            caplog.at_level(logging.ERROR),
+        ):
+            mc.on_train_end(mock_trainer)
 
         assert "Failed to save final checkpoint" in caplog.text
 
