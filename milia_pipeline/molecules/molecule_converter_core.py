@@ -19,6 +19,7 @@ ENHANCED: Complete integration with transformation system refactoring:
 - Integration with graph_transforms module for transformation capabilities
 """
 
+import contextlib
 import logging
 from typing import Any, Optional
 
@@ -562,11 +563,9 @@ class MoleculeDataConverter:
                 )
 
             # Mark handler as owned by this converter
-            try:
-                dataset_handler._converter_owner_id = id(self)
-            except AttributeError:
+            with contextlib.suppress(AttributeError):
                 # Mock objects might not allow setting arbitrary attributes
-                pass
+                dataset_handler._converter_owner_id = id(self)
 
             # Set handler usage flags
             self._use_handlers = True
