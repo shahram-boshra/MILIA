@@ -43,6 +43,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import copy
 import logging
 from typing import Any
@@ -2553,12 +2554,11 @@ class TestEdgeCasesAndBoundaryConditions:
 
         # This might work or fail depending on implementation
         # We just ensure it doesn't crash unexpectedly
-        try:
+        with contextlib.suppress(DataCompatibilityError, ValueError):
+            # Expected for invalid target shape
             train, val, test, num_classes = TaskDataPreparer.prepare_for_task(
                 data, data, data, task_type="graph_regression"
             )
-        except (DataCompatibilityError, ValueError):
-            pass  # Expected for invalid target shape
 
     def test_zero_dimensional_y(self):
         """Test with 0-dimensional y tensor."""
