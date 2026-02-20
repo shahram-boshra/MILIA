@@ -1002,9 +1002,11 @@ class TestModelOptimizerExport:
         filepath = temp_dir / "model.onnx"
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export", side_effect=RuntimeError("Export failed")):
-            with pytest.raises(ExportError, match="ONNX export failed"):
-                optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
+        with (
+            patch("torch.onnx.export", side_effect=RuntimeError("Export failed")),
+            pytest.raises(ExportError, match="ONNX export failed"),
+        ):
+            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
 
     def test_export_to_onnx_string_path(self, simple_linear_model, temp_dir):
         """Test ONNX export with string path."""
@@ -1070,9 +1072,11 @@ class TestModelOptimizerExport:
         filepath = temp_dir / "model.pt"
         example_inputs = (torch.randn(1, 10),)
 
-        with patch.object(torch.jit, "trace", side_effect=RuntimeError("Tracing failed")):
-            with pytest.raises(ExportError, match="Mobile optimization failed"):
-                optimizer.optimize_for_mobile(simple_linear_model, example_inputs, filepath)
+        with (
+            patch.object(torch.jit, "trace", side_effect=RuntimeError("Tracing failed")),
+            pytest.raises(ExportError, match="Mobile optimization failed"),
+        ):
+            optimizer.optimize_for_mobile(simple_linear_model, example_inputs, filepath)
 
 
 # =============================================================================
