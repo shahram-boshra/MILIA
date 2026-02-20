@@ -2580,42 +2580,50 @@ class TestRegistryFallbackScenarios:
         reset_registry_state()
         import milia_pipeline.exceptions as exc_module
 
-        with patch.object(exc_module, "_REGISTRY_AVAILABLE", False):
-            with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
-                types = _get_available_dataset_types()
-                assert isinstance(types, list)
+        with (
+            patch.object(exc_module, "_REGISTRY_AVAILABLE", False),
+            patch.object(exc_module, "_REGISTRY_INITIALIZED", True),
+        ):
+            types = _get_available_dataset_types()
+            assert isinstance(types, list)
 
     def test_is_dataset_type_registered_with_registry_unavailable(self):
         """Test _is_dataset_type_registered falls back correctly when registry unavailable."""
         reset_registry_state()
         import milia_pipeline.exceptions as exc_module
 
-        with patch.object(exc_module, "_REGISTRY_AVAILABLE", False):
-            with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
-                # Should check against dynamically discovered types or empty list
-                result = _is_dataset_type_registered("NONEXISTENT_XYZ")
-                assert not result
+        with (
+            patch.object(exc_module, "_REGISTRY_AVAILABLE", False),
+            patch.object(exc_module, "_REGISTRY_INITIALIZED", True),
+        ):
+            # Should check against dynamically discovered types or empty list
+            result = _is_dataset_type_registered("NONEXISTENT_XYZ")
+            assert not result
 
     def test_get_dataset_feature_with_registry_unavailable_returns_default(self):
         """Test _get_dataset_feature returns default when registry unavailable."""
         reset_registry_state()
         import milia_pipeline.exceptions as exc_module
 
-        with patch.object(exc_module, "_REGISTRY_AVAILABLE", False):
-            with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
-                # With no registry and no legacy fallback, should return default (False)
-                result = _get_dataset_feature("SomeDataset", "uncertainty_handling")
-                assert not result  # default value
+        with (
+            patch.object(exc_module, "_REGISTRY_AVAILABLE", False),
+            patch.object(exc_module, "_REGISTRY_INITIALIZED", True),
+        ):
+            # With no registry and no legacy fallback, should return default (False)
+            result = _get_dataset_feature("SomeDataset", "uncertainty_handling")
+            assert not result  # default value
 
     def test_get_dataset_feature_with_registry_unavailable_custom_default(self):
         """Test _get_dataset_feature returns custom default when registry unavailable."""
         reset_registry_state()
         import milia_pipeline.exceptions as exc_module
 
-        with patch.object(exc_module, "_REGISTRY_AVAILABLE", False):
-            with patch.object(exc_module, "_REGISTRY_INITIALIZED", True):
-                result = _get_dataset_feature("SomeDataset", "some_feature", default=True)
-                assert result  # custom default
+        with (
+            patch.object(exc_module, "_REGISTRY_AVAILABLE", False),
+            patch.object(exc_module, "_REGISTRY_INITIALIZED", True),
+        ):
+            result = _get_dataset_feature("SomeDataset", "some_feature", default=True)
+            assert result  # custom default
 
     def test_get_dataset_feature_unknown_feature_returns_default(self):
         """Test _get_dataset_feature for unknown feature returns default."""
