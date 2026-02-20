@@ -36,6 +36,7 @@ Author: MILIA Team
 Version: 1.0.0
 """
 
+import contextlib
 import logging
 import sys
 import tempfile
@@ -1095,7 +1096,7 @@ class TestFullPipelineIntegrationE2E:
             if edges
             else torch.zeros((2, 0), dtype=torch.long)
         )
-        try:
+        with contextlib.suppress(Exception):  # Continue with basic data if features fail
             pyg = add_structural_features(
                 rdkit_mol=mol,
                 pyg_data=pyg,
@@ -1103,8 +1104,6 @@ class TestFullPipelineIntegrationE2E:
                 logger=logging.getLogger("t"),
                 molecule_index=0,
             )
-        except Exception:
-            pass  # Continue with basic data if features fail
         available = list_available_transforms()
         if "AddSelfLoops" in available:
             try:
