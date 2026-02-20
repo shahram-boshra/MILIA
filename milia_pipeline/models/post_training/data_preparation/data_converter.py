@@ -13,6 +13,7 @@ Author: MILIA Team
 Version: 2.0.0
 """
 
+import contextlib
 import logging
 import threading
 from abc import ABC, abstractmethod
@@ -135,10 +136,8 @@ def _ensure_3d_conformer_for_prediction(
             AllChem.MMFFOptimizeMolecule(mol_with_hs)
         except Exception:
             # MMFF optimization is optional - UFF fallback
-            try:
+            with contextlib.suppress(Exception):  # Use unoptimized conformer
                 AllChem.UFFOptimizeMolecule(mol_with_hs)
-            except Exception:
-                pass  # Use unoptimized conformer
 
         # ================================================================
         # Transfer conformer coordinates to original molecule (without Hs)
