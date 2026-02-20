@@ -417,15 +417,17 @@ class TestHPOManagerInit:
 
     def test_init_disabled_does_not_initialize_backend(self):
         """Test backend is not initialized when HPO is disabled."""
-        with patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig):
-            with patch("milia_pipeline.models.hpo.hpo_manager.get_backend") as mock_get_backend:
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend") as mock_get_backend,
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                config = MockHPOConfig(enabled=False)
-                manager = HPOManager(config)
+            config = MockHPOConfig(enabled=False)
+            manager = HPOManager(config)
 
-                mock_get_backend.assert_not_called()
-                assert manager.backend is None
+            mock_get_backend.assert_not_called()
+            assert manager.backend is None
 
     def test_init_enabled_calls_get_backend(self, mock_backend):
         """Test get_backend is called with correct backend name when enabled."""
@@ -502,16 +504,18 @@ class TestHPOManagerFromConfig:
         mock_hpoconfig_instance = MockHPOConfig(enabled=True)
         mock_hpoconfig_cls.from_dict.return_value = mock_hpoconfig_instance
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", mock_hpoconfig_cls):
-            with patch(
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", mock_hpoconfig_cls),
+            patch(
                 "milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend
-            ):
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+                ),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                config_dict = {"enabled": True, "n_trials": 50}
-                _manager = HPOManager.from_config(config_dict)
+            config_dict = {"enabled": True, "n_trials": 50}
+            _manager = HPOManager.from_config(config_dict)
 
-                mock_hpoconfig_cls.from_dict.assert_called_once_with(config_dict)
+            mock_hpoconfig_cls.from_dict.assert_called_once_with(config_dict)
 
 
 # =============================================================================
@@ -528,23 +532,23 @@ class TestHPOManagerFromYaml:
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
             patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
             patch("builtins.open", mock_open(read_data=mock_yaml_config)),
+            patch("yaml.safe_load") as mock_safe_load,
         ):
-            with patch("yaml.safe_load") as mock_safe_load:
-                mock_safe_load.return_value = {
-                    "models": {
-                        "hpo": {
-                            "enabled": True,
-                            "n_trials": 100,
-                            "backend": "optuna",
-                        }
+            mock_safe_load.return_value = {
+                "models": {
+                    "hpo": {
+                        "enabled": True,
+                        "n_trials": 100,
+                        "backend": "optuna",
                     }
                 }
+            }
 
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                manager = HPOManager.from_yaml("config.yaml")
+            manager = HPOManager.from_yaml("config.yaml")
 
-                assert isinstance(manager, HPOManager)
+            assert isinstance(manager, HPOManager)
 
     def test_from_yaml_file_not_found(self, mock_backend):
         """Test FileNotFoundError when config file not found."""
@@ -566,16 +570,16 @@ class TestHPOManagerFromYaml:
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
             patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
             patch("builtins.open", mock_open(read_data="other: data")),
+            patch("yaml.safe_load") as mock_safe_load,
         ):
-            with patch("yaml.safe_load") as mock_safe_load:
-                mock_safe_load.return_value = {"other": {"data": 123}}
+            mock_safe_load.return_value = {"other": {"data": 123}}
 
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                with pytest.raises(HPOConfigurationError) as exc_info:
-                    HPOManager.from_yaml("config.yaml", section="models.hpo")
+            with pytest.raises(HPOConfigurationError) as exc_info:
+                HPOManager.from_yaml("config.yaml", section="models.hpo")
 
-                assert "models.hpo" in str(exc_info.value)
+            assert "models.hpo" in str(exc_info.value)
 
     def test_from_yaml_custom_section(self, mock_backend):
         """Test from_yaml with custom section path."""
@@ -1560,24 +1564,24 @@ class TestHPOManagerTrainFinalModel:
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
             patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
             patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer),
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", None),
         ):
-            with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", None):
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                config = MockHPOConfig(enabled=True)
-                manager = HPOManager(config)
-                manager.best_params = {"lr": 0.001}
+            config = MockHPOConfig(enabled=True)
+            manager = HPOManager(config)
+            manager.best_params = {"lr": 0.001}
 
-                with pytest.raises(HPOError) as exc_info:
-                    manager.train_final_model(
-                        dataset=MagicMock(),
-                        model_name="GCN",
-                    )
-
-                assert (
-                    "datasplitter" in str(exc_info.value).lower()
-                    or "split" in str(exc_info.value).lower()
+            with pytest.raises(HPOError) as exc_info:
+                manager.train_final_model(
+                    dataset=MagicMock(),
+                    model_name="GCN",
                 )
+
+            assert (
+                "datasplitter" in str(exc_info.value).lower()
+                or "split" in str(exc_info.value).lower()
+            )
 
     def test_train_final_model_no_factory_raises(self, mock_backend):
         """Test HPOError raised when get_factory not available."""
@@ -1973,28 +1977,30 @@ class TestRunCrossValidation:
         mock_datasplitter = MagicMock()
         mock_datasplitter.k_fold_split.return_value = [(MagicMock(), MagicMock())]
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", None):
-                from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", None),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                with pytest.raises(HPOError) as exc_info:
-                    _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=5,
-                        metric="val_loss",
-                        aggregation="mean",
-                        factory=MagicMock(),
-                        task_type="graph_regression",
-                    )
+            with pytest.raises(HPOError) as exc_info:
+                _run_cross_validation(
+                    model_name="GCN",
+                    dataset=MagicMock(),
+                    model_params={},
+                    optimizer_params={},
+                    scheduler_params={},
+                    loss_params={},
+                    trainer_kwargs={},
+                    callbacks=[],
+                    n_folds=5,
+                    metric="val_loss",
+                    aggregation="mean",
+                    factory=MagicMock(),
+                    task_type="graph_regression",
+                )
 
-                assert "trainer" in str(exc_info.value).lower()
+            assert "trainer" in str(exc_info.value).lower()
 
     def test_run_cv_aggregation_mean(self):
         """Test cross-validation with mean aggregation."""
@@ -2026,28 +2032,30 @@ class TestRunCrossValidation:
         # Mock DataLoader to avoid real DataLoader initialization with MagicMock datasets
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    result = _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=2,
-                        metric="val_loss",
-                        aggregation="mean",
-                        factory=mock_factory,
-                        task_type="graph_regression",
-                    )
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=2,
+                metric="val_loss",
+                aggregation="mean",
+                factory=mock_factory,
+                task_type="graph_regression",
+            )
 
-                    assert result == 0.05  # Both folds return 0.05, mean is 0.05
+            assert result == 0.05  # Both folds return 0.05, mean is 0.05
 
     def test_run_cv_aggregation_median(self):
         """Test cross-validation with median aggregation."""
@@ -2090,28 +2098,30 @@ class TestRunCrossValidation:
         # Mock DataLoader to avoid real DataLoader initialization with MagicMock datasets
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    result = _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=3,
-                        metric="val_loss",
-                        aggregation="median",
-                        factory=mock_factory,
-                        task_type="graph_regression",
-                    )
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=3,
+                metric="val_loss",
+                aggregation="median",
+                factory=mock_factory,
+                task_type="graph_regression",
+            )
 
-                    assert result == 0.05  # median of [0.04, 0.05, 0.06]
+            assert result == 0.05  # median of [0.04, 0.05, 0.06]
 
     def test_run_cv_no_valid_metrics_raises(self):
         """Test HPOError raised when no valid fold metrics obtained."""
@@ -2144,29 +2154,31 @@ class TestRunCrossValidation:
         # Mock DataLoader to avoid real DataLoader initialization with MagicMock datasets
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    with pytest.raises(HPOError) as exc_info:
-                        _run_cross_validation(
-                            model_name="GCN",
-                            dataset=MagicMock(),
-                            model_params={},
-                            optimizer_params={},
-                            scheduler_params={},
-                            loss_params={},
-                            trainer_kwargs={},
-                            callbacks=[],
-                            n_folds=1,
-                            metric="val_loss",
-                            aggregation="mean",
-                            factory=mock_factory,
-                            task_type="graph_regression",
-                        )
+            with pytest.raises(HPOError) as exc_info:
+                _run_cross_validation(
+                    model_name="GCN",
+                    dataset=MagicMock(),
+                    model_params={},
+                    optimizer_params={},
+                    scheduler_params={},
+                    loss_params={},
+                    trainer_kwargs={},
+                    callbacks=[],
+                    n_folds=1,
+                    metric="val_loss",
+                    aggregation="mean",
+                    factory=mock_factory,
+                    task_type="graph_regression",
+                )
 
-                    assert "no valid fold metrics" in str(exc_info.value).lower()
+            assert "no valid fold metrics" in str(exc_info.value).lower()
 
 
 # =============================================================================
@@ -2287,14 +2299,16 @@ class TestCreateHpoManager:
 
     def test_create_hpo_manager_disabled(self):
         """Test creation with HPO disabled."""
-        with patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig):
-            with patch("milia_pipeline.models.hpo.hpo_manager.get_backend") as mock_get_backend:
-                from milia_pipeline.models.hpo.hpo_manager import create_hpo_manager
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend") as mock_get_backend,
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import create_hpo_manager
 
-                manager = create_hpo_manager(enabled=False)
+            manager = create_hpo_manager(enabled=False)
 
-                assert manager.config.enabled is False
-                mock_get_backend.assert_not_called()
+            assert manager.config.enabled is False
+            mock_get_backend.assert_not_called()
 
 
 # =============================================================================
@@ -2854,24 +2868,24 @@ class TestSearchSpaceFiltering:
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
             patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
             patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", False),
+            patch("milia_pipeline.models.hpo.hpo_manager.logger") as mock_logger,
         ):
-            with patch("milia_pipeline.models.hpo.hpo_manager.logger") as mock_logger:
-                from milia_pipeline.models.hpo.hpo_manager import HPOManager
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                config = MockHPOConfig(enabled=True)
-                manager = HPOManager(config)
+            config = MockHPOConfig(enabled=True)
+            manager = HPOManager(config)
 
-                filtered = manager._filter_search_space_for_model(
-                    "GCN", sample_search_space_with_heads
-                )
+            filtered = manager._filter_search_space_for_model(
+                "GCN", sample_search_space_with_heads
+            )
 
-                # Should return unfiltered space
-                assert "heads" in filtered.get("hyperparameters", {}), (
-                    "Should return unfiltered space when registry unavailable"
-                )
+            # Should return unfiltered space
+            assert "heads" in filtered.get("hyperparameters", {}), (
+                "Should return unfiltered space when registry unavailable"
+            )
 
-                # Should log warning
-                mock_logger.warning.assert_called()
+            # Should log warning
+            mock_logger.warning.assert_called()
 
     def test_empty_search_space(self, mock_backend):
         """Verify handling of empty search space."""
@@ -3030,41 +3044,42 @@ class TestSearchSpaceFiltering:
             "reduction": {}
         }  # Only 'reduction' is valid
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig):
-            with patch(
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch(
                 "milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend
-            ):
-                with patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", True):
-                    with patch(
-                        "milia_pipeline.models.hpo.hpo_manager.ModelRegistry", MockModelRegistry
-                    ):
-                        # Patch LossRegistry at module level before importing
-                        with patch.object(
-                            __import__(
-                                "milia_pipeline.models.hpo.hpo_manager", fromlist=["LossRegistry"]
-                            ),
-                            "LossRegistry",
-                            mock_loss_registry,
-                        ):
-                            # Re-import to get fresh module state
+                ),
+            patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", True),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager.ModelRegistry", MockModelRegistry
+                ),
+            patch.object(
+                __import__(
+                "milia_pipeline.models.hpo.hpo_manager", fromlist=["LossRegistry"]
+                ),
+                "LossRegistry",
+                mock_loss_registry,
+                ),
+        ):
+            # Re-import to get fresh module state
 
-                            # Now call the function - since we can't easily patch the already-imported
-                            # LossRegistry, let's verify the filtering behavior is correct by
-                            # checking that the function at least doesn't crash and returns a valid result
-                            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+            # Now call the function - since we can't easily patch the already-imported
+            # LossRegistry, let's verify the filtering behavior is correct by
+            # checking that the function at least doesn't crash and returns a valid result
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-                            config = MockHPOConfig(enabled=True)
-                            manager = HPOManager(config)
+            config = MockHPOConfig(enabled=True)
+            manager = HPOManager(config)
 
-                            # Call filter - it should return a filtered space
-                            filtered = manager._filter_search_space_for_model(
-                                "GCN", search_space_with_loss, task_type="graph_regression"
-                            )
+            # Call filter - it should return a filtered space
+            filtered = manager._filter_search_space_for_model(
+                "GCN", search_space_with_loss, task_type="graph_regression"
+            )
 
-                            # The function should return a valid dict with loss category
-                            assert isinstance(filtered, dict)
-                            # Loss category should exist
-                            assert "loss" in filtered or "hyperparameters" in filtered
+            # The function should return a valid dict with loss category
+            assert isinstance(filtered, dict)
+            # Loss category should exist
+            assert "loss" in filtered or "hyperparameters" in filtered
 
     def test_filtering_logs_removed_params(self, mock_backend, sample_search_space_with_heads):
         """Verify filtering logs the removed parameters."""
@@ -3758,22 +3773,24 @@ class TestPrepareClassificationDataHpo:
         val_data = []
 
         # Without DiscretizeTargets available, this should raise or handle gracefully
-        with patch("milia_pipeline.models.hpo.hpo_manager._DISCRETIZE_AVAILABLE", False):
-            with patch("milia_pipeline.models.hpo.hpo_manager.DiscretizeTargets", None):
-                # Re-import to pick up patched values
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager._DISCRETIZE_AVAILABLE", False),
+            patch("milia_pipeline.models.hpo.hpo_manager.DiscretizeTargets", None),
+        ):
+            # Re-import to pick up patched values
 
-                from milia_pipeline.exceptions import HPOError
+            from milia_pipeline.exceptions import HPOError
 
-                # Should raise HPOError when discretization is needed but unavailable
-                # Note: Need to test with actual float tensor
-                try:
-                    _result = _prepare_classification_data_hpo(
-                        train_data, val_data, "graph_classification"
-                    )
-                except HPOError as e:
-                    assert "discretize" in str(e).lower()
-                except Exception:
-                    pass  # Some other error is also acceptable in test context
+            # Should raise HPOError when discretization is needed but unavailable
+            # Note: Need to test with actual float tensor
+            try:
+                _result = _prepare_classification_data_hpo(
+                    train_data, val_data, "graph_classification"
+                )
+            except HPOError as e:
+                assert "discretize" in str(e).lower()
+            except Exception:
+                pass  # Some other error is also acceptable in test context
 
     def test_discretize_config_default_values(self):
         """Test discretization uses default config values."""
@@ -4555,28 +4572,30 @@ class TestCrossValidationAggregation:
 
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    result = _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=2,
-                        metric="val_loss",
-                        aggregation="min",
-                        factory=mock_factory,
-                        task_type="graph_regression",
-                    )
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=2,
+                metric="val_loss",
+                aggregation="min",
+                factory=mock_factory,
+                task_type="graph_regression",
+            )
 
-                    assert result == 0.04  # min of [0.04, 0.06]
+            assert result == 0.04  # min of [0.04, 0.06]
 
     def test_cv_aggregation_max(self):
         """Test cross-validation with max aggregation."""
@@ -4607,28 +4626,30 @@ class TestCrossValidationAggregation:
 
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    result = _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=2,
-                        metric="val_loss",
-                        aggregation="max",
-                        factory=mock_factory,
-                        task_type="graph_regression",
-                    )
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=2,
+                metric="val_loss",
+                aggregation="max",
+                factory=mock_factory,
+                task_type="graph_regression",
+            )
 
-                    assert result == 0.06  # max of [0.04, 0.06]
+            assert result == 0.06  # max of [0.04, 0.06]
 
     def test_cv_uses_best_val_loss_fallback(self):
         """Test CV uses 'best_val_loss' when primary metric not found."""
@@ -4658,29 +4679,31 @@ class TestCrossValidationAggregation:
 
         mock_dataloader = MagicMock()
 
-        with patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter):
-            with patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class):
-                with patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader):
-                    from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-                    result = _run_cross_validation(
-                        model_name="GCN",
-                        dataset=MagicMock(),
-                        model_params={},
-                        optimizer_params={},
-                        scheduler_params={},
-                        loss_params={},
-                        trainer_kwargs={},
-                        callbacks=[],
-                        n_folds=1,
-                        metric="custom_metric",  # Not in results
-                        aggregation="mean",
-                        factory=mock_factory,
-                        task_type="graph_regression",
-                    )
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=1,
+                metric="custom_metric",  # Not in results
+                aggregation="mean",
+                factory=mock_factory,
+                task_type="graph_regression",
+            )
 
-                    # Should fallback to best_val_loss
-                    assert result == 0.05
+            # Should fallback to best_val_loss
+            assert result == 0.05
 
 
 class TestTaskTypeWithConfig:
