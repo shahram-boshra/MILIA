@@ -18,6 +18,7 @@ Author: milia Team
 Version: 3.0.0
 """
 
+import contextlib
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -150,10 +151,8 @@ def teardown_module(module):
     ]
 
     for key in keys_to_remove:
-        try:
+        with contextlib.suppress(KeyError):  # Already removed by another cleanup
             del sys.modules[key]
-        except KeyError:
-            pass  # Already removed by another cleanup
 
 
 # =============================================================================
