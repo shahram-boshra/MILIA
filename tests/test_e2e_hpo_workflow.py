@@ -983,22 +983,24 @@ class TestE2EOptimization:
         mock_factory = MagicMock()
         mock_factory.create_model_with_info = tiny_model_factory
 
-        with patch.object(manager, "_model_factory", mock_factory):
+        with (
+            patch.object(manager, "_model_factory", mock_factory),
             # Patch get_factory at module level so _create_objective captures it
-            with patch(
+            patch(
                 "milia_pipeline.models.hpo.hpo_manager.get_factory",
                 return_value=mock_factory,
-            ):
-                # Patch ModelRegistry as unavailable for filter fallback
-                with patch(
-                    "milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
-                    False,
-                ):
-                    best_params = manager.optimize(
-                        model_name="TinyGNN",
-                        dataset=synthetic_dataset,
-                        trainer_kwargs={"max_epochs": 2},
-                    )
+            ),
+            # Patch ModelRegistry as unavailable for filter fallback
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE",
+                False,
+            ),
+        ):
+            best_params = manager.optimize(
+                model_name="TinyGNN",
+                dataset=synthetic_dataset,
+                trainer_kwargs={"max_epochs": 2},
+            )
 
         # ASSERTIONS
         assert best_params is not None
