@@ -632,19 +632,23 @@ class TestComputationOptimizerInitialization:
 
     def test_verbose_logging(self, caplog):
         """Test verbose logging during initialization."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                _optimizer = ComputationOptimizer(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+        ):
+            _optimizer = ComputationOptimizer(verbose=True)
 
         assert "ComputationOptimizer initialized" in caplog.text
 
     def test_silent_initialization(self, caplog):
         """Test silent initialization when verbose=False."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                # Clear any existing logs
-                caplog.clear()
-                _optimizer = ComputationOptimizer(verbose=False)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+        ):
+            # Clear any existing logs
+            caplog.clear()
+            _optimizer = ComputationOptimizer(verbose=False)
 
         # Check that no INFO logs about initialization were captured after clearing
         optimizer_init_logs = [
@@ -665,9 +669,11 @@ class TestGlobalOptimizations:
         """Test global optimizations on CPU device (skips CUDA-specific)."""
         device = torch.device("cpu")
 
-        with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
-            with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                _optimizer = ComputationOptimizer(device=device, operator_fusion=True, verbose=False)
+        with (
+            patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec,
+            patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode,
+        ):
+            _optimizer = ComputationOptimizer(device=device, operator_fusion=True, verbose=False)
 
         mock_exec.assert_called_once_with(True)
         mock_mode.assert_called_once_with(True)
@@ -713,22 +719,26 @@ class TestGlobalOptimizations:
 
     def test_operator_fusion_enabled(self):
         """Test operator fusion is enabled."""
-        with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
-            with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                _optimizer = ComputationOptimizer(
-                    operator_fusion=True, verbose=False, device=torch.device("cpu")
-                )
+        with (
+            patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec,
+            patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode,
+        ):
+            _optimizer = ComputationOptimizer(
+                operator_fusion=True, verbose=False, device=torch.device("cpu")
+            )
 
         mock_exec.assert_called_with(True)
         mock_mode.assert_called_with(True)
 
     def test_operator_fusion_disabled(self):
         """Test operator fusion is not called when disabled."""
-        with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
-            with patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode:
-                _optimizer = ComputationOptimizer(
-                    operator_fusion=False, verbose=False, device=torch.device("cpu")
-                )
+        with (
+            patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec,
+            patch.object(torch._C, "_jit_set_profiling_mode") as mock_mode,
+        ):
+            _optimizer = ComputationOptimizer(
+                operator_fusion=False, verbose=False, device=torch.device("cpu")
+            )
 
         mock_exec.assert_not_called()
         mock_mode.assert_not_called()
@@ -869,9 +879,11 @@ class TestModelCompilation:
             compile_model=True, verbose=False, device=torch.device("cpu")
         )
 
-        with patch.object(torch, "compile", side_effect=Exception("Compile failed")):
-            with pytest.raises(OptimizationError) as exc_info:
-                optimizer.compile_model(simple_model)
+        with (
+            patch.object(torch, "compile", side_effect=Exception("Compile failed")),
+            pytest.raises(OptimizationError) as exc_info,
+        ):
+            optimizer.compile_model(simple_model)
 
         assert "Failed to compile model" in str(exc_info.value)
 
@@ -882,9 +894,11 @@ class TestModelCompilation:
         )
 
         if hasattr(torch, "compile"):
-            with caplog.at_level(logging.INFO):
-                with patch.object(torch, "compile", return_value=simple_model):
-                    optimizer.compile_model(simple_model)
+            with (
+                caplog.at_level(logging.INFO),
+                patch.object(torch, "compile", return_value=simple_model),
+            ):
+                optimizer.compile_model(simple_model)
 
             assert "Model compiled" in caplog.text
 
@@ -966,11 +980,13 @@ class TestJITCompilation:
 
         mock_scripted = Mock(spec=torch.jit.ScriptModule)
 
-        with patch.object(torch.jit, "script", return_value=mock_scripted) as mock_script:
-            with patch.object(
+        with (
+            patch.object(torch.jit, "script", return_value=mock_scripted) as mock_script,
+            patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_scripted
-            ) as mock_optimize:
-                _result = optimizer.jit_script_model(simple_model)
+                ) as mock_optimize,
+        ):
+            _result = optimizer.jit_script_model(simple_model)
 
         mock_script.assert_called_once_with(simple_model)
         mock_optimize.assert_called_once()
@@ -983,11 +999,13 @@ class TestJITCompilation:
 
         mock_traced = Mock(spec=torch.jit.ScriptModule)
 
-        with patch.object(torch.jit, "trace", return_value=mock_traced) as mock_trace:
-            with patch.object(
+        with (
+            patch.object(torch.jit, "trace", return_value=mock_traced) as mock_trace,
+            patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_traced
-            ) as mock_optimize:
-                _result = optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
+                ) as mock_optimize,
+        ):
+            _result = optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
 
         mock_trace.assert_called_once()
         mock_optimize.assert_called_once()
@@ -1007,9 +1025,11 @@ class TestJITCompilation:
         """Test JIT scripting failure logs warning."""
         optimizer = ComputationOptimizer(jit_compile=True, verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.WARNING):
-            with patch.object(torch.jit, "script", side_effect=Exception("JIT failed")):
-                _result = optimizer.jit_script_model(simple_model)
+        with (
+            caplog.at_level(logging.WARNING),
+            patch.object(torch.jit, "script", side_effect=Exception("JIT failed")),
+        ):
+            _result = optimizer.jit_script_model(simple_model)
 
         assert "JIT compilation failed" in caplog.text
 
@@ -1040,9 +1060,11 @@ class TestJITCompilation:
 
         frozen_mock = Mock(spec=torch.jit.ScriptModule)
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch.jit, "freeze", return_value=frozen_mock):
-                optimizer.jit_freeze_model(mock_jit_script_module)
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch.jit, "freeze", return_value=frozen_mock),
+        ):
+            optimizer.jit_freeze_model(mock_jit_script_module)
 
         assert "Model frozen" in caplog.text
 
@@ -1052,10 +1074,12 @@ class TestJITCompilation:
 
         mock_traced = Mock(spec=torch.jit.ScriptModule)
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch.jit, "trace", return_value=mock_traced):
-                with patch.object(torch.jit, "optimize_for_inference", return_value=mock_traced):
-                    optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch.jit, "trace", return_value=mock_traced),
+            patch.object(torch.jit, "optimize_for_inference", return_value=mock_traced),
+        ):
+            optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
 
         assert "JIT traced" in caplog.text
 
@@ -1065,10 +1089,12 @@ class TestJITCompilation:
 
         mock_scripted = Mock(spec=torch.jit.ScriptModule)
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch.jit, "script", return_value=mock_scripted):
-                with patch.object(torch.jit, "optimize_for_inference", return_value=mock_scripted):
-                    optimizer.jit_script_model(simple_model)
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch.jit, "script", return_value=mock_scripted),
+            patch.object(torch.jit, "optimize_for_inference", return_value=mock_scripted),
+        ):
+            optimizer.jit_script_model(simple_model)
 
         assert "JIT scripted" in caplog.text
 
@@ -1076,9 +1102,11 @@ class TestJITCompilation:
         """Test model freezing failure logs warning."""
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.WARNING):
-            with patch.object(torch.jit, "freeze", side_effect=Exception("Freeze failed")):
-                optimizer.jit_freeze_model(mock_jit_script_module)
+        with (
+            caplog.at_level(logging.WARNING),
+            patch.object(torch.jit, "freeze", side_effect=Exception("Freeze failed")),
+        ):
+            optimizer.jit_freeze_model(mock_jit_script_module)
 
         assert "Model freezing failed" in caplog.text
 
@@ -1532,12 +1560,14 @@ class TestBenchmarking:
         """Test benchmark_model calls CUDA sync on CUDA device."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cuda"))
 
-        with patch.object(torch.cuda, "synchronize") as mock_sync:
-            with patch.object(simple_model, "eval", return_value=simple_model):
-                with patch.object(simple_model, "__call__", return_value=torch.randn(4, 1)):
-                    optimizer.benchmark_model(
-                        simple_model, sample_input, num_iterations=5, warmup_iterations=2
-                    )
+        with (
+            patch.object(torch.cuda, "synchronize") as mock_sync,
+            patch.object(simple_model, "eval", return_value=simple_model),
+            patch.object(simple_model, "__call__", return_value=torch.randn(4, 1)),
+        ):
+            optimizer.benchmark_model(
+                simple_model, sample_input, num_iterations=5, warmup_iterations=2
+            )
 
         # Should call synchronize multiple times
         assert mock_sync.call_count > 0
@@ -1706,9 +1736,11 @@ class TestKernelFusion:
         """Test enabling aggressive kernel fusion."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cpu"))
 
-        with patch.object(torch._C, "_jit_set_texpr_fuser_enabled") as mock_texpr:
-            with patch.object(torch._C, "_jit_set_nvfuser_enabled") as mock_nvfuser:
-                optimizer.enable_fusion(aggressive=True)
+        with (
+            patch.object(torch._C, "_jit_set_texpr_fuser_enabled") as mock_texpr,
+            patch.object(torch._C, "_jit_set_nvfuser_enabled") as mock_nvfuser,
+        ):
+            optimizer.enable_fusion(aggressive=True)
 
         mock_texpr.assert_called_once_with(True)
         mock_nvfuser.assert_called_once_with(True)
@@ -1717,9 +1749,11 @@ class TestKernelFusion:
         """Test enable_fusion logging."""
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch._C, "_jit_set_profiling_executor"):
-                optimizer.enable_fusion(aggressive=False)
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch._C, "_jit_set_profiling_executor"),
+        ):
+            optimizer.enable_fusion(aggressive=False)
 
         assert "kernel fusion" in caplog.text.lower()
 
@@ -1727,10 +1761,12 @@ class TestKernelFusion:
         """Test aggressive enable_fusion logging."""
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch._C, "_jit_set_texpr_fuser_enabled"):
-                with patch.object(torch._C, "_jit_set_nvfuser_enabled"):
-                    optimizer.enable_fusion(aggressive=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch._C, "_jit_set_texpr_fuser_enabled"),
+            patch.object(torch._C, "_jit_set_nvfuser_enabled"),
+        ):
+            optimizer.enable_fusion(aggressive=True)
 
         assert "aggressive" in caplog.text.lower()
 
@@ -1738,10 +1774,12 @@ class TestKernelFusion:
         """Test disabling kernel fusion."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cpu"))
 
-        with patch.object(torch._C, "_jit_set_texpr_fuser_enabled") as mock_texpr:
-            with patch.object(torch._C, "_jit_set_nvfuser_enabled") as mock_nvfuser:
-                with patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec:
-                    optimizer.disable_fusion()
+        with (
+            patch.object(torch._C, "_jit_set_texpr_fuser_enabled") as mock_texpr,
+            patch.object(torch._C, "_jit_set_nvfuser_enabled") as mock_nvfuser,
+            patch.object(torch._C, "_jit_set_profiling_executor") as mock_exec,
+        ):
+            optimizer.disable_fusion()
 
         mock_texpr.assert_called_once_with(False)
         mock_nvfuser.assert_called_once_with(False)
@@ -1751,11 +1789,13 @@ class TestKernelFusion:
         """Test disable_fusion logging."""
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(torch._C, "_jit_set_texpr_fuser_enabled"):
-                with patch.object(torch._C, "_jit_set_nvfuser_enabled"):
-                    with patch.object(torch._C, "_jit_set_profiling_executor"):
-                        optimizer.disable_fusion()
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(torch._C, "_jit_set_texpr_fuser_enabled"),
+            patch.object(torch._C, "_jit_set_nvfuser_enabled"),
+            patch.object(torch._C, "_jit_set_profiling_executor"),
+        ):
+            optimizer.disable_fusion()
 
         assert "Disabled kernel fusion" in caplog.text
 
@@ -1772,10 +1812,12 @@ class TestGraphOptimization:
         """Test graph optimization at level 1."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cpu"))
 
-        with patch.object(torch._C, "_jit_pass_inline") as mock_inline:
-            with patch.object(torch._C, "_jit_pass_constant_propagation") as mock_const:
-                with patch.object(torch._C, "_jit_pass_peephole") as mock_peep:
-                    _result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
+        with (
+            patch.object(torch._C, "_jit_pass_inline") as mock_inline,
+            patch.object(torch._C, "_jit_pass_constant_propagation") as mock_const,
+            patch.object(torch._C, "_jit_pass_peephole") as mock_peep,
+        ):
+            _result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
 
         mock_inline.assert_called_once()
         mock_const.assert_called_once()
@@ -1785,13 +1827,15 @@ class TestGraphOptimization:
         """Test graph optimization at level 2 includes fusion."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cpu"))
 
-        with patch.object(torch._C, "_jit_pass_inline"):
-            with patch.object(torch._C, "_jit_pass_constant_propagation"):
-                with patch.object(torch._C, "_jit_pass_peephole"):
-                    with patch.object(torch._C, "_jit_pass_fuse") as mock_fuse:
-                        _result = optimizer.optimize_graph(
-                            mock_jit_script_module, optimization_level=2
-                        )
+        with (
+            patch.object(torch._C, "_jit_pass_inline"),
+            patch.object(torch._C, "_jit_pass_constant_propagation"),
+            patch.object(torch._C, "_jit_pass_peephole"),
+            patch.object(torch._C, "_jit_pass_fuse") as mock_fuse,
+        ):
+            _result = optimizer.optimize_graph(
+                mock_jit_script_module, optimization_level=2
+            )
 
         mock_fuse.assert_called_once()
 
@@ -1799,14 +1843,16 @@ class TestGraphOptimization:
         """Test graph optimization at level 3 includes mutation removal."""
         optimizer = ComputationOptimizer(verbose=False, device=torch.device("cpu"))
 
-        with patch.object(torch._C, "_jit_pass_inline"):
-            with patch.object(torch._C, "_jit_pass_constant_propagation"):
-                with patch.object(torch._C, "_jit_pass_peephole"):
-                    with patch.object(torch._C, "_jit_pass_fuse"):
-                        with patch.object(torch._C, "_jit_pass_remove_mutation") as mock_remove:
-                            _result = optimizer.optimize_graph(
-                                mock_jit_script_module, optimization_level=3
-                            )
+        with (
+            patch.object(torch._C, "_jit_pass_inline"),
+            patch.object(torch._C, "_jit_pass_constant_propagation"),
+            patch.object(torch._C, "_jit_pass_peephole"),
+            patch.object(torch._C, "_jit_pass_fuse"),
+            patch.object(torch._C, "_jit_pass_remove_mutation") as mock_remove,
+        ):
+            _result = optimizer.optimize_graph(
+                mock_jit_script_module, optimization_level=3
+            )
 
         mock_remove.assert_called_once()
 
@@ -1839,10 +1885,12 @@ class TestGraphOptimization:
         """Test graph optimization logs success."""
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
-        with caplog.at_level(logging.INFO), patch.object(torch._C, "_jit_pass_inline"):
-            with patch.object(torch._C, "_jit_pass_constant_propagation"):
-                with patch.object(torch._C, "_jit_pass_peephole"):
-                    optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
+        with (
+            caplog.at_level(logging.INFO), patch.object(torch._C, "_jit_pass_inline"),
+            patch.object(torch._C, "_jit_pass_constant_propagation"),
+            patch.object(torch._C, "_jit_pass_peephole"),
+        ):
+            optimizer.optimize_graph(mock_jit_script_module, optimization_level=1)
 
         assert "Applied graph optimizations" in caplog.text
 
@@ -2194,9 +2242,11 @@ class TestEdgeCases:
         # Mock the JIT operations
         mock_scripted = Mock(spec=torch.jit.ScriptModule)
 
-        with patch.object(optimizer, "jit_script_model", return_value=mock_scripted):
-            with patch.object(optimizer, "jit_freeze_model", return_value=mock_scripted):
-                result = optimizer.optimize_model(simple_model, example_inputs=None)
+        with (
+            patch.object(optimizer, "jit_script_model", return_value=mock_scripted),
+            patch.object(optimizer, "jit_freeze_model", return_value=mock_scripted),
+        ):
+            result = optimizer.optimize_model(simple_model, example_inputs=None)
 
         # Should still work with None example_inputs
         assert result is not None
@@ -2439,10 +2489,12 @@ class TestIntegration:
         )
 
         # Disable fusion
-        with patch.object(torch._C, "_jit_set_texpr_fuser_enabled"):
-            with patch.object(torch._C, "_jit_set_nvfuser_enabled"):
-                with patch.object(torch._C, "_jit_set_profiling_executor"):
-                    optimizer.disable_fusion()
+        with (
+            patch.object(torch._C, "_jit_set_texpr_fuser_enabled"),
+            patch.object(torch._C, "_jit_set_nvfuser_enabled"),
+            patch.object(torch._C, "_jit_set_profiling_executor"),
+        ):
+            optimizer.disable_fusion()
 
         # Benchmark again
         results2 = optimizer.benchmark_model(
@@ -2662,9 +2714,11 @@ class TestLoggingConfiguration:
 
     def test_verbose_true_logs_info(self, caplog):
         """Test verbose=True produces INFO logs."""
-        with caplog.at_level(logging.INFO):
-            with patch("torch.cuda.is_available", return_value=False):
-                _optimizer = ComputationOptimizer(verbose=True)
+        with (
+            caplog.at_level(logging.INFO),
+            patch("torch.cuda.is_available", return_value=False),
+        ):
+            _optimizer = ComputationOptimizer(verbose=True)
 
         # Should have logged initialization info
         assert len(caplog.records) > 0
