@@ -978,30 +978,32 @@ class TestCreateStudyErrorHandling:
         mock_study.study_name = "existing_study"
         mock_study.trials = [MagicMock()]  # Has existing trials
 
-        with patch("optuna.create_study", side_effect=mock_duplicated_error):
-            with patch("optuna.load_study", return_value=mock_study) as mock_load:
-                with patch(
-                    "milia_pipeline.models.hpo.backends.optuna_backend.logger"
-                ) as mock_logger:
-                    study = backend.create_study(
-                        study_name="existing_study",
-                        direction="minimize",
-                        storage="sqlite:///test.db",
-                    )
+        with (
+            patch("optuna.create_study", side_effect=mock_duplicated_error),
+            patch("optuna.load_study", return_value=mock_study) as mock_load,
+            patch(
+                "milia_pipeline.models.hpo.backends.optuna_backend.logger"
+            ) as mock_logger,
+        ):
+            study = backend.create_study(
+                study_name="existing_study",
+                direction="minimize",
+                storage="sqlite:///test.db",
+            )
 
-                    # Verify load_study was called with correct arguments
-                    mock_load.assert_called_once()
-                    call_kwargs = mock_load.call_args[1]
-                    assert call_kwargs["study_name"] == "existing_study"
-                    assert call_kwargs["storage"] == "sqlite:///test.db"
+            # Verify load_study was called with correct arguments
+            mock_load.assert_called_once()
+            call_kwargs = mock_load.call_args[1]
+            assert call_kwargs["study_name"] == "existing_study"
+            assert call_kwargs["storage"] == "sqlite:///test.db"
 
-                    # Verify warning was logged
-                    mock_logger.warning.assert_called()
-                    warning_msg = str(mock_logger.warning.call_args)
-                    assert "existing_study" in warning_msg or "exists" in warning_msg.lower()
+            # Verify warning was logged
+            mock_logger.warning.assert_called()
+            warning_msg = str(mock_logger.warning.call_args)
+            assert "existing_study" in warning_msg or "exists" in warning_msg.lower()
 
-                    # Verify the loaded study is returned
-                    assert study is mock_study
+            # Verify the loaded study is returned
+            assert study is mock_study
 
     def test_create_study_wraps_exceptions_in_backend_error(self):
         """Test create_study wraps exceptions in BackendError."""
