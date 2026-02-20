@@ -259,6 +259,8 @@ __status__ = "Production"
 # CORE API EXPORTS
 # ==========================================
 
+import contextlib
+
 # --- CLI Management ---
 from milia_pipeline.cli_manager import (
     CLIManager,
@@ -824,11 +826,8 @@ ProcessingError = DataProcessingError  # Alias for legacy code
 
 # Disable verbose third-party logging by default
 # This can be re-enabled by calling the function explicitly
-try:
+with contextlib.suppress(Exception):  # Silently ignore if logging setup fails during import
     disable_verbose_third_party_logging()
-except Exception:
-    # Silently ignore if logging setup fails during import
-    pass
 
 # ==========================================
 # END OF MODULE
