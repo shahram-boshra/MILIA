@@ -36,6 +36,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import contextlib
 import inspect
 import logging
 from unittest.mock import patch
@@ -2045,11 +2046,9 @@ class TestIntegration:
         # Compute all metrics
         results = {}
         for name, metric in metrics.items():
-            try:
-                results[name] = metric(preds, targets)
-            except Exception:
+            with contextlib.suppress(Exception):
                 # Some metrics may need different input format
-                pass
+                results[name] = metric(preds, targets)
 
         # At least some results should exist
         assert len(results) > 0
