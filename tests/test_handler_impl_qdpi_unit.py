@@ -908,15 +908,19 @@ class TestProcessPropertyValueOther(unittest.TestCase):
         err = DatasetSpecificHandlerError(
             dataset_type="QDPi", message="test error", operation="test_op"
         )
-        with patch("numpy.asarray", side_effect=err):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2], 0)
+        with (
+            patch("numpy.asarray", side_effect=err),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2], 0)
 
     def test_unexpected_error_wrapped_in_dataset_specific(self):
         handler = _make_handler()
-        with patch("numpy.asarray", side_effect=RuntimeError("boom")):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.process_property_value("atoms", [1, 2], 0)
+        with (
+            patch("numpy.asarray", side_effect=RuntimeError("boom")),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.process_property_value("atoms", [1, 2], 0)
 
     def test_qdpi_all_13_elements_atoms_processing(self):
         handler = _make_handler()
@@ -1104,9 +1108,11 @@ class TestEnrichPygData(unittest.TestCase):
                 raise RuntimeError("unexpected boom")
             return original_ensure(value, dtype, prop_name, mol_idx, ident)
 
-        with patch.object(handler, "_ensure_tensor", side_effect=failing_ensure):
-            with self.assertRaises(DatasetSpecificHandlerError):
-                handler.enrich_pyg_data(data, props, 0, "test")
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=failing_ensure),
+            self.assertRaises(DatasetSpecificHandlerError),
+        ):
+            handler.enrich_pyg_data(data, props, 0, "test")
 
 
 # ============================================================================
@@ -1206,9 +1212,11 @@ class TestEnrichScalarTargets(unittest.TestCase):
             reason="test error",
             detail="test",
         )
-        with patch.object(handler, "_ensure_tensor", side_effect=err):
-            with self.assertRaises(PropertyEnrichmentError):
-                handler.enrich_pyg_data(data, props, 0, "test")
+        with (
+            patch.object(handler, "_ensure_tensor", side_effect=err),
+            self.assertRaises(PropertyEnrichmentError),
+        ):
+            handler.enrich_pyg_data(data, props, 0, "test")
 
 
 # ============================================================================
