@@ -155,17 +155,21 @@ def temp_checkpoint_dir():
 @pytest.fixture
 def mock_dist_initialized():
     """Mock torch.distributed as initialized."""
-    with patch.object(dist, "is_initialized", return_value=True):
-        with patch.object(dist, "is_available", return_value=True):
-            yield
+    with (
+        patch.object(dist, "is_initialized", return_value=True),
+        patch.object(dist, "is_available", return_value=True),
+    ):
+        yield
 
 
 @pytest.fixture
 def mock_dist_not_initialized():
     """Mock torch.distributed as not initialized."""
-    with patch.object(dist, "is_initialized", return_value=False):
-        with patch.object(dist, "is_available", return_value=True):
-            yield
+    with (
+        patch.object(dist, "is_initialized", return_value=False),
+        patch.object(dist, "is_available", return_value=True),
+    ):
+        yield
 
 
 @pytest.fixture
@@ -881,57 +885,67 @@ class TestSetup:
 
     def test_setup_ddp_initializes_process_group(self, clean_env):
         """Test DDP setup initializes process group."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group") as mock_init:
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group") as mock_init,
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         mock_init.assert_called_once()
         assert manager._is_initialized is True
 
     def test_setup_ddp_sets_environment_variables(self, clean_env):
         """Test DDP setup sets MASTER_ADDR and MASTER_PORT."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.config.master_addr = "192.168.1.1"
-                    manager.config.master_port = "29500"
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.config.master_addr = "192.168.1.1"
+            manager.config.master_port = "29500"
+            manager.setup()
 
         assert os.environ["MASTER_ADDR"] == "192.168.1.1"
         assert os.environ["MASTER_PORT"] == "29500"
 
     def test_setup_ddp_already_initialized_skips_init(self, clean_env):
         """Test DDP setup skips init_process_group if already initialized."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group") as mock_init:
-                manager = DistributedManager(strategy="ddp", verbose=False)
-                manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group") as mock_init,
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         mock_init.assert_not_called()
         assert manager._is_initialized is True
 
     def test_setup_ddp_failure_raises_distributed_error(self, clean_env):
         """Test DDP setup raises DistributedError on failure."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group", side_effect=RuntimeError("Init failed")):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group", side_effect=RuntimeError("Init failed")),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
 
-                    with pytest.raises(DistributedError) as exc_info:
-                        manager.setup()
+            with pytest.raises(DistributedError) as exc_info:
+                manager.setup()
 
         assert "Failed to initialize DDP" in str(exc_info.value)
 
     def test_setup_fsdp_initializes_process_group(self, clean_env):
         """Test FSDP setup initializes process group."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group") as mock_init:
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="fsdp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group") as mock_init,
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
 
         mock_init.assert_called_once()
         assert manager._is_initialized is True
@@ -1047,16 +1061,18 @@ class TestWrapModel:
 
     def test_wrap_model_dp_wraps_with_dataparallel(self, simple_model, clean_env):
         """Test DP wrap_model wraps with DataParallel."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                manager = DistributedManager(strategy="dp", verbose=False)
-                manager.setup()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+        ):
+            manager = DistributedManager(strategy="dp", verbose=False)
+            manager.setup()
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
-                ) as mock_dp:
-                    mock_dp.return_value = MagicMock()
-                    _wrapped = manager.wrap_model(simple_model)
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
+            ) as mock_dp:
+                mock_dp.return_value = MagicMock()
+                _wrapped = manager.wrap_model(simple_model)
 
         mock_dp.assert_called_once()
         call_args = mock_dp.call_args
@@ -1064,16 +1080,18 @@ class TestWrapModel:
 
     def test_wrap_model_dp_custom_device_ids(self, simple_model, clean_env):
         """Test DP wrap_model with custom device_ids."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=4):
-                manager = DistributedManager(strategy="dp", verbose=False)
-                manager.setup()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=4),
+        ):
+            manager = DistributedManager(strategy="dp", verbose=False)
+            manager.setup()
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
-                ) as mock_dp:
-                    mock_dp.return_value = MagicMock()
-                    _wrapped = manager.wrap_model(simple_model, device_ids=[0, 2])
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
+            ) as mock_dp:
+                mock_dp.return_value = MagicMock()
+                _wrapped = manager.wrap_model(simple_model, device_ids=[0, 2])
 
         call_args = mock_dp.call_args
         assert call_args[1]["device_ids"] == [0, 2]
@@ -1083,17 +1101,19 @@ class TestWrapModel:
         mock_model = MagicMock(spec=nn.Module)
         mock_model.to.return_value = mock_model
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch("torch.cuda.is_available", return_value=True):
-                manager = DistributedManager(strategy="ddp", verbose=False)
-                manager.setup()
-                manager.config.local_rank = 0
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
+            manager.config.local_rank = 0
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
-                ) as mock_ddp:
-                    mock_ddp.return_value = MagicMock()
-                    _wrapped = manager.wrap_model(mock_model)
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
+            ) as mock_ddp:
+                mock_ddp.return_value = MagicMock()
+                _wrapped = manager.wrap_model(mock_model)
 
         mock_model.to.assert_called_once()
         mock_ddp.assert_called_once()
@@ -1103,23 +1123,25 @@ class TestWrapModel:
         mock_model = MagicMock(spec=nn.Module)
         mock_model.to.return_value = mock_model
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch("torch.cuda.is_available", return_value=True):
-                manager = DistributedManager(
-                    strategy="ddp",
-                    find_unused_parameters=True,
-                    gradient_as_bucket_view=True,
-                    static_graph=True,
-                    verbose=False,
-                )
-                manager.setup()
-                manager.config.local_rank = 1
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(
+                strategy="ddp",
+                find_unused_parameters=True,
+                gradient_as_bucket_view=True,
+                static_graph=True,
+                verbose=False,
+            )
+            manager.setup()
+            manager.config.local_rank = 1
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
-                ) as mock_ddp:
-                    mock_ddp.return_value = MagicMock()
-                    _wrapped = manager.wrap_model(mock_model)
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DistributedDataParallel"
+            ) as mock_ddp:
+                mock_ddp.return_value = MagicMock()
+                _wrapped = manager.wrap_model(mock_model)
 
         call_args = mock_ddp.call_args
         assert call_args[1]["find_unused_parameters"] is True
@@ -1130,22 +1152,26 @@ class TestWrapModel:
 
     def test_wrap_model_fsdp_import_error_raises(self, simple_model, clean_env):
         """Test FSDP wrap_model raises error on import failure."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch("torch.cuda.is_available", return_value=True):
-                manager = DistributedManager(strategy="fsdp", verbose=False)
-                manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
 
-                # Remove fsdp from sys.modules to force import error
-                with patch.dict("sys.modules", {"torch.distributed.fsdp": None}):
+            # Remove fsdp from sys.modules to force import error
+            with patch.dict("sys.modules", {"torch.distributed.fsdp": None}):
 
-                    def mock_import(name, *args, **kwargs):
-                        if "fsdp" in name:
-                            raise ImportError("FSDP not available")
-                        return __import__(name, *args, **kwargs)
+                def mock_import(name, *args, **kwargs):
+                    if "fsdp" in name:
+                        raise ImportError("FSDP not available")
+                    return __import__(name, *args, **kwargs)
 
-                    with patch("builtins.__import__", side_effect=mock_import):
-                        with pytest.raises(DistributedError) as exc_info:
-                            manager.wrap_model(simple_model)
+                with (
+                    patch("builtins.__import__", side_effect=mock_import),
+                    pytest.raises(DistributedError) as exc_info,
+                ):
+                    manager.wrap_model(simple_model)
 
         assert "FSDP requires PyTorch" in str(exc_info.value)
 
@@ -1173,9 +1199,11 @@ class TestWrapModel:
                 raise ImportError("DeepSpeed not installed")
             return __import__(name, *args, **kwargs)
 
-        with patch("builtins.__import__", side_effect=mock_import):
-            with pytest.raises(DistributedError) as exc_info:
-                manager.wrap_model(simple_model)
+        with (
+            patch("builtins.__import__", side_effect=mock_import),
+            pytest.raises(DistributedError) as exc_info,
+        ):
+            manager.wrap_model(simple_model)
 
         assert "DeepSpeed not installed" in str(exc_info.value)
 
@@ -1239,45 +1267,57 @@ class TestCleanup:
 
     def test_cleanup_ddp_destroys_process_group(self, clean_env):
         """Test DDP cleanup destroys process group."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "destroy_process_group") as mock_destroy:
-                manager.cleanup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "destroy_process_group") as mock_destroy,
+        ):
+            manager.cleanup()
 
         mock_destroy.assert_called_once()
         assert manager._is_initialized is False
 
     def test_cleanup_ddp_skips_if_not_dist_initialized(self, clean_env):
         """Test DDP cleanup skips destroy if dist not initialized."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "destroy_process_group") as mock_destroy:
-                manager.cleanup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "destroy_process_group") as mock_destroy,
+        ):
+            manager.cleanup()
 
         mock_destroy.assert_not_called()
         assert manager._is_initialized is False
 
     def test_cleanup_fsdp_destroys_process_group(self, clean_env):
         """Test FSDP cleanup destroys process group."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="fsdp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "destroy_process_group") as mock_destroy:
-                manager.cleanup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "destroy_process_group") as mock_destroy,
+        ):
+            manager.cleanup()
 
         mock_destroy.assert_called_once()
         assert manager._is_initialized is False
@@ -1306,16 +1346,20 @@ class TestCleanup:
 
     def test_cleanup_logs_on_verbose(self, caplog, clean_env):
         """Test cleanup logs when verbose=True."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=True)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=True)
+            manager.setup()
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "destroy_process_group"):
-                    manager.cleanup()
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "destroy_process_group"),
+        ):
+            manager.cleanup()
 
         assert "Destroyed DDP process group" in caplog.text
 
@@ -1360,29 +1404,37 @@ class TestBarrier:
 
     def test_barrier_ddp_calls_dist_barrier(self, clean_env):
         """Test barrier calls dist.barrier for DDP."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "barrier") as mock_barrier:
-                manager.barrier()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "barrier") as mock_barrier,
+        ):
+            manager.barrier()
 
         mock_barrier.assert_called_once()
 
     def test_barrier_fsdp_calls_dist_barrier(self, clean_env):
         """Test barrier calls dist.barrier for FSDP."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="fsdp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "barrier") as mock_barrier:
-                manager.barrier()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "barrier") as mock_barrier,
+        ):
+            manager.barrier()
 
         mock_barrier.assert_called_once()
 
@@ -1391,9 +1443,11 @@ class TestBarrier:
         manager = DistributedManager(strategy="ddp", verbose=False)
         manager._is_initialized = True
 
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "barrier") as mock_barrier:
-                manager.barrier()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "barrier") as mock_barrier,
+        ):
+            manager.barrier()
 
         mock_barrier.assert_not_called()
 
@@ -1487,17 +1541,21 @@ class TestAllReduce:
 
     def test_all_reduce_ddp_sum(self, clean_env):
         """Test all_reduce with sum operation for DDP."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                _result = manager.all_reduce(tensor, op="sum")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+        ):
+            _result = manager.all_reduce(tensor, op="sum")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1505,17 +1563,21 @@ class TestAllReduce:
 
     def test_all_reduce_ddp_min(self, clean_env):
         """Test all_reduce with min operation for DDP."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                _result = manager.all_reduce(tensor, op="min")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+        ):
+            _result = manager.all_reduce(tensor, op="min")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1523,17 +1585,21 @@ class TestAllReduce:
 
     def test_all_reduce_ddp_max(self, clean_env):
         """Test all_reduce with max operation for DDP."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                _result = manager.all_reduce(tensor, op="max")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+        ):
+            _result = manager.all_reduce(tensor, op="max")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -1597,18 +1663,22 @@ class TestAllGather:
 
     def test_all_gather_ddp(self, clean_env):
         """Test all_gather for DDP strategy."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
-                    manager.config.world_size = 2
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
+            manager.config.world_size = 2
 
         tensor = torch.tensor([1.0, 2.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_gather") as mock_all_gather:
-                result = manager.all_gather(tensor)
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_gather") as mock_all_gather,
+        ):
+            result = manager.all_gather(tensor)
 
         mock_all_gather.assert_called_once()
         assert isinstance(result, list)
@@ -1616,18 +1686,22 @@ class TestAllGather:
 
     def test_all_gather_fsdp(self, clean_env):
         """Test all_gather for FSDP strategy."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="fsdp", verbose=False)
-                    manager.setup()
-                    manager.config.world_size = 4
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
+            manager.config.world_size = 4
 
         tensor = torch.tensor([1.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_gather") as mock_all_gather:
-                result = manager.all_gather(tensor)
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_gather") as mock_all_gather,
+        ):
+            result = manager.all_gather(tensor)
 
         mock_all_gather.assert_called_once()
         assert len(result) == 4
@@ -2123,10 +2197,12 @@ class TestConvenienceFunctions:
 
     def test_get_world_size_distributed_initialized(self):
         """Test get_world_size when distributed is initialized."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "get_world_size", return_value=8) as mock_ws:
-                    result = get_world_size()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "get_world_size", return_value=8) as mock_ws,
+        ):
+            result = get_world_size()
 
         mock_ws.assert_called_once()
         assert result == 8
@@ -2140,18 +2216,22 @@ class TestConvenienceFunctions:
 
     def test_get_world_size_available_but_not_initialized(self):
         """Test get_world_size returns 1 when available but not initialized."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=False):
-                result = get_world_size()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=False),
+        ):
+            result = get_world_size()
 
         assert result == 1
 
     def test_get_rank_distributed_initialized(self):
         """Test get_rank when distributed is initialized."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "get_rank", return_value=3) as mock_rank:
-                    result = get_rank()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "get_rank", return_value=3) as mock_rank,
+        ):
+            result = get_rank()
 
         mock_rank.assert_called_once()
         assert result == 3
@@ -2165,27 +2245,33 @@ class TestConvenienceFunctions:
 
     def test_get_rank_available_but_not_initialized(self):
         """Test get_rank returns 0 when available but not initialized."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=False):
-                result = get_rank()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=False),
+        ):
+            result = get_rank()
 
         assert result == 0
 
     def test_is_main_process_rank_0(self):
         """Test is_main_process returns True when rank is 0."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "get_rank", return_value=0):
-                    result = is_main_process()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "get_rank", return_value=0),
+        ):
+            result = is_main_process()
 
         assert result is True
 
     def test_is_main_process_rank_non_zero(self):
         """Test is_main_process returns False when rank is not 0."""
-        with patch.object(dist, "is_available", return_value=True):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "get_rank", return_value=3):
-                    result = is_main_process()
+        with (
+            patch.object(dist, "is_available", return_value=True),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "get_rank", return_value=3),
+        ):
+            result = is_main_process()
 
         assert result is False
 
@@ -2283,48 +2369,53 @@ class TestFSDPWrapModelAdditional:
         mock_wrap_module = MagicMock()
         mock_wrap_module.size_based_auto_wrap_policy = mock_auto_wrap_policy
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    with patch("torch.cuda.current_device", return_value=0):
-                        manager = DistributedManager(
-                            strategy="fsdp", cpu_offload=True, mixed_precision=True, verbose=False
-                        )
-                        manager.setup()
-
-        with patch.dict(
-            "sys.modules",
-            {
-                "torch.distributed.fsdp": mock_fsdp_module,
-                "torch.distributed.fsdp.wrap": mock_wrap_module,
-            },
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.current_device", return_value=0),
         ):
-            with patch("torch.cuda.current_device", return_value=0):
-                # Mock the import inside wrap_model
-                with patch(
-                    "builtins.__import__",
-                    side_effect=lambda name, *args, **kwargs: (
-                        mock_fsdp_module
-                        if "fsdp" in name and "wrap" not in name
-                        else mock_wrap_module
-                        if "wrap" in name
-                        else __import__(name, *args, **kwargs)
-                    ),
-                ):
-                    # This test verifies the FSDP path exists; actual wrapping would require real imports
-                    pass
+            manager = DistributedManager(
+                strategy="fsdp", cpu_offload=True, mixed_precision=True, verbose=False
+            )
+            manager.setup()
+
+        with (
+            patch.dict(
+                "sys.modules",
+                {
+                    "torch.distributed.fsdp": mock_fsdp_module,
+                    "torch.distributed.fsdp.wrap": mock_wrap_module,
+                },
+            ),
+            patch("torch.cuda.current_device", return_value=0),
+            patch(
+                "builtins.__import__",
+                side_effect=lambda name, *args, **kwargs: (
+                    mock_fsdp_module
+                    if "fsdp" in name and "wrap" not in name
+                    else mock_wrap_module
+                    if "wrap" in name
+                    else __import__(name, *args, **kwargs)
+                ),
+            ),
+        ):
+            # This test verifies the FSDP path exists; actual wrapping would require real imports
+            pass
 
     def test_wrap_model_fsdp_without_cpu_offload(self, clean_env):
         """Test FSDP wrap_model without CPU offload."""
         mock_model = MagicMock(spec=nn.Module)
         mock_model.to.return_value = mock_model
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch("torch.cuda.is_available", return_value=True):
-                manager = DistributedManager(
-                    strategy="fsdp", cpu_offload=False, mixed_precision=False, verbose=False
-                )
-                manager._is_initialized = True
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(
+                strategy="fsdp", cpu_offload=False, mixed_precision=False, verbose=False
+            )
+            manager._is_initialized = True
 
         # Verify config is set correctly
         assert manager.config.cpu_offload is False
@@ -2341,11 +2432,13 @@ class TestAllReduceAdditional:
 
     def test_all_reduce_avg_with_avg_support(self, clean_env):
         """Test all_reduce with avg operation when AVG is supported."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
@@ -2354,21 +2447,25 @@ class TestAllReduceAdditional:
         mock_reduce_op.AVG = MagicMock()
         mock_reduce_op.SUM = dist.ReduceOp.SUM
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                with patch.object(dist, "ReduceOp", mock_reduce_op):
-                    _result = manager.all_reduce(tensor, op="avg")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+            patch.object(dist, "ReduceOp", mock_reduce_op),
+        ):
+            _result = manager.all_reduce(tensor, op="avg")
 
         mock_all_reduce.assert_called_once()
 
     def test_all_reduce_avg_without_avg_support(self, clean_env):
         """Test all_reduce with avg operation when AVG is not supported (fallback to SUM/divide)."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
-                    manager.config.world_size = 4
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
+            manager.config.world_size = 4
 
         tensor = torch.tensor([4.0, 8.0, 12.0])
 
@@ -2378,26 +2475,32 @@ class TestAllReduceAdditional:
             MIN = dist.ReduceOp.MIN
             MAX = dist.ReduceOp.MAX
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                with patch.object(dist, "ReduceOp", MockReduceOp):
-                    _result = manager.all_reduce(tensor, op="avg")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+            patch.object(dist, "ReduceOp", MockReduceOp),
+        ):
+            _result = manager.all_reduce(tensor, op="avg")
 
         mock_all_reduce.assert_called_once()
 
     def test_all_reduce_unknown_op_defaults_to_sum(self, clean_env):
         """Test all_reduce with unknown operation defaults to SUM."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                _result = manager.all_reduce(tensor, op="unknown_op")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+        ):
+            _result = manager.all_reduce(tensor, op="unknown_op")
 
         mock_all_reduce.assert_called_once()
         call_args = mock_all_reduce.call_args
@@ -2405,17 +2508,21 @@ class TestAllReduceAdditional:
 
     def test_all_reduce_fsdp_strategy(self, clean_env):
         """Test all_reduce works with FSDP strategy."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="fsdp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="fsdp", verbose=False)
+            manager.setup()
 
         tensor = torch.tensor([1.0, 2.0, 3.0])
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "all_reduce") as mock_all_reduce:
-                _result = manager.all_reduce(tensor, op="sum")
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "all_reduce") as mock_all_reduce,
+        ):
+            _result = manager.all_reduce(tensor, op="sum")
 
         mock_all_reduce.assert_called_once()
 
@@ -2524,26 +2631,30 @@ class TestWrapModelEdgeCases:
                 raise ImportError("Horovod not installed")
             return __import__(name, *args, **kwargs)
 
-        with patch("builtins.__import__", side_effect=mock_import):
-            with pytest.raises(DistributedError) as exc_info:
-                manager.wrap_model(simple_model)
+        with (
+            patch("builtins.__import__", side_effect=mock_import),
+            pytest.raises(DistributedError) as exc_info,
+        ):
+            manager.wrap_model(simple_model)
 
         assert "Horovod not installed" in str(exc_info.value)
 
     def test_wrap_model_dp_logs_on_verbose(self, caplog, simple_model, clean_env):
         """Test DP wrap_model logs on verbose=True."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                manager = DistributedManager(strategy="dp", verbose=True)
-                manager.setup()
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+        ):
+            manager = DistributedManager(strategy="dp", verbose=True)
+            manager.setup()
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
-                ) as mock_dp:
-                    mock_dp.return_value = MagicMock()
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
+            ) as mock_dp:
+                mock_dp.return_value = MagicMock()
 
-                    with caplog.at_level(logging.INFO):
-                        _wrapped = manager.wrap_model(simple_model)
+                with caplog.at_level(logging.INFO):
+                    _wrapped = manager.wrap_model(simple_model)
 
         assert "DataParallel" in caplog.text or "Wrapped model" in caplog.text
 
@@ -2661,31 +2772,33 @@ class TestIntegration:
 
     def test_full_workflow_dp_with_mocks(self, simple_model, clean_env):
         """Test full workflow with DP strategy using mocks."""
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.device_count", return_value=2):
-                manager = DistributedManager(strategy="dp", verbose=False)
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.device_count", return_value=2),
+        ):
+            manager = DistributedManager(strategy="dp", verbose=False)
 
-                # Setup
-                manager.setup()
-                assert manager._is_initialized is True
+            # Setup
+            manager.setup()
+            assert manager._is_initialized is True
 
-                with patch(
-                    "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
-                ) as mock_dp:
-                    mock_dp.return_value = MagicMock()
+            with patch(
+                "milia_pipeline.models.acceleration.distributed_strategies.DataParallel"
+            ) as mock_dp:
+                mock_dp.return_value = MagicMock()
 
-                    # Wrap model
-                    _wrapped = manager.wrap_model(simple_model)
-                    mock_dp.assert_called_once()
+                # Wrap model
+                _wrapped = manager.wrap_model(simple_model)
+                mock_dp.assert_called_once()
 
-                # All reduce (should return tensor unchanged)
-                tensor = torch.tensor([1.0, 2.0])
-                result = manager.all_reduce(tensor)
-                assert torch.equal(result, tensor)
+            # All reduce (should return tensor unchanged)
+            tensor = torch.tensor([1.0, 2.0])
+            result = manager.all_reduce(tensor)
+            assert torch.equal(result, tensor)
 
-                # Cleanup
-                manager.cleanup()
-                assert manager._is_initialized is False
+            # Cleanup
+            manager.cleanup()
+            assert manager._is_initialized is False
 
     def test_checkpoint_workflow(self, simple_model, temp_checkpoint_dir, clean_env):
         """Test checkpoint save and load workflow."""
@@ -2790,11 +2903,13 @@ class TestIntegration:
         mock_model = MagicMock(spec=nn.Module)
         mock_model.to.return_value = mock_model
 
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group") as mock_init:
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group") as mock_init,
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=False)
+            manager.setup()
 
         mock_init.assert_called_once()
         assert manager._is_initialized is True
@@ -2810,9 +2925,11 @@ class TestIntegration:
 
         mock_ddp.assert_called_once()
 
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "destroy_process_group") as mock_destroy:
-                manager.cleanup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "destroy_process_group") as mock_destroy,
+        ):
+            manager.cleanup()
 
         mock_destroy.assert_called_once()
 
@@ -2840,12 +2957,14 @@ class TestLogging:
 
     def test_setup_ddp_logs_on_verbose(self, caplog, clean_env):
         """Test DDP setup logs on verbose."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    with caplog.at_level(logging.INFO):
-                        manager = DistributedManager(strategy="ddp", verbose=True)
-                        manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+            caplog.at_level(logging.INFO),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=True)
+            manager.setup()
 
         assert any(
             "DDP" in record.message or "Initialized" in record.message for record in caplog.records
@@ -2853,16 +2972,20 @@ class TestLogging:
 
     def test_cleanup_logs_on_verbose(self, caplog, clean_env):
         """Test cleanup logs on verbose."""
-        with patch.object(dist, "is_initialized", return_value=True):
-            with patch.object(dist, "init_process_group"):
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", verbose=True)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "init_process_group"),
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", verbose=True)
+            manager.setup()
 
-        with caplog.at_level(logging.INFO):
-            with patch.object(dist, "is_initialized", return_value=True):
-                with patch.object(dist, "destroy_process_group"):
-                    manager.cleanup()
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(dist, "is_initialized", return_value=True),
+            patch.object(dist, "destroy_process_group"),
+        ):
+            manager.cleanup()
 
         assert "Destroyed" in caplog.text or "process group" in caplog.text
 
@@ -2877,21 +3000,25 @@ class TestEdgeCasesAndErrors:
 
     def test_setup_ddp_with_backend_nccl(self, clean_env):
         """Test DDP setup with explicit NCCL backend."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group") as mock_init:
-                with patch("torch.cuda.is_available", return_value=True):
-                    manager = DistributedManager(strategy="ddp", backend="nccl", verbose=False)
-                    manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group") as mock_init,
+            patch("torch.cuda.is_available", return_value=True),
+        ):
+            manager = DistributedManager(strategy="ddp", backend="nccl", verbose=False)
+            manager.setup()
 
         call_kwargs = mock_init.call_args[1]
         assert call_kwargs["backend"] == "nccl"
 
     def test_setup_ddp_with_backend_gloo(self, clean_env):
         """Test DDP setup with explicit GLOO backend."""
-        with patch.object(dist, "is_initialized", return_value=False):
-            with patch.object(dist, "init_process_group") as mock_init:
-                manager = DistributedManager(strategy="ddp", backend="gloo", verbose=False)
-                manager.setup()
+        with (
+            patch.object(dist, "is_initialized", return_value=False),
+            patch.object(dist, "init_process_group") as mock_init,
+        ):
+            manager = DistributedManager(strategy="ddp", backend="gloo", verbose=False)
+            manager.setup()
 
         call_kwargs = mock_init.call_args[1]
         assert call_kwargs["backend"] == "gloo"
