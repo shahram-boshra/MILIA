@@ -40,6 +40,7 @@ Running:
     pytest tests/test_thread_safety_registries.py -v -m thread_safety
 """
 
+import contextlib
 import logging
 import os
 import sys
@@ -928,17 +929,15 @@ class TestDescriptorRegistryThreadSafety:
             name = f"__test_plugin_desc_{idx}__"
             def func(mol):
                 return float(idx)
-            try:
+            with contextlib.suppress(Exception):
+                # If the descriptor already exists from a prior failed run,
+                # just verify it's present.
                 registry.register_descriptor(
                     name=name,
                     function=func,
                     is_builtin=False,
                     plugin_name=f"test_plugin_{idx}",
                 )
-            except Exception:
-                # If the descriptor already exists from a prior failed run,
-                # just verify it's present.
-                pass
             assert registry.has_descriptor(name)
 
         _, errors = run_threads_with_barrier(register_one, NUM_THREADS)
@@ -1701,10 +1700,9 @@ class TestRegistryEdgeCasesThreadSafety:
 
         def flip_flop(idx):
             if idx % 2 == 0:
-                try:
+                with contextlib.suppress(Exception):
+                    # DatasetRegistrationError is acceptable
                     registry.register(cls)
-                except Exception:
-                    pass  # DatasetRegistrationError is acceptable
             else:
                 registry.unregister("FlipFlop")
 
