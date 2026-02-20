@@ -318,29 +318,29 @@ def search_space_builder_module(mock_exceptions, mock_param_types):
             "milia_pipeline.models.hpo.search_spaces.search_space_builder.SearchSpaceParamConfig",
             MockSearchSpaceParamConfig,
         ),
-    ):
         # Patch the introspector as unavailable for most tests
-        with patch(
+        patch(
             "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
             False,
-        ):
-            from milia_pipeline.models.hpo.search_spaces.search_space_builder import (
-                SearchSpaceBuilder,
-                build_search_space,
-                get_model_search_space,
-                validate_search_space,
-            )
+        ),
+    ):
+        from milia_pipeline.models.hpo.search_spaces.search_space_builder import (
+            SearchSpaceBuilder,
+            build_search_space,
+            get_model_search_space,
+            validate_search_space,
+        )
 
-            yield {
-                "SearchSpaceBuilder": SearchSpaceBuilder,
-                "build_search_space": build_search_space,
-                "get_model_search_space": get_model_search_space,
-                "validate_search_space": validate_search_space,
-                "ParamType": MockParamType,
-                "SearchSpaceParamConfig": MockSearchSpaceParamConfig,
-                "SearchSpaceError": MockSearchSpaceError,
-                "ConfigurationError": MockConfigurationError,
-            }
+        yield {
+            "SearchSpaceBuilder": SearchSpaceBuilder,
+            "build_search_space": build_search_space,
+            "get_model_search_space": get_model_search_space,
+            "validate_search_space": validate_search_space,
+            "ParamType": MockParamType,
+            "SearchSpaceParamConfig": MockSearchSpaceParamConfig,
+            "SearchSpaceError": MockSearchSpaceError,
+            "ConfigurationError": MockConfigurationError,
+        }
 
 
 @pytest.fixture
