@@ -1073,24 +1073,25 @@ class TestDebuggingDiagnostics:
                     ) as mock_compat:
                         mock_compat.return_value = True
 
-                        with patch(
-                            "milia_pipeline.config.config_constants.get_supported_handler_types",
-                            return_value=["DFT", "DMC"],
-                        ):
-                            # Also need to mock _dataset_constants which is used directly in the function
-                            with patch.object(
+                        with (
+                            patch(
+                                "milia_pipeline.config.config_constants.get_supported_handler_types",
+                                return_value=["DFT", "DMC"],
+                                ),
+                            patch.object(
                                 config_constants,
                                 "_dataset_constants",
                                 ("file.npz", "url", "/dir"),
                                 create=True,
-                            ):
-                                info = config_constants.get_complete_constants_debug_info()
+                                ),
+                        ):
+                            info = config_constants.get_complete_constants_debug_info()
 
-                                assert "config_status" in info
-                                assert "handler_support" in info
-                                assert "transformation_support" in info
-                                assert "constants_status" in info
-                                assert "registry_integration" in info
+                            assert "config_status" in info
+                            assert "handler_support" in info
+                            assert "transformation_support" in info
+                            assert "constants_status" in info
+                            assert "registry_integration" in info
         finally:
             # Cleanup
             config_constants._TEMP_CONFIG = original_temp_config
@@ -1338,13 +1339,15 @@ class TestRegistryInitialization:
             config_constants._REGISTRY_INITIALIZED = False
             config_constants._REGISTRY_AVAILABLE = False
 
-            with patch("milia_pipeline.config.config_constants._registry_list_all", None):
-                with patch.dict("sys.modules", {"milia_pipeline.datasets.registry": MagicMock()}):
-                    # The function should attempt initialization
-                    result = config_constants._init_registry()
-                    # Result depends on actual import success
-                    assert isinstance(result, bool)
-                    assert config_constants._REGISTRY_INITIALIZED is True
+            with (
+                patch("milia_pipeline.config.config_constants._registry_list_all", None),
+                patch.dict("sys.modules", {"milia_pipeline.datasets.registry": MagicMock()}),
+            ):
+                # The function should attempt initialization
+                result = config_constants._init_registry()
+                # Result depends on actual import success
+                assert isinstance(result, bool)
+                assert config_constants._REGISTRY_INITIALIZED is True
         finally:
             # Restore ALL original state including function references
             config_constants._REGISTRY_INITIALIZED = original_initialized
@@ -1408,30 +1411,32 @@ class TestDynamicDatasetDiscovery:
 
     def test_discover_dataset_types_from_filesystem_success(self):
         """Test successful filesystem discovery of dataset types."""
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.glob") as mock_glob:
-                # Mock .py files in implementations directory
-                mock_file1 = MagicMock()
-                mock_file1.name = "dft.py"
-                mock_file1.stem = "dft"
-                mock_file2 = MagicMock()
-                mock_file2.name = "qm9.py"
-                mock_file2.stem = "qm9"
-                mock_file3 = MagicMock()
-                mock_file3.name = "_init__.py"  # Should be excluded
-                mock_file3.stem = "__init__"
-                mock_file4 = MagicMock()
-                mock_file4.name = "base.py"  # Should be excluded
-                mock_file4.stem = "base"
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.glob") as mock_glob,
+        ):
+            # Mock .py files in implementations directory
+            mock_file1 = MagicMock()
+            mock_file1.name = "dft.py"
+            mock_file1.stem = "dft"
+            mock_file2 = MagicMock()
+            mock_file2.name = "qm9.py"
+            mock_file2.stem = "qm9"
+            mock_file3 = MagicMock()
+            mock_file3.name = "_init__.py"  # Should be excluded
+            mock_file3.stem = "__init__"
+            mock_file4 = MagicMock()
+            mock_file4.name = "base.py"  # Should be excluded
+            mock_file4.stem = "base"
 
-                mock_glob.return_value = [mock_file1, mock_file2, mock_file3, mock_file4]
+            mock_glob.return_value = [mock_file1, mock_file2, mock_file3, mock_file4]
 
-                result = config_constants._discover_dataset_types_from_filesystem()
+            result = config_constants._discover_dataset_types_from_filesystem()
 
-                assert "DFT" in result
-                assert "QM9" in result
-                assert "__INIT__" not in result
-                assert "BASE" not in result
+            assert "DFT" in result
+            assert "QM9" in result
+            assert "__INIT__" not in result
+            assert "BASE" not in result
 
     def test_discover_dataset_types_from_filesystem_no_directory(self):
         """Test filesystem discovery when directory doesn't exist."""
@@ -1471,13 +1476,15 @@ class TestRegistryWrappers:
         try:
             config_constants._registry_list_all = None
 
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=False):
-                with patch(
+            with (
+                patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
+                patch(
                     "milia_pipeline.config.config_constants._discover_dataset_types_from_filesystem",
                     return_value=["DFT", "QM9"],
-                ):
-                    result = config_constants.registry_list_all()
-                    assert result == ["DFT", "QM9"]
+                    ),
+            ):
+                result = config_constants.registry_list_all()
+                assert result == ["DFT", "QM9"]
         finally:
             config_constants._registry_list_all = original_list_all
 
@@ -1504,12 +1511,14 @@ class TestRegistryWrappers:
         try:
             config_constants._registry_get = None
 
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=False):
-                with patch(
+            with (
+                patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
+                patch(
                     "milia_pipeline.config.config_constants.registry_list_all", return_value=["DFT"]
-                ):
-                    with pytest.raises(HandlerNotAvailableError):
-                        config_constants.registry_get("TestDataset")
+                    ),
+                pytest.raises(HandlerNotAvailableError),
+            ):
+                config_constants.registry_get("TestDataset")
         finally:
             config_constants._registry_get = original_get
 
@@ -1534,13 +1543,15 @@ class TestRegistryWrappers:
         try:
             config_constants._registry_is_registered = None
 
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=False):
-                with patch(
+            with (
+                patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
+                patch(
                     "milia_pipeline.config.config_constants.registry_list_all",
                     return_value=["DFT", "DMC"],
-                ):
-                    assert config_constants.registry_is_registered("DFT") is True
-                    assert config_constants.registry_is_registered("UNKNOWN") is False
+                    ),
+            ):
+                assert config_constants.registry_is_registered("DFT") is True
+                assert config_constants.registry_is_registered("UNKNOWN") is False
         finally:
             config_constants._registry_is_registered = original_is_registered
 
@@ -1600,15 +1611,17 @@ class TestCacheInvalidation:
         """Test _setup_registry_cache_invalidation success case."""
         mock_registry = MagicMock()
 
-        with patch("milia_pipeline.config.config_constants._init_registry", return_value=True):
-            with patch(
+        with (
+            patch("milia_pipeline.config.config_constants._init_registry", return_value=True),
+            patch(
                 "milia_pipeline.config.config_constants.get_default_registry",
                 return_value=mock_registry,
-            ):
-                _result = config_constants._setup_registry_cache_invalidation()
+                ),
+        ):
+            _result = config_constants._setup_registry_cache_invalidation()
 
-                if mock_registry is not None:
-                    mock_registry.add_on_change_callback.assert_called_once()
+            if mock_registry is not None:
+                mock_registry.add_on_change_callback.assert_called_once()
 
     def test_ensure_cache_invalidation_registered(self):
         """Test _ensure_cache_invalidation_registered."""
@@ -1632,27 +1645,31 @@ class TestDynamicHandlerFunctions:
 
     def test_get_supported_handler_types_from_registry(self):
         """Test get_supported_handler_types uses registry when available."""
-        with patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"):
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=True):
-                with patch("milia_pipeline.config.config_constants._REGISTRY_AVAILABLE", True):
-                    with patch(
-                        "milia_pipeline.config.config_constants.registry_list_all",
-                        return_value=["DFT", "DMC", "QM9"],
-                    ):
-                        result = config_constants.get_supported_handler_types()
-                        assert "DFT" in result
-                        assert "DMC" in result
+        with (
+            patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"),
+            patch("milia_pipeline.config.config_constants._init_registry", return_value=True),
+            patch("milia_pipeline.config.config_constants._REGISTRY_AVAILABLE", True),
+            patch(
+                "milia_pipeline.config.config_constants.registry_list_all",
+                return_value=["DFT", "DMC", "QM9"],
+                ),
+        ):
+            result = config_constants.get_supported_handler_types()
+            assert "DFT" in result
+            assert "DMC" in result
 
     def test_get_supported_handler_types_fallback(self):
         """Test get_supported_handler_types falls back to filesystem discovery."""
-        with patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"):
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=False):
-                with patch(
-                    "milia_pipeline.config.config_constants._discover_dataset_types_from_filesystem",
-                    return_value=["DFT", "QM9"],
-                ):
-                    result = config_constants.get_supported_handler_types()
-                    assert isinstance(result, list)
+        with (
+            patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"),
+            patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
+            patch(
+                "milia_pipeline.config.config_constants._discover_dataset_types_from_filesystem",
+                return_value=["DFT", "QM9"],
+                ),
+        ):
+            result = config_constants.get_supported_handler_types()
+            assert isinstance(result, list)
 
     def test_get_default_handler_type(self):
         """Test get_default_handler_type returns correct default."""
@@ -1661,26 +1678,30 @@ class TestDynamicHandlerFunctions:
 
     def test_is_handler_type_supported_true(self):
         """Test is_handler_type_supported returns True for valid handler."""
-        with patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"):
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=True):
-                with patch("milia_pipeline.config.config_constants._REGISTRY_AVAILABLE", True):
-                    with patch(
-                        "milia_pipeline.config.config_constants.registry_is_registered",
-                        return_value=True,
-                    ):
-                        result = config_constants.is_handler_type_supported("DFT")
-                        assert result is True
+        with (
+            patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"),
+            patch("milia_pipeline.config.config_constants._init_registry", return_value=True),
+            patch("milia_pipeline.config.config_constants._REGISTRY_AVAILABLE", True),
+            patch(
+                "milia_pipeline.config.config_constants.registry_is_registered",
+                return_value=True,
+                ),
+        ):
+            result = config_constants.is_handler_type_supported("DFT")
+            assert result is True
 
     def test_is_handler_type_supported_false(self):
         """Test is_handler_type_supported returns False for invalid handler."""
-        with patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"):
-            with patch("milia_pipeline.config.config_constants._init_registry", return_value=False):
-                with patch(
-                    "milia_pipeline.config.config_constants.registry_is_registered",
-                    return_value=False,
-                ):
-                    result = config_constants.is_handler_type_supported("INVALID")
-                    assert result is False
+        with (
+            patch("milia_pipeline.config.config_constants._ensure_cache_invalidation_registered"),
+            patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
+            patch(
+                "milia_pipeline.config.config_constants.registry_is_registered",
+                return_value=False,
+                ),
+        ):
+            result = config_constants.is_handler_type_supported("INVALID")
+            assert result is False
 
 
 # ==========================================
