@@ -913,23 +913,24 @@ def validate_pyg_data_completeness(
             handler_dataset_type = handler.get_dataset_type()
 
             # Uncertainty handling validation (for datasets with uncertainty_handling feature)
-            if _get_dataset_feature(handler_dataset_type, "uncertainty_handling"):
-                if getattr(handler.dataset_config, "is_uncertainty_enabled", False):
-                    uncertainty_config = getattr(handler.dataset_config, "uncertainty_config", {})
-                    if uncertainty_config:
-                        uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")
-                        has_uncertainty = (
-                            hasattr(pyg_data, "uncertainty")
-                            or hasattr(pyg_data, uncertainty_field)
-                            or hasattr(pyg_data, "uncertainty_metadata")
-                        )
-                        validation_results["has_uncertainty"] = has_uncertainty
+            if _get_dataset_feature(
+                handler_dataset_type, "uncertainty_handling"
+            ) and getattr(handler.dataset_config, "is_uncertainty_enabled", False):
+                uncertainty_config = getattr(handler.dataset_config, "uncertainty_config", {})
+                if uncertainty_config:
+                    uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")
+                    has_uncertainty = (
+                        hasattr(pyg_data, "uncertainty")
+                        or hasattr(pyg_data, uncertainty_field)
+                        or hasattr(pyg_data, "uncertainty_metadata")
+                    )
+                    validation_results["has_uncertainty"] = has_uncertainty
 
-                        if not has_uncertainty:
-                            logger.warning(
-                                f"{handler_dataset_type} molecule {molecule_index} missing uncertainty data "
-                                "but uncertainty is enabled"
-                            )
+                    if not has_uncertainty:
+                        logger.warning(
+                            f"{handler_dataset_type} molecule {molecule_index} missing uncertainty data "
+                            "but uncertainty is enabled"
+                        )
 
             # Vibrational analysis validation (for datasets with vibrational_analysis feature)
             if _get_dataset_feature(handler_dataset_type, "vibrational_analysis"):
@@ -1005,26 +1006,31 @@ def _original_validate_pyg_data_completeness(
 
     # Coordinates validation
     if hasattr(pyg_data, "pos") and pyg_data.pos is not None:
-        if isinstance(pyg_data.pos, torch.Tensor):
-            if torch.any(torch.isnan(pyg_data.pos)) or torch.any(torch.isinf(pyg_data.pos)):
-                validation_results["has_coordinates"] = False
+        if isinstance(pyg_data.pos, torch.Tensor) and (
+            torch.any(torch.isnan(pyg_data.pos))
+            or torch.any(torch.isinf(pyg_data.pos))
+        ):
+            validation_results["has_coordinates"] = False
     else:
         validation_results["has_coordinates"] = False
 
     # Atomic numbers validation
     if hasattr(pyg_data, "z") and pyg_data.z is not None:
-        if isinstance(pyg_data.z, torch.Tensor):
-            if torch.any(pyg_data.z < 1) or torch.any(pyg_data.z > 118):
-                validation_results["has_atomic_numbers"] = False
+        if isinstance(pyg_data.z, torch.Tensor) and (
+            torch.any(pyg_data.z < 1) or torch.any(pyg_data.z > 118)
+        ):
+            validation_results["has_atomic_numbers"] = False
     else:
         validation_results["has_atomic_numbers"] = False
 
     # Target values validation
     if not hasattr(pyg_data, "y") or pyg_data.y is None:
         validation_results["has_target_values"] = False
-    elif isinstance(pyg_data.y, torch.Tensor):
-        if torch.any(torch.isnan(pyg_data.y)) or torch.any(torch.isinf(pyg_data.y)):
-            validation_results["has_target_values"] = False
+    elif isinstance(pyg_data.y, torch.Tensor) and (
+        torch.any(torch.isnan(pyg_data.y))
+        or torch.any(torch.isinf(pyg_data.y))
+    ):
+        validation_results["has_target_values"] = False
 
     # Enhanced structural features validation
     has_atom_features = hasattr(pyg_data, "x") and pyg_data.x is not None
@@ -1035,15 +1041,17 @@ def _original_validate_pyg_data_completeness(
 
         # Validate structural features quality
         features_valid = True
-        if has_atom_features and isinstance(pyg_data.x, torch.Tensor):
-            if torch.any(torch.isnan(pyg_data.x)) or torch.any(torch.isinf(pyg_data.x)):
-                features_valid = False
+        if has_atom_features and isinstance(pyg_data.x, torch.Tensor) and (
+            torch.any(torch.isnan(pyg_data.x))
+            or torch.any(torch.isinf(pyg_data.x))
+        ):
+            features_valid = False
 
-        if has_bond_features and isinstance(pyg_data.edge_attr, torch.Tensor):
-            if torch.any(torch.isnan(pyg_data.edge_attr)) or torch.any(
-                torch.isinf(pyg_data.edge_attr)
-            ):
-                features_valid = False
+        if has_bond_features and isinstance(pyg_data.edge_attr, torch.Tensor) and (
+            torch.any(torch.isnan(pyg_data.edge_attr))
+            or torch.any(torch.isinf(pyg_data.edge_attr))
+        ):
+            features_valid = False
 
         validation_results["structural_features_valid"] = features_valid
 
@@ -1366,9 +1374,12 @@ def get_validation_summary(validation_results: dict[str, bool]) -> str:
         recommendations.append("• Verify all handler-required properties are present")
 
     # Uncertainty recommendations (for datasets with uncertainty_handling feature)
-    if handler_type and _get_dataset_feature(handler_type, "uncertainty_handling"):
-        if not validation_results.get("has_uncertainty", True):
-            recommendations.append(f"• Add uncertainty data for {handler_type} dataset")
+    if (
+        handler_type
+        and _get_dataset_feature(handler_type, "uncertainty_handling")
+        and not validation_results.get("has_uncertainty", True)
+    ):
+        recommendations.append(f"• Add uncertainty data for {handler_type} dataset")
 
     # Vibrational recommendations (for datasets with vibrational_analysis feature)
     if handler_type and _get_dataset_feature(handler_type, "vibrational_analysis"):
@@ -1376,16 +1387,20 @@ def get_validation_summary(validation_results: dict[str, bool]) -> str:
             recommendations.append(
                 f"• Consider adding vibrational data for enhanced {handler_type} analysis"
             )
-        if not validation_results.get("has_atomization_energy", True):
-            if _get_dataset_feature(handler_type, "atomization_energy"):
-                recommendations.append(
-                    f"• Consider adding atomization energy for {handler_type} dataset"
-                )
+        if not validation_results.get(
+            "has_atomization_energy", True
+        ) and _get_dataset_feature(handler_type, "atomization_energy"):
+            recommendations.append(
+                f"• Consider adding atomization energy for {handler_type} dataset"
+            )
 
     # Orbital recommendations (for datasets with orbital_analysis feature)
-    if handler_type and _get_dataset_feature(handler_type, "orbital_analysis"):
-        if not validation_results.get("has_orbital_data", True):
-            recommendations.append(f"• Consider adding orbital data for {handler_type} analysis")
+    if (
+        handler_type
+        and _get_dataset_feature(handler_type, "orbital_analysis")
+        and not validation_results.get("has_orbital_data", True)
+    ):
+        recommendations.append(f"• Consider adding orbital data for {handler_type} analysis")
 
     if recommendations:
         summary_lines.extend(["Recommendations:"] + recommendations + [""])
@@ -1568,9 +1583,10 @@ def create_validation_context(
     dataset_type = handler.get_dataset_type()
 
     # Add uncertainty config for datasets with uncertainty_handling feature
-    if _get_dataset_feature(dataset_type, "uncertainty_handling"):
-        if hasattr(handler.dataset_config, "uncertainty_config"):
-            context["uncertainty_config"] = handler.dataset_config.uncertainty_config
+    if _get_dataset_feature(
+        dataset_type, "uncertainty_handling"
+    ) and hasattr(handler.dataset_config, "uncertainty_config"):
+        context["uncertainty_config"] = handler.dataset_config.uncertainty_config
 
     # Add vibrational context for datasets with vibrational_analysis feature
     if _get_dataset_feature(dataset_type, "vibrational_analysis"):
