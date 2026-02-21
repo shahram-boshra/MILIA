@@ -2487,19 +2487,22 @@ class DynamicTransformDiscovery:
 
                     obj = getattr(submodule, name)
 
-                    if inspect.isclass(obj) and self._is_transform_class(obj, name):
+                    if (
+                        inspect.isclass(obj)
+                        and self._is_transform_class(obj, name)
+                        and name not in self._discovered_transforms
+                    ):
                         # Avoid duplicates from main module
-                        if name not in self._discovered_transforms:
-                            self._discovered_transforms[name] = obj
-                            self._discovery_metadata[name] = {
-                                "module": submodule_name,
-                                "discovery_method": "auto",
-                                "source": "submodule",
-                            }
+                        self._discovered_transforms[name] = obj
+                        self._discovery_metadata[name] = {
+                            "module": submodule_name,
+                            "discovery_method": "auto",
+                            "source": "submodule",
+                        }
 
-                            self._logger.debug(
-                                f"Discovered transform from {submodule_name}: {name}"
-                            )
+                        self._logger.debug(
+                            f"Discovered transform from {submodule_name}: {name}"
+                        )
 
             except ImportError:
                 self._logger.debug(f"Submodule {submodule_name} not available")
@@ -4311,15 +4314,17 @@ class IntelligentCacheManager:
         with self._lock:
             current_time = time.time()
 
-            if len(self._cache) >= self.max_cache_size:
-                if not self._evict_items_by_size():
-                    self._logger.warning("Failed to evict items for new cache entry")
-                    return False
+            if len(self._cache) >= self.max_cache_size and not self._evict_items_by_size():
+                self._logger.warning("Failed to evict items for new cache entry")
+                return False
 
-            if self._memory_monitor_enabled and self._is_memory_pressure():
-                if not self._evict_items_by_memory():
-                    self._logger.warning("Failed to evict items due to memory pressure")
-                    return False
+            if (
+                self._memory_monitor_enabled
+                and self._is_memory_pressure()
+                and not self._evict_items_by_memory()
+            ):
+                self._logger.warning("Failed to evict items due to memory pressure")
+                return False
 
             self._cache[key] = value
             self._cache_metadata[key] = metadata or {}
@@ -4582,16 +4587,18 @@ class TransformValidator:
                                 )
 
                         # Choices validation
-                        if "choices" in constraint:
-                            if param_value not in constraint["choices"]:
-                                issues.append(
-                                    {
-                                        "type": "invalid_choice",
-                                        "parameter": param_name,
-                                        "value": param_value,
-                                        "valid_choices": constraint["choices"],
-                                    }
-                                )
+                        if (
+                            "choices" in constraint
+                            and param_value not in constraint["choices"]
+                        ):
+                            issues.append(
+                                {
+                                    "type": "invalid_choice",
+                                    "parameter": param_name,
+                                    "value": param_value,
+                                    "valid_choices": constraint["choices"],
+                                }
+                            )
 
             # If custom transform, return early with results
             if not issues:
@@ -4647,9 +4654,12 @@ class TransformValidator:
 
         # Add defaults for missing optional parameters
         for param_name, param_info in transform_info.parameters.items():
-            if param_name not in validated_kwargs and not param_info["required"]:
-                if param_info["default"] is not None:
-                    validated_kwargs[param_name] = param_info["default"]
+            if (
+                param_name not in validated_kwargs
+                and not param_info["required"]
+                and param_info["default"] is not None
+            ):
+                validated_kwargs[param_name] = param_info["default"]
 
         if errors:
             raise TransformValidationError(
@@ -4778,11 +4788,12 @@ class TransformValidator:
             metadata = self.get_parameter_metadata(transform_name, param_name)
 
             # Check type compatibility
-            if metadata.type_hint is not None:
-                if not self._check_type_compatibility(value, metadata.type_hint):
-                    errors.append(
-                        f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
-                    )
+            if metadata.type_hint is not None and not self._check_type_compatibility(
+                value, metadata.type_hint
+            ):
+                errors.append(
+                    f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
+                )
 
             # Check constraints
             if check_constraints:
@@ -5314,11 +5325,12 @@ class TransformValidator:
             metadata = self.get_parameter_metadata(transform_name, param_name)
 
             # Check type compatibility
-            if metadata.type_hint is not None:
-                if not self._check_type_compatibility(value, metadata.type_hint):
-                    errors.append(
-                        f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
-                    )
+            if metadata.type_hint is not None and not self._check_type_compatibility(
+                value, metadata.type_hint
+            ):
+                errors.append(
+                    f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
+                )
 
             # Check constraints
             if check_constraints:
@@ -5688,9 +5700,8 @@ class TransformComposer:
 
         transform_names = []
         for config in transform_configs:
-            if isinstance(config, dict) and "name" in config:
-                if config.get("enabled", True):
-                    transform_names.append(config["name"])
+            if isinstance(config, dict) and "name" in config and config.get("enabled", True):
+                transform_names.append(config["name"])
 
         if not transform_names:
             warnings.append("No enabled transforms in sequence")
@@ -6698,11 +6709,14 @@ class GraphTransforms:
             context = self.semantic_validator.validate_sequence(configs, context)
 
         # Dataset-specific validation
-        if validation_scope in [ValidationScope.DATASET_SPECIFIC, ValidationScope.PRODUCTION]:
-            if self.dataset_validator and dataset_type:
-                context = self.dataset_validator.validate_for_dataset(
-                    configs, dataset_type, context
-                )
+        if (
+            validation_scope in [ValidationScope.DATASET_SPECIFIC, ValidationScope.PRODUCTION]
+            and self.dataset_validator
+            and dataset_type
+        ):
+            context = self.dataset_validator.validate_for_dataset(
+                configs, dataset_type, context
+            )
 
         # Generate report
         report = None
