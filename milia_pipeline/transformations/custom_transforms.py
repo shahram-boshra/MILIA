@@ -829,9 +829,12 @@ class QuantumTransformBase(MolecularTransformBase):
                 issues.append("Non-finite DMC uncertainty")
 
         # DMC energy validation
-        if hasattr(data, "dmc_energy"):
-            if not torch.isfinite(data.dmc_energy) and data.dmc_energy is not None:
-                issues.append("Non-finite DMC energy")
+        if (
+            hasattr(data, "dmc_energy")
+            and not torch.isfinite(data.dmc_energy)
+            and data.dmc_energy is not None
+        ):
+            issues.append("Non-finite DMC energy")
 
         # Mulliken charges validation (milia-specific)
         if hasattr(data, "charges") and data.charges is not None:
