@@ -962,12 +962,14 @@ class ModelValidator:
 
         # Check required parameters
         for param, spec in schema.items():
-            if spec.get("required", False) and param not in hyperparameters:
-                # Check if there's a default value
-                if "default" not in spec:
-                    errors.append(
-                        f"Required parameter '{param}' is missing and has no default value"
-                    )
+            if (
+                spec.get("required", False)
+                and param not in hyperparameters
+                and "default" not in spec
+            ):
+                errors.append(
+                    f"Required parameter '{param}' is missing and has no default value"
+                )
 
         # Validate provided parameters
         for param, value in hyperparameters.items():
@@ -1114,23 +1116,27 @@ class ModelValidator:
             errors.append("Data missing edge_index (required for graph structure)")
 
         # Check edge features requirement
-        if metadata.requires_edge_features:
-            if not hasattr(data, "edge_attr") or data.edge_attr is None:
-                errors.append("Model requires edge features, but data has no edge_attr")
+        if metadata.requires_edge_features and (
+            not hasattr(data, "edge_attr") or data.edge_attr is None
+        ):
+            errors.append("Model requires edge features, but data has no edge_attr")
 
         # Check edge weights requirement
-        if metadata.requires_edge_weights:
-            if not hasattr(data, "edge_weight") or data.edge_weight is None:
-                errors.append("Model requires edge weights, but data has no edge_weight")
+        if metadata.requires_edge_weights and (
+            not hasattr(data, "edge_weight") or data.edge_weight is None
+        ):
+            errors.append("Model requires edge weights, but data has no edge_weight")
 
         # Check heterogeneous graph support
-        if hasattr(data, "node_type") or hasattr(data, "edge_type"):
+        if (
+            (hasattr(data, "node_type") or hasattr(data, "edge_type"))
+            and not metadata.supports_heterogeneous
+        ):
             # This is a heterogeneous graph
-            if not metadata.supports_heterogeneous:
-                errors.append(
-                    "Model does not support heterogeneous graphs, "
-                    "but data appears to be heterogeneous"
-                )
+            errors.append(
+                "Model does not support heterogeneous graphs, "
+                "but data appears to be heterogeneous"
+            )
 
         if errors:
             error_msg = "Data compatibility validation failed:\n  - " + "\n  - ".join(errors)
@@ -1451,13 +1457,16 @@ class ModelFactory:
             if task_type.lower() == "edge_regression":
                 # Get edge_out_channels from hyperparameters or infer from sample_data
                 edge_out_channels = processed_params.get("edge_out_channels")
-                if edge_out_channels is None and sample_data is not None:
-                    # Infer from edge_attr shape in sample_data
-                    if hasattr(sample_data, "edge_attr") and sample_data.edge_attr is not None:
-                        edge_out_channels = sample_data.edge_attr.shape[-1]
-                        logger.info(
-                            f"Inferred edge_out_channels={edge_out_channels} from sample_data.edge_attr"
-                        )
+                if (
+                    edge_out_channels is None
+                    and sample_data is not None
+                    and hasattr(sample_data, "edge_attr")
+                    and sample_data.edge_attr is not None
+                ):
+                    edge_out_channels = sample_data.edge_attr.shape[-1]
+                    logger.info(
+                        f"Inferred edge_out_channels={edge_out_channels} from sample_data.edge_attr"
+                    )
 
                 # Use MLP decoder for multi-dimensional edge regression
                 if edge_out_channels is not None and edge_out_channels > 1:
@@ -2017,33 +2026,43 @@ class ModelFactory:
         extracted_params = {}
 
         # Extract in_channels from created model (CRITICAL for checkpoint recreation)
-        if hasattr(actual_model, "in_channels") and actual_model.in_channels is not None:
-            # Always store in_channels if available, even if already in hyperparams
-            # This ensures we capture the ACTUAL value used in the model
-            if (
+        if (
+            hasattr(actual_model, "in_channels")
+            and actual_model.in_channels is not None
+            and (
                 "in_channels" not in processed_hyperparams
                 or processed_hyperparams.get("in_channels") != actual_model.in_channels
-            ):
-                processed_hyperparams["in_channels"] = actual_model.in_channels
-                extracted_params["in_channels"] = actual_model.in_channels
+            )
+        ):
+            # Always store in_channels if available, even if already in hyperparams
+            # This ensures we capture the ACTUAL value used in the model
+            processed_hyperparams["in_channels"] = actual_model.in_channels
+            extracted_params["in_channels"] = actual_model.in_channels
 
         # Extract out_channels from created model
-        if hasattr(actual_model, "out_channels") and actual_model.out_channels is not None:
-            if (
+        if (
+            hasattr(actual_model, "out_channels")
+            and actual_model.out_channels is not None
+            and (
                 "out_channels" not in processed_hyperparams
                 or processed_hyperparams.get("out_channels") != actual_model.out_channels
-            ):
-                processed_hyperparams["out_channels"] = actual_model.out_channels
-                extracted_params["out_channels"] = actual_model.out_channels
+            )
+        ):
+            processed_hyperparams["out_channels"] = actual_model.out_channels
+            extracted_params["out_channels"] = actual_model.out_channels
 
         # Extract hidden_channels if available
-        if hasattr(actual_model, "hidden_channels") and actual_model.hidden_channels is not None:
-            if (
+        if (
+            hasattr(actual_model, "hidden_channels")
+            and actual_model.hidden_channels is not None
+            and (
                 "hidden_channels" not in processed_hyperparams
-                or processed_hyperparams.get("hidden_channels") != actual_model.hidden_channels
-            ):
-                processed_hyperparams["hidden_channels"] = actual_model.hidden_channels
-                extracted_params["hidden_channels"] = actual_model.hidden_channels
+                or processed_hyperparams.get("hidden_channels")
+                != actual_model.hidden_channels
+            )
+        ):
+            processed_hyperparams["hidden_channels"] = actual_model.hidden_channels
+            extracted_params["hidden_channels"] = actual_model.hidden_channels
 
         # Extract num_layers if available
         if hasattr(actual_model, "num_layers") and actual_model.num_layers is not None and (
@@ -2058,15 +2077,19 @@ class ModelFactory:
         # This handles cases where model doesn't expose in_channels attribute
         # (e.g., custom models, ensembles, or models using lazy initialization)
         # =====================================================================
-        if "in_channels" not in processed_hyperparams and sample_data is not None:
-            if hasattr(sample_data, "x") and sample_data.x is not None:
-                inferred_in_channels = sample_data.x.size(-1)
-                processed_hyperparams["in_channels"] = inferred_in_channels
-                extracted_params["in_channels"] = f"{inferred_in_channels} (from sample_data)"
-                logger.info(
-                    f"Inferred in_channels={inferred_in_channels} from sample_data "
-                    f"(model does not expose in_channels attribute)"
-                )
+        if (
+            "in_channels" not in processed_hyperparams
+            and sample_data is not None
+            and hasattr(sample_data, "x")
+            and sample_data.x is not None
+        ):
+            inferred_in_channels = sample_data.x.size(-1)
+            processed_hyperparams["in_channels"] = inferred_in_channels
+            extracted_params["in_channels"] = f"{inferred_in_channels} (from sample_data)"
+            logger.info(
+                f"Inferred in_channels={inferred_in_channels} from sample_data "
+                f"(model does not expose in_channels attribute)"
+            )
 
         # Log extracted parameters at INFO level for visibility
         if extracted_params:
@@ -2177,10 +2200,14 @@ class ModelFactory:
 
         # Infer channels from sample data if not in config
         if isinstance(config, dict):
-            if "in_channels" not in config and sample_data is not None:
-                if hasattr(sample_data, "x") and sample_data.x is not None:
-                    config["in_channels"] = sample_data.x.size(-1)
-                    logger.debug(f"Inferred in_channels={config['in_channels']} from sample data")
+            if (
+                "in_channels" not in config
+                and sample_data is not None
+                and hasattr(sample_data, "x")
+                and sample_data.x is not None
+            ):
+                config["in_channels"] = sample_data.x.size(-1)
+                logger.debug(f"Inferred in_channels={config['in_channels']} from sample data")
 
             if "out_channels" not in config:
                 if infer_out_channels is not None and sample_data is not None:
@@ -2374,24 +2401,29 @@ class ModelFactory:
 
                         # Propagate in_channels from checkpoint to level 0 models (parallel input)
                         # For hierarchical/sequential, dimension chaining handles this below
-                        if level == 0 and ensemble_in_channels is not None:
-                            if "in_channels" not in model_hparams:
-                                model_hparams["in_channels"] = ensemble_in_channels
-                                logger.debug(
-                                    f"Checkpoint propagation: {model_name} "
-                                    f"in_channels set to {ensemble_in_channels}"
-                                )
+                        if (
+                            level == 0
+                            and ensemble_in_channels is not None
+                            and "in_channels" not in model_hparams
+                        ):
+                            model_hparams["in_channels"] = ensemble_in_channels
+                            logger.debug(
+                                f"Checkpoint propagation: {model_name} "
+                                f"in_channels set to {ensemble_in_channels}"
+                            )
 
                         # Propagate out_channels from checkpoint to ALL models
                         # (unless classification override or model spec specifies it)
                         # This ensures all parallel models produce the same output dimension
-                        if ensemble_out_channels is not None:
-                            if "out_channels" not in model_hparams:
-                                model_hparams["out_channels"] = ensemble_out_channels
-                                logger.debug(
-                                    f"Checkpoint propagation: {model_name} "
-                                    f"out_channels set to {ensemble_out_channels}"
-                                )
+                        if (
+                            ensemble_out_channels is not None
+                            and "out_channels" not in model_hparams
+                        ):
+                            model_hparams["out_channels"] = ensemble_out_channels
+                            logger.debug(
+                                f"Checkpoint propagation: {model_name} "
+                                f"out_channels set to {ensemble_out_channels}"
+                            )
 
                         # ================================================================
                         # CLASSIFICATION FIX: Inject num_classes_override into model hparams
@@ -2434,13 +2466,12 @@ class ModelFactory:
                             # In sequential, every model after the first needs chaining
                             needs_chain = True
 
-                        if needs_chain:
-                            if "in_channels" not in model_hparams:
-                                model_hparams["in_channels"] = prev_out_channels
-                                logger.debug(
-                                    f"Dimension chaining ({strategy}): {model_name} "
-                                    f"in_channels set to {prev_out_channels}"
-                                )
+                        if needs_chain and "in_channels" not in model_hparams:
+                            model_hparams["in_channels"] = prev_out_channels
+                            logger.debug(
+                                f"Dimension chaining ({strategy}): {model_name} "
+                                f"in_channels set to {prev_out_channels}"
+                            )
 
                         # Create individual model WITHOUT task-level wrapping
                         # CRITICAL: Pass _skip_wrapper=True so individual models are NOT
@@ -2898,12 +2929,16 @@ class ModelFactory:
         # PRODUCTION-READY: Uses schema_params from dynamic introspection
         # FUTURE-PROOF: Works for any new PyG model with any signature
         # =====================================================================
-        if "in_channels" in schema_params:
-            if "in_channels" not in processed and sample_data is not None:
-                if hasattr(sample_data, "x") and sample_data.x is not None:
-                    in_channels = sample_data.x.size(-1)
-                    processed["in_channels"] = in_channels
-                    logger.debug(f"Inferred in_channels={in_channels} from sample data")
+        if (
+            "in_channels" in schema_params
+            and "in_channels" not in processed
+            and sample_data is not None
+            and hasattr(sample_data, "x")
+            and sample_data.x is not None
+        ):
+            in_channels = sample_data.x.size(-1)
+            processed["in_channels"] = in_channels
+            logger.debug(f"Inferred in_channels={in_channels} from sample data")
 
         # =====================================================================
         # INFER OUT_CHANNELS (ONLY IF MODEL SCHEMA SUPPORTS IT)
@@ -3312,12 +3347,16 @@ class ModelFactory:
             encoder_in_channels = hyperparameters.get("encoder_in_channels")
             if encoder_in_channels is None:
                 encoder_in_channels = hyperparameters.get("in_channels")
-            if encoder_in_channels is None and sample_data is not None:
-                if hasattr(sample_data, "x") and sample_data.x is not None:
-                    encoder_in_channels = sample_data.x.size(-1)
-                    logger.debug(
-                        f"GAE/VGAE: Inferred encoder_in_channels={encoder_in_channels} from sample_data.x"
-                    )
+            if (
+                encoder_in_channels is None
+                and sample_data is not None
+                and hasattr(sample_data, "x")
+                and sample_data.x is not None
+            ):
+                encoder_in_channels = sample_data.x.size(-1)
+                logger.debug(
+                    f"GAE/VGAE: Inferred encoder_in_channels={encoder_in_channels} from sample_data.x"
+                )
 
             if encoder_in_channels is None:
                 raise HyperparameterError(
@@ -3478,12 +3517,16 @@ class ModelFactory:
             encoder_in_channels = hyperparameters.get("encoder_in_channels")
             if encoder_in_channels is None:
                 encoder_in_channels = hyperparameters.get("in_channels")
-            if encoder_in_channels is None and sample_data is not None:
-                if hasattr(sample_data, "x") and sample_data.x is not None:
-                    encoder_in_channels = sample_data.x.size(-1)
-                    logger.debug(
-                        f"ARGA/ARGVA: Inferred encoder_in_channels={encoder_in_channels} from sample_data.x"
-                    )
+            if (
+                encoder_in_channels is None
+                and sample_data is not None
+                and hasattr(sample_data, "x")
+                and sample_data.x is not None
+            ):
+                encoder_in_channels = sample_data.x.size(-1)
+                logger.debug(
+                    f"ARGA/ARGVA: Inferred encoder_in_channels={encoder_in_channels} from sample_data.x"
+                )
 
             if encoder_in_channels is None:
                 raise HyperparameterError(
