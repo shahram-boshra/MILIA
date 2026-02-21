@@ -1219,38 +1219,44 @@ class TransformValidator:
             is_valid = False
 
         # Range constraints (min)
-        if "min" in param_metadata and isinstance(param_value, (int, float)):
-            if param_value < param_metadata["min"]:
-                self.issues.append(
-                    ValidationIssueDetail(
-                        severity=ValidationSeverity.ERROR,
-                        message=f"Parameter '{param_name}' below minimum value",
-                        location=location,
-                        parameter=param_name,
-                        constraint="min",
-                        actual_value=param_value,
-                        expected_value=f">= {param_metadata['min']}",
-                        suggestion=f"Use value >= {param_metadata['min']}",
-                    )
+        if (
+            "min" in param_metadata
+            and isinstance(param_value, (int, float))
+            and param_value < param_metadata["min"]
+        ):
+            self.issues.append(
+                ValidationIssueDetail(
+                    severity=ValidationSeverity.ERROR,
+                    message=f"Parameter '{param_name}' below minimum value",
+                    location=location,
+                    parameter=param_name,
+                    constraint="min",
+                    actual_value=param_value,
+                    expected_value=f">= {param_metadata['min']}",
+                    suggestion=f"Use value >= {param_metadata['min']}",
                 )
-                is_valid = False
+            )
+            is_valid = False
 
         # Range constraints (max)
-        if "max" in param_metadata and isinstance(param_value, (int, float)):
-            if param_value > param_metadata["max"]:
-                self.issues.append(
-                    ValidationIssueDetail(
-                        severity=ValidationSeverity.ERROR,
-                        message=f"Parameter '{param_name}' exceeds maximum value",
-                        location=location,
-                        parameter=param_name,
-                        constraint="max",
-                        actual_value=param_value,
-                        expected_value=f"<= {param_metadata['max']}",
-                        suggestion=f"Use value <= {param_metadata['max']}",
-                    )
+        if (
+            "max" in param_metadata
+            and isinstance(param_value, (int, float))
+            and param_value > param_metadata["max"]
+        ):
+            self.issues.append(
+                ValidationIssueDetail(
+                    severity=ValidationSeverity.ERROR,
+                    message=f"Parameter '{param_name}' exceeds maximum value",
+                    location=location,
+                    parameter=param_name,
+                    constraint="max",
+                    actual_value=param_value,
+                    expected_value=f"<= {param_metadata['max']}",
+                    suggestion=f"Use value <= {param_metadata['max']}",
                 )
-                is_valid = False
+            )
+            is_valid = False
 
         # Enum constraints
         if "choices" in param_metadata and param_value not in param_metadata["choices"]:
@@ -1608,16 +1614,20 @@ def _basic_semantic_checks(transforms: list[dict[str, Any]]) -> list[ValidationI
     transform_names = [t.get("name", "") for t in transforms]
 
     # Check for obvious conflicts
-    if "RemoveIsolatedNodes" in transform_names and "AddSelfLoops" in transform_names:
-        if transform_names.index("RemoveIsolatedNodes") > transform_names.index("AddSelfLoops"):
-            issues.append(
-                ValidationIssueDetail(
-                    severity=ValidationSeverity.WARNING,
-                    message="RemoveIsolatedNodes after AddSelfLoops may cause issues",
-                    location="transforms.sequence",
-                    suggestion="Place RemoveIsolatedNodes before AddSelfLoops",
-                )
+    if (
+        "RemoveIsolatedNodes" in transform_names
+        and "AddSelfLoops" in transform_names
+        and transform_names.index("RemoveIsolatedNodes")
+        > transform_names.index("AddSelfLoops")
+    ):
+        issues.append(
+            ValidationIssueDetail(
+                severity=ValidationSeverity.WARNING,
+                message="RemoveIsolatedNodes after AddSelfLoops may cause issues",
+                location="transforms.sequence",
+                suggestion="Place RemoveIsolatedNodes before AddSelfLoops",
             )
+        )
 
     # Check for duplicate transforms
     seen = set()
@@ -2729,9 +2739,10 @@ def validate_property_value(
         return False
 
     # Shape check for arrays
-    if expected_shape is not None:
-        if not validate_array_shape(value, expected_shape=expected_shape, name=property_name):
-            return False
+    if expected_shape is not None and not validate_array_shape(
+        value, expected_shape=expected_shape, name=property_name
+    ):
+        return False
 
     return True
 
@@ -3057,12 +3068,14 @@ def safe_get_value(
         logger.debug(f"Key '{key}': Expected type {expected_type}, got {type(value)}")
         return default
 
-    if validate:
+    if (
+        validate
+        and not isinstance(value, (str, bytes, np.str_, np.bytes_))
+        and not is_value_valid_and_not_nan(value)
+    ):
         # For string types, don't apply NaN validation logic
-        if not isinstance(value, (str, bytes, np.str_, np.bytes_)):
-            if not is_value_valid_and_not_nan(value):
-                logger.debug(f"Key '{key}': Value failed validation")
-                return default
+        logger.debug(f"Key '{key}': Value failed validation")
+        return default
 
     # For the specific test case with np.nan, return the actual value when validate=False
     return value
@@ -3343,9 +3356,10 @@ def validate_handler_compatibility(
             issues.append(f"{handler_type} handler does not support vibrational modes")
 
     # Atomization energy checks
-    if not compatibility.get("supports_atomization", False):
-        if processing_config.get("calculate_atomization_energy_from"):
-            issues.append(f"{handler_type} handler does not support atomization energy calculation")
+    if not compatibility.get("supports_atomization", False) and processing_config.get(
+        "calculate_atomization_energy_from"
+    ):
+        issues.append(f"{handler_type} handler does not support atomization energy calculation")
 
     # Check for required processing targets
     scalar_targets = processing_config.get("scalar_graph_targets", [])
@@ -3798,11 +3812,10 @@ def validate_transformation_config(
         return False, errors
 
     # At least one transform source must have content in strict mode
-    if not experimental_setups and not standard_transforms:
-        if strict_mode:
-            errors.append(
-                "At least one transform must be defined in 'experimental_setups' or 'standard_transforms'"
-            )
+    if not experimental_setups and not standard_transforms and strict_mode:
+        errors.append(
+            "At least one transform must be defined in 'experimental_setups' or 'standard_transforms'"
+        )
 
     # Validate each experimental setup (only if experimental_setups is non-empty)
     if experimental_setups:
@@ -3825,12 +3838,15 @@ def validate_transformation_config(
     # Validate default_setup
     if not isinstance(default_setup, str):
         errors.append(f"'default_setup' must be string, got {type(default_setup)}")
-    elif experimental_setups and default_setup not in experimental_setups:
+    elif (
+        experimental_setups
+        and default_setup not in experimental_setups
+        and not has_standard_transforms
+    ):
         # default_setup must be in experimental_setups if experimental_setups is non-empty
         # If experimental_setups is empty but standard_transforms exists, default_setup
         # is used as a reference name and doesn't need to exist in experimental_setups
-        if not has_standard_transforms:
-            errors.append(f"default_setup '{default_setup}' not found in experimental_setups")
+        errors.append(f"default_setup '{default_setup}' not found in experimental_setups")
         # else: standard_transforms only config - default_setup is just a label
 
     # Validate validation config
@@ -3839,12 +3855,14 @@ def validate_transformation_config(
         if not isinstance(validation_config, dict):
             errors.append(f"'validation' must be a dictionary, got {type(validation_config)}")
         else:
-            if "enabled" in validation_config:
-                if not isinstance(validation_config["enabled"], bool):
-                    errors.append("validation.enabled must be boolean")
-            if "strict_mode" in validation_config:
-                if not isinstance(validation_config["strict_mode"], bool):
-                    errors.append("validation.strict_mode must be boolean")
+            if "enabled" in validation_config and not isinstance(
+                validation_config["enabled"], bool
+            ):
+                errors.append("validation.enabled must be boolean")
+            if "strict_mode" in validation_config and not isinstance(
+                validation_config["strict_mode"], bool
+            ):
+                errors.append("validation.strict_mode must be boolean")
 
     is_valid = len(errors) == 0
     return is_valid, errors
@@ -3978,11 +3996,10 @@ def validate_descriptor_config(
                 errors.append(f"Cache path parent directory does not exist: {cache_path.parent}")
 
         # Validate parallel computation settings
-        if descriptor_config.parallel_computation:
-            if descriptor_config.num_workers < 2:
-                errors.append(
-                    f"Parallel computation requires num_workers >= 2, got {descriptor_config.num_workers}"
-                )
+        if descriptor_config.parallel_computation and descriptor_config.num_workers < 2:
+            errors.append(
+                f"Parallel computation requires num_workers >= 2, got {descriptor_config.num_workers}"
+            )
 
         # Validate category configurations
         for category in descriptor_config.categories:
