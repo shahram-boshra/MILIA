@@ -419,10 +419,14 @@ class Predictor:
 
     def _postprocess(self, output: torch.Tensor, data: Data | Batch) -> torch.Tensor:
         """Post-process output based on task type."""
-        if self.task_type and "classification" in self.task_type.lower():
+        if (
+            self.task_type
+            and "classification" in self.task_type.lower()
             # For classification, return class predictions
-            if output.dim() > 1 and output.size(-1) > 1:
-                return output.argmax(dim=-1)
+            and output.dim() > 1
+            and output.size(-1) > 1
+        ):
+            return output.argmax(dim=-1)
         return output
 
     def predict_batch(
