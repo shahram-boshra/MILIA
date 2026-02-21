@@ -650,23 +650,25 @@ def _resolve_count_mismatch(
             if hasattr(vibmodes, "shape") and hasattr(vibmodes, "dtype"):
                 if vibmodes.dtype == object:
                     for vibmode_entry in vibmodes:
-                        if vibmode_entry is not None:
-                            if isinstance(vibmode_entry, (list, np.ndarray)):
-                                if len(vibmode_entry) > 0:
-                                    has_data = False
-                                    for item in vibmode_entry:
-                                        if (
-                                            isinstance(item, list)
-                                            and len(item) > 0
-                                            or hasattr(item, "__len__")
-                                            and len(item) > 0
-                                        ):
-                                            has_data = True
-                                            break
+                        if (
+                            vibmode_entry is not None
+                            and isinstance(vibmode_entry, (list, np.ndarray))
+                            and len(vibmode_entry) > 0
+                        ):
+                            has_data = False
+                            for item in vibmode_entry:
+                                if (
+                                    isinstance(item, list)
+                                    and len(item) > 0
+                                    or hasattr(item, "__len__")
+                                    and len(item) > 0
+                                ):
+                                    has_data = True
+                                    break
 
-                                    if has_data:
-                                        meaningful_vibmode_count += 1
-                                        sample_vibmodes.append(vibmode_entry)
+                            if has_data:
+                                meaningful_vibmode_count += 1
+                                sample_vibmodes.append(vibmode_entry)
                 else:
                     for vibmode_item in vibmodes:
                         try:
@@ -996,19 +998,21 @@ def _validate_and_reshape_vibmode_data(
 
         # LAST RESORT: Try to work with raw data directly
         try:
-            if isinstance(vibmode_raw, np.ndarray) and vibmode_raw.ndim >= 2:
-                if vibmode_raw.shape[-1] == 3:
-                    reshaped = vibmode_raw.reshape(-1, 3)
-                    if reshaped.size > 0:
-                        # Apply same permissive validation to last resort data
-                        if np.all(np.isfinite(reshaped)):
-                            max_val = np.max(np.abs(reshaped))
-                            if max_val <= 1e100:  # Same permissive threshold
-                                logger.debug(
-                                    f"Molecule {molecule_index}: LAST RESORT SUCCESS - "
-                                    f"used raw shape, max displacement: {max_val:.2e}"
-                                )
-                                return reshaped
+            if (
+                isinstance(vibmode_raw, np.ndarray)
+                and vibmode_raw.ndim >= 2
+                and vibmode_raw.shape[-1] == 3
+            ):
+                reshaped = vibmode_raw.reshape(-1, 3)
+                if reshaped.size > 0 and np.all(np.isfinite(reshaped)):
+                    # Apply same permissive validation to last resort data
+                    max_val = np.max(np.abs(reshaped))
+                    if max_val <= 1e100:  # Same permissive threshold
+                        logger.debug(
+                            f"Molecule {molecule_index}: LAST RESORT SUCCESS - "
+                            f"used raw shape, max displacement: {max_val:.2e}"
+                        )
+                        return reshaped
         except (TypeError, ValueError):
             pass
 
