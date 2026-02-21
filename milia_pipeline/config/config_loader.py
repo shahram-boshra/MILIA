@@ -311,15 +311,17 @@ def _normalize_dataset_keyed_sections(config: dict[str, Any]) -> dict[str, Any]:
             )
 
         # Normalize data_config.property_selection keys
-        if "data_config" in config and isinstance(config["data_config"], dict):
-            if "property_selection" in config["data_config"] and isinstance(
-                config["data_config"]["property_selection"], dict
-            ):
-                config["data_config"]["property_selection"] = _normalize_dict_keys(
-                    config["data_config"]["property_selection"],
-                    type_lookup,
-                    "data_config.property_selection",
-                )
+        if (
+            "data_config" in config
+            and isinstance(config["data_config"], dict)
+            and "property_selection" in config["data_config"]
+            and isinstance(config["data_config"]["property_selection"], dict)
+        ):
+            config["data_config"]["property_selection"] = _normalize_dict_keys(
+                config["data_config"]["property_selection"],
+                type_lookup,
+                "data_config.property_selection",
+            )
 
     except Exception as e:
         logger.debug(f"Error normalizing dataset-keyed sections: {e}")
@@ -1597,12 +1599,15 @@ def _optimized_validation(config):
             # Fast validation - check critical errors only
             if "default_setup" not in transforms_section:
                 logger.warning("Missing default_setup in transformations")
-            elif setups and transforms_section["default_setup"] not in setups:
+            elif (
+                setups
+                and transforms_section["default_setup"] not in setups
+                and not standard_transforms
+            ):
                 # Only warn if experimental_setups is non-empty and no standard_transforms
-                if not standard_transforms:
-                    logger.warning(
-                        f"Default setup '{transforms_section['default_setup']}' not found in experimental_setups"
-                    )
+                logger.warning(
+                    f"Default setup '{transforms_section['default_setup']}' not found in experimental_setups"
+                )
 
             # Validate essential structure
             for setup_name, transforms_list in setups.items():
@@ -1813,9 +1818,12 @@ def get_enhanced_transformation_config(force_reload=False):
     except ConfigurationError as e:
         # Preserve original error message
         original_error = str(e)
-        if hasattr(e, "original_exception") and e.original_exception:
-            if "Test config error" in str(e.original_exception):
-                original_error = str(e.original_exception)
+        if (
+            hasattr(e, "original_exception")
+            and e.original_exception
+            and "Test config error" in str(e.original_exception)
+        ):
+            original_error = str(e.original_exception)
 
         raise ConfigurationError(
             f"Failed to load transformation configuration: {original_error}",
