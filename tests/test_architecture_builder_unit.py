@@ -119,12 +119,7 @@ def setup_module(module):
     from milia_pipeline.models.builders.architecture_builder import (
         CustomArchitecture as _CustomArchitecture,
     )
-    from milia_pipeline.models.builders.architecture_builder import (
-        LayerConfig as _LayerConfig,
-    )
-    from milia_pipeline.models.builders.architecture_builder import (
-        ResidualConnection as _ResidualConnection,
-    )
+
     # CRITICAL: Import FunctionalLayerWrapper from architecture_builder (the
     # module under test), NOT from layer_registry (the mocked dependency).
     # architecture_builder.py:871 uses isinstance(layer, FunctionalLayerWrapper)
@@ -142,8 +137,8 @@ def setup_module(module):
     from milia_pipeline.models.builders.architecture_builder import (
         LayerCategory as _LayerCategory,
     )
-    from milia_pipeline.models.builders.layer_registry import (
-        LayerMetadata as _LayerMetadata,
+    from milia_pipeline.models.builders.architecture_builder import (
+        LayerConfig as _LayerConfig,
     )
 
     # CRITICAL: Import LayerNotFoundError from architecture_builder (the module
@@ -155,6 +150,12 @@ def setup_module(module):
     # to miss the exception.
     from milia_pipeline.models.builders.architecture_builder import (
         LayerNotFoundError as _LayerNotFoundError,
+    )
+    from milia_pipeline.models.builders.architecture_builder import (
+        ResidualConnection as _ResidualConnection,
+    )
+    from milia_pipeline.models.builders.layer_registry import (
+        LayerMetadata as _LayerMetadata,
     )
 
     # --- Assign to globals ---
