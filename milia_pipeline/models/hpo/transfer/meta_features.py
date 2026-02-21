@@ -932,10 +932,13 @@ class MetaFeatureExtractor:
             edge_attr = data.edge_attr
 
             # Check if it looks like one-hot encoded bond types
-            if hasattr(edge_attr, "shape") and len(edge_attr.shape) > 1:
-                if edge_attr.shape[1] <= 5:  # Likely one-hot bond types
-                    if hasattr(edge_attr, "argmax"):
-                        return (edge_attr.argmax(dim=1) + 1).tolist()
+            if (
+                hasattr(edge_attr, "shape")
+                and len(edge_attr.shape) > 1
+                and edge_attr.shape[1] <= 5  # Likely one-hot bond types
+                and hasattr(edge_attr, "argmax")
+            ):
+                return (edge_attr.argmax(dim=1) + 1).tolist()
 
             # First column might be bond type
             if hasattr(edge_attr, "shape") and len(edge_attr.shape) == 2:
