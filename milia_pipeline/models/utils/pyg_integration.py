@@ -135,12 +135,15 @@ def validate_pyg_data(data: Data, strict: bool = False) -> dict[str, Any]:
         info["num_edge_features"] = data.edge_attr.size(1) if data.edge_attr.dim() > 1 else 1
 
         # Check dimension consistency
-        if hasattr(data, "edge_index") and data.edge_index is not None:
-            if data.edge_attr.size(0) != data.edge_index.size(1):
-                errors.append(
-                    f"edge_attr size {data.edge_attr.size(0)} doesn't match "
-                    f"number of edges {data.edge_index.size(1)}"
-                )
+        if (
+            hasattr(data, "edge_index")
+            and data.edge_index is not None
+            and data.edge_attr.size(0) != data.edge_index.size(1)
+        ):
+            errors.append(
+                f"edge_attr size {data.edge_attr.size(0)} doesn't match "
+                f"number of edges {data.edge_index.size(1)}"
+            )
     else:
         info["has_edge_features"] = False
 
@@ -149,12 +152,15 @@ def validate_pyg_data(data: Data, strict: bool = False) -> dict[str, Any]:
         info["has_edge_weights"] = True
 
         # Check dimension consistency
-        if hasattr(data, "edge_index") and data.edge_index is not None:
-            if data.edge_weight.size(0) != data.edge_index.size(1):
-                errors.append(
-                    f"edge_weight size {data.edge_weight.size(0)} doesn't match "
-                    f"number of edges {data.edge_index.size(1)}"
-                )
+        if (
+            hasattr(data, "edge_index")
+            and data.edge_index is not None
+            and data.edge_weight.size(0) != data.edge_index.size(1)
+        ):
+            errors.append(
+                f"edge_weight size {data.edge_weight.size(0)} doesn't match "
+                f"number of edges {data.edge_index.size(1)}"
+            )
     else:
         info["has_edge_weights"] = False
 
