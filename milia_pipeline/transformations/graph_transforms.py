@@ -306,10 +306,6 @@ except ImportError as e:
     TORCH_GEOMETRIC_IMPORT_ERROR = str(e)
     TORCH_GEOMETRIC_VERSION = None
 
-PSUTIL_AVAILABLE = importlib.util.find_spec("psutil") is not None
-
-YAML_AVAILABLE = importlib.util.find_spec("yaml") is not None
-
 # Import ALL exceptions from centralized exceptions.py
 from milia_pipeline.exceptions import (
     ConfigurationError,
@@ -319,6 +315,10 @@ from milia_pipeline.exceptions import (
     TransformValidationError,
     wrap_handler_operation,
 )
+
+PSUTIL_AVAILABLE = importlib.util.find_spec("psutil") is not None
+
+YAML_AVAILABLE = importlib.util.find_spec("yaml") is not None
 
 # Initialize logger for this module
 logger = logging.getLogger(__name__)
