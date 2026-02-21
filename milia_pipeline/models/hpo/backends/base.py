@@ -5,9 +5,9 @@ Defines the abstract interface for HPO backends.
 Enables swapping between Optuna and Ray Tune without code changes.
 """
 
+import importlib.util
 from abc import abstractmethod
 from collections.abc import Callable
-import importlib.util
 from typing import Any, Protocol, runtime_checkable
 
 # Check optuna availability without importing it
