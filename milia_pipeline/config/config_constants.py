@@ -1397,11 +1397,10 @@ def _validate_wavefunction_handler_config(config: dict[str, Any]) -> list[str]:
 
         # Validate scalar targets include appropriate wavefunction properties
         scalar_targets = processing_config.get("scalar_graph_targets", [])
-        if isinstance(scalar_targets, list):
+        if isinstance(scalar_targets, list) and "homo_lumo_gap_eV" not in scalar_targets:
             # Recommend including homo_lumo_gap_eV if available
-            if "homo_lumo_gap_eV" not in scalar_targets:
-                # This is a warning, not an error - don't add to errors list
-                pass
+            # This is a warning, not an error - don't add to errors list
+            pass
 
     return errors
 
@@ -1681,10 +1680,7 @@ def _check_transformation_system_availability() -> bool:
             logger.debug("Transformation system is available")
         else:
             TRANSFORMATION_SYSTEM_AVAILABLE = False
-            missing = [
-                mod for mod in modules_required
-                if importlib.util.find_spec(mod) is None
-            ]
+            missing = [mod for mod in modules_required if importlib.util.find_spec(mod) is None]
             logger.debug(f"Transformation system not available: missing {missing}")
     except ValueError:
         # find_spec raises ValueError if a module is in sys.modules
