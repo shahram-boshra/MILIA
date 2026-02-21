@@ -122,11 +122,14 @@ class ANI1ccxDatasetHandler(DatasetHandler):
 
             # Validate CC energy (ANI-1ccx energies are typically negative in Hartree)
             ccsd_energy = raw_properties_dict.get("ccsd_energy")
-            if ccsd_energy is not None and isinstance(ccsd_energy, (int, float, np.number)):
-                if ccsd_energy > 0:
-                    self.logger.warning(
-                        f"ANI-1ccx molecule {molecule_index} has positive CC energy: {ccsd_energy}"
-                    )
+            if (
+                ccsd_energy is not None
+                and isinstance(ccsd_energy, (int, float, np.number))
+                and ccsd_energy > 0
+            ):
+                self.logger.warning(
+                    f"ANI-1ccx molecule {molecule_index} has positive CC energy: {ccsd_energy}"
+                )
 
         except (HandlerError, DatasetSpecificHandlerError):
             # Re-raise handler-specific errors
@@ -1015,12 +1018,14 @@ class ANI1ccxDatasetHandler(DatasetHandler):
             )
 
         # Force data considerations
-        if hasattr(self.processing_config, "variable_len_graph_properties"):
-            if "forces" in self.processing_config.variable_len_graph_properties:
-                if "RandomRotate" in transform_names:
-                    warnings.append(
-                        "ANI-1ccx dataset has forces - geometric transforms will require force rotation"
-                    )
+        if (
+            hasattr(self.processing_config, "variable_len_graph_properties")
+            and "forces" in self.processing_config.variable_len_graph_properties
+            and "RandomRotate" in transform_names
+        ):
+            warnings.append(
+                "ANI-1ccx dataset has forces - geometric transforms will require force rotation"
+            )
 
         # Distance-based transforms
         if "Distance" in transform_names or "Cartesian" in transform_names:
@@ -1037,15 +1042,16 @@ class ANI1ccxDatasetHandler(DatasetHandler):
         errors = []
 
         # VirtualNode incompatibility with certain ANI-1ccx properties
-        if "VirtualNode" in transform_names:
-            if hasattr(self.processing_config, "node_features") and any(
-                c in self.processing_config.node_features
-                for c in ["hirshfeld_charges", "cm5_charges"]
-            ):
-                errors.append(
-                    "VirtualNode incompatible with precomputed charges - "
-                    "virtual node would need artificial charge"
-                )
+        if "VirtualNode" in transform_names and hasattr(
+            self.processing_config, "node_features"
+        ) and any(
+            c in self.processing_config.node_features
+            for c in ["hirshfeld_charges", "cm5_charges"]
+        ):
+            errors.append(
+                "VirtualNode incompatible with precomputed charges - "
+                "virtual node would need artificial charge"
+            )
 
         return errors
 
@@ -1083,12 +1089,15 @@ class ANI1ccxDatasetHandler(DatasetHandler):
             )
 
         # Distance/edge feature recommendations
-        if "Distance" not in transform_names and "Cartesian" not in transform_names:
-            if any(t in transform_names for t in ["GCNNorm", "GATConv", "SAGEConv"]):
-                recommendations.append(
-                    "Graph neural networks may benefit from edge features. "
-                    "Consider: Distance(norm=False, cat=True) or Cartesian(norm=False, cat=True)"
-                )
+        if (
+            "Distance" not in transform_names
+            and "Cartesian" not in transform_names
+            and any(t in transform_names for t in ["GCNNorm", "GATConv", "SAGEConv"])
+        ):
+            recommendations.append(
+                "Graph neural networks may benefit from edge features. "
+                "Consider: Distance(norm=False, cat=True) or Cartesian(norm=False, cat=True)"
+            )
 
         return recommendations
 
