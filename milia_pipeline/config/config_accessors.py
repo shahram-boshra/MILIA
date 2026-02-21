@@ -961,27 +961,26 @@ def get_transform_config(
             transform_config = t.copy()
             break
 
-    if not transform_config:
+    if not transform_config and use_intelligent_defaults and GRAPH_TRANSFORMS_AVAILABLE:
         # Try to get intelligent default config if Transformation System Integration available
-        if use_intelligent_defaults and GRAPH_TRANSFORMS_AVAILABLE:
-            gt = get_graph_transforms()
-            try:
-                transform_info = gt.get_transform_info(transform_name)
-                transform_config = {"name": transform_name, "kwargs": {}, "enabled": True}
+        gt = get_graph_transforms()
+        try:
+            transform_info = gt.get_transform_info(transform_name)
+            transform_config = {"name": transform_name, "kwargs": {}, "enabled": True}
 
-                # Add intelligent defaults for parameters
-                if transform_info:
-                    param_metadata = gt.get_parameter_info(transform_name)
-                    if isinstance(param_metadata, dict):
-                        for param_name, metadata in param_metadata.items():
-                            if metadata.has_default:
-                                if "kwargs" not in transform_config:
-                                    transform_config["kwargs"] = {}
-                                transform_config["kwargs"][param_name] = metadata.default_value
+            # Add intelligent defaults for parameters
+            if transform_info:
+                param_metadata = gt.get_parameter_info(transform_name)
+                if isinstance(param_metadata, dict):
+                    for param_name, metadata in param_metadata.items():
+                        if metadata.has_default:
+                            if "kwargs" not in transform_config:
+                                transform_config["kwargs"] = {}
+                            transform_config["kwargs"][param_name] = metadata.default_value
 
-                logger.info(f"Generated intelligent default config for '{transform_name}'")
-            except TransformNotFoundError:
-                pass
+            logger.info(f"Generated intelligent default config for '{transform_name}'")
+        except TransformNotFoundError:
+            pass
 
     if not transform_config:
         available = [t.get("name", "unknown") for t in transforms if isinstance(t, dict)]
@@ -1310,9 +1309,12 @@ def validate_config_structure(
             if isinstance(config, dict):
                 if key not in config:
                     errors.append(f"Required key '{key}' missing from configuration")
-            elif CONTAINERS_AVAILABLE and isinstance(config, _BaseModelRuntime):
-                if not hasattr(config, key):
-                    errors.append(f"Required attribute '{key}' missing from configuration")
+            elif (
+                CONTAINERS_AVAILABLE
+                and isinstance(config, _BaseModelRuntime)
+                and not hasattr(config, key)
+            ):
+                errors.append(f"Required attribute '{key}' missing from configuration")
 
     # Schema validation if available
     if SCHEMAS_AVAILABLE:
