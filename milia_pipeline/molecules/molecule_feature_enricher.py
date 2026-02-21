@@ -369,12 +369,14 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
                         logger.debug(f"Additional property estimation failed: {e}")
 
                 # PHASE 6: Check vibrational refinement via feature query instead of type check
-                if _get_dataset_feature(
-                    dataset_type_str, "vibrational_analysis"
-                ) and handler_capabilities.get("vibrational_refinement", False) and (
-                    hasattr(handler, "refine_vibrational_data")
-                    and hasattr(pyg_data, "freqs")
-                    and pyg_data.freqs is not None
+                if (
+                    _get_dataset_feature(dataset_type_str, "vibrational_analysis")
+                    and handler_capabilities.get("vibrational_refinement", False)
+                    and (
+                        hasattr(handler, "refine_vibrational_data")
+                        and hasattr(pyg_data, "freqs")
+                        and pyg_data.freqs is not None
+                    )
                 ):
                     try:
                         refined_freqs = handler.refine_vibrational_data(pyg_data.freqs)
@@ -384,12 +386,14 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
                         logger.debug(f"Vibrational refinement failed: {e}")
 
                 # PHASE 6: Check uncertainty processing via feature query instead of type check
-                if _get_dataset_feature(
-                    dataset_type_str, "uncertainty_handling"
-                ) and handler_capabilities.get("uncertainty_processing", False) and (
-                    hasattr(handler, "process_uncertainty_data")
-                    and hasattr(pyg_data, "uncertainty")
-                    and pyg_data.uncertainty is not None
+                if (
+                    _get_dataset_feature(dataset_type_str, "uncertainty_handling")
+                    and handler_capabilities.get("uncertainty_processing", False)
+                    and (
+                        hasattr(handler, "process_uncertainty_data")
+                        and hasattr(pyg_data, "uncertainty")
+                        and pyg_data.uncertainty is not None
+                    )
                 ):
                     try:
                         uncertainty_info = handler.process_uncertainty_data(pyg_data)
@@ -976,9 +980,9 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
                         handler_capabilities = {}
 
                 # Only get required properties if handler reports it has this capability
-                if handler_capabilities.get(
-                    "has_required_properties", True
-                ) and hasattr(handler, "get_required_properties"):
+                if handler_capabilities.get("has_required_properties", True) and hasattr(
+                    handler, "get_required_properties"
+                ):
                     try:
                         required_props = handler.get_required_properties() or []
                         capabilities["handler_required_properties"] = required_props
@@ -986,9 +990,9 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
                         logger.debug(f"Failed to get required properties: {e}")
 
                 # Check for advanced processing capabilities
-                if handler_capabilities.get(
-                    "supports_custom_validation", False
-                ) and hasattr(handler, "get_validation_rules"):
+                if handler_capabilities.get("supports_custom_validation", False) and hasattr(
+                    handler, "get_validation_rules"
+                ):
                     try:
                         validation_rules = handler.get_validation_rules()
                         if validation_rules is not None:
@@ -1657,7 +1661,8 @@ def validate_feature_extraction_with_handler(
 
         # Check handler requirements only if handler reports having them
         if handler_caps.get(
-            "has_required_properties", True  # Default True for backward compatibility
+            "has_required_properties",
+            True,  # Default True for backward compatibility
         ) and hasattr(handler, "get_required_properties"):
             try:
                 required_props = handler.get_required_properties()
@@ -1729,24 +1734,22 @@ def validate_feature_extraction_with_handler(
                     validation["validation_passed"] = False
 
                 # Additional uncertainty validation if capability exists
-                if uncertainty_caps.get(
-                    "uncertainty_validation", False
-                ) and hasattr(handler, "validate_uncertainty_data"):
+                if uncertainty_caps.get("uncertainty_validation", False) and hasattr(
+                    handler, "validate_uncertainty_data"
+                ):
                     try:
                         unc_result = handler.validate_uncertainty_data(pyg_data)
                         validation["uncertainty_validation"] = unc_result
                         if not unc_result.get("valid", True):
                             validation["validation_passed"] = False
-                            validation["quality_issues"].extend(
-                                unc_result.get("issues", [])
-                            )
+                            validation["quality_issues"].extend(unc_result.get("issues", []))
                     except Exception as e:
                         logger.debug(f"Uncertainty validation failed: {e}")
 
             # Statistical quality validation if available
-            if uncertainty_caps.get(
-                "statistical_quality_check", False
-            ) and hasattr(handler, "check_statistical_quality"):
+            if uncertainty_caps.get("statistical_quality_check", False) and hasattr(
+                handler, "check_statistical_quality"
+            ):
                 try:
                     stat_quality = handler.check_statistical_quality(pyg_data)
                     validation["statistical_quality"] = stat_quality
@@ -1782,9 +1785,9 @@ def validate_feature_extraction_with_handler(
                     logger.debug(f"Vibrational validation failed: {e}")
 
             # Electronic structure validation if capability exists
-            if vibrational_caps.get(
-                "electronic_validation", False
-            ) and hasattr(handler, "validate_electronic_structure"):
+            if vibrational_caps.get("electronic_validation", False) and hasattr(
+                handler, "validate_electronic_structure"
+            ):
                 try:
                     elec_result = handler.validate_electronic_structure(pyg_data)
                     validation["electronic_validation"] = elec_result

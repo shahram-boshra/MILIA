@@ -2882,9 +2882,7 @@ class TestComponentAvailabilitySummary(unittest.TestCase):
             components["Optuna"] = False
 
         # Main module
-        components["main.handle_training_mode"] = (
-            importlib.util.find_spec("main") is not None
-        )
+        components["main.handle_training_mode"] = importlib.util.find_spec("main") is not None
         try:
             from main import HPO_AVAILABLE, MODELS_TRAINING_AVAILABLE
 

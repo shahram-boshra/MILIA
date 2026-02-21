@@ -105,13 +105,12 @@ class QM9Preprocessor(BasePreprocessor):
 
         # Validate num_molecules if specified
         num_molecules = self.config.get("num_molecules")
-        if num_molecules is not None:
-            if not isinstance(num_molecules, int) or num_molecules < 1:
-                raise ConfigurationError(
-                    f"num_molecules must be positive integer, got {num_molecules}",
-                    config_key="num_molecules",
-                    actual_value=num_molecules,
-                )
+        if num_molecules is not None and (not isinstance(num_molecules, int) or num_molecules < 1):
+            raise ConfigurationError(
+                f"num_molecules must be positive integer, got {num_molecules}",
+                config_key="num_molecules",
+                actual_value=num_molecules,
+            )
 
         self.logger.debug("QM9 configuration validation passed")
 

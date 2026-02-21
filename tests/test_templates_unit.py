@@ -648,8 +648,12 @@ class TestHybridConvAttentionTemplate:
         assert gat_count == attention_layers
 
         # Find first GCN and first GAT positions
-        first_gcn_pos = next(i for i, layer in enumerate(builder.layers) if layer["type"] == "GCNConv")
-        first_gat_pos = next(i for i, layer in enumerate(builder.layers) if layer["type"] == "GATConv")
+        first_gcn_pos = next(
+            i for i, layer in enumerate(builder.layers) if layer["type"] == "GCNConv"
+        )
+        first_gat_pos = next(
+            i for i, layer in enumerate(builder.layers) if layer["type"] == "GATConv"
+        )
 
         # GCN should come before GAT
         assert first_gcn_pos < first_gat_pos
@@ -785,7 +789,9 @@ class TestHierarchicalPoolingTemplate:
         )
 
         # Should have global_mean_pool
-        global_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_mean_pool"]
+        global_pool_layers = [
+            layer for layer in builder.layers if layer["type"] == "global_mean_pool"
+        ]
         assert len(global_pool_layers) > 0
 
     def test_hierarchical_pooling_topk_in_channels(self, basic_params):
@@ -1117,7 +1123,9 @@ class TestNodeClassificationNetworkTemplate:
         builder = ArchitectureTemplates.node_classification_network(in_channels=32, num_classes=10)
 
         # Should not have global pooling
-        global_pool_layers = [layer for layer in builder.layers if "global" in layer["type"].lower()]
+        global_pool_layers = [
+            layer for layer in builder.layers if "global" in layer["type"].lower()
+        ]
         assert len(global_pool_layers) == 0
 
     def test_node_classification_network_high_dropout(self):
@@ -1204,7 +1212,9 @@ class TestGraphClassificationNetworkTemplate:
         builder = ArchitectureTemplates.graph_classification_network(in_channels=9, num_classes=2)
 
         # Should have global pooling
-        global_pool_layers = [layer for layer in builder.layers if layer["type"] == "global_mean_pool"]
+        global_pool_layers = [
+            layer for layer in builder.layers if layer["type"] == "global_mean_pool"
+        ]
         assert len(global_pool_layers) > 0
 
     def test_graph_classification_network_output_dimension(self):
@@ -1505,7 +1515,9 @@ class TestTemplateConfigurations:
         """
         for task_type in ["link_prediction", "edge_regression"]:
             builder = ArchitectureTemplates.simple_gcn(16, 1, task_type=task_type)
-            global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
+            global_pooling = [
+                layer for layer in builder.layers if "global" in layer["type"].lower()
+            ]
             assert len(global_pooling) == 0, (
                 f"Task type '{task_type}' should not have global pooling"
             )
@@ -1514,7 +1526,9 @@ class TestTemplateConfigurations:
         """Test that graph_regression and graph_classification tasks always get pooling."""
         for task_type in ["graph_regression", "graph_classification"]:
             builder = ArchitectureTemplates.simple_gcn(16, 1, task_type=task_type)
-            global_pooling = [layer for layer in builder.layers if "global" in layer["type"].lower()]
+            global_pooling = [
+                layer for layer in builder.layers if "global" in layer["type"].lower()
+            ]
             assert len(global_pooling) > 0, f"Task type '{task_type}' should have global pooling"
 
 

@@ -34,6 +34,10 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from dataclasses import FrozenInstanceError
+
+from pydantic import ValidationError as PydanticValidationError
+
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -45,10 +49,6 @@ from milia_pipeline.datasets.protocols import (
     DatasetHandlerProtocol,
     DatasetValidatorProtocol,
 )
-
-from dataclasses import FrozenInstanceError
-
-from pydantic import ValidationError as PydanticValidationError
 
 # ============================================================================
 # HELPER: Reusable valid fixtures for building test subclasses

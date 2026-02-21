@@ -675,10 +675,9 @@ class ModelRegistry:
                     continue
 
                 # Search in tags
-                if "tags" in search_in:
-                    if any(query_lower in tag.lower() for tag in metadata.tags):
-                        results.append(name)
-                        continue
+                if "tags" in search_in and any(query_lower in tag.lower() for tag in metadata.tags):
+                    results.append(name)
+                    continue
 
         return sorted(results)
 

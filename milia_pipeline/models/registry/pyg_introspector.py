@@ -416,8 +416,8 @@ def get_model_conv_kwargs(model_name: str) -> set:
     Returns:
         Set of valid conv kwargs for this model
     """
-    # Normalize model name for lookup
-    normalized_name = model_name.upper().replace("GRAPHSAGE", "GraphSAGE")
+    # Normalize model name for lookup (fully uppercase for case-insensitive comparison)
+    normalized_name = model_name.upper()
 
     # Check various name formats
     for name, kwargs in MODEL_SPECIFIC_CONV_KWARGS.items():
@@ -612,7 +612,12 @@ def _type_hint_to_string(hint: Any) -> str:
     """Convert type hint to string representation."""
     hint_str = str(hint)
 
-    if "int" in hint_str.lower():
+    # Check Optional/None FIRST — before primitive checks, because
+    # str(Optional[int]) contains "int" and str(int | None) contains "int",
+    # so primitive substring matches must not shadow the optional detection.
+    if "Optional" in hint_str or "None" in hint_str:
+        return "optional"
+    elif "int" in hint_str.lower():
         return "int"
     elif "float" in hint_str.lower():
         return "float"
@@ -620,8 +625,6 @@ def _type_hint_to_string(hint: Any) -> str:
         return "bool"
     elif "str" in hint_str.lower():
         return "str"
-    elif "Optional" in hint_str or "None" in hint_str:
-        return "optional"
     else:
         return "any"
 

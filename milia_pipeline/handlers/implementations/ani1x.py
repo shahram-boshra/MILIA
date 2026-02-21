@@ -124,11 +124,7 @@ class ANI1xDatasetHandler(DatasetHandler):
 
             # Validate energy (ANI-1x energies are typically negative in Hartree)
             energy = raw_properties_dict.get("energy")
-            if (
-                energy is not None
-                and isinstance(energy, (int, float, np.number))
-                and energy > 0
-            ):
+            if energy is not None and isinstance(energy, (int, float, np.number)) and energy > 0:
                 self.logger.warning(
                     f"ANI-1x molecule {molecule_index} has positive energy: {energy}"
                 )
@@ -1044,11 +1040,13 @@ class ANI1xDatasetHandler(DatasetHandler):
         errors = []
 
         # VirtualNode incompatibility with certain ANI-1x properties
-        if "VirtualNode" in transform_names and hasattr(
-            self.processing_config, "node_features"
-        ) and any(
-            c in self.processing_config.node_features
-            for c in ["hirshfeld_charges", "cm5_charges"]
+        if (
+            "VirtualNode" in transform_names
+            and hasattr(self.processing_config, "node_features")
+            and any(
+                c in self.processing_config.node_features
+                for c in ["hirshfeld_charges", "cm5_charges"]
+            )
         ):
             errors.append(
                 "VirtualNode incompatible with precomputed charges - "

@@ -311,8 +311,9 @@ def fake_discovery_env(mock_nn_module):
             raise ImportError(f"No module named '{name}'")
         return original_import(name)
 
-    with patch.dict("sys.modules", sys_modules_patch), patch.object(
-        intro.importlib, "import_module", side_effect=_patched_import
+    with (
+        patch.dict("sys.modules", sys_modules_patch),
+        patch.object(intro.importlib, "import_module", side_effect=_patched_import),
     ):
         yield fake_models_mod
 

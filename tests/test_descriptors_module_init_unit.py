@@ -360,8 +360,10 @@ class TestRegistrySystem:
 
     def test_descriptor_registration_class(self):
         """Test DescriptorRegistration class structure and fields"""
+
         def mock_func(mol):
             return 180.16
+
         mock_metadata = DescriptorMetadata("TestDesc", DescriptorCategory.CONSTITUTIONAL)
 
         reg = DescriptorRegistration(
@@ -386,6 +388,7 @@ class TestRegistrySystem:
         # Create an instance to check attributes
         def mock_func(mol):
             return 180.16
+
         mock_metadata = DescriptorMetadata("TestDesc", DescriptorCategory.CONSTITUTIONAL)
         reg = DescriptorRegistration(
             name="TestDesc", function=mock_func, metadata=mock_metadata, is_builtin=True

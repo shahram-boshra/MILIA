@@ -264,7 +264,9 @@ class ComputationOptimizer:
 
         # Check PyTorch version
         if not hasattr(torch, "compile"):
-            warnings.warn("torch.compile requires PyTorch 2.0+. Skipping compilation.", stacklevel=2)
+            warnings.warn(
+                "torch.compile requires PyTorch 2.0+. Skipping compilation.", stacklevel=2
+            )
             return model
 
         mode = mode or self.config.compile_mode

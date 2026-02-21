@@ -269,7 +269,9 @@ class ArchitectureConfigParser:
                     builder.add_residual_connection(start, end, connection_type)
 
                 except Exception as e:
-                    raise ConfigurationError(f"Error parsing residual connection {rc_spec}: {e}") from e
+                    raise ConfigurationError(
+                        f"Error parsing residual connection {rc_spec}: {e}"
+                    ) from e
 
         logger.info(
             f"Parsed custom architecture '{name}' with {len(builder)} layers for task '{task}'"

@@ -132,11 +132,7 @@ class ANI2xDatasetHandler(DatasetHandler):
 
             # Validate energy (ANI-2x energies are typically negative in Hartree)
             energy = raw_properties_dict.get("energy")
-            if (
-                energy is not None
-                and isinstance(energy, (int, float, np.number))
-                and energy > 0
-            ):
+            if energy is not None and isinstance(energy, (int, float, np.number)) and energy > 0:
                 self.logger.warning(
                     f"ANI-2x molecule {molecule_index} has positive energy: {energy}"
                 )
@@ -764,12 +760,12 @@ class ANI2xDatasetHandler(DatasetHandler):
                 and self.processing_config.node_features
             ):
                 forces_configured = "forces" in self.processing_config.node_features
-            if not forces_configured and hasattr(
-                self.processing_config, "variable_len_graph_properties"
-            ) and self.processing_config.variable_len_graph_properties:
-                forces_configured = (
-                    "forces" in self.processing_config.variable_len_graph_properties
-                )
+            if (
+                not forces_configured
+                and hasattr(self.processing_config, "variable_len_graph_properties")
+                and self.processing_config.variable_len_graph_properties
+            ):
+                forces_configured = "forces" in self.processing_config.variable_len_graph_properties
 
         stats["forces_configured"] = forces_configured
 

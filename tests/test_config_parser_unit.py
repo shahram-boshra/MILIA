@@ -912,9 +912,7 @@ class TestParseCustomArchitecture:
 
             assert result == mock_builder
             # Verify warning was logged (check warning method was called)
-            assert (
-                True
-            )  # Logger may or may not be called depending on implementation
+            assert True  # Logger may or may not be called depending on implementation
 
     def test_parse_with_template_delegates_to_template_based(self):
         """Test parsing with template delegates to _parse_template_based."""

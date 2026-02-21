@@ -390,7 +390,7 @@ class TestRegistryIntegration:
             patch("milia_pipeline.datasets.registry.is_registered") as _mock_is_registered,
             patch(
                 "milia_pipeline.datasets.registry.get_default_registry"
-                ) as _mock_get_default_registry,
+            ) as _mock_get_default_registry,
         ):
             result = accessors_module._init_registry()
 
@@ -1436,7 +1436,7 @@ class TestUtilityFunctions:
             patch(
                 "milia_pipeline.config.config_accessors._registry_get_safe",
                 return_value=mock_registry_class,
-                ),
+            ),
         ):
             result = get_required_properties("DFT")  # handler_type not supported
 
@@ -2859,7 +2859,7 @@ class TestLoggingAndMonitoring:
             patch(
                 "milia_pipeline.config.config_accessors.load_config",
                 side_effect=Exception("Test error"),
-                ),
+            ),
             contextlib.suppress(Exception),
         ):
             get_dataset_type()
@@ -3562,9 +3562,7 @@ class TestStructuralFeaturesAccessors:
             ),
             patch("milia_pipeline.config.config_accessors.create_dataset_config_container"),
             patch("milia_pipeline.config.config_accessors.create_filter_config_container"),
-            patch(
-                "milia_pipeline.config.config_accessors.create_processing_config_container"
-            ),
+            patch("milia_pipeline.config.config_accessors.create_processing_config_container"),
         ):
             result = get_feature_compatibility_report("DFT")
             assert isinstance(result, dict)

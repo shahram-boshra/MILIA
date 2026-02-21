@@ -927,8 +927,10 @@ class TestDescriptorRegistryThreadSafety:
 
         def register_one(idx):
             name = f"__test_plugin_desc_{idx}__"
+
             def func(mol):
                 return float(idx)
+
             with contextlib.suppress(Exception):
                 # If the descriptor already exists from a prior failed run,
                 # just verify it's present.

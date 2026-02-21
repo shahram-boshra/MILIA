@@ -338,7 +338,9 @@ class DistributedManager:
                 self._is_initialized = True
 
             except ImportError:
-                raise DistributedError("Horovod not installed. Install with: pip install horovod") from None
+                raise DistributedError(
+                    "Horovod not installed. Install with: pip install horovod"
+                ) from None
             except Exception as e:
                 raise DistributedError(f"Failed to initialize Horovod: {e}") from e
 
@@ -449,9 +451,7 @@ class DistributedManager:
         elif strategy == DistributedStrategy.DEEPSPEED:
             # DeepSpeed (requires separate initialization)
             try:
-                _deepspeed_available = (
-                    importlib.util.find_spec("deepspeed") is not None
-                )
+                _deepspeed_available = importlib.util.find_spec("deepspeed") is not None
             except ValueError:
                 # find_spec raises ValueError if deepspeed is in sys.modules
                 # but __spec__ is not set or is None (documented CPython behavior)
@@ -487,7 +487,9 @@ class DistributedManager:
                 return model
 
             except ImportError:
-                raise DistributedError("Horovod not installed. Install with: pip install horovod") from None
+                raise DistributedError(
+                    "Horovod not installed. Install with: pip install horovod"
+                ) from None
 
         else:
             raise DistributedError(f"Unknown strategy: {strategy}")

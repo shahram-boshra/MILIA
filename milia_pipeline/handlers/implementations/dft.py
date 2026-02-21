@@ -110,11 +110,7 @@ class DFTDatasetHandler(DatasetHandler):
 
             # Validate energy ranges (DFT energies typically more negative)
             etot = raw_properties_dict.get("Etot")
-            if (
-                etot is not None
-                and isinstance(etot, (int, float, np.number))
-                and etot > 0
-            ):
+            if etot is not None and isinstance(etot, (int, float, np.number)) and etot > 0:
                 self.logger.warning(
                     f"DFT molecule {molecule_index} has positive total energy: {etot}"
                 )
@@ -248,11 +244,7 @@ class DFTDatasetHandler(DatasetHandler):
                     ) from e
 
             # Handle vibrational frequencies (can be complex)
-            if (
-                key == "freqs"
-                and value is not None
-                and not is_value_valid_and_not_nan(value)
-            ):
+            if key == "freqs" and value is not None and not is_value_valid_and_not_nan(value):
                 raise DatasetSpecificHandlerError(
                     dataset_type="DFT",
                     message=f"Invalid vibrational frequency data for molecule {molecule_index}",
@@ -265,14 +257,8 @@ class DFTDatasetHandler(DatasetHandler):
                 )
 
             # Handle Mulliken charges
-            if (
-                key == "Qmulliken"
-                and value is not None
-                and not is_value_valid_and_not_nan(value)
-            ):
-                self.logger.warning(
-                    f"DFT molecule {molecule_index} has invalid Mulliken charges"
-                )
+            if key == "Qmulliken" and value is not None and not is_value_valid_and_not_nan(value):
+                self.logger.warning(f"DFT molecule {molecule_index} has invalid Mulliken charges")
                 return None
 
             return value
@@ -445,8 +431,7 @@ class DFTDatasetHandler(DatasetHandler):
             self.processing_config, "variable_len_graph_properties", []
         ):
             errors.append(
-                "DropNode incompatible with vibrational modes - "
-                "modes are indexed by atom number"
+                "DropNode incompatible with vibrational modes - modes are indexed by atom number"
             )
 
         return errors

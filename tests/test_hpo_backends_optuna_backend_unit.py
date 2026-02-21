@@ -981,9 +981,7 @@ class TestCreateStudyErrorHandling:
         with (
             patch("optuna.create_study", side_effect=mock_duplicated_error),
             patch("optuna.load_study", return_value=mock_study) as mock_load,
-            patch(
-                "milia_pipeline.models.hpo.backends.optuna_backend.logger"
-            ) as mock_logger,
+            patch("milia_pipeline.models.hpo.backends.optuna_backend.logger") as mock_logger,
         ):
             study = backend.create_study(
                 study_name="existing_study",

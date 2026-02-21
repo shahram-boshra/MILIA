@@ -506,9 +506,7 @@ class TestHPOManagerFromConfig:
 
         with (
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", mock_hpoconfig_cls),
-            patch(
-                "milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend
-                ),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
         ):
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
@@ -2875,9 +2873,7 @@ class TestSearchSpaceFiltering:
             config = MockHPOConfig(enabled=True)
             manager = HPOManager(config)
 
-            filtered = manager._filter_search_space_for_model(
-                "GCN", sample_search_space_with_heads
-            )
+            filtered = manager._filter_search_space_for_model("GCN", sample_search_space_with_heads)
 
             # Should return unfiltered space
             assert "heads" in filtered.get("hyperparameters", {}), (
@@ -3046,20 +3042,14 @@ class TestSearchSpaceFiltering:
 
         with (
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
-            patch(
-                "milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend
-                ),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
             patch("milia_pipeline.models.hpo.hpo_manager._REGISTRY_AVAILABLE", True),
-            patch(
-                "milia_pipeline.models.hpo.hpo_manager.ModelRegistry", MockModelRegistry
-                ),
+            patch("milia_pipeline.models.hpo.hpo_manager.ModelRegistry", MockModelRegistry),
             patch.object(
-                __import__(
-                "milia_pipeline.models.hpo.hpo_manager", fromlist=["LossRegistry"]
-                ),
+                __import__("milia_pipeline.models.hpo.hpo_manager", fromlist=["LossRegistry"]),
                 "LossRegistry",
                 mock_loss_registry,
-                ),
+            ),
         ):
             # Re-import to get fresh module state
 

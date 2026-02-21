@@ -169,15 +169,11 @@ def mock_cuda_device():
         patch("torch.cuda.memory_allocated", return_value=1024**3),
         patch("torch.cuda.memory_reserved", return_value=2 * 1024**3),
         patch("torch.cuda.max_memory_allocated", return_value=1.5 * 1024**3),
-        patch(
-            "torch.cuda.max_memory_reserved", return_value=2.5 * 1024**3
-            ),
+        patch("torch.cuda.max_memory_reserved", return_value=2.5 * 1024**3),
     ):
         mock_props = MagicMock()
         mock_props.total_memory = 8 * 1024**3
-        with patch(
-            "torch.cuda.get_device_properties", return_value=mock_props
-        ):
+        with patch("torch.cuda.get_device_properties", return_value=mock_props):
             yield
 
 
@@ -1094,7 +1090,8 @@ class TestCacheManagement:
     def test_run_garbage_collection_logs(self, caplog):
         """Test run_garbage_collection logs when verbose."""
         with (
-            patch("torch.cuda.is_available", return_value=False), patch("gc.collect"),
+            patch("torch.cuda.is_available", return_value=False),
+            patch("gc.collect"),
             caplog.at_level(logging.DEBUG),
         ):
             optimizer = MemoryOptimizer(device=torch.device("cpu"), verbose=True)
@@ -1208,9 +1205,7 @@ class TestStepOptimization:
         ):
             mock_props = MagicMock()
             mock_props.total_memory = 10 * 1024**3
-            with patch(
-                "torch.cuda.get_device_properties", return_value=mock_props
-            ):
+            with patch("torch.cuda.get_device_properties", return_value=mock_props):
                 optimizer = MemoryOptimizer(verbose=False)
 
                 # Utilization is 90%, threshold is 80%
@@ -1230,9 +1225,7 @@ class TestStepOptimization:
             mock_props = MagicMock()
             mock_props.total_memory = 10 * 1024**3
             with (
-                patch(
-                    "torch.cuda.get_device_properties", return_value=mock_props
-                ),
+                patch("torch.cuda.get_device_properties", return_value=mock_props),
                 caplog.at_level(logging.WARNING),
             ):
                 optimizer = MemoryOptimizer(verbose=True)
@@ -1508,9 +1501,7 @@ class TestMemoryLeakDetection:
             optimizer = MemoryOptimizer(verbose=False)
 
             dummy_input = torch.randn(4, 10)
-            result = optimizer.detect_memory_leaks(
-                mock_model, dummy_input, num_iterations=5
-            )
+            result = optimizer.detect_memory_leaks(mock_model, dummy_input, num_iterations=5)
 
         assert "iterations" in result
         assert "avg_usage_mb" in result
@@ -1557,9 +1548,7 @@ class TestMemoryLeakDetection:
             optimizer = MemoryOptimizer(verbose=False)
 
             dummy_input = torch.randn(4, 10)
-            result = optimizer.detect_memory_leaks(
-                mock_model, dummy_input, num_iterations=5
-            )
+            result = optimizer.detect_memory_leaks(mock_model, dummy_input, num_iterations=5)
 
         # When memory is stable, is_leaking should be False
         # (0 - 0) * 1.1 = 0, so not leaking
@@ -1936,9 +1925,7 @@ class TestEdgeCasesAndErrors:
         ):
             mock_props = MagicMock()
             mock_props.total_memory = 0
-            with patch(
-                "torch.cuda.get_device_properties", return_value=mock_props
-            ):
+            with patch("torch.cuda.get_device_properties", return_value=mock_props):
                 optimizer = MemoryOptimizer(verbose=False)
                 stats = optimizer.get_memory_stats()
 

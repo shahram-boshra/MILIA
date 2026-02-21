@@ -5851,28 +5851,29 @@ class miliaDataset(InMemoryDataset):
                             "uncertainty_field_name", "std"
                         )
 
-                        if key == uncertainty_field or key == "Etot":
-                            if isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                                try:
-                                    converted_value = float(value)
-                                    # Validate the converted value
-                                    if not is_value_valid_and_not_nan(converted_value):
-                                        raise ValidationError(
-                                            message=f"Property '{key}' has invalid numeric value after conversion",
-                                            validation_type="numeric_validation",
-                                            failed_checks=[f"Value: {converted_value}"],
-                                            data_context=f"Molecule {molecule_index}",
-                                            handler_type=dataset_type,
-                                        )
-                                    return converted_value
-                                except ValueError as e:
-                                    raise PropertyEnrichmentError(
-                                        molecule_index=molecule_index,
-                                        inchi="N/A",
-                                        property_name=key,
-                                        reason=f"Property '{key}' string-to-numeric conversion failed",
-                                        detail=f"Value: '{value}', Error: {str(e)}",
-                                    ) from e
+                        if (key == uncertainty_field or key == "Etot") and isinstance(
+                            value, (str, bytes, np.str_, np.bytes_)
+                        ):
+                            try:
+                                converted_value = float(value)
+                                # Validate the converted value
+                                if not is_value_valid_and_not_nan(converted_value):
+                                    raise ValidationError(
+                                        message=f"Property '{key}' has invalid numeric value after conversion",
+                                        validation_type="numeric_validation",
+                                        failed_checks=[f"Value: {converted_value}"],
+                                        data_context=f"Molecule {molecule_index}",
+                                        handler_type=dataset_type,
+                                    )
+                                return converted_value
+                            except ValueError as e:
+                                raise PropertyEnrichmentError(
+                                    molecule_index=molecule_index,
+                                    inchi="N/A",
+                                    property_name=key,
+                                    reason=f"Property '{key}' string-to-numeric conversion failed",
+                                    detail=f"Value: '{value}', Error: {str(e)}",
+                                ) from e
                 except Exception as e:
                     # Handler interface error - continue with legacy fallback
                     self.logger.debug(f"Handler interface error in enhanced validation: {e}")
@@ -5884,27 +5885,28 @@ class miliaDataset(InMemoryDataset):
                     uncertainty_config = dataset_config.uncertainty_config or {}
                     uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")
 
-                    if key == uncertainty_field or key == "Etot":
-                        if isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                            try:
-                                converted_value = float(value)
-                                # Enhanced validation
-                                if not is_value_valid_and_not_nan(converted_value):
-                                    raise ValidationError(
-                                        message=f"Property '{key}' has invalid numeric value after conversion",
-                                        validation_type="legacy_numeric_validation",
-                                        failed_checks=[f"Value: {converted_value}"],
-                                        data_context=f"Molecule {molecule_index}",
-                                    )
-                                return converted_value
-                            except ValueError as e:
-                                raise PropertyEnrichmentError(
-                                    molecule_index=molecule_index,
-                                    inchi="N/A",
-                                    property_name=key,
-                                    reason=f"Legacy property '{key}' conversion failed",
-                                    detail=f"Value: '{value}', Error: {str(e)}",
-                                ) from e
+                    if (key == uncertainty_field or key == "Etot") and isinstance(
+                        value, (str, bytes, np.str_, np.bytes_)
+                    ):
+                        try:
+                            converted_value = float(value)
+                            # Enhanced validation
+                            if not is_value_valid_and_not_nan(converted_value):
+                                raise ValidationError(
+                                    message=f"Property '{key}' has invalid numeric value after conversion",
+                                    validation_type="legacy_numeric_validation",
+                                    failed_checks=[f"Value: {converted_value}"],
+                                    data_context=f"Molecule {molecule_index}",
+                                )
+                            return converted_value
+                        except ValueError as e:
+                            raise PropertyEnrichmentError(
+                                molecule_index=molecule_index,
+                                inchi="N/A",
+                                property_name=key,
+                                reason=f"Legacy property '{key}' conversion failed",
+                                detail=f"Value: '{value}', Error: {str(e)}",
+                            ) from e
 
             # Default: return value as-is with basic validation
             if value is not None and hasattr(value, "__len__") and len(str(value)) == 0:

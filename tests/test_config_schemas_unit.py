@@ -303,7 +303,6 @@ class TestPhase5RegistryIntegration:
     def test_registry_list_all_safe_returns_list(self):
         """Test _registry_list_all_safe returns a list."""
         import milia_pipeline.config.config_schemas as schemas_module
-        from unittest.mock import patch
 
         # In the full suite, _init_registry() can fail due to sys.modules pollution.
         # Patch _registry_list_all_safe at the module level to ensure controlled behavior.

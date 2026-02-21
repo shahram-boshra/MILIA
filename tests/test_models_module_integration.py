@@ -36,6 +36,8 @@ import torch.nn as nn
 import yaml
 from torch_geometric.data import Data, Dataset
 
+from milia_pipeline.exceptions import ModelError
+
 # Factory components
 from milia_pipeline.models.factory.model_factory import (
     ModelFactory,
@@ -74,8 +76,6 @@ from milia_pipeline.models.utils.pyg_integration import (
     to_device,
     validate_pyg_data,
 )
-
-from milia_pipeline.exceptions import ModelError
 
 # =============================================================================
 # TEST FIXTURES - MOCK MODELS

@@ -1630,6 +1630,7 @@ class TestProtocolMethodInvocation:
         backend = compliant_backend_class()
 
         mock_study = MagicMock()
+
         def mock_objective(trial):
             return 0.5
 

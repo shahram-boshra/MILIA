@@ -984,7 +984,7 @@ class TestJITCompilation:
             patch.object(torch.jit, "script", return_value=mock_scripted) as mock_script,
             patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_scripted
-                ) as mock_optimize,
+            ) as mock_optimize,
         ):
             _result = optimizer.jit_script_model(simple_model)
 
@@ -1003,7 +1003,7 @@ class TestJITCompilation:
             patch.object(torch.jit, "trace", return_value=mock_traced) as mock_trace,
             patch.object(
                 torch.jit, "optimize_for_inference", return_value=mock_traced
-                ) as mock_optimize,
+            ) as mock_optimize,
         ):
             _result = optimizer.jit_script_model(simple_model, example_inputs=(sample_input,))
 
@@ -1833,9 +1833,7 @@ class TestGraphOptimization:
             patch.object(torch._C, "_jit_pass_peephole"),
             patch.object(torch._C, "_jit_pass_fuse") as mock_fuse,
         ):
-            _result = optimizer.optimize_graph(
-                mock_jit_script_module, optimization_level=2
-            )
+            _result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=2)
 
         mock_fuse.assert_called_once()
 
@@ -1850,9 +1848,7 @@ class TestGraphOptimization:
             patch.object(torch._C, "_jit_pass_fuse"),
             patch.object(torch._C, "_jit_pass_remove_mutation") as mock_remove,
         ):
-            _result = optimizer.optimize_graph(
-                mock_jit_script_module, optimization_level=3
-            )
+            _result = optimizer.optimize_graph(mock_jit_script_module, optimization_level=3)
 
         mock_remove.assert_called_once()
 
@@ -1886,7 +1882,8 @@ class TestGraphOptimization:
         optimizer = ComputationOptimizer(verbose=True, device=torch.device("cpu"))
 
         with (
-            caplog.at_level(logging.INFO), patch.object(torch._C, "_jit_pass_inline"),
+            caplog.at_level(logging.INFO),
+            patch.object(torch._C, "_jit_pass_inline"),
             patch.object(torch._C, "_jit_pass_constant_propagation"),
             patch.object(torch._C, "_jit_pass_peephole"),
         ):

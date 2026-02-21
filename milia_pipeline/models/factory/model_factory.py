@@ -902,7 +902,9 @@ class EdgeLevelModelWrapper(torch.nn.Module):
             model = object.__getattribute__(self, "model")
             return getattr(model, name)
         except AttributeError:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'") from None
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            ) from None
 
 
 # =============================================================================
@@ -967,9 +969,7 @@ class ModelValidator:
                 and param not in hyperparameters
                 and "default" not in spec
             ):
-                errors.append(
-                    f"Required parameter '{param}' is missing and has no default value"
-                )
+                errors.append(f"Required parameter '{param}' is missing and has no default value")
 
         # Validate provided parameters
         for param, value in hyperparameters.items():
@@ -1129,13 +1129,11 @@ class ModelValidator:
 
         # Check heterogeneous graph support
         if (
-            (hasattr(data, "node_type") or hasattr(data, "edge_type"))
-            and not metadata.supports_heterogeneous
-        ):
+            hasattr(data, "node_type") or hasattr(data, "edge_type")
+        ) and not metadata.supports_heterogeneous:
             # This is a heterogeneous graph
             errors.append(
-                "Model does not support heterogeneous graphs, "
-                "but data appears to be heterogeneous"
+                "Model does not support heterogeneous graphs, but data appears to be heterogeneous"
             )
 
         if errors:
@@ -2057,17 +2055,20 @@ class ModelFactory:
             and actual_model.hidden_channels is not None
             and (
                 "hidden_channels" not in processed_hyperparams
-                or processed_hyperparams.get("hidden_channels")
-                != actual_model.hidden_channels
+                or processed_hyperparams.get("hidden_channels") != actual_model.hidden_channels
             )
         ):
             processed_hyperparams["hidden_channels"] = actual_model.hidden_channels
             extracted_params["hidden_channels"] = actual_model.hidden_channels
 
         # Extract num_layers if available
-        if hasattr(actual_model, "num_layers") and actual_model.num_layers is not None and (
-            "num_layers" not in processed_hyperparams
-            or processed_hyperparams.get("num_layers") != actual_model.num_layers
+        if (
+            hasattr(actual_model, "num_layers")
+            and actual_model.num_layers is not None
+            and (
+                "num_layers" not in processed_hyperparams
+                or processed_hyperparams.get("num_layers") != actual_model.num_layers
+            )
         ):
             processed_hyperparams["num_layers"] = actual_model.num_layers
             extracted_params["num_layers"] = actual_model.num_layers
@@ -2540,7 +2541,9 @@ class ModelFactory:
         try:
             model = composer.build()
         except Exception as e:
-            raise ModelInstantiationError(f"Failed to build ensemble: {e}", model_name="ensemble") from e
+            raise ModelInstantiationError(
+                f"Failed to build ensemble: {e}", model_name="ensemble"
+            ) from e
 
         # =====================================================================
         # WRAP ENSEMBLE FOR GRAPH-LEVEL TASKS

@@ -132,11 +132,7 @@ class RMD17DatasetHandler(DatasetHandler):
 
             # Validate energy (rMD17 energies are in Hartree after preprocessing)
             energy = raw_properties_dict.get("energies")
-            if (
-                energy is not None
-                and isinstance(energy, (int, float, np.number))
-                and energy > 0
-            ):
+            if energy is not None and isinstance(energy, (int, float, np.number)) and energy > 0:
                 # rMD17 energies should be negative (total molecular energy)
                 self.logger.warning(
                     f"rMD17 molecule {molecule_index} has positive energy: {energy}"

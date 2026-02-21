@@ -296,17 +296,19 @@ class DescriptorValidator:
                 )
 
         # Check selected_descriptors if present
-        if "selected_descriptors" in config:
-            if not isinstance(config["selected_descriptors"], (dict, list)):
-                errors.append("'selected_descriptors' must be dict or list")
+        if "selected_descriptors" in config and not isinstance(
+            config["selected_descriptors"], (dict, list)
+        ):
+            errors.append("'selected_descriptors' must be dict or list")
 
         # Check computation settings
         if "computation" in config:
             comp_config = config["computation"]
 
-            if "batch_size" in comp_config:
-                if not isinstance(comp_config["batch_size"], int) or comp_config["batch_size"] <= 0:
-                    errors.append("'batch_size' must be positive integer")
+            if "batch_size" in comp_config and (
+                not isinstance(comp_config["batch_size"], int) or comp_config["batch_size"] <= 0
+            ):
+                errors.append("'batch_size' must be positive integer")
 
         # Check plugin settings
         if "plugins" in config:

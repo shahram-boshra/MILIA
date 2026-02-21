@@ -3242,7 +3242,7 @@ class TestEnsure3DConformerForPrediction:
             patch(
                 "milia_pipeline.models.post_training.data_preparation.data_converter._requires_3d_conformer",
                 return_value=True,
-                ),
+            ),
         ):
             # This will attempt to import rdkit and fail
             # The function should catch this and return False gracefully
@@ -3307,9 +3307,7 @@ class TestEnsure3DConformerForPrediction:
             patch.object(AllChem, "MMFFOptimizeMolecule", side_effect=Exception("MMFF failed")),
             patch.object(AllChem, "UFFOptimizeMolecule", side_effect=Exception("UFF failed")),
         ):
-            result = _ensure_3d_conformer_for_prediction(
-                mol, structural_features_config_with_3d
-            )
+            result = _ensure_3d_conformer_for_prediction(mol, structural_features_config_with_3d)
             # Should still succeed with unoptimized conformer
             assert result is True
             assert mol.GetNumConformers() > 0
@@ -3367,9 +3365,7 @@ class TestEnsure3DConformerForPrediction:
             patch.object(AllChem, "EmbedMolecule", side_effect=mock_embed),
             caplog.at_level(logging.DEBUG),
         ):
-            _result = _ensure_3d_conformer_for_prediction(
-                mol, structural_features_config_with_3d
-            )
+            _result = _ensure_3d_conformer_for_prediction(mol, structural_features_config_with_3d)
 
         # Should have attempted twice (initial + random coords fallback)
         assert call_count[0] == 2
@@ -3390,9 +3386,7 @@ class TestEnsure3DConformerForPrediction:
             patch.object(AllChem, "ETKDGv3", side_effect=RuntimeError("Unexpected error")),
             caplog.at_level(logging.WARNING),
         ):
-            result = _ensure_3d_conformer_for_prediction(
-                mol, structural_features_config_with_3d
-            )
+            result = _ensure_3d_conformer_for_prediction(mol, structural_features_config_with_3d)
 
         assert result is False
         # Should log a warning
@@ -3729,7 +3723,9 @@ class TestSMILESConverterStructuralFeatures:
     ):
         """Test logs featurization info when structural_features_config provided."""
         with caplog.at_level(logging.INFO):
-            _converter = SMILESConverter(structural_features_config=structural_features_config_basic)
+            _converter = SMILESConverter(
+                structural_features_config=structural_features_config_basic
+            )
 
         assert any(
             "SMILESConverter using checkpoint featurization" in record.message

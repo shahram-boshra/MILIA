@@ -323,10 +323,13 @@ def _extract_molecule_features(
             features["total_energy_Hartree"] = np.nan
 
     # COMPLETE TIER: Number of shells
-    if feature_tier == "complete":
-        if hasattr(mol_data, "obasis") and mol_data.obasis is not None:
-            if hasattr(mol_data.obasis, "nbasis"):
-                features["n_shells"] = int(mol_data.obasis.nbasis)
+    if (
+        feature_tier == "complete"
+        and hasattr(mol_data, "obasis")
+        and mol_data.obasis is not None
+        and hasattr(mol_data.obasis, "nbasis")
+    ):
+        features["n_shells"] = int(mol_data.obasis.nbasis)
 
     # Standard and complete tier features
     if feature_tier in ["standard", "complete"]:
@@ -335,32 +338,31 @@ def _extract_molecule_features(
         features["molecular_weight"] = _get_molecular_weight(mol_data.atnums)
 
     # Complete tier: derived quantum descriptors
-    if feature_tier == "complete":
-        if "homo_energy_eV" in features and "lumo_energy_eV" in features:
-            homo = features["homo_energy_eV"]
-            lumo = features["lumo_energy_eV"]
+    if feature_tier == "complete" and "homo_energy_eV" in features and "lumo_energy_eV" in features:
+        homo = features["homo_energy_eV"]
+        lumo = features["lumo_energy_eV"]
 
-            # Ionization potential ≈ -HOMO
-            features["ionization_potential_eV"] = -homo
+        # Ionization potential ≈ -HOMO
+        features["ionization_potential_eV"] = -homo
 
-            # Electron affinity ≈ -LUMO
-            features["electron_affinity_eV"] = -lumo
+        # Electron affinity ≈ -LUMO
+        features["electron_affinity_eV"] = -lumo
 
-            # Chemical hardness = (IP - EA) / 2
-            features["chemical_hardness_eV"] = (
-                features["ionization_potential_eV"] - features["electron_affinity_eV"]
-            ) / 2.0
+        # Chemical hardness = (IP - EA) / 2
+        features["chemical_hardness_eV"] = (
+            features["ionization_potential_eV"] - features["electron_affinity_eV"]
+        ) / 2.0
 
-            # Chemical potential = -(IP + EA) / 2
-            features["chemical_potential_eV"] = (
-                -(features["ionization_potential_eV"] + features["electron_affinity_eV"]) / 2.0
+        # Chemical potential = -(IP + EA) / 2
+        features["chemical_potential_eV"] = (
+            -(features["ionization_potential_eV"] + features["electron_affinity_eV"]) / 2.0
+        )
+
+        # Electrophilicity index = μ²/(2η)
+        if features["chemical_hardness_eV"] != 0:
+            features["electrophilicity_eV"] = features["chemical_potential_eV"] ** 2 / (
+                2 * features["chemical_hardness_eV"]
             )
-
-            # Electrophilicity index = μ²/(2η)
-            if features["chemical_hardness_eV"] != 0:
-                features["electrophilicity_eV"] = features["chemical_potential_eV"] ** 2 / (
-                    2 * features["chemical_hardness_eV"]
-                )
 
     return features
 

@@ -161,9 +161,7 @@ except ImportError:
 import importlib.util
 
 _MODEL_LOADER_AVAILABLE = (
-    importlib.util.find_spec(
-        "milia_pipeline.models.post_training.inference.model_loader"
-    )
+    importlib.util.find_spec("milia_pipeline.models.post_training.inference.model_loader")
     is not None
 )
 

@@ -2665,9 +2665,7 @@ class MoleculeDataConverter:
                 self.logger.debug(
                     f"Converting edge_attr from {type(enhanced_data.edge_attr)} to tensor for molecule {current_mol_index}"
                 )
-                enhanced_data.edge_attr = torch.tensor(
-                    enhanced_data.edge_attr, dtype=torch.float32
-                )
+                enhanced_data.edge_attr = torch.tensor(enhanced_data.edge_attr, dtype=torch.float32)
 
             # Log feature extraction summary
             if hasattr(enhanced_data, "x") and enhanced_data.x is not None:
@@ -2854,8 +2852,7 @@ class MoleculeDataConverter:
             if hasattr(pyg_data, "y") and pyg_data.y is not None:
                 y_values = pyg_data.y
                 if isinstance(y_values, torch.Tensor) and (
-                    torch.any(torch.isnan(y_values))
-                    or torch.any(torch.isinf(y_values))
+                    torch.any(torch.isnan(y_values)) or torch.any(torch.isinf(y_values))
                 ):
                     raise PyGDataCreationError(
                         message=f"NaN or Inf values in {self._dataset_config.dataset_type} target tensor",

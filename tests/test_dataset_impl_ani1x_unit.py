@@ -975,10 +975,9 @@ class TestANI1xDatasetModuleImportsAndExports(unittest.TestCase):
             # Class-level (but not inside methods) — check direct children of ClassDef
             elif isinstance(node, ast.ClassDef):
                 for class_child in ast.iter_child_nodes(node):
-                    if isinstance(class_child, (ast.Import, ast.ImportFrom)):
-                        if isinstance(class_child, ast.ImportFrom) and class_child.names:
-                            for alias in class_child.names:
-                                module_level_import_names.append(alias.name)
+                    if isinstance(class_child, ast.ImportFrom) and class_child.names:
+                        for alias in class_child.names:
+                            module_level_import_names.append(alias.name)
 
         self.assertNotIn(
             "ANI1xDatasetHandler",

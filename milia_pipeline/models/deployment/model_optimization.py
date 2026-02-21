@@ -551,7 +551,8 @@ class ModelOptimizer:
         # Users should implement their own student model creation
         warnings.warn(
             "create_student_model is a placeholder. "
-            "Implement custom student model based on your architecture.", stacklevel=2
+            "Implement custom student model based on your architecture.",
+            stacklevel=2,
         )
 
         # Return a copy for now

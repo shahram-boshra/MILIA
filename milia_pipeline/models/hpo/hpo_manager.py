@@ -2204,7 +2204,9 @@ class HPOManager:
             saved_paths["trials_path"] = trials_path
             logger.info(f"All trials saved: {trials_path}")
         except Exception as e:
-            raise HPOError(f"Failed to save trials: {e}", details=f"Target path: {trials_path}") from e
+            raise HPOError(
+                f"Failed to save trials: {e}", details=f"Target path: {trials_path}"
+            ) from e
 
         return saved_paths
 

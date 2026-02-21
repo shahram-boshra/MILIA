@@ -1077,13 +1077,13 @@ class TestDebuggingDiagnostics:
                             patch(
                                 "milia_pipeline.config.config_constants.get_supported_handler_types",
                                 return_value=["DFT", "DMC"],
-                                ),
+                            ),
                             patch.object(
                                 config_constants,
                                 "_dataset_constants",
                                 ("file.npz", "url", "/dir"),
                                 create=True,
-                                ),
+                            ),
                         ):
                             info = config_constants.get_complete_constants_debug_info()
 
@@ -1481,7 +1481,7 @@ class TestRegistryWrappers:
                 patch(
                     "milia_pipeline.config.config_constants._discover_dataset_types_from_filesystem",
                     return_value=["DFT", "QM9"],
-                    ),
+                ),
             ):
                 result = config_constants.registry_list_all()
                 assert result == ["DFT", "QM9"]
@@ -1515,7 +1515,7 @@ class TestRegistryWrappers:
                 patch("milia_pipeline.config.config_constants._init_registry", return_value=False),
                 patch(
                     "milia_pipeline.config.config_constants.registry_list_all", return_value=["DFT"]
-                    ),
+                ),
                 pytest.raises(HandlerNotAvailableError),
             ):
                 config_constants.registry_get("TestDataset")
@@ -1548,7 +1548,7 @@ class TestRegistryWrappers:
                 patch(
                     "milia_pipeline.config.config_constants.registry_list_all",
                     return_value=["DFT", "DMC"],
-                    ),
+                ),
             ):
                 assert config_constants.registry_is_registered("DFT") is True
                 assert config_constants.registry_is_registered("UNKNOWN") is False
@@ -1616,7 +1616,7 @@ class TestCacheInvalidation:
             patch(
                 "milia_pipeline.config.config_constants.get_default_registry",
                 return_value=mock_registry,
-                ),
+            ),
         ):
             _result = config_constants._setup_registry_cache_invalidation()
 
@@ -1652,7 +1652,7 @@ class TestDynamicHandlerFunctions:
             patch(
                 "milia_pipeline.config.config_constants.registry_list_all",
                 return_value=["DFT", "DMC", "QM9"],
-                ),
+            ),
         ):
             result = config_constants.get_supported_handler_types()
             assert "DFT" in result
@@ -1666,7 +1666,7 @@ class TestDynamicHandlerFunctions:
             patch(
                 "milia_pipeline.config.config_constants._discover_dataset_types_from_filesystem",
                 return_value=["DFT", "QM9"],
-                ),
+            ),
         ):
             result = config_constants.get_supported_handler_types()
             assert isinstance(result, list)
@@ -1685,7 +1685,7 @@ class TestDynamicHandlerFunctions:
             patch(
                 "milia_pipeline.config.config_constants.registry_is_registered",
                 return_value=True,
-                ),
+            ),
         ):
             result = config_constants.is_handler_type_supported("DFT")
             assert result is True
@@ -1698,7 +1698,7 @@ class TestDynamicHandlerFunctions:
             patch(
                 "milia_pipeline.config.config_constants.registry_is_registered",
                 return_value=False,
-                ),
+            ),
         ):
             result = config_constants.is_handler_type_supported("INVALID")
             assert result is False

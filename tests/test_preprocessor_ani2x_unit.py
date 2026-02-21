@@ -1541,7 +1541,8 @@ class TestGetH5Path(unittest.TestCase):
         archive_path = Path("/data/raw/ANI-2x-wB97X-631Gd.tar.gz")
 
         with (
-            patch("tarfile.open", return_value=mock_tar), patch("pathlib.Path.mkdir"),
+            patch("tarfile.open", return_value=mock_tar),
+            patch("pathlib.Path.mkdir"),
             self.assertRaises(DataProcessingError) as ctx,
         ):
             preprocessor._get_h5_path(archive_path)

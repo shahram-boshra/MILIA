@@ -152,14 +152,8 @@ class XXMDDatasetHandler(DatasetHandler):
 
             # Validate energy (xxMD energies are typically negative in Hartree after conversion)
             energy = raw_properties_dict.get("energy")
-            if (
-                energy is not None
-                and isinstance(energy, (int, float, np.number))
-                and energy > 0
-            ):
-                self.logger.warning(
-                    f"xxMD molecule {molecule_index} has positive energy: {energy}"
-                )
+            if energy is not None and isinstance(energy, (int, float, np.number)) and energy > 0:
+                self.logger.warning(f"xxMD molecule {molecule_index} has positive energy: {energy}")
 
         except (HandlerError, DatasetSpecificHandlerError):
             # Re-raise handler-specific errors

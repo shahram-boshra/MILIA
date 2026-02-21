@@ -34,7 +34,9 @@ try:
     CONFIG_LOADER_AVAILABLE = True
 except ImportError:
     CONFIG_LOADER_AVAILABLE = False
-    warnings.warn("config_loader not available - using fallback YAML loading", UserWarning, stacklevel=2)
+    warnings.warn(
+        "config_loader not available - using fallback YAML loading", UserWarning, stacklevel=2
+    )
     import yaml
 
     def load_config(config_path: Path | None = None) -> dict[str, Any]:
@@ -267,7 +269,9 @@ class DataSplitConfig(BaseModel):
             DataSplitMethod(v)
         except ValueError:
             valid_methods = [m.value for m in DataSplitMethod]
-            raise ValueError(f"Invalid split method '{v}'. Must be one of: {valid_methods}") from None
+            raise ValueError(
+                f"Invalid split method '{v}'. Must be one of: {valid_methods}"
+            ) from None
         return v
 
     @model_validator(mode="after")
@@ -300,7 +304,9 @@ class LossConfig(BaseModel):
             LossFunction(v)
         except ValueError:
             valid_losses = [loss.value for loss in LossFunction]
-            raise ValueError(f"Invalid loss function '{v}'. Must be one of: {valid_losses}") from None
+            raise ValueError(
+                f"Invalid loss function '{v}'. Must be one of: {valid_losses}"
+            ) from None
         return v
 
     def validate(self):
@@ -322,7 +328,9 @@ class OptimizerConfig(BaseModel):
             OptimizerType(v)
         except ValueError:
             valid_optimizers = [o.value for o in OptimizerType]
-            raise ValueError(f"Invalid optimizer '{v}'. Must be one of: {valid_optimizers}") from None
+            raise ValueError(
+                f"Invalid optimizer '{v}'. Must be one of: {valid_optimizers}"
+            ) from None
         return v
 
     @model_validator(mode="after")
@@ -452,7 +460,9 @@ class DeviceConfig(BaseModel):
             DeviceType(v)
         except ValueError:
             valid_devices = [d.value for d in DeviceType]
-            raise ValueError(f"Invalid device type '{v}'. Must be one of: {valid_devices}") from None
+            raise ValueError(
+                f"Invalid device type '{v}'. Must be one of: {valid_devices}"
+            ) from None
         return v
 
     def validate(self):
@@ -535,7 +545,9 @@ class MemoryConfig(BaseModel):
             MixedPrecision(v)
         except ValueError:
             valid_precision = [m.value for m in MixedPrecision]
-            raise ValueError(f"Invalid mixed precision '{v}'. Must be one of: {valid_precision}") from None
+            raise ValueError(
+                f"Invalid mixed precision '{v}'. Must be one of: {valid_precision}"
+            ) from None
         return v
 
     def validate(self):

@@ -691,8 +691,10 @@ class TestEdgeCases:
 
     def test_register_same_descriptor_twice_plugin(self, sample_function):
         """Test registering same descriptor name from different plugins (override)."""
+
         def func1(m):
             return 1.0
+
         def func2(m):
             return 2.0
 

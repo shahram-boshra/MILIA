@@ -1998,10 +1998,14 @@ class MoleculeFilter:
 
         # PHASE 6: Check dataset configuration compatibility using feature query
         # instead of hardcoded if self.dataset_config.dataset_type == "DMC"
-        if self.dataset_config and self.filter_config and (
-            _get_dataset_feature(self.dataset_config.dataset_type, "uncertainty_handling")
-            and self.dataset_config.is_uncertainty_enabled
-            and not self.filter_config.dmc_uncertainty_filter
+        if (
+            self.dataset_config
+            and self.filter_config
+            and (
+                _get_dataset_feature(self.dataset_config.dataset_type, "uncertainty_handling")
+                and self.dataset_config.is_uncertainty_enabled
+                and not self.filter_config.dmc_uncertainty_filter
+            )
         ):
             validation_result["warnings"].append(
                 f"{self.dataset_config.dataset_type} dataset with uncertainty enabled but "

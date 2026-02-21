@@ -198,9 +198,7 @@ class DataSplitter:
         if label_getter is None:
             # Default: assume data.y is label
             def label_getter(data):
-                return (
-                            data.y.item() if data.y.dim() == 0 else data.y.argmax().item()
-                        )
+                return data.y.item() if data.y.dim() == 0 else data.y.argmax().item()
 
         try:
             labels = [label_getter(dataset[i]) for i in range(len(dataset))]
@@ -282,6 +280,7 @@ class DataSplitter:
 
         # Extract timestamps
         if time_getter is None:
+
             def time_getter(data):
                 return getattr(data, time_field)
 
@@ -365,7 +364,9 @@ class DataSplitter:
         try:
             from rdkit.Chem.Scaffolds import MurckoScaffold
         except ImportError:
-            raise DataError("scaffold_split requires rdkit. Install with: pip install rdkit") from None
+            raise DataError(
+                "scaffold_split requires rdkit. Install with: pip install rdkit"
+            ) from None
 
         # Validation
         if abs(train_ratio + val_ratio + test_ratio - 1.0) > 1e-6:
@@ -380,6 +381,7 @@ class DataSplitter:
 
         # Extract molecules and generate scaffolds
         if mol_getter is None:
+
             def mol_getter(data):
                 return data.mol
 

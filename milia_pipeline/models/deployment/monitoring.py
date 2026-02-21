@@ -318,17 +318,20 @@ class ModelMonitor:
             self._check_for_anomalies()
 
         # Drift detection
-        if self.config.enable_drift_detection and self.reference_data is not None:
-            if self.total_predictions % 100 == 0:  # Check every 100 predictions
-                drift_score = self._calculate_drift(input_data)
-                if drift_score > self.config.drift_threshold:
-                    self._trigger_alert(
-                        severity=AlertSeverity.WARNING,
-                        message=f"Data drift detected (score: {drift_score:.4f})",
-                        metric_type="drift",
-                        metric_value=drift_score,
-                        threshold=self.config.drift_threshold,
-                    )
+        if (
+            self.config.enable_drift_detection
+            and self.reference_data is not None
+            and self.total_predictions % 100 == 0  # Check every 100 predictions
+        ):
+            drift_score = self._calculate_drift(input_data)
+            if drift_score > self.config.drift_threshold:
+                self._trigger_alert(
+                    severity=AlertSeverity.WARNING,
+                    message=f"Data drift detected (score: {drift_score:.4f})",
+                    metric_type="drift",
+                    metric_value=drift_score,
+                    threshold=self.config.drift_threshold,
+                )
 
     def log_error(self, error: Exception, metadata: dict[str, Any] | None = None):
         """

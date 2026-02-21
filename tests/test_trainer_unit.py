@@ -3979,10 +3979,7 @@ class TestBoundaryConditions:
             trainer.fit()
 
             # Should log at most once per epoch (controlled by log_every_n_steps)
-            batch_logs = [
-                msg for msg in caplog.messages
-                if "Batch" in msg and "Loss" in msg
-            ]
+            batch_logs = [msg for msg in caplog.messages if "Batch" in msg and "Loss" in msg]
             assert len(batch_logs) <= 1
 
     def test_accumulate_grad_batches_equals_one(

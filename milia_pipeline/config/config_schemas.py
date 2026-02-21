@@ -2055,9 +2055,7 @@ class DescriptorSchemaValidator:
                 )
 
             # Validate enabled field
-            if "enabled" in category_config and not isinstance(
-                category_config["enabled"], bool
-            ):
+            if "enabled" in category_config and not isinstance(category_config["enabled"], bool):
                 result["errors"].append(f"Category '{category_name}': enabled must be boolean")
 
             # Validate descriptors list
@@ -2078,12 +2076,8 @@ class DescriptorSchemaValidator:
                         )
 
             # Validate options
-            if "options" in category_config and not isinstance(
-                category_config["options"], dict
-            ):
-                result["errors"].append(
-                    f"Category '{category_name}': options must be a dictionary"
-                )
+            if "options" in category_config and not isinstance(category_config["options"], dict):
+                result["errors"].append(f"Category '{category_name}': options must be a dictionary")
 
             # Strict mode validations
             if (

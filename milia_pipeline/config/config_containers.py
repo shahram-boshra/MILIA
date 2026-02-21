@@ -548,9 +548,7 @@ class FilterConfig(BaseModel, frozen=True):
             and self.min_atoms is not None
             and self.max_atoms < self.min_atoms
         ):
-            errors.append(
-                f"max_atoms ({self.max_atoms}) must be >= min_atoms ({self.min_atoms})"
-            )
+            errors.append(f"max_atoms ({self.max_atoms}) must be >= min_atoms ({self.min_atoms})")
 
         if self.min_atoms is not None and self.min_atoms <= 0:
             errors.append(f"min_atoms must be positive, got {self.min_atoms}")

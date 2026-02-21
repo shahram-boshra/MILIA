@@ -939,7 +939,9 @@ class TestTransformComposerEdgeAttrIntegration:
 
             try:
                 # Call with sample_data parameter
-                _compose = composer.compose_transforms(configs, sample_data=mock_data_with_edge_attr)
+                _compose = composer.compose_transforms(
+                    configs, sample_data=mock_data_with_edge_attr
+                )
                 # Injection should have occurred
                 assert composer._edge_attr_injector.has_edge_attr is True
             except Exception:
@@ -1567,7 +1569,11 @@ class TestValidationLevelsAndScopes:
         gt = GraphTransforms()
 
         # Test with each validation level
-        for _level in [ValidationLevel.STRICT, ValidationLevel.STANDARD, ValidationLevel.PERMISSIVE]:
+        for _level in [
+            ValidationLevel.STRICT,
+            ValidationLevel.STANDARD,
+            ValidationLevel.PERMISSIVE,
+        ]:
             result = gt.validate_config(sample_transform_configs)
             assert isinstance(result, dict)
             assert "valid" in result

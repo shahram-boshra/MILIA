@@ -421,54 +421,54 @@ class Trainer:
         try:
             for batch_idx, batch in enumerate(self.train_loader):
                 logger.debug(f"[DIAGNOSTIC] _train_epoch: Processing batch {batch_idx}")
-            try:
-                # Move batch to device
-                logger.debug("[DIAGNOSTIC] _train_epoch: Moving batch to device")
-                batch = batch.to(self.device)
-                logger.debug(
-                    "[DIAGNOSTIC] _train_epoch: Batch moved to device, calling _forward_pass"
-                )
-
-                # Forward pass
-                out = self._forward_pass(batch)
-                # Get appropriate target based on task type
-                target = self._get_target(batch)
-                loss = self.loss_fn(out, target)
-
-                # Scale loss for gradient accumulation
-                loss = loss / self.accumulate_grad_batches
-
-                # Backward pass
-                loss.backward()
-
-                # Gradient accumulation
-                if (batch_idx + 1) % self.accumulate_grad_batches == 0:
-                    # Gradient clipping
-                    if self.gradient_clip_val is not None:
-                        torch.nn.utils.clip_grad_norm_(
-                            self.model.parameters(), self.gradient_clip_val
-                        )
-
-                    # Optimizer step
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
-
-                # Track metrics
-                epoch_loss += loss.item() * self.accumulate_grad_batches
-                num_batches += 1
-                self.global_step += 1
-
-                # Logging
-                if batch_idx % self.log_every_n_steps == 0:
+                try:
+                    # Move batch to device
+                    logger.debug("[DIAGNOSTIC] _train_epoch: Moving batch to device")
+                    batch = batch.to(self.device)
                     logger.debug(
-                        f"Epoch {self.current_epoch} | "
-                        f"Batch {batch_idx}/{len(self.train_loader)} | "
-                        f"Loss: {loss.item() * self.accumulate_grad_batches:.6f}"
+                        "[DIAGNOSTIC] _train_epoch: Batch moved to device, calling _forward_pass"
                     )
 
-            except Exception as e:
-                logger.error(f"Error in training batch {batch_idx}: {e}")
-                raise TrainingError(f"Training batch failed: {e}") from e
+                    # Forward pass
+                    out = self._forward_pass(batch)
+                    # Get appropriate target based on task type
+                    target = self._get_target(batch)
+                    loss = self.loss_fn(out, target)
+
+                    # Scale loss for gradient accumulation
+                    loss = loss / self.accumulate_grad_batches
+
+                    # Backward pass
+                    loss.backward()
+
+                    # Gradient accumulation
+                    if (batch_idx + 1) % self.accumulate_grad_batches == 0:
+                        # Gradient clipping
+                        if self.gradient_clip_val is not None:
+                            torch.nn.utils.clip_grad_norm_(
+                                self.model.parameters(), self.gradient_clip_val
+                            )
+
+                        # Optimizer step
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+
+                    # Track metrics
+                    epoch_loss += loss.item() * self.accumulate_grad_batches
+                    num_batches += 1
+                    self.global_step += 1
+
+                    # Logging
+                    if batch_idx % self.log_every_n_steps == 0:
+                        logger.debug(
+                            f"Epoch {self.current_epoch} | "
+                            f"Batch {batch_idx}/{len(self.train_loader)} | "
+                            f"Loss: {loss.item() * self.accumulate_grad_batches:.6f}"
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error in training batch {batch_idx}: {e}")
+                    raise TrainingError(f"Training batch failed: {e}") from e
         except Exception as dataloader_error:
             # Catch errors that happen during DataLoader iteration (collation, etc.)
             import traceback
@@ -1398,12 +1398,16 @@ class Trainer:
 
             # For classification: target should already be [batch_size] with class indices
             # Log for debugging if classification task detected
-            if self._is_classification_task and self._is_graph_level_task():
-                if target is not None and hasattr(batch, "num_graphs"):
-                    logger.debug(
-                        f"Classification task: target shape [{target.size(0)}] "
-                        f"(class indices for {batch.num_graphs} graphs, no reshape needed)"
-                    )
+            if (
+                self._is_classification_task
+                and self._is_graph_level_task()
+                and target is not None
+                and hasattr(batch, "num_graphs")
+            ):
+                logger.debug(
+                    f"Classification task: target shape [{target.size(0)}] "
+                    f"(class indices for {batch.num_graphs} graphs, no reshape needed)"
+                )
 
             return target
 

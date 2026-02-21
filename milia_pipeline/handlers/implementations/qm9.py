@@ -115,9 +115,7 @@ class QM9DatasetHandler(DatasetHandler):
             # Validate energy ranges (QM9 energies typically negative in Hartree)
             u0 = raw_properties_dict.get("U0")
             if u0 is not None and isinstance(u0, (int, float, np.number)) and u0 > 0:
-                self.logger.warning(
-                    f"QM9 molecule {molecule_index} has positive U0 energy: {u0}"
-                )
+                self.logger.warning(f"QM9 molecule {molecule_index} has positive U0 energy: {u0}")
 
         except (HandlerError, DatasetSpecificHandlerError):
             # Re-raise handler-specific errors
@@ -240,23 +238,13 @@ class QM9DatasetHandler(DatasetHandler):
         """Process QM9-specific property values with exception handling."""
         try:
             # Handle vibrational frequencies
-            if (
-                key == "freqs"
-                and value is not None
-                and not is_value_valid_and_not_nan(value)
-            ):
+            if key == "freqs" and value is not None and not is_value_valid_and_not_nan(value):
                 self.logger.warning(f"QM9 molecule {molecule_index} has invalid frequency data")
                 return None
 
             # Handle Mulliken charges
-            if (
-                key == "Qmulliken"
-                and value is not None
-                and not is_value_valid_and_not_nan(value)
-            ):
-                self.logger.warning(
-                    f"QM9 molecule {molecule_index} has invalid Mulliken charges"
-                )
+            if key == "Qmulliken" and value is not None and not is_value_valid_and_not_nan(value):
+                self.logger.warning(f"QM9 molecule {molecule_index} has invalid Mulliken charges")
                 return None
 
             # Handle rotational constants (A, B, C)

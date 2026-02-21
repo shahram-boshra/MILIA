@@ -1026,8 +1026,10 @@ class TestIsolatedRegistry:
         """Removing a callback prevents it from being called."""
         reg = DatasetRegistry()
         called = []
+
         def cb():
             return called.append(True)
+
         reg.add_on_change_callback(cb)
         reg.remove_on_change_callback(cb)
 

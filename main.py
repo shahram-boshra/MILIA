@@ -2540,21 +2540,21 @@ def print_dataset_info(
     # PHASE 7: Feature-based uncertainty display
     # ================================================================
     # Display uncertainty info for ANY dataset with uncertainty_handling feature
-    if _get_dataset_feature(dataset_config.dataset_type, "uncertainty_handling"):
-        if dataset_config.is_uncertainty_enabled:
-            uncertainty_config = dataset_config.uncertainty_config
-            logger.info(f"\n{dataset_config.dataset_type} Uncertainty Configuration:")
-            logger.info(f"  Field name: {uncertainty_config.get('uncertainty_field_name', 'std')}")
-            logger.info(
-                f"  Loss weighting: {uncertainty_config.get('use_for_loss_weighting', False)}"
-            )
-            logger.info(
-                f"  Weighting strategy: {uncertainty_config.get('uncertainty_weighting', 'inverse_variance')}"
-            )
+    if (
+        _get_dataset_feature(dataset_config.dataset_type, "uncertainty_handling")
+        and dataset_config.is_uncertainty_enabled
+    ):
+        uncertainty_config = dataset_config.uncertainty_config
+        logger.info(f"\n{dataset_config.dataset_type} Uncertainty Configuration:")
+        logger.info(f"  Field name: {uncertainty_config.get('uncertainty_field_name', 'std')}")
+        logger.info(f"  Loss weighting: {uncertainty_config.get('use_for_loss_weighting', False)}")
+        logger.info(
+            f"  Weighting strategy: {uncertainty_config.get('uncertainty_weighting', 'inverse_variance')}"
+        )
 
-            max_uncertainty = uncertainty_config.get("max_uncertainty_threshold")
-            if max_uncertainty is not None:
-                logger.info(f"  Max uncertainty threshold: {max_uncertainty}")
+        max_uncertainty = uncertainty_config.get("max_uncertainty_threshold")
+        if max_uncertainty is not None:
+            logger.info(f"  Max uncertainty threshold: {max_uncertainty}")
 
     logger.info("=" * 60)
 
@@ -2648,10 +2648,13 @@ def analyze_dataset_statistics(
             # PHASE 7: Feature-based uncertainty statistics
             # ================================================================
             # Collect uncertainty for ANY dataset with uncertainty_handling feature
-            if _get_dataset_feature(dataset_config.dataset_type, "uncertainty_handling"):
-                if hasattr(data, "uncertainty") and data.uncertainty is not None:
-                    has_uncertainty += 1
-                    uncertainty_values.append(data.uncertainty.item())
+            if (
+                _get_dataset_feature(dataset_config.dataset_type, "uncertainty_handling")
+                and hasattr(data, "uncertainty")
+                and data.uncertainty is not None
+            ):
+                has_uncertainty += 1
+                uncertainty_values.append(data.uncertainty.item())
 
         except Exception as e:
             logger.warning(f"Error analyzing molecule {i}: {e}")
@@ -2799,9 +2802,12 @@ def dataset_access_test(
                 return False
 
             # Dataset-specific validation using container
-            if dataset_config.dataset_type == "DMC" and dataset_config.is_uncertainty_enabled:
-                if not hasattr(data, "uncertainty"):
-                    logger.warning(f"Sample {i}: Missing uncertainty data for DMC dataset")
+            if (
+                dataset_config.dataset_type == "DMC"
+                and dataset_config.is_uncertainty_enabled
+                and not hasattr(data, "uncertainty")
+            ):
+                logger.warning(f"Sample {i}: Missing uncertainty data for DMC dataset")
 
             # Handler-Based Pattern Development ENHANCEMENT: Check for handler-generated attributes
             handler_attributes = ["handler_processed", "dataset_handler_type"]
@@ -3235,9 +3241,7 @@ def handle_predict_mode(
         include_inputs = getattr(args, "predict_include_inputs", False) or prediction_config.get(
             "include_inputs", False
         )
-        getattr(args, "predict_uncertainty", False) or prediction_config.get(
-            "uncertainty", False
-        )
+        getattr(args, "predict_uncertainty", False) or prediction_config.get("uncertainty", False)
 
         # Determine device
         if device_str == "auto":

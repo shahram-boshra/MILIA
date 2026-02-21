@@ -519,11 +519,8 @@ class StudyAnalyzer:
         method = method or self.config.importance_method
 
         try:
-            if method == ImportanceMethod.FANOVA:
-                evaluator = FanovaImportanceEvaluator()
-            else:
-                # MDI uses default evaluator
-                evaluator = None
+            # FANOVA uses dedicated evaluator; MDI uses default (None)
+            evaluator = FanovaImportanceEvaluator() if method == ImportanceMethod.FANOVA else None
 
             importance = get_param_importances(
                 self.study,

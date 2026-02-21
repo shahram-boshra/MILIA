@@ -188,12 +188,11 @@ class MockSearchSpaceParamConfig:
                     actual_value=f"low={self.low}, high={self.high}",
                 )
 
-        if self.type == MockParamType.CATEGORICAL:
-            if not self.choices or len(self.choices) == 0:
-                raise MockConfigurationError(
-                    "Categorical parameter requires non-empty 'choices' list",
-                    config_key="search_space",
-                )
+        if self.type == MockParamType.CATEGORICAL and (not self.choices or len(self.choices) == 0):
+            raise MockConfigurationError(
+                "Categorical parameter requires non-empty 'choices' list",
+                config_key="search_space",
+            )
 
         if self.type == MockParamType.DISCRETE_UNIFORM:
             if self.low is None or self.high is None:

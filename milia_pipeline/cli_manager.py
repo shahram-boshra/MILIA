@@ -434,9 +434,10 @@ def _get_dataset_input_format(dataset_type: str) -> str:
             dataset_class = _registry_get(dataset_type)
             if hasattr(dataset_class, "schema"):
                 return getattr(dataset_class.schema, "input_file_format", "npz")
-            if hasattr(dataset_class, "features"):
-                if getattr(dataset_class.features, "requires_archive_input", False):
-                    return "tar.gz"
+            if hasattr(dataset_class, "features") and getattr(
+                dataset_class.features, "requires_archive_input", False
+            ):
+                return "tar.gz"
         except Exception:
             pass
 
@@ -1861,12 +1862,14 @@ For more information, see: https://docs.example.com/milia-cli
             raise CLIValidationError(f"Invalid test limit: {args.test_limit}. Must be at least 1.")
 
         # Validate filter combinations
-        if args.min_atoms is not None and args.max_atoms is not None:
-            if args.min_atoms > args.max_atoms:
-                raise CLIValidationError(
-                    f"Invalid filter range: min_atoms ({args.min_atoms}) > "
-                    f"max_atoms ({args.max_atoms})"
-                )
+        if (
+            args.min_atoms is not None
+            and args.max_atoms is not None
+            and args.min_atoms > args.max_atoms
+        ):
+            raise CLIValidationError(
+                f"Invalid filter range: min_atoms ({args.min_atoms}) > max_atoms ({args.max_atoms})"
+            )
 
         # Validate mutually exclusive filter options
         if args.no_filters and any([args.max_atoms, args.min_atoms, args.max_uncertainty]):
@@ -1947,13 +1950,16 @@ For more information, see: https://docs.example.com/milia-cli
                     )
 
             # PHASE 7: Validate dataset type using registry
-            if hasattr(args, "preprocess_dataset") and args.preprocess_dataset:
-                if not _is_dataset_type_registered(args.preprocess_dataset):
-                    available_types = _get_available_dataset_types()
-                    raise CLIValidationError(
-                        f"Invalid preprocessing dataset type: {args.preprocess_dataset}. "
-                        f"Must be one of: {available_types}"
-                    )
+            if (
+                hasattr(args, "preprocess_dataset")
+                and args.preprocess_dataset
+                and not _is_dataset_type_registered(args.preprocess_dataset)
+            ):
+                available_types = _get_available_dataset_types()
+                raise CLIValidationError(
+                    f"Invalid preprocessing dataset type: {args.preprocess_dataset}. "
+                    f"Must be one of: {available_types}"
+                )
 
             # Validate input path if specified
             if hasattr(args, "preprocess_input") and args.preprocess_input:
@@ -1965,11 +1971,12 @@ For more information, see: https://docs.example.com/milia-cli
                 # PHASE 7: Feature-based input format validation
                 if _get_dataset_feature(args.preprocess_dataset, "requires_archive_input"):
                     expected_format = _get_dataset_input_format(args.preprocess_dataset)
-                    if expected_format == "tar.gz":
-                        if not (input_path.suffix == ".gz" and input_path.stem.endswith(".tar")):
-                            raise CLIValidationError(
-                                f"{args.preprocess_dataset} preprocessing requires .tar.gz file, got: {input_path.name}"
-                            )
+                    if expected_format == "tar.gz" and not (
+                        input_path.suffix == ".gz" and input_path.stem.endswith(".tar")
+                    ):
+                        raise CLIValidationError(
+                            f"{args.preprocess_dataset} preprocessing requires .tar.gz file, got: {input_path.name}"
+                        )
                     # Add more format checks as needed for future dataset types
 
             # Validate output path if specified
@@ -1993,11 +2000,14 @@ For more information, see: https://docs.example.com/milia-cli
                     )
 
             # Validate num_molecules if specified
-            if hasattr(args, "preprocess_num_molecules") and args.preprocess_num_molecules:
-                if args.preprocess_num_molecules < 1:
-                    raise CLIValidationError(
-                        f"preprocess_num_molecules must be >= 1, got: {args.preprocess_num_molecules}"
-                    )
+            if (
+                hasattr(args, "preprocess_num_molecules")
+                and args.preprocess_num_molecules
+                and args.preprocess_num_molecules < 1
+            ):
+                raise CLIValidationError(
+                    f"preprocess_num_molecules must be >= 1, got: {args.preprocess_num_molecules}"
+                )
 
             # Validate feature_tier if specified
             if hasattr(args, "preprocess_feature_tier") and args.preprocess_feature_tier:
@@ -2009,14 +2019,15 @@ For more information, see: https://docs.example.com/milia-cli
                     )
 
         # Validate preprocessing-only modes
-        if hasattr(args, "validate_preprocessing_only") and args.validate_preprocessing_only:
-            # Need either preprocess_config or preprocess_dataset
-            if not (hasattr(args, "preprocess_config") and args.preprocess_config) and not (
-                hasattr(args, "preprocess_dataset") and args.preprocess_dataset
-            ):
-                raise CLIValidationError(
-                    "Preprocessing validation requires --preprocess-config or --preprocess-dataset"
-                )
+        if (
+            hasattr(args, "validate_preprocessing_only")
+            and args.validate_preprocessing_only
+            and not (hasattr(args, "preprocess_config") and args.preprocess_config)
+            and not (hasattr(args, "preprocess_dataset") and args.preprocess_dataset)
+        ):
+            raise CLIValidationError(
+                "Preprocessing validation requires --preprocess-config or --preprocess-dataset"
+            )
 
         # Note: test_preprocessor_only and list_preprocessors do NOT require --preprocess-dataset
         # They list ALL available preprocessors, not a specific one

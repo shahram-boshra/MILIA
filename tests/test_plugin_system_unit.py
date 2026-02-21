@@ -1359,7 +1359,7 @@ class TestPluginRegistryUtilities:
             patch(
                 "milia_pipeline.transformations.plugin_system._import_custom_transforms",
                 return_value=False,
-                ),
+            ),
         ):
             result = PluginRegistry._is_custom_transform(object)
             assert result is False

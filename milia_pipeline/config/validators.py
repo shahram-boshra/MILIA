@@ -362,10 +362,12 @@ except ImportError:
     TRANSFORM_INTROSPECTION_AVAILABLE = False
 
 # Validation reporting
-
-VALIDATION_REPORTING_AVAILABLE = (
-    importlib.util.find_spec("milia_pipeline.transformations.graph_transforms") is not None
-)
+try:
+    VALIDATION_REPORTING_AVAILABLE = (
+        importlib.util.find_spec("milia_pipeline.transformations.graph_transforms") is not None
+    )
+except (ValueError, ModuleNotFoundError):
+    VALIDATION_REPORTING_AVAILABLE = False
 
 # Pydantic V2 integration for runtime validation
 # Phase 4: Enables conversion between Pydantic ValidationError and MILIA ValidationResult
@@ -1160,9 +1162,12 @@ class TransformValidator:
 
             # Validate parameter type and constraints
             param_metadata = param_info[param_name]
-            if not self._validate_parameter_constraints(
-                param_name, param_value, param_metadata, param_location
-            ) and not collect_issues:
+            if (
+                not self._validate_parameter_constraints(
+                    param_name, param_value, param_metadata, param_location
+                )
+                and not collect_issues
+            ):
                 return False
 
         # Check for required parameters
@@ -1617,8 +1622,7 @@ def _basic_semantic_checks(transforms: list[dict[str, Any]]) -> list[ValidationI
     if (
         "RemoveIsolatedNodes" in transform_names
         and "AddSelfLoops" in transform_names
-        and transform_names.index("RemoveIsolatedNodes")
-        > transform_names.index("AddSelfLoops")
+        and transform_names.index("RemoveIsolatedNodes") > transform_names.index("AddSelfLoops")
     ):
         issues.append(
             ValidationIssueDetail(
@@ -2739,12 +2743,9 @@ def validate_property_value(
         return False
 
     # Shape check for arrays
-    if expected_shape is not None and not validate_array_shape(
+    return expected_shape is None or validate_array_shape(
         value, expected_shape=expected_shape, name=property_name
-    ):
-        return False
-
-    return True
+    )
 
 
 def validate_coordinates_3d(
@@ -4336,8 +4337,8 @@ def run_validation_diagnostics() -> dict[str, Any]:
             results["feature_query_dynamic"] = feature_query_success
         else:
             # No registry available - feature queries should return False gracefully
-            results["feature_query_dynamic"] = (
-                not _get_dataset_feature("unknown_type", "uncertainty_handling")
+            results["feature_query_dynamic"] = not _get_dataset_feature(
+                "unknown_type", "uncertainty_handling"
             )
     except Exception as e:
         logger.error(f"Feature query tests failed: {e}")

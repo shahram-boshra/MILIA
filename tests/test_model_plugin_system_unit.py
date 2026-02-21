@@ -1540,9 +1540,7 @@ class TestModelPluginLoaderRegistration:
             with pytest.raises(PluginError, match="ModelRegistry not available"):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    def test_register_plugin_model_import_error(
-        self, sample_model_declaration, temp_plugin_dir
-    ):
+    def test_register_plugin_model_import_error(self, sample_model_declaration, temp_plugin_dir):
         """Test model registration with import error."""
         with (
             patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
@@ -1557,9 +1555,7 @@ class TestModelPluginLoaderRegistration:
             ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    def test_register_plugin_model_class_not_found(
-        self, sample_model_declaration, temp_plugin_dir
-    ):
+    def test_register_plugin_model_class_not_found(self, sample_model_declaration, temp_plugin_dir):
         """Test model registration when class not found in module."""
         with (
             patch.object(model_plugin_system, "MODELS_AVAILABLE", True),
@@ -1578,9 +1574,7 @@ class TestModelPluginLoaderRegistration:
             ):
                 loader._register_plugin_model(sample_model_declaration, temp_plugin_dir)
 
-    def test_register_plugin_model_not_nn_module(
-        self, sample_model_declaration, temp_plugin_dir
-    ):
+    def test_register_plugin_model_not_nn_module(self, sample_model_declaration, temp_plugin_dir):
         """Test model registration when class doesn't inherit from nn.Module."""
         with (
             patch.object(model_plugin_system, "MODELS_AVAILABLE", True),

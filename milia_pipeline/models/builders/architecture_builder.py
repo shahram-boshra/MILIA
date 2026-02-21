@@ -861,7 +861,9 @@ class CustomArchitecture(nn.Module):
 
         # Forward through layers
         current = x
-        for i, (layer, config) in enumerate(zip(self.layers_list, self.layer_configs, strict=False)):
+        for i, (layer, config) in enumerate(
+            zip(self.layers_list, self.layer_configs, strict=False)
+        ):
             metadata = self.registry.get_layer_metadata(config.type)
 
             # Apply layer based on its requirements

@@ -60,8 +60,16 @@ from milia_pipeline.config.config_containers import (
 
 # Known valid dataset types for testing (matches real registry canonical names)
 _VALID_TEST_TYPES = {
-    "DFT", "DMC", "QM9", "ANI1x", "ANI1ccx", "ANI2x",
-    "Wavefunction", "XXMD", "QDPi", "RMD17",
+    "DFT",
+    "DMC",
+    "QM9",
+    "ANI1x",
+    "ANI1ccx",
+    "ANI2x",
+    "Wavefunction",
+    "XXMD",
+    "QDPi",
+    "RMD17",
 }
 
 

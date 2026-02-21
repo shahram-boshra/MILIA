@@ -584,9 +584,7 @@ class TestAutoDeviceDetection:
             patch("torch.cuda.is_available", return_value=False),
             patch.object(DeviceManager, "_is_mps_available", return_value=False),
             patch.object(DeviceManager, "_is_tpu_available", return_value=True),
-            patch.object(
-                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                ),
+            patch.object(DeviceManager, "_get_tpu_device", return_value=mock_tpu_device),
         ):
             manager = DeviceManager(verbose=False)
 
@@ -617,9 +615,7 @@ class TestAutoDeviceDetection:
             caplog.at_level(logging.INFO),
             patch("torch.cuda.is_available", return_value=True),
             patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
-            patch(
-                "torch.cuda.get_device_properties", return_value=mock_cuda_properties
-                ),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
         ):
@@ -648,9 +644,7 @@ class TestAutoDeviceDetection:
             patch("torch.cuda.is_available", return_value=False),
             patch.object(DeviceManager, "_is_mps_available", return_value=False),
             patch.object(DeviceManager, "_is_tpu_available", return_value=True),
-            patch.object(
-                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                ),
+            patch.object(DeviceManager, "_get_tpu_device", return_value=mock_tpu_device),
         ):
             _manager = DeviceManager(verbose=True)
 
@@ -709,15 +703,11 @@ class TestDeviceValidation:
             caplog.at_level(logging.WARNING),
             patch("torch.cuda.is_available", return_value=True),
             patch("torch.cuda.device_count", return_value=1),
-            patch(
-                "torch.cuda.get_device_properties", return_value=mock_cuda_properties
-                ),
+            patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
         ):
-            manager = DeviceManager(
-                device="cuda:5", allow_fallback=True, verbose=True
-            )
+            manager = DeviceManager(device="cuda:5", allow_fallback=True, verbose=True)
 
         assert manager._device == torch.device("cuda:0")
         assert "not available" in caplog.text
@@ -797,9 +787,7 @@ class TestDeviceValidation:
             patch("torch.cuda.is_available", return_value=False),
             patch.object(DeviceManager, "_is_mps_available", return_value=False),
             patch.object(DeviceManager, "_is_tpu_available", return_value=True),
-            patch.object(
-                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                ),
+            patch.object(DeviceManager, "_get_tpu_device", return_value=mock_tpu_device),
         ):
             manager = DeviceManager(verbose=False)
 
@@ -850,7 +838,7 @@ class TestDeviceValidation:
                 DeviceManager,
                 "_get_tpu_device",
                 side_effect=DeviceNotAvailableError("TPU not available"),
-                ),
+            ),
             pytest.raises(DeviceNotAvailableError) as exc_info,
         ):
             _manager = DeviceManager(allow_fallback=False, verbose=False)
@@ -994,9 +982,7 @@ class TestGetDeviceInfo:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=1 * (1024**3)),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1039,9 +1025,7 @@ class TestGetDeviceInfo:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1073,9 +1057,7 @@ class TestGetDeviceInfo:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1149,9 +1131,7 @@ class TestPublicAPI:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda", verbose=False)
 
@@ -1190,9 +1170,7 @@ class TestPublicAPI:
             patch("torch.cuda.is_available", return_value=False),
             patch.object(DeviceManager, "_is_mps_available", return_value=False),
             patch.object(DeviceManager, "_is_tpu_available", return_value=True),
-            patch.object(
-                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                ),
+            patch.object(DeviceManager, "_get_tpu_device", return_value=mock_tpu_device),
         ):
             manager = DeviceManager(verbose=False)
             # Call get_available_devices within the patch context
@@ -1209,9 +1187,7 @@ class TestPublicAPI:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda", verbose=False)
 
@@ -1317,9 +1293,7 @@ class TestMemoryInfo:
             patch("torch.cuda.memory_allocated", return_value=4 * (1024**3)),
             patch("torch.cuda.memory_reserved", return_value=6 * (1024**3)),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1353,9 +1327,7 @@ class TestMemoryInfo:
             patch("torch.cuda.memory_allocated", return_value=allocated),
             patch("torch.cuda.memory_reserved", return_value=reserved),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1379,9 +1351,7 @@ class TestMemoryInfo:
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.memory_reserved", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda", verbose=False)
 
@@ -1404,9 +1374,7 @@ class TestMemoryManagement:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1432,9 +1400,7 @@ class TestMemoryManagement:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=True)
 
@@ -1450,9 +1416,7 @@ class TestMemoryManagement:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1478,9 +1442,7 @@ class TestMemoryManagement:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=True)
 
@@ -1496,9 +1458,7 @@ class TestMemoryManagement:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1527,9 +1487,7 @@ class TestMemoryManagement:
             patch("torch.cuda.is_available", return_value=False),
             patch.object(DeviceManager, "_is_mps_available", return_value=False),
             patch.object(DeviceManager, "_is_tpu_available", return_value=True),
-            patch.object(
-                DeviceManager, "_get_tpu_device", return_value=mock_tpu_device
-                ),
+            patch.object(DeviceManager, "_get_tpu_device", return_value=mock_tpu_device),
         ):
             manager = DeviceManager(verbose=False)
 
@@ -1608,9 +1566,7 @@ class TestDeviceContextManager:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1654,9 +1610,7 @@ class TestPrintDeviceSummary:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1682,9 +1636,7 @@ class TestPrintDeviceSummary:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1708,9 +1660,7 @@ class TestPrintDeviceSummary:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -1808,7 +1758,7 @@ class TestConvenienceFunctions:
                 "enabled",
                 new_callable=PropertyMock,
                 return_value=True,
-                ),
+            ),
         ):
             capabilities = get_device_capabilities()
 
@@ -1943,9 +1893,7 @@ class TestEdgeCases:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda", verbose=False)
 
@@ -2003,9 +1951,7 @@ class TestEdgeCases:
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.memory_reserved", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda", verbose=False)
 
@@ -2162,9 +2108,7 @@ class TestCUDASpecific:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -2186,9 +2130,7 @@ class TestCUDASpecific:
             patch("torch.cuda.memory_allocated", return_value=allocated),
             patch("torch.cuda.memory_reserved", return_value=reserved),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 
@@ -2212,9 +2154,7 @@ class TestCUDASpecific:
             patch("torch.cuda.get_device_properties", return_value=mock_cuda_properties),
             patch("torch.cuda.memory_allocated", return_value=0),
             patch("torch.cuda.set_device"),
-            patch(
-                "torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"
-                ),
+            patch("torch.cuda.get_device_name", return_value="NVIDIA GeForce RTX 3090"),
         ):
             manager = DeviceManager(device="cuda:0", verbose=False)
 

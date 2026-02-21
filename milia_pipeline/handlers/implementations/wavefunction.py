@@ -301,9 +301,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
 
         # Validate MO occupations if present
         mo_occupations = raw_properties_dict.get("mo_occupations")
-        if mo_occupations is not None and not isinstance(
-            mo_occupations, (list, np.ndarray)
-        ):
+        if mo_occupations is not None and not isinstance(mo_occupations, (list, np.ndarray)):
             raise DatasetSpecificHandlerError(
                 dataset_type="Wavefunction",
                 message=f"MO occupations must be array-like for molecule {molecule_index}",
@@ -380,11 +378,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
         """
         try:
             # Handle MO energies
-            if (
-                key == "mo_energies"
-                and value is not None
-                and isinstance(value, (list, tuple))
-            ):
+            if key == "mo_energies" and value is not None and isinstance(value, (list, tuple)):
                 try:
                     return np.array(value, dtype=float)
                 except ValueError as e:
@@ -398,11 +392,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
                     ) from e
 
             # Handle MO occupations
-            if (
-                key == "mo_occupations"
-                and value is not None
-                and isinstance(value, (list, tuple))
-            ):
+            if key == "mo_occupations" and value is not None and isinstance(value, (list, tuple)):
                 try:
                     return np.array(value, dtype=float)
                 except ValueError as e:
@@ -789,9 +779,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
         for mol in processed_molecules:
             atoms = mol.get("atoms")
             if atoms is not None and (
-                isinstance(atoms, np.ndarray)
-                or isinstance(atoms, (list, tuple))
-                and len(atoms) > 0
+                isinstance(atoms, np.ndarray) or isinstance(atoms, (list, tuple)) and len(atoms) > 0
             ):
                 atom_counts.append(len(atoms))
 

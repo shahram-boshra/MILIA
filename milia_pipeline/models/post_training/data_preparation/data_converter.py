@@ -505,11 +505,10 @@ class SMILESConverter(BaseDataConverter):
             return False
         # Check if it looks like SMILES (basic heuristic)
         # SMILES contain atoms: C, N, O, S, P, F, Cl, Br, I, etc.
-        if any(c in input_data for c in ["C", "N", "O", "c", "n", "o"]):
-            # Not a file path
-            if not input_data.endswith((".xyz", ".sdf", ".mol", ".cif")):
-                return True
-        return False
+        # Not a file path
+        return any(
+            c in input_data for c in ["C", "N", "O", "c", "n", "o"]
+        ) and not input_data.endswith((".xyz", ".sdf", ".mol", ".cif"))
 
     def convert(self, input_data: Any, **kwargs) -> Data:
         from rdkit import Chem

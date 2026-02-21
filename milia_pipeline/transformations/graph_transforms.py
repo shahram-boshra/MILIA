@@ -2500,9 +2500,7 @@ class DynamicTransformDiscovery:
                             "source": "submodule",
                         }
 
-                        self._logger.debug(
-                            f"Discovered transform from {submodule_name}: {name}"
-                        )
+                        self._logger.debug(f"Discovered transform from {submodule_name}: {name}")
 
             except ImportError:
                 self._logger.debug(f"Submodule {submodule_name} not available")
@@ -4587,10 +4585,7 @@ class TransformValidator:
                                 )
 
                         # Choices validation
-                        if (
-                            "choices" in constraint
-                            and param_value not in constraint["choices"]
-                        ):
+                        if "choices" in constraint and param_value not in constraint["choices"]:
                             issues.append(
                                 {
                                     "type": "invalid_choice",
@@ -4725,7 +4720,9 @@ class TransformValidator:
                 try:
                     converted = target_type(value)
                 except ValueError:
-                    raise ValueError(f"Cannot convert string '{value}' to {target_type.__name__}") from None
+                    raise ValueError(
+                        f"Cannot convert string '{value}' to {target_type.__name__}"
+                    ) from None
             elif isinstance(value, complex):
                 raise ValueError("Complex numbers not supported")
             elif isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -4791,9 +4788,7 @@ class TransformValidator:
             if metadata.type_hint is not None and not self._check_type_compatibility(
                 value, metadata.type_hint
             ):
-                errors.append(
-                    f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
-                )
+                errors.append(f"Type mismatch: expected {metadata.type_hint}, got {type(value)}")
 
             # Check constraints
             if check_constraints:
@@ -5328,9 +5323,7 @@ class TransformValidator:
             if metadata.type_hint is not None and not self._check_type_compatibility(
                 value, metadata.type_hint
             ):
-                errors.append(
-                    f"Type mismatch: expected {metadata.type_hint}, got {type(value)}"
-                )
+                errors.append(f"Type mismatch: expected {metadata.type_hint}, got {type(value)}")
 
             # Check constraints
             if check_constraints:
@@ -6701,11 +6694,15 @@ class GraphTransforms:
             context = self.validator.validate_with_context(configs, context)
 
         # Semantic validation
-        if validation_scope in [
-            ValidationScope.SEMANTIC,
-            ValidationScope.DATASET_SPECIFIC,
-            ValidationScope.PRODUCTION,
-        ] and self.semantic_validator:
+        if (
+            validation_scope
+            in [
+                ValidationScope.SEMANTIC,
+                ValidationScope.DATASET_SPECIFIC,
+                ValidationScope.PRODUCTION,
+            ]
+            and self.semantic_validator
+        ):
             context = self.semantic_validator.validate_sequence(configs, context)
 
         # Dataset-specific validation
@@ -6714,9 +6711,7 @@ class GraphTransforms:
             and self.dataset_validator
             and dataset_type
         ):
-            context = self.dataset_validator.validate_for_dataset(
-                configs, dataset_type, context
-            )
+            context = self.dataset_validator.validate_for_dataset(configs, dataset_type, context)
 
         # Generate report
         report = None

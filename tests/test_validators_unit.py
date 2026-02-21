@@ -50,6 +50,7 @@ Test execution:
     python -m pytest tests/test_validators_unit.py -v --tb=short
 """
 
+import importlib.machinery
 import sys
 import unittest
 from pathlib import Path
@@ -207,6 +208,12 @@ class MockGraphTransformsModule:
     TransformComposer = MockTransformComposer
     __name__ = "milia_pipeline.transformations.graph_transforms"
     __file__ = "/mock/graph_transforms.py"
+    __loader__ = None
+    __spec__ = importlib.machinery.ModuleSpec(
+        "milia_pipeline.transformations.graph_transforms",
+        None,
+        origin="/mock/graph_transforms.py",
+    )
 
 
 # NOTE: Injection deferred to setup_module()
@@ -221,6 +228,13 @@ class MockTransformationsPackage:
     __name__ = "milia_pipeline.transformations"
     __path__ = ["/mock/transformations"]
     __file__ = "/mock/transformations/__init__.py"
+    __loader__ = None
+    __spec__ = importlib.machinery.ModuleSpec(
+        "milia_pipeline.transformations",
+        None,
+        origin="/mock/transformations/__init__.py",
+        is_package=True,
+    )
 
 
 # NOTE: Injection deferred to setup_module()
