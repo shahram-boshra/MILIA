@@ -408,12 +408,11 @@ class MultiObjectiveStudyConfig(BaseModel, frozen=True):
                     raise ValueError("metrics cannot contain empty strings")
 
             # Validate reference_point length matches metrics
-            if reference_point is not None:
-                if len(reference_point) != len(metrics):
-                    raise ValueError(
-                        f"reference_point must match number of metrics. "
-                        f"Got reference_point length {len(reference_point)}, metrics length {len(metrics)}"
-                    )
+            if reference_point is not None and len(reference_point) != len(metrics):
+                raise ValueError(
+                    f"reference_point must match number of metrics. "
+                    f"Got reference_point length {len(reference_point)}, metrics length {len(metrics)}"
+                )
 
             # Validate study_name
             study_name = data.get("study_name", "milia_hpo_multi")
