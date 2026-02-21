@@ -237,6 +237,7 @@ For batch processing:
 """
 
 import functools
+import importlib.util
 import json
 import logging
 import warnings
@@ -361,7 +362,6 @@ except ImportError:
     TRANSFORM_INTROSPECTION_AVAILABLE = False
 
 # Validation reporting
-import importlib.util
 
 VALIDATION_REPORTING_AVAILABLE = (
     importlib.util.find_spec("milia_pipeline.transformations.graph_transforms") is not None
