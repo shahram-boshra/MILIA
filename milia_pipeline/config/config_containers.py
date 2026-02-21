@@ -410,9 +410,12 @@ class DatasetConfig(BaseModel, frozen=True):
                 dataset_class = _registry_get(self.dataset_type)
                 base_props = list(dataset_class.get_required_properties())
                 # Handle DMC uncertainty special case
-                if self.dataset_type == "DMC" and self.is_uncertainty_enabled:
-                    if "std" not in base_props:
-                        base_props.append("std")
+                if (
+                    self.dataset_type == "DMC"
+                    and self.is_uncertainty_enabled
+                    and "std" not in base_props
+                ):
+                    base_props.append("std")
                 return base_props
             except Exception:
                 pass  # Fall through to legacy behavior
@@ -540,11 +543,14 @@ class FilterConfig(BaseModel, frozen=True):
         errors = []
 
         # Validate atom count filters
-        if self.max_atoms is not None and self.min_atoms is not None:
-            if self.max_atoms < self.min_atoms:
-                errors.append(
-                    f"max_atoms ({self.max_atoms}) must be >= min_atoms ({self.min_atoms})"
-                )
+        if (
+            self.max_atoms is not None
+            and self.min_atoms is not None
+            and self.max_atoms < self.min_atoms
+        ):
+            errors.append(
+                f"max_atoms ({self.max_atoms}) must be >= min_atoms ({self.min_atoms})"
+            )
 
         if self.min_atoms is not None and self.min_atoms <= 0:
             errors.append(f"min_atoms must be positive, got {self.min_atoms}")
@@ -553,9 +559,10 @@ class FilterConfig(BaseModel, frozen=True):
             errors.append(f"max_atoms must be positive, got {self.max_atoms}")
 
         # Validate DMC uncertainty filters
-        if self.dmc_uncertainty_filter is not None:
-            if not isinstance(self.dmc_uncertainty_filter, dict):
-                errors.append("dmc_uncertainty_filter must be a dictionary")
+        if self.dmc_uncertainty_filter is not None and not isinstance(
+            self.dmc_uncertainty_filter, dict
+        ):
+            errors.append("dmc_uncertainty_filter must be a dictionary")
 
         # Validate handler-specific filters
         for handler_type, filters in self.handler_filters.items():
@@ -803,9 +810,10 @@ class ProcessingConfig(BaseModel, frozen=True):
                 errors.append(f"All {field_name} must be strings")
 
         # Validate test molecule limit
-        if self.test_molecule_limit is not None:
-            if not isinstance(self.test_molecule_limit, int) or self.test_molecule_limit <= 0:
-                errors.append("test_molecule_limit must be a positive integer or None")
+        if self.test_molecule_limit is not None and (
+            not isinstance(self.test_molecule_limit, int) or self.test_molecule_limit <= 0
+        ):
+            errors.append("test_molecule_limit must be a positive integer or None")
 
         # Validate handler-specific configurations using dynamic registry lookup
         for handler_type, config in self.handler_processing.items():
@@ -4547,9 +4555,12 @@ def check_configuration_compatibility(
         proc_a = config_a.get("processing_config")
         proc_b = config_b.get("processing_config")
 
-        if proc_a and proc_b:
-            if set(proc_a.scalar_graph_targets) != set(proc_b.scalar_graph_targets):
-                issues.append("Scalar graph targets mismatch")
+        if (
+            proc_a
+            and proc_b
+            and set(proc_a.scalar_graph_targets) != set(proc_b.scalar_graph_targets)
+        ):
+            issues.append("Scalar graph targets mismatch")
 
         # Check transformation configuration compatibility
         trans_a = config_a.get("transformation_config")
