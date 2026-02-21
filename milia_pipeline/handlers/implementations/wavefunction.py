@@ -301,16 +301,17 @@ class WavefunctionDatasetHandler(DatasetHandler):
 
         # Validate MO occupations if present
         mo_occupations = raw_properties_dict.get("mo_occupations")
-        if mo_occupations is not None:
-            if not isinstance(mo_occupations, (list, np.ndarray)):
-                raise DatasetSpecificHandlerError(
-                    dataset_type="Wavefunction",
-                    message=f"MO occupations must be array-like for molecule {molecule_index}",
-                    operation="mo_occupations_validation",
-                    property_name="mo_occupations",
-                    molecule_index=molecule_index,
-                    details=f"Got type: {type(mo_occupations)}",
-                )
+        if mo_occupations is not None and not isinstance(
+            mo_occupations, (list, np.ndarray)
+        ):
+            raise DatasetSpecificHandlerError(
+                dataset_type="Wavefunction",
+                message=f"MO occupations must be array-like for molecule {molecule_index}",
+                operation="mo_occupations_validation",
+                property_name="mo_occupations",
+                molecule_index=molecule_index,
+                details=f"Got type: {type(mo_occupations)}",
+            )
 
         # Validate HOMO-LUMO gap if present
         homo_lumo_gap = raw_properties_dict.get("homo_lumo_gap_eV")
@@ -379,42 +380,51 @@ class WavefunctionDatasetHandler(DatasetHandler):
         """
         try:
             # Handle MO energies
-            if key == "mo_energies" and value is not None:
-                if isinstance(value, (list, tuple)):
-                    try:
-                        return np.array(value, dtype=float)
-                    except ValueError as e:
-                        raise DatasetSpecificHandlerError(
-                            dataset_type="Wavefunction",
-                            message=f"Failed to convert MO energies for molecule {molecule_index}",
-                            operation="property_processing",
-                            property_name=key,
-                            details=f"InChI: {identifier}, Value type: {type(value)}, "
-                            f"Conversion error: {str(e)}",
-                        ) from e
+            if (
+                key == "mo_energies"
+                and value is not None
+                and isinstance(value, (list, tuple))
+            ):
+                try:
+                    return np.array(value, dtype=float)
+                except ValueError as e:
+                    raise DatasetSpecificHandlerError(
+                        dataset_type="Wavefunction",
+                        message=f"Failed to convert MO energies for molecule {molecule_index}",
+                        operation="property_processing",
+                        property_name=key,
+                        details=f"InChI: {identifier}, Value type: {type(value)}, "
+                        f"Conversion error: {str(e)}",
+                    ) from e
 
             # Handle MO occupations
-            if key == "mo_occupations" and value is not None:
-                if isinstance(value, (list, tuple)):
-                    try:
-                        return np.array(value, dtype=float)
-                    except ValueError as e:
-                        raise DatasetSpecificHandlerError(
-                            dataset_type="Wavefunction",
-                            message=f"Failed to convert MO occupations for molecule {molecule_index}",
-                            operation="property_processing",
-                            property_name=key,
-                            details=f"InChI: {identifier}, Value type: {type(value)}, "
-                            f"Conversion error: {str(e)}",
-                        ) from e
+            if (
+                key == "mo_occupations"
+                and value is not None
+                and isinstance(value, (list, tuple))
+            ):
+                try:
+                    return np.array(value, dtype=float)
+                except ValueError as e:
+                    raise DatasetSpecificHandlerError(
+                        dataset_type="Wavefunction",
+                        message=f"Failed to convert MO occupations for molecule {molecule_index}",
+                        operation="property_processing",
+                        property_name=key,
+                        details=f"InChI: {identifier}, Value type: {type(value)}, "
+                        f"Conversion error: {str(e)}",
+                    ) from e
 
             # Handle HOMO-LUMO gap
-            if key == "homo_lumo_gap_eV" and value is not None:
-                if not is_value_valid_and_not_nan(value):
-                    self.logger.warning(
-                        f"Wavefunction molecule {molecule_index} has invalid HOMO-LUMO gap"
-                    )
-                    return None
+            if (
+                key == "homo_lumo_gap_eV"
+                and value is not None
+                and not is_value_valid_and_not_nan(value)
+            ):
+                self.logger.warning(
+                    f"Wavefunction molecule {molecule_index} has invalid HOMO-LUMO gap"
+                )
+                return None
 
             return value
 
