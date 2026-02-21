@@ -358,14 +358,15 @@ def estimate_molecular_properties(pyg_data: Data, handler: DatasetHandler) -> di
                         handler_capabilities = {}
 
                 # Use handler's custom property estimation if capability exists
-                if handler_capabilities.get("custom_properties", True):
-                    if hasattr(handler, "estimate_additional_properties"):
-                        try:
-                            additional_props = handler.estimate_additional_properties(pyg_data)
-                            if additional_props is not None:
-                                properties.update(additional_props)
-                        except Exception as e:
-                            logger.debug(f"Additional property estimation failed: {e}")
+                if handler_capabilities.get("custom_properties", True) and hasattr(
+                    handler, "estimate_additional_properties"
+                ):
+                    try:
+                        additional_props = handler.estimate_additional_properties(pyg_data)
+                        if additional_props is not None:
+                            properties.update(additional_props)
+                    except Exception as e:
+                        logger.debug(f"Additional property estimation failed: {e}")
 
                 # PHASE 6: Check vibrational refinement via feature query instead of type check
                 if _get_dataset_feature(
@@ -900,13 +901,19 @@ def get_feature_extraction_diagnostics(pyg_data: Data, handler: DatasetHandler) 
                 logger.error("Expected bond features are missing!")
 
         # Check for unexpected features (when no structural features configured)
-        if not structural_features_config or not structural_features_config.get("atom", []):
-            if hasattr(pyg_data, "x") and pyg_data.x is not None:
-                diagnostics["unexpected_features"].append("atom_features")
+        if (
+            (not structural_features_config or not structural_features_config.get("atom", []))
+            and hasattr(pyg_data, "x")
+            and pyg_data.x is not None
+        ):
+            diagnostics["unexpected_features"].append("atom_features")
 
-        if not structural_features_config or not structural_features_config.get("bond", []):
-            if hasattr(pyg_data, "edge_attr") and pyg_data.edge_attr is not None:
-                diagnostics["unexpected_features"].append("bond_features")
+        if (
+            (not structural_features_config or not structural_features_config.get("bond", []))
+            and hasattr(pyg_data, "edge_attr")
+            and pyg_data.edge_attr is not None
+        ):
+            diagnostics["unexpected_features"].append("bond_features")
 
         return diagnostics
 
@@ -969,23 +976,25 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
                         handler_capabilities = {}
 
                 # Only get required properties if handler reports it has this capability
-                if handler_capabilities.get("has_required_properties", True):
-                    if hasattr(handler, "get_required_properties"):
-                        try:
-                            required_props = handler.get_required_properties() or []
-                            capabilities["handler_required_properties"] = required_props
-                        except Exception as e:
-                            logger.debug(f"Failed to get required properties: {e}")
+                if handler_capabilities.get(
+                    "has_required_properties", True
+                ) and hasattr(handler, "get_required_properties"):
+                    try:
+                        required_props = handler.get_required_properties() or []
+                        capabilities["handler_required_properties"] = required_props
+                    except Exception as e:
+                        logger.debug(f"Failed to get required properties: {e}")
 
                 # Check for advanced processing capabilities
-                if handler_capabilities.get("supports_custom_validation", False):
-                    if hasattr(handler, "get_validation_rules"):
-                        try:
-                            validation_rules = handler.get_validation_rules()
-                            if validation_rules is not None:
-                                capabilities["custom_validation_rules"] = validation_rules
-                        except Exception as e:
-                            logger.debug(f"Failed to get validation rules: {e}")
+                if handler_capabilities.get(
+                    "supports_custom_validation", False
+                ) and hasattr(handler, "get_validation_rules"):
+                    try:
+                        validation_rules = handler.get_validation_rules()
+                        if validation_rules is not None:
+                            capabilities["custom_validation_rules"] = validation_rules
+                    except Exception as e:
+                        logger.debug(f"Failed to get validation rules: {e}")
 
                 # Check for dataset-specific optimization capabilities
                 if handler_capabilities.get("supports_optimized_processing", False):
@@ -1558,37 +1567,44 @@ def create_handler_compatible_fingerprint(
             fingerprint["handler_properties"] = {}
 
         # Use handler-specific fingerprinting if capability is available
-        if handler_caps.get("custom_fingerprinting", False):
-            if hasattr(handler, "create_custom_fingerprint"):
-                try:
-                    custom_fingerprint = handler.create_custom_fingerprint(pyg_data)
-                    if custom_fingerprint is not None:
-                        fingerprint["handler_custom_fingerprint"] = custom_fingerprint
-                except Exception as e:
-                    logger.debug(f"Failed to create custom fingerprint: {e}")
+        if handler_caps.get("custom_fingerprinting", False) and hasattr(
+            handler, "create_custom_fingerprint"
+        ):
+            try:
+                custom_fingerprint = handler.create_custom_fingerprint(pyg_data)
+                if custom_fingerprint is not None:
+                    fingerprint["handler_custom_fingerprint"] = custom_fingerprint
+            except Exception as e:
+                logger.debug(f"Failed to create custom fingerprint: {e}")
 
         # PHASE 6: Use feature-based fingerprinting instead of type checks
-        if _get_dataset_feature(handler_type, "vibrational_analysis") and handler_caps.get(
-            "vibrational_processing", False
-        ) and hasattr(pyg_data, "freqs") and pyg_data.freqs is not None:
-            if hasattr(handler, "analyze_vibrational_signature"):
-                try:
-                    vib_signature = handler.analyze_vibrational_signature(pyg_data.freqs)
-                    if vib_signature is not None:
-                        fingerprint["vibrational_signature"] = vib_signature
-                except Exception as e:
-                    logger.debug(f"Failed to analyze vibrational signature: {e}")
+        if (
+            _get_dataset_feature(handler_type, "vibrational_analysis")
+            and handler_caps.get("vibrational_processing", False)
+            and hasattr(pyg_data, "freqs")
+            and pyg_data.freqs is not None
+            and hasattr(handler, "analyze_vibrational_signature")
+        ):
+            try:
+                vib_signature = handler.analyze_vibrational_signature(pyg_data.freqs)
+                if vib_signature is not None:
+                    fingerprint["vibrational_signature"] = vib_signature
+            except Exception as e:
+                logger.debug(f"Failed to analyze vibrational signature: {e}")
 
-        if _get_dataset_feature(handler_type, "uncertainty_handling") and handler_caps.get(
-            "uncertainty_handling", False
-        ) and hasattr(pyg_data, "uncertainty") and pyg_data.uncertainty is not None:
-            if hasattr(handler, "analyze_uncertainty_distribution"):
-                try:
-                    uncertainty_dist = handler.analyze_uncertainty_distribution(pyg_data)
-                    if uncertainty_dist is not None:
-                        fingerprint["uncertainty_distribution"] = uncertainty_dist
-                except Exception as e:
-                    logger.debug(f"Failed to analyze uncertainty distribution: {e}")
+        if (
+            _get_dataset_feature(handler_type, "uncertainty_handling")
+            and handler_caps.get("uncertainty_handling", False)
+            and hasattr(pyg_data, "uncertainty")
+            and pyg_data.uncertainty is not None
+            and hasattr(handler, "analyze_uncertainty_distribution")
+        ):
+            try:
+                uncertainty_dist = handler.analyze_uncertainty_distribution(pyg_data)
+                if uncertainty_dist is not None:
+                    fingerprint["uncertainty_distribution"] = uncertainty_dist
+            except Exception as e:
+                logger.debug(f"Failed to analyze uncertainty distribution: {e}")
 
     except HandlerError as e:
         logger.warning(f"Handler fingerprint enhancement failed: {e}")
@@ -1641,58 +1657,60 @@ def validate_feature_extraction_with_handler(
 
         # Check handler requirements only if handler reports having them
         if handler_caps.get(
-            "has_required_properties", True
-        ):  # Default True for backward compatibility
-            if hasattr(handler, "get_required_properties"):
-                try:
-                    required_props = handler.get_required_properties()
-                    # Ensure we have a valid iterable, default to empty list if None
-                    if required_props is None:
-                        required_props = []
+            "has_required_properties", True  # Default True for backward compatibility
+        ) and hasattr(handler, "get_required_properties"):
+            try:
+                required_props = handler.get_required_properties()
+                # Ensure we have a valid iterable, default to empty list if None
+                if required_props is None:
+                    required_props = []
 
-                    for prop in required_props:
-                        if not hasattr(pyg_data, prop) or getattr(pyg_data, prop) is None:
-                            validation["missing_requirements"].append(prop)
-                            validation["validation_passed"] = False
-                except (AttributeError, TypeError) as e:
-                    logger.debug(f"Failed to get required properties from handler: {e}")
-                    # Continue validation even if this check fails
+                for prop in required_props:
+                    if not hasattr(pyg_data, prop) or getattr(pyg_data, prop) is None:
+                        validation["missing_requirements"].append(prop)
+                        validation["validation_passed"] = False
+            except (AttributeError, TypeError) as e:
+                logger.debug(f"Failed to get required properties from handler: {e}")
+                # Continue validation even if this check fails
 
         # Handler-specific validation - check capabilities first
-        if handler_caps.get("custom_validation", False):
-            if hasattr(handler, "validate_feature_quality"):
-                try:
-                    quality_result = handler.validate_feature_quality(pyg_data)
-                    validation["handler_specific_checks"] = quality_result
-                    if not quality_result.get("passed", True):
-                        validation["validation_passed"] = False
-                        validation["quality_issues"].extend(quality_result.get("issues", []))
-                except HandlerError as e:
-                    validation["handler_specific_checks"] = {"handler_error": str(e)}
+        if handler_caps.get("custom_validation", False) and hasattr(
+            handler, "validate_feature_quality"
+        ):
+            try:
+                quality_result = handler.validate_feature_quality(pyg_data)
+                validation["handler_specific_checks"] = quality_result
+                if not quality_result.get("passed", True):
                     validation["validation_passed"] = False
-                except Exception as e:
-                    validation["handler_specific_checks"] = {"error": str(e)}
+                    validation["quality_issues"].extend(quality_result.get("issues", []))
+            except HandlerError as e:
+                validation["handler_specific_checks"] = {"handler_error": str(e)}
+                validation["validation_passed"] = False
+            except Exception as e:
+                validation["handler_specific_checks"] = {"error": str(e)}
 
         # Advanced validation based on capabilities
-        if handler_caps.get("statistical_validation", False):
-            if hasattr(handler, "validate_statistical_properties"):
-                try:
-                    stat_validation = handler.validate_statistical_properties(pyg_data)
-                    validation["statistical_validation"] = stat_validation
-                    if not stat_validation.get("passed", True):
-                        validation["validation_passed"] = False
-                except Exception as e:
-                    logger.debug(f"Statistical validation failed: {e}")
+        if handler_caps.get("statistical_validation", False) and hasattr(
+            handler, "validate_statistical_properties"
+        ):
+            try:
+                stat_validation = handler.validate_statistical_properties(pyg_data)
+                validation["statistical_validation"] = stat_validation
+                if not stat_validation.get("passed", True):
+                    validation["validation_passed"] = False
+            except Exception as e:
+                logger.debug(f"Statistical validation failed: {e}")
 
-        if handler_caps.get("structural_validation", False):
-            if hasattr(handler, "validate_structural_integrity"):
-                try:
-                    struct_validation = handler.validate_structural_integrity(pyg_data)
-                    validation["structural_validation"] = struct_validation
-                    if not struct_validation.get("passed", True):
-                        validation["validation_passed"] = False
-                except Exception as e:
-                    logger.debug(f"Structural validation failed: {e}")
+        if handler_caps.get("structural_validation", False) and hasattr(
+            handler, "validate_structural_integrity"
+        ):
+            try:
+                struct_validation = handler.validate_structural_integrity(pyg_data)
+                validation["structural_validation"] = struct_validation
+                if not struct_validation.get("passed", True):
+                    validation["validation_passed"] = False
+            except Exception as e:
+                logger.debug(f"Structural validation failed: {e}")
 
         # PHASE 6: Use feature-based validation instead of type checks
         dataset_type = handler.get_dataset_type()
@@ -1701,36 +1719,41 @@ def validate_feature_extraction_with_handler(
             # Uncertainty-enabled datasets validation (DMC, QMC, etc.)
             uncertainty_caps = handler_caps.get("uncertainty_specific", {})
 
-            if hasattr(handler, "dataset_config") and handler.dataset_config is not None:
-                if getattr(handler.dataset_config, "is_uncertainty_enabled", False):
-                    if not hasattr(pyg_data, "uncertainty") or pyg_data.uncertainty is None:
-                        validation["missing_requirements"].append("uncertainty")
-                        validation["validation_passed"] = False
+            if (
+                hasattr(handler, "dataset_config")
+                and handler.dataset_config is not None
+                and getattr(handler.dataset_config, "is_uncertainty_enabled", False)
+            ):
+                if not hasattr(pyg_data, "uncertainty") or pyg_data.uncertainty is None:
+                    validation["missing_requirements"].append("uncertainty")
+                    validation["validation_passed"] = False
 
-                    # Additional uncertainty validation if capability exists
-                    if uncertainty_caps.get("uncertainty_validation", False):
-                        if hasattr(handler, "validate_uncertainty_data"):
-                            try:
-                                unc_result = handler.validate_uncertainty_data(pyg_data)
-                                validation["uncertainty_validation"] = unc_result
-                                if not unc_result.get("valid", True):
-                                    validation["validation_passed"] = False
-                                    validation["quality_issues"].extend(
-                                        unc_result.get("issues", [])
-                                    )
-                            except Exception as e:
-                                logger.debug(f"Uncertainty validation failed: {e}")
+                # Additional uncertainty validation if capability exists
+                if uncertainty_caps.get(
+                    "uncertainty_validation", False
+                ) and hasattr(handler, "validate_uncertainty_data"):
+                    try:
+                        unc_result = handler.validate_uncertainty_data(pyg_data)
+                        validation["uncertainty_validation"] = unc_result
+                        if not unc_result.get("valid", True):
+                            validation["validation_passed"] = False
+                            validation["quality_issues"].extend(
+                                unc_result.get("issues", [])
+                            )
+                    except Exception as e:
+                        logger.debug(f"Uncertainty validation failed: {e}")
 
             # Statistical quality validation if available
-            if uncertainty_caps.get("statistical_quality_check", False):
-                if hasattr(handler, "check_statistical_quality"):
-                    try:
-                        stat_quality = handler.check_statistical_quality(pyg_data)
-                        validation["statistical_quality"] = stat_quality
-                        if stat_quality.get("quality_level", "unknown") == "poor":
-                            validation["quality_issues"].append("poor_statistical_quality")
-                    except Exception as e:
-                        logger.debug(f"Statistical quality check failed: {e}")
+            if uncertainty_caps.get(
+                "statistical_quality_check", False
+            ) and hasattr(handler, "check_statistical_quality"):
+                try:
+                    stat_quality = handler.check_statistical_quality(pyg_data)
+                    validation["statistical_quality"] = stat_quality
+                    if stat_quality.get("quality_level", "unknown") == "poor":
+                        validation["quality_issues"].append("poor_statistical_quality")
+                except Exception as e:
+                    logger.debug(f"Statistical quality check failed: {e}")
 
         elif _get_dataset_feature(dataset_type, "vibrational_analysis"):
             # Vibrational-enabled datasets validation (DFT, semi-empirical, etc.)
@@ -1744,27 +1767,31 @@ def validate_feature_extraction_with_handler(
                     validation["validation_passed"] = False
 
             # Vibrational data validation if capability exists
-            if vibrational_caps.get("vibrational_validation", False):
-                if hasattr(pyg_data, "freqs") and pyg_data.freqs is not None:
-                    if hasattr(handler, "validate_vibrational_data"):
-                        try:
-                            vib_result = handler.validate_vibrational_data(pyg_data.freqs)
-                            validation["vibrational_validation"] = vib_result
-                            if not vib_result.get("valid", True):
-                                validation["quality_issues"].extend(vib_result.get("issues", []))
-                        except Exception as e:
-                            logger.debug(f"Vibrational validation failed: {e}")
+            if (
+                vibrational_caps.get("vibrational_validation", False)
+                and hasattr(pyg_data, "freqs")
+                and pyg_data.freqs is not None
+                and hasattr(handler, "validate_vibrational_data")
+            ):
+                try:
+                    vib_result = handler.validate_vibrational_data(pyg_data.freqs)
+                    validation["vibrational_validation"] = vib_result
+                    if not vib_result.get("valid", True):
+                        validation["quality_issues"].extend(vib_result.get("issues", []))
+                except Exception as e:
+                    logger.debug(f"Vibrational validation failed: {e}")
 
             # Electronic structure validation if capability exists
-            if vibrational_caps.get("electronic_validation", False):
-                if hasattr(handler, "validate_electronic_structure"):
-                    try:
-                        elec_result = handler.validate_electronic_structure(pyg_data)
-                        validation["electronic_validation"] = elec_result
-                        if not elec_result.get("valid", True):
-                            validation["quality_issues"].extend(elec_result.get("issues", []))
-                    except Exception as e:
-                        logger.debug(f"Electronic validation failed: {e}")
+            if vibrational_caps.get(
+                "electronic_validation", False
+            ) and hasattr(handler, "validate_electronic_structure"):
+                try:
+                    elec_result = handler.validate_electronic_structure(pyg_data)
+                    validation["electronic_validation"] = elec_result
+                    if not elec_result.get("valid", True):
+                        validation["quality_issues"].extend(elec_result.get("issues", []))
+                except Exception as e:
+                    logger.debug(f"Electronic validation failed: {e}")
 
         return validation
 
