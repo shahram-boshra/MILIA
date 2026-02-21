@@ -2647,21 +2647,27 @@ class MoleculeDataConverter:
             )
 
             # Ensure structural features are tensors
-            if hasattr(enhanced_data, "x") and enhanced_data.x is not None:
-                if not isinstance(enhanced_data.x, torch.Tensor):
-                    self.logger.debug(
-                        f"Converting x from {type(enhanced_data.x)} to tensor for molecule {current_mol_index}"
-                    )
-                    enhanced_data.x = torch.tensor(enhanced_data.x, dtype=torch.float32)
+            if (
+                hasattr(enhanced_data, "x")
+                and enhanced_data.x is not None
+                and not isinstance(enhanced_data.x, torch.Tensor)
+            ):
+                self.logger.debug(
+                    f"Converting x from {type(enhanced_data.x)} to tensor for molecule {current_mol_index}"
+                )
+                enhanced_data.x = torch.tensor(enhanced_data.x, dtype=torch.float32)
 
-            if hasattr(enhanced_data, "edge_attr") and enhanced_data.edge_attr is not None:
-                if not isinstance(enhanced_data.edge_attr, torch.Tensor):
-                    self.logger.debug(
-                        f"Converting edge_attr from {type(enhanced_data.edge_attr)} to tensor for molecule {current_mol_index}"
-                    )
-                    enhanced_data.edge_attr = torch.tensor(
-                        enhanced_data.edge_attr, dtype=torch.float32
-                    )
+            if (
+                hasattr(enhanced_data, "edge_attr")
+                and enhanced_data.edge_attr is not None
+                and not isinstance(enhanced_data.edge_attr, torch.Tensor)
+            ):
+                self.logger.debug(
+                    f"Converting edge_attr from {type(enhanced_data.edge_attr)} to tensor for molecule {current_mol_index}"
+                )
+                enhanced_data.edge_attr = torch.tensor(
+                    enhanced_data.edge_attr, dtype=torch.float32
+                )
 
             # Log feature extraction summary
             if hasattr(enhanced_data, "x") and enhanced_data.x is not None:
@@ -2819,11 +2825,10 @@ class MoleculeDataConverter:
             # Energy validation
             if hasattr(pyg_data, "y") and pyg_data.y is not None:
                 y_values = pyg_data.y
-                if isinstance(y_values, torch.Tensor):
-                    if torch.any(y_values > 1000):
-                        self.logger.warning(
-                            f"{dataset_config.dataset_type} molecule {molecule_index} has unusually high energy values"
-                        )
+                if isinstance(y_values, torch.Tensor) and torch.any(y_values > 1000):
+                    self.logger.warning(
+                        f"{dataset_config.dataset_type} molecule {molecule_index} has unusually high energy values"
+                    )
 
         except Exception as e:
             # Convert to dataset-specific handler error if available
@@ -2848,15 +2853,17 @@ class MoleculeDataConverter:
             # Target validation
             if hasattr(pyg_data, "y") and pyg_data.y is not None:
                 y_values = pyg_data.y
-                if isinstance(y_values, torch.Tensor):
-                    if torch.any(torch.isnan(y_values)) or torch.any(torch.isinf(y_values)):
-                        raise PyGDataCreationError(
-                            message=f"NaN or Inf values in {self._dataset_config.dataset_type} target tensor",
-                            molecule_index=molecule_index,
-                            smiles="N/A",
-                            reason=f"NaN or Inf values in {self._dataset_config.dataset_type} target tensor",
-                            detail=f"{self._dataset_config.dataset_type} targets must be finite numbers",
-                        )
+                if isinstance(y_values, torch.Tensor) and (
+                    torch.any(torch.isnan(y_values))
+                    or torch.any(torch.isinf(y_values))
+                ):
+                    raise PyGDataCreationError(
+                        message=f"NaN or Inf values in {self._dataset_config.dataset_type} target tensor",
+                        molecule_index=molecule_index,
+                        smiles="N/A",
+                        reason=f"NaN or Inf values in {self._dataset_config.dataset_type} target tensor",
+                        detail=f"{self._dataset_config.dataset_type} targets must be finite numbers",
+                    )
 
             # Atomization energy validation
             if hasattr(pyg_data, "atomization_energy"):
@@ -2890,40 +2897,46 @@ class MoleculeDataConverter:
         """
         try:
             # Atom features validation
-            if hasattr(pyg_data, "x") and pyg_data.x is not None:
-                if isinstance(pyg_data.x, torch.Tensor):
-                    if torch.any(torch.isnan(pyg_data.x)) or torch.any(torch.isinf(pyg_data.x)):
-                        self.logger.warning(
-                            f"Molecule {molecule_index} has NaN/Inf values in atom structural features"
-                        )
+            if (
+                hasattr(pyg_data, "x")
+                and pyg_data.x is not None
+                and isinstance(pyg_data.x, torch.Tensor)
+            ):
+                if torch.any(torch.isnan(pyg_data.x)) or torch.any(torch.isinf(pyg_data.x)):
+                    self.logger.warning(
+                        f"Molecule {molecule_index} has NaN/Inf values in atom structural features"
+                    )
 
-                    expected_atom_features = len(self.structural_features_config.get("atom", []))
-                    if expected_atom_features > 0:
-                        atom_feature_dim = pyg_data.x.shape[1] if pyg_data.x.ndim > 1 else 1
-                        if atom_feature_dim == 0:
-                            self.logger.warning(
-                                f"Molecule {molecule_index} has zero-dimensional atom features despite configuration"
-                            )
+                expected_atom_features = len(self.structural_features_config.get("atom", []))
+                if expected_atom_features > 0:
+                    atom_feature_dim = pyg_data.x.shape[1] if pyg_data.x.ndim > 1 else 1
+                    if atom_feature_dim == 0:
+                        self.logger.warning(
+                            f"Molecule {molecule_index} has zero-dimensional atom features despite configuration"
+                        )
 
             # Bond features validation
-            if hasattr(pyg_data, "edge_attr") and pyg_data.edge_attr is not None:
-                if isinstance(pyg_data.edge_attr, torch.Tensor):
-                    if torch.any(torch.isnan(pyg_data.edge_attr)) or torch.any(
-                        torch.isinf(pyg_data.edge_attr)
-                    ):
-                        self.logger.warning(
-                            f"Molecule {molecule_index} has NaN/Inf values in bond structural features"
-                        )
+            if (
+                hasattr(pyg_data, "edge_attr")
+                and pyg_data.edge_attr is not None
+                and isinstance(pyg_data.edge_attr, torch.Tensor)
+            ):
+                if torch.any(torch.isnan(pyg_data.edge_attr)) or torch.any(
+                    torch.isinf(pyg_data.edge_attr)
+                ):
+                    self.logger.warning(
+                        f"Molecule {molecule_index} has NaN/Inf values in bond structural features"
+                    )
 
-                    expected_bond_features = len(self.structural_features_config.get("bond", []))
-                    if expected_bond_features > 0:
-                        bond_feature_dim = (
-                            pyg_data.edge_attr.shape[1] if pyg_data.edge_attr.ndim > 1 else 1
+                expected_bond_features = len(self.structural_features_config.get("bond", []))
+                if expected_bond_features > 0:
+                    bond_feature_dim = (
+                        pyg_data.edge_attr.shape[1] if pyg_data.edge_attr.ndim > 1 else 1
+                    )
+                    if bond_feature_dim == 0:
+                        self.logger.warning(
+                            f"Molecule {molecule_index} has zero-dimensional bond features despite configuration"
                         )
-                        if bond_feature_dim == 0:
-                            self.logger.warning(
-                                f"Molecule {molecule_index} has zero-dimensional bond features despite configuration"
-                            )
 
             # Configuration consistency validation
             configured_atom_features = self.structural_features_config.get("atom", [])
