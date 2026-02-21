@@ -635,21 +635,20 @@ def introspect_transform_filter_parameters(
                 t_params = t.get("params", {})
 
                 # Virtual node transforms add nodes
-                if t_name == "VirtualNode":
-                    if filter_config.max_atoms:
-                        introspection_results["parameter_interactions"].append(
-                            {
-                                "type": "atom_count_increase",
-                                "transform": t_name,
-                                "filter": "max_atoms",
-                                "impact": "VirtualNode adds 1 node, effective limit becomes max_atoms - 1",
-                                "severity": "medium",
-                            }
-                        )
-                        introspection_results["optimization_suggestions"].append(
-                            f"Consider increasing max_atoms to {filter_config.max_atoms + 1} "
-                            "to account for VirtualNode addition"
-                        )
+                if t_name == "VirtualNode" and filter_config.max_atoms:
+                    introspection_results["parameter_interactions"].append(
+                        {
+                            "type": "atom_count_increase",
+                            "transform": t_name,
+                            "filter": "max_atoms",
+                            "impact": "VirtualNode adds 1 node, effective limit becomes max_atoms - 1",
+                            "severity": "medium",
+                        }
+                    )
+                    introspection_results["optimization_suggestions"].append(
+                        f"Consider increasing max_atoms to {filter_config.max_atoms + 1} "
+                        "to account for VirtualNode addition"
+                    )
 
                 # DropNode transforms remove nodes
                 if t_name == "DropNode":
@@ -897,23 +896,25 @@ def apply_atom_count_filters(
                 )
 
         # Validate filter configuration
-        if filter_config.max_atoms is not None:
-            if not isinstance(filter_config.max_atoms, int) or filter_config.max_atoms <= 0:
-                raise ConfigurationError(
-                    message="max_atoms filter must be a positive integer",
-                    config_key="filter_config.max_atoms",
-                    actual_value=filter_config.max_atoms,
-                    expected_value="positive integer",
-                )
+        if filter_config.max_atoms is not None and (
+            not isinstance(filter_config.max_atoms, int) or filter_config.max_atoms <= 0
+        ):
+            raise ConfigurationError(
+                message="max_atoms filter must be a positive integer",
+                config_key="filter_config.max_atoms",
+                actual_value=filter_config.max_atoms,
+                expected_value="positive integer",
+            )
 
-        if filter_config.min_atoms is not None:
-            if not isinstance(filter_config.min_atoms, int) or filter_config.min_atoms <= 0:
-                raise ConfigurationError(
-                    message="min_atoms filter must be a positive integer",
-                    config_key="filter_config.min_atoms",
-                    actual_value=filter_config.min_atoms,
-                    expected_value="positive integer",
-                )
+        if filter_config.min_atoms is not None and (
+            not isinstance(filter_config.min_atoms, int) or filter_config.min_atoms <= 0
+        ):
+            raise ConfigurationError(
+                message="min_atoms filter must be a positive integer",
+                config_key="filter_config.min_atoms",
+                actual_value=filter_config.min_atoms,
+                expected_value="positive integer",
+            )
 
         # Check for logical inconsistency
         if (
@@ -1179,23 +1180,25 @@ def validate_filter_configuration(
 
     try:
         # Validate atom count filters
-        if filter_config.max_atoms is not None:
-            if not isinstance(filter_config.max_atoms, int) or filter_config.max_atoms <= 0:
-                raise ConfigurationError(
-                    message="max_atoms must be a positive integer",
-                    config_key="filter_config.max_atoms",
-                    actual_value=filter_config.max_atoms,
-                    expected_value="positive integer",
-                )
+        if filter_config.max_atoms is not None and (
+            not isinstance(filter_config.max_atoms, int) or filter_config.max_atoms <= 0
+        ):
+            raise ConfigurationError(
+                message="max_atoms must be a positive integer",
+                config_key="filter_config.max_atoms",
+                actual_value=filter_config.max_atoms,
+                expected_value="positive integer",
+            )
 
-        if filter_config.min_atoms is not None:
-            if not isinstance(filter_config.min_atoms, int) or filter_config.min_atoms <= 0:
-                raise ConfigurationError(
-                    message="min_atoms must be a positive integer",
-                    config_key="filter_config.min_atoms",
-                    actual_value=filter_config.min_atoms,
-                    expected_value="positive integer",
-                )
+        if filter_config.min_atoms is not None and (
+            not isinstance(filter_config.min_atoms, int) or filter_config.min_atoms <= 0
+        ):
+            raise ConfigurationError(
+                message="min_atoms must be a positive integer",
+                config_key="filter_config.min_atoms",
+                actual_value=filter_config.min_atoms,
+                expected_value="positive integer",
+            )
 
         # Check for logical inconsistency
         if (
