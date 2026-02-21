@@ -240,26 +240,35 @@ class QM9DatasetHandler(DatasetHandler):
         """Process QM9-specific property values with exception handling."""
         try:
             # Handle vibrational frequencies
-            if key == "freqs" and value is not None:
-                if not is_value_valid_and_not_nan(value):
-                    self.logger.warning(f"QM9 molecule {molecule_index} has invalid frequency data")
-                    return None
+            if (
+                key == "freqs"
+                and value is not None
+                and not is_value_valid_and_not_nan(value)
+            ):
+                self.logger.warning(f"QM9 molecule {molecule_index} has invalid frequency data")
+                return None
 
             # Handle Mulliken charges
-            if key == "Qmulliken" and value is not None:
-                if not is_value_valid_and_not_nan(value):
-                    self.logger.warning(
-                        f"QM9 molecule {molecule_index} has invalid Mulliken charges"
-                    )
-                    return None
+            if (
+                key == "Qmulliken"
+                and value is not None
+                and not is_value_valid_and_not_nan(value)
+            ):
+                self.logger.warning(
+                    f"QM9 molecule {molecule_index} has invalid Mulliken charges"
+                )
+                return None
 
             # Handle rotational constants (A, B, C)
-            if key in ["A", "B", "C"] and value is not None:
-                if not is_value_valid_and_not_nan(value):
-                    self.logger.warning(
-                        f"QM9 molecule {molecule_index} has invalid rotational constant {key}"
-                    )
-                    return None
+            if (
+                key in ["A", "B", "C"]
+                and value is not None
+                and not is_value_valid_and_not_nan(value)
+            ):
+                self.logger.warning(
+                    f"QM9 molecule {molecule_index} has invalid rotational constant {key}"
+                )
+                return None
 
             return value
 
@@ -845,12 +854,14 @@ class QM9DatasetHandler(DatasetHandler):
             )
 
         # Vibrational data considerations
-        if hasattr(self.processing_config, "variable_len_graph_properties"):
-            if "freqs" in self.processing_config.variable_len_graph_properties:
-                if "RandomRotate" in transform_names:
-                    warnings.append(
-                        "QM9 dataset has vibrational frequencies - geometric transforms may affect spectral properties"
-                    )
+        if (
+            hasattr(self.processing_config, "variable_len_graph_properties")
+            and "freqs" in self.processing_config.variable_len_graph_properties
+            and "RandomRotate" in transform_names
+        ):
+            warnings.append(
+                "QM9 dataset has vibrational frequencies - geometric transforms may affect spectral properties"
+            )
 
         # Distance-based transforms
         if "Distance" in transform_names or "Cartesian" in transform_names:
@@ -873,13 +884,15 @@ class QM9DatasetHandler(DatasetHandler):
         errors = []
 
         # VirtualNode incompatibility with certain QM9 properties
-        if "VirtualNode" in transform_names:
-            if hasattr(self.processing_config, "node_features"):
-                if "Qmulliken" in self.processing_config.node_features:
-                    errors.append(
-                        "VirtualNode incompatible with Mulliken charges - "
-                        "virtual node would need artificial charge"
-                    )
+        if (
+            "VirtualNode" in transform_names
+            and hasattr(self.processing_config, "node_features")
+            and "Qmulliken" in self.processing_config.node_features
+        ):
+            errors.append(
+                "VirtualNode incompatible with Mulliken charges - "
+                "virtual node would need artificial charge"
+            )
 
         return errors
 
@@ -933,11 +946,14 @@ class QM9DatasetHandler(DatasetHandler):
             )
 
         # Distance/edge feature recommendations
-        if "Distance" not in transform_names and "Cartesian" not in transform_names:
-            if any(t in transform_names for t in ["GCNNorm", "GATConv", "SAGEConv"]):
-                recommendations.append(
-                    "Graph neural networks may benefit from edge features. "
-                    "Consider: Distance(norm=False, cat=True) or Cartesian(norm=False, cat=True)"
-                )
+        if (
+            "Distance" not in transform_names
+            and "Cartesian" not in transform_names
+            and any(t in transform_names for t in ["GCNNorm", "GATConv", "SAGEConv"])
+        ):
+            recommendations.append(
+                "Graph neural networks may benefit from edge features. "
+                "Consider: Distance(norm=False, cat=True) or Cartesian(norm=False, cat=True)"
+            )
 
         return recommendations
