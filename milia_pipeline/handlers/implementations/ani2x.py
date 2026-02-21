@@ -132,11 +132,14 @@ class ANI2xDatasetHandler(DatasetHandler):
 
             # Validate energy (ANI-2x energies are typically negative in Hartree)
             energy = raw_properties_dict.get("energy")
-            if energy is not None and isinstance(energy, (int, float, np.number)):
-                if energy > 0:
-                    self.logger.warning(
-                        f"ANI-2x molecule {molecule_index} has positive energy: {energy}"
-                    )
+            if (
+                energy is not None
+                and isinstance(energy, (int, float, np.number))
+                and energy > 0
+            ):
+                self.logger.warning(
+                    f"ANI-2x molecule {molecule_index} has positive energy: {energy}"
+                )
 
         except (HandlerError, DatasetSpecificHandlerError):
             # Re-raise handler-specific errors
@@ -951,12 +954,14 @@ class ANI2xDatasetHandler(DatasetHandler):
             )
 
         # Force data considerations
-        if hasattr(self.processing_config, "variable_len_graph_properties"):
-            if "forces" in self.processing_config.variable_len_graph_properties:
-                if "RandomRotate" in transform_names:
-                    warnings.append(
-                        "ANI-2x dataset has forces - geometric transforms will require force rotation"
-                    )
+        if (
+            hasattr(self.processing_config, "variable_len_graph_properties")
+            and "forces" in self.processing_config.variable_len_graph_properties
+            and "RandomRotate" in transform_names
+        ):
+            warnings.append(
+                "ANI-2x dataset has forces - geometric transforms will require force rotation"
+            )
 
         # Distance-based transforms
         if "Distance" in transform_names or "Cartesian" in transform_names:
