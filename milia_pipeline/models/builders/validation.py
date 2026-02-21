@@ -265,21 +265,25 @@ class ArchitectureValidator:
             next_meta = self.registry.get_layer_metadata(next_layer.type)
 
             # Pooling should come after convolutional layers
-            if current_meta.category == LayerCategory.POOLING:
-                if next_meta.category == LayerCategory.CONVOLUTIONAL:
-                    warnings.append(
-                        f"Unusual ordering: Pooling layer {i} ({current.type}) "
-                        f"followed by convolutional layer {i + 1} ({next_layer.type})"
-                    )
-                    suggestions.append("Consider moving pooling layer later in architecture")
+            if (
+                current_meta.category == LayerCategory.POOLING
+                and next_meta.category == LayerCategory.CONVOLUTIONAL
+            ):
+                warnings.append(
+                    f"Unusual ordering: Pooling layer {i} ({current.type}) "
+                    f"followed by convolutional layer {i + 1} ({next_layer.type})"
+                )
+                suggestions.append("Consider moving pooling layer later in architecture")
 
             # Activation should come after convolutional/linear layers
-            if current_meta.category == LayerCategory.ACTIVATION:
-                if next_meta.category == LayerCategory.ACTIVATION:
-                    warnings.append(
-                        f"Multiple consecutive activation layers: "
-                        f"{i} ({current.type}), {i + 1} ({next_layer.type})"
-                    )
+            if (
+                current_meta.category == LayerCategory.ACTIVATION
+                and next_meta.category == LayerCategory.ACTIVATION
+            ):
+                warnings.append(
+                    f"Multiple consecutive activation layers: "
+                    f"{i} ({current.type}), {i + 1} ({next_layer.type})"
+                )
 
         return {"errors": errors, "warnings": warnings, "suggestions": suggestions}
 
