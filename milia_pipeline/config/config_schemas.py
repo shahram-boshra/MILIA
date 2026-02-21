@@ -379,12 +379,15 @@ class TransformationSchema(BaseModel):
             raise ValueError("standard_transforms must be a list")
 
         # default_setup must exist in experimental_setups if experimental_setups is non-empty
-        if has_experimental and self.default_setup not in self.experimental_setups:
+        if (
+            has_experimental
+            and self.default_setup not in self.experimental_setups
+            and not has_standard
+        ):
             # Allow if standard_transforms exists (default_setup is just a label)
-            if not has_standard:
-                raise ValueError(
-                    f"Default setup '{self.default_setup}' not found in experimental setups"
-                )
+            raise ValueError(
+                f"Default setup '{self.default_setup}' not found in experimental setups"
+            )
 
         return self
 
@@ -1248,11 +1251,14 @@ class YAMLSchemaValidator:
                         continue
 
                     # Only require description in strict mode
-                    if validation_config.require_descriptions and validation_config.strict_mode:
-                        if "description" not in setup_data:
-                            result["errors"].append(
-                                f"Setup '{setup_name}' missing required description"
-                            )
+                    if (
+                        validation_config.require_descriptions
+                        and validation_config.strict_mode
+                        and "description" not in setup_data
+                    ):
+                        result["errors"].append(
+                            f"Setup '{setup_name}' missing required description"
+                        )
 
                     # Check for transforms - but be flexible about format
                     if "transforms" in setup_data:
@@ -2049,9 +2055,10 @@ class DescriptorSchemaValidator:
                 )
 
             # Validate enabled field
-            if "enabled" in category_config:
-                if not isinstance(category_config["enabled"], bool):
-                    result["errors"].append(f"Category '{category_name}': enabled must be boolean")
+            if "enabled" in category_config and not isinstance(
+                category_config["enabled"], bool
+            ):
+                result["errors"].append(f"Category '{category_name}': enabled must be boolean")
 
             # Validate descriptors list
             if "descriptors" in category_config:
@@ -2071,18 +2078,22 @@ class DescriptorSchemaValidator:
                         )
 
             # Validate options
-            if "options" in category_config:
-                if not isinstance(category_config["options"], dict):
-                    result["errors"].append(
-                        f"Category '{category_name}': options must be a dictionary"
-                    )
+            if "options" in category_config and not isinstance(
+                category_config["options"], dict
+            ):
+                result["errors"].append(
+                    f"Category '{category_name}': options must be a dictionary"
+                )
 
             # Strict mode validations
-            if strict_mode and category_config.get("enabled", True):
-                if "descriptors" not in category_config:
-                    result["warnings"].append(
-                        f"Strict mode: Category '{category_name}' has no descriptor specification"
-                    )
+            if (
+                strict_mode
+                and category_config.get("enabled", True)
+                and "descriptors" not in category_config
+            ):
+                result["warnings"].append(
+                    f"Strict mode: Category '{category_name}' has no descriptor specification"
+                )
 
             result["valid"] = len(result["errors"]) == 0
 
