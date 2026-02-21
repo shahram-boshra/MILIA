@@ -1289,12 +1289,15 @@ def validate_conversion_prerequisites(
         failed_validations.append("Atomic numbers are required")
 
     # Validate array consistency
-    if coordinates is not None and atomic_numbers is not None:
-        if coordinates.shape[0] != len(atomic_numbers):
-            failed_validations.append(
-                f"Coordinates and atomic numbers length mismatch: "
-                f"{coordinates.shape[0]} vs {len(atomic_numbers)}"
-            )
+    if (
+        coordinates is not None
+        and atomic_numbers is not None
+        and coordinates.shape[0] != len(atomic_numbers)
+    ):
+        failed_validations.append(
+            f"Coordinates and atomic numbers length mismatch: "
+            f"{coordinates.shape[0]} vs {len(atomic_numbers)}"
+        )
 
     if failed_validations:
         raise HandlerValidationError(
