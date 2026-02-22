@@ -1,5 +1,8 @@
 # Dockerfile for shah_env ML/Chemistry environment
-FROM docker.io/continuumio/miniconda3:latest
+# Pin to miniconda3 v25.11.1-1 (Python 3.13, conda 25.11.1) — matches working container base.
+# Digest verified from docker build log (2026-02-22). Pin by digest per Docker best practices.
+# To upgrade: pull new miniconda3:latest, note its sha256, update digest + comment here.
+FROM docker.io/continuumio/miniconda3@sha256:5df7c31c16e90e4ea370836770feed507a1cf51c6e8aad835c65fb26b9eca941
 
 # OCI metadata labels — required for GHCR repository linking and package discoverability
 # Source: GitHub Docs ("Working with the Container registry" — "Labelling container images")
@@ -13,7 +16,7 @@ WORKDIR /app
 # Install mamba with aggressive retry logic
 RUN set -e && \
     for i in $(seq 1 3); do \
-        conda install -n base -c conda-forge mamba -y && break || sleep 10; \
+        conda install -n base -c conda-forge mamba=2.4.0 -y && break || sleep 10; \
     done && \
     conda config --set remote_connect_timeout_secs 180.0 && \
     conda config --set remote_read_timeout_secs 900.0 && \
