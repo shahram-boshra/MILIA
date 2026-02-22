@@ -48,8 +48,22 @@ import time
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+# ---------------------------------------------------------------------------
+# NOTE: PyYAML (``import yaml``) is intentionally NOT imported at module level.
+#
+# PyYAML is a conda-managed dependency in MILIA. Importing it eagerly here
+# would prevent ``milia_pipeline`` from being importable in environments
+# where only pip-managed dev dependencies are installed (e.g. GitHub Actions
+# CI for lint and smoke testing).
+#
+# Instead, every function that needs yaml performs a local ``import yaml``
+# at the top of its body. Python caches modules in ``sys.modules`` after
+# the first import, so subsequent ``import yaml`` calls are effectively
+# free (a single dict lookup).
+#
+# This is the same deferred-import pattern used throughout the MILIA test
+# suite (e.g. ``import torch`` inside conftest.py fixtures).
+# ---------------------------------------------------------------------------
 from milia_pipeline.exceptions import ConfigurationError
 
 # Handler removed - using config_schemas directly for all validation and migration
@@ -577,6 +591,8 @@ def _load_and_merge_yaml_files(files: list[Path]) -> dict[str, Any]:
     Raises:
         ConfigurationError: If any file fails to load or parse
     """
+    import yaml
+
     if not files:
         raise ConfigurationError(
             "No configuration files provided for merging",
@@ -706,6 +722,8 @@ def load_config(
         ConfigurationError: If the file is not found, cannot be parsed,
                             validation fails, or any other loading error occurs.
     """
+    import yaml
+
     global _config_cache, _CONFIG_STATS, _CONFIG
 
     # Determine config path
@@ -1859,6 +1877,8 @@ def validate_config_file(
     Returns:
         Dictionary with comprehensive validation results
     """
+    import yaml
+
     validation_level = validation_level.upper()
     if validation_level not in ["STRICT", "NORMAL", "RELAXED"]:
         validation_level = "STRICT"  # Default to strict for file validation
@@ -2064,6 +2084,8 @@ def create_example_config(
     - Original hardcoded default: config_loader.py line 1256 (dataset_type='DFT')
     - Pattern: Following Phase 3/4 dynamic type resolution approach
     """
+    import yaml
+
     # PHASE 5: Get default dataset type from registry if not specified
     if dataset_type is None:
         dataset_type = _get_default_dataset_type()
@@ -2197,6 +2219,8 @@ def migrate_legacy_config(
     - Original hardcoded default: config_loader.py line 1345 (dataset_type='DFT')
     - Pattern: Following Phase 3/4 dynamic type resolution approach
     """
+    import yaml
+
     # PHASE 5: Get default dataset type from registry if not specified
     if dataset_type is None:
         dataset_type = _get_default_dataset_type()
@@ -2654,6 +2678,8 @@ def check_migration_status(config_path: str = "config.yaml") -> dict[str, Any]:
     Returns:
         Dictionary with migration status and recommendations
     """
+    import yaml
+
     try:
         if not os.path.exists(config_path):
             return {
@@ -2792,6 +2818,8 @@ def recommend_validation_level(config_path: str = "config.yaml") -> str:
     Returns:
         Recommended validation level ('STRICT', 'NORMAL', or 'RELAXED')
     """
+    import yaml
+
     try:
         if not os.path.exists(config_path):
             return "NORMAL"
