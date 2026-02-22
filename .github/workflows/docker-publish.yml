@@ -1,4 +1,12 @@
 # .github/workflows/docker-publish.yml
+#
+# Source evidence:
+#   - GitHub Docs: "Publishing and installing a package with GitHub Actions"
+#   - docker/login-action@v3, docker/metadata-action@v5, docker/build-push-action@v6
+#     (current latest per Docker official docs and release pages, Feb 2026)
+#   - actions/checkout@v6 (current latest per actions/checkout releases, Feb 2026)
+#   - docker/metadata-action README: automatic org.opencontainers.image.source label
+#     generation from GitHub context (enables GHCR → repository linking)
 name: Build and Publish Docker Image
 
 on:
@@ -27,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -46,7 +54,7 @@ jobs:
             type=sha,prefix=
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true

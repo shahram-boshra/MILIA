@@ -59,6 +59,20 @@ MILIA relies on heavy scientific packages (PyTorch, PyTorch Geometric, RDKit) th
 
 The fastest way to get MILIA running. A pre-built image is available on GitHub Container Registry:
 
+> **Note (Private Repository):** MILIA's GHCR image is private. Before pulling, authenticate
+> to GHCR using either [GitHub CLI](https://cli.github.com/) or a
+> [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+> with `read:packages` scope:
+>
+> ```bash
+> # Option A: GitHub CLI (recommended — no PAT needed)
+> gh auth login
+> echo $(gh auth token) | docker login ghcr.io -u USERNAME --password-stdin
+>
+> # Option B: Personal Access Token with read:packages scope
+> echo YOUR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+> ```
+
 ```bash
 # Pull and run the pre-built image
 docker pull ghcr.io/shahram-boshra/milia:latest
