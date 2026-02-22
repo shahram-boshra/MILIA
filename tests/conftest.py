@@ -70,18 +70,25 @@ import pytest
 # Dynamic collection filtering — skip test files with unimportable deps
 # ---------------------------------------------------------------------------
 # CI installs only pip dev extras (pytest, ruff, pytest-mock). Heavy scientific
-# dependencies (torch, numpy, PyG, RDKit, pydantic) are conda-managed and NOT
-# available in CI pip-only environments.
+# dependencies (torch, numpy, PyG, RDKit, pydantic, PyYAML) are conda-managed
+# and NOT available in CI pip-only environments.
 #
 # pytest must *import* every test file during collection to discover markers,
 # so ``-m smoke`` alone is insufficient — test files that import heavy deps at
 # module level cause ``ModuleNotFoundError`` during collection.
 #
-# Solution: When core heavy deps are absent, dynamically populate
-# ``collect_ignore`` with every test file whose top-level imports include
-# modules that are not currently installed. This is done by parsing each
-# file's AST to extract module-level import names, then probing each with
-# ``importlib.util.find_spec``.
+# Solution: Two-phase import probing when core heavy deps are absent.
+#
+# **Phase 1 (fast)**: AST-based ``find_spec`` check for direct imports whose
+# top-level package is entirely absent (e.g. ``import torch``).
+#
+# **Phase 2 (deep)**: For files that pass Phase 1 (their top-level packages
+# are installed), attempt the actual ``importlib.import_module()`` for every
+# fully-qualified module path referenced in the file.  This catches
+# **transitive** failures — e.g. ``from milia_pipeline.exceptions import X``
+# where ``milia_pipeline`` is installed but its ``__init__.py`` eagerly
+# imports ``yaml`` / ``pydantic`` / ``numpy`` which are NOT installed.
+# Results are cached per module path so each probe runs at most once.
 #
 # This approach is:
 #   - **Non-breaking**: When all deps are installed, nothing is skipped.
@@ -93,7 +100,7 @@ import pytest
 # ---------------------------------------------------------------------------
 def _heavy_deps_available() -> bool:
     """Return True if core heavy dependencies are importable."""
-    for mod_name in ("torch", "numpy"):
+    for mod_name in ("torch", "numpy", "yaml", "pydantic"):
         try:
             __import__(mod_name)
         except ImportError:
@@ -101,12 +108,35 @@ def _heavy_deps_available() -> bool:
     return True
 
 
+# Module-level cache: maps fully-qualified module path → bool (importable?)
+_import_probe_cache: dict[str, bool] = {}
+
+
+def _probe_import(module_path: str) -> bool:
+    """Attempt to import *module_path* and return True on success.
+
+    Results are cached so each module is probed at most once per session.
+    Only catches ``ImportError`` (includes ``ModuleNotFoundError``); other
+    exceptions propagate so real bugs are not silently swallowed.
+    """
+    if module_path in _import_probe_cache:
+        return _import_probe_cache[module_path]
+    try:
+        __import__(module_path)
+        _import_probe_cache[module_path] = True
+    except ImportError:
+        _import_probe_cache[module_path] = False
+    return _import_probe_cache[module_path]
+
+
 def _get_unimportable_test_files() -> list[str]:
-    """Return list of test file paths whose top-level imports cannot be resolved.
+    """Return list of test file paths whose imports cannot be resolved.
 
     Parses each ``test_*.py`` file's AST to find module-level ``import X``
-    and ``from X import ...`` statements, then checks if the top-level
-    package of each import is findable via ``importlib.util.find_spec``.
+    and ``from X import ...`` statements, then applies a two-phase probe:
+
+    1. ``importlib.util.find_spec`` on the top-level package (fast reject).
+    2. ``__import__`` on the full module path (catches transitive failures).
 
     Files whose imports are all resolvable are NOT included in the result.
     """
@@ -132,17 +162,19 @@ def _get_unimportable_test_files() -> list[str]:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     top_pkg = alias.name.split(".")[0]
+                    # Phase 1: top-level package missing entirely
                     if importlib.util.find_spec(top_pkg) is None:
                         skip = True
                         break
-            elif (
-                isinstance(node, ast.ImportFrom)
-                and node.module
-                and node.level == 0
-                and importlib.util.find_spec(node.module.split(".")[0]) is None
-            ):
-                skip = True
-                break
+                    # Phase 2: deep probe — full module path
+                    if not _probe_import(alias.name):
+                        skip = True
+                        break
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                top_pkg = node.module.split(".")[0]
+                # Phase 1: top-level package missing entirely
+                if importlib.util.find_spec(top_pkg) is None or not _probe_import(node.module):
+                    skip = True
             if skip:
                 break
 

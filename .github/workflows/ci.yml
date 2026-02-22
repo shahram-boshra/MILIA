@@ -81,10 +81,12 @@ jobs:
       # Full test suite requires conda-managed scientific packages
       # (PyTorch, PyG, RDKit, NumPy) which are not available via pip.
       #
-      # conftest.py dynamically skips any test file whose top-level imports
-      # cannot be resolved (AST-based probing via importlib.util.find_spec).
-      # This means only test files whose deps are fully available are
-      # collected, regardless of smoke vs non-smoke designation.
+      # conftest.py dynamically skips any test file whose module-level
+      # imports cannot be fully resolved.  It uses two-phase probing:
+      # Phase 1: AST-based find_spec for missing top-level packages.
+      # Phase 2: actual __import__ on full module paths to catch
+      # transitive failures (e.g. milia_pipeline -> yaml/pydantic/numpy).
+      # Only test files whose deps are ALL resolvable are collected.
       #
       # Exit code 5 (no tests collected) is possible if ALL smoke test
       # files depend on heavy packages — this is expected in pip-only CI.
