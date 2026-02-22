@@ -83,12 +83,17 @@ import pytest
 # top-level package is entirely absent (e.g. ``import torch``).
 #
 # **Phase 2 (deep)**: For files that pass Phase 1 (their top-level packages
-# are installed), attempt the actual ``importlib.import_module()`` for every
-# fully-qualified module path referenced in the file.  This catches
+# are installed), attempt the actual import in a **subprocess** for every
+# unique fully-qualified module path referenced in the file.  This catches
 # **transitive** failures — e.g. ``from milia_pipeline.exceptions import X``
 # where ``milia_pipeline`` is installed but its ``__init__.py`` eagerly
 # imports ``yaml`` / ``pydantic`` / ``numpy`` which are NOT installed.
-# Results are cached per module path so each probe runs at most once.
+# Results are cached per module path so each subprocess runs at most once.
+#
+# A subprocess is required because ``__import__()`` in-process leaves
+# partially-initialized modules in ``sys.modules`` (per Python docs:
+# "any module that was successfully loaded as a side-effect must remain
+# in the cache"), which corrupts subsequent import attempts.
 #
 # This approach is:
 #   - **Non-breaking**: When all deps are installed, nothing is skipped.
@@ -113,19 +118,26 @@ _import_probe_cache: dict[str, bool] = {}
 
 
 def _probe_import(module_path: str) -> bool:
-    """Attempt to import *module_path* and return True on success.
+    """Check if *module_path* is importable using a subprocess.
+
+    A subprocess is used to avoid polluting ``sys.modules`` in the main
+    pytest process with partially-initialized modules (Python import docs:
+    side-effect modules remain in ``sys.modules`` even when the failing
+    module is removed).
 
     Results are cached so each module is probed at most once per session.
-    Only catches ``ImportError`` (includes ``ModuleNotFoundError``); other
-    exceptions propagate so real bugs are not silently swallowed.
     """
     if module_path in _import_probe_cache:
         return _import_probe_cache[module_path]
-    try:
-        __import__(module_path)
-        _import_probe_cache[module_path] = True
-    except ImportError:
-        _import_probe_cache[module_path] = False
+
+    import subprocess
+
+    result = subprocess.run(
+        [sys.executable, "-c", f"import {module_path}"],
+        capture_output=True,
+        timeout=30,
+    )
+    _import_probe_cache[module_path] = result.returncode == 0
     return _import_probe_cache[module_path]
 
 
@@ -136,7 +148,8 @@ def _get_unimportable_test_files() -> list[str]:
     and ``from X import ...`` statements, then applies a two-phase probe:
 
     1. ``importlib.util.find_spec`` on the top-level package (fast reject).
-    2. ``__import__`` on the full module path (catches transitive failures).
+    2. Subprocess ``import`` on the full module path (catches transitive
+       failures without polluting the main process).
 
     Files whose imports are all resolvable are NOT included in the result.
     """
