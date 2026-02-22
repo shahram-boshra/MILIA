@@ -1,0 +1,65 @@
+# =============================================================================
+# MILIA — Workflow Run Cleanup
+# =============================================================================
+# Automatically deletes old workflow runs to keep the Actions tab clean.
+#
+# Triggers:
+#   - Scheduled: 1st of each month at 00:00 UTC (automatic hygiene)
+#   - Manual: workflow_dispatch with configurable parameters
+#
+# Policy:
+#   - Retain runs for 30 days (configurable via manual dispatch)
+#   - Always keep at least 6 recent runs per workflow
+#   - Targets ALL workflows (CI, Build and Publish Docker Image, etc.)
+#   - Targets ALL run conclusions (success, failure, cancelled, etc.)
+#
+# Uses Mattraks/delete-workflow-runs@v2 (MIT license)
+#   https://github.com/Mattraks/delete-workflow-runs
+#
+# Permissions:
+#   - actions: write  (required to delete workflow runs via GitHub API)
+#   - contents: read   (required by the action to list workflows)
+# =============================================================================
+
+name: Cleanup old workflow runs
+
+on:
+  schedule:
+    # Run monthly on the 1st at 00:00 UTC
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days to retain runs"
+        required: true
+        default: "30"
+      minimum_runs:
+        description: "Minimum runs to keep per workflow"
+        required: true
+        default: "6"
+      dry_run:
+        description: "Simulate deletions (no actual deletes)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete old workflow runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: ${{ github.event.inputs.days || 30 }}
+          keep_minimum_runs: ${{ github.event.inputs.minimum_runs || 6 }}
+          dry_run: ${{ github.event.inputs.dry_run || 'false' }}
