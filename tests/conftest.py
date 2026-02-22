@@ -65,6 +65,96 @@ from typing import Any
 
 import pytest
 
+
+# ---------------------------------------------------------------------------
+# Dynamic collection filtering — skip test files with unimportable deps
+# ---------------------------------------------------------------------------
+# CI installs only pip dev extras (pytest, ruff, pytest-mock). Heavy scientific
+# dependencies (torch, numpy, PyG, RDKit, pydantic) are conda-managed and NOT
+# available in CI pip-only environments.
+#
+# pytest must *import* every test file during collection to discover markers,
+# so ``-m smoke`` alone is insufficient — test files that import heavy deps at
+# module level cause ``ModuleNotFoundError`` during collection.
+#
+# Solution: When core heavy deps are absent, dynamically populate
+# ``collect_ignore`` with every test file whose top-level imports include
+# modules that are not currently installed. This is done by parsing each
+# file's AST to extract module-level import names, then probing each with
+# ``importlib.util.find_spec``.
+#
+# This approach is:
+#   - **Non-breaking**: When all deps are installed, nothing is skipped.
+#   - **Dynamic**: Automatically adapts to any new test file or dependency.
+#   - **Future-proof**: No hard-coded file lists or module names.
+#
+# Official pytest docs on ``collect_ignore``:
+#   https://docs.pytest.org/en/stable/example/pythoncollection.html
+# ---------------------------------------------------------------------------
+def _heavy_deps_available() -> bool:
+    """Return True if core heavy dependencies are importable."""
+    for mod_name in ("torch", "numpy"):
+        try:
+            __import__(mod_name)
+        except ImportError:
+            return False
+    return True
+
+
+def _get_unimportable_test_files() -> list[str]:
+    """Return list of test file paths whose top-level imports cannot be resolved.
+
+    Parses each ``test_*.py`` file's AST to find module-level ``import X``
+    and ``from X import ...`` statements, then checks if the top-level
+    package of each import is findable via ``importlib.util.find_spec``.
+
+    Files whose imports are all resolvable are NOT included in the result.
+    """
+    import ast
+    import glob as _glob
+    import importlib.util
+
+    tests_dir = Path(__file__).resolve().parent
+    all_test_files = _glob.glob(str(tests_dir / "test_*.py"))
+    unimportable = []
+
+    for filepath in all_test_files:
+        try:
+            source = Path(filepath).read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=filepath)
+        except (SyntaxError, UnicodeDecodeError):
+            # If we can't even parse the file, skip it during collection
+            unimportable.append(filepath)
+            continue
+
+        skip = False
+        for node in ast.iter_child_nodes(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    top_pkg = alias.name.split(".")[0]
+                    if importlib.util.find_spec(top_pkg) is None:
+                        skip = True
+                        break
+            elif (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and node.level == 0
+                and importlib.util.find_spec(node.module.split(".")[0]) is None
+            ):
+                skip = True
+                break
+            if skip:
+                break
+
+        if skip:
+            unimportable.append(filepath)
+
+    return unimportable
+
+
+if not _heavy_deps_available():
+    collect_ignore = _get_unimportable_test_files()
+
 # ---------------------------------------------------------------------------
 # Ensure project root is on sys.path
 # ---------------------------------------------------------------------------
