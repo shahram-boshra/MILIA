@@ -65,6 +65,46 @@ from typing import Any
 
 import pytest
 
+
+# ---------------------------------------------------------------------------
+# Dynamic collection filtering — skip non-smoke tests when heavy deps missing
+# ---------------------------------------------------------------------------
+# CI installs only dev extras (pytest, ruff, pytest-mock). Heavy scientific
+# dependencies (torch, numpy, PyYAML, PyG, RDKit) are conda-managed and NOT
+# available in CI pip-only environments.
+#
+# pytest must *import* every test file during collection to discover markers,
+# so ``-m smoke`` alone is insufficient — non-smoke test files that import
+# heavy deps at module level cause ``ModuleNotFoundError`` during collection.
+#
+# Solution: When heavy deps are absent, dynamically populate
+# ``collect_ignore`` so pytest never attempts to import non-smoke files.
+# This is the officially documented mechanism for conditionally excluding
+# files from collection:
+#   https://docs.pytest.org/en/stable/example/pythoncollection.html
+#
+# When all dependencies ARE installed (e.g. in conda/Docker), this block is
+# a no-op and the full test suite collects normally.
+# ---------------------------------------------------------------------------
+def _heavy_deps_available() -> bool:
+    """Return True if core heavy dependencies are importable."""
+    for mod_name in ("torch", "numpy", "yaml"):
+        try:
+            __import__(mod_name)
+        except ImportError:
+            return False
+    return True
+
+
+if not _heavy_deps_available():
+    import glob as _glob
+
+    _tests_dir = str(Path(__file__).resolve().parent)
+    # Discover ALL test files, then exclude smoke test files.
+    # Smoke test files follow the naming convention ``test_smoke_*.py``.
+    _all_test_files = _glob.glob(str(Path(_tests_dir) / "test_*.py"))
+    collect_ignore = [f for f in _all_test_files if not Path(f).name.startswith("test_smoke_")]
+
 # ---------------------------------------------------------------------------
 # Ensure project root is on sys.path
 # ---------------------------------------------------------------------------
