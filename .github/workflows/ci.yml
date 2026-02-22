@@ -81,29 +81,8 @@ jobs:
       # Full test suite requires conda-managed scientific packages
       # (PyTorch, PyG, RDKit) which are not available via pip.
       # Smoke-marked tests are designed to run without heavy dependencies.
-      #
-      # --continue-on-collection-errors: Prevents hard failure when
-      #   individual smoke test files cannot be imported because heavy
-      #   deps (torch, numpy) are missing in the pip-only CI environment.
-      #   conftest.py already filters out non-smoke test files dynamically.
-      #
-      # Exit code handling:
-      #   0 = all tests passed          → success
-      #   1 = some tests failed         → real failure (propagated)
-      #   2 = interrupted / fatal       → real failure (propagated)
-      #   5 = no tests collected        → expected when heavy deps absent
       - name: Run smoke tests
-        run: |
-          exit_code=0
-          pytest -m smoke --tb=short -v --continue-on-collection-errors || exit_code=$?
-          # Exit code 5 means "no tests were collected" — this is expected
-          # in pip-only CI where heavy deps (torch, numpy, PyYAML) are absent.
-          # All other non-zero codes indicate real failures.
-          if [ "$exit_code" -eq 5 ]; then
-            echo "::notice::No smoke tests collected — heavy dependencies not installed (expected in pip-only CI)"
-            exit 0
-          fi
-          exit "$exit_code"
+        run: pytest -m smoke --tb=short -v
 
   # Placeholder for future conda-based full test job.
   # Uncomment and configure when CI conda environment is set up.
