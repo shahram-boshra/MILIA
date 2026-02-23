@@ -29,17 +29,20 @@ RUN conda config --set remote_connect_timeout_secs 180.0 && \
 
 # Create base environment with retry logic
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Creating base environment..."; \
         rm -rf /opt/conda/envs/shah_env; \
         mamba create -n shah_env python=3.10 pip -y && \
         test -f /opt/conda/envs/shah_env/bin/python && \
-        echo "Base environment created!" && break || sleep 15; \
+        echo "Base environment created!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to create base environment after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install numpy, scipy, and small packages
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing core numerical libraries..."; \
         mamba install -n shah_env -c conda-forge \
@@ -49,35 +52,43 @@ RUN set -e && \
             attrs \
             h5py \
             pandas=2.3.1 \
-            -y && echo "Core libraries installed!" && break || sleep 15; \
+            -y && echo "Core libraries installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install core libraries after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install PyTorch (large package - most likely to fail)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 5); do \
         echo "Attempt $i/5: Installing PyTorch..."; \
         mamba install -n shah_env -c pytorch -c conda-forge \
-            pytorch=2.4.0 \
-            cpuonly=2.0 \
-            -y && echo "PyTorch installed!" && break || \
+            --no-channel-priority \
+            pytorch::pytorch=2.4.0 \
+            pytorch::cpuonly=2.0 \
+            -y && echo "PyTorch installed!" && _success=1 && break || \
         (echo "PyTorch install failed, retrying..." && sleep 20); \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install PyTorch after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install torch-geometric
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing torch-geometric..."; \
         mamba install -n shah_env -c pyg -c conda-forge \
+            --no-channel-priority \
             torch-geometric \
-            -y && echo "torch-geometric installed!" && break || sleep 15; \
+            -y && echo "torch-geometric installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install torch-geometric after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install PyG optional packages via pip (required for SchNet, DimeNet, PointNet++, etc.)
 # Using pip wheels as recommended by PyG documentation for PyTorch 2.4.0
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing PyG optional packages (torch-cluster, torch-scatter, torch-sparse, torch-spline-conv)..."; \
         /opt/conda/envs/shah_env/bin/pip install --no-cache-dir \
@@ -86,21 +97,25 @@ RUN set -e && \
             torch-sparse \
             torch-spline-conv \
             -f https://data.pyg.org/whl/torch-2.4.0+cpu.html && \
-        echo "PyG optional packages installed!" && break || sleep 10; \
-    done
+        echo "PyG optional packages installed!" && _success=1 && break || sleep 10; \
+    done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install PyG optional packages after all retries"; exit 1; fi
 
 # Install RDKit
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing RDKit..."; \
         mamba install -n shah_env -c conda-forge \
             rdkit=2025.03.5 \
-            -y && echo "RDKit installed!" && break || sleep 15; \
+            -y && echo "RDKit installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install RDKit after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install matplotlib and testing packages
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing remaining packages..."; \
         mamba install -n shah_env -c conda-forge \
@@ -108,81 +123,96 @@ RUN set -e && \
             pytest=8.4.1 \
             pytest-mock=3.14.1 \
             pydantic-settings=2.10.1 \
-            -y && echo "Remaining packages installed!" && break || sleep 15; \
+            -y && echo "Remaining packages installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install remaining packages after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install ASE (Atomic Simulation Environment) for XYZ file support (Tests 67, 71)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing ASE..."; \
         mamba install -n shah_env -c conda-forge \
             ase \
-            -y && echo "ASE installed!" && break || sleep 15; \
+            -y && echo "ASE installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install ASE after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install torchmetrics (NEW - Required for MetricsRegistry)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing torchmetrics..."; \
         mamba install -n shah_env -c conda-forge \
             "torchmetrics>=1.0.0" \
-            -y && echo "torchmetrics installed!" && break || sleep 15; \
+            -y && echo "torchmetrics installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install torchmetrics after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install Hydra (Configuration Management Framework for ML)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing hydra-core..."; \
         mamba install -n shah_env -c conda-forge \
             "hydra-core>=1.3.0" \
-            -y && echo "hydra-core installed!" && break || sleep 15; \
+            -y && echo "hydra-core installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install hydra-core after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install HPO conda packages (Optuna, visualization)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing HPO packages (Optuna, visualization)..."; \
         mamba install -n shah_env -c conda-forge \
             "optuna>=3.0.0" \
             "plotly>=5.0.0" \
             python-kaleido \
-            -y && echo "HPO conda packages installed!" && break || sleep 15; \
+            -y && echo "HPO conda packages installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install HPO conda packages after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install scikit-learn separately to ensure it installs
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing scikit-learn..."; \
         mamba install -n shah_env -c conda-forge \
             scikit-learn=1.5.2 \
-            -y && echo "scikit-learn installed!" && break || sleep 15; \
+            -y && echo "scikit-learn installed!" && _success=1 && break || sleep 15; \
     done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install scikit-learn after all retries"; exit 1; fi && \
     conda clean --all -y
 
 # Install pip packages with retry
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing pip packages..."; \
         /opt/conda/envs/shah_env/bin/pip install --no-cache-dir \
             memory-profiler \
             qc-iodata && \
-        echo "Pip packages installed!" && break || sleep 10; \
-    done
+        echo "Pip packages installed!" && _success=1 && break || sleep 10; \
+    done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install pip packages after all retries"; exit 1; fi
 
 # Install HPO optional pip packages (Ray Tune, Optuna Dashboard)
 RUN set -e && \
+    _success=0 && \
     for i in $(seq 1 3); do \
         echo "Attempt $i/3: Installing HPO pip packages (Ray Tune, Optuna Dashboard)..."; \
         /opt/conda/envs/shah_env/bin/pip install --no-cache-dir \
             "ray[tune]>=2.0.0" \
             optuna-dashboard && \
-        echo "HPO pip packages installed!" && break || sleep 10; \
-    done
+        echo "HPO pip packages installed!" && _success=1 && break || sleep 10; \
+    done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install HPO pip packages after all retries"; exit 1; fi
 
 # Verify critical packages
 RUN /opt/conda/envs/shah_env/bin/python -c "import sys; print(f'Python: {sys.version}')" && \
@@ -212,6 +242,12 @@ SHELL ["/bin/bash", "-c"]
 RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
     echo ". /opt/conda/etc/profile.d/mamba.sh" >> ~/.bashrc && \
     echo "conda activate shah_env" >> ~/.bashrc
+
+# Ensure shah_env is active for all invocation modes (docker run, exec, CMD)
+# .bashrc alone only covers interactive non-login shells
+ENV PATH="/opt/conda/envs/shah_env/bin:${PATH}"
+ENV CONDA_DEFAULT_ENV=shah_env
+ENV CONDA_PREFIX=/opt/conda/envs/shah_env
 
 # Copy application code
 COPY . /app
