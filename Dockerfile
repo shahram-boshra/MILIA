@@ -248,6 +248,8 @@ RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
 ENV PATH="/opt/conda/envs/shah_env/bin:${PATH}"
 ENV CONDA_DEFAULT_ENV=shah_env
 ENV CONDA_PREFIX=/opt/conda/envs/shah_env
+# Required by mamba >=2.0 to locate the installation root (ref: mamba-org/mamba#756)
+ENV MAMBA_ROOT_PREFIX=/opt/conda
 
 # Copy application code
 COPY . /app
