@@ -1,8 +1,12 @@
 # Dockerfile for shah_env ML/Chemistry environment
-# Pin to miniconda3 v25.11.1-1 (Python 3.13, conda 25.11.1) — matches working container base.
-# Digest verified from docker build log (2026-02-22). Pin by digest per Docker best practices.
-# To upgrade: pull new miniconda3:latest, note its sha256, update digest + comment here.
-FROM docker.io/continuumio/miniconda3@sha256:5df7c31c16e90e4ea370836770feed507a1cf51c6e8aad835c65fb26b9eca941
+# Base: condaforge/miniforge3 — the Mamba project's recommended distribution.
+# Miniforge3 ships with mamba pre-installed and uses only the conda-forge channel.
+# This avoids the Anaconda-defaults/conda-forge channel incompatibility that causes
+# broken environments (ref: mamba.readthedocs.io/en/latest/user_guide/troubleshooting.html).
+# Pin to versioned tag per Docker best practices for reproducibility.
+# To upgrade: check https://github.com/conda-forge/miniforge/releases for new tags,
+# update the tag below, and optionally pin by digest from `docker pull` output.
+FROM condaforge/miniforge3:25.11.0-1
 
 # OCI metadata labels — required for GHCR repository linking and package discoverability
 # Source: GitHub Docs ("Working with the Container registry" — "Labelling container images")
@@ -13,14 +17,14 @@ LABEL org.opencontainers.image.licenses=MIT
 
 WORKDIR /app
 
-# Install mamba with aggressive retry logic
-RUN set -e && \
-    for i in $(seq 1 3); do \
-        conda install -n base -c conda-forge mamba=2.4.0 -y && break || sleep 10; \
-    done && \
-    conda config --set remote_connect_timeout_secs 180.0 && \
+# Configure conda/mamba: conda-forge only, strict priority, generous timeouts.
+# Miniforge3 ships mamba pre-installed — no separate install step needed.
+# channel_priority=strict per Mamba docs: prevents mixing incompatible channels.
+RUN conda config --set remote_connect_timeout_secs 180.0 && \
     conda config --set remote_read_timeout_secs 900.0 && \
-    conda config --set channel_priority flexible && \
+    conda config --set channel_priority strict && \
+    conda config --remove channels defaults 2>/dev/null || true && \
+    conda config --add channels conda-forge && \
     conda clean --all -y
 
 # Create base environment with retry logic
@@ -203,9 +207,10 @@ RUN /opt/conda/envs/shah_env/bin/python -c "import sys; print(f'Python: {sys.ver
     echo "SUCCESS: All packages verified!" && \
     echo "========================================"
 
-# Setup conda activation
+# Setup conda/mamba activation for interactive shells
 SHELL ["/bin/bash", "-c"]
 RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+    echo ". /opt/conda/etc/profile.d/mamba.sh" >> ~/.bashrc && \
     echo "conda activate shah_env" >> ~/.bashrc
 
 # Copy application code
