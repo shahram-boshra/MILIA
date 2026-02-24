@@ -129,28 +129,31 @@ pip install -e ".[dev]"
 ### Command Line
 
 ```bash
-# Process molecular data
-milia --config config.yaml --process
+# Process molecular data (auto-detects configs/ directory)
+milia --process
 
 # Train a GNN model
-milia --config config.yaml --train
+milia --train
 
-# Train with hyperparameter optimization
-milia --config config.yaml --train  # (set models.hpo.enabled: true in config)
+# Train with hyperparameter optimization (via CLI flag)
+milia --train --hpo
 
 # Run predictions on new molecules
 milia --predict --model-path ./checkpoints/best_model.pt \
       --test-path ./molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
-milia --config config.yaml --dry-run
+milia --dry-run
 
 # List available transforms and experimental setups
-milia --config config.yaml --list-transforms
-milia --config config.yaml --list-experimental-setups
+milia --list-transforms
+milia --list-experimental-setups
 
 # Generate statistics from existing data
-milia --config config.yaml --stats-only
+milia --stats-only
+
+# Explicit config path (equivalent to auto-detection when configs/ exists)
+milia --config configs/ --process
 ```
 
 ### Programmatic API
@@ -161,7 +164,7 @@ from milia_pipeline import create_cli_manager, setup_logging
 # Setup
 logger = setup_logging(log_level="INFO")
 cli = create_cli_manager(logger=logger)
-args = cli.parse_args(['--config', 'config.yaml', '--process'])
+args = cli.parse_args(['--config', 'configs/', '--process'])
 
 # Load and validate configuration
 config = cli.load_and_merge_config(args)
@@ -173,8 +176,8 @@ from milia_pipeline.config import load_config
 from milia_pipeline.handlers import create_handler
 from milia_pipeline.datasets import miliaDataset
 
-# Load configuration and create a dataset handler
-config = load_config('config.yaml')
+# Load configuration (split-file mode: merges all YAML files in configs/)
+config = load_config('configs/')
 handler = create_handler(
     dataset_type='DFT',
     config=config,
