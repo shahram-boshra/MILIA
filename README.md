@@ -40,7 +40,7 @@ Edge, cloud, and federated deployment strategies with model quantization and pru
 Extend descriptors, transformations, and models independently without modifying core code. Plugin discovery with YAML manifests, validation, and security controls. Ships with example plugins and user templates.
 
 ### Flexible Configuration System
-Schema-validated YAML with Pydantic V2 (10 frozen BaseModel containers, 60+ accessor functions). Supports single-file (`config.yaml`) or split-file (`configs/`) modes with deep merge, CLI override, and configuration migration. Each dataset type has colocated configuration files for self-contained setup.
+Schema-validated YAML with Pydantic V2 (10 frozen BaseModel containers, 60+ accessor functions). Split-file `configs/` directory as the sole configuration source with deep merge, CLI override, and configuration migration. Explicit single-file paths are supported via `--config`. Each dataset type has colocated configuration files for self-contained setup.
 
 ### Wavefunction Preprocessing
 Modular preprocessing for quantum chemistry data formats (MOLDEN, FCHK) with structural feature filtering per dataset type, wavefunction data extraction, and VQM24 support.
@@ -198,7 +198,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 
 | Module | Files | Purpose |
 |--------|-------|---------|
-| `config/` | 7 files, ~22K lines | Multi-layered configuration management with Pydantic V2 validation, YAML splitting (single-file or `configs/` directory), thread-safe caching, schema migration, and 60+ accessor functions |
+| `config/` | 7 files, ~22K lines | Multi-layered configuration management with Pydantic V2 validation, YAML splitting (`configs/` directory with deep merge), thread-safe caching, schema migration, and 60+ accessor functions |
 | `molecules/` | 7 files, ~14K lines | Molecular conversion (RDKit → PyG), structural feature extraction, property enrichment, filtering with transform compatibility, and registry-integrated validation |
 | `transformations/` | 4 files, ~16K lines | 7-layer graph transformation system: dynamic discovery, registry, semantic validation, composition with caching, configuration bridge, error recovery, and production metrics |
 | `datasets/` | 10 files | Registry-based PyTorch Geometric datasets with Protocol contracts, compile-time validation, and 5 concrete implementations (DFT, DMC, Wavefunction, XXMD, QDPi) |
