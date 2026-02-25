@@ -468,44 +468,34 @@ def get_cli_registry_status() -> dict:
 
 def _get_default_config_path() -> str:
     """
-    Get the default configuration file or directory path.
+    Get the default configuration directory path.
 
-    YAML Splitting Architecture Enhancement:
-    - Supports both single-file (backward compatible) and directory (split-file) modes
-    - Dynamically detects available configuration at runtime
+    The MILIA project uses a split-file YAML configuration architecture
+    where the ``configs/`` directory is the sole configuration source.
+    The monolithic ``config.yaml`` has been permanently removed (v2.3).
 
-    Priority Order:
-    1. config.yaml (single file in CWD) - HIGHEST, backward compatible
-    2. config.yml (single file in CWD)
-    3. ./configs/ (directory) - triggers split-file mode
-    4. ./configs/config.yaml (single file inside configs/) - fallback
-    5. Return 'config.yaml' as default (will trigger helpful error if missing)
+    Resolution:
+    1. ``./configs/`` directory — the shipped configuration source
+    2. If ``./configs/`` does not exist, raise a clear error
 
     Returns:
-        Path to configuration file or directory
+        Path to configuration directory
 
-    Evidence: Blueprint Section 3.1.3 specifies this priority order for
-    backward compatibility while enabling new split-file mode.
+    NOTE: ``configs/`` (plural) avoids confusion with the Python code
+    package ``milia_pipeline/config/``.
     """
-    # Priority 1: Single file in CWD (backward compatible)
-    for file_path in ["config.yaml", "config.yml"]:
-        if Path(file_path).is_file():
-            return file_path
-
-    # Priority 2: Configs directory (NEW - split-file mode)
-    # NOTE: 'configs/' (plural) avoids confusion with milia_pipeline/config/ (Python code module)
     configs_dir = Path("./configs")
     if configs_dir.is_dir():
         return str(configs_dir)
 
-    # Priority 3: config.yaml inside configs/ directory (legacy layout)
-    config_in_dir = Path("./configs/config.yaml")
-    if config_in_dir.is_file():
-        return str(config_in_dir)
-
-    # Default fallback - return 'config.yaml' which will trigger a helpful error
-    # message if it doesn't exist (validation will catch this)
-    return "config.yaml"
+    # No configs/ directory found — raise an actionable error
+    raise CLIValidationError(
+        "Configuration directory not found: ./configs/\n"
+        "The MILIA project requires a 'configs/' directory containing split "
+        "YAML configuration files (main.yaml, datasets/*.yaml, etc.).\n"
+        "Please ensure you are running from the project root directory, or "
+        "pass an explicit path via --config."
+    )
 
 
 class CLIValidationError(Exception):
@@ -610,7 +600,7 @@ class CLIManager:
             type=str,
             default=None,
             metavar="PATH",
-            help="Root directory for dataset (overrides config.yaml)",
+            help="Root directory for dataset (overrides configuration)",
         )
 
         basic.add_argument(
@@ -630,10 +620,10 @@ class CLIManager:
         basic.add_argument(
             "--config",
             type=str,
-            default="config.yaml",
+            default=None,
             metavar="PATH",
             help="Configuration file or directory path. "
-            "Auto-detects: config.yaml → config.yml → configs/ directory. "
+            "Default: auto-detects configs/ directory. "
             "If a directory is specified (e.g., configs/), all YAML files within are merged "
             "(YAML Splitting Architecture).",
         )
@@ -923,7 +913,7 @@ class CLIManager:
     def _add_filter_arguments(self, parser: argparse.ArgumentParser) -> None:
         """Add molecule filter arguments."""
         filters = parser.add_argument_group(
-            "Molecule Filters", "Override filter settings from config.yaml"
+            "Molecule Filters", "Override filter settings from configuration"
         )
 
         filters.add_argument(
@@ -1247,7 +1237,7 @@ class CLIManager:
             type=str,
             default=None,
             choices=["single", "custom", "ensemble"],
-            help="Model selection mode: single (registry model), custom (ArchitectureBuilder), ensemble (ModelComposer). Overrides config.yaml models.selection.mode",
+            help="Model selection mode: single (registry model), custom (ArchitectureBuilder), ensemble (ModelComposer). Overrides configs/ models.selection.mode",
         )
 
         training.add_argument(
@@ -1263,28 +1253,28 @@ class CLIManager:
                 "edge_regression",
                 "edge_classification",
             ],
-            help="Task type (overrides config.yaml models.selection.task_type)",
+            help="Task type (overrides configs/ models.selection.task_type)",
         )
 
         training.add_argument(
             "--epochs",
             type=int,
             default=None,
-            help="Number of training epochs (overrides config.yaml)",
+            help="Number of training epochs (overrides configs/)",
         )
 
         training.add_argument(
             "--batch-size",
             type=int,
             default=None,
-            help="Training batch size (overrides config.yaml)",
+            help="Training batch size (overrides configs/)",
         )
 
         training.add_argument(
             "--learning-rate",
             type=float,
             default=None,
-            help="Base learning rate (overrides config.yaml)",
+            help="Base learning rate (overrides configs/)",
         )
 
         training.add_argument(
@@ -1391,14 +1381,14 @@ class CLIManager:
             "--n-trials",
             type=int,
             default=None,
-            help="Number of HPO trials (overrides config.yaml models.hpo.n_trials)",
+            help="Number of HPO trials (overrides configs/ models.hpo.n_trials)",
         )
 
         training.add_argument(
             "--hpo-timeout",
             type=int,
             default=None,
-            help="HPO timeout in seconds (overrides config.yaml models.hpo.timeout)",
+            help="HPO timeout in seconds (overrides configs/ models.hpo.timeout)",
         )
 
         training.add_argument(
@@ -1760,12 +1750,9 @@ For more information, see: https://docs.example.com/milia-cli
 
         # YAML Splitting Architecture: Resolve config path dynamically
         # If user didn't specify --config, use dynamic default detection
-        if args.config == "config.yaml":
-            # User used the default - check if we should use split-file mode
-            resolved_path = _get_default_config_path()
-            if resolved_path != "config.yaml":
-                args.config = resolved_path
-                self.logger.debug(f"Using detected config path: {resolved_path}")
+        if args.config is None:
+            args.config = _get_default_config_path()
+            self.logger.debug(f"Using detected config path: {args.config}")
 
         # NEW: Handle preprocessing modes
         if hasattr(args, "preprocess") and args.preprocess:
@@ -1890,13 +1877,11 @@ For more information, see: https://docs.example.com/milia-cli
             self.logger.warning(f"Root directory does not exist: {args.root_dir}")
 
         if args.config and not Path(args.config).exists():
-            # YAML Splitting Architecture: Config path can be file OR directory
-            # Check if it's neither a file nor a directory
+            # Config path can be a file OR directory
             raise CLIValidationError(
                 f"Configuration path not found: {args.config}\n"
-                f"Expected either:\n"
-                f"  - A configuration file (e.g., config.yaml)\n"
-                f"  - A configuration directory (e.g., configs/)"
+                f"Expected a configuration directory (e.g., configs/).\n"
+                f"A single YAML file is also accepted when passed explicitly via --config."
             )
         # Validate plugin arguments
         if PLUGIN_SYSTEM_AVAILABLE:
@@ -2198,7 +2183,7 @@ For more information, see: https://docs.example.com/milia-cli
             # Warn if models not enabled in config
             if not self.config["models"].get("enabled", False):
                 self.logger.warning(
-                    "models.enabled is False in config.yaml, and the user is specified --train. "
+                    "models.enabled is False in configs/models.yaml, and the user is specified --train. "
                     "Enabling models for this run."
                 )
                 self.config["models"]["enabled"] = True
@@ -2889,7 +2874,7 @@ For more information, see: https://docs.example.com/milia-cli
         elif no_filters:
             print("Filters: None (disabled)")
         else:
-            print("Filters: From config.yaml")
+            print("Filters: From configs/")
 
         # Logging - safe access
         log_level = getattr(args, "log_level", "INFO")
@@ -3090,7 +3075,7 @@ For more information, see: https://docs.example.com/milia-cli
                     print("\nNo experiments configured.")
                     print("\nTo add experiments:")
                     print("  1. Create research_experiments.yaml in project root, OR")
-                    print("  2. Add 'experiments:' section to config.yaml")
+                    print("  2. Add 'experiments:' section to configs/main.yaml")
                     print("\nSee Research API Operations documentation for format.")
                 else:
                     # Display each experiment

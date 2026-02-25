@@ -16,7 +16,8 @@ Key Features:
 - Support for multiple experimental setups
 - Handler-based backward compatibility
 - Comprehensive validation with detailed error reporting
-- Production-ready error handling and fallback mechanisms
+- Production-ready error handling
+- **YAML Splitting**: Split-file configuration via ``configs/`` directory (sole source)
 - **PHASE 5**: Dynamic dataset type resolution via registry
 
 Architecture:
@@ -226,7 +227,7 @@ def _normalize_dataset_type(dataset_type: str, _skip_cache_if_reentrant: list = 
     3. No match - returns input unchanged (validation will catch invalid types)
 
     Args:
-        dataset_type: Dataset type name from config.yaml (any case)
+        dataset_type: Dataset type name from YAML config (any case)
         _skip_cache_if_reentrant: Internal list to signal re-entrant call (set to [True] if skipped)
 
     Returns:
@@ -295,7 +296,7 @@ def _normalize_dataset_keyed_sections(config: dict[str, Any]) -> dict[str, Any]:
     - data_config.property_selection: Maps dataset types to selected properties
 
     Keys are normalized to match canonical registry names (case-insensitive matching).
-    This ensures that config.yaml can use any case (e.g., "ANI1X", "ani1x", "Ani1x")
+    This ensures that YAML config files can use any case (e.g., "ANI1X", "ani1x", "Ani1x")
     and lookups will work correctly with the canonical name (e.g., "ANI1x").
 
     Args:
@@ -422,9 +423,10 @@ def _discover_config_files(config_path: str) -> tuple[bool, list[Path]]:
     Discover configuration files for YAML splitting support.
 
     Strategy:
-    1. If config_path is a file that exists → single-file mode (backward compatible)
-    2. If config_path is a directory → split-file mode (new feature)
-    3. If config_path doesn't exist but config_path + '/' does → split-file mode
+    1. If config_path is a file that exists → single-file mode
+       (supports explicit user-provided file paths, e.g. load_config('my.yaml'))
+    2. If config_path is a directory → split-file mode (standard MILIA layout)
+    3. Path does not exist → return as-is so load_config() raises a clear error
 
     Args:
         config_path: Path to config file or directory
@@ -447,24 +449,17 @@ def _discover_config_files(config_path: str) -> tuple[bool, list[Path]]:
     """
     config_path = Path(config_path)
 
-    # Case 1: Single file exists (backward compatibility)
+    # Case 1: Single file exists (explicit user-provided file path)
     if config_path.is_file():
         logger.debug(f"Single-file config mode: {config_path}")
         return (False, [config_path])
 
-    # Case 2: Directory exists (split-file mode)
+    # Case 2: Directory exists (split-file mode — standard MILIA layout)
     if config_path.is_dir():
         logger.debug(f"Split-file config mode: {config_path}")
         return (True, _collect_yaml_files(config_path))
 
-    # Case 3: Path might be intended as directory
-    # (e.g., 'config' when 'config/' exists but 'config' file doesn't)
-    if config_path.with_suffix("").is_dir():
-        dir_path = config_path.with_suffix("")
-        logger.debug(f"Split-file config mode (inferred directory): {dir_path}")
-        return (True, _collect_yaml_files(dir_path))
-
-    # Case 4: Neither exists - return as-is, let load_config() handle the error
+    # Case 3: Neither exists - return as-is, let load_config() handle the error
     return (False, [config_path])
 
 
@@ -475,15 +470,12 @@ def _collect_yaml_files(config_dir: Path) -> list[Path]:
     Merge Order (later files override earlier):
     1. main.yaml or main.yml (base configuration, if exists)
     2. Root-level *.yaml/*.yml (alphabetical, excluding main.yaml/main.yml)
-       - This includes config.yaml if present (handles edge case where
-         directory contains config.yaml instead of main.yaml)
     3. datasets/*.yaml/*.yml (alphabetical) - dataset-specific configs
 
     Edge Case Handling:
-    - If ./config/ exists with config.yaml but NO main.yaml:
+    - If the directory contains a config.yaml but NO main.yaml,
       config.yaml is picked up in step 2 (root-level files)
-    - Files are sorted alphabetically, so 'config.yaml' loads before
-      'datasets.yaml', 'models.yaml', etc.
+    - Files are sorted alphabetically
 
     Args:
         config_dir: Path to configuration directory
@@ -505,7 +497,6 @@ def _collect_yaml_files(config_dir: Path) -> list[Path]:
         files.append(main_yml)
 
     # 2. Root-level YAML files (alphabetical, excluding main)
-    # NOTE: This catches config.yaml if main.yaml doesn't exist
     root_yamls = sorted(
         [f for f in config_dir.glob("*.yaml") if f.name not in ("main.yaml",)]
         + [f for f in config_dir.glob("*.yml") if f.name not in ("main.yml",)]
@@ -647,42 +638,38 @@ def _load_and_merge_yaml_files(files: list[Path]) -> dict[str, Any]:
 
 def _get_default_config_path():
     """
-    Get the default configuration file or directory path.
+    Get the default configuration directory path.
 
-    YAML Splitting Enhancement:
-    - Now supports both single-file (backward compatible) and directory (split-file) modes
+    The MILIA project uses a split-file YAML configuration architecture
+    where the ``configs/`` directory is the sole configuration source.
+    The monolithic ``config.yaml`` has been permanently removed (v2.3).
 
-    Priority Order:
-    1. config.yaml (single file in CWD) - HIGHEST, backward compatible
-    2. config.yml (single file in CWD)
-    3. ./configs/ (directory) - triggers split-file mode
-       NOTE: Uses 'configs/' (plural) to avoid confusion with milia_pipeline/config/ (Python code)
-    4. ./configs/config.yaml (single file inside configs/) - fallback
+    Resolution:
+    1. ``./configs/`` directory — the shipped configuration source
+    2. If ``./configs/`` does not exist, raise a clear error
 
-    Edge Case Clarification:
-    - If ./configs/ directory exists, it takes priority over ./configs/config.yaml
-    - The directory mode will then discover ALL *.yaml files inside ./configs/
-    - If ./configs/ contains config.yaml (but no main.yaml), config.yaml is
-      loaded as part of the directory merge (see _collect_yaml_files)
+    NOTE: ``configs/`` (plural) avoids confusion with the Python code
+    package ``milia_pipeline/config/``.
+
+    When a user explicitly passes a path via ``load_config(config_path=...)``,
+    that path (file or directory) is honoured by ``_discover_config_files()``
+    and this function is never consulted.
     """
-    # Priority 1: Single file (backward compatible)
-    for file_path in ["config.yaml", "config.yml"]:
-        if Path(file_path).is_file():
-            return file_path
-
-    # Priority 2: Configs directory (NEW - split-file mode)
-    # NOTE: 'configs/' (plural) avoids confusion with milia_pipeline/config/ (Python code module)
     configs_dir = Path("./configs")
     if configs_dir.is_dir():
         return str(configs_dir)
 
-    # Priority 3: config.yaml inside configs/ directory (legacy layout)
-    config_in_dir = Path("./configs/config.yaml")
-    if config_in_dir.is_file():
-        return str(config_in_dir)
-
-    # Default fallback
-    return "config.yaml"
+    # No configs/ directory found — raise an actionable error instead of
+    # silently returning a path to a file that does not exist.
+    raise ConfigurationError(
+        "Configuration directory not found: ./configs/\n"
+        "The MILIA project requires a 'configs/' directory containing split "
+        "YAML configuration files (main.yaml, datasets/*.yaml, etc.).\n"
+        "Please ensure you are running from the project root directory, or "
+        "pass an explicit path via load_config(config_path=...) or --config.",
+        config_key="config_directory",
+        actual_value="./configs",
+    )
 
 
 def load_config(
@@ -797,7 +784,7 @@ def load_config(
                     config = _load_and_merge_yaml_files(config_files)
                     logger.info(f"Loaded split configuration from: {config_path}")
                 else:
-                    # Single-file mode: backward compatible behavior
+                    # Single-file mode: user explicitly provided a file path
                     single_file = config_files[0]
                     with open(single_file, encoding="utf-8") as f:
                         content = f.read().strip()
@@ -859,7 +846,7 @@ def load_config(
             # ================================================================
             # Normalize keys in property_availability and data_config.property_selection
             # to match the canonical dataset names from the registry.
-            # This ensures config lookups work regardless of case used in config.yaml.
+            # This ensures config lookups work regardless of case used in YAML config files.
             if not _normalization_skipped:
                 config = _normalize_dataset_keyed_sections(config)
 
@@ -1774,14 +1761,14 @@ def load_config_with_validation(config_path=None, validation_level="NORMAL"):
     return config, validation_results
 
 
-def reload_config(config_path: str = "config.yaml") -> dict[str, Any]:
+def reload_config(config_path: str | None = None) -> dict[str, Any]:
     """
     Force reload the configuration, bypassing cache.
 
     Useful for development and testing when configuration changes.
 
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file or directory (default: auto-detect via configs/)
 
     Returns:
         Reloaded configuration dictionary
@@ -1854,7 +1841,7 @@ def get_enhanced_transformation_config(force_reload=False):
 
 
 def validate_config_file(
-    config_path: str = "config.yaml",
+    config_path: str | None = None,
     validation_level: str = "STRICT",
     dataset_type: str | None = None,
 ) -> dict[str, Any]:
@@ -1870,7 +1857,7 @@ def validate_config_file(
     - Automatic ConfigHandler or fallback validation
 
     Args:
-        config_path: Path to configuration file to validate
+        config_path: Path to configuration file or directory (default: auto-detect via configs/)
         validation_level: Validation strictness level
         dataset_type: Dataset type for specialized validation
 
@@ -1878,6 +1865,10 @@ def validate_config_file(
         Dictionary with comprehensive validation results
     """
     import yaml
+
+    # Resolve default config path
+    if config_path is None:
+        config_path = _get_default_config_path()
 
     validation_level = validation_level.upper()
     if validation_level not in ["STRICT", "NORMAL", "RELAXED"]:
@@ -2611,17 +2602,21 @@ def print_config_diagnostics():
     print("\n" + "=" * 70 + "\n")
 
 
-def validate_and_report(config_path: str = "config.yaml", validation_level: str = "NORMAL") -> bool:
+def validate_and_report(config_path: str | None = None, validation_level: str = "NORMAL") -> bool:
     """
     Validate configuration file and print detailed report.
 
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file or directory (default: auto-detect via configs/)
         validation_level: Validation strictness level
 
     Returns:
         True if validation passed, False otherwise
     """
+    # Resolve default config path
+    if config_path is None:
+        config_path = _get_default_config_path()
+
     print(f"\nValidating configuration: {config_path}")
     print(f"Validation level: {validation_level}")
     print("-" * 60)
@@ -2666,30 +2661,47 @@ def validate_and_report(config_path: str = "config.yaml", validation_level: str 
 # =============================================================================
 
 
-def check_migration_status(config_path: str = "config.yaml") -> dict[str, Any]:
+def check_migration_status(config_path: str | None = None) -> dict[str, Any]:
     """
     Check if a configuration file needs migration and provide recommendations.
 
     Handler-Based Architecture: Delegates format detection to ConfigHandler.
 
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file or directory (default: auto-detect via configs/)
 
     Returns:
         Dictionary with migration status and recommendations
     """
     import yaml
 
+    # Resolve default config path
+    if config_path is None:
+        config_path = _get_default_config_path()
+
     try:
-        if not os.path.exists(config_path):
+        # Use split-mode aware loading
+        is_split_mode, config_files = _discover_config_files(config_path)
+
+        if not is_split_mode and not config_files[0].exists():
             return {
                 "file_exists": False,
                 "needs_migration": False,
-                "error": f"File not found: {config_path}",
+                "error": f"Configuration path not found: {config_path}",
+            }
+        if is_split_mode and not config_files:
+            return {
+                "file_exists": False,
+                "needs_migration": False,
+                "error": f"No configuration files found in directory: {config_path}",
             }
 
-        with open(config_path, encoding="utf-8") as f:
-            config = yaml.safe_load(f)
+        # Load config using split-mode aware approach
+        if is_split_mode:
+            config = _load_and_merge_yaml_files(config_files)
+        else:
+            with open(config_path, encoding="utf-8") as f:
+                config = yaml.safe_load(f)
 
         if not isinstance(config, dict):
             return {
@@ -2808,12 +2820,12 @@ def print_transformation_status():
         print("  - Research API: ✓")
 
 
-def recommend_validation_level(config_path: str = "config.yaml") -> str:
+def recommend_validation_level(config_path: str | None = None) -> str:
     """
     Recommend an appropriate validation level based on configuration analysis.
 
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file or directory (default: auto-detect via configs/)
 
     Returns:
         Recommended validation level ('STRICT', 'NORMAL', or 'RELAXED')
@@ -2821,11 +2833,23 @@ def recommend_validation_level(config_path: str = "config.yaml") -> str:
     import yaml
 
     try:
-        if not os.path.exists(config_path):
+        # Resolve default config path
+        if config_path is None:
+            config_path = _get_default_config_path()
+
+        # Use split-mode aware loading
+        is_split_mode, config_files = _discover_config_files(config_path)
+
+        if not is_split_mode and not config_files[0].exists():
+            return "NORMAL"
+        if is_split_mode and not config_files:
             return "NORMAL"
 
-        with open(config_path, encoding="utf-8") as f:
-            config = yaml.safe_load(f)
+        if is_split_mode:
+            config = _load_and_merge_yaml_files(config_files)
+        else:
+            with open(config_path, encoding="utf-8") as f:
+                config = yaml.safe_load(f)
 
         if not isinstance(config, dict):
             return "NORMAL"
