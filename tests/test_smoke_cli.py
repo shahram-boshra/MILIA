@@ -40,6 +40,7 @@ Version: 1.0.0
 """
 
 import logging
+import os
 import shutil
 import sys
 import tempfile
@@ -113,8 +114,8 @@ def tmp_work_dir():
 def minimal_config_dict() -> dict[str, Any]:
     """Provide a minimal valid configuration dictionary.
 
-    This mirrors the structure of config.yaml with only the fields
-    required for smoke testing. It avoids touching the filesystem
+    This mirrors the structure of the split YAML configs/ directory with only
+    the fields required for smoke testing. It avoids touching the filesystem
     for config loading so the test is self-contained.
 
     Evidence: config_loader.py load_config() expects a dict with
@@ -448,17 +449,17 @@ class TestCLIArgumentParsingSmoke:
         cli = CLIManager()
 
         # Empty args will default to --process mode, which then validates
-        # that config exists. Since we may not have a config.yaml in CWD,
+        # that config exists. Since we may not have a configs/ directory in CWD,
         # a CLIValidationError is the expected outcome (config path not found).
         # The smoke test verifies that parse_args() reaches the validation
         # stage without crashing on anything else.
         try:
             args = cli.parse_args([])
-            # If we reach here, a config.yaml existed in CWD — that's fine
+            # If we reach here, a configs/ directory existed in CWD — that's fine
             assert args.process is True
         except (CLIValidationError, SystemExit):
-            # Expected: config path validation fails because no config.yaml
-            # exists in the test runner's CWD. This is correct behavior.
+            # Expected: config path validation fails because no configs/
+            # directory exists in the test runner's CWD. This is correct behavior.
             pass
 
     def test_parse_list_transforms_flag(self):
@@ -1484,41 +1485,47 @@ class TestCLIValidateConfigSmoke:
 class TestCLIDefaultConfigPathSmoke:
     """Smoke tests for _get_default_config_path() function.
 
-    Evidence:
-    - cli_manager.py line 462: def _get_default_config_path() -> str
-    - Priority: config.yaml > config.yml > configs/ > configs/config.yaml
-      > fallback 'config.yaml'
+    Evidence (v2.4):
+    - cli_manager.py line 469: def _get_default_config_path() -> str
+    - Resolution: ./configs/ directory only; raises CLIValidationError otherwise
+    - The monolithic config.yaml/config.yml probes were removed in v2.4.
     """
 
-    def test_get_default_config_path_returns_string(self):
-        """_get_default_config_path returns a string.
+    def test_get_default_config_path_returns_string_with_configs_dir(self, tmp_path):
+        """_get_default_config_path returns a string when ./configs/ exists.
 
-        Evidence: cli_manager.py line 462:
+        Evidence: cli_manager.py line 469:
             def _get_default_config_path() -> str
         """
         from milia_pipeline.cli_manager import _get_default_config_path
 
-        result = _get_default_config_path()
-        assert isinstance(result, str)
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            (tmp_path / "configs").mkdir()
+            result = _get_default_config_path()
+            assert isinstance(result, str)
+            assert result == "configs"
+        finally:
+            os.chdir(original_cwd)
 
-    def test_get_default_config_path_fallback(self):
-        """_get_default_config_path returns 'config.yaml' when no config exists.
+    def test_get_default_config_path_raises_without_configs_dir(self, tmp_path):
+        """_get_default_config_path raises CLIValidationError when no configs/ exists.
 
-        Evidence: cli_manager.py line 500-501:
-            # Default fallback
-            return 'config.yaml'
-
-        NOTE: This test only validates the fallback behavior when run from a
-        directory without config files. If config.yaml or configs/ exists in
-        the CWD, the function returns that path instead.
+        Evidence (v2.4): cli_manager.py line 492-498:
+            raise CLIValidationError(
+                "Configuration directory not found: ./configs/\\n" ...
+            )
         """
-        from milia_pipeline.cli_manager import _get_default_config_path
+        from milia_pipeline.cli_manager import CLIValidationError, _get_default_config_path
 
-        result = _get_default_config_path()
-        # The result is always a string path — either an existing config
-        # or the fallback 'config.yaml'
-        assert isinstance(result, str)
-        assert len(result) > 0
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with pytest.raises(CLIValidationError, match="configs"):
+                _get_default_config_path()
+        finally:
+            os.chdir(original_cwd)
 
 
 # ===========================================================================

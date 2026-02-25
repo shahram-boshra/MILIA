@@ -55,7 +55,7 @@ Key Test Areas:
 35. PHASE 5b: Prediction validation logic
 36. PHASE 3: Descriptor management arguments
 37. Descriptor configuration validation (validate_descriptor_config)
-38. Default config path detection (_get_default_config_path)
+38. Default config path detection (_get_default_config_path) — v2.4 configs/-only
 39. Working root dir resolution (_get_working_root_dir_for_validation)
 40. Prediction path validation (extended)
 """
@@ -309,7 +309,7 @@ class MockConfigLoader:
     """Mock config_loader module"""
 
     @staticmethod
-    def load_config(config_path="config.yaml"):
+    def load_config(config_path=None):
         """Mock load_config"""
         return {
             "dataset": {
@@ -3718,13 +3718,14 @@ class TestDefaultConfigPathDetection(unittest.TestCase):
     """
     Test _get_default_config_path function.
 
-    This function dynamically detects the best configuration path following
-    the YAML Splitting Architecture priority order:
-    1. config.yaml (single file in CWD)
-    2. config.yml (single file in CWD)
-    3. ./configs/ (directory)
-    4. ./configs/config.yaml
-    5. Default 'config.yaml'
+    Since v2.4 (YAML Splitting Architecture — fallback removal), this
+    function resolves configuration via a single rule:
+
+    1. ``./configs/`` directory exists → return ``"configs"``
+    2. Otherwise → raise ``CLIValidationError``
+
+    The monolithic ``config.yaml`` / ``config.yml`` probes and the silent
+    ``"config.yaml"`` fallback were removed in v2.4.
     """
 
     def setUp(self):
@@ -3744,70 +3745,67 @@ class TestDefaultConfigPathDetection(unittest.TestCase):
         self.assertTrue(callable(cli_manager._get_default_config_path))
 
     def test_get_default_config_path_returns_string(self):
-        """Test that _get_default_config_path returns a string"""
+        """Test that _get_default_config_path returns a string when configs/ exists"""
+        os.makedirs("configs", exist_ok=True)
         result = cli_manager._get_default_config_path()
         self.assertIsInstance(result, str)
 
-    def test_get_default_config_path_priority_1_config_yaml(self):
-        """Test priority 1: config.yaml file in CWD"""
-        # Create config.yaml
+    def test_get_default_config_path_ignores_config_yaml_in_cwd(self):
+        """Test that config.yaml in CWD is NOT detected (v2.4: fallback removed)."""
+        # Create config.yaml — v2.3 would have returned "config.yaml", v2.4 should not
         with open("config.yaml", "w") as f:
             f.write("test: true")
 
-        result = cli_manager._get_default_config_path()
-        self.assertEqual(result, "config.yaml")
+        with self.assertRaises(CLIValidationError):
+            cli_manager._get_default_config_path()
 
-    def test_get_default_config_path_priority_2_config_yml(self):
-        """Test priority 2: config.yml file in CWD"""
-        # Create config.yml (not .yaml)
+    def test_get_default_config_path_ignores_config_yml_in_cwd(self):
+        """Test that config.yml in CWD is NOT detected (v2.4: fallback removed)."""
+        # Create config.yml — v2.3 would have returned "config.yml", v2.4 should not
         with open("config.yml", "w") as f:
             f.write("test: true")
 
-        result = cli_manager._get_default_config_path()
-        self.assertEqual(result, "config.yml")
+        with self.assertRaises(CLIValidationError):
+            cli_manager._get_default_config_path()
 
-    def test_get_default_config_path_priority_3_configs_dir(self):
-        """Test priority 3: ./configs/ directory"""
+    def test_get_default_config_path_resolves_configs_dir(self):
+        """Test that ./configs/ directory is resolved as the config path."""
         # Create configs directory
         os.makedirs("configs", exist_ok=True)
 
         result = cli_manager._get_default_config_path()
         self.assertEqual(result, "configs")
 
-    def test_get_default_config_path_priority_4_configs_config_yaml(self):
-        """Test priority 4: ./configs/config.yaml file"""
-        # Create configs directory with config.yaml inside
+    def test_get_default_config_path_configs_dir_with_yaml_files(self):
+        """Test that ./configs/ with YAML files inside resolves to the directory."""
+        # Create configs directory with a config file inside
         os.makedirs("configs", exist_ok=True)
-        with open("configs/config.yaml", "w") as f:
+        with open("configs/main.yaml", "w") as f:
             f.write("test: true")
 
-        # Remove configs directory (make it a file case doesn't apply)
-        # Actually this test needs adjusting - configs/ dir takes priority
-        # So we need a scenario where configs/ is not a dir
-        shutil.rmtree("configs")
-        os.makedirs("configs", exist_ok=True)
-
-        # This will be caught by priority 3, so adjust test
         result = cli_manager._get_default_config_path()
-        # Priority 3 (directory) takes precedence
+        # Returns the directory path; load_config handles file discovery
         self.assertEqual(result, "configs")
 
-    def test_get_default_config_path_default_fallback(self):
-        """Test default fallback to 'config.yaml'"""
-        # No files or directories present
-        result = cli_manager._get_default_config_path()
-        self.assertEqual(result, "config.yaml")
+    def test_get_default_config_path_raises_when_no_configs_dir(self):
+        """Test that CLIValidationError is raised when ./configs/ does not exist."""
+        # No files or directories present — v2.4 raises instead of returning "config.yaml"
+        with self.assertRaises(CLIValidationError) as context:
+            cli_manager._get_default_config_path()
+        self.assertIn("configs", str(context.exception))
 
-    def test_get_default_config_path_yaml_over_yml(self):
-        """Test that config.yaml takes priority over config.yml"""
-        # Create both
+    def test_get_default_config_path_ignores_yaml_and_yml_when_configs_dir_exists(self):
+        """Test that config.yaml and config.yml are ignored; configs/ dir wins."""
+        # Create both legacy files AND the configs/ directory
         with open("config.yaml", "w") as f:
             f.write("test: yaml")
         with open("config.yml", "w") as f:
             f.write("test: yml")
+        os.makedirs("configs", exist_ok=True)
 
         result = cli_manager._get_default_config_path()
-        self.assertEqual(result, "config.yaml")
+        # v2.4: only ./configs/ is recognised
+        self.assertEqual(result, "configs")
 
 
 # ==============================================================================
