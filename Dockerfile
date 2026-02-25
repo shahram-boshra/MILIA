@@ -254,4 +254,27 @@ ENV MAMBA_ROOT_PREFIX=/opt/conda
 # Copy application code
 COPY . /app
 
+# Install MILIA as a Python package (production, non-editable)
+# This step serves two purposes:
+# 1. Registers the 'milia' CLI entry point defined in pyproject.toml [project.scripts]
+#    (milia = "main:main") — setuptools generates a wrapper script in shah_env's bin/
+# 2. Installs milia_pipeline into shah_env's site-packages for formal package imports
+#
+# --no-deps: All runtime dependencies are managed by conda/mamba (see install layers above).
+#   pyproject.toml intentionally declares dependencies=[] to avoid pip/conda conflicts
+#   with binary packages (PyTorch, RDKit, PyG). This flag is a safety measure.
+# --no-cache-dir: Minimizes image layer size (no pip cache to clean up).
+#
+# The original source files remain at /app/ — 'python main.py' continues to work
+# as a fallback alongside the 'milia' entry point command.
+#
+# Source: PyPA Packaging User Guide — "Writing your pyproject.toml" (console scripts)
+# Source: pyOpenSci — "Declare Dependencies" (conda-managed + pip install pattern)
+RUN /opt/conda/envs/shah_env/bin/pip install --no-deps --no-cache-dir . && \
+    echo "MILIA package installed:" && \
+    /opt/conda/envs/shah_env/bin/pip show milia && \
+    echo "CLI entry point registered:" && \
+    which milia && \
+    echo "========================================"
+
 CMD ["/bin/bash", "--login"]
