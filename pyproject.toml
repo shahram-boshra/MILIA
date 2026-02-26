@@ -93,7 +93,9 @@ Changelog = "https://github.com/shahram-boshra/MILIA/blob/main/CHANGELOG.md"
 
 # CLI entry point: `milia` command invokes main.main()
 # main.py resides at project root (outside milia_pipeline package).
-# pip install -e . adds the project root to sys.path, making `main` importable.
+# It is explicitly included via [tool.setuptools] py-modules = ["main"]
+# so that both editable (`pip install -e .`) and non-editable (`pip install .`)
+# installs make the `main` module importable from site-packages.
 [project.scripts]
 milia = "main:main"
 
@@ -103,6 +105,14 @@ milia = "main:main"
 # This is the single source of truth for the project version.
 [tool.setuptools.dynamic]
 version = {attr = "milia_pipeline.__version__"}
+
+# Standalone modules: include main.py (project root) as a top-level module.
+# Required for the `milia` CLI entry point (`main:main`) to resolve via
+# `from main import main` after non-editable install (`pip install .`).
+# Without this, main.py is NOT packaged into the wheel and the `milia`
+# command fails with: ModuleNotFoundError: No module named 'main'.
+[tool.setuptools]
+py-modules = ["main"]
 
 # Package discovery: auto-find all packages under the project root.
 # Excludes test directories, scripts, docs, and legacy/archive directories.
