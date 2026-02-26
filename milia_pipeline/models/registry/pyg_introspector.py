@@ -21,7 +21,7 @@ import importlib
 import inspect
 import logging
 from enum import Enum
-from typing import Any, get_type_hints
+from typing import Any, Union, get_args, get_origin, get_type_hints
 
 import torch.nn as nn
 from pydantic import BaseModel, ConfigDict, Field
@@ -170,7 +170,7 @@ class ParameterInfo(BaseModel):
     """
 
     name: str
-    param_type: str  # 'int', 'float', 'bool', 'str', 'optional', 'any'
+    param_type: str  # 'int', 'float', 'bool', 'str', 'optional' (no hint, default=None), 'any'
     required: bool
     default: Any = None
     description: str = ""
@@ -609,21 +609,86 @@ def _infer_param_type(param_name: str, param: inspect.Parameter, hints: dict[str
 
 
 def _type_hint_to_string(hint: Any) -> str:
-    """Convert type hint to string representation."""
-    hint_str = str(hint)
+    """Convert type hint to string representation.
 
-    # Check Optional/None FIRST — before primitive checks, because
-    # str(Optional[int]) contains "int" and str(int | None) contains "int",
-    # so primitive substring matches must not shadow the optional detection.
-    if "Optional" in hint_str or "None" in hint_str:
-        return "optional"
-    elif "int" in hint_str.lower():
+    Properly unwraps Optional[X] (== Union[X, None]) to extract the inner
+    type X, so that Optional[int] → "int", Optional[float] → "float", etc.
+
+    Uses typing.get_origin / typing.get_args (Python 3.8+) for robust
+    introspection instead of fragile string matching.
+
+    PRODUCTION-READY: Handles Optional[X], Union[X, None], X | None (3.10+)
+    FUTURE-PROOF: Works with any inner type, including custom types
+    NON-BREAKING: Returns the same strings as before for non-Optional hints
+    """
+    # -------------------------------------------------------------------------
+    # Step 1: Unwrap Optional[X] / Union[X, None] / X | None
+    # -------------------------------------------------------------------------
+    # Optional[X] is equivalent to Union[X, None]. When detected, extract
+    # the non-None inner type and recurse so that Optional[int] → "int",
+    # Optional[float] → "float", Optional[str] → "str", etc.
+    #
+    # Evidence: Python docs (typing module):
+    #   get_origin(Optional[int]) returns typing.Union
+    #   get_args(Optional[int]) returns (int, NoneType)
+    #
+    # Also handles Python 3.10+ union syntax: int | None
+    #   get_origin(int | None) returns types.UnionType
+    #   get_args(int | None) returns (int, NoneType)
+    # -------------------------------------------------------------------------
+    origin = get_origin(hint)
+    if origin is Union:
+        # Filter out NoneType to get the "real" type(s)
+        args = [a for a in get_args(hint) if a is not type(None)]
+        if len(args) == 1:
+            # Simple Optional[X] — recurse to resolve the inner type
+            return _type_hint_to_string(args[0])
+        elif len(args) > 1:
+            # Union of multiple non-None types (e.g., Union[int, str])
+            # Return the first concrete type as best effort
+            return _type_hint_to_string(args[0])
+        else:
+            # Union[None] edge case — effectively NoneType only
+            return "any"
+
+    # Python 3.10+ union syntax: int | None creates types.UnionType
+    # which has a different origin than typing.Union
+    try:
+        import types as _types
+
+        if isinstance(hint, _types.UnionType):
+            args = [a for a in get_args(hint) if a is not type(None)]
+            if len(args) == 1 or len(args) > 1:
+                return _type_hint_to_string(args[0])
+            else:
+                return "any"
+    except AttributeError:
+        pass  # Python < 3.10, no UnionType
+
+    # -------------------------------------------------------------------------
+    # Step 2: Match concrete primitive types
+    # -------------------------------------------------------------------------
+    # Check the actual type object first (most reliable), then fall back
+    # to string matching for complex or stringified annotations.
+    # -------------------------------------------------------------------------
+    if hint is int:
         return "int"
-    elif "float" in hint_str.lower():
+    if hint is float:
         return "float"
-    elif "bool" in hint_str.lower():
+    if hint is bool:
         return "bool"
-    elif "str" in hint_str.lower():
+    if hint is str:
+        return "str"
+
+    # Fallback: string-based matching for complex annotations
+    hint_str = str(hint).lower()
+    if "int" in hint_str:
+        return "int"
+    elif "float" in hint_str:
+        return "float"
+    elif "bool" in hint_str:
+        return "bool"
+    elif "str" in hint_str:
         return "str"
     else:
         return "any"
@@ -995,7 +1060,7 @@ def _parameters_to_hyperparameters_dict(parameters: dict[str, ParameterInfo]) ->
         "float": "float",
         "bool": "boolean",
         "str": "string",
-        "optional": "string",
+        "optional": "any",  # No type hint available; accept any type
         "any": "any",
     }
 

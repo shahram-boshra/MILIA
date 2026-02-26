@@ -620,9 +620,19 @@ class TestTypeInference:
         intro = pytest.importorskip(_MODULE_PATH)
         assert intro._type_hint_to_string(bool) == "bool"
 
-    def test_hint_optional(self):
+    def test_hint_optional_int_unwraps_to_int(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        assert intro._type_hint_to_string(int | None) == "optional"
+        # _type_hint_to_string properly unwraps Optional[int] (== int | None)
+        # to extract the inner type "int", not a flat "optional"
+        assert intro._type_hint_to_string(int | None) == "int"
+
+    def test_hint_optional_float_unwraps_to_float(self):
+        intro = pytest.importorskip(_MODULE_PATH)
+        assert intro._type_hint_to_string(float | None) == "float"
+
+    def test_hint_optional_str_unwraps_to_str(self):
+        intro = pytest.importorskip(_MODULE_PATH)
+        assert intro._type_hint_to_string(str | None) == "str"
 
     def test_name_convention_channels(self):
         intro = pytest.importorskip(_MODULE_PATH)
