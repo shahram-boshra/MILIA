@@ -324,14 +324,19 @@ class TestCLIManagerInstantiationSmoke:
     def test_cli_manager_parser_has_description(self):
         """CLIManager's parser has a description string.
 
-        Evidence: cli_manager.py line 570-576: parser = argparse.ArgumentParser(
-            prog='milia_process', description='milia Dataset Processing System...'
+        Evidence: cli_manager.py line 568-573: parser = argparse.ArgumentParser(
+            description='milia Dataset Processing System...'
         )
+        prog is auto-detected by argparse from sys.argv[0] (no hardcoded value).
         """
         from milia_pipeline.cli_manager import CLIManager
 
         cli = CLIManager()
-        assert cli.parser.prog == "milia_process"
+        # prog is auto-detected by argparse from sys.argv[0]; verify it is
+        # a non-empty string and not the legacy hardcoded name
+        assert isinstance(cli.parser.prog, str)
+        assert len(cli.parser.prog) > 0
+        assert cli.parser.prog != "milia_process"
         assert "milia" in cli.parser.description.lower()
 
 
@@ -368,9 +373,10 @@ class TestCLIHelpSmoke:
         assert exc_info.value.code == 0
 
     def test_help_output_contains_program_name(self, capsys):
-        """--help output contains the program name 'milia_process'.
+        """--help output contains the program name (auto-detected by argparse).
 
-        Evidence: cli_manager.py line 571: prog='milia_process'
+        Evidence: cli_manager.py line 568: argparse.ArgumentParser() with no
+        prog= argument; argparse auto-detects from sys.argv[0].
         """
         from milia_pipeline.cli_manager import CLIManager
 
@@ -382,7 +388,7 @@ class TestCLIHelpSmoke:
         captured = capsys.readouterr()
         # argparse prints help to stdout
         help_text = captured.out
-        assert "milia_process" in help_text or "milia" in help_text.lower(), (
+        assert "milia" in help_text.lower(), (
             f"Help text should contain program name. Got:\n{help_text[:500]}"
         )
 
