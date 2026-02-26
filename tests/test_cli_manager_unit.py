@@ -548,7 +548,11 @@ class TestCLIManagerInitialization(unittest.TestCase):
         """Test argument parser creation"""
         cli = CLIManager()
         self.assertIsNotNone(cli.parser)
-        self.assertEqual(cli.parser.prog, "milia_process")
+        # prog is auto-detected by argparse from sys.argv[0] (no hardcoded value);
+        # verify it is a non-empty string and not the legacy hardcoded name
+        self.assertIsInstance(cli.parser.prog, str)
+        self.assertTrue(len(cli.parser.prog) > 0)
+        self.assertNotEqual(cli.parser.prog, "milia_process")
         self.assertIn("milia Dataset Processing System", cli.parser.description)
 
 
@@ -1246,8 +1250,12 @@ class TestUsageExamplesAndHelp(unittest.TestCase):
         self.assertIn("Examples:", help_text)
 
     def test_parser_prog_name(self):
-        """Test parser program name"""
-        self.assertEqual(self.cli.parser.prog, "milia_process")
+        """Test parser program name is auto-detected (not hardcoded)"""
+        # prog is auto-detected by argparse from sys.argv[0]; verify it is
+        # a non-empty string and not the legacy hardcoded name
+        self.assertIsInstance(self.cli.parser.prog, str)
+        self.assertTrue(len(self.cli.parser.prog) > 0)
+        self.assertNotEqual(self.cli.parser.prog, "milia_process")
 
     def test_parser_description(self):
         """Test parser description"""
