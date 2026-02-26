@@ -566,7 +566,6 @@ class CLIManager:
             Configured ArgumentParser instance
         """
         parser = argparse.ArgumentParser(
-            prog="milia_process",
             description="milia Dataset Processing System - Enhanced CLI\n"
             "Defaults to --process mode when no mode flag is specified.",
             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1578,130 +1577,130 @@ class CLIManager:
 Examples:
   Examples:
   # Basic processing (--process is default, but shown explicitly for clarity)
-  python main.py --process
+  %(prog)s --process
 
   # Same as above - process mode is automatic without flags
-  python main.py
+  %(prog)s
 
   # Use specific experimental setup
-  python main.py --experimental-setup baseline
+  %(prog)s --experimental-setup baseline
 
   # Validate handler configuration before processing
-  python main.py --validate-handlers
+  %(prog)s --validate-handlers
 
   # Force reprocessing with custom chunk size
-  python main.py --force-reload --chunk-size 10000
+  %(prog)s --force-reload --chunk-size 10000
 
   # Quick validation of existing data
-  python main.py --quick-validation
+  %(prog)s --quick-validation
 
   # List available experimental setups
-  python main.py --list-experimental-setups
+  %(prog)s --list-experimental-setups
 
   # Interactive configuration wizard
-  python main.py --interactive
+  %(prog)s --interactive
 
   # Debug mode with detailed logging
-  python main.py --verbose --log-file debug.log
+  %(prog)s --verbose --log-file debug.log
 
   # Test with limited dataset
-  python main.py --test-limit 100 --quick-validation
+  %(prog)s --test-limit 100 --quick-validation
 
   # Override filters from command line
-  python main.py --max-atoms 50 --min-atoms 3
+  %(prog)s --max-atoms 50 --min-atoms 3
 
   # Validate configuration without processing
-  python main.py --validate-config
+  %(prog)s --validate-config
 
   # Plugin Management
-  python main.py --plugin-path ./my_plugins --discover-plugins
-  python main.py --list-plugins
-  python main.py --validate-plugin my_custom_plugin
-  python main.py --validate-plugin-comprehensive my_custom_plugin --run-performance-tests
-  python main.py --enable-plugin my_custom_plugin
-  python main.py --disable-plugin old_plugin
-  python main.py --plugin-info my_custom_plugin
-  python main.py --trust-plugin verified_plugin
-  python main.py --plugin-path ./plugins --process --experimental-setup custom_setup
+  %(prog)s --plugin-path ./my_plugins --discover-plugins
+  %(prog)s --list-plugins
+  %(prog)s --validate-plugin my_custom_plugin
+  %(prog)s --validate-plugin-comprehensive my_custom_plugin --run-performance-tests
+  %(prog)s --enable-plugin my_custom_plugin
+  %(prog)s --disable-plugin old_plugin
+  %(prog)s --plugin-info my_custom_plugin
+  %(prog)s --trust-plugin verified_plugin
+  %(prog)s --plugin-path ./plugins --process --experimental-setup custom_setup
 
   # Research API
-  python main.py --list-experiments
-  python main.py --validate-experiment transform_ablation
-  python main.py --run-experiment transform_ablation --experiment-output ./results
-  python main.py --list-experiments --experiment-config my_experiments.yaml
+  %(prog)s --list-experiments
+  %(prog)s --validate-experiment transform_ablation
+  %(prog)s --run-experiment transform_ablation --experiment-output ./results
+  %(prog)s --list-experiments --experiment-config my_experiments.yaml
 
   # Basic processing (--process is default, but shown explicitly for clarity)
-  python main.py --process
+  %(prog)s --process
 
   # Same as above - process mode is automatic without flags
-  python main.py
+  %(prog)s
 
   # Use specific experimental setup
-  python main.py --experimental-setup baseline
+  %(prog)s --experimental-setup baseline
 
   # Validate handler configuration before processing
-  python main.py --validate-handlers
+  %(prog)s --validate-handlers
 
   # Force reprocessing with custom chunk size
-  python main.py --force-reload --chunk-size 10000
+  %(prog)s --force-reload --chunk-size 10000
 
   # Quick validation of existing data
-  python main.py --quick-validation
+  %(prog)s --quick-validation
 
   # List available experimental setups
-  python main.py --list-experimental-setups
+  %(prog)s --list-experimental-setups
 
   # Interactive configuration wizard
-  python main.py --interactive
+  %(prog)s --interactive
 
   # Debug mode with detailed logging
-  python main.py --verbose --log-file debug.log
+  %(prog)s --verbose --log-file debug.log
 
   # NEW: Preprocessing examples
   # Available dataset types: {types_str}
 
   # Preprocess wavefunction dataset
-  python main.py --preprocess --preprocess-config examples/preprocessing/wavefunction_preprocess.yaml
+  %(prog)s --preprocess --preprocess-config examples/preprocessing/wavefunction_preprocess.yaml
 
   # Preprocess with CLI overrides
-  python main.py --preprocess --preprocess-dataset Wavefunction --preprocess-input raw/wavefunctions.tar.gz
+  %(prog)s --preprocess --preprocess-dataset Wavefunction --preprocess-input raw/wavefunctions.tar.gz
 
   # Validate preprocessing configuration
-  python main.py --validate-preprocessing-only --preprocess-config examples/preprocessing/wavefunction_preprocess.yaml
+  %(prog)s --validate-preprocessing-only --preprocess-config examples/preprocessing/wavefunction_preprocess.yaml
 
   # Test preprocessor with small dataset
-  python main.py --test-preprocessor-only --preprocess-dataset Wavefunction --preprocess-num-molecules 10
+  %(prog)s --test-preprocessor-only --preprocess-dataset Wavefunction --preprocess-num-molecules 10
 
   # List available preprocessors
-  python main.py --list-preprocessors
+  %(prog)s --list-preprocessors
 
   # =================================================================
   # PREDICTION MODE (Phase 5b - Post-Training Inference)
   # =================================================================
 
   # Predict on molecular file (SMILES CSV)
-  python main.py --predict --model-path ./checkpoints/best_model.pt --test-path ./molecules.csv --preds-path ./predictions.csv
+  %(prog)s --predict --model-path ./checkpoints/best_model.pt --test-path ./molecules.csv --preds-path ./predictions.csv
 
   # Predict on XYZ file
-  python main.py --predict --model-path ./checkpoints/schnet_model.pt --test-path ./molecule.xyz
+  %(prog)s --predict --model-path ./checkpoints/schnet_model.pt --test-path ./molecule.xyz
 
   # Predict on processed dataset (.pt file)
-  python main.py --predict --model-path ./checkpoints/model.pt --test-path ./data/QM9/processed/data.pt
+  %(prog)s --predict --model-path ./checkpoints/model.pt --test-path ./data/QM9/processed/data.pt
 
   # Predict on miliaDataset directory (auto-detects processed/data.pt)
-  python main.py --predict --model-path ./checkpoints/model.pt --test-path ./data/QM9/
+  %(prog)s --predict --model-path ./checkpoints/model.pt --test-path ./data/QM9/
 
   # Predict with custom batch size and device
-  python main.py --predict --model-path ./model.pt --test-path ./data.csv --predict-batch-size 64 --predict-device cuda
+  %(prog)s --predict --model-path ./model.pt --test-path ./data.csv --predict-batch-size 64 --predict-device cuda
 
   # Predict on specific dataset split
-  python main.py --predict --model-path ./model.pt --test-path ./data/QM9/ --predict-split test
+  %(prog)s --predict --model-path ./model.pt --test-path ./data/QM9/ --predict-split test
 
   # Predict with sample limit
-  python main.py --predict --model-path ./model.pt --test-path ./data.csv --predict-num-samples 1000
+  %(prog)s --predict --model-path ./model.pt --test-path ./data.csv --predict-num-samples 1000
 
   # Predict with JSON output
-  python main.py --predict --model-path ./model.pt --test-path ./data.csv --predict-output-format json
+  %(prog)s --predict --model-path ./model.pt --test-path ./data.csv --predict-output-format json
 
 
 For more information, see: https://docs.example.com/milia-cli
@@ -2029,14 +2028,14 @@ For more information, see: https://docs.example.com/milia-cli
             if not getattr(args, "model_path", None):
                 raise CLIValidationError(
                     "--model-path is required when using --predict mode.\n"
-                    "Example: python main.py --predict --model-path ./model.pt --test-path ./data.csv"
+                    f"Example: {self.parser.prog} --predict --model-path ./model.pt --test-path ./data.csv"
                 )
 
             # --test-path is required in predict mode
             if not getattr(args, "test_path", None):
                 raise CLIValidationError(
                     "--test-path is required when using --predict mode.\n"
-                    "Example: python main.py --predict --model-path ./model.pt --test-path ./data.csv"
+                    f"Example: {self.parser.prog} --predict --model-path ./model.pt --test-path ./data.csv"
                 )
 
             # Validate predict_batch_size

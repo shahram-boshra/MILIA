@@ -139,22 +139,25 @@ See Also:
 
 Examples:
     Basic usage:
-        $ python main.py --config config.yaml
+        $ milia --config config.yaml
 
     Quick validation:
-        $ python main.py --quick-validation
+        $ milia --quick-validation
 
     Experimental setup:
-        $ python main.py --experimental-setup baseline --force-reload
+        $ milia --experimental-setup baseline --force-reload
 
     Transform validation:
-        $ python main.py --validate-transforms-only --experimental-setup ablation
+        $ milia --validate-transforms-only --experimental-setup ablation
 
     Handler testing:
-        $ python main.py --test-handlers-only
+        $ milia --test-handlers-only
 
     List available setups:
-        $ python main.py --list-experimental-setups
+        $ milia --list-experimental-setups
+
+    Note: ``python main.py`` also works as a fallback when running from
+    the project root without a package install.
 """
 
 import argparse
