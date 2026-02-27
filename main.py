@@ -5337,11 +5337,15 @@ def list_available_transforms_info(logger: logging.Logger) -> None:
         logger.info("=" * 60)
 
         for category, transforms in available_transforms.items():
+            if not isinstance(transforms, list):
+                continue
             logger.info(f"\n{category}:")
             for transform_name in sorted(transforms):
                 logger.info(f"  - {transform_name}")
 
-        total = sum(len(t) for t in available_transforms.values())
+        total = available_transforms.get(
+            "count", sum(len(v) for v in available_transforms.values() if isinstance(v, list))
+        )
         logger.info(f"\nTotal transforms: {total}")
         logger.info("=" * 60)
 

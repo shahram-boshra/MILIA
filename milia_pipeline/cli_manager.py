@@ -1767,13 +1767,28 @@ For more information, see: https://docs.example.com/milia-cli
                 args.quick_validation,
                 args.stats_only,
                 args.interactive,
+                args.list_experimental_setups,
+                args.validate_transforms_only,
+                args.test_handlers_only,
+                args.validate_config,
+                args.list_transforms,
+                args.list_plugins,
+                args.plugin_info,
+                args.validate_plugin,
+                args.validate_plugin_comprehensive,
+                args.discover_plugins,
                 getattr(args, "preprocess", False),
                 getattr(args, "validate_preprocessing_only", False),
                 getattr(args, "test_preprocessor_only", False),
                 getattr(args, "list_preprocessors", False),
+                getattr(args, "list_experiments", False),
+                getattr(args, "validate_experiment", None),
+                getattr(args, "run_experiment", None),
                 getattr(args, "predict", False),
+                getattr(args, "train", False),
+                getattr(args, "evaluate_only", False),
             ]
-        ):  # Phase 5b: prediction mode
+        ):
             args.process = True
             self.logger.info("No mode specified - defaulting to --process mode")
 
