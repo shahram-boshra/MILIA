@@ -1220,16 +1220,54 @@ class TestTransformListing(unittest.TestCase):
     """Test list_available_transforms_info function"""
 
     @patch("main.GRAPH_TRANSFORMS_AVAILABLE", True)
-    @patch("main.list_available_transforms")
-    def test_list_transforms_available(self, mock_list_transforms):
-        """Test listing available transforms"""
+    @patch("main.get_graph_transforms")
+    def test_list_transforms_available(self, mock_get_gt):
+        """Test listing available transforms with mixed-type dict from get_available_transforms"""
         logger = Mock()
-        mock_list_transforms.return_value = ["AddLaplacian", "KNNGraph", "AddRandomNoise"]
+        mock_gt_instance = Mock()
+        mock_gt_instance.get_available_transforms.return_value = {
+            "basic": ["AddLaplacian", "KNNGraph"],
+            "augmentation": ["DropEdge"],
+            "molecular": [],
+            "all": ["AddLaplacian", "KNNGraph", "DropEdge"],
+            "count": 3,
+            "metadata": {"version": "1.0"},
+        }
+        mock_get_gt.return_value = mock_gt_instance
 
-        # Should not raise exception
+        # Should not raise exception — isinstance guard skips non-list values
         list_available_transforms_info(logger)
 
+        # Verify info was logged (categories + transforms + total)
         self.assertTrue(logger.info.called)
+        # Verify no error was logged
+        self.assertFalse(logger.error.called)
+
+    @patch("main.GRAPH_TRANSFORMS_AVAILABLE", True)
+    @patch("main.get_graph_transforms")
+    def test_list_transforms_skips_non_list_values(self, mock_get_gt):
+        """Test that non-list dict values (count, metadata) are skipped without error"""
+        logger = Mock()
+        mock_gt_instance = Mock()
+        mock_gt_instance.get_available_transforms.return_value = {
+            "basic": ["Transform1"],
+            "count": 1,
+            "metadata": {"version": "2.0"},
+        }
+        mock_get_gt.return_value = mock_gt_instance
+
+        list_available_transforms_info(logger)
+
+        # Collect all info log messages
+        info_messages = [str(call) for call in logger.info.call_args_list]
+        info_text = " ".join(info_messages)
+
+        # "count:" and "metadata:" should NOT appear as category headers
+        self.assertNotIn("count:", info_text)
+        self.assertNotIn("metadata:", info_text)
+        # "basic:" SHOULD appear
+        self.assertIn("basic:", info_text)
+        self.assertFalse(logger.error.called)
 
     @patch("main.GRAPH_TRANSFORMS_AVAILABLE", False)
     def test_list_transforms_not_available(self):

@@ -697,6 +697,16 @@ class TestTransformationArguments(unittest.TestCase):
         args = self._parse_only(["--list-transforms"])
         self.assertTrue(args.list_transforms)
 
+    def test_list_transforms_is_standalone_mode(self):
+        """Test that --list-transforms is recognized as a standalone mode by _process_arguments"""
+        args = self._parse_only(["--list-transforms"])
+        processed_args = self.cli._process_arguments(args)
+
+        # list_transforms should remain True
+        self.assertTrue(processed_args.list_transforms)
+        # process mode should NOT be set to True automatically
+        self.assertFalse(processed_args.process)
+
 
 # ==============================================================================
 # TEST CLASS 5: Plugin System Arguments
