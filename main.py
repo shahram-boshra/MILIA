@@ -4184,7 +4184,7 @@ def _run_hpo_training(
 
         # 2. Get model name and task type FIRST (needed for HPOConfig)
         selection = models_config.get("selection", {})
-        mode = getattr(args, "mode", None) or "single"
+        mode = getattr(args, "mode", None) or selection.get("mode", "single")
         model_name = getattr(args, "model_name", None) or selection.get("model_name", "GCN")
         task_type = getattr(args, "task_type", None) or selection.get(
             "task_type", "graph_regression"
@@ -4218,12 +4218,6 @@ def _run_hpo_training(
         if resume_study_name:
             logger.info(f"Resuming study: {resume_study_name}")
             # HPOManager handles study resumption internally via study config
-
-        # For custom/ensemble modes, use the mode name
-        if mode == "custom":
-            model_name = "custom"
-        elif mode == "ensemble":
-            model_name = "ensemble"
 
         # For custom/ensemble modes, use the mode name
         if mode == "custom":
