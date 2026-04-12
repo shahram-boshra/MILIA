@@ -17,7 +17,7 @@
 
 # ---- Build System (PEP 517/518) ----
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools>=82.0.1"]
 build-backend = "setuptools.build_meta"
 
 # ---- Project Metadata (PEP 621/639) ----
