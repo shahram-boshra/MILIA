@@ -1600,6 +1600,22 @@ def list_experimental_setups_info(logger: logging.Logger) -> None:
 
                     logger.info(f"\nSetup: '{setup_name}'{default_marker}")
 
+                    # Display the setup's enabled state so the 'Combined total' below is
+                    # always interpretable. When a setup has enabled=false in YAML, its
+                    # experimental transforms exist on the container but are skipped by
+                    # TransformationConfig.get_combined_transforms() (which honours
+                    # ExperimentalSetup.enabled). Showing the toggle state up-front prevents
+                    # the otherwise-confusing 'Experimental transforms: 3 / Combined total: 2'
+                    # discrepancy that would arise if any setup is disabled in the future.
+                    setup_enabled = True
+                    setup_obj = None
+                    if hasattr(transform_config, "experimental_setups"):
+                        setup_obj = transform_config.experimental_setups.get(setup_name)
+                        if setup_obj is not None and hasattr(setup_obj, "enabled"):
+                            setup_enabled = bool(setup_obj.enabled)
+                    state_marker = "enabled" if setup_enabled else "disabled"
+                    logger.info(f"  Status: {state_marker}")
+
                     if setup_config and len(setup_config) > 0:
                         logger.info(f"  Experimental transforms: {len(setup_config)}")
                         transform_names = [t.get("name", "unknown") for t in setup_config]
@@ -1613,7 +1629,19 @@ def list_experimental_setups_info(logger: logging.Logger) -> None:
                         and transform_config.has_standard_transforms()
                     ):
                         combined = get_combined_transforms_as_dicts(setup_name)
-                        logger.info(f"  Combined total: {len(combined)} transforms")
+                        if setup_enabled:
+                            logger.info(f"  Combined total: {len(combined)} transforms")
+                        else:
+                            # Setup is disabled — runtime combined excludes its experimental
+                            # transforms. Show what would be combined if enabled, so the
+                            # display is internally consistent with 'Experimental transforms'
+                            # above and the toggle state is the only thing the reader needs
+                            # to reconcile.
+                            would_be_combined = len(combined) + len(setup_config or [])
+                            logger.info(
+                                f"  Combined total: {len(combined)} transforms "
+                                f"(setup disabled — would be {would_be_combined} if enabled)"
+                            )
 
                 except Exception as e:
                     logger.error(f"  Error loading setup '{setup_name}': {e}")
