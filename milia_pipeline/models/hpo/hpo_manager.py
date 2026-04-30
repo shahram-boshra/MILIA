@@ -1288,6 +1288,29 @@ class HPOManager:
                     _extract_param_categories(hyperparameters)
                 )
 
+                # 3b. Composite-model bridge: assemble factory contracts for
+                #     composite model dispatches ('ensemble' / 'custom').
+                # ----------------------------------------------------------------
+                # ModelFactory dispatches name.lower()=='ensemble' to
+                # _create_ensemble_model (requires hyperparameters['ensemble_config']
+                # with a 'models' field) and name.lower()=='custom' to
+                # _create_custom_model (requires hyperparameters['architecture_config']).
+                # For non-composite models this call returns model_params unchanged —
+                # single-model HPO behavior is preserved exactly.
+                #
+                # NON-BREAKING: Single-model code path is byte-identical to before.
+                # PRODUCTION-READY: Per-submodel param filtering uses registry
+                #                   introspection; no hardcoded model-to-param maps.
+                # FUTURE-PROOF: One injection point covers both the standard-training
+                #               factory call AND the cross-validation dispatch, since
+                #               both consume model_params downstream.
+                # ----------------------------------------------------------------
+                model_params = self._build_composite_hyperparameters(
+                    model_name=model_name,
+                    trial_model_params=model_params,
+                    models_config=models_config,
+                )
+
                 # 4. Determine task type with validation
                 sample_data = dataset[0] if hasattr(dataset, "__getitem__") else None
                 inferred_task_type = infer_task_type(
@@ -1521,6 +1544,226 @@ class HPOManager:
 
         return objective
 
+    def _build_composite_hyperparameters(
+        self,
+        model_name: str,
+        trial_model_params: dict[str, Any],
+        models_config: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Bridge a trial's flat hyperparameter suggestions to the ModelFactory's
+        composite-model contract.
+
+        ModelFactory dispatches `name.lower() == "ensemble"` to
+        _create_ensemble_model (which requires hyperparameters['ensemble_config']
+        with a 'models' field — see model_factory.py:2295-2300) and
+        `name.lower() == "custom"` to _create_custom_model (which requires
+        hyperparameters['architecture_config']). HPO trials, by contrast, suggest
+        a flat parameter dict drawn from hpo.search_space. This helper assembles
+        the composite-model contract from the user's authored composite config
+        (models.ensemble.* or models.custom_architecture.*) and overlays the
+        trial's suggestions onto each constituent submodel where applicable.
+
+        Per-submodel filtering applies the SAME registry-introspection mechanism
+        used by _filter_search_space_for_model: a trial-suggested parameter is
+        applied to a submodel only if it appears in that submodel's metadata
+        hyperparameters. For example, 'heads' is applied to GAT but skipped for
+        GCN/GraphSAGE — preventing factory-level signature mismatches that would
+        otherwise fail trials.
+
+        For non-composite models (any name other than 'ensemble' / 'custom'), the
+        trial parameters are returned unchanged so the existing single-model
+        registry path is preserved exactly. This method is purely additive: it
+        introduces no behavior change for single-model HPO.
+
+        Args:
+            model_name: The model name passed to optimize() (factory dispatch key).
+            trial_model_params: The trial's suggested model-bucket parameters
+                (output of _extract_param_categories()'s first return value).
+            models_config: The full models.* config subtree (the same dict already
+                used elsewhere in objective() for target_selection, etc.).
+
+        Returns:
+            A new hyperparameters dict suitable for passing to
+            factory.create_model_with_info(...). For composite models, includes
+            'ensemble_config' or 'architecture_config' assembled from models_config
+            with the trial overlay applied. For non-composite models, returns
+            trial_model_params unchanged.
+
+        Design:
+            - DYNAMIC: Per-submodel filtering uses live registry metadata — no
+              hardcoded model-to-param maps.
+            - PRODUCTION-READY: Failures during overlay (e.g., registry miss for a
+              submodel) downgrade gracefully to "no overlay" rather than aborting
+              the trial; the user's authored hyperparameters are then used as-is.
+            - FUTURE-PROOF: The same pattern extends symmetrically to 'custom'
+              architectures, and to any future composite model type that the
+              factory dispatches as a special token.
+            - NON-BREAKING: Single-model HPO returns trial_model_params unchanged.
+        """
+        from copy import deepcopy
+
+        name_lower = model_name.lower() if isinstance(model_name, str) else ""
+
+        # Fast path: not a composite model — preserve existing single-model behavior.
+        if name_lower not in ("ensemble", "custom"):
+            return trial_model_params
+
+        # =====================================================================
+        # ENSEMBLE PATH
+        # =====================================================================
+        # Lift the user-authored ensemble subtree from models_config and overlay
+        # trial_model_params onto each constituent submodel's hyperparameters,
+        # filtered against the submodel's registry metadata.
+        if name_lower == "ensemble":
+            ensemble_yaml = (
+                models_config.get("ensemble") if isinstance(models_config, dict) else None
+            )
+            if not isinstance(ensemble_yaml, dict):
+                logger.warning(
+                    "model_name='ensemble' was selected for HPO but 'models.ensemble' "
+                    "is not present in config. Trial will fail at factory dispatch. "
+                    "Provide an ensemble configuration with a non-empty 'models' list."
+                )
+                return trial_model_params
+
+            ensemble_config: dict[str, Any] = deepcopy(ensemble_yaml)
+
+            # Hoist pooling_method from selection.* if not already set on ensemble_config
+            # — _create_ensemble_model reads ensemble_config['pooling_method'] for the
+            # graph-level wrapper (model_factory.py:2568).
+            if "pooling_method" not in ensemble_config:
+                pooling = (
+                    models_config.get("selection", {}).get("pooling_method")
+                    if isinstance(models_config, dict)
+                    else None
+                )
+                if pooling is not None:
+                    ensemble_config["pooling_method"] = pooling
+
+            # Apply trial overlay to each submodel, filtered by registry metadata.
+            submodels = ensemble_config.get("models")
+            if isinstance(submodels, list) and trial_model_params:
+                for submodel_spec in submodels:
+                    if not isinstance(submodel_spec, dict):
+                        continue
+                    sub_name = submodel_spec.get("name")
+                    if not isinstance(sub_name, str):
+                        continue
+
+                    # Determine which trial params this submodel actually accepts.
+                    accepted_params = self._select_accepted_params_for_submodel(
+                        sub_name, trial_model_params
+                    )
+                    if not accepted_params:
+                        continue
+
+                    # Overlay accepted trial params WITHOUT clobbering values the
+                    # user explicitly authored in models.ensemble.models[].hyperparameters.
+                    sub_hparams = submodel_spec.get("hyperparameters")
+                    if not isinstance(sub_hparams, dict):
+                        sub_hparams = {}
+                        submodel_spec["hyperparameters"] = sub_hparams
+                    for k, v in accepted_params.items():
+                        if k not in sub_hparams:
+                            sub_hparams[k] = v
+
+            # Trial-bucket params that are NOT submodel hyperparameters (none today,
+            # but kept for forward-compatibility) flow through alongside ensemble_config.
+            return {**trial_model_params, "ensemble_config": ensemble_config}
+
+        # =====================================================================
+        # CUSTOM ARCHITECTURE PATH
+        # =====================================================================
+        # Lift models.custom_architecture and pass it through as architecture_config.
+        # Trial-suggested topology params are NOT auto-overlaid onto layer specs
+        # (custom architectures have explicit per-layer params authored by the user);
+        # they remain in the top-level hyperparameters dict where _create_custom_model
+        # / its downstream consumers can pick them up.
+        if name_lower == "custom":
+            custom_yaml = (
+                models_config.get("custom_architecture")
+                if isinstance(models_config, dict)
+                else None
+            )
+            if not isinstance(custom_yaml, dict):
+                logger.warning(
+                    "model_name='custom' was selected for HPO but 'models.custom_architecture' "
+                    "is not present in config. Trial will fail at factory dispatch."
+                )
+                return trial_model_params
+
+            architecture_config: dict[str, Any] = deepcopy(custom_yaml)
+            return {**trial_model_params, "architecture_config": architecture_config}
+
+        # Unreachable — name_lower is constrained above.
+        return trial_model_params
+
+    def _select_accepted_params_for_submodel(
+        self,
+        submodel_name: str,
+        trial_model_params: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Filter trial-suggested model parameters to the subset accepted by a
+        specific submodel, using the same registry-introspection mechanism as
+        _filter_search_space_for_model.
+
+        On any registry failure (registry unavailable, submodel not registered,
+        metadata missing) the method falls back conservatively by returning an
+        EMPTY dict — i.e., do not overlay anything onto that submodel and let
+        the user's authored hyperparameters / submodel defaults stand. This
+        preserves the principle of least surprise: a misnamed submodel surfaces
+        as "user's authored config used" rather than as a corrupted overlay.
+
+        Args:
+            submodel_name: Name of a submodel as it appears in
+                models.ensemble.models[].name (registry key).
+            trial_model_params: The trial's suggested model-bucket parameters.
+
+        Returns:
+            Subset of trial_model_params whose keys match the submodel's
+            metadata.hyperparameters. Empty dict if filtering is not possible.
+        """
+        if not trial_model_params:
+            return {}
+
+        if not _REGISTRY_AVAILABLE or ModelRegistry is None:
+            logger.debug(
+                f"ModelRegistry not available; skipping trial overlay for "
+                f"submodel '{submodel_name}'."
+            )
+            return {}
+
+        try:
+            registry = ModelRegistry.get_instance()
+            if not registry.has_model(submodel_name):
+                logger.debug(
+                    f"Submodel '{submodel_name}' not in registry; skipping trial "
+                    f"overlay (user-authored hyperparameters will be used as-is)."
+                )
+                return {}
+            metadata = registry.get_metadata(submodel_name)
+            if metadata is None or not getattr(metadata, "hyperparameters", None):
+                logger.debug(f"No metadata for submodel '{submodel_name}'; skipping trial overlay.")
+                return {}
+            valid_keys = set(metadata.hyperparameters.keys())
+        except Exception as e:
+            logger.debug(
+                f"Registry introspection failed for submodel '{submodel_name}': {e}. "
+                f"Skipping trial overlay."
+            )
+            return {}
+
+        accepted = {k: v for k, v in trial_model_params.items() if k in valid_keys}
+        if accepted and logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Trial overlay for submodel '{submodel_name}': "
+                f"applying {sorted(accepted.keys())} "
+                f"(skipped: {sorted(set(trial_model_params) - set(accepted))})"
+            )
+        return accepted
+
     def _filter_search_space_for_model(
         self,
         model_name: str,
@@ -1581,10 +1824,25 @@ class HPOManager:
 
         # Check if model exists in registry
         if not registry.has_model(model_name):
-            logger.warning(
-                f"Model '{model_name}' not found in registry. "
-                f"Cannot filter search space. Using unfiltered search space."
-            )
+            # Architecturally-valid factory keywords ('ensemble', 'custom') are NOT
+            # registered as registry entries — they are dispatched as special tokens
+            # by ModelFactory.create_model (see model_factory.py: name.lower()=='ensemble'
+            # routes to _create_ensemble_model; name.lower()=='custom' routes to
+            # _create_custom_model). For these names, returning the unfiltered space is
+            # the intended behavior, and per-submodel filtering happens later at
+            # composition time. Lower the log level accordingly to avoid misleading
+            # 'not found' warnings during normal composite-model HPO.
+            if model_name.lower() in ("ensemble", "custom"):
+                logger.info(
+                    f"Composite model '{model_name}' is not a registry entry "
+                    f"(handled by factory dispatch). Using unfiltered search space; "
+                    f"per-submodel parameter filtering is applied at composition time."
+                )
+            else:
+                logger.warning(
+                    f"Model '{model_name}' not found in registry. "
+                    f"Cannot filter search space. Using unfiltered search space."
+                )
             return deepcopy(search_space)
 
         # Get model metadata
