@@ -139,7 +139,7 @@ milia --train
 milia --train --hpo
 
 # Run predictions on new molecules
-milia --predict --model-path ./checkpoints/best_model.pt \
+milia --predict --model-path ./checkpoints/best.pt \
       --test-path ./molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
