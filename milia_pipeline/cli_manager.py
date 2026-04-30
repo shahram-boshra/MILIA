@@ -1575,7 +1575,6 @@ class CLIManager:
 
         return f"""
 Examples:
-  Examples:
   # Basic processing (--process is default, but shown explicitly for clarity)
   %(prog)s --process
 
@@ -1629,33 +1628,6 @@ Examples:
   %(prog)s --run-experiment transform_ablation --experiment-output ./results
   %(prog)s --list-experiments --experiment-config my_experiments.yaml
 
-  # Basic processing (--process is default, but shown explicitly for clarity)
-  %(prog)s --process
-
-  # Same as above - process mode is automatic without flags
-  %(prog)s
-
-  # Use specific experimental setup
-  %(prog)s --experimental-setup baseline
-
-  # Validate handler configuration before processing
-  %(prog)s --validate-handlers
-
-  # Force reprocessing with custom chunk size
-  %(prog)s --force-reload --chunk-size 10000
-
-  # Quick validation of existing data
-  %(prog)s --quick-validation
-
-  # List available experimental setups
-  %(prog)s --list-experimental-setups
-
-  # Interactive configuration wizard
-  %(prog)s --interactive
-
-  # Debug mode with detailed logging
-  %(prog)s --verbose --log-file debug.log
-
   # NEW: Preprocessing examples
   # Available dataset types: {types_str}
 
@@ -1679,7 +1651,7 @@ Examples:
   # =================================================================
 
   # Predict on molecular file (SMILES CSV)
-  %(prog)s --predict --model-path ./checkpoints/best_model.pt --test-path ./molecules.csv --preds-path ./predictions.csv
+  %(prog)s --predict --model-path ./checkpoints/best.pt --test-path ./molecules.csv --preds-path ./predictions.csv
 
   # Predict on XYZ file
   %(prog)s --predict --model-path ./checkpoints/schnet_model.pt --test-path ./molecule.xyz
