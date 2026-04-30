@@ -5358,15 +5358,26 @@ def list_available_transforms_info(logger: logging.Logger) -> None:
         logger.info("AVAILABLE TRANSFORMS BY CATEGORY")
         logger.info("=" * 60)
 
+        # 'all' is a meta-category in the API contract — a flat union of every
+        # transform across all per-category buckets. Skip it during rendering so
+        # the listing isn't duplicated, and skip it in the count-fallback so the
+        # per-bucket totals can't double-count.
         for category, transforms in available_transforms.items():
             if not isinstance(transforms, list):
+                continue
+            if category == "all":
                 continue
             logger.info(f"\n{category}:")
             for transform_name in sorted(transforms):
                 logger.info(f"  - {transform_name}")
 
         total = available_transforms.get(
-            "count", sum(len(v) for v in available_transforms.values() if isinstance(v, list))
+            "count",
+            sum(
+                len(v)
+                for k, v in available_transforms.items()
+                if isinstance(v, list) and k != "all"
+            ),
         )
         logger.info(f"\nTotal transforms: {total}")
         logger.info("=" * 60)
