@@ -54,7 +54,7 @@ transformations:
     milia_quantum_enhanced:
       name: "milia_quantum_enhanced"
       description: "Milia quantum-enhanced setup with vibrational mode normalization and charge scaling"
-      enabled: false
+      enabled: true
       transforms:
         - name: "NormalizeVibrationalModes"
           enabled: true
@@ -74,7 +74,7 @@ transformations:
     milia_filtered:
       name: "milia_filtered"
       description: "Milia setup with DMC uncertainty filtering for high-quality training data"
-      enabled: false
+      enabled: true
       transforms:
         - name: "FilterByDMCUncertainty"
           enabled: true
@@ -91,7 +91,7 @@ transformations:
     milia_ablation_no_vibmodes:
       name: "milia_ablation_no_vibmodes"
       description: "Milia ablation study setup - no vibrational mode normalization"
-      enabled: false
+      enabled: true
       transforms:
         - name: "ScaleMullikenCharges"
           enabled: true
