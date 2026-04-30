@@ -5904,19 +5904,23 @@ class GraphTransforms:
             # Enhanced categorization using registry metadata
             for transform_name in all_transforms:
                 try:
-                    # Get transform info from registry
+                    # Get transform info from registry. Note: TransformInfo is a
+                    # Pydantic BaseModel (see class definition above), NOT a dict,
+                    # so attribute access — not .get() — is the correct API. Using
+                    # getattr() with explicit defaults keeps this defensive against
+                    # any future field renames or removals on TransformInfo.
                     transform_info = self.registry.get_transform_info(transform_name)
 
                     # Store metadata
                     categorized["metadata"][transform_name] = {
-                        "available": transform_info.get("available", True),
-                        "parameters": transform_info.get("parameters", {}),
-                        "description": transform_info.get("description", ""),
-                        "category": transform_info.get("category", "unknown"),
+                        "available": getattr(transform_info, "available", True),
+                        "parameters": getattr(transform_info, "parameters", {}),
+                        "description": getattr(transform_info, "description", "") or "",
+                        "category": getattr(transform_info, "category", "unknown"),
                     }
 
                     # Categorize by type
-                    category = transform_info.get("category", "basic")
+                    category = getattr(transform_info, "category", "basic")
                     if category == "augmentation":
                         categorized["augmentation"].append(transform_name)
                     elif category == "molecular":
