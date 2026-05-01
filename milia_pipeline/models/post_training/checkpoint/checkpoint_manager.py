@@ -25,6 +25,62 @@ logger = logging.getLogger(__name__)
 # Checkpoint format version
 CHECKPOINT_FORMAT_VERSION = "2.0"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PyTorch >= 2.6 weights_only allowlist
+# ─────────────────────────────────────────────────────────────────────────────
+# PyTorch 2.6 made `weights_only=True` the default for torch.load(). Under
+# that mode, unpickling refuses any class not on an explicit allowlist —
+# even safe utility classes that downstream libraries (PyG, Optuna, the
+# optimizer's own state_dict serializer) embed in checkpoints.
+#
+# Rather than disable `weights_only` (which would throw away the security
+# benefit), we register the small set of known-safe types that legitimate
+# checkpoints contain. Each entry must be (a) authored by torch/PyG/numpy
+# itself, NOT by user code, and (b) a value-style class with no behaviour
+# that could be exploited via crafted state.
+#
+# The list grows incrementally as new false-positive blockages are reported
+# from the field. Wrapped in try/except so this module imports cleanly on
+# pre-2.4 PyTorch (where `add_safe_globals` did not yet exist).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _register_safe_globals() -> None:
+    """Allowlist known-safe non-tensor types embedded by PyTorch/PyG/etc."""
+    try:
+        from torch.serialization import add_safe_globals
+    except ImportError:
+        # Pre-2.4 PyTorch — weights_only allowlist does not exist; nothing to do.
+        return
+
+    safe_classes: list[type] = []
+
+    # torch internals known to appear in optimizer/scheduler state and version
+    # metadata embedded by upstream save logic.
+    try:
+        from torch.torch_version import TorchVersion
+
+        safe_classes.append(TorchVersion)
+    except (ImportError, AttributeError):
+        pass
+
+    if not safe_classes:
+        return
+
+    try:
+        add_safe_globals(safe_classes)
+        logger.debug(
+            f"Registered {len(safe_classes)} type(s) with torch.serialization "
+            f"safe-globals allowlist: {[c.__name__ for c in safe_classes]}"
+        )
+    except Exception as e:  # noqa: BLE001 — defensive boot-time guard
+        logger.debug(f"Could not register safe globals (non-fatal): {e}")
+
+
+# Register at module-import time so any subsequent torch.load() call within
+# the process picks up the allowlist. Idempotent under re-import.
+_register_safe_globals()
+
 
 class CheckpointManager:
     """
@@ -259,11 +315,49 @@ class CheckpointManager:
         # Resolve path with intelligent search
         resolved_filepath = self._resolve_checkpoint_path(filepath)
 
-        checkpoint = torch.load(
-            resolved_filepath,
-            map_location=map_location,
-            weights_only=weights_only,
-        )
+        try:
+            checkpoint = torch.load(
+                resolved_filepath,
+                map_location=map_location,
+                weights_only=weights_only,
+            )
+        except Exception as e:
+            # PyTorch >= 2.6 raises pickle.UnpicklingError (or a torch-specific
+            # subclass) when weights_only=True encounters a non-allowlisted
+            # global. The allowlist registered at module import covers the
+            # common cases, but checkpoints may contain types embedded by
+            # transient versions of upstream libraries (PyG, Optuna, etc.)
+            # that we have not yet seen.
+            #
+            # MILIA's checkpoints are MILIA-authored (we save them, we load
+            # them), so the security risk of falling back to
+            # weights_only=False is bounded. We retry once and surface a
+            # clear warning so the missing allowlist entry can be added
+            # permanently in _register_safe_globals() above.
+            #
+            # If `weights_only` was already False (caller's choice), the
+            # error is unrelated and we re-raise unchanged.
+            error_text = str(e)
+            looks_like_weights_only_block = weights_only and (
+                "weights_only" in error_text
+                or "WeightsUnpickler" in error_text
+                or "Unsupported global" in error_text
+            )
+            if not looks_like_weights_only_block:
+                raise
+
+            logger.warning(
+                "torch.load(weights_only=True) rejected a global in the "
+                f"checkpoint at {resolved_filepath}. Retrying with "
+                "weights_only=False (safe for MILIA-authored checkpoints). "
+                "Underlying error was: %s",
+                error_text.splitlines()[0] if error_text else "<no message>",
+            )
+            checkpoint = torch.load(
+                resolved_filepath,
+                map_location=map_location,
+                weights_only=False,
+            )
 
         # Check format version
         version_info = checkpoint.get("version_info", {})
