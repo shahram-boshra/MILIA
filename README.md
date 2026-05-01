@@ -140,7 +140,7 @@ milia --train --hpo
 
 # Run predictions on new molecules
 milia --predict --model-path ./checkpoints/best.pt \
-      --test-path ./molecules.csv --preds-path ./predictions.csv
+      --test-path test_data/molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
 milia --dry-run
@@ -191,6 +191,88 @@ dataset = miliaDataset(
     transform=my_transforms
 )
 ```
+
+## Trying MILIA — Reproducible Walkthrough
+
+This section walks a reviewer through the shortest path from a fresh clone to a trained model and a prediction. Every command below has been validated end-to-end. Paths are relative throughout, so the walkthrough works identically on any machine — Linux, macOS, WSL, or inside the Docker container.
+
+### Prerequisites
+
+1. **MILIA installed** — see [Installation](#installation) above. Method 1 (Docker) is the fastest route for a one-shot evaluation; Method 2 (Conda + `pip install -e .`) is recommended if you intend to inspect or modify source.
+
+2. **`working_root_dir` set in your configuration** — this is the only path you must configure. It tells MILIA where to download datasets, write processed graphs, and save checkpoints. There is **no implicit default** — the framework asks you to choose deliberately.
+
+   Open `configs/main.yaml` and set:
+
+   ```yaml
+   global_paths:
+     working_root_dir: ~/Chem_Data/Milia_PyG_Dataset    # or any directory you prefer
+   ```
+
+   The `~` is expanded to your home directory at runtime, so the same line works for any user. Inside the Docker image the value is preset to `/root/Chem_Data/Milia_PyG_Dataset` and you can leave it as-is.
+
+3. **A laptop-friendly configuration** — the shipped `configs/models.yaml` is preconfigured for low-resource execution (small batch size, few epochs, small ensembles). A reviewer with a CPU-only laptop can run the walkthrough below without a GPU.
+
+### Step-by-step
+
+Run each command from the repository root (or, in Docker, from `/app/milia`). Every command auto-detects the `configs/` directory.
+
+```bash
+# 1. Sanity-check the install (under two minutes on CPU)
+pytest -m smoke --tb=short
+
+# 2. Validate the configuration without doing any work
+milia --dry-run
+
+# 3. Process the dataset (downloads if needed, writes PyG graphs under working_root_dir)
+milia --process
+
+# 4. Inspect the processed dataset
+milia --stats-only
+
+# 5. Train a model
+#    Best checkpoint written to {working_root_dir}/checkpoints/best.pt
+milia --train
+
+# 6. (Optional) Train with hyperparameter optimization instead of step 5
+milia --train --hpo
+
+# 7. Run prediction on the sample molecules shipped with the repo
+milia --predict \
+    --model-path ./checkpoints/best.pt \
+    --test-path test_data/molecules.csv \
+    --preds-path ./predictions.csv
+```
+
+After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the five sample molecules in `test_data/molecules.csv` (ethanol, acetic acid, benzene, isopropanol, triethylamine — all common organic molecules in SMILES format).
+
+### Where the outputs live
+
+Every artifact MILIA produces lands under `working_root_dir`. With the example value `~/Chem_Data/Milia_PyG_Dataset` this means:
+
+| Artifact | Location |
+|---|---|
+| Processed PyG graphs | `~/Chem_Data/Milia_PyG_Dataset/processed/` |
+| Best model checkpoint | `~/Chem_Data/Milia_PyG_Dataset/checkpoints/best.pt` |
+| Per-epoch checkpoints | `~/Chem_Data/Milia_PyG_Dataset/checkpoints/epoch=*.pt` |
+| HPO best parameters | `~/Chem_Data/Milia_PyG_Dataset/hpo_output/best_params.json` |
+| Training plots | `~/Chem_Data/Milia_PyG_Dataset/training_plots/` |
+
+The CLI resolves checkpoint paths against `working_root_dir` automatically, so commands that reference `./checkpoints/best.pt` work regardless of which directory you run them from.
+
+### Introspection commands
+
+These are read-only and useful for orientation:
+
+```bash
+milia --list-transforms              # 30+ pre-registered PyG transforms + plugin transforms
+milia --list-experimental-setups     # Available research/experiment configurations
+milia --help                         # Full CLI reference
+```
+
+### Sample data shipped with the repo
+
+The `test_data/` directory contains `molecules.csv` — a small CSV with five common organic molecules in SMILES format, ready for use with `milia --predict` (step 7 above). This is the minimal sample needed to verify end-to-end inference; for production use, supply your own input file in the same format (`smiles,molecule_id` header, one molecule per row).
 
 ## Architecture
 

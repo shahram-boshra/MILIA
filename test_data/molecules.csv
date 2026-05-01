@@ -1,0 +1,6 @@
+smiles,molecule_id
+CCO,ethanol_001
+CC(=O)O,acetic_acid_002
+c1ccccc1,benzene_003
+CC(C)O,isopropanol_004
+CCN(CC)CC,triethylamine_005

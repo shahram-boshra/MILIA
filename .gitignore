@@ -259,8 +259,15 @@ archive/
 scripts/
 
 # Dev-only test fixture files — tests use /tmp/test_data/ with mocks,
-# not this directory. (§1.1)
-test_data/
+# not this directory. Heavy dev-only artifacts (.npz datasets, .pt
+# checkpoints, .tar.gz archives) are excluded; small documented sample
+# files referenced from README are whitelisted explicitly below.
+# Pattern note: we use 'test_data/*' (not 'test_data/') so git descends
+# into the directory and per-file '!' exceptions take effect. With a
+# trailing-slash rule, git ignores the directory at directory level and
+# never evaluates contained files. (§1.1)
+test_data/*
+!test_data/molecules.csv
 
 # Experiment output files — uncomment if experiments/ generates large outputs
 # experiments/
