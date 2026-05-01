@@ -3222,12 +3222,19 @@ def handle_predict_mode(
         if model_path_arg is None:
             logger.error("--model-path is required for prediction mode")
             return 1
-        model_path = Path(model_path_arg).expanduser()
-        if not model_path.is_absolute():
-            # Check in checkpoint directory first
-            checkpoint_dir = working_root_dir / "checkpoints"
-            candidate = checkpoint_dir / model_path.name
-            model_path = candidate if candidate.exists() else working_root_dir / model_path
+        checkpoint_dir = working_root_dir / "checkpoints"
+        resolved_model, _model_attempts = _resolve_user_path(
+            model_path_arg,
+            working_root_dir=working_root_dir,
+            extra_search_dirs=(checkpoint_dir,),
+        )
+        # Validation already happened in CLIManager — we just use the resolved
+        # path here, falling back to the bare working_root_dir join if the
+        # validator was somehow bypassed (defensive; should not happen in
+        # normal flow).
+        model_path = (
+            resolved_model if resolved_model is not None else working_root_dir / model_path_arg
+        )
         logger.info(f"Model checkpoint: {model_path}")
 
         # Resolve test path (--test-path)
@@ -3235,18 +3242,30 @@ def handle_predict_mode(
         if test_path_arg is None:
             logger.error("--test-path is required for prediction mode")
             return 1
-        test_path = Path(test_path_arg).expanduser()
-        if not test_path.is_absolute():
-            test_path = working_root_dir / test_path
+        resolved_test, _test_attempts = _resolve_user_path(
+            test_path_arg,
+            working_root_dir=working_root_dir,
+        )
+        test_path = resolved_test if resolved_test is not None else working_root_dir / test_path_arg
         logger.info(f"Test data path: {test_path}")
 
         # Resolve output path (--preds-path)
+        # Output paths have different semantics — the file may not exist yet
+        # (we are about to create it), so we resolve via the same chain but
+        # don't require existence: we want CWD-relative if the user provided
+        # a CWD-style path, working_root_dir-relative otherwise.
         preds_path_arg = getattr(args, "preds_path", None) or prediction_config.get(
             "output_path", "./predictions.csv"
         )
-        preds_path = Path(preds_path_arg).expanduser()
-        if not preds_path.is_absolute():
-            preds_path = working_root_dir / preds_path
+        preds_path_input = Path(preds_path_arg).expanduser()
+        if preds_path_input.is_absolute():
+            preds_path = preds_path_input
+        elif preds_path_input.parent.exists():
+            # Parent directory exists from CWD — treat as CWD-relative output
+            preds_path = preds_path_input.resolve()
+        else:
+            # Parent doesn't exist from CWD — fall back to working_root_dir-relative
+            preds_path = working_root_dir / preds_path_input
         preds_path.parent.mkdir(parents=True, exist_ok=True)
         logger.info(f"Predictions output: {preds_path}")
 
@@ -4437,6 +4456,77 @@ def _get_working_root_dir(config: dict, logger: logging.Logger) -> Path:
         logger.debug(f"Using current directory as working_root_dir: {working_root_dir}")
 
     return working_root_dir
+
+
+def _resolve_user_path(
+    user_path: str | Path,
+    working_root_dir: Path,
+    extra_search_dirs: tuple[Path, ...] = (),
+) -> tuple[Path | None, list[tuple[str, Path]]]:
+    """
+    Resolve a user-supplied prediction-flow path with full search visibility.
+
+    Tries each candidate in order, returns the first one that exists, and
+    always returns the full list of candidates actually tried so callers
+    can build accurate diagnostics.
+
+    Search order (per the documented contract; mirrors
+    CLIManager._resolve_user_path in cli_manager.py for consistency between
+    CLI validation and main-mode execution):
+      1. AS PROVIDED, relative to CWD. Pathlib treats absolute paths
+         unchanged here — so absolute inputs are tried verbatim.
+      2. Each `extra_search_dirs` entry, joined with the path's basename.
+         Used by the model-path resolver to look in
+         {working_root_dir}/checkpoints/. Empty by default.
+      3. Joined with `working_root_dir`. Final fallback for when the user
+         provides a path relative to their data root rather than their CWD.
+
+    Mild duplication with CLIManager._resolve_user_path is intentional
+    under the project's documented Dependency Injection convention
+    (project structure doc lines 467-473, 941: "REMOVED path_utils.py
+    (Service Locator anti-pattern)"). Each module owning path resolution
+    keeps its own private resolver scoped to its responsibility, with
+    working_root_dir injected explicitly — no shared utility module.
+
+    Args:
+        user_path: The path the user supplied on the CLI (e.g. value of
+                   --test-path or --model-path).
+        working_root_dir: The configured global_paths.working_root_dir,
+                          used as the final-fallback root.
+        extra_search_dirs: Optional intermediate directories searched
+                           between CWD and working_root_dir. The path's
+                           basename is joined with each one.
+
+    Returns:
+        (resolved_path, attempted_candidates) where:
+          - resolved_path is the first existing candidate, or None if
+            none exist
+          - attempted_candidates is a list of (label, path) tuples in
+            the order they were tried — suitable for emitting an
+            accurate "Searched locations:" diagnostic
+    """
+    original = Path(user_path).expanduser()
+    attempted: list[tuple[str, Path]] = []
+
+    # 1. As provided (CWD-relative or absolute — pathlib handles both)
+    attempted.append(("as provided", original))
+    if original.exists():
+        return original.resolve(), attempted
+
+    # 2. Caller-supplied intermediate search dirs (basename match)
+    for search_dir in extra_search_dirs:
+        candidate = search_dir / original.name
+        attempted.append((f"in {search_dir}", candidate))
+        if candidate.exists():
+            return candidate.resolve(), attempted
+
+    # 3. working_root_dir relative
+    candidate = working_root_dir / original
+    attempted.append(("working_root_dir relative", candidate))
+    if candidate.exists():
+        return candidate.resolve(), attempted
+
+    return None, attempted
 
 
 def _create_callbacks(
