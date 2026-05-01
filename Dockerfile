@@ -17,6 +17,34 @@ LABEL org.opencontainers.image.licenses=MIT
 
 WORKDIR /app
 
+# Install minimal system tooling required for in-container git workflows.
+# - git: enables 'git pull / git status' inside running containers (without this,
+#   reviewers cannot fetch updates from origin/main without rebuilding the image)
+# - openssh-client: required by git when remote URLs use the git@github.com:... form
+#   (without this, 'git pull' fails with 'error: cannot run ssh: No such file or directory')
+# - ca-certificates: HTTPS verification for git/curl
+#
+# Pattern follows Docker official best practices (docs.docker.com/build/building/best-practices):
+# - apt-get update && install in a single RUN layer so the cache is current at install time
+# - --no-install-recommends to skip optional dependencies (smaller image)
+# - rm -rf /var/lib/apt/lists/* in the SAME layer to avoid persisting cache in lower layers
+# - DEBIAN_FRONTEND=noninteractive set per-RUN (NOT as ENV) per Docker FAQ — avoids leaking
+#   into runtime where it would suppress legitimate prompts
+# Retry loop matches the resilience pattern used by the conda layers below.
+RUN set -e && \
+    _success=0 && \
+    for i in $(seq 1 3); do \
+        echo "Attempt $i/3: Installing system packages (git, openssh-client, ca-certificates)..."; \
+        DEBIAN_FRONTEND=noninteractive apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates \
+            git \
+            openssh-client \
+        && rm -rf /var/lib/apt/lists/* \
+        && echo "System packages installed!" && _success=1 && break || sleep 10; \
+    done && \
+    if [ "$_success" -ne 1 ]; then echo "FATAL: Failed to install system packages after all retries"; exit 1; fi
+
 # Configure conda/mamba: conda-forge only, strict priority, generous timeouts.
 # Miniforge3 ships mamba pre-installed — no separate install step needed.
 # channel_priority=strict per Mamba docs: prevents mixing incompatible channels.
