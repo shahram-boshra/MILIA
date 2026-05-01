@@ -2252,22 +2252,20 @@ For more information, see: https://docs.example.com/milia-cli
             working_root_dir = self._get_working_root_dir_for_validation()
 
             # Resolve and validate model path
-            model_path = Path(args.model_path).expanduser()
-            if not model_path.is_absolute():
-                # Check in checkpoint directory first (same logic as main.py)
-                checkpoint_dir = working_root_dir / "checkpoints"
-                candidate = checkpoint_dir / model_path.name
-                model_path = candidate if candidate.exists() else working_root_dir / model_path
-
-            if not model_path.exists():
+            checkpoint_dir = working_root_dir / "checkpoints"
+            resolved_model, model_attempts = self._resolve_user_path(
+                args.model_path,
+                working_root_dir=working_root_dir,
+                extra_search_dirs=(checkpoint_dir,),
+            )
+            if resolved_model is None:
                 raise CLIValidationError(
                     f"Model checkpoint not found: {args.model_path}\n"
                     f"Searched locations:\n"
-                    f"  1. {Path(args.model_path).expanduser()} (as provided)\n"
-                    f"  2. {working_root_dir / 'checkpoints' / Path(args.model_path).name} (checkpoints dir)\n"
-                    f"  3. {working_root_dir / args.model_path} (working_root_dir relative)\n"
+                    f"{self._format_searched_locations(model_attempts)}\n"
                     f"Ensure the path to your trained model checkpoint is correct."
                 )
+            model_path = resolved_model
 
             # Validate model path has .pt extension
             if model_path.suffix != ".pt":
@@ -2279,19 +2277,19 @@ For more information, see: https://docs.example.com/milia-cli
             self.logger.debug(f"Resolved model path: {model_path}")
 
             # Resolve and validate test path
-            test_path = Path(args.test_path).expanduser()
-            if not test_path.is_absolute():
-                test_path = working_root_dir / test_path
-
-            if not test_path.exists():
+            resolved_test, test_attempts = self._resolve_user_path(
+                args.test_path,
+                working_root_dir=working_root_dir,
+            )
+            if resolved_test is None:
                 raise CLIValidationError(
                     f"Test path not found: {args.test_path}\n"
                     f"Searched locations:\n"
-                    f"  1. {Path(args.test_path).expanduser()} (as provided)\n"
-                    f"  2. {working_root_dir / args.test_path} (working_root_dir relative)\n"
+                    f"{self._format_searched_locations(test_attempts)}\n"
                     f"Provide a valid path to: molecular file (CSV, XYZ, SDF), "
                     f"processed dataset (.pt), or miliaDataset directory."
                 )
+            test_path = resolved_test
 
             self.logger.debug(f"Resolved test path: {test_path}")
 
@@ -2313,6 +2311,81 @@ For more information, see: https://docs.example.com/milia-cli
 
             self.logger.debug(f"Resolved predictions path: {preds_path}")
             self.logger.debug("Prediction path validation completed successfully")
+
+    def _resolve_user_path(
+        self,
+        user_path: str | Path,
+        working_root_dir: Path,
+        extra_search_dirs: tuple[Path, ...] = (),
+    ) -> tuple[Path | None, list[tuple[str, Path]]]:
+        """
+        Resolve a user-supplied prediction-flow path with full search visibility.
+
+        Tries each candidate in order, returns the first one that exists, and
+        always returns the full list of candidates actually tried so callers
+        can build accurate "Searched locations:" error messages.
+
+        Search order (per the documented contract):
+          1. AS PROVIDED, relative to CWD. Pathlib treats absolute paths
+             unchanged here — so absolute inputs are tried verbatim.
+          2. Each `extra_search_dirs` entry, joined with the path's basename.
+             Used by the model-path resolver to look in
+             {working_root_dir}/checkpoints/. Empty by default.
+          3. Joined with `working_root_dir`. Final fallback for when the
+             user provides a path relative to their data root rather than
+             their CWD.
+
+        Args:
+            user_path: The path the user supplied on the CLI (e.g. value of
+                       --test-path or --model-path).
+            working_root_dir: The configured global_paths.working_root_dir,
+                              used as the final-fallback root.
+            extra_search_dirs: Optional intermediate directories searched
+                               between CWD and working_root_dir. The path's
+                               basename is joined with each one (so the
+                               canonical use case — looking for "best.pt"
+                               under "checkpoints/" — works without the
+                               caller having to pre-compute the candidate).
+
+        Returns:
+            (resolved_path, attempted_candidates) where:
+              - resolved_path is the first existing candidate, or None if
+                none exist
+              - attempted_candidates is a list of (label, path) tuples in
+                the order they were tried — suitable for emitting an
+                accurate "Searched locations:" diagnostic
+        """
+        original = Path(user_path).expanduser()
+        attempted: list[tuple[str, Path]] = []
+
+        # 1. As provided (CWD-relative or absolute — pathlib handles both)
+        attempted.append(("as provided", original))
+        if original.exists():
+            return original.resolve(), attempted
+
+        # 2. Caller-supplied intermediate search dirs (basename match)
+        for search_dir in extra_search_dirs:
+            candidate = search_dir / original.name
+            attempted.append((f"in {search_dir}", candidate))
+            if candidate.exists():
+                return candidate.resolve(), attempted
+
+        # 3. working_root_dir relative
+        candidate = working_root_dir / original
+        attempted.append(("working_root_dir relative", candidate))
+        if candidate.exists():
+            return candidate.resolve(), attempted
+
+        return None, attempted
+
+    @staticmethod
+    def _format_searched_locations(
+        attempted: list[tuple[str, Path]],
+    ) -> str:
+        """Format an attempted-candidate list into a human-readable error block."""
+        return "\n".join(
+            f"  {i}. {path} ({label})" for i, (label, path) in enumerate(attempted, start=1)
+        )
 
     def _get_working_root_dir_for_validation(self) -> Path:
         """
