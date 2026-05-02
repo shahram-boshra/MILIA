@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Optional, Protocol
 
+import numpy as np
 import torch
 from torch_geometric.data import Batch, Data
 
@@ -765,7 +766,14 @@ class XYZConverter(BaseDataConverter):
         # Create edges based on distance cutoff
         cutoff = kwargs.get("cutoff", self.cutoff)
         i, j = neighbor_list("ij", atoms, cutoff)
-        edge_index = torch.tensor([i, j], dtype=torch.long)
+        # ASE's neighbor_list returns numpy ndarrays. Wrapping two ndarrays in a
+        # Python list before passing to torch.tensor() is a documented PyTorch
+        # anti-pattern (UserWarning at tensor_new.cpp; see pytorch/pytorch#13918)
+        # that triggers an O(N) element-wise copy. np.stack joins them into a
+        # single contiguous [2, num_edges] ndarray — the exact shape PyG requires
+        # for edge_index in COO format — and torch.from_numpy enables the
+        # zero-copy fast ingestion path before the dtype cast to long.
+        edge_index = torch.from_numpy(np.stack([i, j])).to(dtype=torch.long)
 
         return Data(z=z, pos=pos, edge_index=edge_index, num_nodes=len(atoms))
 
@@ -810,7 +818,14 @@ class ASEAtomsConverter(BaseDataConverter):
 
         cutoff = kwargs.get("cutoff", self.cutoff)
         i, j = neighbor_list("ij", atoms, cutoff)
-        edge_index = torch.tensor([i, j], dtype=torch.long)
+        # ASE's neighbor_list returns numpy ndarrays. Wrapping two ndarrays in a
+        # Python list before passing to torch.tensor() is a documented PyTorch
+        # anti-pattern (UserWarning at tensor_new.cpp; see pytorch/pytorch#13918)
+        # that triggers an O(N) element-wise copy. np.stack joins them into a
+        # single contiguous [2, num_edges] ndarray — the exact shape PyG requires
+        # for edge_index in COO format — and torch.from_numpy enables the
+        # zero-copy fast ingestion path before the dtype cast to long.
+        edge_index = torch.from_numpy(np.stack([i, j])).to(dtype=torch.long)
 
         return Data(z=z, pos=pos, edge_index=edge_index, num_nodes=len(atoms))
 
