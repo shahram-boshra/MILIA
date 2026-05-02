@@ -81,7 +81,7 @@ docs = [
     "sphinx>=8.1,<8.2",
     "pydata-sphinx-theme>=0.16",
     "myst-parser>=4.0",
-    "sphinx-copybutton>=0.5",
+    "sphinx-copybutton>=0.5.2",
 ]
 
 [project.urls]
