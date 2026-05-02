@@ -167,10 +167,31 @@ addopts = [
 #      filtered. This preserves the "fail loud on our own code" discipline
 #      while accepting that we cannot fix our dependencies for them.
 #
-# Reference: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+#   3. Silence ONE specific PyTorch Geometric UserWarning: the "Unable to
+#      accurately infer 'num_nodes'" notice emitted by
+#      torch_geometric.data.storage when a Data() object has no node-level
+#      attributes. Per PyG's own documentation (Data.num_nodes property
+#      docstring), this warning is INFORMATIONAL and is the documented
+#      mechanism by which PyG asks callers to set num_nodes explicitly when
+#      working with edge-only graphs. MILIA's pyg_integration.compute_graph_
+#      statistics() function is required to gracefully handle empty Data()
+#      objects, and the test suite (TestComputeGraphStatisticsExtended::
+#      test_no_node_info_at_all) deliberately exercises this path to assert
+#      stats["num_nodes"] is None. The warning is therefore expected behavior
+#      under test and is not actionable from MILIA. Filter scope is narrow
+#      (exact message prefix + UserWarning category + torch_geometric.data.
+#      storage module) so all other PyG UserWarnings continue to surface.
+#      The message prefix and emitting module path are stable across PyG
+#      versions 2.0.3 through latest (verified upstream source).
+#
+# References:
+#   - https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+#   - https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/data/data.html
+#     (Data.num_nodes property — documents the inference-warning contract)
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    "ignore:Unable to accurately infer 'num_nodes':UserWarning:torch_geometric.data.storage",
     "error::DeprecationWarning:milia_pipeline",
     "error::PendingDeprecationWarning:milia_pipeline",
 ]
