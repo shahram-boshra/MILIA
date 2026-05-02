@@ -58,6 +58,33 @@ except ImportError:
         pass
 
 
+# Import the canonical PyTorch>=2.6 safe-load helper from trainer.py.
+#
+# `_safe_torch_load` invokes torch.load() with weights_only=True first (the
+# secure, future-aligned path) and falls back to weights_only=False with a
+# logged warning only on diagnostic-discriminated weights_only blocks. This
+# eliminates the FutureWarning emitted by torch>=2.4 and prepares this
+# module for the torch>=2.6 default flip without weakening security for
+# legitimate MILIA-authored checkpoints.
+#
+# The same retry pattern is implemented in CheckpointManager.load() in
+# milia_pipeline/models/post_training/checkpoint/checkpoint_manager.py.
+# Reusing the helper here keeps the policy centralized in one place.
+#
+# Fallback rationale: if trainer.py is unavailable (e.g., partial install
+# where the training subpackage was excluded), this module degrades to
+# legacy torch.load() behavior rather than failing at import time. That
+# preserves the historical contract for callers that never exercised
+# load_checkpoint().
+try:
+    from milia_pipeline.models.training.trainer import _safe_torch_load
+except ImportError:
+
+    def _safe_torch_load(filepath, map_location=None):
+        """Fallback when trainer module is unavailable; matches legacy semantics."""
+        return torch.load(filepath, map_location=map_location)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -672,7 +699,7 @@ class DistributedManager:
         if not filepath.exists():
             raise FileNotFoundError(f"Checkpoint not found: {filepath}")
 
-        checkpoint = torch.load(filepath, map_location="cpu")
+        checkpoint = _safe_torch_load(filepath, map_location="cpu")
 
         # Load model state
         if hasattr(model, "module"):

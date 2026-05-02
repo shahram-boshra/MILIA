@@ -1807,7 +1807,7 @@ class TestSaveCheckpoint:
         checkpoint_path = temp_checkpoint_dir / "checkpoint.pt"
         manager.save_checkpoint(simple_model, checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "model_state_dict" in checkpoint
 
     def test_save_checkpoint_contains_distributed_config(
@@ -1820,7 +1820,7 @@ class TestSaveCheckpoint:
         checkpoint_path = temp_checkpoint_dir / "checkpoint.pt"
         manager.save_checkpoint(simple_model, checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "distributed_config" in checkpoint
 
     def test_save_checkpoint_with_optimizer(self, simple_model, temp_checkpoint_dir, clean_env):
@@ -1835,7 +1835,7 @@ class TestSaveCheckpoint:
             simple_model, checkpoint_path, include_optimizer=True, optimizer=optimizer
         )
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "optimizer_state_dict" in checkpoint
 
     def test_save_checkpoint_without_optimizer(self, simple_model, temp_checkpoint_dir, clean_env):
@@ -1846,7 +1846,7 @@ class TestSaveCheckpoint:
         checkpoint_path = temp_checkpoint_dir / "checkpoint.pt"
         manager.save_checkpoint(simple_model, checkpoint_path, include_optimizer=False)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "optimizer_state_dict" not in checkpoint
 
     def test_save_checkpoint_wrapped_model_module_attr(self, temp_checkpoint_dir, clean_env):
@@ -1861,7 +1861,7 @@ class TestSaveCheckpoint:
         checkpoint_path = temp_checkpoint_dir / "checkpoint.pt"
         manager.save_checkpoint(wrapped_model, checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "model_state_dict" in checkpoint
 
     def test_save_checkpoint_logs_on_verbose(

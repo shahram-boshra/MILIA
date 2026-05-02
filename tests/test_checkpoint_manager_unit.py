@@ -676,7 +676,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "model_state_dict" in checkpoint
         mock_model.state_dict.assert_called_once()
 
@@ -688,7 +688,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, optimizer=mock_optimizer)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "optimizer_state_dict" in checkpoint
         mock_optimizer.state_dict.assert_called_once()
 
@@ -698,7 +698,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, optimizer=None)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "optimizer_state_dict" not in checkpoint
 
     def test_save_with_scheduler(
@@ -709,7 +709,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, scheduler=mock_scheduler)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "scheduler_state_dict" in checkpoint
         mock_scheduler.state_dict.assert_called_once()
 
@@ -719,7 +719,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, scheduler=None)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "scheduler_state_dict" not in checkpoint
 
     def test_save_with_epoch(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -728,7 +728,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=42)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == 42
 
     def test_save_epoch_default(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -737,7 +737,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == 0
 
     def test_save_with_global_step(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -746,7 +746,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, global_step=10000)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["global_step"] == 10000
 
     def test_save_global_step_default(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -755,7 +755,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["global_step"] == 0
 
     def test_save_with_metrics_history(
@@ -768,7 +768,7 @@ class TestSaveMethod:
             filepath=filepath, model=mock_model, metrics_history=sample_metrics_history
         )
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["metrics_history"] == sample_metrics_history
 
     def test_save_metrics_history_default_empty(
@@ -779,7 +779,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["metrics_history"] == {}
 
     def test_save_metrics_history_none_becomes_empty(
@@ -790,7 +790,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, metrics_history=None)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["metrics_history"] == {}
 
     def test_save_with_best_val_loss(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -799,7 +799,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, best_val_loss=0.123)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["best_val_loss"] == 0.123
 
     def test_save_best_val_loss_default_inf(
@@ -810,7 +810,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["best_val_loss"] == float("inf")
 
     def test_save_with_hyper_parameters(
@@ -823,7 +823,7 @@ class TestSaveMethod:
             filepath=filepath, model=mock_model, hyper_parameters=sample_hyper_parameters
         )
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["hyper_parameters"] == sample_hyper_parameters
 
     def test_save_hyper_parameters_default_empty(
@@ -834,7 +834,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["hyper_parameters"] == {}
 
     def test_save_with_data_info(
@@ -845,7 +845,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, data_info=sample_data_info)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["data_info"] == sample_data_info
 
     def test_save_data_info_default_empty(
@@ -856,7 +856,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["data_info"] == {}
 
     def test_save_contains_version_info(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -865,7 +865,7 @@ class TestSaveMethod:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "version_info" in checkpoint
         assert "checkpoint_format_version" in checkpoint["version_info"]
         assert checkpoint["version_info"]["checkpoint_format_version"] == "2.0"
@@ -882,7 +882,7 @@ class TestSaveMethod:
             custom_list=[1, 2, 3],
         )
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["custom_field_1"] == "custom_value"
         assert checkpoint["custom_field_2"] == {"nested": "data"}
         assert checkpoint["custom_list"] == [1, 2, 3]
@@ -917,7 +917,7 @@ class TestSaveMethod:
 
         assert result == filepath.resolve()
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == 100
         assert checkpoint["global_step"] == 50000
         assert checkpoint["best_val_loss"] == 0.15
@@ -947,12 +947,12 @@ class TestSaveMethod:
 
         # Save first checkpoint
         checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=10)
-        checkpoint1 = torch.load(filepath)
+        checkpoint1 = torch.load(filepath, weights_only=False)
         assert checkpoint1["epoch"] == 10
 
         # Save second checkpoint (should overwrite)
         checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=20)
-        checkpoint2 = torch.load(filepath)
+        checkpoint2 = torch.load(filepath, weights_only=False)
         assert checkpoint2["epoch"] == 20
 
 
@@ -1099,7 +1099,7 @@ class TestSaveMethodWithRealModels:
 
         checkpoint_manager.save(filepath=filepath, model=real_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "model_state_dict" in checkpoint
         # Verify state dict has expected keys
         assert "linear.weight" in checkpoint["model_state_dict"]
@@ -1113,7 +1113,7 @@ class TestSaveMethodWithRealModels:
 
         checkpoint_manager.save(filepath=filepath, model=real_model, optimizer=real_optimizer)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "model_state_dict" in checkpoint
         assert "optimizer_state_dict" in checkpoint
         assert "param_groups" in checkpoint["optimizer_state_dict"]
@@ -1128,7 +1128,7 @@ class TestSaveMethodWithRealModels:
             filepath=filepath, model=real_model, optimizer=real_optimizer, scheduler=real_scheduler
         )
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert "model_state_dict" in checkpoint
         assert "optimizer_state_dict" in checkpoint
         assert "scheduler_state_dict" in checkpoint
@@ -1610,7 +1610,7 @@ class TestCheckpointFormatVersionConstant:
         filepath = temp_checkpoint_dir / "format_version.pt"
 
         checkpoint_manager.save(filepath=filepath, model=mock_model)
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
 
         assert checkpoint["version_info"]["checkpoint_format_version"] == CHECKPOINT_FORMAT_VERSION
 
@@ -1631,7 +1631,7 @@ class TestEdgeCasesAndErrorHandling:
         filepath = temp_checkpoint_dir / "empty_state.pt"
         checkpoint_manager.save(filepath=filepath, model=empty_model)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["model_state_dict"] == {}
 
     def test_save_with_large_state_dict(self, checkpoint_manager, temp_checkpoint_dir):
@@ -1645,7 +1645,7 @@ class TestEdgeCasesAndErrorHandling:
         checkpoint_manager.save(filepath=filepath, model=large_model)
 
         assert filepath.exists()
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert len(checkpoint["model_state_dict"]) == 10
 
     def test_save_with_special_characters_in_path(
@@ -1665,7 +1665,7 @@ class TestEdgeCasesAndErrorHandling:
         # Should not raise - just stores the value
         checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=-1)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == -1
 
     def test_save_with_very_large_epoch(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -1674,7 +1674,7 @@ class TestEdgeCasesAndErrorHandling:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=1000000)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == 1000000
 
     def test_save_with_nan_best_val_loss(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -1684,7 +1684,7 @@ class TestEdgeCasesAndErrorHandling:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, best_val_loss=float("nan"))
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert math.isnan(checkpoint["best_val_loss"])
 
     def test_save_with_negative_inf_best_val_loss(
@@ -1695,7 +1695,7 @@ class TestEdgeCasesAndErrorHandling:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, best_val_loss=float("-inf"))
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["best_val_loss"] == float("-inf")
 
     def test_load_corrupted_file(self, checkpoint_manager, temp_checkpoint_dir):
@@ -1723,7 +1723,7 @@ class TestEdgeCasesAndErrorHandling:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, hyper_parameters=hyper_params)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["hyper_parameters"]["optional_field"] is None
 
     def test_save_data_info_with_tensors(self, checkpoint_manager, mock_model, temp_checkpoint_dir):
@@ -1737,7 +1737,7 @@ class TestEdgeCasesAndErrorHandling:
 
         checkpoint_manager.save(filepath=filepath, model=mock_model, data_info=data_info)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         torch.testing.assert_close(checkpoint["data_info"]["mean"], data_info["mean"])
 
 
@@ -1831,7 +1831,7 @@ class TestMultipleSaveOperations:
         for epoch in range(5):
             checkpoint_manager.save(filepath=filepath, model=mock_model, epoch=epoch)
 
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=False)
         assert checkpoint["epoch"] == 4  # Last save
 
     def test_multiple_saves_different_files(
@@ -1845,7 +1845,7 @@ class TestMultipleSaveOperations:
         # Verify all files exist with correct epochs
         for i in range(5):
             filepath = temp_checkpoint_dir / f"checkpoint_{i}.pt"
-            checkpoint = torch.load(filepath)
+            checkpoint = torch.load(filepath, weights_only=False)
             assert checkpoint["epoch"] == i
 
 
