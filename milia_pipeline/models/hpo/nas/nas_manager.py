@@ -1013,7 +1013,7 @@ class HeterogeneousGNN(nn.Module):
         """
         try:
             from torch_geometric.nn import (
-                GlobalAttention,
+                AttentionalAggregation,
                 global_add_pool,
                 global_max_pool,
                 global_mean_pool,
@@ -1034,7 +1034,7 @@ class HeterogeneousGNN(nn.Module):
             return global_add_pool
         elif pooling_type == "attention":
             gate_nn = nn.Linear(self.architecture["hidden_channels"], 1)
-            return GlobalAttention(gate_nn)
+            return AttentionalAggregation(gate_nn)
         else:
             return global_mean_pool
 
