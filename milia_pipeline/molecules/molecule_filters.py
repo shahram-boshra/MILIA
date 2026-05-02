@@ -871,7 +871,13 @@ def apply_atom_count_filters(
     mol_idx: int | str = getattr(pyg_data, "original_mol_idx", "N/A")
     smiles: str = getattr(pyg_data, "smiles", "N/A")
     inchi: str = getattr(pyg_data, "inchi", "N/A")
-    num_nodes: int | str = getattr(pyg_data, "num_nodes", "N/A")
+    # Use PyG's public 'in' API (backed by Data.keys()) to check for an
+    # explicitly-set 'num_nodes' attribute without invoking the num_nodes
+    # @property, whose inference machinery emits a UserWarning when only
+    # non-node-level attributes (e.g., 'z') are present. When 'num_nodes'
+    # is not explicitly stored, the "N/A" sentinel triggers the existing
+    # z-tensor fallback below at line ~887.
+    num_nodes: int | str = pyg_data.num_nodes if "num_nodes" in pyg_data else "N/A"
 
     # Use global config if none provided
     if filter_config is None:
