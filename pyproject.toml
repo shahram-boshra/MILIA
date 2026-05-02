@@ -184,6 +184,40 @@ addopts = [
 #      The message prefix and emitting module path are stable across PyG
 #      versions 2.0.3 through latest (verified upstream source).
 #
+#   4. Silence ONE specific PyTorch UserWarning: the "Detected call of
+#      `lr_scheduler.step()` before `optimizer.step()`" notice emitted by
+#      torch.optim.lr_scheduler.LRScheduler.step() when its internal
+#      _step_count advances ahead of the optimizer's _step_count. This is
+#      a heuristic intended to catch end-user training-loop ordering bugs;
+#      it is NOT a defect detector for scheduler unit tests. MILIA's
+#      tests/test_schedulers_unit.py (TestSchedulerFunctionality and
+#      TestEdgeCases classes) deliberately drive scheduler.step() in
+#      isolation to verify LR-decay arithmetic (StepLR halving, exponential
+#      decay, cosine curve, plateau behavior) without constructing a full
+#      training loop — by design, no optimizer.step() precedes these
+#      scheduler steps. The warning is therefore expected behavior under
+#      these unit tests and is not actionable from MILIA. Filter scope is
+#      narrow (exact message prefix + UserWarning category + torch.optim.
+#      lr_scheduler module) so any unrelated PyTorch UserWarning continues
+#      to surface.
+#
+#   5. Silence ONE specific PyTorch UserWarning emitted by PyTorch ITSELF
+#      from inside SequentialLR.step(): "The epoch parameter in
+#      `scheduler.step()` was not necessary and is being deprecated …".
+#      Despite the message wording, this warning is raised as UserWarning
+#      (not DeprecationWarning) — verified in PyTorch source
+#      torch/optim/lr_scheduler.py: warnings.warn(EPOCH_DEPRECATION_WARNING,
+#      UserWarning). The warning is triggered because PyTorch's own
+#      SequentialLR.step() implementation calls the inner scheduler with
+#      scheduler.step(0) when crossing a milestone, passing the deprecated
+#      epoch argument internally. MILIA's create_warmup_scheduler() helper
+#      (milia_pipeline/models/training/schedulers.py) builds a SequentialLR
+#      and never passes epoch from MILIA code. This is a well-known,
+#      acknowledged upstream PyTorch bug tracked in issues
+#      pytorch/pytorch#67586, #76113, #116776, and #130018 — fix is upstream
+#      and not actionable from MILIA. Filter scope is narrow (exact message
+#      prefix + UserWarning category + torch.optim.lr_scheduler module).
+#
 # References:
 #   - https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 #   - https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/data/data.html
@@ -192,6 +226,8 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore:Unable to accurately infer 'num_nodes':UserWarning:torch_geometric.data.storage",
+    "ignore:Detected call of `lr_scheduler.step\\(\\)` before `optimizer.step\\(\\)`:UserWarning:torch.optim.lr_scheduler",
+    "ignore:The epoch parameter in `scheduler.step\\(\\)` was not necessary and is being deprecated:UserWarning:torch.optim.lr_scheduler",
     "error::DeprecationWarning:milia_pipeline",
     "error::PendingDeprecationWarning:milia_pipeline",
 ]
