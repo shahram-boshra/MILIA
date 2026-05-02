@@ -134,7 +134,7 @@ def sample_pyg_dataset(sample_pyg_data):
         data = Data(
             x=torch.randn(num_nodes, 5),
             edge_index=torch.randint(0, num_nodes, (2, num_nodes * 2)),
-            y=torch.randn(1),
+            y=torch.randn(1, 1),
             num_nodes=num_nodes,
         )
         data_list.append(data)
