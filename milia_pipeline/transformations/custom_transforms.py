@@ -2306,8 +2306,13 @@ class DiscretizeTargets(QuantumTransformBase):
                     setattr(data, f"{attr}_target_level", target_level)
                     continue
 
-            # Ensure float type for binning computation
-            values_float = values_flat.float()
+            # Ensure float type AND contiguous memory layout for binning computation.
+            # torch.bucketize() / torch.searchsorted() require contiguous input on the
+            # fast dispatch path (see ATen/native/Bucketization.cpp); otherwise PyTorch
+            # performs a redundant internal copy and emits a UserWarning. Calling
+            # .contiguous() is a no-op when already contiguous (returns self) and a
+            # one-time canonicalization after strided slicing (e.g. y[..., col]).
+            values_float = values_flat.float().contiguous()
 
             # Use pre-fitted bin edges if available (CRITICAL for train/val consistency)
             # Otherwise compute fresh edges (for single-sample or unfitted usage)
