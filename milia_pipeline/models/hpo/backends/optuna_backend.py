@@ -16,12 +16,28 @@ try:
     from optuna.exceptions import ExperimentalWarning
     from optuna.trial import TrialState
 
+    # Optuna version detection for forward-compatible feature gating.
+    # `restart_strategy` was deprecated in Optuna v4.4.0 (FutureWarning) with
+    # removal scheduled for v6.0.0. From v4.4.0 onward, passing it falls back
+    # silently to None (i.e. it has no runtime effect). We use this constant
+    # below to skip the deprecated kwarg on newer Optuna releases, eliminating
+    # the FutureWarning at the call site rather than via warning suppression.
+    # See: https://github.com/optuna/optuna/releases/tag/v4.4.0
+    # The `packaging` library is a hard transitive dependency of optuna itself
+    # (declared in optuna's setup.py), so this adds no new install requirement.
+    from packaging import version as _pkg_version
+
+    _OPTUNA_VERSION = _pkg_version.parse(optuna.__version__)
+    _OPTUNA_RESTART_STRATEGY_DEPRECATED_IN = _pkg_version.parse("4.4.0")
+
     OPTUNA_AVAILABLE = True
 except ImportError:
     OPTUNA_AVAILABLE = False
     optuna = None
     TrialState = None
     ExperimentalWarning = None
+    _OPTUNA_VERSION = None
+    _OPTUNA_RESTART_STRATEGY_DEPRECATED_IN = None
 
 from milia_pipeline.exceptions import BackendError, HPOError
 
@@ -294,7 +310,25 @@ class OptunaBackend:
             }
 
         logger.debug(f"Creating {pruner_type} pruner with kwargs: {pruner_kwargs}")
-        return pruner_cls(**pruner_kwargs)
+
+        # Some Optuna pruners (notably PatientPruner, decorated with
+        # @experimental_class("2.8.0")) emit ExperimentalWarning unconditionally
+        # on every instantiation, even though they have been stable in practice
+        # for years and have no non-experimental replacement. MILIA exposes
+        # PatientPruner as a deliberate architectural choice (see the
+        # `pruner_map` registry above and the dedicated test class
+        # TestCreatePrunerPatient). We therefore scope-suppress only
+        # ExperimentalWarning at the instantiation point, mirroring the same
+        # pattern applied to sampler instantiation in `create_sampler` below.
+        # See Optuna issue #3815 for the maintainers' endorsement of this
+        # approach for legitimate opt-in usage of experimental APIs.
+        with warnings.catch_warnings():
+            if ExperimentalWarning is not None:
+                warnings.filterwarnings(
+                    "ignore",
+                    category=ExperimentalWarning,
+                )
+            return pruner_cls(**pruner_kwargs)
 
     def _build_sampler_registry(self) -> dict[str, type]:
         """Build sampler registry dynamically based on Optuna version."""
@@ -359,12 +393,29 @@ class OptunaBackend:
             )
 
         elif sampler_type == "cmaes":
-            sampler_kwargs.update(
-                {
-                    "n_startup_trials": n_startup_trials,
-                    "restart_strategy": kwargs.get("restart_strategy", "ipop"),
-                }
-            )
+            sampler_kwargs["n_startup_trials"] = n_startup_trials
+            # `restart_strategy` was deprecated in Optuna v4.4.0 with removal
+            # scheduled for v6.0.0. From v4.4.0 onward Optuna silently falls
+            # back to None (i.e. the argument has no runtime effect) and emits
+            # a FutureWarning. We honor the deprecation contract by passing
+            # the kwarg only on versions where it still functions, and by
+            # informing the user (once, via INFO log) when their explicit
+            # request can no longer be served by core Optuna. The official
+            # replacement on v4.4.0+ is the OptunaHub `restart_cmaes` sampler:
+            # https://hub.optuna.org/samplers/restart_cmaes/
+            requested_restart = kwargs.get("restart_strategy", "ipop")
+            if _OPTUNA_VERSION < _OPTUNA_RESTART_STRATEGY_DEPRECATED_IN:
+                sampler_kwargs["restart_strategy"] = requested_restart
+            elif requested_restart is not None and "restart_strategy" in kwargs:
+                logger.info(
+                    "CmaEsSampler.restart_strategy=%r was requested but is no "
+                    "longer supported by core Optuna (deprecated in v4.4.0, "
+                    "removal scheduled for v6.0.0). The argument is being "
+                    "omitted; CMA-ES will run without restart. For IPOP/BIPOP "
+                    "restart support, use the OptunaHub sampler "
+                    "`samplers/restart_cmaes`.",
+                    requested_restart,
+                )
 
         elif sampler_type == "grid":
             # Grid sampler requires search_space
