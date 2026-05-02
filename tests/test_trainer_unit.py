@@ -94,6 +94,19 @@ def mock_optimizer():
     optimizer.state_dict = Mock(return_value={"state": {}})
     optimizer.load_state_dict = Mock()
     optimizer.param_groups = [{"lr": 0.001}]
+    # Real-valued internal attributes consulted by torch.optim.lr_scheduler.step()
+    # to verify optimizer.step() was called before lr_scheduler.step(). With a
+    # bare Mock(spec=optim.Adam), these attributes default to Mock objects,
+    # which fail torch's getattr/comparison checks and trigger a spurious
+    # UserWarning from real torch schedulers (StepLR, ExponentialLR, etc.)
+    # constructed against this mock. Trainer source already calls
+    # optimizer.step() before scheduler.step() (verified at trainer.py L453
+    # vs L1660/L1663) — this just communicates that fact to torch's checker.
+    # Reference: pytorch/pytorch torch/optim/lr_scheduler.py — current branch
+    # checks `getattr(self.optimizer, "_opt_called", False)`; legacy versions
+    # checked `self.optimizer._step_count < 1`. Setting both is portable.
+    optimizer._opt_called = True
+    optimizer._step_count = 1
     return optimizer
 
 
@@ -1805,7 +1818,7 @@ class TestCheckpoint:
         trainer.save_checkpoint(checkpoint_path, custom_key="custom_value")
 
         # Load and verify extra data
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "custom_key" in checkpoint
         assert checkpoint["custom_key"] == "custom_value"
 
@@ -1831,7 +1844,7 @@ class TestCheckpoint:
         checkpoint_path = temp_checkpoint_dir / "checkpoint.pt"
         trainer.save_checkpoint(checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "scheduler_state_dict" in checkpoint
 
     def test_save_checkpoint_error_handling(
@@ -2957,7 +2970,7 @@ class TestCheckpointCorruptionAndEdgeCases:
         checkpoint_path = temp_checkpoint_dir / "no_scheduler.pt"
         trainer.save_checkpoint(checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "scheduler_state_dict" not in checkpoint
 
     def test_checkpoint_with_empty_metrics_history(
@@ -2975,7 +2988,7 @@ class TestCheckpointCorruptionAndEdgeCases:
         checkpoint_path = temp_checkpoint_dir / "empty_metrics.pt"
         trainer.save_checkpoint(checkpoint_path)
 
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert checkpoint["metrics_history"] == {}
 
     def test_load_checkpoint_missing_optional_fields(
@@ -4349,7 +4362,7 @@ class TestCheckpointV2Format:
         )
         checkpoint_path = temp_checkpoint_dir / "v2_checkpoint.pt"
         trainer.save_checkpoint(checkpoint_path)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert "version_info" in checkpoint
         assert checkpoint["version_info"]["checkpoint_format_version"] == "2.0"
         assert "hyper_parameters" in checkpoint
@@ -4371,7 +4384,7 @@ class TestCheckpointV2Format:
             "task_type": "graph_regression",
         }
         trainer.save_checkpoint(checkpoint_path, hyper_parameters=hyper_params)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert checkpoint["hyper_parameters"] == hyper_params
 
     def test_get_checkpoint_info_static_method(
@@ -5077,7 +5090,7 @@ class TestCheckpointModelInfoIntegration:
         )
         checkpoint_path = temp_checkpoint_dir / "model_info_ckpt.pt"
         trainer.save_checkpoint(checkpoint_path)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
 
         hp = checkpoint["hyper_parameters"]
         assert hp["model_name"] == "GCN"
@@ -5136,7 +5149,7 @@ class TestCheckpointModelInfoIntegration:
         )
         checkpoint_path = temp_checkpoint_dir / "data_info_ckpt.pt"
         trainer.save_checkpoint(checkpoint_path)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert checkpoint["data_info"]["requires_edge_features"] is True
         assert checkpoint["data_info"]["uses_edge_features"] is True
 
@@ -5158,7 +5171,7 @@ class TestCheckpointModelInfoIntegration:
             "requires_pos": True,
         }
         trainer.save_checkpoint(checkpoint_path, data_info=custom_data_info)
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         assert checkpoint["data_info"] == custom_data_info
 
 
