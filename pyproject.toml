@@ -146,6 +146,34 @@ addopts = [
     "--tb=short",
     "--strict-markers",
 ]
+# Warning policy (last-match-wins — pytest applies filters bottom-up):
+#
+#   1. Silence DeprecationWarning broadly. Rationale: MILIA's heavy scientific
+#      dependency tree (matplotlib, plotly, kaleido, pyparsing, torch,
+#      torch_geometric, rdkit, pydantic) emits a steady stream of upstream
+#      deprecation chatter that is OUTSIDE this project's control and clutters
+#      reviewer-facing test output. Documented authoritative example: matplotlib
+#      ._mathtext invokes pyparsing's deprecated camelCase API (setName,
+#      setParseAction, parseAll, leaveWhitespace, endQuoteChar, unquoteResults)
+#      whenever any matplotlib log-scale tick label is rendered — generated
+#      ~265 of 270 warnings observed in test_visualization_unit.py. Will be
+#      resolved upstream (matplotlib + pyparsing maintainers); not actionable
+#      from MILIA. Reference: pytest filterwarnings docs, last-match-wins rule.
+#
+#   2. Re-enable DeprecationWarning as error ONLY for first-party code
+#      (milia_pipeline.*). Rationale: MILIA must not silently rely on its own
+#      deprecated APIs. If MILIA itself ever emits a DeprecationWarning, the
+#      test suite fails — forcing the issue to be fixed at source rather than
+#      filtered. This preserves the "fail loud on our own code" discipline
+#      while accepting that we cannot fix our dependencies for them.
+#
+# Reference: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "error::DeprecationWarning:milia_pipeline",
+    "error::PendingDeprecationWarning:milia_pipeline",
+]
 markers = [
     "smoke: Smoke tests — fast, first gate in CI/CD pipeline",
     "contract: Interface contract validation tests",

@@ -170,7 +170,12 @@ class TrainingVisualizer:
         ax.set_xlabel("Epoch", fontsize=self.style["font_size"])
         ax.set_ylabel("Loss", fontsize=self.style["font_size"])
         ax.set_title(title, fontsize=self.style["title_size"])
-        ax.legend(fontsize=self.style["legend_size"])
+        # Only render legend when at least one labeled artist exists.
+        # Prevents matplotlib UserWarning ("No artists with labels found to
+        # put in legend") on empty metrics_history without altering visual
+        # output for the populated case.
+        if ax.get_legend_handles_labels()[0]:
+            ax.legend(fontsize=self.style["legend_size"])
         ax.grid(True, alpha=self.style["grid_alpha"])
 
         plt.tight_layout()
