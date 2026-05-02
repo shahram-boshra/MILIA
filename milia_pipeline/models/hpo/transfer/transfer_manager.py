@@ -1033,35 +1033,68 @@ class HPOTransferManager:
             if hasattr(first_data, "x") and first_data.x is not None:
                 features["n_features"] = float(first_data.x.shape[1])
 
+            # Numeric type guard: only accept real numeric scalars into reduction
+            # lists. Protects against malformed datasets whose .shape attributes
+            # return non-numeric objects (e.g., tensors, custom wrappers, mocks),
+            # which would otherwise (a) trigger NumPy RuntimeWarnings via
+            # np.mean/np.std on non-numeric arrays and (b) silently propagate NaN
+            # into the meta-feature database, corrupting similarity computations.
+            # Refs: NumPy issue #10709, SciPy issue #19805.
+            _NUMERIC_TYPES = (int, float, np.integer, np.floating)
+
+            def _safe_reduce(values: list, reducer) -> float | None:
+                """Reduce a list with NumPy, suppressing reduction warnings and
+                returning None if the result is non-finite or the input is empty.
+                Empty/degenerate inputs are pre-filtered, but np.errstate provides
+                defense-in-depth against any residual numerical edge case."""
+                if not values:
+                    return None
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    result = float(reducer(values))
+                return result if np.isfinite(result) else None
+
             if hasattr(first_data, "edge_index") and first_data.edge_index is not None:
-                edge_counts = []
-                node_counts = []
+                edge_counts: list[float] = []
+                node_counts: list[float] = []
 
                 for i in range(min(100, len(dataset))):
                     data = dataset[i]
                     if hasattr(data, "edge_index") and data.edge_index is not None:
-                        edge_counts.append(data.edge_index.shape[1])
+                        edge_val = data.edge_index.shape[1]
+                        if isinstance(edge_val, _NUMERIC_TYPES):
+                            edge_counts.append(float(edge_val))
                     if hasattr(data, "x") and data.x is not None:
-                        node_counts.append(data.x.shape[0])
+                        node_val = data.x.shape[0]
+                        if isinstance(node_val, _NUMERIC_TYPES):
+                            node_counts.append(float(node_val))
 
-                if edge_counts:
-                    features["mean_edges"] = float(np.mean(edge_counts))
-                if node_counts:
-                    features["mean_nodes"] = float(np.mean(node_counts))
+                mean_edges = _safe_reduce(edge_counts, np.mean)
+                if mean_edges is not None:
+                    features["mean_edges"] = mean_edges
+                mean_nodes = _safe_reduce(node_counts, np.mean)
+                if mean_nodes is not None:
+                    features["mean_nodes"] = mean_nodes
 
             if hasattr(first_data, "y") and first_data.y is not None:
-                targets = []
+                targets: list[float] = []
                 for i in range(min(100, len(dataset))):
                     data = dataset[i]
                     if hasattr(data, "y") and data.y is not None:
                         if hasattr(data.y, "numel") and data.y.numel() == 1:
-                            targets.append(float(data.y.item()))
+                            target_val = float(data.y.item())
+                            if np.isfinite(target_val):
+                                targets.append(target_val)
                         elif hasattr(data.y, "mean"):
-                            targets.append(float(data.y.mean().item()))
+                            target_val = float(data.y.mean().item())
+                            if np.isfinite(target_val):
+                                targets.append(target_val)
 
-                if targets:
-                    features["target_mean"] = float(np.mean(targets))
-                    features["target_std"] = float(np.std(targets))
+                target_mean = _safe_reduce(targets, np.mean)
+                if target_mean is not None:
+                    features["target_mean"] = target_mean
+                target_std = _safe_reduce(targets, np.std)
+                if target_std is not None:
+                    features["target_std"] = target_std
 
         except Exception as e:
             logger.warning(f"Error extracting basic meta-features: {e}")
