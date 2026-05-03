@@ -1970,10 +1970,19 @@ For more information, see: https://docs.example.com/milia-cli
                         f"Use --preprocess-force to overwrite."
                     )
 
-            # Validate num_molecules if specified
+            # Validate num_molecules if specified.
+            # Use `is not None` (not Python truthiness) because argparse stores
+            # `None` for an omitted optional argument and `0` for an explicit
+            # `--preprocess-num-molecules 0` — both of which are falsy. A
+            # truthiness check would silently let `0` slip through validation
+            # despite the error message below promising `>= 1`. Reference:
+            # https://docs.python.org/3/howto/argparse.html ("by default, if
+            # an optional argument isn't used, the relevant variable ... is
+            # given None as a value, which is the reason it fails the truth
+            # test of the if statement").
             if (
                 hasattr(args, "preprocess_num_molecules")
-                and args.preprocess_num_molecules
+                and args.preprocess_num_molecules is not None
                 and args.preprocess_num_molecules < 1
             ):
                 raise CLIValidationError(
@@ -2132,8 +2141,17 @@ For more information, see: https://docs.example.com/milia-cli
                     f"CLI override: preprocessing.output_path = {args.preprocess_output}"
                 )
 
-            # Override num_molecules
-            if hasattr(args, "preprocess_num_molecules") and args.preprocess_num_molecules:
+            # Override num_molecules.
+            # See the validation block above for why `is not None` (not
+            # truthiness) is the correct sentinel-check for an argparse
+            # int-typed optional argument. The override and the validation
+            # block must use the same contract so that the override copies
+            # the user-supplied value into the config iff the user actually
+            # supplied one — independent of whether that value is 0.
+            if (
+                hasattr(args, "preprocess_num_molecules")
+                and args.preprocess_num_molecules is not None
+            ):
                 self.config["preprocessing"]["num_molecules"] = args.preprocess_num_molecules
                 self.logger.debug(
                     f"CLI override: preprocessing.num_molecules = {args.preprocess_num_molecules}"
