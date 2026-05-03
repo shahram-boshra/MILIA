@@ -11,7 +11,7 @@
 
 MILIA (**M**achine **I**ntelligent **L**earning **I**nference **A**ssistant) is a production-ready, research-oriented Python framework for molecular data processing and graph-based machine learning. It provides a complete, no-code ML/DL workflow — from dataset curation, molecular graph transformation, and molecular descriptor computation through graph neural network training, hyperparameter optimization, and model deployment — requiring only YAML configuration to run. Every level of the pipeline (datasets, transformations, descriptors, models, training, deployment) is fully configurable without writing code, while remaining extensible via plugins for untouched areas of research. Built on PyTorch, PyTorch Geometric, and RDKit, MILIA is designed for researchers, educators, and teams who need a flexible, extensible platform across the full ML/DL stack.
 
-MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset handlers spanning quantum chemistry (DFT, QM9, ANI), quantum Monte Carlo (DMC), wavefunction analysis, molecular dynamics (rMD17), coupled cluster methods (ANI-1ccx), and more — and is readily extensible to new domains including pharmaceutical chemistry, materials science, and beyond.
+MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset implementations spanning the VQM24 family (DFT, DMC, Wavefunction), the QM9 benchmark, the ANI family (ANI-1x, ANI-1ccx, ANI-2x) including coupled-cluster reference data, the rMD17 and xxMD reactive dynamics datasets, and the drug-discovery-oriented QDπ dataset — and is readily extensible via the registry-based architecture documented in the [Datasets](#datasets) section.
 
 ## Key Features
 
@@ -283,7 +283,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 | `config/` | 7 files, ~22K lines | Multi-layered configuration management with Pydantic V2 validation, YAML splitting (`configs/` directory with deep merge), thread-safe caching, schema migration, and 60+ accessor functions |
 | `molecules/` | 7 files, ~14K lines | Molecular conversion (RDKit → PyG), structural feature extraction, property enrichment, filtering with transform compatibility, and registry-integrated validation |
 | `transformations/` | 4 files, ~16K lines | 7-layer graph transformation system: dynamic discovery, registry, semantic validation, composition with caching, configuration bridge, error recovery, and production metrics |
-| `datasets/` | 10 files | Registry-based PyTorch Geometric datasets with Protocol contracts, compile-time validation, and 5 concrete implementations (DFT, DMC, Wavefunction, XXMD, QDPi) |
+| `datasets/` | 10 files | Registry-based PyTorch Geometric datasets with Protocol contracts, compile-time validation, and 10 concrete implementations spanning the VQM24 family (DFT, DMC, Wavefunction), QM9, the ANI family (ANI-1x, ANI-1ccx, ANI-2x), rMD17, xxMD, and QDπ — see the [Datasets](#datasets) section |
 | `handlers/` | 15+ files | 10 dataset handler types (DFT, DMC, Wavefunction, QM9, ANI-1x, ANI-1ccx, rMD17, ANI-2x, XXMD, QDPi) with transform integration and lazy loading |
 | `preprocessing/` | 8+ files | Modular wavefunction preprocessing (MOLDEN, FCHK), data refinement, and VQM24 support |
 | `descriptors/` | 6+ files | 400+ molecular descriptors across 6 categories with thread-safe singleton registry, caching, conformer generation, and plugin support |
@@ -299,6 +299,31 @@ MILIA is organized into 11 core modules and a split configuration system:
 | `configs/` | Split YAML configuration with per-dataset files (10 datasets) and deep-merge architecture |
 | `plugins/` | Plugin storage: descriptor plugins, transformation plugins, model plugins — with YAML manifests and user templates |
 | `tests/` | 127 unit and integration tests across all modules |
+
+## Datasets
+
+MILIA ships with **10 production-ready dataset implementations** covering the major quantum-chemistry and molecular-dynamics benchmarks used in modern molecular machine learning. Selecting a dataset is a one-line change in `configs/main.yaml` (`dataset_type: <Registry key>`) — no code, no rebuild, no glue.
+
+### Shipped datasets
+
+| Registry key | Class | Source / level of theory | Coordinates | Energy | Strategy |
+|---|---|---|---|---|---|
+| `DFT` | `DFTDataset` | VQM24 — ωB97X-D3/cc-pVDZ DFT properties for ~785k conformers (Khan et al., *Sci. Data* 12, 1551, 2025) | Å | Hartree | identifier + coordinate (InChI/SMILES) |
+| `DMC` | `DMCDataset` | VQM24 — DMC@PBE0/ccECP-cc-pVQZ energies with statistical uncertainties for 10,793 constitutional isomers (same reference) | Å | Hartree | identifier + coordinate (InChI/SMILES) |
+| `Wavefunction` | `WavefunctionDataset` | VQM24 wavefunction files (MOLDEN/FCHK) — molecular orbitals, HOMO–LUMO gap, MO energies | Bohr → Å | eV | coordinate-based (charge inferred from `n_electrons`) |
+| `QM9` | `QM9Dataset` | QM9 — 133,885 small organic molecules (CHONF) at B3LYP/6-31G(2df,p) (Ramakrishnan et al., *Sci. Data* 1, 140022, 2014) | Å | Hartree | identifier + coordinate (InChI → SMILES) |
+| `ANI1x` | `ANI1xDataset` | ANI-1x — ~5M ωB97x/6-31G* DFT conformations of CHNO molecules from active learning (Smith et al., *Sci. Data* 7, 134, 2020) | Å | Hartree | coordinate-based |
+| `ANI1ccx` | `ANI1ccxDataset` | ANI-1ccx — ~500k CCSD(T)/CBS energies on a curated subset of ANI-1x (same reference) | Å | Hartree | coordinate-based |
+| `ANI2x` | `ANI2xDataset` | ANI-2x — DFT conformations at ωB97X/6-31G(d) extended to S, F, Cl (Devereux et al., *J. Chem. Theory Comput.* 16, 4192, 2020) | Å | Hartree | coordinate-based |
+| `RMD17` | `RMD17Dataset` | revised MD17 — ~100k PBE/def2-SVP conformations for each of 10 small molecules with very tight SCF and dense grids (Christensen & von Lilienfeld, *MLST* 1, 045018, 2020) | Å | Hartree (converted from kcal/mol) | coordinate-based |
+| `XXMD` | `XXMDDataset` | xxMD-DFT — non-adiabatic dynamics trajectories for 4 photo-active molecules at the M06 level, including transition states and conical-intersection regions (Pengmei et al., *Sci. Data* 11, 222, 2024) | Å | Hartree (converted from eV) | coordinate-based |
+| `QDPi` | `QDPiDataset` | QDπ — ~1.6M ωB97M-D3(BJ)/def2-TZVPPD structures for drug-like neutral *and* charged species across 13 elements (Zeng et al., *Sci. Data* 12, 693, 2025) | Å | Hartree (converted from eV) | coordinate-based (charge-aware) |
+
+The `DFT`, `DMC`, and `Wavefunction` entries are the three deliverables of the **Vector-QM24 (VQM24)** dataset (Zenodo: [10.5281/zenodo.11164951](https://doi.org/10.5281/zenodo.11164951)) — DFT geometries and properties, DMC reference energies, and quantum-mechanical wavefunctions respectively — for which MILIA provides VQM24-aware vibrational refinement and MOLDEN/FCHK readers out of the box.
+
+### Bringing your own dataset
+
+The breadth of datasets above is matched by an architecture that makes **adding a new one fast** — fast enough to be practical in a graduate course or a one-week research sprint, and one of MILIA's distinguishing advantages over rigid, dataset-locked pipelines. New datasets slot into the same no-code workflow as the shipped ones and are picked up automatically by every part of MILIA — the CLI, the YAML configuration, training, hyperparameter optimization, and prediction — so a custom benchmark, a different level of theory, or a domain-specific format becomes a first-class citizen of the pipeline as soon as it is dropped in. For students, this means a course or in-house dataset can be running through the full pipeline the same day; for researchers, it means a new benchmark can be evaluated against existing transforms, descriptors, and models without modifying the framework. This extensibility is a deliberate design goal of MILIA, and the 10 shipped datasets — spanning the VQM24 family, QM9, the ANI series, rMD17, xxMD, and QDπ — are the same template anyone can follow to add the next one.
 
 ## Testing
 
