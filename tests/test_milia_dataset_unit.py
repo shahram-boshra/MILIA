@@ -3501,7 +3501,17 @@ class TestCollationAndBatching(BaseTestCase):
         print("✅ slices attribute exists")
 
     def test_data_attribute_exists(self):
-        """Test data attribute exists for InMemoryDataset."""
+        """Test internal storage attribute exists for InMemoryDataset.
+
+        PyG >= 2.4 exposes `data` as a `@property` whose getter emits a
+        `UserWarning` on every read (including via `hasattr(obj, "data")`,
+        which internally calls the getter). The warning explicitly directs
+        callers to access the underlying storage via `_data` instead.
+        We assert on `_data`, which is the canonical PyG-documented internal
+        storage handle and is the same attribute the `data` property returns.
+        Reference: torch_geometric/data/in_memory_dataset.py — the `data`
+        property's body is `warnings.warn(...); return self._data`.
+        """
         with (
             patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
             patch.object(miliaDataset, "_download", return_value=None),
@@ -3514,8 +3524,8 @@ class TestCollationAndBatching(BaseTestCase):
                 processing_config=self.processing_config,
             )
 
-        self.assertTrue(hasattr(dataset, "data"))
-        print("✅ data attribute exists")
+        self.assertTrue(hasattr(dataset, "_data"))
+        print("✅ _data attribute exists")
 
     def test_pad_sequence_imported(self):
         """Test pad_sequence is imported for variable-length data."""

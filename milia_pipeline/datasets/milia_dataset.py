@@ -696,13 +696,14 @@ class miliaDataset(InMemoryDataset):
         processed_file_path: str = self.processed_paths[0]
         if Path(processed_file_path).exists():
             try:
-                self.data: Data | None
-                self.slices: dict[str, torch.Tensor] | None
-                # M2 fix: Explicitly set weights_only=False for PyG Data objects
-                # PyG datasets contain complex objects (Data, slices) that require full pickle support.
-                # This is safe for locally-generated processed files from our own pipeline.
-                # Reference: https://pytorch.org/docs/stable/generated/torch.load.html
-                self.data, self.slices = torch.load(processed_file_path, weights_only=False)
+                # PyG >= 2.4: use the public `InMemoryDataset.load()` API.
+                # This method internally performs `torch.load` and populates the
+                # underlying `_data` / `slices` storage WITHOUT triggering the
+                # `UserWarning` emitted by the public `data` property on direct
+                # access. It is the documented, future-proof replacement for the
+                # legacy `self.data, self.slices = torch.load(...)` pattern.
+                # Reference: https://pytorch-geometric.readthedocs.io/en/latest/notes/create_dataset.html
+                self.load(processed_file_path)
                 self.logger.info(f"Dataset data and slices loaded from {processed_file_path}.")
             except Exception as e:
                 self.logger.error(f"Error during manual load of {processed_file_path}: {e}")
@@ -714,7 +715,10 @@ class miliaDataset(InMemoryDataset):
             self.logger.warning(
                 f"Processed file {processed_file_path} does NOT exist after super().__init__. Processing might have failed to save it correctly, or all molecules were filtered out."
             )
-            self.data, self.slices = None, None
+            # Use the underscore-prefixed internal attributes directly to avoid
+            # the `data` property's UserWarning. Setting these to None signals
+            # the "empty dataset" state to downstream `len()` / `get()` calls.
+            self._data, self.slices = None, None
 
         if isinstance(self.slices, dict) and self.slices:
             first_slice_key = next(iter(self.slices))
@@ -736,8 +740,13 @@ class miliaDataset(InMemoryDataset):
             )
         else:
             self.logger.info(f"Dataset successfully loaded/processed. Total molecules: {len(self)}")
-            if hasattr(self.data, "num_graphs"):
-                self.logger.debug(f"self.data.num_graphs: {self.data.num_graphs}")
+            # Read via `_data` (the underlying storage attribute) instead of the
+            # `data` property to avoid the PyG `UserWarning` on every access.
+            # `_data` is the canonical internal handle the warning itself
+            # references as the recommended bypass.
+            internal_data = self._data
+            if hasattr(internal_data, "num_graphs"):
+                self.logger.debug(f"self._data.num_graphs: {internal_data.num_graphs}")
             elif isinstance(self.slices, dict) and self.slices:
                 num_graphs_inferred = len(next(iter(self.slices.values())))
                 self.logger.debug(f"Inferred number of graphs from slices: {num_graphs_inferred}")
