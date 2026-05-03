@@ -391,35 +391,34 @@ class TestPreprocessingValidation:
                 assert "tar.gz" not in str(e).lower()
 
     def test_validate_num_molecules_positive(self, cli):
-        """Test num_molecules must be positive.
+        """Test num_molecules must be positive (rejects 0 and negatives).
 
-        NOTE: The validation in cli_manager.py checks:
-        if hasattr(args, 'preprocess_num_molecules') and args.preprocess_num_molecules:
+        Verifies that ``CLIManager._validate_arguments`` rejects
+        ``--preprocess-num-molecules 0`` (and, by the same predicate, any
+        negative integer) with the documented ``CLIValidationError``
+        message.
 
-        This fails to catch 0 because 0 is falsy in Python!
-        The validation should be:
-        if hasattr(args, 'preprocess_num_molecules') and args.preprocess_num_molecules is not None:
-
-        This test documents the bug until cli_manager.py is fixed.
+        Historical note: this assertion previously had to be guarded by a
+        ``pytest.skip`` because ``cli_manager.py`` used Python truthiness
+        (``and args.preprocess_num_molecules``) as the "was the argument
+        supplied?" sentinel-check, which silently swallowed the value 0
+        before it could reach the ``< 1`` predicate. The validator now
+        correctly uses ``is not None`` per the official Python argparse
+        guidance (https://docs.python.org/3/howto/argparse.html), so the
+        exception path is reachable and this test asserts on it directly
+        using the canonical ``pytest.raises`` context-manager idiom.
         """
         # Parse without validation using internal parser
         parsed_args = cli.parser.parse_args(["--preprocess", "--preprocess-num-molecules", "0"])
         # Process arguments (sets defaults)
         parsed_args = cli._process_arguments(parsed_args)
 
-        # BUG: The validation doesn't catch 0 because of the truthiness check
-        # Expected behavior: Should raise CLIValidationError
-        # Actual behavior: Validation is skipped because 0 is falsy
-        try:
+        # The validator must reject 0. The `match` argument is interpreted
+        # by `re.search`; we use a raw string to make the regex-vs-literal
+        # intent explicit (Ruff RUF043) even though no metacharacters are
+        # present in this particular pattern.
+        with pytest.raises(CLIValidationError, match=r"must be >= 1"):
             cli._validate_arguments(parsed_args)
-            # If we get here, the bug exists (0 wasn't caught)
-            pytest.skip(
-                "BUG in cli_manager.py: Validation uses 'and args.preprocess_num_molecules' "
-                "which fails for 0 (falsy). Change to 'and args.preprocess_num_molecules is not None'"
-            )
-        except CLIValidationError as e:
-            # Bug is fixed - validation correctly catches 0
-            assert "must be >= 1" in str(e)
 
     def test_validate_feature_tier_valid(self, cli):
         """Test feature tier validation."""
