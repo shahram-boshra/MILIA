@@ -3781,14 +3781,23 @@ class TransformRegistry:
                         except Exception as e:
                             self._logger.warning(f"✗ Failed to register custom {name}: {e}")
                     else:
-                        self._logger.warning(
-                            f"⚠ Transform '{name}' not available in PyG {TORCH_GEOMETRIC_VERSION}. "
-                            f"Checking plugin system for implementations."
+                        # Transform is not exposed as a class by the installed PyG version
+                        # (e.g. DropEdge/DropNode/MaskFeatures/RandomNodeSample are provided by
+                        # PyG only as functional utilities under torch_geometric.utils, not as
+                        # Transform classes). The plugin system is the designated extension point
+                        # for class-based wrappers and will register them in the next phase.
+                        # Logged at DEBUG so production output stays clean while preserving the
+                        # diagnostic trail when DEBUG logging is enabled.
+                        self._logger.debug(
+                            f"Transform '{name}' is not exposed as a class by PyG "
+                            f"{TORCH_GEOMETRIC_VERSION}; will be sourced from the plugin system."
                         )
                 else:
-                    self._logger.warning(
-                        f"⚠ Transform '{name}' not available in PyG {TORCH_GEOMETRIC_VERSION}. "
-                        f"Checking plugin system for implementations."
+                    # Same condition as above (dict.get returned None because key is absent);
+                    # see comment in sibling branch for rationale.
+                    self._logger.debug(
+                        f"Transform '{name}' is not exposed as a class by PyG "
+                        f"{TORCH_GEOMETRIC_VERSION}; will be sourced from the plugin system."
                     )
 
         self._logger.info(
