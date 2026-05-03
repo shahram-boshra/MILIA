@@ -34,7 +34,15 @@ from typing import Any
 import torch
 import torch.nn as nn
 from pydantic import BaseModel
-from torch.cuda.amp import GradScaler, autocast
+
+# PyTorch 2.4+ unified AMP API: `torch.amp.GradScaler` and `torch.amp.autocast`
+# are the device-agnostic replacements for the legacy `torch.cuda.amp.*` and
+# `torch.cpu.amp.*` paths, which emit `FutureWarning` on use. The unified API
+# accepts a device-type string ("cuda", "cpu", ...) as the first positional
+# argument; class identity is `torch.amp.GradScaler` (with `torch.cuda.amp.GradScaler`
+# being a thin deprecated subclass that forwards to it).
+# Reference: https://pytorch.org/docs/stable/amp.html
+from torch.amp import GradScaler
 
 # Import exceptions with fallback
 try:
@@ -192,7 +200,11 @@ class MemoryOptimizer:
 
         # Initialize grad scaler for mixed precision
         if self.config.mixed_precision and self.device.type == "cuda":
-            self._grad_scaler = GradScaler()
+            # PyTorch 2.4+ unified API requires the device-type string as the
+            # first positional arg. `torch.amp.GradScaler("cuda")` is the
+            # functional equivalent of the legacy `torch.cuda.amp.GradScaler()`
+            # call without emitting the deprecation `FutureWarning`.
+            self._grad_scaler = GradScaler("cuda")
 
         if self.verbose:
             logger.info(
@@ -241,10 +253,14 @@ class MemoryOptimizer:
         dtype = self._get_autocast_dtype()
 
         if self.device.type == "cuda":
-            with autocast(enabled=True, dtype=dtype):
+            # PyTorch 2.4+ unified API: `torch.amp.autocast("cuda", ...)` is the
+            # documented replacement for the deprecated `torch.cuda.amp.autocast`.
+            with torch.amp.autocast("cuda", dtype=dtype):
                 yield
         elif self.device.type == "cpu":
-            with torch.cpu.amp.autocast(enabled=True, dtype=dtype):
+            # PyTorch 2.4+ unified API: `torch.amp.autocast("cpu", ...)` is the
+            # documented replacement for the deprecated `torch.cpu.amp.autocast`.
+            with torch.amp.autocast("cpu", dtype=dtype):
                 yield
         else:
             yield

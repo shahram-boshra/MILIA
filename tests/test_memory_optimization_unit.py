@@ -39,10 +39,13 @@ import pytest
 import torch
 import torch.nn as nn
 
-# Backward-compatible GradScaler import: torch.amp.GradScaler is preferred in PyTorch 2.4+,
-# but torch.cuda.amp.GradScaler remains available for backward compatibility.
-# We import from torch.cuda.amp to match the module under test's import pattern.
-from torch.cuda.amp import GradScaler
+# GradScaler import: the source module uses the unified PyTorch 2.4+
+# `torch.amp.GradScaler` API. We import from the same path here so that the
+# `isinstance(...)` assertions verify the correct (current) class identity.
+# Note: `torch.cuda.amp.GradScaler` is a deprecated subclass of
+# `torch.amp.GradScaler`; using the parent class for `isinstance` checks
+# accepts both old and new instances and is forward-compatible.
+from torch.amp import GradScaler
 
 # Import the module under test
 from milia_pipeline.models.acceleration.memory_optimization import (
@@ -631,7 +634,14 @@ class TestMixedPrecisionTraining:
         with patch("torch.cuda.is_available", return_value=True):
             optimizer = MemoryOptimizer(mixed_precision=True, verbose=False)
 
-        with patch("torch.cuda.amp.autocast") as mock_autocast:
+        # Patch the unified PyTorch 2.4+ AMP entry point (`torch.amp.autocast`),
+        # which is what the source module now invokes. Patching the legacy
+        # `torch.cuda.amp.autocast` path would silently no-op and let the real
+        # `torch.amp.autocast("cuda", ...)` execute, which itself emits a
+        # `UserWarning: CUDA is not available. Disabling` because the test
+        # environment has no GPU (the `torch.cuda.is_available` patch above
+        # only affects optimizer.__init__, not autocast's own internal check).
+        with patch("torch.amp.autocast") as mock_autocast:
             _mock_context = MagicMock()
             mock_autocast.return_value.__enter__ = Mock(return_value=None)
             mock_autocast.return_value.__exit__ = Mock(return_value=None)
