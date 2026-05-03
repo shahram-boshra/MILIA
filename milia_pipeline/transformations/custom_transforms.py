@@ -71,6 +71,16 @@ ValidationScope = None
 get_transform_info = None
 validate_comprehensive = None
 
+# Re-entry guard for _lazy_import_graph_transforms(). Must be defined at module
+# scope because the function declares it `global` and reads it before assigning
+# to it (see the `if _IMPORTING_GRAPH_TRANSFORMS:` check, then the `True` /
+# `False` assignments inside the function body). Without this binding, that
+# read raises NameError on first call. The chosen initial value (False) matches
+# the semantics: "no import currently in progress." This declaration sits
+# beside the other lazy-import sentinels above (GRAPH_TRANSFORMS_AVAILABLE
+# et al.) to follow the established pattern in this module.
+_IMPORTING_GRAPH_TRANSFORMS = False
+
 
 def _lazy_import_graph_transforms():
     """Lazy import to avoid circular dependency"""

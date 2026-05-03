@@ -369,7 +369,13 @@ def get_available_transforms() -> list[str]:
         return []
 
     gt = get_graph_transforms()
-    return gt.list_available_transforms()
+    # Note: GraphTransforms exposes list_transforms() returning list[str].
+    # The underlying flat-list method list_available_transforms() lives on
+    # TransformRegistry, not on GraphTransforms; reaching into gt.registry
+    # would bypass the public API's _initialized=False fallback (returns []).
+    # list_transforms() delegates to self.registry.list_available_transforms()
+    # internally, so semantics are preserved.
+    return gt.list_transforms()
 
 
 def create_transform_sequence(
@@ -510,7 +516,10 @@ def get_system_status() -> dict[str, Any]:
     if GRAPH_TRANSFORMS_AVAILABLE:
         try:
             gt = get_graph_transforms()
-            status["registered_transforms"] = len(gt.list_available_transforms())
+            # See note on get_available_transforms() above: list_transforms() is
+            # the GraphTransforms public method; list_available_transforms() lives
+            # on TransformRegistry only.
+            status["registered_transforms"] = len(gt.list_transforms())
             status["health_check"] = gt.perform_health_check()
         except Exception as e:
             status["health_check_error"] = str(e)
