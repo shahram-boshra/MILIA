@@ -1077,6 +1077,67 @@ def get_handler_constants(handler_type: str) -> dict[str, Any]:
         ) from e
 
 
+def get_bohr_to_angstrom() -> float:
+    """
+    Get the Bohr-to-Angstrom conversion factor (CODATA physical constant).
+
+    DESIGN NOTE — Why a regular accessor function (not a lazy attribute):
+
+    The module also exposes BOHR_TO_ANGSTROM via PEP 562 module-level
+    __getattr__, which lazily resolves the value from the loaded YAML config
+    on first access and caches it in _CONSTANTS_CACHE. That pattern is fine
+    for application code that runs after load_config() has populated
+    _TEMP_CONFIG, but it makes call-sites untestable in isolation: per
+    PEP 562, after the first successful access the value is cached and
+    subsequent imports bypass __getattr__, so a bare module-level import
+    cannot be patched with @patch(...) at decorator time without create=True,
+    and the call-site silently inherits whatever state any preceding test
+    left in _CONSTANTS_CACHE / _TEMP_CONFIG.
+
+    This accessor function mirrors the established codebase pattern (see
+    get_handler_constants and the 60+ other accessor functions in this
+    module) so that:
+      - Production code can call get_bohr_to_angstrom() and depend on a
+        regular function, not a PEP 562 lazy global.
+      - Tests can patch this function with the standard @patch decorator
+        without touching the lazy cache.
+      - The underlying YAML config remains the single source of truth (no
+        hardcoded CODATA value here — see configs/global_constants.yaml).
+
+    Returns:
+        Bohr-to-Angstrom conversion factor (CODATA-derived, ~0.529177249).
+
+    Raises:
+        ConfigurationError: If the 'bohr_to_angstrom' key is missing from the
+            'global_constants' section of the loaded YAML configuration.
+
+    References:
+        - PEP 562 (Module __getattr__ and __dir__): https://peps.python.org/pep-0562/
+        - CODATA 2022: https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0
+    """
+    global _TEMP_CONFIG
+
+    _ensure_cache_invalidation_registered()
+
+    # Lazy initialize config on first access (mirrors __getattr__ behavior)
+    if _TEMP_CONFIG is None:
+        from milia_pipeline.config.config_loader import load_config
+
+        _TEMP_CONFIG = load_config()
+
+    # Use the same _CONSTANTS_CACHE entry as the lazy attribute, so both
+    # access paths share a single source of truth and a single cached value.
+    # This guarantees get_bohr_to_angstrom() and the BOHR_TO_ANGSTROM lazy
+    # attribute always return the same object.
+    cache_key = "BOHR_TO_ANGSTROM"
+    if cache_key not in _CONSTANTS_CACHE:
+        global_constants = _get_config_value(_TEMP_CONFIG, "global_constants", dict)
+        _CONSTANTS_CACHE[cache_key] = _get_config_value(
+            global_constants, "bohr_to_angstrom", (int, float), parent_key="global_constants"
+        )
+    return _CONSTANTS_CACHE[cache_key]
+
+
 def _get_handler_specific_constants(
     handler_type: str, dataset_config: dict[str, Any]
 ) -> dict[str, Any]:

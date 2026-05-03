@@ -319,10 +319,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
     @patch("milia_pipeline.molecules.mol_conversion_utils.Chem")
     @patch("milia_pipeline.molecules.mol_conversion_utils.rdDetermineBonds")
     @patch("milia_pipeline.config.config_constants.get_handler_constants")
+    @patch("milia_pipeline.config.config_constants.get_bohr_to_angstrom")
     @patch("milia_pipeline.molecules.mol_conversion_utils.create_handler_error_context")
     def test_strategy_coordinate_based_uses_rdDetermineBonds(
         self,
         mock_context,
+        mock_get_bohr,
         mock_get_constants,
         mock_determine_bonds,
         mock_chem,
@@ -337,6 +339,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
 
         mock_validate_structure.return_value = (self.valid_atomic_numbers, self.valid_coordinates)
         mock_get_constants.return_value = {"coordinate_units": "angstrom"}
+        # CODATA 2022 Bohr-to-Angstrom conversion factor (~0.529177249).
+        # Patched so the test does not depend on _CONSTANTS_CACHE / _TEMP_CONFIG
+        # state left by other tests in the suite. The angstrom branch above
+        # means this value is unused at runtime, but the patch must still be
+        # in place to prevent the lazy attribute lookup from being reached.
+        mock_get_bohr.return_value = 0.529177249
 
         # Mock XYZ block creation and parsing
         mock_raw_mol = Mock()
@@ -368,10 +376,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
     @patch("milia_pipeline.molecules.mol_conversion_utils.Chem")
     @patch("milia_pipeline.molecules.mol_conversion_utils.rdDetermineBonds")
     @patch("milia_pipeline.config.config_constants.get_handler_constants")
+    @patch("milia_pipeline.config.config_constants.get_bohr_to_angstrom")
     @patch("milia_pipeline.molecules.mol_conversion_utils.create_handler_error_context")
     def test_coordinate_based_with_bohr_units_converts_to_angstrom(
         self,
         mock_context,
+        mock_get_bohr,
         mock_get_constants,
         mock_determine_bonds,
         mock_chem,
@@ -397,6 +407,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
         mock_validate_structure.return_value = (self.valid_atomic_numbers, bohr_coordinates)
         # Return Bohr units - should trigger conversion
         mock_get_constants.return_value = {"coordinate_units": "bohr"}
+        # CODATA 2022 Bohr-to-Angstrom conversion factor (~0.529177249).
+        # This branch IS exercised by the test (coord_units == "bohr"), so the
+        # mocked return value is multiplied into the XYZ block coordinates.
+        # Patched so the test does not depend on _CONSTANTS_CACHE / _TEMP_CONFIG
+        # state left by other tests in the suite.
+        mock_get_bohr.return_value = 0.529177249
 
         mock_raw_mol = Mock()
         mock_raw_mol.GetNumBonds.return_value = 2
@@ -454,10 +470,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
     @patch("milia_pipeline.molecules.mol_conversion_utils.Chem")
     @patch("milia_pipeline.molecules.mol_conversion_utils.rdDetermineBonds")
     @patch("milia_pipeline.config.config_constants.get_handler_constants")
+    @patch("milia_pipeline.config.config_constants.get_bohr_to_angstrom")
     @patch("milia_pipeline.molecules.mol_conversion_utils.create_handler_error_context")
     def test_coordinate_based_with_molecular_charge(
         self,
         mock_context,
+        mock_get_bohr,
         mock_get_constants,
         mock_determine_bonds,
         mock_chem,
@@ -472,6 +490,12 @@ class TestCreateRdkitMolStrategyRouting(unittest.TestCase):
 
         mock_validate_structure.return_value = (self.valid_atomic_numbers, self.valid_coordinates)
         mock_get_constants.return_value = {"coordinate_units": "angstrom"}
+        # CODATA 2022 Bohr-to-Angstrom conversion factor (~0.529177249).
+        # Patched so the test does not depend on _CONSTANTS_CACHE / _TEMP_CONFIG
+        # state left by other tests in the suite. The angstrom branch above
+        # means this value is unused at runtime, but the patch must still be
+        # in place to prevent the lazy attribute lookup from being reached.
+        mock_get_bohr.return_value = 0.529177249
 
         mock_raw_mol = Mock()
         mock_raw_mol.GetNumBonds.return_value = 2

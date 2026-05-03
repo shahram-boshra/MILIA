@@ -426,6 +426,7 @@ from .config_constants import (
     ensure_complete_compatibility,
     ensure_handler_constant_compatibility,
     get_all_cache_info,
+    get_bohr_to_angstrom,  # Bohr-to-Angstrom CODATA conversion factor (accessor for testability)
     get_cached_handler_config,
     get_compatible_transforms_for_handler,
     # Debug & Diagnostics
@@ -1024,6 +1025,7 @@ __all__ = [
     "get_handler_molecule_creation_strategy",
     # Handler Utilities
     "get_handler_constants",
+    "get_bohr_to_angstrom",
     "get_handler_identifier_keys",
     "validate_handler_configuration",
     "get_handler_compatibility_info",

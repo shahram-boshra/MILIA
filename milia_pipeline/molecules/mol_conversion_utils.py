@@ -555,12 +555,22 @@ def _create_molecule_coordinate_based(
     Returns:
         Chem.Mol: RDKit molecule with inferred bonds and QM coordinates
     """
-    # Get handler constants for coordinate unit conversion
-    from milia_pipeline.config.config_constants import BOHR_TO_ANGSTROM, get_handler_constants
+    # Get handler constants for coordinate unit conversion.
+    #
+    # ARCHITECTURE NOTE — get_bohr_to_angstrom() vs BOHR_TO_ANGSTROM:
+    # We deliberately call get_bohr_to_angstrom() (a regular accessor function)
+    # rather than importing the BOHR_TO_ANGSTROM module-level lazy attribute.
+    # Both resolve to the same CODATA conversion factor from the same YAML
+    # config (they share _CONSTANTS_CACHE), but the accessor is patchable in
+    # unit tests with the standard @patch decorator and is not subject to the
+    # PEP 562 caching/bypass quirk that made this call-site non-isolated when
+    # the surrounding test suite mutated config state. See get_bohr_to_angstrom
+    # docstring in milia_pipeline.config.config_constants for full rationale.
+    from milia_pipeline.config.config_constants import get_bohr_to_angstrom, get_handler_constants
 
     handler_constants = get_handler_constants(dataset_type)
     coord_units = handler_constants.get("coordinate_units", "angstrom")
-    conversion_factor = BOHR_TO_ANGSTROM if coord_units == "bohr" else 1.0
+    conversion_factor = get_bohr_to_angstrom() if coord_units == "bohr" else 1.0
 
     logger.debug(
         f"{context}: Starting coordinate-based RDKit mol creation "
