@@ -1826,6 +1826,16 @@ class TestErrorHandling:
 
         assert "Invalid parameters for loss" in str(exc_info.value)
 
+    @pytest.mark.filterwarnings(
+        # PyTorch's `F.mse_loss` emits a `UserWarning` about input/target size
+        # mismatch *before* raising the `RuntimeError` that this test verifies.
+        # The warning is collateral to the deliberately-mismatched shapes used
+        # to provoke the `RuntimeError`, not a defect being asserted on. We
+        # match on the exact message prefix so that any other unrelated
+        # `UserWarning` from this test would still surface in the log.
+        # Reference: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+        "ignore:Using a target size:UserWarning"
+    )
     def test_loss_with_mismatched_shapes(self):
         """Test losses with mismatched tensor shapes."""
         loss_fn = LossRegistry.get_loss("mse")
