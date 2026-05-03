@@ -553,7 +553,23 @@ class ParameterMetadata(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str
-    type_hint: type | None = None
+    # `type_hint` holds whatever `typing.get_type_hints(...)` or
+    # `inspect.signature(...).parameters[*].annotation` returns for a
+    # transform's __init__ parameter. That includes:
+    #   * concrete classes:        float, int, str, torch.Tensor
+    #   * Union/Optional aliases:  Union[float, Tensor, str], Optional[float]
+    #   * PEP 604 unions:          int | None
+    #   * parameterized generics:  list[int], dict[str, Any]
+    #   * None when no annotation is available
+    # None of the generic-alias forms are `isinstance(., type)`, so the
+    # previous annotation `type | None` caused Pydantic v2 to raise
+    # ValidationError for transforms with Union-typed parameters (e.g.,
+    # AddSelfLoops.fill_value). The body of this class itself already
+    # treats `type_hint` as "any typing construct" via `get_origin` /
+    # `get_args` (see `is_optional` and `get_base_type` below), so `Any`
+    # is the annotation that honestly reflects the field's contract.
+    # Reference: https://docs.pydantic.dev/latest/concepts/types/
+    type_hint: Any = None
     default_value: Any = inspect.Parameter.empty
     required: bool = True
     description: str | None = None
