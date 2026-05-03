@@ -17,7 +17,6 @@ to a modular structure:
     ├── __init__.py                      # This file - backward compatible exports
     ├── base_handler.py                  # DatasetHandler ABC + factory functions + utilities
     ├── handler_registry.py              # HandlerRegistry + @register_handler decorator
-    ├── dataset_handler_integration.py   # TransformAwareHandlerIntegrator (unchanged)
     └── implementations/                 # Individual handler implementations
         ├── __init__.py                  # Dynamic discovery
         ├── dft.py                       # DFTDatasetHandler
@@ -31,6 +30,7 @@ to a modular structure:
 
 Phase 7 Migration Complete:
 - dataset_handlers.py has been REMOVED
+- dataset_handler_integration.py has been REMOVED (deprecated cleanup, recoverable from Git history)
 - All factory functions migrated to base_handler.py
 - Handler classes are in implementations/
 
@@ -71,18 +71,12 @@ Handler Classes:
 Factory Functions:
     - create_dataset_handler: Factory function to create appropriate handler instances
 
-Integration Classes:
-    - TransformAwareHandlerIntegrator: Integration class for handler-transform workflows
-
 Error Handling:
     - handle_transform_errors: Decorator for transform error handling in handlers
 
 Phase 6 - Registry Integration:
     - verify_handler_abstraction: Verification function for handler abstraction status
     - get_handler_abstraction_summary: Summary of handler abstraction features
-
-Phase 7 - Registry Integration for Integration Module:
-    - get_registry_integration_status: Status of registry integration for diagnostics
 """
 
 # =============================================================================
@@ -225,11 +219,10 @@ def __getattr__(name):
     This function intercepts attribute access and imports the requested
     symbol only when needed, breaking the circular import chain.
 
-    Import priority (Phase 7 - dataset_handlers.py REMOVED):
+    Import priority (Phase 7 - dataset_handlers.py and dataset_handler_integration.py REMOVED):
     1. Try implementations/ (refactored modular structure) - DYNAMIC DISCOVERY
     2. Fall back to base_handler.py (factory functions + utilities)
     3. Fall back to handler_registry.py (registry exports)
-    4. Try dataset_handler_integration.py
 
     DYNAMIC HANDLER DISCOVERY:
     Handler classes are discovered dynamically from implementations/__init__.py,
@@ -290,43 +283,13 @@ def __getattr__(name):
     # get_handler_abstraction_summary are now in base_handler.py and routed
     # via _BASE_HANDLER_ATTRS above (Phase 7 migration).
 
-    # Import integration module lazily - Classes
-    if name == "TransformAwareHandlerIntegrator":
-        from . import dataset_handler_integration as _dhi
-
-        return getattr(_dhi, name)
-
-    # Import integration module lazily - Phase 7 Registry Integration
-    if name == "get_registry_integration_status":
-        from . import dataset_handler_integration as _dhi
-
-        return getattr(_dhi, name)
-
-    # Import integration module lazily - Demonstration Functions
-    if name in (
-        "demonstrate_experimental_setup_workflow",
-        "demonstrate_multi_level_validation_complete",
-        "demonstrate_dynamic_transform_discovery_workflow",
-        "demonstrate_transform_error_handling",
-        "demonstrate_config_migration_complete",
-        "demonstrate_complete_phase2_workflow",
-        "demonstrate_testing_patterns",
-    ):
-        from . import dataset_handler_integration as _dhi
-
-        return getattr(_dhi, name)
-
-    # Import integration module lazily - Helper/Utility Functions
-    if name in (
-        "create_integration_checklist",
-        "generate_benefits",
-        "create_performance_guide",
-        "generate_quick_reference_guide",
-        "run_example_from_cli",
-    ):
-        from . import dataset_handler_integration as _dhi
-
-        return getattr(_dhi, name)
+    # NOTE: TransformAwareHandlerIntegrator, get_registry_integration_status,
+    # the seven demonstrate_* functions, and the five integration helper
+    # functions previously lived in dataset_handler_integration.py, which was
+    # removed in commit e7ebb9b5 ("chore: remove all DEPRECATED and .backup
+    # files, recoverable from Git history") on 2026-02-12. Requests for those
+    # names now fall through to the trailing AttributeError below, which is
+    # the correct contract for genuinely-removed public API.
 
     # Module helper functions (defined below)
     if name == "get_available_handlers":
@@ -358,8 +321,6 @@ def __dir__():
         "RMD17DatasetHandler",
         # Factory Functions
         "create_dataset_handler",
-        # Integration Classes
-        "TransformAwareHandlerIntegrator",
         # Decorators
         "handle_transform_errors",
         # Registry
@@ -369,22 +330,6 @@ def __dir__():
         # Phase 6: Verification Functions
         "verify_handler_abstraction",
         "get_handler_abstraction_summary",
-        # Phase 7: Registry Integration Status
-        "get_registry_integration_status",
-        # Demonstration Functions
-        "demonstrate_experimental_setup_workflow",
-        "demonstrate_multi_level_validation_complete",
-        "demonstrate_dynamic_transform_discovery_workflow",
-        "demonstrate_transform_error_handling",
-        "demonstrate_config_migration_complete",
-        "demonstrate_complete_phase2_workflow",
-        "demonstrate_testing_patterns",
-        # Helper/Utility Functions
-        "create_integration_checklist",
-        "generate_benefits",
-        "create_performance_guide",
-        "generate_quick_reference_guide",
-        "run_example_from_cli",
         # Module-Level Helper Functions
         "get_available_handlers",
         "get_handler_info",
@@ -408,8 +353,6 @@ __all__ = [
     "RMD17DatasetHandler",
     # Factory Functions
     "create_dataset_handler",
-    # Integration Classes
-    "TransformAwareHandlerIntegrator",
     # Decorators
     "handle_transform_errors",
     # Registry
@@ -419,22 +362,6 @@ __all__ = [
     # Phase 6: Verification Functions
     "verify_handler_abstraction",
     "get_handler_abstraction_summary",
-    # Phase 7: Registry Integration Status
-    "get_registry_integration_status",
-    # Demonstration Functions
-    "demonstrate_experimental_setup_workflow",
-    "demonstrate_multi_level_validation_complete",
-    "demonstrate_dynamic_transform_discovery_workflow",
-    "demonstrate_transform_error_handling",
-    "demonstrate_config_migration_complete",
-    "demonstrate_complete_phase2_workflow",
-    "demonstrate_testing_patterns",
-    # Helper/Utility Functions
-    "create_integration_checklist",
-    "generate_benefits",
-    "create_performance_guide",
-    "generate_quick_reference_guide",
-    "run_example_from_cli",
     # Module-Level Helper Functions
     "get_available_handlers",
     "get_handler_info",
@@ -719,10 +646,3 @@ def get_handler_info(handler_type: str) -> dict:
 #   - Consistent initialization across all handler types
 #   - Compatibility checking between handler and dataset
 #   - Registry-based dynamic handler resolution when available
-#
-# For transform-aware workflows, use TransformAwareHandlerIntegrator:
-#   integrator = TransformAwareHandlerIntegrator(
-#       dataset_config, filter_config, processing_config, logger,
-#       experimental_setup="baseline",
-#       enable_caching=True
-#   )

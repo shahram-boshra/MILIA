@@ -31,9 +31,6 @@ Covers:
         - Handler classes resolved via lazy loading are classes
         - Base handler utility attributes are resolvable and callable
         - Handler registry attributes are resolvable
-        - Integration class (TransformAwareHandlerIntegrator) is resolvable
-        - Demonstration functions are resolvable and callable
-        - Helper/utility functions are resolvable and callable
         - ``get_available_handlers()`` returns a list of strings
         - ``get_handler_info()`` returns a dict with expected keys for known types
         - ``get_handler_info()`` raises ValueError for unknown types
@@ -43,7 +40,7 @@ Covers:
         - ``__version__`` follows semver pattern
         - Public API surface stability (minimum expected names present)
         - Lazy import routing: handler classes → implementations, factory → base_handler,
-          registry → handler_registry, integration → dataset_handler_integration
+          registry → handler_registry
         - ``_BASE_HANDLER_ATTRS`` and ``_HANDLER_REGISTRY_ATTRS`` sets are non-empty
         - ``_HANDLER_CLASSES_FALLBACK`` contains all 8 original + DatasetHandler names
 
@@ -457,142 +454,15 @@ class TestSmokeLazyLoadingRegistryExports:
         assert obj is not None, f"Registry export '{name}' could not be resolved"
 
 
-class TestSmokeLazyLoadingIntegrationExports:
-    """§1.2 — Integration module exports are declared and conditionally resolvable.
-
-    The ``dataset_handler_integration`` module has a complex dependency chain
-    (TransformRegistry, DynamicTransformDiscovery, etc.) that may fail to import
-    at runtime depending on environment state.  Tests validate that the names
-    are declared in ``__all__`` / ``__dir__()``, and attempt resolution with
-    ``xfail`` tolerance for the known ImportError.
-    """
-
-    INTEGRATION_NAMES = [
-        "TransformAwareHandlerIntegrator",
-        "get_registry_integration_status",
-    ]
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", INTEGRATION_NAMES)
-    def test_integration_export_declared_in_all(self, handlers_pkg, name):
-        """Each integration export is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", INTEGRATION_NAMES)
-    def test_integration_export_declared_in_dir(self, handlers_pkg, name):
-        """Each integration export is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", INTEGRATION_NAMES)
-    def test_integration_export_resolvable_or_import_error(self, handlers_pkg, name):
-        """
-        Each integration export resolves to a non-None object, or raises
-        an ``ImportError`` / ``AttributeError`` from the integration module's
-        dependency chain (known environment-dependent condition).
-        """
-        try:
-            obj = getattr(handlers_pkg, name)
-            assert obj is not None
-        except (ImportError, AttributeError) as exc:
-            pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
-            )
-
-
-class TestSmokeLazyLoadingDemonstrationFunctions:
-    """§1.2 — Demonstration function exports from integration module.
-
-    These are routed through ``dataset_handler_integration``, which may fail
-    to import due to its dependency chain.  Tests validate declaration in the
-    public API surface and attempt resolution with ``xfail`` tolerance.
-    """
-
-    DEMO_FUNCTIONS = [
-        "demonstrate_experimental_setup_workflow",
-        "demonstrate_multi_level_validation_complete",
-        "demonstrate_dynamic_transform_discovery_workflow",
-        "demonstrate_transform_error_handling",
-        "demonstrate_config_migration_complete",
-        "demonstrate_complete_phase2_workflow",
-        "demonstrate_testing_patterns",
-    ]
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
-    def test_demonstration_function_declared_in_all(self, handlers_pkg, name):
-        """Each demonstration function is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
-    def test_demonstration_function_declared_in_dir(self, handlers_pkg, name):
-        """Each demonstration function is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", DEMO_FUNCTIONS)
-    def test_demonstration_function_resolvable_or_import_error(self, handlers_pkg, name):
-        """
-        Each demonstration function resolves to a callable, or raises
-        ``ImportError`` / ``AttributeError`` from the integration module's
-        dependency chain (known environment-dependent condition).
-        """
-        try:
-            obj = getattr(handlers_pkg, name)
-            assert obj is not None
-            assert callable(obj), f"'{name}' should be callable"
-        except (ImportError, AttributeError) as exc:
-            pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
-            )
-
-
-class TestSmokeLazyLoadingHelperFunctions:
-    """§1.2 — Helper/utility function exports from integration module.
-
-    These are routed through ``dataset_handler_integration``, which may fail
-    to import due to its dependency chain.  Tests validate declaration in the
-    public API surface and attempt resolution with ``xfail`` tolerance.
-    """
-
-    HELPER_FUNCTIONS = [
-        "create_integration_checklist",
-        "generate_benefits",
-        "create_performance_guide",
-        "generate_quick_reference_guide",
-        "run_example_from_cli",
-    ]
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
-    def test_helper_function_declared_in_all(self, handlers_pkg, name):
-        """Each helper function is declared in ``__all__``."""
-        assert name in handlers_pkg.__all__, f"'{name}' should be declared in __all__"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
-    def test_helper_function_declared_in_dir(self, handlers_pkg, name):
-        """Each helper function is declared in ``dir()``."""
-        assert name in dir(handlers_pkg), f"'{name}' should be declared in dir()"
-
-    @pytest.mark.smoke
-    @pytest.mark.parametrize("name", HELPER_FUNCTIONS)
-    def test_helper_function_resolvable_or_import_error(self, handlers_pkg, name):
-        """
-        Each helper function resolves to a callable, or raises
-        ``ImportError`` / ``AttributeError`` from the integration module's
-        dependency chain (known environment-dependent condition).
-        """
-        try:
-            obj = getattr(handlers_pkg, name)
-            assert obj is not None
-            assert callable(obj), f"'{name}' should be callable"
-        except (ImportError, AttributeError) as exc:
-            pytest.xfail(
-                f"'{name}' not resolvable due to dataset_handler_integration import chain: {exc}"
-            )
+# NOTE: The classes TestSmokeLazyLoadingIntegrationExports,
+# TestSmokeLazyLoadingDemonstrationFunctions, and
+# TestSmokeLazyLoadingHelperFunctions previously tested behavior of
+# 14 names belonging to dataset_handler_integration.py. That module
+# was removed in commit e7ebb9b5 ("chore: remove all DEPRECATED and
+# .backup files, recoverable from Git history") on 2026-02-12, and
+# the corresponding test classes were removed once the public API
+# of milia_pipeline.handlers no longer advertised those names.
+# Recoverable from Git history if ever needed.
 
 
 class TestSmokeModuleLevelHelperFunctions:
@@ -759,58 +629,31 @@ class TestContractAllCompleteness:
             seen.add(name)
         assert not duplicates, f"Duplicate entries in __all__: {duplicates}"
 
-    # Names routed through dataset_handler_integration which may fail to import
-    # due to its dependency chain (TransformRegistry, DynamicTransformDiscovery, etc.)
-    _INTEGRATION_MODULE_NAMES = {
-        "TransformAwareHandlerIntegrator",
-        "get_registry_integration_status",
-        "demonstrate_experimental_setup_workflow",
-        "demonstrate_multi_level_validation_complete",
-        "demonstrate_dynamic_transform_discovery_workflow",
-        "demonstrate_transform_error_handling",
-        "demonstrate_config_migration_complete",
-        "demonstrate_complete_phase2_workflow",
-        "demonstrate_testing_patterns",
-        "create_integration_checklist",
-        "generate_benefits",
-        "create_performance_guide",
-        "generate_quick_reference_guide",
-        "run_example_from_cli",
-    }
-
     @pytest.mark.contract
     def test_every_all_entry_is_resolvable(self, handlers_pkg, all_names):
         """
-        Generic sweep: every single entry in ``__all__`` must be resolvable,
-        regardless of whether it is parameterized individually.
+        Generic sweep: every single entry in ``__all__`` must be resolvable.
 
-        Names routed through ``dataset_handler_integration`` are allowed to
-        raise ``ImportError`` / ``AttributeError`` due to the integration
-        module's known dependency chain issues.  These are reported separately.
+        Historical note: this test previously had a ``_INTEGRATION_MODULE_NAMES``
+        special-case set tolerating ImportError for 14 names routed through
+        ``dataset_handler_integration``. That submodule was removed in commit
+        e7ebb9b5 ("chore: remove all DEPRECATED and .backup files, recoverable
+        from Git history") on 2026-02-12, the corresponding names were stripped
+        from milia_pipeline.handlers's __all__, and the special case was no
+        longer needed. The test is now in its essential form: any name in
+        __all__ that is not resolvable is a real bug.
         """
         unresolvable = []
-        integration_failures = []
         for name in all_names:
             try:
                 if not hasattr(handlers_pkg, name):
-                    if name in self._INTEGRATION_MODULE_NAMES:
-                        integration_failures.append(name)
-                    else:
-                        unresolvable.append(name)
-            except (ImportError, AttributeError):
-                if name in self._INTEGRATION_MODULE_NAMES:
-                    integration_failures.append(name)
-                else:
                     unresolvable.append(name)
+            except (ImportError, AttributeError):
+                unresolvable.append(name)
 
         assert not unresolvable, (
             f"Names in __all__ that are not defined on the module: {unresolvable}"
         )
-        if integration_failures:
-            pytest.xfail(
-                f"Integration module names in __all__ not resolvable due to "
-                f"dataset_handler_integration import chain: {integration_failures}"
-            )
 
     @pytest.mark.contract
     def test_all_entries_are_strings(self, all_names):
@@ -925,48 +768,11 @@ class TestContractHandlerRegistryExportTypes:
         assert inspect.isclass(obj)
 
 
-class TestContractIntegrationClassType:
-    """§2 — ``TransformAwareHandlerIntegrator`` is a class (when resolvable).
-
-    The integration module (``dataset_handler_integration``) may fail to import
-    due to its dependency chain.  The test attempts resolution and xfails if
-    the known ImportError occurs.
-    """
-
-    @pytest.mark.contract
-    def test_integrator_is_class(self, handlers_pkg):
-        """``TransformAwareHandlerIntegrator`` is a class."""
-        try:
-            obj = handlers_pkg.TransformAwareHandlerIntegrator
-        except (ImportError, AttributeError) as exc:
-            pytest.xfail(
-                f"TransformAwareHandlerIntegrator not resolvable due to "
-                f"dataset_handler_integration import chain: {exc}"
-            )
-        assert inspect.isclass(obj), (
-            f"TransformAwareHandlerIntegrator should be a class, got {type(obj).__name__}"
-        )
-
-
-class TestContractGetRegistryIntegrationStatusType:
-    """§2 — ``get_registry_integration_status`` is callable (when resolvable).
-
-    The integration module (``dataset_handler_integration``) may fail to import
-    due to its dependency chain.  The test attempts resolution and xfails if
-    the known ImportError occurs.
-    """
-
-    @pytest.mark.contract
-    def test_get_registry_integration_status_is_callable(self, handlers_pkg):
-        """``get_registry_integration_status`` is callable."""
-        try:
-            obj = handlers_pkg.get_registry_integration_status
-        except (ImportError, AttributeError) as exc:
-            pytest.xfail(
-                f"get_registry_integration_status not resolvable due to "
-                f"dataset_handler_integration import chain: {exc}"
-            )
-        assert callable(obj), "get_registry_integration_status should be callable"
+# NOTE: Classes TestContractIntegrationClassType and
+# TestContractGetRegistryIntegrationStatusType were removed alongside the
+# Smoke-* classes documented above. Both tested type contracts on names
+# from the removed dataset_handler_integration.py submodule.
+# Recoverable from Git history if ever needed.
 
 
 class TestContractBaseHandlerUtilityExports:
@@ -1394,8 +1200,6 @@ class TestContractPublicAPISurface:
         "RMD17DatasetHandler",
         # Factory Functions
         "create_dataset_handler",
-        # Integration
-        "TransformAwareHandlerIntegrator",
         # Decorators
         "handle_transform_errors",
         # Registry
@@ -1405,22 +1209,6 @@ class TestContractPublicAPISurface:
         # Verification Functions
         "verify_handler_abstraction",
         "get_handler_abstraction_summary",
-        # Registry Integration Status
-        "get_registry_integration_status",
-        # Demonstration Functions
-        "demonstrate_experimental_setup_workflow",
-        "demonstrate_multi_level_validation_complete",
-        "demonstrate_dynamic_transform_discovery_workflow",
-        "demonstrate_transform_error_handling",
-        "demonstrate_config_migration_complete",
-        "demonstrate_complete_phase2_workflow",
-        "demonstrate_testing_patterns",
-        # Helper/Utility Functions
-        "create_integration_checklist",
-        "generate_benefits",
-        "create_performance_guide",
-        "generate_quick_reference_guide",
-        "run_example_from_cli",
         # Module-Level Helpers
         "get_available_handlers",
         "get_handler_info",
@@ -1438,12 +1226,13 @@ class TestContractPublicAPISurface:
         """
         ``__all__`` contains a substantial number of entries.
 
-        Based on the __init__.py source, the handlers package exports 44
-        names. This test guards against catastrophic loss while allowing
-        for organic growth.
+        After the Phase 7 dataset_handler_integration.py cleanup (commit
+        e7ebb9b5, 2026-02-12), the handlers package exports 19 names. This
+        test guards against catastrophic loss while allowing for organic
+        growth.
         """
         actual = len(all_names)
-        MINIMUM_EXPECTED = 30
+        MINIMUM_EXPECTED = 16
         assert actual >= MINIMUM_EXPECTED, (
             f"__all__ has {actual} entries, expected at least {MINIMUM_EXPECTED}. "
             f"This suggests __all__ may have been accidentally truncated."
