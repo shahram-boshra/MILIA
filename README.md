@@ -11,7 +11,7 @@
 
 MILIA (**M**achine **I**ntelligent **L**earning **I**nference **A**ssistant) is a production-ready, research-oriented Python framework for molecular data processing and graph-based machine learning. It provides a complete, no-code ML/DL workflow — from dataset curation, molecular graph transformation, and molecular descriptor computation through graph neural network training, hyperparameter optimization, and model deployment — requiring only YAML configuration to run. Every level of the pipeline (datasets, transformations, descriptors, models, training, deployment) is fully configurable without writing code, while remaining extensible via plugins for untouched areas of research. Built on PyTorch, PyTorch Geometric, and RDKit, MILIA is designed for researchers, educators, and teams who need a flexible, extensible platform across the full ML/DL stack.
 
-MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset implementations spanning the VQM24 family (DFT, DMC, Wavefunction), the QM9 benchmark, the ANI family (ANI-1x, ANI-1ccx, ANI-2x) including coupled-cluster reference data, the rMD17 and xxMD reactive dynamics datasets, and the drug-discovery-oriented QDπ dataset — and is readily extensible via the registry-based architecture documented in the [Datasets](#datasets) section.
+MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset implementations spanning the VQM24 family (DFT, DMC, Wavefunction), the QM9 benchmark, the ANI family (ANI-1x, ANI-1ccx, ANI-2x) including coupled-cluster reference data, the rMD17 and xxMD reactive dynamics datasets, and the drug-discovery-oriented QDπ dataset.
 
 ## Key Features
 
@@ -321,9 +321,43 @@ MILIA ships with **10 production-ready dataset implementations** covering the ma
 
 The `DFT`, `DMC`, and `Wavefunction` entries are the three deliverables of the **Vector-QM24 (VQM24)** dataset (Zenodo: [10.5281/zenodo.11164951](https://doi.org/10.5281/zenodo.11164951)) — DFT geometries and properties, DMC reference energies, and quantum-mechanical wavefunctions respectively — for which MILIA provides VQM24-aware vibrational refinement and MOLDEN/FCHK readers out of the box.
 
-### Bringing your own dataset
+#### Per-dataset capability matrix
 
-The breadth of datasets above is matched by an architecture that makes **adding a new one fast** — fast enough to be practical in a graduate course or a one-week research sprint, and one of MILIA's distinguishing advantages over rigid, dataset-locked pipelines. New datasets slot into the same no-code workflow as the shipped ones and are picked up automatically by every part of MILIA — the CLI, the YAML configuration, training, hyperparameter optimization, and prediction — so a custom benchmark, a different level of theory, or a domain-specific format becomes a first-class citizen of the pipeline as soon as it is dropped in. For students, this means a course or in-house dataset can be running through the full pipeline the same day; for researchers, it means a new benchmark can be evaluated against existing transforms, descriptors, and models without modifying the framework. This extensibility is a deliberate design goal of MILIA, and the 10 shipped datasets — spanning the VQM24 family, QM9, the ANI series, rMD17, xxMD, and QDπ — are the same template anyone can follow to add the next one.
+Each shipped dataset declares an immutable `DatasetFeatures` record (a Pydantic V2 frozen dataclass) that drives feature-aware code paths in MILIA — descriptor selection, transform compatibility validation, atomization-energy bookkeeping, and orbital-property extraction — without any consumer needing to hard-code dataset names. The five flags below are the most consequential for downstream model targets and are queried at runtime via `_get_dataset_feature(dataset_type, feature_name)`:
+
+| Dataset | Vibrational analysis | Uncertainty handling | Atomization energy | Orbital analysis | HOMO–LUMO gap |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `DFT` | ✓ | ✗ | ✓ | ✗ | ✗ |
+| `DMC` | ✗ | ✓ | ✗ | ✗ | ✗ |
+| `Wavefunction` | ✗ | ✗ | ✗ | ✓ | ✓ |
+| `QM9` | ✓ | ✗ | ✓ | ✗ | ✓ |
+| `ANI1x` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `ANI1ccx` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `ANI2x` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `RMD17` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `XXMD` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `QDPi` | ✗ | ✗ | ✓ | ✗ | ✗ |
+
+These five columns are a subset of the eight flags carried by `DatasetFeatures`; the other three (`rotational_constants`, `frequency_analysis`, `mo_energies`) gate finer-grained behaviour and are queried programmatically rather than displayed here. The matrix is not a documentation artefact — it is the same registry data that MILIA consults to decide, for example, whether a transform that requires vibrational modes is admissible against a given dataset, or whether atomization-energy targets are derivable. Setting `vibrational_analysis: True` on a new dataset's `DatasetFeatures` is therefore sufficient to opt into vibrational-aware processing across the pipeline; no other module needs editing.
+
+### Adding a dataset
+
+Adding a new dataset to MILIA is a three-file operation against existing extension points — no core file is modified, and no registration list, switch statement, or import is touched anywhere else in the codebase:
+
+| Touch-point | What you create | How MILIA picks it up |
+|---|---|---|
+| `milia_pipeline/datasets/implementations/<name>.py` | A `BaseDataset` subclass decorated with `@register` | Dynamic discovery in `datasets/implementations/__init__.py` auto-imports every `.py` file in the directory and triggers the decorator at import time |
+| `milia_pipeline/handlers/implementations/<name>.py` | A `DatasetHandler` subclass decorated with `@register_handler` | Dynamic discovery in `handlers/implementations/__init__.py` auto-imports the file, finds classes ending in `DatasetHandler` or `Handler`, and triggers the decorator |
+| `configs/datasets/<name>.yaml` | Colocated dataset config containing `<name>_config`, `data_config.property_selection.<KEY>`, and `property_availability.<KEY>` | YAML splitting merges `datasets/*.yaml` automatically — no edit to `main.yaml` beyond setting `dataset_type` to the new key |
+
+The architecture enforcing this is **Protocol + ABC + explicit registry**, applied identically to datasets and handlers:
+
+- **`@register` / `@register_handler` decorators** wire the new class into thread-safe (`RLock`-protected) registries at import time, with no central registration list to update.
+- **`DatasetHandlerProtocol`** (11 runtime-checkable methods) and the `BaseDataset` ABC (with `__init_subclass__` validation) catch contract violations at *import time*, not at runtime — a missing required method fails fast before any data is loaded.
+- **`DatasetMetadata`, `DatasetSchema`, `DatasetFeatures`** are immutable Pydantic V2 frozen dataclasses, so the new dataset's metadata is validated structurally before registration succeeds.
+- **Feature flags** (`vibrational_analysis`, `uncertainty_handling`, `atomization_energy`, `orbital_analysis`, `homo_lumo_gap`, and three others) declared in the `BaseDataset` subclass make the new dataset visible to feature-aware code paths in `milia_dataset.py` and the transform validator without any of those modules learning the new dataset's name.
+
+Once the three files are in place, the new dataset is a first-class citizen of every part of the pipeline — CLI (`milia --process`, `--train`, `--predict`), YAML configuration, hyperparameter optimization, transform validation, descriptors, and prediction — selectable by setting `dataset_type: <key>` in `configs/main.yaml`. The 10 shipped datasets follow this exact pattern; the registry has no knowledge that they are "built-in" rather than user-added.
 
 ## Testing
 
