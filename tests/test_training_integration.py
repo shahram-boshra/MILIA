@@ -128,8 +128,17 @@ class MinimalGraphData:
         edge_targets = torch.randint(0, num_nodes, (num_edges,))
         self.edge_index = torch.stack([edge_sources, edge_targets], dim=0)
 
-        # Target value (graph-level regression)
-        self.y = torch.tensor([target_value], dtype=torch.float32)
+        # Target value (graph-level regression).
+        # Shape `[1, 1]` follows the official PyG convention for graph-level
+        # targets — see https://pytorch-geometric.readthedocs.io/en/latest/get_started/introduction.html
+        # ("graph-level targets of shape [1, *]"). After collation across a
+        # batch of N graphs via `torch.cat(..., dim=0)` this becomes `[N, 1]`,
+        # matching the `[N, 1]` post-pooling Linear output of the model and
+        # avoiding the `MSELoss` broadcasting `UserWarning` that would
+        # otherwise fire when comparing a `[N]` target against a `[N, 1]`
+        # prediction (which silently produces an `[N, N]` outer-difference
+        # matrix instead of element-wise residuals).
+        self.y = torch.tensor([[target_value]], dtype=torch.float32)
 
         # Batch indicator (single graph)
         self.batch = torch.zeros(num_nodes, dtype=torch.long)
@@ -913,7 +922,10 @@ class TestMinimalFixtures(unittest.TestCase):
         self.assertEqual(data.x.shape, (10, 16))
         self.assertEqual(data.edge_index.shape[0], 2)
         self.assertEqual(data.edge_index.shape[1], 20)
-        self.assertEqual(data.y.shape, (1,))
+        # `y.shape == (1, 1)` follows the official PyG convention for
+        # graph-level regression targets (shape `[1, *]`); see the
+        # `MinimalGraphData.__init__` docstring for the rationale.
+        self.assertEqual(data.y.shape, (1, 1))
         self.assertEqual(data.batch.shape, (10,))
 
         # Check types
