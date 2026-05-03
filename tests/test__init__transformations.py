@@ -1102,25 +1102,17 @@ class TestContractConvenienceFunctionUnavailableBehavior:
     """
 
     @pytest.mark.contract
-    @pytest.mark.xfail(
-        strict=True,
-        raises=AttributeError,
-        reason=(
-            "Source bug: __init__.py line 377 calls "
-            "gt.list_available_transforms() but GraphTransforms exposes "
-            "gt.get_available_transforms() — method name mismatch"
-        ),
-    )
     def test_get_available_transforms_returns_list(self, transformations_pkg):
         """
         ``get_available_transforms()`` returns a list (possibly empty if
         graph_transforms is unavailable).
 
-        Known source bug: The module-level ``get_available_transforms()``
-        delegates to ``GraphTransforms.list_available_transforms()`` which
-        does not exist; the actual method is ``get_available_transforms()``.
-        Marked ``xfail(strict=True)`` so CI will alert when the source
-        bug is fixed (XPASS → FAIL).
+        Historical note: until the fix landed in transformations/__init__.py
+        (gt.list_available_transforms() → gt.list_transforms()), this test
+        was marked xfail(strict=True) because GraphTransforms exposes
+        list_transforms() returning list[str] — list_available_transforms()
+        lives on TransformRegistry, not GraphTransforms. The xfail marker
+        was removed once the source bug was fixed.
         """
         result = transformations_pkg.get_available_transforms()
         assert isinstance(result, list), (
@@ -1381,23 +1373,17 @@ class TestContractEnsureInitializedIdempotency:
         )
 
     @pytest.mark.contract
-    @pytest.mark.xfail(
-        strict=True,
-        raises=NameError,
-        reason=(
-            "Source bug: custom_transforms._lazy_import_graph_transforms() "
-            "references undefined global '_IMPORTING_GRAPH_TRANSFORMS'"
-        ),
-    )
     def test_ensure_initialized_returns_none(self, transformations_pkg):
         """
         ``_ensure_initialized()`` returns None (side-effect only).
 
-        Known source bug: ``_ensure_initialized()`` triggers
-        ``custom_transforms._lazy_import_graph_transforms()`` which
-        references an undefined global ``_IMPORTING_GRAPH_TRANSFORMS``,
-        raising ``NameError``.  Marked ``xfail(strict=True)`` so CI
-        will alert when the source bug is fixed (XPASS → FAIL).
+        Historical note: until the fix landed in
+        transformations/custom_transforms.py (added module-level binding
+        ``_IMPORTING_GRAPH_TRANSFORMS = False``), this test was marked
+        xfail(strict=True) because ``_ensure_initialized()`` triggered
+        ``custom_transforms._lazy_import_graph_transforms()`` which read
+        an undefined global, raising NameError. The xfail marker was
+        removed once the source bug was fixed.
         """
         result = transformations_pkg._ensure_initialized()
         assert result is None, (
@@ -1405,22 +1391,17 @@ class TestContractEnsureInitializedIdempotency:
         )
 
     @pytest.mark.contract
-    @pytest.mark.xfail(
-        strict=True,
-        raises=NameError,
-        reason=(
-            "Source bug: custom_transforms._lazy_import_graph_transforms() "
-            "references undefined global '_IMPORTING_GRAPH_TRANSFORMS'"
-        ),
-    )
     def test_ensure_initialized_double_call_safe(self, transformations_pkg):
         """
         Calling ``_ensure_initialized()`` twice does not crash.
 
-        Known source bug: raises ``NameError`` due to undefined
-        ``_IMPORTING_GRAPH_TRANSFORMS`` in custom_transforms.py.
-        Marked ``xfail(strict=True)`` so CI will alert when the source
-        bug is fixed (XPASS → FAIL).
+        Historical note: until the fix landed in
+        transformations/custom_transforms.py (added module-level binding
+        ``_IMPORTING_GRAPH_TRANSFORMS = False``), this test was marked
+        xfail(strict=True) because the second call would re-enter
+        ``_lazy_import_graph_transforms()`` and read an undefined global,
+        raising NameError. The xfail marker was removed once the source
+        bug was fixed.
         """
         transformations_pkg._ensure_initialized()
         transformations_pkg._ensure_initialized()
