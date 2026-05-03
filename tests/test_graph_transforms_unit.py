@@ -1414,37 +1414,41 @@ class TestGraphTransforms:
         assert len(help_text) > 0
 
     def test_get_transform_documentation(self):
-        """Test getting transform documentation"""
+        """Test getting transform documentation.
+
+        Historical note: previously guarded by a ``try/except`` that called
+        ``pytest.skip`` when the source ``ParameterMetadata`` model raised
+        ``ValidationError`` for transforms whose ``__init__`` parameters
+        had ``Union``-typed annotations (e.g. ``AddSelfLoops.fill_value:
+        Union[float, Tensor, str]``). The root cause — the field
+        annotation ``type_hint: type | None`` mismatching the runtime
+        contract — has been fixed at the source by changing the
+        annotation to ``Any`` (the only annotation that honestly admits
+        the generic-alias values that ``typing.get_type_hints`` and
+        ``inspect.signature`` actually return). The workaround is
+        therefore no longer needed.
+        """
         gt = GraphTransforms()
 
-        # Note: This may raise ValidationError in the module due to Pydantic v2
-        # type_hint validation when parameters have Union types like
-        # Union[float, torch.Tensor, str]. We handle this gracefully.
-        try:
-            docs = gt.get_transform_documentation("AddSelfLoops")
-            assert isinstance(docs, dict)
-        except Exception as e:
-            # Module has a known issue with Union type hints in ParameterMetadata
-            if "ValidationError" in type(e).__name__ or "type_hint" in str(e):
-                pytest.skip("Module has Pydantic v2 ParameterMetadata type_hint validation issue")
-            raise
+        docs = gt.get_transform_documentation("AddSelfLoops")
+        assert isinstance(docs, dict)
 
     def test_get_parameter_info(self):
-        """Test getting parameter info for a transform"""
+        """Test getting parameter info for a transform.
+
+        Historical note: see ``test_get_transform_documentation`` above —
+        previously guarded by a ``try/except`` skip-on-ValidationError
+        wrapper for the Pydantic v2 ``ParameterMetadata.type_hint``
+        annotation bug, now fixed at the source.
+        """
         gt = GraphTransforms()
 
-        # Note: This may raise ValidationError in the module due to Pydantic v2
-        # type_hint validation when parameters have Union types.
-        try:
-            param_info = gt.get_parameter_info("AddSelfLoops", "fill_value")
-            # FIXED: May return ParameterMetadata object, not just dict or None
-            # Accept None, dict, or any object with attributes
-            assert param_info is None or isinstance(param_info, dict) or hasattr(param_info, "name")
-        except Exception as e:
-            # Module has a known issue with Union type hints in ParameterMetadata
-            if "ValidationError" in type(e).__name__ or "type_hint" in str(e):
-                pytest.skip("Module has Pydantic v2 ParameterMetadata type_hint validation issue")
-            raise
+        param_info = gt.get_parameter_info("AddSelfLoops", "fill_value")
+        # ``get_parameter_info(transform, name)`` returns a
+        # ``ParameterMetadata`` instance per the method's declared return
+        # type — but accept None and dict as well to remain robust if a
+        # parameter is unknown or the implementation evolves.
+        assert param_info is None or isinstance(param_info, dict) or hasattr(param_info, "name")
 
     def test_get_parameter_constraints(self):
         """Test getting parameter constraints"""
@@ -1456,20 +1460,18 @@ class TestGraphTransforms:
         assert isinstance(constraints, list)
 
     def test_get_parameter_examples(self):
-        """Test getting parameter examples"""
+        """Test getting parameter examples.
+
+        Historical note: see ``test_get_transform_documentation`` above —
+        previously guarded by a ``try/except`` skip-on-ValidationError
+        wrapper for the Pydantic v2 ``ParameterMetadata.type_hint``
+        annotation bug, now fixed at the source.
+        """
         gt = GraphTransforms()
 
-        # Note: This may raise ValidationError in the module due to Pydantic v2
-        # type_hint validation when parameters have Union types.
-        try:
-            examples = gt.get_parameter_examples("Distance", "max_value")
-            # May return empty list or list of examples
-            assert isinstance(examples, list)
-        except Exception as e:
-            # Module has a known issue with Union type hints in ParameterMetadata
-            if "ValidationError" in type(e).__name__ or "type_hint" in str(e):
-                pytest.skip("Module has Pydantic v2 ParameterMetadata type_hint validation issue")
-            raise
+        examples = gt.get_parameter_examples("Distance", "max_value")
+        # May return empty list or list of examples
+        assert isinstance(examples, list)
 
 
 # =============================================================================
