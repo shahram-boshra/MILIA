@@ -60,3 +60,72 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # =========================================================================
+  # Smoke-test job — satisfies §5f items 8 + 9 of the MILIA Release Guide
+  # =========================================================================
+  # Pulls the image just published to GHCR and runs the §5f acceptance checks
+  # on a GitHub-hosted runner. Reasons for separate job (not steps in the
+  # publish job):
+  #   - Authoritative source: docker/build-push-action issue #225 — images
+  #     loaded with `load: true` are NOT visible in subsequent jobs (each
+  #     GitHub Actions job runs on a fresh runner). The published artifact
+  #     must be `docker pull`'d in the testing job.
+  #   - Testing the registry-pulled image is what reviewers will actually do,
+  #     so this catches push-side issues (missing layers, wrong digest,
+  #     auth misconfiguration) that an in-process `load: true` would mask.
+  #
+  # Acceptance criteria mapping:
+  #   §5f #8 → "Test pull from your own machine" → satisfied by `docker pull`
+  #            from a runner outside the build environment.
+  #   §5f #9 → "milia CLI entry point works inside the container" → satisfied
+  #            by `milia --help`, `milia --dry-run`, `python main.py --help`.
+  #   §5f #8 → "pytest -m smoke passes" → satisfied by the `pytest -m smoke`
+  #            invocation against /app/tests/ (verified present in the image
+  #            via Dockerfile's `COPY . /app`).
+  smoke-test:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull just-published image from GHCR
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --format 'Image: {{.Id}}{{"\n"}}Created: {{.Created}}{{"\n"}}Labels: {{json .Config.Labels}}'
+
+      - name: §5f #9 — Verify milia CLI entry point (--help)
+        run: |
+          docker run --rm \
+            --entrypoint /opt/conda/envs/shah_env/bin/milia \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --help
+
+      - name: §5f #9 — Verify milia --dry-run (configuration validation)
+        run: |
+          docker run --rm \
+            --entrypoint /opt/conda/envs/shah_env/bin/milia \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --dry-run
+
+      - name: §5f #9 — Verify python main.py --help (fallback entry point)
+        run: |
+          docker run --rm \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            /opt/conda/envs/shah_env/bin/python /app/main.py --help
+
+      - name: §5f #8 — Run smoke test suite (pytest -m smoke) inside container
+        run: |
+          docker run --rm \
+            -w /app \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            /opt/conda/envs/shah_env/bin/pytest -m smoke --tb=short -q tests/
