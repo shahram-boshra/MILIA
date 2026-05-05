@@ -13,6 +13,8 @@ MILIA (**M**achine **I**ntelligent **L**earning **I**nference **A**ssistant) is 
 
 MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset implementations spanning the VQM24 family (DFT, DMC, Wavefunction), the QM9 benchmark, the ANI family (ANI-1x, ANI-1ccx, ANI-2x) including coupled-cluster reference data, the rMD17 and xxMD reactive dynamics datasets, and the drug-discovery-oriented QDπ dataset.
 
+> **🚀 New here?** If you have authenticated access to this repository and want the shortest reproducible path from zero to a running MILIA install — Docker pull, smoke test, one full walkthrough — see **[QUICKSTART.md](QUICKSTART.md)**. It is designed to be executable end-to-end in ≤30 minutes on a CPU-only laptop without contacting the authors.
+
 ## Key Features
 
 ### No-Code ML/DL Workflow

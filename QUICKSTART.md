@@ -141,11 +141,11 @@ This is the gate. Until you complete it, `docker pull ghcr.io/shahram-boshra/mil
 
 You have two equivalent options. **Option A (GitHub CLI)** is recommended for most users — your existing `gh` login does the work and no Personal Access Token has to be managed by hand. **Option B (Personal Access Token)** is the right choice in CI/CD pipelines, on shared machines, or anywhere you cannot or do not want to run an interactive `gh auth login` flow.
 
-> **Why this block is duplicated from `README.md`.** The instructions in the green callout below appear verbatim in [`README.md`](README.md#method-1-docker-recommended) (lines 62–74). They are reproduced here, rather than cross-referenced, because they are a hard prerequisite gate for the rest of this guide: a reader who must context-switch to `README.md` mid-flow to authenticate breaks the "linearly executable from zero" contract this document promises. The walkthrough commands in §6 are not gates and are therefore cross-referenced rather than embedded.
+> **Why this block is duplicated from `README.md`.** The instructions in the green callout below appear verbatim in [`README.md` § Installation → Method 1: Docker (Recommended)](README.md#method-1-docker-recommended). They are reproduced here, rather than cross-referenced, because they are a hard prerequisite gate for the rest of this guide: a reader who must context-switch to `README.md` mid-flow to authenticate breaks the "linearly executable from zero" contract this document promises. The walkthrough commands in §6 are not gates and are therefore cross-referenced rather than embedded.
 >
-> **Maintainer invariant.** If the GHCR authentication blockquote in **either** `README.md` (lines 62–74) or this section is updated, the corresponding block in the other file MUST be updated in the same Git commit. The exact enforcement mechanism (manual checklist, custom pre-commit hook, or CI grep check) is to be decided in a follow-up; until then this paragraph is the only safeguard against drift.
+> **Maintainer invariant.** If the GHCR authentication blockquote in **either** `README.md` (§ Installation → Method 1) or this section is updated, the corresponding block in the other file MUST be updated in the same Git commit. The two blocks are identified canonically by the marker string `**Note (Private Repository):**` which begins each — a future programmatic enforcement mechanism (custom pre-commit hook, or CI grep check) can detect drift by diffing the two blocks identified by that marker. Until that mechanism exists, this paragraph is the only safeguard against drift.
 
-### The authentication block (verbatim from `README.md` lines 62–74)
+### The authentication block (verbatim from `README.md` § Installation → Method 1)
 
 > **Note (Private Repository):** MILIA's GHCR image is private. Before pulling, authenticate
 > to GHCR using either [GitHub CLI](https://cli.github.com/) or a
@@ -242,7 +242,7 @@ and verify that the first line is `usage: milia [-h] ...` followed by MILIA's ar
 
 ### 4.5 Building locally instead (optional)
 
-If you would rather build the image from source than pull it — for example, to inspect or modify the `Dockerfile` — see [`README.md` § Installation → Method 1 → "Or build locally from the Dockerfile"](README.md#method-1-docker-recommended) (lines 87–95). The resulting image is interchangeable with the pulled one for everything in §5–§6.
+If you would rather build the image from source than pull it — for example, to inspect or modify the `Dockerfile` — see [`README.md` § Installation → Method 1 → "Or build locally from the Dockerfile"](README.md#method-1-docker-recommended). The resulting image is interchangeable with the pulled one for everything in §5–§6.
 
 
 
@@ -292,7 +292,7 @@ It does **not** exercise dataset download, full training, or hyperparameter opti
 
 The smoke suite proved the image works. This section proves **MILIA itself works** — that it can ingest a dataset, build a graph representation, train a small GNN on a CPU, and predict on a fresh molecule.
 
-The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough) (lines 195–275). It is cross-referenced rather than duplicated here because, unlike §3's authentication gate, the walkthrough commands are not prerequisites for any later step in *this* document — by the time you reach §6 you already have a working terminal inside the container, so a context switch to `README.md` is safe.
+The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough). It is cross-referenced rather than duplicated here because, unlike §3's authentication gate, the walkthrough commands are not prerequisites for any later step in *this* document — by the time you reach §6 you already have a working terminal inside the container, so a context switch to `README.md` is safe.
 
 **Two prerequisites already handled for you inside the Docker image**, so you can skip directly to README's "Step-by-step" subsection:
 
@@ -325,7 +325,7 @@ You now have a running install. If you want to *understand* MILIA — to evaluat
 
 Once those three are familiar, the comprehensive structural map is [`MILIA_Pipeline_Project_Structure.md`](MILIA_Pipeline_Project_Structure.md) — 4,400+ lines covering every directory, file, and class in the package, organised top-down. Use it as a lookup, not a linear read.
 
-For a higher-level, narrative tour of the 11 core modules and the split-configuration architecture, see [`README.md` § Architecture](README.md#architecture) (lines 277–301) and [`README.md` § Datasets](README.md#datasets) (lines 303–360 — covers the 10 shipped dataset implementations and the three-file pattern for adding your own).
+For a higher-level, narrative tour of the 11 core modules and the split-configuration architecture, see [`README.md` § Architecture](README.md#architecture) and [`README.md` § Datasets](README.md#datasets) — the latter covers the 10 shipped dataset implementations and the three-file pattern for adding your own.
 
 
 
@@ -374,7 +374,7 @@ This section catalogues the concrete failures you may hit at each gate of the gu
 
 ### 8.5 §6 walkthrough fails
 
-The README walkthrough (lines 195–275) is the authoritative source for command-by-command behaviour. If a specific README step fails:
+The README walkthrough (§ "Trying MILIA — Reproducible Walkthrough") is the authoritative source for command-by-command behaviour. If a specific README step fails:
 
 - **Step 2 (`milia --dry-run`) fails** — almost always a `configs/` issue. Re-confirm the image's preset `working_root_dir` (§6 prerequisite 1) is intact: `grep -n working_root_dir configs/main.yaml` should print one line. If you have edited `configs/main.yaml` inside the container, revert by exiting and starting a fresh container.
 - **Step 3 (`milia --process`) fails on dataset download** — connectivity from inside the container to the dataset host. Same diagnosis as §8.2's TLS/DNS branch.
@@ -415,22 +415,22 @@ If you are evaluating MILIA for publication review, hiring, or collaborative onb
 1. **Does the software actually do what the README says it does?**
 2. **Where in the source can I confirm each claim with my own eyes?**
 
-This section maps the headline claims from [`README.md` § Key Features](README.md#key-features) (lines 16–53) and § Architecture (lines 277–301) to concrete locations in the codebase. No claim below is original to this guide — they are reproduced from `README.md` and pointed at their verification site.
+This section maps the headline claims from [`README.md` § Key Features](README.md#key-features) and § Architecture to concrete locations in the codebase. No claim below is original to this guide — they are reproduced from `README.md` and pointed at their verification site.
 
 | Claim (paraphrased from README) | Verify by inspecting |
 |---|---|
 | **No-code, YAML-driven ML/DL pipeline.** Run dataset curation, transformations, training, HPO, and prediction through configuration alone. | The 7 step-by-step commands you executed in §6, plus `configs/main.yaml` and the per-dataset files under `configs/datasets/` (10 files; see `MILIA_Pipeline_Project_Structure.md`). No Python is written by the user in §6. |
-| **10 shipped dataset implementations** (VQM24 family, QM9, ANI-1x/1ccx/2x, rMD17, xxMD, QDπ). | `milia_pipeline/datasets/implementations/` — one `.py` per dataset. README § Datasets table (lines 311–321) names each, with primary-source citation. |
-| **Every PyTorch Geometric model is reachable by name** via dynamic introspection. | `milia_pipeline/models/` — registry and factory. README line 22 + § Architecture row "models" (~25 files). |
-| **400+ molecular descriptors across 6 categories.** | `milia_pipeline/descriptors/` — registry, 6+ files. README line 28 enumerates the 6 categories with counts. |
-| **Hardware-agnostic** — CPU, CUDA, MPS, TPU; 4 distributed strategies. | `milia_pipeline/models/` acceleration submodule. README line 25 + Architecture row "models". The Docker image you ran is the CPU configuration. |
-| **Optuna-based HPO** with 5 search algorithms and 5 pruning strategies; NAS for GNNs. | `milia_pipeline/models/hpo/` — 12 files. README line 31 + Architecture row "models/hpo". |
-| **Three-tier plugin architecture** (descriptors, transformations, models) with YAML manifests. | `plugins/` directory at the repo root. README line 40 + § Datasets "Adding a dataset" subsection (lines 343–360) describes the three-file extension pattern. |
-| **Pydantic V2 schema-validated configuration** with deep merge across split YAML files. | `milia_pipeline/config/` — 7 files. README line 43 + Architecture row "config". |
-| **127 unit and integration tests** covering all core modules. | `tests/` directory. README line 374. The smoke subset you ran in §5 is the fast-failing prefix of this suite. |
-| **30+ pre-registered PyG transforms; 7-layer transformation system; 3 validation levels × 5 scopes.** | `milia_pipeline/transformations/` — 4 files, ~16K lines. README line 37 + Architecture row "transformations". |
-| **12 CLI argument groups; 12+ processing modes; interactive mode.** | `milia_pipeline/cli_manager.py` — single file, ~3,800 lines. README line 292 (Architecture row "cli_manager"). |
-| **Per-dataset capability matrix is registry-driven, not hard-coded.** Eight feature flags (vibrational, uncertainty, atomization, orbital, HOMO–LUMO, plus three more) gate behaviour without consumers learning dataset names. | README § Datasets → Per-dataset capability matrix (lines 324–341). Each `BaseDataset` subclass declares an immutable `DatasetFeatures` record; queried at runtime via `_get_dataset_feature(dataset_type, feature_name)`. |
+| **10 shipped dataset implementations** (VQM24 family, QM9, ANI-1x/1ccx/2x, rMD17, xxMD, QDπ). | `milia_pipeline/datasets/implementations/` — one `.py` per dataset. README § Datasets table names each, with primary-source citation. |
+| **Every PyTorch Geometric model is reachable by name** via dynamic introspection. | `milia_pipeline/models/` — registry and factory. README § Key Features → "Unlimited Model Flexibility" + § Architecture row "models" (~25 files). |
+| **400+ molecular descriptors across 6 categories.** | `milia_pipeline/descriptors/` — registry, 6+ files. README § Key Features → "Molecular Descriptors" enumerates the 6 categories with counts. |
+| **Hardware-agnostic** — CPU, CUDA, MPS, TPU; 4 distributed strategies. | `milia_pipeline/models/` acceleration submodule. README § Key Features → "Hardware Agnostic" + Architecture row "models". The Docker image you ran is the CPU configuration. |
+| **Optuna-based HPO** with 5 search algorithms and 5 pruning strategies; NAS for GNNs. | `milia_pipeline/models/hpo/` — 12 files. README § Key Features → "Advanced Hyperparameter Optimization" + Architecture row "models/hpo". |
+| **Three-tier plugin architecture** (descriptors, transformations, models) with YAML manifests. | `plugins/` directory at the repo root. README § Key Features → "Three-Tier Plugin Architecture" + § Datasets → "Adding a dataset" subsection describes the three-file extension pattern. |
+| **Pydantic V2 schema-validated configuration** with deep merge across split YAML files. | `milia_pipeline/config/` — 7 files. README § Key Features → "Flexible Configuration System" + Architecture row "config". |
+| **127 unit and integration tests** covering all core modules. | `tests/` directory. README § Testing. The smoke subset you ran in §5 is the fast-failing prefix of this suite. |
+| **30+ pre-registered PyG transforms; 7-layer transformation system; 3 validation levels × 5 scopes.** | `milia_pipeline/transformations/` — 4 files, ~16K lines. README § Key Features → "Extensible Graph Transformation System" + Architecture row "transformations". |
+| **12 CLI argument groups; 12+ processing modes; interactive mode.** | `milia_pipeline/cli_manager.py` — single file, ~3,800 lines. README § Architecture (row "cli_manager"). |
+| **Per-dataset capability matrix is registry-driven, not hard-coded.** Eight feature flags (vibrational, uncertainty, atomization, orbital, HOMO–LUMO, plus three more) gate behaviour without consumers learning dataset names. | README § Datasets → "Per-dataset capability matrix". Each `BaseDataset` subclass declares an immutable `DatasetFeatures` record; queried at runtime via `_get_dataset_feature(dataset_type, feature_name)`. |
 
 ### Independent reproducibility checklist
 
@@ -439,7 +439,7 @@ These are the things a peer reviewer can re-verify entirely from a freshly-pulle
 - **The image you pulled is the one CI built.** Compare `docker inspect --format='{{index .RepoDigests 0}}'` (§4.2) against the digest published in the GitHub Actions run that produced `latest`.
 - **The shipped configuration is laptop-runnable.** Step 5 (`milia --train`) of the README walkthrough completes on a CPU within the §5e.1 30-minute budget — your own clock is the witness.
 - **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains 5 rows for 5 SMILES strings the model was not trained on (sample at `test_data/molecules.csv`).
-- **The test suite is real.** `pytest` (without the `-m smoke` filter) inside the container exercises the full 127-test suite. README § Testing (lines 362–374) documents the markers; you do not have to take the README's word for the count — `pytest --collect-only -q | tail -n 1` prints it.
+- **The test suite is real.** `pytest` (without the `-m smoke` filter) inside the container exercises the full 127-test suite. README § Testing documents the markers; you do not have to take the README's word for the count — `pytest --collect-only -q | tail -n 1` prints it.
 
 ### Out of scope for this guide
 
