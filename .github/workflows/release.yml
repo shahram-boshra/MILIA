@@ -10,7 +10,7 @@
 #     publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
 #   - PyPI Trusted Publishers: https://docs.pypi.org/trusted-publishers/
 #   - pypa/gh-action-pypi-publish@release/v1 (current recommended branch)
-#   - actions/upload-artifact@v5, actions/download-artifact@v6 (current latest)
+#   - actions/upload-artifact@v5, actions/download-artifact@v8 (current latest)
 #
 # SETUP REQUIRED (one-time, before first release):
 #   1. Go to https://pypi.org/manage/project/milia/settings/publishing/
@@ -68,7 +68,7 @@ jobs:
 
     steps:
       - name: Download distribution packages
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: python-package-distributions
           path: dist/
