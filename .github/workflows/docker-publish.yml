@@ -2,7 +2,7 @@
 #
 # Source evidence:
 #   - GitHub Docs: "Publishing and installing a package with GitHub Actions"
-#   - docker/login-action@v3, docker/metadata-action@v5, docker/build-push-action@v6
+#   - docker/login-action@v3, docker/metadata-action@v5, docker/build-push-action@v7
 #     (current latest per Docker official docs and release pages, Feb 2026)
 #   - actions/checkout@v6 (current latest per actions/checkout releases, Feb 2026)
 #   - docker/metadata-action README: automatic org.opencontainers.image.source label
@@ -54,7 +54,7 @@ jobs:
             type=sha,prefix=
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
