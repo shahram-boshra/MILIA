@@ -90,6 +90,19 @@ jobs:
       contents: read
       packages: read
     steps:
+      - name: Compute lowercase image reference
+        # Docker reference-format spec requires lowercase repository names
+        # (https://docs.docker.com/reference/cli/docker/image/tag/).
+        # `${{ github.repository }}` preserves original case, so we lowercase
+        # via `tr` here. The `docker/metadata-action@v5` used in build-and-push
+        # auto-lowercases, which is why the push succeeded; here we replicate
+        # that behavior at the shell level.
+        id: image
+        run: |
+          IMAGE_LOWER=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "ref=${IMAGE_LOWER}:latest" >> "$GITHUB_OUTPUT"
+          echo "Computed image reference: ${IMAGE_LOWER}:latest"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -99,33 +112,33 @@ jobs:
 
       - name: Pull just-published image from GHCR
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          docker pull ${{ steps.image.outputs.ref }}
+          docker inspect ${{ steps.image.outputs.ref }} \
             --format 'Image: {{.Id}}{{"\n"}}Created: {{.Created}}{{"\n"}}Labels: {{json .Config.Labels}}'
 
       - name: §5f #9 — Verify milia CLI entry point (--help)
         run: |
           docker run --rm \
             --entrypoint /opt/conda/envs/shah_env/bin/milia \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ steps.image.outputs.ref }} \
             --help
 
       - name: §5f #9 — Verify milia --dry-run (configuration validation)
         run: |
           docker run --rm \
             --entrypoint /opt/conda/envs/shah_env/bin/milia \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ steps.image.outputs.ref }} \
             --dry-run
 
       - name: §5f #9 — Verify python main.py --help (fallback entry point)
         run: |
           docker run --rm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ steps.image.outputs.ref }} \
             /opt/conda/envs/shah_env/bin/python /app/main.py --help
 
       - name: §5f #8 — Run smoke test suite (pytest -m smoke) inside container
         run: |
           docker run --rm \
             -w /app \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ steps.image.outputs.ref }} \
             /opt/conda/envs/shah_env/bin/pytest -m smoke --tb=short -q tests/
