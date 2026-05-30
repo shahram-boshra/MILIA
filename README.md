@@ -13,7 +13,7 @@ MILIA (**M**achine **I**ntelligent **L**earning **I**nterface **A**ssistant) is 
 
 MILIA fills a gap in the molecular ML ecosystem by unifying dataset handling, feature engineering, model training, and deployment into a single, extensible framework with plugin support. Where tools like PyTorch Geometric provide GNN building blocks and DeepChem offers pre-built models, MILIA provides a configuration-driven research workflow — supporting any PyG model architecture through dynamic introspection, any hardware from CPU to TPU, and any dataset through its zero-modification extension architecture. The framework currently ships with 10 dataset implementations spanning the VQM24 family (DFT, DMC, Wavefunction), the QM9 benchmark, the ANI family (ANI-1x, ANI-1ccx, ANI-2x) including coupled-cluster reference data, the rMD17 and xxMD reactive dynamics datasets, and the drug-discovery-oriented QDπ dataset.
 
-> **🚀 New here?** If you have authenticated access to this repository and want the shortest reproducible path from zero to a running MILIA install — Docker pull, smoke test, one full walkthrough — see **[QUICKSTART.md](QUICKSTART.md)**. It is designed to be executable end-to-end in ≤30 minutes on a CPU-only laptop without contacting the authors.
+> **🚀 New here?** For the shortest reproducible path from zero to a running MILIA install — Docker pull, smoke test, one full walkthrough — see **[QUICKSTART.md](QUICKSTART.md)**. It is designed to be executable end-to-end in ≤30 minutes on a CPU-only laptop without contacting the author.
 
 ## Key Features
 
@@ -59,21 +59,7 @@ MILIA relies on heavy scientific packages (PyTorch, PyTorch Geometric, RDKit) th
 
 ### Method 1: Docker (Recommended)
 
-The fastest way to get MILIA running. A pre-built image is available on GitHub Container Registry:
-
-> **Note (Private Repository):** MILIA's GHCR image is private. Before pulling, authenticate
-> to GHCR using either [GitHub CLI](https://cli.github.com/) or a
-> [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-> with `read:packages` scope:
->
-> ```bash
-> # Option A: GitHub CLI (recommended — no PAT needed)
-> gh auth login
-> echo $(gh auth token) | docker login ghcr.io -u USERNAME --password-stdin
->
-> # Option B: Personal Access Token with read:packages scope
-> echo YOUR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-> ```
+The fastest way to get MILIA running. A pre-built image is publicly available on GitHub Container Registry — no authentication required:
 
 ```bash
 # Pull and run the pre-built image
@@ -387,10 +373,9 @@ If you use MILIA in your research, please cite it. See [CITATION.cff](CITATION.c
 
 MILIA is released under the [MIT License](LICENSE).
 
-## Authors
+## Author
 
 - **Asadollah (Shahram) Boshra** — [a.boshra@gmail.com](mailto:a.boshra@gmail.com)
-- **Ilia Boshra** — [ilia.boshra@gmail.com](mailto:ilia.boshra@gmail.com)
 
 ## Links
 
