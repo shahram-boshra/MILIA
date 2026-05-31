@@ -1,18 +1,18 @@
 # MILIA Quick Start Guide
 
-**For anyone with authenticated access to the MILIA private repository** — collaborators, peer reviewers, interviewers, students joining the project, and any other invitee.
+**For anyone evaluating the MILIA public repository** — peer reviewers, interviewers, prospective contributors, students joining the project, and any other reader.
 
-This guide takes you from "I just accepted the repository invitation" to "I have run MILIA on my own machine and verified it works" in **roughly 30 minutes** on a CPU-only laptop, without contacting the authors. Every step states the expected output so you can self-verify.
+This guide takes you from "I just found the MILIA repository" to "I have run MILIA on my own machine and verified it works" in **roughly 30 minutes** on a CPU-only laptop, without contacting the authors. Every step states the expected output so you can self-verify.
 
 > **Scope note (Linux-only).** This document covers Linux only — specifically Debian/Ubuntu and derivatives such as Linux Mint. macOS and Windows-WSL coverage is deliberately deferred; if you are on those platforms, the [`README.md`](README.md) `Installation` section and the upstream Docker / GitHub-CLI documentation linked below are sufficient to adapt the steps yourself.
 
-> **Relationship to `README.md`.** `README.md` is the project reference — *what* MILIA is and *how* its modules fit together. This document is the onboarding tutorial — *the shortest reproducible path from zero to a working install*. Where the two would overlap, this guide cross-references `README.md` rather than duplicating it. The single deliberate exception is the GHCR authentication block in §3, which is embedded verbatim because it is a hard gate: you cannot continue past §3 until authentication succeeds, and a context switch to another document at that point breaks the linear-execution contract of this guide.
+> **Relationship to `README.md`.** `README.md` is the project reference — *what* MILIA is and *how* its modules fit together. This document is the onboarding tutorial — *the shortest reproducible path from zero to a working install*. Where the two would overlap, this guide cross-references `README.md` rather than duplicating it. The MILIA image is public, so pulling it requires no authentication and no context switch; §3 covers the optional authentication path (only needed for unauthenticated rate limits) and otherwise links to `README.md` for the canonical install commands.
 
 ## Table of contents
 
-1. [Welcome — what your authenticated access grants you](#1-welcome--what-your-authenticated-access-grants-you)
+1. [Welcome — what the public repository gives you](#1-welcome--what-the-public-repository-gives-you)
 2. [Prerequisites — install Docker and GitHub CLI](#2-prerequisites--install-docker-and-github-cli) *(~10 min)*
-3. [Authenticate to GHCR](#3-authenticate-to-ghcr) *(~3 min)*
+3. [Authenticate to GHCR (optional)](#3-authenticate-to-ghcr-optional) *(~1 min, only if rate-limited)*
 4. [Pull and run the MILIA Docker image](#4-pull-and-run-the-milia-docker-image) *(~5 min)*
 5. [The 5-minute health check](#5-the-5-minute-health-check) *(~3 min)*
 6. [The 15-minute "is this software real?" walkthrough](#6-the-15-minute-is-this-software-real-walkthrough) *(~15 min)*
@@ -22,12 +22,12 @@ This guide takes you from "I just accepted the repository invitation" to "I have
 
 ---
 
-## 1. Welcome — what your authenticated access grants you
+## 1. Welcome — what the public repository gives you
 
-You have accepted an invitation to a **private** GitHub repository. That single act has quietly enabled three things that this guide is about to use:
+MILIA is a **public** GitHub repository — no invitation, no account, and no authentication are required to read the code or pull the image. Three things this guide is about to use are open to anyone:
 
 1. **Read access to the source tree** at [`github.com/shahram-boshra/MILIA`](https://github.com/shahram-boshra/MILIA) — including `main.py`, the `milia_pipeline/` package, the `configs/` directory, and the test suite. You can browse, clone, and fork.
-2. **Pull access to the private container image** published at `ghcr.io/shahram-boshra/milia:latest`. The image is hosted on **GitHub Container Registry (GHCR)** and inherits its permissions from this repository, so the same invitation that granted source access also granted image-pull access — but the registry will not give you the image until you authenticate (§3).
+2. **Anonymous pull access to the public container image** published at `ghcr.io/shahram-boshra/milia:latest`. The image is hosted on **GitHub Container Registry (GHCR)** and its visibility is set to public, so `docker pull` works for anyone with no `docker login`, no Personal Access Token, and no `read:packages` scope.
 3. **The right to file issues** at [`github.com/shahram-boshra/MILIA/issues`](https://github.com/shahram-boshra/MILIA/issues) — the channel of record for anything that fails.
 
 What this guide does **not** assume you have:
@@ -122,7 +122,7 @@ Add the GitHub CLI apt repository (signed by GitHub's GPG key):
 gh --version
 ```
 
-prints a version string of the form `gh version X.Y.Z (YYYY-MM-DD)`. If you see that line, both prerequisites are satisfied — proceed to §3.
+prints a version string of the form `gh version X.Y.Z (YYYY-MM-DD)`. If you see that line, both prerequisites are satisfied. `gh` is only needed for the optional authentication in §3; if you do not plan to authenticate, proceed straight to §4.
 
 ### 2.3 Authoritative sources
 
@@ -135,31 +135,26 @@ If anything in §2.1 or §2.2 has drifted from the upstream documentation since 
 
 
 
-## 3. Authenticate to GHCR
+## 3. Authenticate to GHCR (optional)
 
-This is the gate. Until you complete it, `docker pull ghcr.io/shahram-boshra/milia:latest` in §4 will fail with `unauthorized` or `denied: denied`. After it, every subsequent step in this guide works.
+**You can skip this section.** The MILIA image is public, so `docker pull ghcr.io/shahram-boshra/milia:latest` in §4 works anonymously — no login required. Authentication is only useful if you hit GHCR's unauthenticated pull rate limit (rare for a single evaluation), or if you are scripting in a CI/CD environment that you prefer to run authenticated. If neither applies, proceed directly to §4.
 
-You have two equivalent options. **Option A (GitHub CLI)** is recommended for most users — your existing `gh` login does the work and no Personal Access Token has to be managed by hand. **Option B (Personal Access Token)** is the right choice in CI/CD pipelines, on shared machines, or anywhere you cannot or do not want to run an interactive `gh auth login` flow.
+If you do want to authenticate, you have two equivalent options. **Option A (GitHub CLI)** is simplest for most users — your existing `gh` login does the work and no Personal Access Token has to be managed by hand. **Option B (Personal Access Token)** suits CI/CD pipelines, shared machines, or anywhere you cannot run an interactive `gh auth login` flow.
 
-> **Why this block is duplicated from `README.md`.** The instructions in the green callout below appear verbatim in [`README.md` § Installation → Method 1: Docker (Recommended)](README.md#method-1-docker-recommended). They are reproduced here, rather than cross-referenced, because they are a hard prerequisite gate for the rest of this guide: a reader who must context-switch to `README.md` mid-flow to authenticate breaks the "linearly executable from zero" contract this document promises. The walkthrough commands in §6 are not gates and are therefore cross-referenced rather than embedded.
->
-> **Maintainer invariant.** If the GHCR authentication blockquote in **either** `README.md` (§ Installation → Method 1) or this section is updated, the corresponding block in the other file MUST be updated in the same Git commit. The two blocks are identified canonically by the marker string `**Note (Private Repository):**` which begins each — a future programmatic enforcement mechanism (custom pre-commit hook, or CI grep check) can detect drift by diffing the two blocks identified by that marker. Until that mechanism exists, this paragraph is the only safeguard against drift.
+> **Note on `README.md`.** Because authentication is no longer a prerequisite gate, this section is self-contained and the optional commands below are not coupled to `README.md`. For the canonical (no-auth) install commands, see [`README.md` § Installation → Method 1: Docker (Recommended)](README.md#method-1-docker-recommended); for everything else, that section is the reference. There is no longer a duplicated, must-stay-in-sync authentication block across the two files.
 
-### The authentication block (verbatim from `README.md` § Installation → Method 1)
+### The optional authentication commands
 
-> **Note (Private Repository):** MILIA's GHCR image is private. Before pulling, authenticate
-> to GHCR using either [GitHub CLI](https://cli.github.com/) or a
-> [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-> with `read:packages` scope:
->
-> ```bash
-> # Option A: GitHub CLI (recommended — no PAT needed)
-> gh auth login
-> echo $(gh auth token) | docker login ghcr.io -u USERNAME --password-stdin
->
-> # Option B: Personal Access Token with read:packages scope
-> echo YOUR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-> ```
+If you choose to authenticate, run one of:
+
+```bash
+# Option A: GitHub CLI (recommended — no PAT needed)
+gh auth login
+echo $(gh auth token) | docker login ghcr.io -u USERNAME --password-stdin
+
+# Option B: Personal Access Token with read:packages scope
+echo YOUR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
 
 ### Notes on the placeholders
 
@@ -174,13 +169,13 @@ The final command of either option prints exactly:
 Login Succeeded
 ```
 
-If you see that line, GHCR will accept the `docker pull` in §4. If you see `unauthorized`, `denied: denied`, or `incorrect username or password`, jump to §8.1 — do not retry blindly. **Do not proceed to §4 until `Login Succeeded` has been printed.**
+If you see that line, your subsequent pulls are authenticated. If you see `unauthorized`, `denied: denied`, or `incorrect username or password`, see §8.1. Because the image is public, you do **not** need `Login Succeeded` to proceed — §4's pull works anonymously regardless.
 
 
 
 ## 4. Pull and run the MILIA Docker image
 
-After §3 prints `Login Succeeded`, the registry will hand you the image. The pull is network-bound (a few hundred MB) and typically completes in 1–3 minutes on a residential connection.
+The image is public, so the pull works directly — no §3 authentication needed. The pull is network-bound (a few hundred MB) and typically completes in 1–3 minutes on a residential connection.
 
 ### 4.1 Pull
 
@@ -195,7 +190,7 @@ Status: Downloaded newer image for ghcr.io/shahram-boshra/milia:latest
 ghcr.io/shahram-boshra/milia:latest
 ```
 
-If you see `unauthorized` or `denied: denied` here, your §3 authentication did not stick — the most common cause is that `docker login ghcr.io` was run as a different OS user or without the `--password-stdin` line completing successfully. Re-run §3 (Option A or Option B) and try the pull again.
+A public-image pull should not fail with `unauthorized` or `denied: denied`. If it does, the package visibility may have changed or GHCR is rate-limiting unauthenticated pulls from your network — authenticate via §3 (optional) and retry, or see §8.2.
 
 ### 4.2 (Optional) Verify image integrity by digest
 
@@ -292,7 +287,7 @@ It does **not** exercise dataset download, full training, or hyperparameter opti
 
 The smoke suite proved the image works. This section proves **MILIA itself works** — that it can ingest a dataset, build a graph representation, train a small GNN on a CPU, and predict on a fresh molecule.
 
-The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough). It is cross-referenced rather than duplicated here because, unlike §3's authentication gate, the walkthrough commands are not prerequisites for any later step in *this* document — by the time you reach §6 you already have a working terminal inside the container, so a context switch to `README.md` is safe.
+The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough). It is cross-referenced rather than duplicated here because the walkthrough commands are not prerequisites for any later step in *this* document — by the time you reach §6 you already have a working terminal inside the container, so a context switch to `README.md` is safe.
 
 **Two prerequisites already handled for you inside the Docker image**, so you can skip directly to README's "Step-by-step" subsection:
 
@@ -335,6 +330,8 @@ This section catalogues the concrete failures you may hit at each gate of the gu
 
 ### 8.1 §3 authentication fails (`docker login ghcr.io` does not print `Login Succeeded`)
 
+*Authentication is optional for the public image — you only need this subsection if you chose to authenticate (e.g., for rate limits) and the login failed.*
+
 **Most common symptoms**:
 
 - `Error response from daemon: Get "https://ghcr.io/v2/": unauthorized`
@@ -346,11 +343,11 @@ This section catalogues the concrete failures you may hit at each gate of the gu
 1. **The `gh` CLI is not actually logged in.** Run `gh auth status` — if it does not say `Logged in to github.com as <your-username>`, run `gh auth login` first, then retry the `docker login` line from §3.
 2. **Stale Docker credentials from a previous session.** Run `docker logout ghcr.io`, then re-run §3 from the top.
 3. **PAT (Option B) missing the `read:packages` scope.** Re-issue the token at <https://github.com/settings/tokens> with `read:packages` checked, and retry. Tokens cannot be retroactively granted scopes.
-4. **`USERNAME` placeholder not substituted.** The literal string `USERNAME` from the README block is a placeholder — replace it with your GitHub username before running.
+4. **`USERNAME` placeholder not substituted.** The literal string `USERNAME` in the §3 optional-auth commands is a placeholder — replace it with your GitHub username before running.
 
 ### 8.2 §4 pull fails (`docker pull` returns an error)
 
-**`unauthorized` / `denied: denied`** — §3 did not stick. Return to §8.1.
+**`unauthorized` / `denied: denied`** — unexpected for a public image. Either GHCR is rate-limiting unauthenticated pulls from your network (authenticate via §3 as a workaround and retry) or the package visibility changed; if the latter, file an issue per §8.7.
 
 **`manifest unknown`** — the tag `latest` does not resolve. Confirm the URL is exactly `ghcr.io/shahram-boshra/milia:latest` (note: lowercase, no typos in the owner). If correct, the image may have been temporarily delisted by the maintainer; file an issue per §8.7.
 
