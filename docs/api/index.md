@@ -2,16 +2,6 @@
 
 This section documents the public API of the `milia_pipeline` package.
 
-## Package API
-
-```{eval-rst}
-.. autosummary::
-   :toctree: generated
-   :recursive:
-
-   milia_pipeline
-```
-
 ## Core Modules
 
 | Module | Description |

@@ -39,15 +39,27 @@ try:
     author = _metadata["Author-email"].split("<")[0].strip()
     release = _metadata["Version"]
 except importlib.metadata.PackageNotFoundError:
-    # Fallback: import directly from the source tree (editable or raw checkout).
-    project = "MILIA"
-    try:
-        from milia_pipeline import __version__
+    # Fallback for hermetic documentation builds where the package is NOT
+    # installed (e.g. Read the Docs, which installs only docs/requirements.txt).
+    # Read the __version__ literal straight from the package source WITHOUT
+    # importing milia_pipeline: importing it executes import-time code paths
+    # (cli_manager -> config) that require the full runtime dependency stack
+    # and a configs/ directory, neither of which exists in a docs-only env.
+    # pyproject.toml declares the version via `attr = "milia_pipeline.__version__"`,
+    # so the __init__.py literal is the single source of truth; we parse that
+    # same literal here, keeping the build dynamic and dependency-free.
+    import re
+    from pathlib import Path
 
-        release = __version__
-    except ImportError:
-        release = "unknown"
+    project = "MILIA"
     author = "Asadollah (Shahram) Boshra"
+    _init_path = Path(__file__).resolve().parent.parent / "milia_pipeline" / "__init__.py"
+    _version_match = re.search(
+        r'^__version__\s*=\s*["\']([^"\']+)["\']',
+        _init_path.read_text(encoding="utf-8"),
+        re.MULTILINE,
+    )
+    release = _version_match.group(1) if _version_match else "unknown"
 
 version = ".".join(release.split(".")[:2])  # short X.Y version
 copyright = f"2026-present, {author}"  # noqa: A001
@@ -113,7 +125,10 @@ autodoc_typehints = "description"
 autodoc_member_order = "bysource"
 
 # -- autosummary configuration ------------------------------------------------
-autosummary_generate = True  # auto-generate stub pages for API docs
+autosummary_generate = False  # hermetic docs build: no autosummary directives,
+# so no package import/introspection is triggered. API reference is curated
+# (see docs/api/index.md). Re-enable only if the package is made import-safe
+# (remove the import-time load_config() side effect) AND installed in the build.
 
 # -- napoleon configuration ----------------------------------------------------
 # Source: pyOpenSci — NumPy-style docstrings are standard in scientific Python
