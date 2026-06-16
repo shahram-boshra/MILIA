@@ -30,7 +30,7 @@ Public API:
     - validate_architecture: Validate architecture
     - validate_data_compatibility: Validate data compatibility
 
-Version: 1.0.0
+Version: 1.1.0
 """
 
 # Import architecture builder components
@@ -91,7 +91,7 @@ from .validation import (
     validate_data_compatibility,
 )
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Milia Team"
 
 __all__ = [
