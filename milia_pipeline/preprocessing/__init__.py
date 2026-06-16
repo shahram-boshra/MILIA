@@ -158,7 +158,7 @@ Performance Considerations
 
 Version History
 ---------------
-- 1.1 (November 2025): Production-ready release with enhanced documentation
+- 1.1.0 (November 2025): Production-ready release with enhanced documentation
 - 1.0 (Initial): Base implementation with wavefunction preprocessing
 
 Author: milia Pipeline Team
@@ -292,7 +292,7 @@ except ImportError as e:
 # ============================================================================
 
 # Module version
-__version__ = "1.1"
+__version__ = "1.1.0"
 
 # Public API - explicitly define what gets exported with "from preprocessing import *"
 __all__ = [
