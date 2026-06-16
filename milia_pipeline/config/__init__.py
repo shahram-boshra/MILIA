@@ -1180,7 +1180,7 @@ __all__ = [
 # Version & Metadata
 # =============================================================================
 
-__version__ = "1.8.0"  # Updated for standard_transforms validation support in validators, config_schemas, config_loader
+__version__ = "1.1.0"  # Unified with milia_pipeline.__version__ (single source of truth)
 __author__ = "milia Pipeline Development Team"
 __description__ = "Configuration management system for milia molecular graph ML/DL pipeline"
 
