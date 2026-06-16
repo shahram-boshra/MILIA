@@ -192,9 +192,23 @@ class TestSmokeMetadataAttributes:
             assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
-    def test_version_value(self, accel_pkg):
-        """``__version__`` is ``'1.0.0'`` as declared in the source."""
-        assert accel_pkg.__version__ == "1.0.0"
+    def test_version_matches_package_source_of_truth(self, accel_pkg):
+        """
+        ``__version__`` tracks the canonical package version.
+
+        The acceleration subpackage version must stay unified with
+        ``milia_pipeline.__version__`` — the single source of truth that
+        ``pyproject.toml`` reads dynamically. Asserting equality against that
+        attribute (rather than a hardcoded literal) keeps this contract correct
+        across future version bumps with no test edits required.
+        """
+        import milia_pipeline
+
+        assert accel_pkg.__version__ == milia_pipeline.__version__, (
+            f"acceleration __version__ ({accel_pkg.__version__}) must match the "
+            f"canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
+        )
 
     @pytest.mark.smoke
     def test_author_value(self, accel_pkg):

@@ -68,7 +68,7 @@ Module Structure:
 - distributed_strategies: Multi-GPU and multi-node training
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging
@@ -81,7 +81,7 @@ import torch.nn as nn
 # VERSION AND METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "milia Team"
 __description__ = "Hardware acceleration and optimization for milia Pipeline"
 
