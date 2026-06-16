@@ -93,11 +93,11 @@ Components
 - **PHASE 7: Builders**: LayerRegistry, ArchitectureBuilder, ModelComposer, Templates
 - **PHASE 8: HPO**: HPOManager, HPOConfig, OptunaPruningCallback, SearchSpaceBuilder
 
-Version: 1.2.0 (Phase 8 HPO)
+Version: 1.1.0 (Phase 8 HPO)
 Author: milia Team
 """
 
-__version__ = "1.2.0"
+__version__ = "1.1.0"
 
 import logging
 
