@@ -1803,13 +1803,22 @@ class TestContractVersionMetadata:
         assert transformations_pkg.__license__ == info["license"]
 
     @pytest.mark.contract
-    def test_version_is_1_0_0(self, transformations_pkg):
+    def test_version_matches_package_source_of_truth(self, transformations_pkg):
         """
-        ``__version__`` is ``'1.0.0'`` as documented in the module source
-        (line 88 of __init__.py).
+        ``__version__`` tracks the canonical package version.
+
+        The transformations subpackage version must stay unified with
+        ``milia_pipeline.__version__`` — the single source of truth that
+        ``pyproject.toml`` reads dynamically. Asserting equality against that
+        attribute (rather than a hardcoded literal) keeps this contract correct
+        across future version bumps with no test edits required.
         """
-        assert transformations_pkg.__version__ == "1.0.0", (
-            f"Expected version '1.0.0', got '{transformations_pkg.__version__}'"
+        import milia_pipeline
+
+        assert transformations_pkg.__version__ == milia_pipeline.__version__, (
+            f"transformations __version__ ({transformations_pkg.__version__}) must "
+            f"match the canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract

@@ -77,7 +77,7 @@ Research experiments:
     ... )
 
 Author: milia Project Team
-Version: 1.0.0
+Version: 1.1.0
 License: MIT
 """
 
@@ -85,7 +85,7 @@ import logging
 from typing import Any
 
 # Module metadata
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "milia Project Team"
 __license__ = "MIT"
 
