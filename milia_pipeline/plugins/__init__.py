@@ -39,7 +39,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 # Logger consistent with project-wide naming convention
