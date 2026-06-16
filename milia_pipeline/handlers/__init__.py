@@ -371,7 +371,7 @@ __all__ = [
 # Module Metadata
 # =============================================================================
 
-__version__ = "3.0.0"  # Updated for Handler Module Refactoring
+__version__ = "1.1.0"  # Unified with milia_pipeline.__version__ (single source of truth)
 __author__ = "Milia Pipeline Team"
 __description__ = (
     "Modular dataset handlers with transformation system integration and registry support"

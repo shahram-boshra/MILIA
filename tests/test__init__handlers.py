@@ -1313,13 +1313,22 @@ class TestContractVersionFormat:
     """§2 — ``__version__`` follows semantic versioning."""
 
     @pytest.mark.contract
-    def test_version_is_3_0_0(self, handlers_pkg):
+    def test_version_matches_package_source_of_truth(self, handlers_pkg):
         """
-        ``__version__`` is '3.0.0' (as documented in the source for
-        Handler Module Refactoring).
+        ``__version__`` tracks the canonical package version.
+
+        The handlers subpackage version must stay unified with
+        ``milia_pipeline.__version__`` — the single source of truth that
+        ``pyproject.toml`` reads dynamically. Asserting equality against that
+        attribute (rather than a hardcoded literal) keeps this contract correct
+        across future version bumps with no test edits required.
         """
-        assert handlers_pkg.__version__ == "3.0.0", (
-            f"__version__ should be '3.0.0', got '{handlers_pkg.__version__}'"
+        import milia_pipeline
+
+        assert handlers_pkg.__version__ == milia_pipeline.__version__, (
+            f"handlers __version__ ({handlers_pkg.__version__}) must match the "
+            f"canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
 
