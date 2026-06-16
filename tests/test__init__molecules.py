@@ -1293,14 +1293,22 @@ class TestContractVersionContract:
     """§2 — ``__version__`` follows documented contract."""
 
     @pytest.mark.contract
-    def test_version_is_1_4_x(self, mol_pkg):
+    def test_version_matches_package_source_of_truth(self, mol_pkg):
         """
-        ``__version__`` starts with '1.4' per the Phase 6 molecule_filters
-        integration documented in the source.
+        ``__version__`` tracks the canonical package version.
+
+        The molecules subpackage version must stay unified with
+        ``milia_pipeline.__version__`` — the single source of truth that
+        ``pyproject.toml`` reads dynamically. Asserting equality against that
+        attribute (rather than a hardcoded literal) keeps this contract correct
+        across future version bumps with no test edits required.
         """
-        version = mol_pkg.__version__
-        assert version.startswith("1.4"), (
-            f"Expected __version__ to start with '1.4' (Phase 6), got '{version}'"
+        import milia_pipeline
+
+        assert mol_pkg.__version__ == milia_pipeline.__version__, (
+            f"molecules __version__ ({mol_pkg.__version__}) must match the "
+            f"canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract

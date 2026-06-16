@@ -94,7 +94,7 @@ For advanced usage and internal utilities, import directly from submodules:
 import logging
 
 # Package version - Updated for Phase 6 molecule_filters registry integration
-__version__ = "1.4.0"
+__version__ = "1.1.0"
 
 _logger = logging.getLogger(__name__)
 
