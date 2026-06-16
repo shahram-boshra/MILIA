@@ -285,7 +285,7 @@ See individual module docstrings for detailed API documentation:
 
 Version Information
 -------------------
-Module Version: 1.0.0
+Module Version: 1.1.0
 Compatible with: RDKit >= 2022.03.1, PyTorch Geometric >= 2.0.0
 
 Authors
@@ -298,7 +298,7 @@ See project LICENSE file
 """
 
 # Version
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # =============================================================================
 # IMPORTS - CORE COMPONENTS
