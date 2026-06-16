@@ -71,7 +71,7 @@ Usage Examples:
     >>> health = monitor.health_check()
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging
@@ -197,7 +197,7 @@ from .monitoring import (
 # MODULE METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Milia Team"
 __all__ = [
     # Exceptions
