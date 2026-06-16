@@ -100,7 +100,7 @@ This module integrates with:
 
 Version Information
 ------------------
-Module Version: 1.4.0
+Module Version: 1.1.0
 Handler Architecture: Handler-Only (No Backward Compatibility)
 Transformation System: Enhanced with Experimental Setup and Standard Transforms Support
 Exception Integration: Complete Handler Exception Hierarchy
@@ -177,7 +177,7 @@ from .milia_dataset import miliaDataset
 # Version and Metadata
 # ============================================================================
 
-__version__ = "1.4.0"
+__version__ = "1.1.0"
 __author__ = "milia Pipeline Development Team"
 __module_status__ = "Production Ready - Handler-Only Architecture with Phase 6 Registry Integration and Standard Transforms Support"
 
