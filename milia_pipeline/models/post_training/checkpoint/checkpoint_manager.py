@@ -132,8 +132,13 @@ class CheckpointManager:
         except ImportError:
             pyg_version = "unknown"
 
+        try:
+            from milia_pipeline import __version__ as milia_version
+        except ImportError:
+            milia_version = "unknown"
+
         return {
-            "milia_version": "1.0.0",  # TODO: Import from milia_pipeline.__version__
+            "milia_version": milia_version,
             "checkpoint_format_version": CHECKPOINT_FORMAT_VERSION,
             "pytorch_version": str(torch.__version__),
             "pyg_version": str(pyg_version),

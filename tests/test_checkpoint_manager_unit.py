@@ -332,9 +332,11 @@ class TestCreateVersionInfo:
         assert version_info["pytorch_version"] == torch.__version__
 
     def test_create_version_info_milia_version(self, checkpoint_manager):
-        """Test milia_version is set."""
+        """Test milia_version tracks milia_pipeline.__version__ (unified-version policy)."""
+        import milia_pipeline
+
         version_info = checkpoint_manager.create_version_info()
-        assert version_info["milia_version"] == "1.0.0"
+        assert version_info["milia_version"] == milia_pipeline.__version__
 
     def test_create_version_info_created_at_format(self, checkpoint_manager):
         """Test created_at is in ISO format."""
