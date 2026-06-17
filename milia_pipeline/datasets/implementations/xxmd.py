@@ -51,7 +51,7 @@ Evidence sources:
 - ASE documentation (extended XYZ format, eV/Angstrom units)
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: January 2026
 """
 
@@ -119,7 +119,7 @@ class XXMDDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="XXMD",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "xxMD (Extended Excited-state Molecular Dynamics) dataset containing "
             "nonadiabatic dynamics trajectories for 4 photochemically active molecules "

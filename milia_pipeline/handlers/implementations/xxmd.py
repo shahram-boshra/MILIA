@@ -29,7 +29,7 @@ Reference: Pengmei, Liu, Shu. Scientific Data 11, 222 (2024)
            DOI: 10.1038/s41597-024-03019-3
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: January 2026
 """
 
