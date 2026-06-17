@@ -14,7 +14,7 @@ Modules:
 - npz_builders: NPZ file creation and validation
 
 Author: milia Pipeline Team
-Version: 1.2
+Version: 1.1.0
 Date: December 2025
 """
 

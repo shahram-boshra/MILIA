@@ -5,7 +5,7 @@ Format Parsers - Molecular File Parsing Utilities
 Parse quantum chemistry file formats (.molden) and extract features.
 
 Author: milia Pipeline Team
-Version: 1.1 (FIXED - Returns tuple of (features, metadata))
+Version: 1.1.0
 Date: November 2025
 """
 

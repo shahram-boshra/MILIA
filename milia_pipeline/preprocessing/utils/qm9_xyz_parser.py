@@ -43,7 +43,7 @@ I   Property    Unit            Description
 17  Cv          cal/(mol·K)     Heat capacity at 298.15K
 
 Author: milia Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: December 2025
 """
 

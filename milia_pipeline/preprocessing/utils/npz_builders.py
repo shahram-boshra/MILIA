@@ -5,7 +5,7 @@ NPZ Builders - .npz File Creation Utilities
 Build compressed .npz files compatible with miliaDataset format.
 
 Author: milia Pipeline Team
-Version: 1.1 (FIXED - Accepts separate features and metadata)
+Version: 1.1.0
 Date: November 2025
 """
 

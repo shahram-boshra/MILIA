@@ -6,7 +6,7 @@ Memory-efficient streaming extraction for large compressed archives.
 Supports multiple compression formats (gzip, bzip2, xz, uncompressed).
 
 Author: milia Pipeline Team
-Version: 1.2 (Enhanced - Dynamic compression format support)
+Version: 1.1.0
 Date: December 2025
 
 Version History:
