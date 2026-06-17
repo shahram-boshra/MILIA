@@ -48,6 +48,7 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import milia_pipeline
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -67,7 +68,7 @@ from milia_pipeline.datasets.registry import (
 # ============================================================================
 
 EXPECTED_METADATA_NAME = "RMD17"
-EXPECTED_METADATA_VERSION = "1.0.0"
+EXPECTED_METADATA_VERSION = milia_pipeline.__version__
 EXPECTED_METADATA_DESCRIPTION = (
     "Revised MD17 dataset with ~100,000 conformations for 10 small organic "
     "molecules. Energies and forces computed at PBE/def2-SVP level using "
@@ -260,7 +261,7 @@ class TestRMD17DatasetMetadata(unittest.TestCase):
         self.assertEqual(RMD17Dataset.metadata.name, EXPECTED_METADATA_NAME)
 
     def test_metadata_version(self):
-        """metadata.version is '1.0.0'."""
+        """metadata.version tracks milia_pipeline.__version__ (unified-version policy)."""
         self.assertEqual(RMD17Dataset.metadata.version, EXPECTED_METADATA_VERSION)
 
     def test_metadata_description(self):

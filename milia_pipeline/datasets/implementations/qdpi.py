@@ -82,7 +82,7 @@ class QDPiDataset(BaseDataset):
 
     metadata: ClassVar[DatasetMetadata] = DatasetMetadata(
         name="QDPi",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "Quantum Deep Potential Interaction dataset for drug discovery. "
             "Contains ~1.6 million structures of drug-like molecules and biopolymer "

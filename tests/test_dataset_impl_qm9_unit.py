@@ -45,6 +45,7 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import milia_pipeline
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -61,7 +62,7 @@ from milia_pipeline.datasets.registry import (
 # ============================================================================
 
 EXPECTED_METADATA_NAME = "QM9"
-EXPECTED_METADATA_VERSION = "1.0.0"
+EXPECTED_METADATA_VERSION = milia_pipeline.__version__
 EXPECTED_METADATA_DESCRIPTION = (
     "QM9 quantum chemistry dataset with 133,885 stable small organic molecules "
     "(CHONF, up to 9 heavy atoms). Properties computed at B3LYP/6-31G(2df,p) level."
@@ -245,7 +246,7 @@ class TestQM9DatasetMetadata(unittest.TestCase):
         self.assertEqual(QM9Dataset.metadata.name, EXPECTED_METADATA_NAME)
 
     def test_metadata_version(self):
-        """metadata.version is '1.0.0'."""
+        """metadata.version tracks milia_pipeline.__version__ (unified-version policy)."""
         self.assertEqual(QM9Dataset.metadata.version, EXPECTED_METADATA_VERSION)
 
     def test_metadata_description(self):

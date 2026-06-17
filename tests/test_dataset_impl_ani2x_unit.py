@@ -46,6 +46,7 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+import milia_pipeline
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -62,7 +63,7 @@ from milia_pipeline.datasets.registry import (
 # ============================================================================
 
 EXPECTED_METADATA_NAME = "ANI2x"
-EXPECTED_METADATA_VERSION = "1.0.0"
+EXPECTED_METADATA_VERSION = milia_pipeline.__version__
 EXPECTED_METADATA_DESCRIPTION = (
     "ANI-2x dataset with DFT conformations for organic molecules "
     "(H, C, N, O, S, F, Cl). Properties computed at ωB97X/6-31G(d) level "
@@ -232,7 +233,7 @@ class TestANI2xDatasetMetadata(unittest.TestCase):
         self.assertEqual(ANI2xDataset.metadata.name, EXPECTED_METADATA_NAME)
 
     def test_metadata_version(self):
-        """metadata.version is '1.0.0'."""
+        """metadata.version tracks milia_pipeline.__version__ (unified-version policy)."""
         self.assertEqual(ANI2xDataset.metadata.version, EXPECTED_METADATA_VERSION)
 
     def test_metadata_description(self):

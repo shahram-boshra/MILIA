@@ -145,7 +145,7 @@ class RMD17Dataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="RMD17",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "Revised MD17 dataset with ~100,000 conformations for 10 small organic "
             "molecules. Energies and forces computed at PBE/def2-SVP level using "

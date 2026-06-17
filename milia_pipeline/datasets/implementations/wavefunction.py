@@ -69,7 +69,7 @@ class WavefunctionDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="Wavefunction",
-        version="1.0.0",
+        version="1.1.0",
         description="Quantum mechanical wavefunction dataset from .molden files with orbital analysis",
         author="MILIA Pipeline Team",
     )

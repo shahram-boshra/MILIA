@@ -87,7 +87,7 @@ class ANI2xDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="ANI2x",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "ANI-2x dataset with DFT conformations for organic molecules "
             "(H, C, N, O, S, F, Cl). Properties computed at ωB97X/6-31G(d) level "

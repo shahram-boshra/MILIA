@@ -85,7 +85,7 @@ class ANI1xDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="ANI1x",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "ANI-1x dataset with ~5 million DFT conformations for organic molecules "
             "(CHNO). Properties computed at ωB97x/6-31G* level using active learning."

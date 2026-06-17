@@ -75,7 +75,7 @@ class QM9Dataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="QM9",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "QM9 quantum chemistry dataset with 133,885 stable small organic molecules "
             "(CHONF, up to 9 heavy atoms). Properties computed at B3LYP/6-31G(2df,p) level."

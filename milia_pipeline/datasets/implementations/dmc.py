@@ -50,7 +50,7 @@ class DMCDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="DMC",
-        version="1.0.0",
+        version="1.1.0",
         description="DMC quantum Monte Carlo dataset with uncertainty handling",
         author="MILIA Pipeline Team",
     )

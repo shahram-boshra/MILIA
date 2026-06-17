@@ -96,7 +96,7 @@ class ANI1ccxDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="ANI1ccx",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "ANI-1ccx dataset with ~500k coupled-cluster conformations for organic "
             "molecules (CHNO). Properties computed at CCSD(T)/CBS level using transfer "

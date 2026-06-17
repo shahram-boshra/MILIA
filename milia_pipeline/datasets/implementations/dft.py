@@ -49,7 +49,7 @@ class DFTDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="DFT",
-        version="1.0.0",
+        version="1.1.0",
         description="DFT quantum chemistry dataset with vibrational analysis and thermodynamic properties",
         author="MILIA Pipeline Team",
     )
