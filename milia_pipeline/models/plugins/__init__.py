@@ -59,9 +59,9 @@ Plugin Structure:
     plugin_type: "model"
 
     requirements:
-      milia_version: ">=1.0.0"
+      milia_version: ">=1.1.0"
       pyg_version: ">=2.0.0"
-      python_version: ">=3.8"
+      python_version: ">=3.10"
 
     models:
       - name: "CustomGNN"
