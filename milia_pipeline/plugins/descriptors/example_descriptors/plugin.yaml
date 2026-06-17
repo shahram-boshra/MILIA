@@ -1,12 +1,14 @@
+# plugins/descriptors/example_descriptors/plugin.yaml
+
 plugin_name: "example_descriptors"
 version: "1.0.0"
-author: "VQM24 Team"
-email: "vqm24@example.com"
+author: "Asadollah (Shahram) Boshra, Ilia Boshra"
+email: "a.boshra@gmail.com"
 description: "Example descriptor plugin demonstrating best practices"
 license: "MIT"
-homepage: "https://github.com/vqm24/descriptor-plugins"
-vqm24_version: ">=1.0.0"
-python_version: ">=3.8"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.1.0"
+python_version: ">=3.10"
 dependencies: []
 
 descriptors:
