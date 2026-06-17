@@ -505,7 +505,9 @@ class TestPreprocessFullPipeline(unittest.TestCase):
         kw = mock_build.call_args.kwargs
         self.assertIs(kw.get("features"), features)
         metadata = kw.get("metadata")
-        self.assertEqual(metadata.get("version"), "1.0")
+        import milia_pipeline
+
+        self.assertEqual(metadata.get("version"), milia_pipeline.__version__)
         self.assertEqual(metadata.get("dataset_name"), "ANI1ccx")
 
 
@@ -595,9 +597,13 @@ class TestPreprocessMetadata(unittest.TestCase):
     @patch.object(ANI1ccxPreprocessor, "_build_npz")
     @patch.object(ANI1ccxPreprocessor, "_parse_ani1ccx_h5")
     def test_metadata_includes_version(self, mock_parse, mock_build):
-        """NPZ metadata includes version='1.0'."""
+        """NPZ metadata version tracks milia_pipeline.__version__."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(mock_build.call_args.kwargs["metadata"]["version"], "1.0")
+        import milia_pipeline
+
+        self.assertEqual(
+            mock_build.call_args.kwargs["metadata"]["version"], milia_pipeline.__version__
+        )
 
     @patch.object(ANI1ccxPreprocessor, "_build_npz")
     @patch.object(ANI1ccxPreprocessor, "_parse_ani1ccx_h5")
@@ -1526,9 +1532,14 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
     @patch.object(ANI1ccxPreprocessor, "_build_npz")
     @patch.object(ANI1ccxPreprocessor, "_parse_ani1ccx_h5")
     def test_metadata_preprocessing_version(self, mock_parse, mock_build):
-        """Metadata includes preprocessing_version='1.0'."""
+        """Metadata preprocessing_version tracks milia_pipeline.__version__."""
         _create_and_run_pipeline(_make_config(), mock_parse, mock_build)
-        self.assertEqual(mock_build.call_args.kwargs["metadata"]["preprocessing_version"], "1.0")
+        import milia_pipeline
+
+        self.assertEqual(
+            mock_build.call_args.kwargs["metadata"]["preprocessing_version"],
+            milia_pipeline.__version__,
+        )
 
     @patch("pathlib.Path.exists", return_value=True)
     @patch("milia_pipeline.preprocessing.preprocessors.ani1ccx.iter_data_buckets_ccx")

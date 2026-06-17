@@ -314,7 +314,7 @@ class ANI2xPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.0",
+                "version": "1.1.0",
                 "dataset_name": "ANI2x",
                 "source": archive_path.name,
                 "source_url": "https://zenodo.org/records/10108942/files/ANI-2x-wB97X-631Gd.tar.gz",
@@ -322,7 +322,7 @@ class ANI2xPreprocessor(BasePreprocessor):
                 "doi": "10.1021/acs.jctc.0c00121",
                 "file_format": ".h5 (HDF5 ANI-2x format)",
                 "parser": "ANI2xPreprocessor",
-                "preprocessing_version": "1.0",
+                "preprocessing_version": "1.1.0",
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 "force_units": "hartree/angstrom",

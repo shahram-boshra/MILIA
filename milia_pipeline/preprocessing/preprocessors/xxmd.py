@@ -641,7 +641,7 @@ class XXMDPreprocessor(BasePreprocessor):
         # Compute metadata
         atom_counts = [len(a) for a in atoms_list]
         metadata = {
-            "version": "1.0",
+            "version": "1.1.0",
             "dataset_name": "XXMD",
             "subset": "xxMD-DFT",
             "total_conformers": total_conformers,

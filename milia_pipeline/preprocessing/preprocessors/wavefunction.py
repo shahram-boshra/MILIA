@@ -156,13 +156,13 @@ class WavefunctionPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.1",
+                "version": "1.1.0",
                 "dataset_name": "milia_Wavefunction",
                 "source": tar_path.name,
                 "feature_tier": feature_tier,
                 "file_format": ".molden",
                 "parser": "IOData",
-                "preprocessing_version": "1.1",
+                "preprocessing_version": "1.1.0",
                 **parse_metadata,  # Include parsing statistics
             }
 

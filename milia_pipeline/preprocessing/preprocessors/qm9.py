@@ -173,7 +173,7 @@ class QM9Preprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.0",
+                "version": "1.1.0",
                 "dataset_name": "QM9",
                 "source": archive_path.name,
                 "source_url": "https://figshare.com/ndownloader/files/3195389",
@@ -181,7 +181,7 @@ class QM9Preprocessor(BasePreprocessor):
                 "doi": "10.1038/sdata.2014.22",
                 "file_format": ".xyz (extended QM9 format)",
                 "parser": "qm9_xyz_parser",
-                "preprocessing_version": "1.0",
+                "preprocessing_version": "1.1.0",
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 **parse_metadata,  # Include parsing statistics

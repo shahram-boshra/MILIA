@@ -361,7 +361,7 @@ class ANI1ccxPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.0",
+                "version": "1.1.0",
                 "dataset_name": "ANI1ccx",
                 "source": h5_path.name,
                 "source_url": "https://figshare.com/ndownloader/files/18112775",
@@ -369,7 +369,7 @@ class ANI1ccxPreprocessor(BasePreprocessor):
                 "doi": "10.1038/s41597-020-0473-z",
                 "file_format": ".h5 (HDF5 ANI-1x format, ANI-1ccx subset)",
                 "parser": "ANI1ccxPreprocessor",
-                "preprocessing_version": "1.0",
+                "preprocessing_version": "1.1.0",
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 "primary_energy": "ccsd(t)_cbs.energy (CCSD(T)/CBS)",

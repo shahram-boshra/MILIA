@@ -522,7 +522,9 @@ class TestPreprocessFullPipeline(unittest.TestCase):
         kw = mock_build.call_args.kwargs
         self.assertIs(kw.get("features"), features)
         metadata = kw.get("metadata")
-        self.assertEqual(metadata.get("version"), "1.0")
+        import milia_pipeline
+
+        self.assertEqual(metadata.get("version"), milia_pipeline.__version__)
         self.assertEqual(metadata.get("dataset_name"), "QM9")
         self.assertEqual(metadata.get("num_molecules"), 2)
 
@@ -751,9 +753,13 @@ class TestPreprocessMetadata(unittest.TestCase):
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.extract_from_archive")
     @patch("shutil.rmtree")
     def test_metadata_includes_version(self, mock_rmtree, mock_extract, mock_parse, mock_build):
-        """NPZ metadata includes version='1.0'."""
+        """NPZ metadata version tracks milia_pipeline.__version__."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs["metadata"]["version"], "1.0")
+        import milia_pipeline
+
+        self.assertEqual(
+            mock_build.call_args.kwargs["metadata"]["version"], milia_pipeline.__version__
+        )
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
@@ -1081,9 +1087,14 @@ class TestEdgeCasesAndRobustness(unittest.TestCase):
     def test_metadata_preprocessing_version(
         self, mock_rmtree, mock_extract, mock_parse, mock_build
     ):
-        """Metadata includes preprocessing_version='1.0'."""
+        """Metadata preprocessing_version tracks milia_pipeline.__version__."""
         _create_and_run_pipeline(_make_config(), mock_extract, mock_parse, mock_build, mock_rmtree)
-        self.assertEqual(mock_build.call_args.kwargs["metadata"]["preprocessing_version"], "1.0")
+        import milia_pipeline
+
+        self.assertEqual(
+            mock_build.call_args.kwargs["metadata"]["preprocessing_version"],
+            milia_pipeline.__version__,
+        )
 
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.build_npz")
     @patch("milia_pipeline.preprocessing.preprocessors.qm9.parse_qm9_xyz_files")
