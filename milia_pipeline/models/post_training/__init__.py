@@ -72,7 +72,7 @@ Usage:
     )
 
 Author: MILIA Team
-Version: 2.0.0
+Version: 1.1.0
 """
 
 import logging
@@ -84,7 +84,7 @@ logger = logging.getLogger(__name__)
 # VERSION INFORMATION
 # =============================================================================
 
-__version__ = "2.0.0"
+__version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 

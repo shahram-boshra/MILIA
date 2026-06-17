@@ -14,7 +14,7 @@ FUTURE-PROOF: FreezeStrategy enum allows easy extension.
               Works with any model that has standard PyTorch modules.
 
 Author: MILIA Team
-Version: 1.0.0
+Version: 1.1.0
 
 Quick Start:
     >>> from milia_pipeline.models.post_training.transfer_learning import (
@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 # VERSION INFORMATION
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 

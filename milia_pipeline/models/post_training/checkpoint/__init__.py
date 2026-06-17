@@ -5,7 +5,7 @@ Checkpoint Subpackage
 Enhanced checkpoint management with model recreation metadata.
 
 Author: MILIA Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 from .checkpoint_manager import (

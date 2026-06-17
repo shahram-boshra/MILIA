@@ -21,7 +21,7 @@ FUTURE-PROOF: Works with ANY model in registry without code changes.
               New models automatically supported via ModelRegistry lookup.
 
 Author: MILIA Team
-Version: 1.0.0
+Version: 1.1.0
 
 Quick Start:
     >>> from milia_pipeline.models.post_training.inference import (
@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 # VERSION INFORMATION
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 

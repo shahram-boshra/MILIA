@@ -24,7 +24,7 @@ FUTURE-PROOF: Registry-based architecture allows adding new formats
               without modifying existing code.
 
 Author: MILIA Team
-Version: 1.0.0
+Version: 1.1.0
 
 Quick Start:
     >>> from milia_pipeline.models.post_training.data_preparation import (
@@ -78,7 +78,7 @@ logger = logging.getLogger(__name__)
 # VERSION INFORMATION
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 
