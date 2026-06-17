@@ -101,7 +101,7 @@ Integration:
     - ModelCategory: For model categorization
     - Config system: For plugin path configuration
 
-Version: 1.0.0
+Version: 1.1.0
 Author: milia Team
 """
 
@@ -138,7 +138,7 @@ from milia_pipeline.models.plugins.model_plugin_system import (
 # VERSION AND METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "milia Team"
 __all__ = [
     # Core Classes
