@@ -17,7 +17,7 @@ QM9 Dataset Information:
 - Format: Extended XYZ with properties in comment line
 
 Author: milia Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: December 2025
 """
 

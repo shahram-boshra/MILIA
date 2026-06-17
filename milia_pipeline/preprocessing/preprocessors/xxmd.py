@@ -66,7 +66,7 @@ Reference: Pengmei, Z., Liu, J. & Shu, Y. Beyond MD17: the reactive xxMD dataset
            Sci Data 11, 222 (2024). https://doi.org/10.1038/s41597-024-03019-3
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: January 2026
 """
 

@@ -37,7 +37,7 @@ Reference: Devereux, C., Smith, J.S., et al. Extending the Applicability of the
            J. Chem. Theory Comput. 2020, 16, 7, 4192-4202.
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: January 2026
 """
 

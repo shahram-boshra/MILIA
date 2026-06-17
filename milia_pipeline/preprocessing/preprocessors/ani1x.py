@@ -35,7 +35,7 @@ Reference: Smith, J.S., et al. The ANI-1ccx and ANI-1x data sets,
            for molecules. Sci Data 7, 134 (2020).
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: December 2025
 """
 

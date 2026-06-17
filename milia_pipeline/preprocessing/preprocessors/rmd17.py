@@ -78,7 +78,7 @@ Reference: Christensen, A.S. & von Lilienfeld, O.A. (2020). On the role of
            Mach. Learn.: Sci. Technol. 1, 045018.
 
 Author: MILIA Pipeline Team
-Version: 1.0
+Version: 1.1.0
 Date: January 2026
 """
 

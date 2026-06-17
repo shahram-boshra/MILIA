@@ -11,7 +11,7 @@ discovered and imported. No manual imports or __all__ updates needed when
 adding new preprocessors - just create the file.
 
 Author: milia Pipeline Team
-Version: 1.4
+Version: 1.1.0
 Date: December 2025
 """
 
