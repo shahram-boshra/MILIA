@@ -38,7 +38,7 @@ Research Basis:
 - Transfer learning for AutoML
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 
 Pattern References:
 - Module structure: hpo/backends/__init__.py
@@ -163,7 +163,7 @@ __all__ = [
 # MODULE VERSION AND METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Milia Team"
 
 

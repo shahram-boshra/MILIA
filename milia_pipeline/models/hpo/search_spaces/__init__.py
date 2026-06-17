@@ -53,7 +53,7 @@ Example:
     >>> gat_space = get_model_search_space("GAT")
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging
@@ -96,7 +96,7 @@ __all__ = [
 # MODULE METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Milia Team"
 
 

@@ -27,7 +27,7 @@ Usage:
     >>> analyzer.export_results("results.json")
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 from .study_analyzer import (

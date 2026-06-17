@@ -117,7 +117,7 @@ See Also
 - milia_pipeline.models.hpo.backends : HPO backends (Optuna, Ray Tune)
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 # =============================================================================
@@ -179,7 +179,7 @@ __all__ = [
 # MODULE METADATA
 # =============================================================================
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Milia Team"
 
 
