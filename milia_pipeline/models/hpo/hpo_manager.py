@@ -27,7 +27,7 @@ Pydantic V2 Migration (Phase 26):
     - NON-BREAKING: No API changes; dead code removal only
 
 Author: Milia Team
-Version: 1.2.0
+Version: 1.1.0
 """
 
 from __future__ import annotations

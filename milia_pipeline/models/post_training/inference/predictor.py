@@ -10,7 +10,7 @@ Dependency Injection Pattern:
 - Follows CallbackFactory pattern from models/training/callbacks.py
 
 Author: MILIA Team
-Version: 2.0.0
+Version: 1.1.0
 """
 
 from __future__ import annotations

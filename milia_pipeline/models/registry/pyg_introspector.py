@@ -14,7 +14,7 @@ Pydantic V2 Migration (Phase 23):
     - NON-BREAKING: Same constructor API and attribute access preserved
 
 Author: Milia Team
-Version: 2.1.0
+Version: 1.1.0
 """
 
 import importlib

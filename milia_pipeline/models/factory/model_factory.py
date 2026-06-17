@@ -8,7 +8,7 @@ PHASE 7 EXTENSION: Added support for custom architectures and ensembles.
 PHASE 4 MIGRATION: Updated to use dynamic introspection from pyg_introspector.
 
 Author: milia Team
-Version: 1.2.0
+Version: 1.1.0
 """
 
 import contextlib

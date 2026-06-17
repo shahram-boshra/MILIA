@@ -28,7 +28,7 @@ Pattern: Follows registry patterns from loss_functions.py, schedulers.py, optimi
 Dependencies: param_types.py, hpo_config.py, exceptions.py, pyg_introspector.py
 
 Author: Milia Team
-Version: 2.1.0
+Version: 1.1.0
 """
 
 import logging

@@ -5,7 +5,7 @@ Comprehensive validation for custom architectures.
 Checks channel compatibility, task requirements, data compatibility.
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging

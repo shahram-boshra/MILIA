@@ -17,7 +17,7 @@ Thread-safe singleton pattern following descriptors module architecture.
 - NON-BREAKING: Same constructor API and attribute access preserved
 
 Author: Milia Team
-Version: 1.2.0
+Version: 1.1.0
 """
 
 import importlib

@@ -14,7 +14,7 @@ Features:
 - Graph statistics computation
 
 Author: Milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging

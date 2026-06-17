@@ -14,7 +14,7 @@ Features:
 - Integration with ArchitectureBuilder, ModelComposer, and ArchitectureValidator
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import json
