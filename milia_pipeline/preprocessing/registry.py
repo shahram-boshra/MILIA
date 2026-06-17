@@ -7,7 +7,7 @@ Preprocessor Registry
 Auto-discovery and management of dataset preprocessors.
 
 Author: milia Pipeline Team
-Version: 1.1
+Version: 1.1.0
 Date: November 2025
 """
 

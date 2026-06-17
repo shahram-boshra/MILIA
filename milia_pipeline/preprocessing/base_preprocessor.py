@@ -8,7 +8,7 @@ Defines the contract for all dataset preprocessors in the milia Pipeline.
 All preprocessors must inherit from this base class and implement required methods.
 
 Author: milia Pipeline Team
-Version: 1.1
+Version: 1.1.0
 Date: November 2025
 """
 
