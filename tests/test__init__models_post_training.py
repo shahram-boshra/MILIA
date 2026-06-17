@@ -1136,15 +1136,17 @@ class TestContractDependencyInjectionPattern:
         assert not found, f"Path utility names still in __all__ after v2.0.0 removal: {found}"
 
     @pytest.mark.contract
-    def test_version_is_2_or_later(self, post_training_pkg):
+    def test_version_matches_package(self, post_training_pkg):
         """
-        ``__version__`` is 2.0.0 or later (DI refactoring version).
+        ``__version__`` tracks milia_pipeline.__version__ (unified-version policy).
+
+        The DI refactoring milestone is documented in the CHANGELOG and module
+        docstrings; the structural DI contract is enforced by the path-utility
+        removal tests in this file, not by the module version number.
         """
-        version = post_training_pkg.__version__
-        major = int(version.split(".")[0])
-        assert major >= 2, (
-            f"Post-training module version should be >= 2.0.0 (DI pattern), got {version}"
-        )
+        import milia_pipeline
+
+        assert post_training_pkg.__version__ == milia_pipeline.__version__
 
 
 class TestContractInferenceFunctionSignatures:

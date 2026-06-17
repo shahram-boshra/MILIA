@@ -170,9 +170,11 @@ class TestSmokeMetadataAttributes:
             assert len(numeric_part) > 0, f"Version component '{part}' should start with a digit"
 
     @pytest.mark.smoke
-    def test_version_value_is_1_0_0(self, desc_pkg):
-        """``__version__`` is '1.0.0' as documented in the module."""
-        assert desc_pkg.__version__ == "1.0.0"
+    def test_version_matches_package(self, desc_pkg):
+        """``__version__`` tracks milia_pipeline.__version__ (unified-version policy)."""
+        import milia_pipeline
+
+        assert desc_pkg.__version__ == milia_pipeline.__version__
 
 
 class TestSmokeRegistrySystemExports:
@@ -435,8 +437,10 @@ class TestSmokeModuleInitialization:
         """
         Re-importing the descriptors package preserves ``__version__``.
         """
+        import milia_pipeline
+
         reloaded = importlib.reload(desc_pkg)
-        assert reloaded.__version__ == "1.0.0"
+        assert reloaded.__version__ == milia_pipeline.__version__
 
     @pytest.mark.smoke
     def test_module_docstring_exists(self, desc_pkg):
