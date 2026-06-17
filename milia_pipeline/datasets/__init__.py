@@ -391,7 +391,7 @@ def get_supported_dataset_types():
 HANDLER_ARCHITECTURE_VERSION = "2.0"
 """Current handler architecture version (Handler-Only)."""
 
-TRANSFORMATION_SYSTEM_VERSION = "2.1"
+TRANSFORMATION_SYSTEM_VERSION = "1.1.0"
 """Enhanced transformation system with experimental setup and standard transforms support."""
 
 REGISTRY_VERSION = "1.0"

@@ -1304,10 +1304,21 @@ class TestContractVersionConstantValues:
 
     @pytest.mark.contract
     def test_transformation_system_version(self, datasets_pkg):
-        """TRANSFORMATION_SYSTEM_VERSION is '2.1'."""
-        assert datasets_pkg.TRANSFORMATION_SYSTEM_VERSION == "2.1", (
-            f"TRANSFORMATION_SYSTEM_VERSION should be '2.1', "
-            f"got '{datasets_pkg.TRANSFORMATION_SYSTEM_VERSION}'"
+        """
+        TRANSFORMATION_SYSTEM_VERSION tracks the canonical package version.
+
+        Per the unified-version policy, this label must equal
+        ``milia_pipeline.__version__`` — the single source of truth that
+        ``pyproject.toml`` reads dynamically. Asserting equality against that
+        attribute (rather than a hardcoded literal) keeps the contract correct
+        across future version bumps with no test edits required.
+        """
+        import milia_pipeline
+
+        assert milia_pipeline.__version__ == datasets_pkg.TRANSFORMATION_SYSTEM_VERSION, (
+            f"TRANSFORMATION_SYSTEM_VERSION ({datasets_pkg.TRANSFORMATION_SYSTEM_VERSION}) "
+            f"must match the canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract
