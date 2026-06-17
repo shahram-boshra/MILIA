@@ -19,7 +19,7 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Shahram Boshra, Ilia Boshra"
 
 # Plugin metadata for milia plugin system
@@ -30,9 +30,9 @@ PLUGIN_METADATA = {
     "plugin_type": "pyg_fallback",  # PyG transforms fallback
     "description": "PyG augmentation transforms missing from PyG 2.6.1",
     "license": "MIT",
-    "milia_version": ">=4.0.0",
+    "milia_version": ">=1.1.0",
     "pyg_version": ">=2.0.0",
-    "python_version": ">=3.8",
+    "python_version": ">=3.10",
 }
 
 # Logger for this plugin
@@ -168,9 +168,9 @@ def _register_with_plugin_system() -> bool:
             plugin_type=PLUGIN_METADATA["plugin_type"],
             description=PLUGIN_METADATA.get("description", ""),
             license=PLUGIN_METADATA.get("license", "MIT"),
-            milia_version=PLUGIN_METADATA.get("milia_version", ">=4.0.0"),
+            milia_version=PLUGIN_METADATA.get("milia_version", ">=1.1.0"),
             pyg_version=PLUGIN_METADATA.get("pyg_version", ">=2.0.0"),
-            python_version=PLUGIN_METADATA.get("python_version", ">=3.8"),
+            python_version=PLUGIN_METADATA.get("python_version", ">=3.10"),
             plugin_path=plugin_path,
         )
 
@@ -428,9 +428,9 @@ Available Transforms:
 {chr(10).join(f"  - {name}" for name in _transform_names)}
 
 Requirements:
-  - milia: {PLUGIN_METADATA.get("milia_version", ">=4.0.0")}
+  - milia: {PLUGIN_METADATA.get("milia_version", ">=1.1.0")}
   - PyG: {PLUGIN_METADATA.get("pyg_version", ">=2.0.0")}
-  - Python: {PLUGIN_METADATA.get("python_version", ">=3.8")}
+  - Python: {PLUGIN_METADATA.get("python_version", ">=3.10")}
 
 Usage:
     # Direct import (backward compatible)
