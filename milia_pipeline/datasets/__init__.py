@@ -388,19 +388,19 @@ def get_supported_dataset_types():
     return []
 
 
-HANDLER_ARCHITECTURE_VERSION = "2.0"
+HANDLER_ARCHITECTURE_VERSION = "1.1.0"
 """Current handler architecture version (Handler-Only)."""
 
 TRANSFORMATION_SYSTEM_VERSION = "1.1.0"
 """Enhanced transformation system with experimental setup and standard transforms support."""
 
-REGISTRY_VERSION = "1.0"
+REGISTRY_VERSION = "1.1.0"
 """Dataset registry infrastructure version (Phase 1)."""
 
-IMPLEMENTATIONS_VERSION = "1.0"
+IMPLEMENTATIONS_VERSION = "1.1.0"
 """Dataset implementations version (Phase 2)."""
 
-PHASE_6_INTEGRATION_VERSION = "6.0.0"
+PHASE_6_INTEGRATION_VERSION = "1.1.0"
 """Phase 6 registry-based feature query integration version."""
 
 # ============================================================================

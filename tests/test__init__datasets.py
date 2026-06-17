@@ -1296,10 +1296,20 @@ class TestContractVersionConstantValues:
 
     @pytest.mark.contract
     def test_handler_architecture_version(self, datasets_pkg):
-        """HANDLER_ARCHITECTURE_VERSION is '2.0'."""
-        assert datasets_pkg.HANDLER_ARCHITECTURE_VERSION == "2.0", (
-            f"HANDLER_ARCHITECTURE_VERSION should be '2.0', "
-            f"got '{datasets_pkg.HANDLER_ARCHITECTURE_VERSION}'"
+        """
+        HANDLER_ARCHITECTURE_VERSION tracks the canonical package version.
+
+        Per the unified-version policy, this label must equal
+        ``milia_pipeline.__version__`` (the single source of truth read by
+        ``pyproject.toml``). Asserting equality against that attribute keeps the
+        contract correct across future version bumps with no test edits required.
+        """
+        import milia_pipeline
+
+        assert milia_pipeline.__version__ == datasets_pkg.HANDLER_ARCHITECTURE_VERSION, (
+            f"HANDLER_ARCHITECTURE_VERSION ({datasets_pkg.HANDLER_ARCHITECTURE_VERSION}) "
+            f"must match the canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract
@@ -1323,24 +1333,44 @@ class TestContractVersionConstantValues:
 
     @pytest.mark.contract
     def test_registry_version(self, datasets_pkg):
-        """REGISTRY_VERSION is '1.0'."""
-        assert datasets_pkg.REGISTRY_VERSION == "1.0", (
-            f"REGISTRY_VERSION should be '1.0', got '{datasets_pkg.REGISTRY_VERSION}'"
+        """
+        REGISTRY_VERSION tracks the canonical package version
+        (``milia_pipeline.__version__``) under the unified-version policy.
+        """
+        import milia_pipeline
+
+        assert milia_pipeline.__version__ == datasets_pkg.REGISTRY_VERSION, (
+            f"REGISTRY_VERSION ({datasets_pkg.REGISTRY_VERSION}) must match the "
+            f"canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract
     def test_implementations_version(self, datasets_pkg):
-        """IMPLEMENTATIONS_VERSION is '1.0'."""
-        assert datasets_pkg.IMPLEMENTATIONS_VERSION == "1.0", (
-            f"IMPLEMENTATIONS_VERSION should be '1.0', got '{datasets_pkg.IMPLEMENTATIONS_VERSION}'"
+        """
+        IMPLEMENTATIONS_VERSION tracks the canonical package version
+        (``milia_pipeline.__version__``) under the unified-version policy.
+        """
+        import milia_pipeline
+
+        assert milia_pipeline.__version__ == datasets_pkg.IMPLEMENTATIONS_VERSION, (
+            f"IMPLEMENTATIONS_VERSION ({datasets_pkg.IMPLEMENTATIONS_VERSION}) must match the "
+            f"canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
     @pytest.mark.contract
     def test_phase_6_integration_version(self, datasets_pkg):
-        """PHASE_6_INTEGRATION_VERSION is '6.0.0'."""
-        assert datasets_pkg.PHASE_6_INTEGRATION_VERSION == "6.0.0", (
-            f"PHASE_6_INTEGRATION_VERSION should be '6.0.0', "
-            f"got '{datasets_pkg.PHASE_6_INTEGRATION_VERSION}'"
+        """
+        PHASE_6_INTEGRATION_VERSION tracks the canonical package version
+        (``milia_pipeline.__version__``) under the unified-version policy.
+        """
+        import milia_pipeline
+
+        assert milia_pipeline.__version__ == datasets_pkg.PHASE_6_INTEGRATION_VERSION, (
+            f"PHASE_6_INTEGRATION_VERSION ({datasets_pkg.PHASE_6_INTEGRATION_VERSION}) "
+            f"must match the canonical package version milia_pipeline.__version__ "
+            f"({milia_pipeline.__version__})"
         )
 
 
