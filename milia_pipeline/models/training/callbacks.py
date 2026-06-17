@@ -5,7 +5,7 @@ Extensible callback system for training monitoring and control.
 Includes common callbacks: EarlyStopping, ModelCheckpoint, TensorBoard, etc.
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import logging

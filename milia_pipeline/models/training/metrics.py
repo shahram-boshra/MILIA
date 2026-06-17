@@ -9,7 +9,7 @@ Centralized registry for evaluation metrics with:
 - Full parameter introspection via inspect.signature()
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import inspect

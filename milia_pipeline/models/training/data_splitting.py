@@ -8,7 +8,7 @@ Comprehensive data splitting strategies for graph datasets:
 - Scaffold split (for molecular data)
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 from __future__ import annotations

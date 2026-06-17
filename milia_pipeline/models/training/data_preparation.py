@@ -12,7 +12,7 @@ PRODUCTION-READY: Comprehensive validation, clear error messages
 FUTURE-PROOF: Extensible for new task types via registry pattern
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import copy

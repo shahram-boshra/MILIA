@@ -9,7 +9,7 @@ Provides visualization utilities for training metrics and loss curves:
 - Export functionality (PNG, HTML, PDF)
 
 Author: milia Team
-Version: 1.0.0
+Version: 1.1.0
 """
 
 import importlib.util

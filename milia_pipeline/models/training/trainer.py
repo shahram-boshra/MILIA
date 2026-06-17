@@ -17,7 +17,7 @@ Phase 1 Enhancement (v1.2.0):
 - Backward compatible with v1.0 checkpoints
 
 Author: milia Team
-Version: 1.2.0
+Version: 1.1.0
 """
 
 from __future__ import annotations
