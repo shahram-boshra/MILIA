@@ -1,0 +1,194 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# QM40 Dataset Configuration (COLOCATED)
+# Part of MILIA YAML Splitting Architecture
+#
+# This file contains ALL QM40-specific configuration in one place:
+#   1. qm40_config - Dataset paths and settings
+#   2. data_config.property_selection.QM40 - Property selection for PyG Data
+#   3. property_availability.QM40 - Available properties
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ────────────────────────────────────────────────────
+# QM40 Dataset Configuration
+# ────────────────────────────────────────────────────
+# Reference: Madushanka, Moura Jr. & Kraka, Scientific Data 11, 1376 (2024)
+# DOI: 10.1038/s41597-024-04206-y
+# Figshare DOI: 10.6084/m9.figshare.25993060
+#
+# 162,954 neutral drug-like ZINC molecules (10-40 heavy atoms).
+# Level of theory: B3LYP/6-31G(2df,p) (Gaussian16) - identical to QM9.
+# Elements: C, O, N, S, F, Cl (+ H) - 7 elements.
+# Charge state: NEUTRAL ONLY (anions and cations excluded).
+#
+# IMPORTANT: Source data is three CSV files inside QM40_dataset.zip; the QM40
+# preprocessor joins them by Zinc_id and builds the .npz. No unit conversion is
+# applied (energies already in Hartree, coordinates already in Angstrom).
+# ────────────────────────────────────────────────────
+qm40_config:
+  # Filename for the preprocessed .npz QM40 dataset file (OUTPUT after preprocessing)
+  raw_npz_filename: qm40.npz
+
+  # Filename for the raw source archive (INPUT before preprocessing)
+  # CRITICAL: Required for URLs that don't include the filename (Figshare API URLs)
+  raw_source_filename: QM40_dataset.zip
+
+  # URL to download the raw QM40 archive (ZIP of CSV files)
+  # Source: Figshare (DOI: 10.6084/m9.figshare.25993060)
+  # Reference: Madushanka, Moura Jr. & Kraka, Scientific Data 11, 1376 (2024)
+  # NOTE: Figshare uses API-style URLs that don't contain the filename
+  raw_data_download_url: https://ndownloader.figshare.com/files/47535647
+
+  # QM40 processing configuration
+  processing_config:
+    # Preprocessing parameters (for automatic ZIP → npz conversion)
+    # NOTE: keys here are flattened to the preprocessor config at runtime.
+    preprocessing:
+      # Number of molecules to preprocess (null = all 162,954 molecules)
+      # Use integer for testing/limiting dataset size (e.g., 100, 1000, 10000)
+      num_molecules: null
+
+      # Store per-bond local vibrational mode data (QM40_bond.csv): bond atom
+      # indices, element-pair tag, and local-mode force constant (mDyn/Angstrom).
+      include_bond_data: true
+
+      # Store pre-optimization (initial) Cartesian coordinates alongside the
+      # optimized geometry.
+      include_initial_coordinates: true
+
+      # Clean up the temporary extraction directory after preprocessing
+      cleanup_temp: true
+
+  # QM40 does not have uncertainty handling (DFT calculations are deterministic)
+  uncertainty_handling:
+    enabled: false
+
+
+# ────────────────────────────────────────────────────
+# QM40 Property Selection for PyG Data Objects
+# ────────────────────────────────────────────────────
+data_config:
+  property_selection:
+    QM40:
+      # QM40 Dataset Property Selection
+      # Reference: Madushanka, Moura Jr. & Kraka, Scientific Data 11, 1376 (2024)
+      # Level of theory: B3LYP/6-31G(2df,p)
+
+      # Scalar graph-level targets to be included in pyg_data.y
+      scalar_graph_targets_to_include:
+        # Primary energy targets (Hartree)
+        - Internal_E_0K   # Internal energy at 0K (primary target; atomization base)
+        - Inter_E_298     # Internal energy at 298.15K
+        - Enthalpy        # Enthalpy at 298.15K
+        - Free_E          # Free energy at 298.15K
+        - ZPE             # Zero point energy (kcal/mol)
+
+        # Electronic properties (Hartree)
+        - HOMO            # HOMO energy
+        - LUMO            # LUMO energy
+        - HL_gap          # HOMO-LUMO gap (HOMO - LUMO; may be negative)
+
+        # Other properties
+        - dipol_mom       # Dipole moment (Debye)
+        - Polarizability  # Isotropic polarizability (Bohr³)
+        - spatial_extent  # Electronic spatial extent (Bohr²)
+        - CV              # Heat capacity (cal/(mol·K))
+        - Entropy         # Entropy (cal/(mol·K))
+
+        # Rotational constants (GHz)
+        - rot1
+        - rot2
+        - rot3
+
+      # Node-level features to be added to pyg_data.x
+      node_features_to_add:
+        - Qmulliken       # Mulliken partial charges (per atom)
+
+      # Fixed-size vector graph properties
+      vector_graph_properties_to_include: []
+
+      # Variable-length graph properties
+      # NOTE: per-bond local-mode data is stored in the .npz and documented under
+      # property_availability below. It is left UNSELECTED by default (opt-in).
+      # Only NUMERIC variable-length keys may be added here (bond_atom1_idx,
+      # bond_atom2_idx, bond_lmod_ka). Do NOT add 'bond_tag' (string array): it
+      # cannot be converted to a tensor.
+      variable_len_graph_properties_to_include: []
+
+      # QM40-specific settings
+      # Calculate atomization energy from Internal_E_0K (internal energy at 0K)
+      calculate_atomization_energy_from: Internal_E_0K
+      # The name of the key for the calculated atomization energy
+      atomization_energy_key_name: Internal_E_0K_ATOM
+
+
+# ────────────────────────────────────────────────────
+# QM40 Property Availability Matrix
+# ────────────────────────────────────────────────────
+property_availability:
+  QM40:
+    # QM40 Dataset Property Availability
+    # Reference: Madushanka, Moura Jr. & Kraka, Scientific Data 11, 1376 (2024)
+    # DOI: 10.1038/s41597-024-04206-y
+    # Source: Figshare (DOI: 10.6084/m9.figshare.25993060)
+    # 162,954 neutral drug-like ZINC molecules (10-40 heavy atoms)
+    # Level of theory: B3LYP/6-31G(2df,p)
+    # Elements: C, O, N, S, F, Cl (+ H) - 7 elements
+    # Coordinate units: Angstrom | Energy units: Hartree
+    # CRITICAL: Neutral only; SMILES present but no InChI (coordinate_based)
+
+    # Molecular identifiers (2 keys)
+    molecular_identifiers:
+      - compounds       # ZINC identifier (Zinc_id)
+      - smiles          # SMILES string (tracking label; not used for graph construction)
+
+    # Atomic structure properties (3 keys)
+    atomic_structure:
+      - atoms           # Atomic numbers (C=6, H=1, N=7, O=8, F=9, S=16, Cl=17)
+      - coordinates     # B3LYP/6-31G(2df,p) optimized coordinates (Angstrom)
+      - initial_coordinates  # Pre-optimization coordinates (Angstrom; optional)
+
+    # Scalar graph-level properties (16 keys)
+    scalar_graph_targets:
+      # Energies (Hartree)
+      - Internal_E_0K   # Internal energy at 0K
+      - Inter_E_298     # Internal energy at 298.15K
+      - Enthalpy        # Enthalpy at 298.15K
+      - Free_E          # Free energy at 298.15K
+      # Electronic properties (Hartree)
+      - HOMO            # HOMO energy
+      - LUMO            # LUMO energy
+      - HL_gap          # HOMO-LUMO gap (HOMO - LUMO)
+      # Other properties
+      - Polarizability  # Isotropic polarizability (Bohr³)
+      - spatial_extent  # Electronic spatial extent (Bohr²)
+      - dipol_mom       # Dipole moment (Debye)
+      - ZPE             # Zero point energy (kcal/mol)
+      - CV              # Heat capacity at 298.15K (cal/(mol·K))
+      - Entropy         # Entropy at 298.15K (cal/(mol·K))
+      # Rotational constants (GHz)
+      - rot1
+      - rot2
+      - rot3
+
+    # Node-level (atomic) properties (1 key)
+    node_features:
+      - Qmulliken       # Mulliken partial charges (per atom)
+
+    # Fixed-size vector graph properties
+    vector_graph_properties: []  # dipol_mom is stored as a scalar, not a vector
+
+    # Variable-length graph properties (per-bond local vibrational mode data; QM40_bond.csv)
+    # Available in the .npz but opt-in (see property_selection note above).
+    variable_len_graph_properties:
+      - bond_atom1_idx  # 0-based first-atom index of each bond (int)
+      - bond_atom2_idx  # 0-based second-atom index of each bond (int)
+      - bond_tag        # element-pair tag, e.g. "CC" (string; NOT tensor-convertible)
+      - bond_lmod_ka    # local mode stretching force constant (mDyn/Angstrom, float)
+
+    # Metadata fields (1 key)
+    metadata_fields:
+      - metadata        # Dataset metadata (object array; written by build_npz)
+
+    # QM40 is DFT-based - no uncertainty fields
+    uncertainty_fields: []
