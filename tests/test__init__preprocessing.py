@@ -1196,6 +1196,7 @@ class TestContractPreprocessorAutoRegistration:
         "RMD17",
         "XXMD",
         "QDPi",
+        "QM40",
     ]
 
     # Preprocessor module names used in _PREPROCESSOR_IMPORT_ERRORS
