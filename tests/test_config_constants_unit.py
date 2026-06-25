@@ -190,6 +190,7 @@ class TestHandlerConstants:
             "ANI2x",
             "XXMD",
             "QDPi",
+            "QM40",
         ]
         assert expected_types == config_constants.SUPPORTED_HANDLER_TYPES
 
