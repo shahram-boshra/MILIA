@@ -109,6 +109,30 @@ _ID_COLUMN = "Zinc_id"
 _SMILES_COLUMN = "smile"
 
 
+def _build_object_array(items: list) -> np.ndarray:
+    """
+    Build a 1-D object array while preserving each element's structure/dtype.
+
+    Using ``np.array(list_of_arrays, dtype=object)`` is unsafe: when the inner
+    arrays happen to share a shape NumPy collapses them into a single N-D array
+    (losing the per-molecule grouping) and can coerce the inner dtype to object.
+    Allocating with ``np.empty`` and assigning element-by-element guarantees a
+    1-D object array of length ``len(items)`` whose entries are the originals,
+    regardless of whether their shapes coincide. (Pattern established by the
+    xxMD preprocessor.)
+
+    Args:
+        items: List of per-molecule arrays/values to store.
+
+    Returns:
+        1-D ``np.ndarray`` of ``dtype=object``.
+    """
+    arr = np.empty(len(items), dtype=object)
+    for i, item in enumerate(items):
+        arr[i] = item
+    return arr
+
+
 def _locate_csv_files(csv_dir: Path) -> tuple[Path, Path, Path]:
     """
     Locate the QM40 main / xyz / bond CSV files under an extraction directory.
@@ -494,23 +518,23 @@ def parse_qm40_csv_files(
 
     features: dict[str, np.ndarray] = {
         # Required core features
-        "compounds": np.array(compounds, dtype=object),
-        "atoms": np.array(atoms_list, dtype=object),
-        "coordinates": np.array(coordinates_list, dtype=object),
+        "compounds": _build_object_array(compounds),
+        "atoms": _build_object_array(atoms_list),
+        "coordinates": _build_object_array(coordinates_list),
         # Per-atom node feature (canonical Mulliken key, matches QM9/DFT)
-        "Qmulliken": np.array(qmulliken_list, dtype=object),
+        "Qmulliken": _build_object_array(qmulliken_list),
         # Tracking label (not used for graph construction — coordinate_based)
-        "smiles": np.array(smiles_list, dtype=object),
+        "smiles": _build_object_array(smiles_list),
     }
 
     if include_initial_coordinates:
-        features["initial_coordinates"] = np.array(initial_coordinates_list, dtype=object)
+        features["initial_coordinates"] = _build_object_array(initial_coordinates_list)
 
     if include_bond_data:
-        features["bond_atom1_idx"] = np.array(bond_a1_list, dtype=object)
-        features["bond_atom2_idx"] = np.array(bond_a2_list, dtype=object)
-        features["bond_tag"] = np.array(bond_tag_list, dtype=object)
-        features["bond_lmod_ka"] = np.array(bond_lmod_list, dtype=object)
+        features["bond_atom1_idx"] = _build_object_array(bond_a1_list)
+        features["bond_atom2_idx"] = _build_object_array(bond_a2_list)
+        features["bond_tag"] = _build_object_array(bond_tag_list)
+        features["bond_lmod_ka"] = _build_object_array(bond_lmod_list)
 
     for key in QM40_SCALAR_KEYS:
         features[key] = np.array(scalar_props[key], dtype=np.float64)
