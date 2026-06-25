@@ -9,7 +9,7 @@ DatasetSchema, and DatasetFeatures.
 Modules exercised:
 - milia_pipeline/datasets/base.py — BaseDataset, DatasetMetadata, DatasetSchema, DatasetFeatures
 - milia_pipeline/datasets/registry.py — DatasetRegistry, list_all(), get()
-- milia_pipeline/datasets/implementations/ — All 10 registered dataset classes
+- milia_pipeline/datasets/implementations/ — All 11 registered dataset classes
 
 Contract guarantees verified:
 1. Every registered class is a proper BaseDataset subclass
@@ -115,6 +115,7 @@ EXPECTED_DATASETS = {
     "RMD17",
     "XXMD",
     "QDPi",
+    "QM40",
 }
 
 VALID_COORDINATE_UNITS = ("angstrom", "bohr")
@@ -135,7 +136,7 @@ class TestRegistryPopulation:
         assert len(registered_names) >= 1
 
     def test_expected_datasets_are_registered(self, registered_names: list[str]):
-        """All 10 known datasets from the project structure must be registered."""
+        """All 11 known datasets from the project structure must be registered."""
         registered_set = set(registered_names)
         missing = EXPECTED_DATASETS - registered_set
         assert not missing, (
