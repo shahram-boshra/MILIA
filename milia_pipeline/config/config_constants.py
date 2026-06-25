@@ -395,6 +395,7 @@ SUPPORTED_HANDLER_TYPES: list[str] = [
     "ANI2x",
     "XXMD",
     "QDPi",
+    "QM40",
 ]  # LEGACY - use get_supported_handler_types()
 DEFAULT_HANDLER_TYPE: str = "DFT"
 
@@ -411,6 +412,7 @@ REQUIRED_HANDLER_CONFIG_KEYS: dict[str, list[str]] = {
     "ANI2x": ["dataset_type", "processing_config"],
     "XXMD": ["dataset_type", "processing_config"],
     "QDPi": ["dataset_type", "processing_config"],
+    "QM40": ["dataset_type", "processing_config"],
 }
 
 # Handler feature support matrix
@@ -513,6 +515,16 @@ HANDLER_FEATURE_SUPPORT: dict[str, dict[str, bool]] = {
         "mo_energies": False,
         "forces": True,  # QDπ has atomic forces
     },
+    "QM40": {
+        "vibrational_analysis": False,
+        "uncertainty_handling": False,
+        "atomization_energy": True,
+        "rotational_constants": True,
+        "frequency_analysis": False,
+        "orbital_analysis": False,
+        "homo_lumo_gap": True,
+        "mo_energies": False,
+    },
 }
 
 # Handler property requirements
@@ -527,6 +539,7 @@ HANDLER_REQUIRED_PROPERTIES: dict[str, list[str]] = {
     "ANI2x": ["energy", "atoms", "coordinates"],
     "XXMD": ["energy", "atoms", "coordinates"],
     "QDPi": ["energy", "atoms", "coordinates"],
+    "QM40": ["Internal_E_0K", "atoms", "coordinates"],
 }
 
 # Handler optional properties
@@ -565,6 +578,30 @@ HANDLER_OPTIONAL_PROPERTIES: dict[str, list[str]] = {
     "ANI2x": ["forces", "molecule_id"],
     "XXMD": ["forces", "molecule_name", "split"],
     "QDPi": ["forces", "formula"],
+    "QM40": [
+        "HOMO",
+        "LUMO",
+        "HL_gap",
+        "Polarizability",
+        "spatial_extent",
+        "dipol_mom",
+        "ZPE",
+        "rot1",
+        "rot2",
+        "rot3",
+        "Inter_E_298",
+        "Enthalpy",
+        "Free_E",
+        "CV",
+        "Entropy",
+        "Qmulliken",
+        "smiles",
+        "initial_coordinates",
+        "bond_atom1_idx",
+        "bond_atom2_idx",
+        "bond_tag",
+        "bond_lmod_ka",
+    ],
 }
 
 # Handler molecular identifier keys
@@ -593,6 +630,7 @@ HANDLER_IDENTIFIER_KEYS: dict[str, list[tuple[str, str]]] = {
     "ANI2x": [],  # ANI-2x has NO parseable identifiers - uses coordinate_based strategy
     "XXMD": [],  # xxMD has NO parseable identifiers - uses coordinate_based strategy
     "QDPi": [],  # QDπ has NO parseable identifiers - uses coordinate_based strategy
+    "QM40": [],  # QM40 has SMILES but no InChI - uses coordinate_based strategy
 }
 
 # Handler coordinate units (for unit conversion)
@@ -607,6 +645,7 @@ HANDLER_COORDINATE_UNITS: dict[str, str] = {
     "ANI2x": "angstrom",
     "XXMD": "angstrom",
     "QDPi": "angstrom",
+    "QM40": "angstrom",
 }
 
 
