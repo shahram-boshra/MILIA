@@ -11,7 +11,7 @@ global_paths:
 # ────────────
 # Dataset Type
 # ────────────
-dataset_type: "DFT"  # Options: "DFT", "DMC", "Wavefunction", "QM9", "ANI1X", "ANI1CCX", "RMD17", "ANI2X", "XXMD", "QDPi"
+dataset_type: "DFT"  # Options: "DFT", "DMC", "Wavefunction", "QM9", "ANI1X", "ANI1CCX", "RMD17", "ANI2X", "XXMD", "QDPi", "QM40"
 
 
 # ────────────────
