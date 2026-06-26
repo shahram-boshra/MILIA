@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-26
+
+### Added
+
+- QM40 dataset support: 162,954 neutral drug-like ZINC molecules (10-40 heavy
+  atoms) at B3LYP/6-31G(2df,p), with optimized geometries, Mulliken charges,
+  16 scalar quantum-mechanical properties, and per-bond local vibrational mode
+  force constants. Reference: Madushanka, Moura Jr. & Kraka, *Scientific Data*
+  11, 1376 (2024). Includes dataset implementation, handler, preprocessor (ZIP
+  of three CSV files joined by Zinc_id), CSV parser, colocated YAML
+  configuration, and `config_constants` registry entries. Uses the
+  `coordinate_based` molecule-creation strategy (SMILES present, no InChI) and
+  is neutral-only (`supports_charged_molecules()` is `False`).
+
 ## [1.1.0] - 2026-02-12
 
 ### Added
@@ -32,5 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/shahram-boshra/MILIA/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shahram-boshra/MILIA/releases/tag/v1.1.0
