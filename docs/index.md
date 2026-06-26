@@ -2,7 +2,7 @@
 
 **Molecular graph processing and machine learning framework for molecular sciences.**
 
-MILIA (**M**achine **I**ntelligent **L**earning **I**nference **A**ssistant) provides
+MILIA (**M**achine **I**ntelligent **L**earning **I**nterface **A**ssistant) provides
 a configuration-driven, no-code pipeline for molecular dataset processing, graph neural
 network training, hyperparameter optimization, and deployment — covering the full
 lifecycle from raw molecular data to production inference.
