@@ -152,11 +152,22 @@ Backward Compatibility:
     - Standard model creation path completely untouched
 
 Author: milia Team
-Version: 1.1.0 (Phase 7 Extended)
+Status: Phase 7 (Extended)
 """
 
 import logging
 from typing import Any
+
+# =============================================================================
+# MODULE METADATA
+# =============================================================================
+# __version__ is bound to the canonical package version (milia_pipeline.__version__,
+# the single source of truth that pyproject.toml reads dynamically) so it tracks
+# every version bump with no edits here. Kept as a real module-level name because
+# it is referenced at import time (logger below), by _get_module_info(), and is
+# exported in __all__. Circular-import safe: milia_pipeline sets __version__
+# before any submodule import and imports this package only lazily inside functions.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 
 # =============================================================================
 # IMPORTS FROM MODEL_FACTORY MODULE
@@ -180,11 +191,7 @@ from .target_selection_config import (
     TargetSelectionConfig,
 )
 
-# =============================================================================
-# MODULE METADATA
-# =============================================================================
-
-__version__ = "1.1.0"
+__version__ = _CANONICAL_VERSION
 __author__ = "milia Team"
 __all__ = [
     # Main Classes
@@ -228,7 +235,7 @@ def _get_module_info() -> dict[str, Any]:
         >>> from milia_pipeline.models import factory
         >>> info = factory._get_module_info()
         >>> print(info['version'])
-        1.1.0
+        1.2.0
         >>> print(info['phase_7_features'])
         ['custom_architectures', 'ensemble_models']
     """
