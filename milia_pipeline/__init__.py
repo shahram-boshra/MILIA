@@ -228,7 +228,6 @@ Optional:
 
 Development Status
 ------------------
-Version: 1.1.0
 Status: Production-Ready
 Python: 3.10+
 License: See LICENSE file
@@ -579,7 +578,7 @@ def get_version() -> str:
     Example:
         >>> from milia_pipeline import get_version
         >>> print(get_version())
-        1.1.0
+        1.2.0
     """
     return __version__
 
@@ -601,7 +600,7 @@ def get_package_info() -> dict:
         >>> from milia_pipeline import get_package_info
         >>> info = get_package_info()
         >>> print(f"milia Pipeline v{info['version']} - {info['status']}")
-        milia Pipeline v1.1.0 - Production
+        milia Pipeline v1.2.0 - Production
     """
     return {
         "version": __version__,
