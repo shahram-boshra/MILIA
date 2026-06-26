@@ -12,13 +12,18 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [main]
-    # Only rebuild when image-affecting files change
-    paths:
-      - 'Dockerfile'
-      - 'environment.yml'
-      - 'milia_pipeline/**'
-      - 'setup.py'
-      - 'pyproject.toml'
+    # Rebuild on ANY image-affecting change. Denylist (paths-ignore) is used
+    # instead of an allowlist (paths) so newly added source/config/test
+    # directories trigger a rebuild automatically without editing this workflow.
+    # Only paths that are NEVER copied-and-run in a way that alters the image's
+    # runtime behavior are excluded. Note: tests/ IS bundled and executed inside
+    # the published image (smoke-test job below), so it is intentionally NOT
+    # ignored. Ref: GitHub Docs — Workflow syntax, "Excluding paths".
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - 'LICENSE'
   # Allow manual trigger for first-time build
   workflow_dispatch:
 
