@@ -249,7 +249,7 @@ Notes
 
 """
 
-__version__ = "1.1.0"  # Phase 5b: Post-training inference support
+__version__ = "1.2.0"  # Add QM40 dataset (162,954 neutral drug-like ZINC molecules)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
