@@ -261,9 +261,19 @@ For detailed documentation, see individual module and function docstrings.
 """
 
 # =============================================================================
+# Canonical Version Source (Unified-Version Policy)
+# =============================================================================
+# Bind this subpackage's version to the canonical package version
+# (milia_pipeline.__version__ — the single source of truth that pyproject.toml
+# reads dynamically) so it tracks every version bump with no edits here.
+# Circular-import safe: milia_pipeline sets __version__ before any submodule
+# import and never imports this package at top-level init (config is imported
+# lazily inside parent functions or directly by callers).
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+# =============================================================================
 # Core Configuration Loading
 # =============================================================================
-
 from .config_accessors import (
     # Registry Status Flags
     _REGISTRY_AVAILABLE as _ACCESSORS_REGISTRY_AVAILABLE,  # Renamed to avoid conflict
@@ -1180,7 +1190,7 @@ __all__ = [
 # Version & Metadata
 # =============================================================================
 
-__version__ = "1.1.0"  # Unified with milia_pipeline.__version__ (single source of truth)
+__version__ = _CANONICAL_VERSION  # Unified with milia_pipeline.__version__ (single source of truth)
 __author__ = "milia Pipeline Development Team"
 __description__ = "Configuration management system for milia molecular graph ML/DL pipeline"
 
