@@ -142,6 +142,19 @@ from typing import Any
 import milia_pipeline.datasets.implementations  # Triggers auto-discovery and @register decorators
 
 # ============================================================================
+# Version and Metadata
+# ============================================================================
+# Unified-version policy: the canonical package version
+# (``milia_pipeline.__version__`` — the single source of truth that
+# ``pyproject.toml`` reads dynamically) is the sole origin for every version
+# label exposed by this subpackage. Binding to it here, rather than restating a
+# literal, guarantees these labels can never drift on a version bump.
+# Circular-import safe: Python fully initializes the parent package (which sets
+# ``__version__`` before any submodule import) before this module executes, so
+# the attribute is always bound when read below.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+# ============================================================================
 # PHASE 1 ADDITIONS - Dataset Registry Infrastructure
 # ============================================================================
 from milia_pipeline.datasets.base import (
@@ -173,11 +186,7 @@ from milia_pipeline.exceptions import (
 # ============================================================================
 from .milia_dataset import miliaDataset
 
-# ============================================================================
-# Version and Metadata
-# ============================================================================
-
-__version__ = "1.1.0"
+__version__ = _CANONICAL_VERSION
 __author__ = "milia Pipeline Development Team"
 __module_status__ = "Production Ready - Handler-Only Architecture with Phase 6 Registry Integration and Standard Transforms Support"
 
@@ -388,19 +397,23 @@ def get_supported_dataset_types():
     return []
 
 
-HANDLER_ARCHITECTURE_VERSION = "1.1.0"
+# The five version labels below are bound to the canonical package version
+# (``_CANONICAL_VERSION`` == ``milia_pipeline.__version__``) per the
+# unified-version policy, so they advance automatically on every version bump
+# with no edits required here.
+HANDLER_ARCHITECTURE_VERSION = _CANONICAL_VERSION
 """Current handler architecture version (Handler-Only)."""
 
-TRANSFORMATION_SYSTEM_VERSION = "1.1.0"
+TRANSFORMATION_SYSTEM_VERSION = _CANONICAL_VERSION
 """Enhanced transformation system with experimental setup and standard transforms support."""
 
-REGISTRY_VERSION = "1.1.0"
+REGISTRY_VERSION = _CANONICAL_VERSION
 """Dataset registry infrastructure version (Phase 1)."""
 
-IMPLEMENTATIONS_VERSION = "1.1.0"
+IMPLEMENTATIONS_VERSION = _CANONICAL_VERSION
 """Dataset implementations version (Phase 2)."""
 
-PHASE_6_INTEGRATION_VERSION = "1.1.0"
+PHASE_6_INTEGRATION_VERSION = _CANONICAL_VERSION
 """Phase 6 registry-based feature query integration version."""
 
 # ============================================================================
