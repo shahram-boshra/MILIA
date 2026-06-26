@@ -72,7 +72,6 @@ Usage:
     )
 
 Author: MILIA Team
-Version: 1.1.0
 """
 
 import logging
@@ -84,7 +83,15 @@ logger = logging.getLogger(__name__)
 # VERSION INFORMATION
 # =============================================================================
 
-__version__ = "1.1.0"
+# __version__ is bound to the canonical package version (milia_pipeline.__version__,
+# the single source of truth that pyproject.toml reads dynamically) so it tracks
+# every version bump with no edits here. Kept as a real module-level name because
+# it is referenced at import time (logger below) and by print_available_components().
+# Circular-import safe: milia_pipeline sets __version__ before any submodule
+# import and imports this package only lazily inside functions.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+__version__ = _CANONICAL_VERSION
 __author__ = "MILIA Team"
 
 
