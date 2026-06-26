@@ -812,17 +812,21 @@ class TestPreprocessorRegistryIntegrationScenarios(unittest.TestCase):
         self.assertFalse(PreprocessorRegistry.supports_preprocessing("TypeA"))
 
     def test_register_all_known_project_dataset_types(self):
-        """Register all known project dataset types and verify enumeration."""
-        known_types = [
-            "Wavefunction",
-            "QM9",
-            "ANI1x",
-            "ANI1ccx",
-            "RMD17",
-            "ANI2x",
-            "XXMD",
-            "QDPi",
-        ]
+        """Register a preprocessor for every dataset type known to the dataset
+        registry and verify enumeration round-trips.
+
+        Dynamic: the known set is derived from the dataset registry's
+        auto-discovered roster (``datasets.registry.list_all()``), so newly
+        added datasets are covered automatically with no edit to this test.
+        """
+        from milia_pipeline.datasets.registry import list_all as list_known_dataset_types
+
+        known_types = sorted(list_known_dataset_types())
+        self.assertGreater(
+            len(known_types),
+            0,
+            "Dataset registry is empty — no dataset types discovered to register",
+        )
         for dtype in known_types:
             StubCls = _make_concrete_preprocessor_class(f"{dtype}Stub")
             PreprocessorRegistry.register(dtype)(StubCls)
