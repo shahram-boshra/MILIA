@@ -239,6 +239,15 @@ def __getattr__(name):
     Raises:
         AttributeError: If the attribute doesn't exist
     """
+    # Canonical version (unified-version policy): resolved lazily here so this
+    # module keeps its zero-module-level-import design (see header rationale).
+    # Deferring the import to attribute-access time tracks the canonical
+    # milia_pipeline.__version__ dynamically and cannot introduce an import cycle.
+    if name == "__version__":
+        from milia_pipeline import __version__ as _canonical_version
+
+        return _canonical_version
+
     # Handler classes - use dynamic discovery from implementations/
     if _is_handler_class(name):
         # DatasetHandler ABC comes from base_handler
@@ -371,7 +380,10 @@ __all__ = [
 # Module Metadata
 # =============================================================================
 
-__version__ = "1.1.0"  # Unified with milia_pipeline.__version__ (single source of truth)
+# __version__ is intentionally NOT bound statically here. It is resolved lazily
+# via __getattr__ (above) to the canonical milia_pipeline.__version__, preserving
+# this module's zero-module-level-import design while keeping the version unified
+# and drift-proof under the unified-version policy.
 __author__ = "Milia Pipeline Team"
 __description__ = (
     "Modular dataset handlers with transformation system integration and registry support"
