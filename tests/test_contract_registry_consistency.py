@@ -416,15 +416,15 @@ class TestCrossRegistryConsistency:
     2. Every handler registered in HandlerRegistry has a corresponding dataset
        in DatasetRegistry (reverse coverage).
 
-    Note: The MILIA project structure (as of v1.1.0) shows 5 dataset
-    implementations (DFT, DMC, Wavefunction, XXMD, QDPi) and 10 handler
-    implementations (the above 5 plus QM9, ANI1x, ANI1ccx, ANI2x, RMD17).
-    This asymmetry — where some handlers exist without corresponding dataset
-    implementations — may be an intentional design choice (handlers can work
-    with datasets that are not yet formally registered via @register in
-    datasets/implementations/). The tests below document this and report
-    precisely which entries are mismatched, without assuming one direction
-    must be a strict subset of the other.
+    Note: The MILIA project structure currently provides 11 dataset
+    implementations (DFT, DMC, Wavefunction, QM9, ANI1x, ANI1ccx, ANI2x,
+    RMD17, XXMD, QDPi, QM40) each with a corresponding handler implementation
+    (11 handlers total), so the two registries are expected to be symmetric.
+    Should any asymmetry arise — e.g. a handler that works with a dataset not
+    yet formally registered via @register in datasets/implementations/ — the
+    tests below report precisely which entries are mismatched, without assuming
+    one direction must be a strict subset of the other. Counts are not asserted
+    directly; coverage is checked dynamically against the live registries.
     """
 
     @pytest.mark.skipif(not _BOTH_REGISTRIES_AVAILABLE, reason=SKIP_NO_BOTH_REGISTRIES)
