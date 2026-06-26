@@ -93,8 +93,14 @@ For advanced usage and internal utilities, import directly from submodules:
 
 import logging
 
-# Package version - Updated for Phase 6 molecule_filters registry integration
-__version__ = "1.1.0"
+# Package version bound to the canonical milia_pipeline.__version__ (the single
+# source of truth that pyproject.toml reads dynamically) so it tracks every version
+# bump with no edits here. Kept as a real module-level name because it is referenced
+# at import time (logger below). Circular-import safe: milia_pipeline sets
+# __version__ before any submodule import and imports this package only lazily.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+__version__ = _CANONICAL_VERSION
 
 _logger = logging.getLogger(__name__)
 
