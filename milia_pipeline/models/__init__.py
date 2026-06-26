@@ -93,11 +93,19 @@ Components
 - **PHASE 7: Builders**: LayerRegistry, ArchitectureBuilder, ModelComposer, Templates
 - **PHASE 8: HPO**: HPOManager, HPOConfig, OptunaPruningCallback, SearchSpaceBuilder
 
-Version: 1.1.0 (Phase 8 HPO)
+Status: Phase 8 (HPO)
 Author: milia Team
 """
 
-__version__ = "1.1.0"
+# __version__ is bound to the canonical package version (milia_pipeline.__version__,
+# the single source of truth that pyproject.toml reads dynamically) so it tracks
+# every version bump with no edits here. Kept as a real module-level name because
+# it is referenced at import time (logger below) and by get_module_info().
+# Circular-import safe: milia_pipeline sets __version__ before any submodule
+# import and imports this package only lazily inside functions.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+__version__ = _CANONICAL_VERSION
 
 import logging
 
