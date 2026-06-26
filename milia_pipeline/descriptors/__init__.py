@@ -297,8 +297,15 @@ License
 See project LICENSE file
 """
 
-# Version
-__version__ = "1.1.0"
+# Version — bound to the canonical package version (milia_pipeline.__version__,
+# the single source of truth that pyproject.toml reads dynamically) so it tracks
+# every version bump with no edits here. Circular-import safe: milia_pipeline
+# sets __version__ before any submodule import and never imports this package at
+# top-level init (descriptors is imported lazily or directly by callers).
+# Reload-safe: importlib.reload re-runs this import and re-derives the value.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+__version__ = _CANONICAL_VERSION
 
 # =============================================================================
 # IMPORTS - CORE COMPONENTS
