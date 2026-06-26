@@ -320,7 +320,7 @@ You now have a running install. If you want to *understand* MILIA — to evaluat
 
 Once those three are familiar, the comprehensive structural map is [`MILIA_Pipeline_Project_Structure.md`](MILIA_Pipeline_Project_Structure.md) — 4,400+ lines covering every directory, file, and class in the package, organised top-down. Use it as a lookup, not a linear read.
 
-For a higher-level, narrative tour of the 11 core modules and the split-configuration architecture, see [`README.md` § Architecture](README.md#architecture) and [`README.md` § Datasets](README.md#datasets) — the latter covers the 10 shipped dataset implementations and the three-file pattern for adding your own.
+For a higher-level, narrative tour of the 11 core modules and the split-configuration architecture, see [`README.md` § Architecture](README.md#architecture) and [`README.md` § Datasets](README.md#datasets) — the latter covers the 11 shipped dataset implementations and the three-file pattern for adding your own.
 
 
 
@@ -416,8 +416,8 @@ This section maps the headline claims from [`README.md` § Key Features](README.
 
 | Claim (paraphrased from README) | Verify by inspecting |
 |---|---|
-| **No-code, YAML-driven ML/DL pipeline.** Run dataset curation, transformations, training, HPO, and prediction through configuration alone. | The 7 step-by-step commands you executed in §6, plus `configs/main.yaml` and the per-dataset files under `configs/datasets/` (10 files; see `MILIA_Pipeline_Project_Structure.md`). No Python is written by the user in §6. |
-| **10 shipped dataset implementations** (VQM24 family, QM9, ANI-1x/1ccx/2x, rMD17, xxMD, QDπ). | `milia_pipeline/datasets/implementations/` — one `.py` per dataset. README § Datasets table names each, with primary-source citation. |
+| **No-code, YAML-driven ML/DL pipeline.** Run dataset curation, transformations, training, HPO, and prediction through configuration alone. | The 7 step-by-step commands you executed in §6, plus `configs/main.yaml` and the per-dataset files under `configs/datasets/` (11 files; see `MILIA_Pipeline_Project_Structure.md`). No Python is written by the user in §6. |
+| **11 shipped dataset implementations** (VQM24 family, QM9, ANI-1x/1ccx/2x, rMD17, xxMD, QDπ, QM40). | `milia_pipeline/datasets/implementations/` — one `.py` per dataset. README § Datasets table names each, with primary-source citation. |
 | **Every PyTorch Geometric model is reachable by name** via dynamic introspection. | `milia_pipeline/models/` — registry and factory. README § Key Features → "Unlimited Model Flexibility" + § Architecture row "models" (~25 files). |
 | **400+ molecular descriptors across 6 categories.** | `milia_pipeline/descriptors/` — registry, 6+ files. README § Key Features → "Molecular Descriptors" enumerates the 6 categories with counts. |
 | **Hardware-agnostic** — CPU, CUDA, MPS, TPU; 4 distributed strategies. | `milia_pipeline/models/` acceleration submodule. README § Key Features → "Hardware Agnostic" + Architecture row "models". The Docker image you ran is the CPU configuration. |
