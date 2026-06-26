@@ -9,7 +9,7 @@ Verifies that every registered handler implementation satisfies all 11 methods
 of `DatasetHandlerProtocol` with correct return types.
 
 Test Scope (from MILIA_Test_Recommendations.md §2.1):
-- Iterates over all 10 registered handlers
+- Iterates over all 11 registered handlers
 - For each handler, verifies:
     1. Method existence (all 11 protocol methods present)
     2. Return type correctness (e.g., get_dataset_type() -> str)
@@ -19,7 +19,7 @@ Test Scope (from MILIA_Test_Recommendations.md §2.1):
 Modules Exercised:
 - milia_pipeline/datasets/protocols.py — DatasetHandlerProtocol (11 methods)
 - milia_pipeline/handlers/handler_registry.py — HandlerRegistry.list_all()
-- milia_pipeline/handlers/implementations/*.py — All 10 handler implementations
+- milia_pipeline/handlers/implementations/*.py — All 11 handler implementations
 
 Design Decisions:
 - No sys.modules pollution: all mocking is test-scoped via @patch or fixtures
@@ -34,8 +34,8 @@ References:
   experimental_setup=None), 12 abstract methods
 - protocols.py: DatasetHandlerProtocol with 11 @runtime_checkable methods
 - handler_registry.py: HandlerRegistry, @register_handler, get_default_registry()
-- All 10 handler implementations: DFT, DMC, Wavefunction, QM9, ANI1x, ANI1ccx,
-  ANI2x, RMD17, XXMD, QDPi
+- All 11 handler implementations: DFT, DMC, Wavefunction, QM9, ANI1x, ANI1ccx,
+  ANI2x, RMD17, XXMD, QDPi, QM40
 
 Execution:
     pytest tests/test_contract_dataset_handler_protocol.py -v
@@ -81,8 +81,8 @@ from milia_pipeline.handlers.handler_registry import (
 # Constants derived from evidence
 # ---------------------------------------------------------------------------
 
-# All 10 handler classes and their expected dataset_type strings.
-# Source: grep of @register_handler + get_dataset_type() across all 10 files.
+# All 11 handler classes and their expected dataset_type strings.
+# Source: grep of @register_handler + get_dataset_type() across all 11 files.
 EXPECTED_HANDLERS: dict[str, str] = {
     "DFT": "DFTDatasetHandler",
     "DMC": "DMCDatasetHandler",
@@ -94,6 +94,7 @@ EXPECTED_HANDLERS: dict[str, str] = {
     "RMD17": "RMD17DatasetHandler",
     "XXMD": "XXMDDatasetHandler",
     "QDPi": "QDPiDatasetHandler",
+    "QM40": "QM40DatasetHandler",
 }
 
 # The 11 protocol methods from DatasetHandlerProtocol (protocols.py).
@@ -341,7 +342,7 @@ REGISTERED_HANDLER_NAMES = _get_registered_handler_names()
 
 
 class TestRegistryPopulation:
-    """Verify the handler registry is correctly populated with all 10 handlers."""
+    """Verify the handler registry is correctly populated with all 11 handlers."""
 
     def test_registry_is_not_empty(self, default_registry):
         """The default registry must contain at least one handler."""
@@ -376,10 +377,11 @@ class TestRegistryPopulation:
             )
 
     def test_handler_count(self, default_registry):
-        """Registry should contain at least 10 handlers (the known set)."""
+        """Registry should contain at least the known handler set (currently 11)."""
         count = len(default_registry)
-        assert count >= 10, (
-            f"Expected at least 10 handlers, found {count}: {default_registry.list_all()}"
+        minimum = len(EXPECTED_HANDLERS)
+        assert count >= minimum, (
+            f"Expected at least {minimum} handlers, found {count}: {default_registry.list_all()}"
         )
 
     def test_registry_info_structure(self, default_registry):
