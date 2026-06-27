@@ -46,7 +46,6 @@ Reference: Smith, J.S., et al. The ANI-1ccx and ANI-1x data sets,
            for molecules. Sci Data 7, 134 (2020).
 
 Author: MILIA Pipeline Team
-Version: 1.1.0
 Date: January 2026
 """
 
@@ -56,6 +55,7 @@ from typing import Any
 
 import numpy as np
 
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
@@ -361,7 +361,7 @@ class ANI1ccxPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.1.0",
+                "version": _CANONICAL_VERSION,
                 "dataset_name": "ANI1ccx",
                 "source": h5_path.name,
                 "source_url": "https://figshare.com/ndownloader/files/18112775",
@@ -369,7 +369,7 @@ class ANI1ccxPreprocessor(BasePreprocessor):
                 "doi": "10.1038/s41597-020-0473-z",
                 "file_format": ".h5 (HDF5 ANI-1x format, ANI-1ccx subset)",
                 "parser": "ANI1ccxPreprocessor",
-                "preprocessing_version": "1.1.0",
+                "preprocessing_version": _CANONICAL_VERSION,
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 "primary_energy": "ccsd(t)_cbs.energy (CCSD(T)/CBS)",
