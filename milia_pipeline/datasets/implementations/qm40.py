@@ -39,6 +39,13 @@ never for graph construction.
 
 from typing import ClassVar
 
+# Canonical version: QM40 metadata.version tracks milia_pipeline.__version__
+# (the single source of truth that pyproject.toml reads dynamically) so it advances
+# automatically on every version bump with no per-dataset edits — consistent with
+# the other dataset implementations. Circular-import safe: milia_pipeline sets
+# __version__ before any submodule import, and dataset implementations are imported
+# (via dynamic discovery) only after the parent package is fully initialized.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -83,7 +90,7 @@ class QM40Dataset(BaseDataset):
 
     metadata: ClassVar[DatasetMetadata] = DatasetMetadata(
         name="QM40",
-        version="1.0.0",
+        version=_CANONICAL_VERSION,
         description=(
             "QM40 quantum chemistry dataset: 162,954 neutral drug-like ZINC molecules "
             "(C, O, N, S, F, Cl + H; 10-40 heavy atoms) at B3LYP/6-31G(2df,p). Provides "
