@@ -56,9 +56,6 @@ try:
         ProcessingConfig,
         TransformationConfig,
         TransformSpec,
-        create_dataset_config_from_global,
-        create_filter_config_from_global,
-        create_processing_config_from_global,
     )
     from milia_pipeline.exceptions import (
         ConfigurationError,
@@ -165,15 +162,15 @@ class TestMoleculeDataConverterInitialization(unittest.TestCase):
 
     def setUp(self):
         self.global_config = create_mock_global_config()
-        try:
-            self.dataset_config = create_dataset_config_from_global(self.global_config)
-            self.filter_config = create_filter_config_from_global(self.global_config)
-            self.processing_config = create_processing_config_from_global(self.global_config)
-        except Exception:
-            self.dataset_config = Mock(spec=DatasetConfig)
-            self.dataset_config.dataset_type = "DFT"
-            self.filter_config = Mock(spec=FilterConfig)
-            self.processing_config = Mock(spec=ProcessingConfig)
+        # Build DFT-typed config doubles directly. create_*_config_from_global()
+        # read load_config() (the live on-disk config), which would couple these
+        # unit tests to whichever dataset configs/main.yaml currently targets and
+        # mismatch the DFT handler doubles used below. Explicit doubles keep the
+        # suite deterministic and isolated from deployment state.
+        self.dataset_config = Mock(spec=DatasetConfig)
+        self.dataset_config.dataset_type = "DFT"
+        self.filter_config = Mock(spec=FilterConfig)
+        self.processing_config = Mock(spec=ProcessingConfig)
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -330,8 +327,17 @@ class TestMoleculeDataConverterInitialization(unittest.TestCase):
         mock_handler.get_dataset_type.return_value = "DFT"
         mock_create_handler.return_value = mock_handler
 
-        # Pass None to trigger default creation
-        converter = MoleculeDataConverter()
+        # With no configs, MoleculeDataConverter builds its defaults via
+        # create_*_config_from_global(), which read load_config() (the live on-disk
+        # config). Pin dataset_type to DFT so this default-creation path is isolated
+        # from whichever dataset configs/main.yaml currently targets and matches the
+        # DFT handler double above.
+        with patch(
+            "milia_pipeline.config.config_loader.load_config",
+            return_value={"dataset_type": "DFT"},
+        ):
+            # Pass None to trigger default creation
+            converter = MoleculeDataConverter()
 
         # Should have created defaults
         self.assertIsNotNone(converter._dataset_config)
@@ -349,15 +355,15 @@ class TestMoleculeDataConverterHandlers(unittest.TestCase):
 
     def setUp(self):
         self.global_config = create_mock_global_config()
-        try:
-            self.dataset_config = create_dataset_config_from_global(self.global_config)
-            self.filter_config = create_filter_config_from_global(self.global_config)
-            self.processing_config = create_processing_config_from_global(self.global_config)
-        except Exception:
-            self.dataset_config = Mock(spec=DatasetConfig)
-            self.dataset_config.dataset_type = "DFT"
-            self.filter_config = Mock(spec=FilterConfig)
-            self.processing_config = Mock(spec=ProcessingConfig)
+        # Build DFT-typed config doubles directly. create_*_config_from_global()
+        # read load_config() (the live on-disk config), which would couple these
+        # unit tests to whichever dataset configs/main.yaml currently targets and
+        # mismatch the DFT handler doubles used below. Explicit doubles keep the
+        # suite deterministic and isolated from deployment state.
+        self.dataset_config = Mock(spec=DatasetConfig)
+        self.dataset_config.dataset_type = "DFT"
+        self.filter_config = Mock(spec=FilterConfig)
+        self.processing_config = Mock(spec=ProcessingConfig)
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -482,15 +488,15 @@ class TestMoleculeDataConverterTransformationSystem(unittest.TestCase):
 
     def setUp(self):
         self.global_config = create_mock_global_config()
-        try:
-            self.dataset_config = create_dataset_config_from_global(self.global_config)
-            self.filter_config = create_filter_config_from_global(self.global_config)
-            self.processing_config = create_processing_config_from_global(self.global_config)
-        except Exception:
-            self.dataset_config = Mock(spec=DatasetConfig)
-            self.dataset_config.dataset_type = "DFT"
-            self.filter_config = Mock(spec=FilterConfig)
-            self.processing_config = Mock(spec=ProcessingConfig)
+        # Build DFT-typed config doubles directly. create_*_config_from_global()
+        # read load_config() (the live on-disk config), which would couple these
+        # unit tests to whichever dataset configs/main.yaml currently targets and
+        # mismatch the DFT handler doubles used below. Explicit doubles keep the
+        # suite deterministic and isolated from deployment state.
+        self.dataset_config = Mock(spec=DatasetConfig)
+        self.dataset_config.dataset_type = "DFT"
+        self.filter_config = Mock(spec=FilterConfig)
+        self.processing_config = Mock(spec=ProcessingConfig)
 
         self.transform_config = Mock(spec=TransformationConfig)
         mock_setup = Mock(spec=ExperimentalSetup)
@@ -698,16 +704,16 @@ class TestMoleculeDataConverterValidation(unittest.TestCase):
 
     def setUp(self):
         self.global_config = create_mock_global_config()
-        try:
-            self.dataset_config = create_dataset_config_from_global(self.global_config)
-            self.filter_config = create_filter_config_from_global(self.global_config)
-            self.processing_config = create_processing_config_from_global(self.global_config)
-        except Exception:
-            self.dataset_config = Mock(spec=DatasetConfig)
-            self.dataset_config.dataset_type = "DFT"
-            self.filter_config = Mock(spec=FilterConfig)
-            self.processing_config = Mock(spec=ProcessingConfig)
-            self.processing_config.enable_validation = True
+        # Build DFT-typed config doubles directly. create_*_config_from_global()
+        # read load_config() (the live on-disk config), which would couple these
+        # unit tests to whichever dataset configs/main.yaml currently targets and
+        # mismatch the DFT handler doubles used below. Explicit doubles keep the
+        # suite deterministic and isolated from deployment state.
+        self.dataset_config = Mock(spec=DatasetConfig)
+        self.dataset_config.dataset_type = "DFT"
+        self.filter_config = Mock(spec=FilterConfig)
+        self.processing_config = Mock(spec=ProcessingConfig)
+        self.processing_config.enable_validation = True
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -939,15 +945,15 @@ class TestMoleculeDataConverterDiagnostics(unittest.TestCase):
 
     def setUp(self):
         self.global_config = create_mock_global_config()
-        try:
-            self.dataset_config = create_dataset_config_from_global(self.global_config)
-            self.filter_config = create_filter_config_from_global(self.global_config)
-            self.processing_config = create_processing_config_from_global(self.global_config)
-        except Exception:
-            self.dataset_config = Mock(spec=DatasetConfig)
-            self.dataset_config.dataset_type = "DFT"
-            self.filter_config = Mock(spec=FilterConfig)
-            self.processing_config = Mock(spec=ProcessingConfig)
+        # Build DFT-typed config doubles directly. create_*_config_from_global()
+        # read load_config() (the live on-disk config), which would couple these
+        # unit tests to whichever dataset configs/main.yaml currently targets and
+        # mismatch the DFT handler doubles used below. Explicit doubles keep the
+        # suite deterministic and isolated from deployment state.
+        self.dataset_config = Mock(spec=DatasetConfig)
+        self.dataset_config.dataset_type = "DFT"
+        self.filter_config = Mock(spec=FilterConfig)
+        self.processing_config = Mock(spec=ProcessingConfig)
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
