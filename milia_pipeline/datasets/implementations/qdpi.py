@@ -49,6 +49,13 @@ Groups organized by chemical formula, each containing:
 
 from typing import ClassVar
 
+# Canonical version: dataset metadata.version tracks milia_pipeline.__version__
+# (the single source of truth that pyproject.toml reads dynamically) so it advances
+# automatically on every version bump with no per-dataset edits. Circular-import
+# safe: milia_pipeline sets __version__ before any submodule import, and dataset
+# implementations are imported (via dynamic discovery) only after the parent
+# package is fully initialized.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -82,7 +89,7 @@ class QDPiDataset(BaseDataset):
 
     metadata: ClassVar[DatasetMetadata] = DatasetMetadata(
         name="QDPi",
-        version="1.1.0",
+        version=_CANONICAL_VERSION,
         description=(
             "Quantum Deep Potential Interaction dataset for drug discovery. "
             "Contains ~1.6 million structures of drug-like molecules and biopolymer "
