@@ -108,8 +108,6 @@ class WavefunctionDatasetHandler(DatasetHandler):
             dataset_config, filter_config, processing_config, logger, experimental_setup
         )
 
-        self.logger.info("Initializing WavefunctionDatasetHandler")
-
     def get_dataset_type(self) -> str:
         """
         Get the dataset type identifier.
