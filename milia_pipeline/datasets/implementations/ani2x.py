@@ -31,6 +31,13 @@ Evidence sources:
 - MILIA_Adding_New_Datasets_Implementation_Blueprint.md (decision tree analysis)
 """
 
+# Canonical version: dataset metadata.version tracks milia_pipeline.__version__
+# (the single source of truth that pyproject.toml reads dynamically) so it advances
+# automatically on every version bump with no per-dataset edits. Circular-import
+# safe: milia_pipeline sets __version__ before any submodule import, and dataset
+# implementations are imported (via dynamic discovery) only after the parent
+# package is fully initialized.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -87,7 +94,7 @@ class ANI2xDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="ANI2x",
-        version="1.1.0",
+        version=_CANONICAL_VERSION,
         description=(
             "ANI-2x dataset with DFT conformations for organic molecules "
             "(H, C, N, O, S, F, Cl). Properties computed at ωB97X/6-31G(d) level "
