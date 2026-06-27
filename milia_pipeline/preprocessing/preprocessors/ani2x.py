@@ -37,7 +37,6 @@ Reference: Devereux, C., Smith, J.S., et al. Extending the Applicability of the
            J. Chem. Theory Comput. 2020, 16, 7, 4192-4202.
 
 Author: MILIA Pipeline Team
-Version: 1.1.0
 Date: January 2026
 """
 
@@ -47,6 +46,7 @@ from typing import Any
 
 import numpy as np
 
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
@@ -314,7 +314,7 @@ class ANI2xPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.1.0",
+                "version": _CANONICAL_VERSION,
                 "dataset_name": "ANI2x",
                 "source": archive_path.name,
                 "source_url": "https://zenodo.org/records/10108942/files/ANI-2x-wB97X-631Gd.tar.gz",
@@ -322,7 +322,7 @@ class ANI2xPreprocessor(BasePreprocessor):
                 "doi": "10.1021/acs.jctc.0c00121",
                 "file_format": ".h5 (HDF5 ANI-2x format)",
                 "parser": "ANI2xPreprocessor",
-                "preprocessing_version": "1.1.0",
+                "preprocessing_version": _CANONICAL_VERSION,
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 "force_units": "hartree/angstrom",
