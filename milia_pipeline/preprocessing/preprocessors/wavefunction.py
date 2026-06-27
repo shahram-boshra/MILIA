@@ -8,7 +8,6 @@ Extracts wavefunction files from tar.gz archive, parses with IOData,
 and creates .npz file compatible with miliaDataset.
 
 Author: milia Pipeline Team
-Version: 1.1.0
 Date: November 2025
 """
 
@@ -16,6 +15,7 @@ import logging
 import shutil
 from pathlib import Path
 
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
@@ -156,13 +156,13 @@ class WavefunctionPreprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.1.0",
+                "version": _CANONICAL_VERSION,
                 "dataset_name": "milia_Wavefunction",
                 "source": tar_path.name,
                 "feature_tier": feature_tier,
                 "file_format": ".molden",
                 "parser": "IOData",
-                "preprocessing_version": "1.1.0",
+                "preprocessing_version": _CANONICAL_VERSION,
                 **parse_metadata,  # Include parsing statistics
             }
 
