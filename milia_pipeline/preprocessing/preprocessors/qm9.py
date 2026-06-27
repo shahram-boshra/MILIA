@@ -17,7 +17,6 @@ QM9 Dataset Information:
 - Format: Extended XYZ with properties in comment line
 
 Author: milia Pipeline Team
-Version: 1.1.0
 Date: December 2025
 """
 
@@ -25,6 +24,7 @@ import logging
 import shutil
 from pathlib import Path
 
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.exceptions import ConfigurationError, DataProcessingError
 from milia_pipeline.preprocessing.base_preprocessor import BasePreprocessor
 from milia_pipeline.preprocessing.registry import PreprocessorRegistry
@@ -173,7 +173,7 @@ class QM9Preprocessor(BasePreprocessor):
 
             # Prepare comprehensive metadata
             npz_metadata = {
-                "version": "1.1.0",
+                "version": _CANONICAL_VERSION,
                 "dataset_name": "QM9",
                 "source": archive_path.name,
                 "source_url": "https://figshare.com/ndownloader/files/3195389",
@@ -181,7 +181,7 @@ class QM9Preprocessor(BasePreprocessor):
                 "doi": "10.1038/sdata.2014.22",
                 "file_format": ".xyz (extended QM9 format)",
                 "parser": "qm9_xyz_parser",
-                "preprocessing_version": "1.1.0",
+                "preprocessing_version": _CANONICAL_VERSION,
                 "coordinate_units": "angstrom",
                 "energy_units": "hartree",
                 **parse_metadata,  # Include parsing statistics
