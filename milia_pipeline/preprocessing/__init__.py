@@ -173,6 +173,15 @@ import logging
 import warnings
 
 # ============================================================================
+# Canonical Version Source (Unified-Version Policy)
+# ============================================================================
+# Bind this subpackage's __version__ to the canonical milia_pipeline.__version__
+# (the single source of truth that pyproject.toml reads dynamically) so it tracks
+# every version bump with no edits here. Circular-import safe: milia_pipeline sets
+# __version__ before any submodule import and imports this package only lazily.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
+
+# ============================================================================
 # Core Component Imports
 # ============================================================================
 # These are the fundamental building blocks of the preprocessing subsystem
@@ -292,7 +301,7 @@ except ImportError as e:
 # ============================================================================
 
 # Module version
-__version__ = "1.1.0"
+__version__ = _CANONICAL_VERSION
 
 # Public API - explicitly define what gets exported with "from preprocessing import *"
 __all__ = [
