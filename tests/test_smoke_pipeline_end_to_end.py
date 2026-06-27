@@ -275,27 +275,34 @@ class TestConfigurationSystemSmoke:
 
         assert hasattr(config_accessors, "get_dataset_type")
 
-    def test_config_container_creation_from_dict(self, minimal_config_dict):
-        """Config containers can be created from a configuration dictionary.
+    def test_config_container_creation_from_dict(self, minimal_config_dict, monkeypatch):
+        """Config containers can be created from the global configuration.
 
         Evidence: config_containers.py provides create_dataset_config_from_global(),
-        create_filter_config_from_global(), create_processing_config_from_global()
-        factory functions that accept a global config dict.
+        create_filter_config_from_global(), create_processing_config_from_global(),
+        which read the global config via config_loader.load_config(). The
+        self-contained fixture is fed through load_config so the test stays isolated
+        from the on-disk config.
         """
+        import milia_pipeline.config.config_loader as _config_loader
         from milia_pipeline.config.config_containers import (
             create_dataset_config_from_global,
             create_filter_config_from_global,
             create_processing_config_from_global,
         )
 
-        dataset_config = create_dataset_config_from_global(minimal_config_dict)
+        monkeypatch.setattr(
+            _config_loader, "load_config", lambda *args, **kwargs: minimal_config_dict
+        )
+
+        dataset_config = create_dataset_config_from_global()
         assert dataset_config is not None
         assert dataset_config.dataset_type == "DFT"
 
-        filter_config = create_filter_config_from_global(minimal_config_dict)
+        filter_config = create_filter_config_from_global()
         assert filter_config is not None
 
-        processing_config = create_processing_config_from_global(minimal_config_dict)
+        processing_config = create_processing_config_from_global()
         assert processing_config is not None
 
     def test_load_config_with_temp_yaml(self, tmp_work_dir, minimal_config_dict):
@@ -1007,22 +1014,29 @@ class TestCrossSystemIntegrationSmoke:
     and training.
     """
 
-    def test_config_to_handler_pipeline(self, minimal_config_dict):
+    def test_config_to_handler_pipeline(self, minimal_config_dict, monkeypatch):
         """Config loading → container creation → handler creation path works.
 
         This tests the critical path from configuration to handler instantiation
         that every real pipeline execution must traverse.
         """
+        import milia_pipeline.config.config_loader as _config_loader
         from milia_pipeline.config.config_containers import (
             create_dataset_config_from_global,
             create_filter_config_from_global,
             create_processing_config_from_global,
         )
 
-        # Step 1: Create config containers
-        dataset_config = create_dataset_config_from_global(minimal_config_dict)
-        filter_config = create_filter_config_from_global(minimal_config_dict)
-        processing_config = create_processing_config_from_global(minimal_config_dict)
+        # Step 1: Create config containers. The factories read
+        # config_loader.load_config(); feed them the self-contained fixture so the
+        # test is isolated from whichever dataset configs/main.yaml currently targets.
+        monkeypatch.setattr(
+            _config_loader, "load_config", lambda *args, **kwargs: minimal_config_dict
+        )
+
+        dataset_config = create_dataset_config_from_global()
+        filter_config = create_filter_config_from_global()
+        processing_config = create_processing_config_from_global()
 
         assert dataset_config.dataset_type == "DFT"
 
