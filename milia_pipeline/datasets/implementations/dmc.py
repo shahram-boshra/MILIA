@@ -12,6 +12,13 @@ Evidence sources:
 - dataset_handlers.py lines 2190-2207 (get_molecule_creation_strategy)
 """
 
+# Canonical version: dataset metadata.version tracks milia_pipeline.__version__
+# (the single source of truth that pyproject.toml reads dynamically) so it advances
+# automatically on every version bump with no per-dataset edits. Circular-import
+# safe: milia_pipeline sets __version__ before any submodule import, and dataset
+# implementations are imported (via dynamic discovery) only after the parent
+# package is fully initialized.
+from milia_pipeline import __version__ as _CANONICAL_VERSION
 from milia_pipeline.datasets.base import (
     BaseDataset,
     DatasetFeatures,
@@ -50,7 +57,7 @@ class DMCDataset(BaseDataset):
 
     metadata = DatasetMetadata(
         name="DMC",
-        version="1.1.0",
+        version=_CANONICAL_VERSION,
         description="DMC quantum Monte Carlo dataset with uncertainty handling",
         author="MILIA Pipeline Team",
     )
