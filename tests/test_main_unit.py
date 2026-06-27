@@ -644,6 +644,11 @@ class TestConfigurationValidation(unittest.TestCase):
         self.assertTrue(logger.info.called)
         # Should call validate_dataset_specific_configuration
         mock_validate_dataset.assert_called_once()
+        # Regression guard (single-probe invariant): handler availability must be
+        # validated exactly once per validate_configuration() call. The probe
+        # reconstructs every registered handler, so a duplicate call is wasteful;
+        # this asserts the redundant second probe is not reintroduced.
+        mock_validate_handler.assert_called_once()
 
     @patch("main.load_config")
     def test_validate_dft_configuration(self, mock_load_config):

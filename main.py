@@ -1742,9 +1742,12 @@ def validate_configuration(
         # Only validate if handlers are actually available
         if validate_handlers and HANDLERS_AVAILABLE:
             try:
-                validate_handler_availability(logger)
-
-                # Test handler creation with current configuration
+                # Handler availability was already validated above (the
+                # validate_handler_availability call guarded by `if validate_handlers`).
+                # Re-probing the full registry here is redundant — it reconstructs
+                # every registered handler a second time. create_handler_for_validation()
+                # builds only the configured dataset's handler, which is what this
+                # block needs to verify.
                 test_handler = create_handler_for_validation(
                     dataset_config, filter_config, processing_config, logger
                 )
