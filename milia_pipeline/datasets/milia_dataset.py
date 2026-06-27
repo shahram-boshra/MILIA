@@ -36,7 +36,6 @@ PHASE 6: Registry Integration for Dynamic Dataset Processing
 """
 
 import logging
-import multiprocessing
 import os
 import shutil
 import time
@@ -371,34 +370,35 @@ logger = logging.getLogger(__name__)
 
 def _delete_directory_in_background(directory_path_str: str, logger_name: str):
     """
-    Deletes a directory in a separate process to avoid blocking the main thread.
+    Delete a directory tree (existence check + ``shutil.rmtree``) with non-fatal
+    OSError handling.
 
-    This is particularly useful for cleaning up large temporary directories
-    (e.g., processed data chunks) after the main processing is complete.
-    Accepts directory_path as a string because `Path` objects might not
-    pickle reliably across processes in all Python versions/scenarios.
+    Invoked **synchronously** by ``miliaDataset._cleanup_chunks`` after the
+    consolidated dataset has been written, so removal is deterministic and cannot
+    be interrupted by interpreter/CLI exit. (The ``_in_background`` suffix is
+    retained for backward compatibility; the function performs a plain, blocking
+    deletion and is no longer dispatched to a separate process.)
+
+    Accepts ``directory_path`` as a string (kept from the prior cross-process
+    signature) so the helper remains reusable as-is.
 
     Args:
-        directory_path_str (str): The string representation of the path to the directory to be deleted.
-        logger_name (str): The name of the logger to be used within the child process for logging messages.
+        directory_path_str (str): String path of the directory to delete.
+        logger_name (str): Name of the logger used for deletion messages.
     """
-    # Re-initialize logger in the child process if detailed logging is desired
-    # Note: This logger will operate independently of the parent's logger setup.
     process_logger = logging.getLogger(str(logger_name))
 
     directory_path = Path(directory_path_str)  # Convert string back to Path object
 
     if directory_path.exists():
-        process_logger.info(f"Background process: Deleting temporary directory: {directory_path}")
+        process_logger.info(f"Deleting temporary directory: {directory_path}")
         try:
             shutil.rmtree(directory_path)
-            process_logger.info(f"Background process: Deletion of {directory_path} completed.")
+            process_logger.info(f"Deletion of {directory_path} completed.")
         except OSError as e:
-            process_logger.error(f"Background process: Error deleting {directory_path}: {e}")
+            process_logger.error(f"Error deleting {directory_path}: {e}")
     else:
-        process_logger.info(
-            f"Background process: Directory {directory_path} not found, no deletion needed."
-        )
+        process_logger.info(f"Directory {directory_path} not found, no deletion needed.")
 
 
 def _extract_filename_from_url(url: str) -> str:
@@ -6938,34 +6938,31 @@ class miliaDataset(InMemoryDataset):
 
     def _cleanup_chunks(self) -> None:
         """
-        ENHANCED: Initiate background cleanup with comprehensive error handling and logging.
+        ENHANCED: Synchronously remove the temporary chunk directory after the
+        consolidated dataset has been written, with non-fatal error handling.
         """
         try:
-            self.logger.info(
-                "Initiating background cleanup of chunk files using multiprocessing..."
-            )
-            cleanup_process = multiprocessing.Process(
-                target=_delete_directory_in_background,
-                args=(str(self.processed_chunk_dir), self.logger.name),
-            )
-            cleanup_process.daemon = True
-            cleanup_process.start()
-            self.logger.info(
-                "Main processing thread finished. Background cleanup initiated (non-blocking)."
-            )
+            self.logger.info("Cleaning up temporary chunk files...")
+            # Deterministic synchronous deletion. The consolidated dataset is
+            # already persisted, so removing the chunk directory here runs to
+            # completion before this method returns. (Previously this was
+            # dispatched to a daemon multiprocessing.Process with no join(); per
+            # the Python docs daemonic children are "terminated (and not joined)"
+            # when the parent exits, so the CLI's exit raced ahead of the delete
+            # and the chunk directory was left behind.)
+            _delete_directory_in_background(str(self.processed_chunk_dir), self.logger.name)
 
             # Enhanced cleanup monitoring
             if self._handler_enabled:
                 cleanup_stats = {
                     "chunk_directory": str(self.processed_chunk_dir),
-                    "cleanup_process_pid": cleanup_process.pid,
                     "handler_type": self._dataset_config.dataset_type,
                 }
                 self.logger.debug(f"Cleanup stats: {cleanup_stats}")
 
         except Exception as e:
             # Log cleanup errors but don't fail the main process
-            self.logger.warning(f"Background cleanup initiation failed (non-critical): {e}")
+            self.logger.warning(f"Chunk cleanup failed (non-critical): {e}")
             self.logger.info("Chunk cleanup can be performed manually if needed")
 
     @wrap_handler_operation("dataset", "full_processing")
