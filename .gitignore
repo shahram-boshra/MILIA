@@ -272,5 +272,15 @@ test_data/*
 !test_data/molecules.xyz
 !test_data/molecules.sdf
 
-# Experiment output files — uncomment if experiments/ generates large outputs
-# experiments/
+# Experiment and example scaffolds — local-only per project policy (§1.1).
+# Directory structure is preserved in the repo via a tracked .gitkeep, but all
+# contents (generated outputs, local notebooks, scratch runs) stay local and are
+# never pushed. The 'dir/*' + '!dir/.gitkeep' form is REQUIRED: a trailing-slash
+# 'dir/' rule makes git skip the directory entirely, so the '.gitkeep' exception
+# would never be evaluated (git-scm gitignore(5): "not possible to re-include a
+# file if a parent directory is excluded"). Mirrors the test_data/* pattern above.
+# If a keepfile is missing, create it once: `touch <dir>/.gitkeep`.
+experiments/*
+!experiments/.gitkeep
+examples/*
+!examples/.gitkeep

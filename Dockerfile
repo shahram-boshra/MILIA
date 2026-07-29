@@ -279,6 +279,17 @@ ENV CONDA_PREFIX=/opt/conda/envs/shah_env
 # Required by mamba >=2.0 to locate the installation root (ref: mamba-org/mamba#756)
 ENV MAMBA_ROOT_PREFIX=/opt/conda
 
+# Single import root guarantee (fixes the "stale results until reinstall" class of bug).
+# Because the source tree is also copied to /app (below) AND the package is installed
+# into site-packages, there are two physical copies of milia_pipeline/main on disk.
+# Without this flag, `python /app/main.py` prepends /app to sys.path[0] and imports the
+# SOURCE copy, while the `milia` console entry point imports the SITE-PACKAGES copy — a
+# launch-path-dependent divergence. PYTHONSAFEPATH (PEP 587 / sys.flags.safe_path, Py>=3.11)
+# stops the automatic prepend of the script directory and CWD, so EVERY invocation mode
+# resolves milia_pipeline to the single installed copy in site-packages.
+# Ref: Python docs — sys.flags.safe_path; command line -P / PYTHONSAFEPATH.
+ENV PYTHONSAFEPATH=1
+
 # Copy application code
 COPY . /app
 
@@ -293,8 +304,16 @@ COPY . /app
 #   with binary packages (PyTorch, RDKit, PyG). This flag is a safety measure.
 # --no-cache-dir: Minimizes image layer size (no pip cache to clean up).
 #
-# The original source files remain at /app/ — 'python main.py' continues to work
-# as a fallback alongside the 'milia' entry point command.
+# Single source of truth: the INSTALLED copy in site-packages is authoritative for all
+# imports (enforced by PYTHONSAFEPATH=1 above). The /app source tree is retained only for
+# reference/config assets — do NOT mutate it at runtime expecting code changes to take
+# effect. Images are immutable: to ship a code update, rebuild and publish a new tag
+# (the CI/CD short-SHA tag), then redeploy — never `git pull && pip install` inside a
+# running container. That in-place mutation is exactly what caused prior "results didn't
+# update until we reinstalled" incidents, and it breaks reproducibility.
+# Ref: Docker Docs — Immutable infrastructure ("rebuild and redeploy rather than patch
+#      running containers"); non-editable install per PyDevTools ("do not use editable
+#      installs in production").
 #
 # Source: PyPA Packaging User Guide — "Writing your pyproject.toml" (console scripts)
 # Source: pyOpenSci — "Declare Dependencies" (conda-managed + pip install pattern)
@@ -303,6 +322,8 @@ RUN /opt/conda/envs/shah_env/bin/pip install --no-deps --no-cache-dir . && \
     /opt/conda/envs/shah_env/bin/pip show milia && \
     echo "CLI entry point registered:" && \
     which milia && \
+    echo "Verifying single import root (must resolve to site-packages, NOT /app):" && \
+    /opt/conda/envs/shah_env/bin/python -c "import milia_pipeline, sys; p = milia_pipeline.__file__; print('milia_pipeline ->', p); assert 'site-packages' in p and not p.startswith('/app/'), f'FATAL: milia_pipeline resolves to {p} instead of site-packages — two-copy divergence risk'" && \
     echo "========================================"
 
 CMD ["/bin/bash", "--login"]
