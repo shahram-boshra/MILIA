@@ -72,7 +72,13 @@ dependencies = []
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.14",
-    "ruff",
+    # Pinned to match .pre-commit-config.yaml (ruff-pre-commit rev v0.15.0) so
+    # local hooks and CI run byte-identical Ruff. Leaving 'ruff' unpinned let CI
+    # pull 0.16.0 (released 2026-07-23), whose breaking default — formatting
+    # Python code blocks inside Markdown — failed `ruff format --check .` on
+    # unchanged docs. Bump this and the pre-commit rev together in a deliberate
+    # upgrade. Ref: astral-sh/ruff 0.16.0 release notes (Breaking changes).
+    "ruff==0.15.0",
 ]
 # Documentation build dependencies (installed via: pip install -e ".[docs]")
 # Sphinx <8.2: 8.2+ drops Python 3.10 support (sphinx-doc/sphinx#13325).
@@ -246,6 +252,14 @@ markers = [
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+# Ruff 0.16+ formats Python code blocks inside Markdown by default. MILIA's
+# formatting scope is Python-only (mirrors the ruff-format pre-commit hook),
+# and the *.md docs hold illustrative snippets not maintained as formatted
+# source. Exclude Markdown explicitly so the scope stays deterministic across
+# Ruff upgrades. CI runs `ruff format --check .` (a directory scan), for which
+# extend-exclude is honored; the ruff-format pre-commit hook also passes
+# --force-exclude. Ref: docs.astral.sh/ruff/formatter (Markdown) & settings.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = [
