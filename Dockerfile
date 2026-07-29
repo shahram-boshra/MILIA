@@ -279,16 +279,26 @@ ENV CONDA_PREFIX=/opt/conda/envs/shah_env
 # Required by mamba >=2.0 to locate the installation root (ref: mamba-org/mamba#756)
 ENV MAMBA_ROOT_PREFIX=/opt/conda
 
-# Single import root guarantee (fixes the "stale results until reinstall" class of bug).
-# Because the source tree is also copied to /app (below) AND the package is installed
-# into site-packages, there are two physical copies of milia_pipeline/main on disk.
-# Without this flag, `python /app/main.py` prepends /app to sys.path[0] and imports the
-# SOURCE copy, while the `milia` console entry point imports the SITE-PACKAGES copy — a
-# launch-path-dependent divergence. PYTHONSAFEPATH (PEP 587 / sys.flags.safe_path, Py>=3.11)
-# stops the automatic prepend of the script directory and CWD, so EVERY invocation mode
-# resolves milia_pipeline to the single installed copy in site-packages.
-# Ref: Python docs — sys.flags.safe_path; command line -P / PYTHONSAFEPATH.
-ENV PYTHONSAFEPATH=1
+# Two physical copies of milia_pipeline/main exist in the image: the source tree
+# at /app (COPY below) and the non-editable install in site-packages (pip install
+# below). On this Python 3.10 base, import resolution is launch-path dependent —
+# the `milia` console script resolves to site-packages, while `python /app/main.py`
+# and any `python -c` run from WORKDIR /app resolve to the /app source (CWD is
+# prepended to sys.path). PYTHONSAFEPATH/-P, which would suppress that prepend,
+# only exists on Python >=3.11 (added there per the CPython docs), so it is inert
+# here and is deliberately NOT set — it would also break the /app-based pytest and
+# `python main.py` invocations in the smoke-test job if the base were upgraded.
+#
+# What actually prevents the "stale results until reinstall" bug is IMMUTABILITY:
+# `pip install .` copies the package from the same /app source in the same build,
+# so both copies are byte-identical, and the image is never mutated at runtime
+# (no in-container `git pull`; updates ship as a rebuilt, retagged image). Which
+# copy an import resolves to is therefore immaterial — they can never diverge.
+# The structural fix that would collapse this to a single import root on every
+# Python version is the src/ layout (package under src/milia_pipeline/, so the
+# project root holds no importable milia_pipeline/); tracked as a future refactor.
+# Ref: PyPA Packaging User Guide — "src layout vs flat layout"; Docker Docs —
+#      Immutable infrastructure.
 
 # Copy application code
 COPY . /app
@@ -304,9 +314,11 @@ COPY . /app
 #   with binary packages (PyTorch, RDKit, PyG). This flag is a safety measure.
 # --no-cache-dir: Minimizes image layer size (no pip cache to clean up).
 #
-# Single source of truth: the INSTALLED copy in site-packages is authoritative for all
-# imports (enforced by PYTHONSAFEPATH=1 above). The /app source tree is retained only for
-# reference/config assets — do NOT mutate it at runtime expecting code changes to take
+# Two byte-identical copies exist (site-packages install + /app source); on this
+# Python 3.10 base neither is forced to win at import time, but immutability makes
+# that moot (see the note above the COPY step). The /app source tree is retained
+# only for reference/config assets and the smoke-test's `python /app/main.py` and
+# `pytest tests/` runs — do NOT mutate it at runtime expecting code changes to take
 # effect. Images are immutable: to ship a code update, rebuild and publish a new tag
 # (the CI/CD short-SHA tag), then redeploy — never `git pull && pip install` inside a
 # running container. That in-place mutation is exactly what caused prior "results didn't
@@ -322,8 +334,8 @@ RUN /opt/conda/envs/shah_env/bin/pip install --no-deps --no-cache-dir . && \
     /opt/conda/envs/shah_env/bin/pip show milia && \
     echo "CLI entry point registered:" && \
     which milia && \
-    echo "Verifying single import root (must resolve to site-packages, NOT /app):" && \
-    /opt/conda/envs/shah_env/bin/python -c "import milia_pipeline, sys; p = milia_pipeline.__file__; print('milia_pipeline ->', p); assert 'site-packages' in p and not p.startswith('/app/'), f'FATAL: milia_pipeline resolves to {p} instead of site-packages — two-copy divergence risk'" && \
+    echo "Verifying the non-editable install placed milia_pipeline in site-packages:" && \
+    /opt/conda/envs/shah_env/bin/python -I -c "import importlib.util as u; s = u.find_spec('milia_pipeline'); origin = s.origin if s else None; assert origin and 'site-packages' in origin, f'FATAL: pip install . did not package milia_pipeline into site-packages (find_spec origin={origin}); the install would silently fall back to the /app source copy'; print('milia_pipeline installed at', origin)" && \
     echo "========================================"
 
 CMD ["/bin/bash", "--login"]
