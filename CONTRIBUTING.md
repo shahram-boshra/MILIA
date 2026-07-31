@@ -63,7 +63,7 @@ For significant changes (new modules, architectural modifications, new dataset h
 
 ### Prerequisites
 
-MILIA requires **Python 3.10 or later** and uses conda for managing heavy scientific dependencies (PyTorch, PyTorch Geometric, RDKit). See the [README](README.md#installation) for full installation details.
+MILIA requires **Python 3.10 or later** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
 
 ### Setting Up for Development
 
@@ -72,21 +72,16 @@ MILIA requires **Python 3.10 or later** and uses conda for managing heavy scient
 git clone https://github.com/<your-username>/MILIA.git
 cd MILIA
 
-# 2. Create and activate conda environment
-conda create -n milia python=3.10
-conda activate milia
+# 2. Install uv (https://docs.astral.sh/uv/)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 3. Install core dependencies via conda-forge
-conda install -c conda-forge numpy scipy pyyaml h5py pandas rdkit \
-    matplotlib pydantic-settings ase torchmetrics hydra-core optuna \
-    plotly scikit-learn pytorch cpuonly -c pytorch
+# 3. Create the locked environment: full CPU stack + dev tools.
+#    Use exactly ONE accelerator extra (cpu | cu118 | cu121 | cu124).
+uv sync --locked --extra cpu --extra dev
 
-# 4. Install PyTorch Geometric and extensions
-conda install -c pyg torch-geometric
-pip install torch-cluster torch-scatter torch-sparse torch-spline-conv
-
-# 5. Install MILIA in editable mode with development dependencies
-pip install -e ".[dev]"
+# 4. Run tooling inside the environment
+uv run ruff check .
+uv run --no-sync pytest -m smoke -q tests/
 ```
 
 This installs the development extras defined in `pyproject.toml`: `pytest>=8.0`, `pytest-mock>=3.14`, and `ruff`.
@@ -191,9 +186,8 @@ MILIA uses [Sphinx](https://www.sphinx-doc.org/) with the [MyST Markdown](https:
 ### Building Documentation Locally
 
 ```bash
-# Install documentation dependencies
-pip install -r docs/requirements.txt
-# or: pip install -e ".[docs]"
+# Install documentation dependencies (docs extra)
+uv sync --locked --extra cpu --extra docs
 
 # Build HTML documentation
 make docs
