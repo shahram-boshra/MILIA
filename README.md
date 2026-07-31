@@ -122,9 +122,9 @@ milia --train
 # Train with hyperparameter optimization (via CLI flag)
 milia --train --hpo
 
-# Run predictions on new molecules
+# Run predictions on new molecules (supply your own CSV: header smiles,molecule_id)
 milia --predict --model-path ./checkpoints/best.pt \
-      --test-path test_data/molecules.csv --preds-path ./predictions.csv
+      --test-path ./my_molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
 milia --dry-run
@@ -221,14 +221,14 @@ milia --train
 # 6. (Optional) Train with hyperparameter optimization instead of step 5
 milia --train --hpo
 
-# 7. Run prediction on the sample molecules shipped with the repo
+# 7. Run prediction on your own molecules (CSV with header: smiles,molecule_id)
 milia --predict \
     --model-path ./checkpoints/best.pt \
-    --test-path test_data/molecules.csv \
+    --test-path ./my_molecules.csv \
     --preds-path ./predictions.csv
 ```
 
-After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the five sample molecules in `test_data/molecules.csv` (ethanol, acetic acid, benzene, isopropanol, triethylamine — all common organic molecules in SMILES format).
+After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row.
 
 ### Where the outputs live
 
@@ -254,9 +254,18 @@ milia --list-experimental-setups     # Available research/experiment configurati
 milia --help                         # Full CLI reference
 ```
 
-### Sample data shipped with the repo
+### Prediction input format
 
-The `test_data/` directory contains `molecules.csv` — a small CSV with five common organic molecules in SMILES format, ready for use with `milia --predict` (step 7 above). This is the minimal sample needed to verify end-to-end inference; for production use, supply your own input file in the same format (`smiles,molecule_id` header, one molecule per row).
+`milia --predict --test-path <file>` expects a CSV with a `smiles,molecule_id` header and one molecule per row, for example:
+
+```csv
+smiles,molecule_id
+CCO,ethanol
+CC(=O)O,acetic_acid
+c1ccccc1,benzene
+```
+
+Supply your own file — no sample dataset is bundled with the repository.
 
 ## Architecture
 

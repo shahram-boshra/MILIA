@@ -314,7 +314,7 @@ The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying 
 
 ### Pass criterion
 
-After completing step 7 of the README walkthrough, the file `./predictions.csv` exists in the current directory and contains predicted property values for the five sample molecules shipped at `test_data/molecules.csv` (ethanol, acetic acid, benzene, isopropanol, triethylamine). Confirm with:
+After completing step 7 of the README walkthrough, the file `./predictions.csv` exists in the current directory and contains predicted property values for the molecules in your `--test-path` input CSV (`smiles,molecule_id` header, one molecule per row). Confirm with:
 
 ```bash
 ls -lh ./predictions.csv && head -n 6 ./predictions.csv
@@ -451,7 +451,7 @@ These are the things a peer reviewer can re-verify entirely from a freshly-pulle
 
 - **The image you pulled is the one CI built.** Compare `docker inspect --format='{{index .RepoDigests 0}}'` (§4.2) against the digest published in the GitHub Actions run that produced `latest`.
 - **The shipped configuration is laptop-runnable.** Step 5 (`milia --train`) of the README walkthrough completes on a CPU within the §5e.1 30-minute budget — your own clock is the witness.
-- **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains 5 rows for 5 SMILES strings the model was not trained on (sample at `test_data/molecules.csv`).
+- **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains one row per SMILES string in your `--test-path` input — molecules the model was not trained on.
 - **The test suite is real.** `pytest` (without the `-m smoke` filter) inside the container exercises the full 127-test suite. README § Testing documents the markers; you do not have to take the README's word for the count — `pytest --collect-only -q | tail -n 1` prints it.
 
 ### Out of scope for this guide
