@@ -37,6 +37,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # CPU is the validated variant published on every push. Add GPU tags by extending
+        # this list (e.g. `cu121`, `cu124`): they BUILD on a CPU runner (the torch/PyG wheels
+        # bundle the CUDA runtime) but are runtime-validated only on a GPU runner, so they are
+        # added deliberately, not auto-published on every push. TPU is intentionally excluded
+        # (PyG's compiled kernels have no XLA backend). One image = one accelerator.
+        accel: [cpu]
 
     steps:
       - name: Checkout repository
@@ -54,15 +63,20 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Per-accelerator tags: moving `:<accel>`, immutable `:<accel>-<sha>`, and `:latest`
+          # only for the cpu (default) variant.
           tags: |
-            type=raw,value=latest
-            type=sha,prefix=
+            type=raw,value=${{ matrix.accel }}
+            type=sha,prefix=${{ matrix.accel }}-
+            type=raw,value=latest,enable=${{ matrix.accel == 'cpu' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          build-args: |
+            ACCEL=${{ matrix.accel }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -123,27 +137,20 @@ jobs:
 
       - name: §5f #9 — Verify milia CLI entry point (--help)
         run: |
-          docker run --rm \
-            --entrypoint /opt/conda/envs/shah_env/bin/milia \
-            ${{ steps.image.outputs.ref }} \
-            --help
+          docker run --rm ${{ steps.image.outputs.ref }} --help
 
       - name: §5f #9 — Verify milia --dry-run (configuration validation)
         run: |
-          docker run --rm \
-            --entrypoint /opt/conda/envs/shah_env/bin/milia \
-            ${{ steps.image.outputs.ref }} \
-            --dry-run
+          docker run --rm ${{ steps.image.outputs.ref }} --dry-run
 
       - name: §5f #9 — Verify python main.py --help (fallback entry point)
         run: |
-          docker run --rm \
+          docker run --rm --entrypoint python \
             ${{ steps.image.outputs.ref }} \
-            /opt/conda/envs/shah_env/bin/python /app/main.py --help
+            /app/main.py --help
 
-      - name: §5f #8 — Run smoke test suite (pytest -m smoke) inside container
-        run: |
-          docker run --rm \
-            -w /app \
-            ${{ steps.image.outputs.ref }} \
-            /opt/conda/envs/shah_env/bin/pytest -m smoke --tb=short -q tests/
+      # NOTE: `pytest -m smoke` is NOT run here. The published runtime image is a lean
+      # PRODUCTION artifact and deliberately excludes dev tools (pytest/ruff). The full
+      # smoke suite runs in ci.yml under the locked uv env (`--extra dev`) across the
+      # Python matrix. This job validates that the published image *runs* (entry point,
+      # non-root, config resolution); ci.yml validates the test suite.
