@@ -89,7 +89,7 @@ body:
         - PyTorch version: e.g., 2.x
         - PyTorch Geometric version: e.g., 2.x
         - RDKit version: e.g., 2024.x
-        - Installation method: conda + pip install -e .
+        - Installation method: e.g., uv sync --extra cpu | Docker (ghcr.io/shahram-boshra/milia)
       render: shell
     validations:
       required: false

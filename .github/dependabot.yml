@@ -7,7 +7,7 @@
 #
 # Two ecosystems monitored:
 #   1. pip — dev dependencies in pyproject.toml [project.optional-dependencies].dev
-#      (pytest, pytest-mock, ruff). Runtime deps are conda-managed and excluded.
+#      (pytest, pytest-mock, ruff) plus runtime deps, all now uv/PyPI-managed via pyproject + uv.lock.
 #   2. github-actions — Actions versions in .github/workflows/ (checkout, setup-python, etc.)
 #
 # Note: Dependabot reads pyproject.toml for pip ecosystem (GitHub Docs:

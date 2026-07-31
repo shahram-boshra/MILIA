@@ -7,12 +7,11 @@
 # Version is read dynamically from milia_pipeline/__init__.py.__version__
 # via the setuptools `attr` directive (single source of truth).
 #
-# Dependencies: This project uses conda for heavy scientific packages
-# (PyTorch, RDKit, PyG, etc.) — see Dockerfile and environment.yml.
-# Runtime dependencies are intentionally left empty here to avoid conflicts
-# with conda-managed binary packages. Install via:
-#   conda env create -f environment.yml
-#   pip install -e .
+# Dependencies: managed with uv (https://docs.astral.sh/uv/) from the committed uv.lock.
+# All packages (PyTorch, RDKit, PyG + compiled companions, etc.) install from PyPI +
+# the pinned PyTorch/PyG indexes below. Choose one accelerator extra. Install via:
+#   uv sync --locked --extra cpu          # or cu118 | cu121 | cu124
+#   uv sync --locked --extra cpu --extra dev   # + dev tools
 # =============================================================================
 
 # ---- Build System (PEP 517/518) ----
