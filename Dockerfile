@@ -80,7 +80,9 @@ COPY --from=builder --chown=milia:milia /app /app
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    MILIA_LOG_DIR=/tmp
+    MILIA_LOG_DIR=/tmp \
+    HOME=/tmp \
+    MPLCONFIGDIR=/tmp/matplotlib
 WORKDIR /app
 USER milia
 
