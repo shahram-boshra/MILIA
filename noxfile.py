@@ -34,7 +34,6 @@
 #   nox -s tests -- -m smoke          # pass extra args to pytest
 #   nox -s tests -p 3.12              # run tests on Python 3.12 only
 #   nox -R                            # reuse existing virtual environments
-#   nox -s tests_conda                # run tests in conda environment
 #
 # GitHub Actions integration:
 #   - uses: wntrblm/nox@2026.2.9
@@ -109,9 +108,10 @@ def lint(session: nox.Session) -> None:
 # Installs the package in editable mode with dev extras.
 # Source: pyproject.toml [tool.pytest.ini_options] (testpaths = ["tests"],
 #   addopts = ["-v", "--tb=short", "--strict-markers"]).
-# Note: Full test suite requires conda-managed scientific dependencies
-# (PyTorch, PyG, RDKit). This session works when those are available in
-# the system environment or when running smoke tests only.
+# Note: the full stack (PyTorch, PyG + compiled companions, RDKit) is uv/PyPI-managed.
+# For a complete, reproducible run use the locked accelerator env:
+#   uv sync --locked --extra cpu --extra dev  &&  uv run pytest
+# (this bare `.[dev]` session omits the accelerator extra, so prefer the uv command above).
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session: nox.Session) -> None:
     """Run the test suite across Python versions."""
@@ -130,52 +130,6 @@ def tests_smoke(session: nox.Session) -> None:
     """Run smoke tests only (fast, no heavy dependencies required)."""
     session.install("-e", ".[dev]")
     session.run("pytest", "-m", "smoke", *session.posargs)
-
-
-# =============================================================================
-# Session: tests_conda — Full test suite in a conda environment
-# =============================================================================
-# Uses nox's built-in conda backend for environments requiring heavy
-# scientific dependencies (PyTorch, PyG, RDKit, etc.).
-# Source: ci.yml commented conda job (lines 89–104), CONTRIBUTING.md
-#   "Development Setup" (conda env create).
-# Note: Requires conda/mamba/micromamba to be installed on the system.
-#   Not a default session — run explicitly with: nox -s tests_conda
-@nox.session(
-    python=PYTHON_DEFAULT,
-    venv_backend="conda",
-    default=False,
-)
-def tests_conda(session: nox.Session) -> None:
-    """Run the full test suite in a conda environment with scientific deps."""
-    # Install heavy scientific dependencies via conda.
-    # Package list sourced from ci.yml commented conda job (lines 93–96).
-    session.conda_install(
-        "numpy",
-        "scipy",
-        "pyyaml",
-        "h5py",
-        "pandas",
-        "rdkit",
-        "matplotlib",
-        "pydantic-settings",
-        "ase",
-        "torchmetrics",
-        "hydra-core",
-        "optuna",
-        "plotly",
-        "scikit-learn",
-        channel="conda-forge",
-    )
-    session.conda_install("pytorch", "cpuonly", channel="pytorch")
-    session.conda_install("torch-geometric", channel="pyg")
-
-    # Install MILIA + dev deps via pip (--no-deps to avoid breaking conda env).
-    # Source: nox tutorial — "best practice only install pip packages with
-    # the --no-deps option" in conda environments.
-    session.install("-e", ".[dev]", "--no-deps")
-
-    session.run("pytest", *session.posargs)
 
 
 # =============================================================================
