@@ -206,34 +206,42 @@ Compare the printed digest against the one in the corresponding GitHub Actions w
 docker pull ghcr.io/shahram-boshra/milia@sha256:<digest-from-actions>
 ```
 
-### 4.3 Run the container interactively
+### 4.3 Run the container
+
+The image's entry point **is** the `milia` CLI, so you pass MILIA arguments directly to
+`docker run` — there is no interactive shell to enter. Each command is one `docker run`:
 
 ```bash
-docker run --rm -it ghcr.io/shahram-boshra/milia:latest
+docker run --rm ghcr.io/shahram-boshra/milia:latest --help
 ```
 
-What each flag does:
+What each part does:
 
-- `--rm` — delete the container's filesystem layer when you exit. Safe for a one-shot evaluation; omit it if you want to `docker start` the same container later.
-- `-it` — attach an interactive TTY. Without this, the shell exits immediately.
+- `--rm` — delete the container's filesystem layer when the command exits (each `docker run` is one-shot).
+- Everything after the image name (`--help`, `--dry-run`, `--root-dir …`) is passed straight to `milia`.
 
-When the run succeeds, the prompt changes to:
+For commands that read or write your dataset, run **non-root** and mount your data at `/data`
+(the image runs as an unprivileged user; the bind mount keeps any outputs owned by you on the host):
 
+```bash
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v ~/Chem_Data/Milia_PyG_Dataset:/data:rw \
+  ghcr.io/shahram-boshra/milia:latest --root-dir /data --dry-run
 ```
-(shah_env) root@<container-id>:/app/milia#
-```
 
-The `(shah_env)` prefix tells you that MILIA's conda environment is already active. The working directory `/app/milia` contains the source tree; `/app` is the image's `WORKDIR`. **Every command from §5 onward is run from inside this prompt**, not from your host shell.
+There is no `(shah_env)` prompt and no conda: dependencies are baked into the image's uv
+environment on `PATH`. **Every §5–§6 command is a `docker run … milia <args>` invocation** from
+your host shell.
 
 ### 4.4 Pass criterion
 
-Inside the container prompt, run:
+Run:
 
 ```bash
-milia --help
+docker run --rm ghcr.io/shahram-boshra/milia:latest --help
 ```
 
-and verify that the first line is `usage: milia [-h] ...` followed by MILIA's argument groups. If `milia --help` prints help text without an error, the image is healthy and you can proceed to §5. If `milia: command not found`, the image was pulled but the entrypoint shell did not activate the conda env — exit and re-run §4.3 (the `-it` flag is required).
+and verify the first line is `usage: milia [-h] ...` followed by MILIA's argument groups. If it prints help without error, the image is healthy and you can proceed to §5. If the command fails to pull or run, re-check §4.2 (pull) and that the Docker daemon is running.
 
 ### 4.5 Building locally instead (optional)
 
@@ -243,37 +251,45 @@ If you would rather build the image from source than pull it — for example, to
 
 ## 5. The 5-minute health check
 
-You are now inside the container with `(shah_env) root@…:/app/milia#` as your prompt. Before exercising the full pipeline, run the smoke suite — a curated subset of the 127-test suite (see [`README.md` § Testing](README.md#testing)) tagged with `@pytest.mark.smoke`, designed to fail fast if anything in the image is broken.
+The published image is a lean production runtime and does **not** bundle the test tools, so the
+in-image health check is a **dry run** — it imports the full stack, registers transforms/plugins,
+and validates configuration without processing any data:
 
 ```bash
-pytest -m smoke --tb=short
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v ~/Chem_Data/Milia_PyG_Dataset:/data:rw \
+  ghcr.io/shahram-boshra/milia:latest --dry-run --root-dir /data
 ```
 
-**Expected duration**: approximately 1–2 minutes on a typical CPU-only laptop. (This estimate is derived from the published `smoke-test` GitHub Actions job, which completes in roughly 2m24s end-to-end including `docker pull`; the pytest portion alone is shorter.)
+**Expected duration**: a few seconds (imports + config validation only). The full `pytest -m smoke`
+suite (the fail-fast subset tagged `@pytest.mark.smoke`) runs in CI on every push/PR and locally
+from a source checkout via `uv run --extra cpu --extra dev pytest -m smoke`; it is not shipped in
+the runtime image.
 
 ### What a pass looks like
 
-The final line of the output is of the form:
+The final lines are of the form:
 
 ```
-========================== N passed in T.TTs ==========================
+... Dry run mode - configuration validated successfully
+... No dataset processing performed
 ```
 
-where `N` is the number of smoke-tagged tests collected (currently 20+, defined in `tests/test__init__models_builders.py` and other test modules) and `T.TT` is the wall-clock time. **The exit code is `0`.** Anything else is a fail.
+with **exit code `0`**. Anything else is a fail.
 
 ### What a fail looks like
 
 Any of:
 
-- The line above ends in `failed`, `error`, or `passed, X failed`.
-- pytest exits non-zero.
-- The collection phase prints `ERROR collecting …` before any test runs (this usually means a missing import — i.e. the image was built incompletely).
+- A Python traceback (e.g. an `ImportError`/`ModuleNotFoundError`) — indicates the image was built incompletely.
+- A configuration or handler validation error before the "Dry run mode" line.
+- The command exits non-zero.
 
 If you see any of those, **do not proceed to §6**. Jump to §8.4.
 
 ### What this gate proves and does not prove
 
-A green smoke suite establishes that:
+A green dry run establishes that:
 
 - The Python environment inside the image is internally consistent (PyTorch, PyTorch Geometric, RDKit, and MILIA's own modules all import).
 - The model/dataset registries populate correctly at import time.
@@ -287,18 +303,18 @@ It does **not** exercise dataset download, full training, or hyperparameter opti
 
 The smoke suite proved the image works. This section proves **MILIA itself works** — that it can ingest a dataset, build a graph representation, train a small GNN on a CPU, and predict on a fresh molecule.
 
-The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough). It is cross-referenced rather than duplicated here because the walkthrough commands are not prerequisites for any later step in *this* document — by the time you reach §6 you already have a working terminal inside the container, so a context switch to `README.md` is safe.
+The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying MILIA — Reproducible Walkthrough"](README.md#trying-milia--reproducible-walkthrough). It is cross-referenced rather than duplicated here because the walkthrough commands are not prerequisites for any later step in *this* document, so a context switch to `README.md` is safe. Run each walkthrough command as a `docker run … milia <args>` invocation — mount your data at `/data` and pass `--root-dir /data` (with `--user "$(id -u):$(id -g)"`), exactly as in §4.3/§5.
 
 **Two prerequisites already handled for you inside the Docker image**, so you can skip directly to README's "Step-by-step" subsection:
 
-1. The `working_root_dir` configuration value (the only path you would normally have to set) is **preset inside the container** to `/root/Chem_Data/Milia_PyG_Dataset` — leave it as-is.
+1. The `working_root_dir` path is supplied at run time via **`--root-dir /data`** together with a bind mount (`-v ~/Chem_Data/Milia_PyG_Dataset:/data:rw`); the CLI flag overrides `configs/main.yaml`, so you edit no config. Run non-root (`--user "$(id -u):$(id -g)"`) so any outputs stay owned by you on the host.
 2. The shipped `configs/models.yaml` is preconfigured for low-resource execution (small batch size, few epochs, small ensembles), so the full sequence runs to completion on a CPU-only laptop.
 
 **Minimal acceptance path** (≤ 15 min on CPU): execute steps 1, 2, 3, 5, and 7 from the README walkthrough — that is, smoke check, dry-run, dataset processing, training, and prediction. Step 4 (`milia --stats-only`) is informational and step 6 (`milia --train --hpo`) is the optional HPO variant of step 5.
 
 ### Pass criterion
 
-After completing step 7 of the README walkthrough, the file `./predictions.csv` exists in the current directory and contains predicted property values for the five sample molecules shipped at `test_data/molecules.csv` (ethanol, acetic acid, benzene, isopropanol, triethylamine). Confirm with:
+After completing step 7 of the README walkthrough, the file `./predictions.csv` exists in the current directory and contains predicted property values for the molecules in your `--test-path` input CSV (`smiles,molecule_id` header, one molecule per row). Confirm with:
 
 ```bash
 ls -lh ./predictions.csv && head -n 6 ./predictions.csv
@@ -357,7 +373,7 @@ This section catalogues the concrete failures you may hit at each gate of the gu
 
 ### 8.3 §4.4 `milia --help` fails inside the container
 
-**`milia: command not found`** — the conda environment did not activate. Symptom is usually a prompt without the `(shah_env)` prefix. Exit (`exit` or Ctrl-D) and re-run §4.3, ensuring the `-it` flags are present.
+**`milia: command not found`** — you likely overrode the entry point (e.g. an explicit `--entrypoint` or an appended shell command). The image's entry point already **is** `milia`, so pass only MILIA arguments: `docker run --rm ghcr.io/shahram-boshra/milia:latest --help`. To run a different tool, set it explicitly, e.g. `docker run --rm --entrypoint python … /app/main.py --help`.
 
 **`ImportError` or `ModuleNotFoundError` on a top-level package (torch, torch_geometric, rdkit, …)** — the image you pulled is corrupted or partial. Run `docker rmi ghcr.io/shahram-boshra/milia:latest` and re-pull from §4.1. If it recurs, file an issue per §8.7 and include the manifest digest from `docker inspect` (§4.2).
 
@@ -373,7 +389,7 @@ This section catalogues the concrete failures you may hit at each gate of the gu
 
 The README walkthrough (§ "Trying MILIA — Reproducible Walkthrough") is the authoritative source for command-by-command behaviour. If a specific README step fails:
 
-- **Step 2 (`milia --dry-run`) fails** — almost always a `configs/` issue. Re-confirm the image's preset `working_root_dir` (§6 prerequisite 1) is intact: `grep -n working_root_dir configs/main.yaml` should print one line. If you have edited `configs/main.yaml` inside the container, revert by exiting and starting a fresh container.
+- **Step 2 (`milia --dry-run`) fails** — almost always a path/config issue. Ensure you passed `--root-dir /data` and mounted the dataset (`-v …:/data:rw`); the flag overrides `configs/main.yaml`, so no in-container edits are needed. Every `docker run` starts from the image's pristine config.
 - **Step 3 (`milia --process`) fails on dataset download** — connectivity from inside the container to the dataset host. Same diagnosis as §8.2's TLS/DNS branch.
 - **Step 5 (`milia --train`) hangs or runs out of memory** — the shipped low-resource preset should not OOM on a typical laptop, but if it does, check `docker stats` from your host shell and confirm the Docker daemon's memory limit. Reduce nothing in `configs/models.yaml` without first reading `configs/models.yaml`'s comments — the preset values are interrelated.
 - **Step 7 (`milia --predict`) writes no `predictions.csv`** — the most common cause is `--model-path ./checkpoints/best.pt` not resolving because step 5 did not actually train (check the console output from step 5 for an end-of-training summary).
@@ -435,7 +451,7 @@ These are the things a peer reviewer can re-verify entirely from a freshly-pulle
 
 - **The image you pulled is the one CI built.** Compare `docker inspect --format='{{index .RepoDigests 0}}'` (§4.2) against the digest published in the GitHub Actions run that produced `latest`.
 - **The shipped configuration is laptop-runnable.** Step 5 (`milia --train`) of the README walkthrough completes on a CPU within the §5e.1 30-minute budget — your own clock is the witness.
-- **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains 5 rows for 5 SMILES strings the model was not trained on (sample at `test_data/molecules.csv`).
+- **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains one row per SMILES string in your `--test-path` input — molecules the model was not trained on.
 - **The test suite is real.** `pytest` (without the `-m smoke` filter) inside the container exercises the full 127-test suite. README § Testing documents the markers; you do not have to take the README's word for the count — `pytest --collect-only -q | tail -n 1` prints it.
 
 ### Out of scope for this guide

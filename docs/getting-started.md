@@ -2,28 +2,26 @@
 
 ## Installation
 
-MILIA uses conda for managing heavy scientific dependencies (PyTorch, PyTorch
-Geometric, RDKit). See the [README](https://github.com/shahram-boshra/MILIA#installation)
+MILIA uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch
+Geometric, RDKit, …) from a committed lockfile. See the [README](https://github.com/shahram-boshra/MILIA#installation)
 for complete installation instructions.
 
 ### Quick Install
 
 ```bash
-# 1. Create and activate conda environment
-conda create -n milia python=3.10
-conda activate milia
+# 1. Install uv (https://docs.astral.sh/uv/)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 2. Install core scientific dependencies via conda-forge
-conda install -c conda-forge numpy scipy pyyaml h5py pandas rdkit \
-    matplotlib pydantic-settings ase torchmetrics hydra-core optuna \
-    plotly scikit-learn pytorch cpuonly -c pytorch
+# 2. Clone MILIA
+git clone https://github.com/shahram-boshra/MILIA.git
+cd MILIA
 
-# 3. Install PyTorch Geometric and extensions
-conda install -c pyg torch-geometric
-pip install torch-cluster torch-scatter torch-sparse torch-spline-conv
+# 3. Install the full stack (PyTorch, PyG + compiled companions, RDKit, …) from the
+#    committed lockfile. Choose exactly ONE accelerator extra: cpu | cu118 | cu121 | cu124.
+uv sync --locked --extra cpu
 
-# 4. Install MILIA
-pip install -e .
+# 4. Run MILIA (inside the locked environment)
+uv run --extra cpu milia --help
 ```
 
 ### Verify Installation

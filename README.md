@@ -55,21 +55,23 @@ The no-code design, comprehensive CLI with interactive mode, and 12+ processing 
 
 ## Installation
 
-MILIA relies on heavy scientific packages (PyTorch, PyTorch Geometric, RDKit) that are best managed through conda to avoid binary dependency conflicts.
+MILIA's dependencies (PyTorch, PyTorch Geometric + compiled companions, RDKit, …) are managed with [uv](https://docs.astral.sh/uv/) from a committed lockfile (`uv.lock`) for fully reproducible installs. A pre-built Docker image is also published.
 
 ### Method 1: Docker (Recommended)
 
 The fastest way to get MILIA running. A pre-built image is publicly available on GitHub Container Registry — no authentication required:
 
 ```bash
-# Pull and run the pre-built image
+# Pull the pre-built CPU image (no authentication required)
 docker pull ghcr.io/shahram-boshra/milia:latest
-docker run -it ghcr.io/shahram-boshra/milia:latest
-# → (shah_env) root@...:/app/milia#
 
-# Verify MILIA works (inside the container)
-pytest -m smoke --tb=short
-milia --help
+# The image's entry point IS the `milia` CLI — pass CLI args directly:
+docker run --rm ghcr.io/shahram-boshra/milia:latest --help
+
+# Process a dataset (runs non-root; mount your data read-write at /data):
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v ~/Chem_Data/Milia_PyG_Dataset:/data:rw \
+  ghcr.io/shahram-boshra/milia:latest --root-dir /data
 ```
 
 Or build locally from the Dockerfile:
@@ -77,39 +79,33 @@ Or build locally from the Dockerfile:
 ```bash
 git clone https://github.com/shahram-boshra/MILIA.git
 cd MILIA
-docker build -t milia .
-docker run -it milia
-# → (shah_env) root@...:/app/milia#
+docker build -t milia:cpu .                    # CPU (default); GPU: --build-arg ACCEL=cu124
+docker run --rm milia:cpu --help
 ```
 
-### Method 2: Conda (Without Docker)
+> The published image is a lean production runtime (no test tools). The smoke suite runs in CI (and locally via `uv run --extra cpu --extra dev pytest -m smoke`), not inside the runtime image.
+
+### Method 2: uv (Without Docker)
 
 ```bash
-# 1. Create and activate conda environment
-conda create -n milia python=3.10
-conda activate milia
+# 1. Install uv (https://docs.astral.sh/uv/)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 2. Install core dependencies via conda-forge
-conda install -c conda-forge numpy scipy pyyaml h5py pandas rdkit \
-    matplotlib pydantic-settings ase torchmetrics hydra-core optuna \
-    plotly scikit-learn pytorch cpuonly -c pytorch
-
-# 3. Install PyTorch Geometric and extensions
-conda install -c pyg torch-geometric
-pip install torch-cluster torch-scatter torch-sparse torch-spline-conv
-
-# 4. Install MILIA in editable mode
+# 2. Clone MILIA
 git clone https://github.com/shahram-boshra/MILIA.git
 cd MILIA
-pip install -e .
+
+# 3. Install the full stack from the committed lockfile.
+#    Choose exactly ONE accelerator extra: cpu | cu118 | cu121 | cu124.
+uv sync --locked --extra cpu
 ```
 
-For GPU support, replace `cpuonly` with the appropriate CUDA toolkit version (e.g., `pytorch-cuda=12.1 -c nvidia`).
+For GPU support, choose a CUDA accelerator extra instead of `cpu` — e.g. `uv sync --locked --extra cu124` (pick the one matching your CUDA runtime; requires an NVIDIA driver + container toolkit at run time).
 
-For development (includes pytest and ruff):
+For development (adds pytest and ruff):
 
 ```bash
-pip install -e ".[dev]"
+uv sync --locked --extra cpu --extra dev
 ```
 
 ## Quick Start
@@ -126,9 +122,9 @@ milia --train
 # Train with hyperparameter optimization (via CLI flag)
 milia --train --hpo
 
-# Run predictions on new molecules
+# Run predictions on new molecules (supply your own CSV: header smiles,molecule_id)
 milia --predict --model-path ./checkpoints/best.pt \
-      --test-path test_data/molecules.csv --preds-path ./predictions.csv
+      --test-path ./my_molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
 milia --dry-run
@@ -186,7 +182,7 @@ This section walks a reviewer through the shortest path from a fresh clone to a 
 
 ### Prerequisites
 
-1. **MILIA installed** — see [Installation](#installation) above. Method 1 (Docker) is the fastest route for a one-shot evaluation; Method 2 (Conda + `pip install -e .`) is recommended if you intend to inspect or modify source.
+1. **MILIA installed** — see [Installation](#installation) above. Method 1 (Docker) is the fastest route for a one-shot evaluation; Method 2 (uv) is recommended if you intend to inspect or modify source.
 
 2. **`working_root_dir` set in your configuration** — this is the only path you must configure. It tells MILIA where to download datasets, write processed graphs, and save checkpoints. There is **no implicit default** — the framework asks you to choose deliberately.
 
@@ -225,14 +221,14 @@ milia --train
 # 6. (Optional) Train with hyperparameter optimization instead of step 5
 milia --train --hpo
 
-# 7. Run prediction on the sample molecules shipped with the repo
+# 7. Run prediction on your own molecules (CSV with header: smiles,molecule_id)
 milia --predict \
     --model-path ./checkpoints/best.pt \
-    --test-path test_data/molecules.csv \
+    --test-path ./my_molecules.csv \
     --preds-path ./predictions.csv
 ```
 
-After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the five sample molecules in `test_data/molecules.csv` (ethanol, acetic acid, benzene, isopropanol, triethylamine — all common organic molecules in SMILES format).
+After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row.
 
 ### Where the outputs live
 
@@ -258,9 +254,18 @@ milia --list-experimental-setups     # Available research/experiment configurati
 milia --help                         # Full CLI reference
 ```
 
-### Sample data shipped with the repo
+### Prediction input format
 
-The `test_data/` directory contains `molecules.csv` — a small CSV with five common organic molecules in SMILES format, ready for use with `milia --predict` (step 7 above). This is the minimal sample needed to verify end-to-end inference; for production use, supply your own input file in the same format (`smiles,molecule_id` header, one molecule per row).
+`milia --predict --test-path <file>` expects a CSV with a `smiles,molecule_id` header and one molecule per row, for example:
+
+```csv
+smiles,molecule_id
+CCO,ethanol
+CC(=O)O,acetic_acid
+c1ccccc1,benzene
+```
+
+Supply your own file — no sample dataset is bundled with the repository.
 
 ## Architecture
 

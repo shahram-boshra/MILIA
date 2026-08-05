@@ -7,12 +7,11 @@
 # Version is read dynamically from milia_pipeline/__init__.py.__version__
 # via the setuptools `attr` directive (single source of truth).
 #
-# Dependencies: This project uses conda for heavy scientific packages
-# (PyTorch, RDKit, PyG, etc.) — see Dockerfile and environment.yml.
-# Runtime dependencies are intentionally left empty here to avoid conflicts
-# with conda-managed binary packages. Install via:
-#   conda env create -f environment.yml
-#   pip install -e .
+# Dependencies: managed with uv (https://docs.astral.sh/uv/) from the committed uv.lock.
+# All packages (PyTorch, RDKit, PyG + compiled companions, etc.) install from PyPI +
+# the pinned PyTorch/PyG indexes below. Choose one accelerator extra. Install via:
+#   uv sync --locked --extra cpu          # or cu118 | cu121 | cu124
+#   uv sync --locked --extra cpu --extra dev   # + dev tools
 # =============================================================================
 
 # ---- Build System (PEP 517/518) ----
@@ -62,10 +61,32 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# Runtime dependencies are managed by conda (see Dockerfile / environment.yml).
-# Left empty intentionally to avoid pip/conda conflicts with binary packages
-# such as PyTorch, RDKit, and PyTorch Geometric.
-dependencies = []
+# Runtime dependencies (uv/PyPI-managed; versions pinned to the validated Phase-0 baseline).
+# Accelerator-agnostic packages live here; torch + the compiled PyG companions live in the
+# mutually-exclusive accelerator extras below (cpu / cu118 / cu121 / cu124), sourced from the
+# per-accelerator indexes in [tool.uv.sources]. See UV_MIGRATION_STRATEGY.md.
+dependencies = [
+    "torch-geometric==2.6.1",       # pure-Python; compiled kernels are in the accelerator extras
+    "numpy==1.26.4",                # hold NumPy 1.x ABI
+    "scipy==1.15.2",
+    "pandas==2.3.1",
+    "pyyaml==6.0.2",
+    "rdkit==2025.3.5",
+    "matplotlib==3.10.3",
+    "scikit-learn==1.5.2",
+    "pydantic-settings==2.10.1",
+    "torchmetrics==1.9.0",
+    "hydra-core==1.3.2",
+    "optuna==4.9.0",
+    "optuna-dashboard==0.20.0",
+    "plotly==6.9.0",
+    "kaleido==1.3.0",
+    "ase==3.29.0",
+    "qc-iodata==1.0.1",
+    "ray[tune]==2.56.1",
+    "psutil==7.2.2",                # implicit direct dep (3 import sites); conda supplied, never declared
+    "h5py==3.16.0",                 # implicit direct dep (4 preprocessor import sites)
+]
 
 [project.optional-dependencies]
 # Developer / CI dependencies (installed via: pip install -e ".[dev]")
@@ -89,6 +110,14 @@ docs = [
     "myst-parser>=4.0",
     "sphinx-copybutton>=0.5",
 ]
+# Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu118 | cu121 | cu124).
+# torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
+# CPU is the validated cutover target (matches the current cpuonly image + CPU-only dev/CI hardware);
+# the CUDA variants are declared+locked for future GPU deployment, validated on a GPU host/runner.
+cpu   = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
+cu118 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
+cu121 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
+cu124 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
 
 [project.urls]
 Homepage = "https://github.com/shahram-boshra/MILIA"
@@ -246,6 +275,76 @@ markers = [
     "slow: Tests taking > 30 seconds (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
     "gpu: marks tests requiring GPU",
+]
+
+# uv — accelerator-aware resolution (see UV_MIGRATION_STRATEGY.md)
+[tool.uv]
+# Lock scoped to Linux (matches the deployed image + validated spike). Broaden with darwin
+# markers when MPS support is validated on macOS.
+environments = ["sys_platform == 'linux'"]
+# The accelerator extras are mutually exclusive — uv refuses to resolve two at once.
+conflicts = [[{ extra = "cpu" }, { extra = "cu118" }, { extra = "cu121" }, { extra = "cu124" }]]
+
+# pytorch-* are PEP 503 simple indexes; pyg-* are FLAT find-links HTML pages → format="flat"
+# (a plain index entry makes uv probe sub-paths → 403). explicit=true scopes each index to the
+# packages pinned to it in [tool.uv.sources]; everything else resolves from PyPI.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url  = "https://download.pytorch.org/whl/cpu"
+explicit = true
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url  = "https://download.pytorch.org/whl/cu118"
+explicit = true
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url  = "https://download.pytorch.org/whl/cu121"
+explicit = true
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url  = "https://download.pytorch.org/whl/cu124"
+explicit = true
+[[tool.uv.index]]
+name = "pyg-cpu"
+url  = "https://data.pyg.org/whl/torch-2.4.0+cpu.html"
+format = "flat"
+explicit = true
+[[tool.uv.index]]
+name = "pyg-cu118"
+url  = "https://data.pyg.org/whl/torch-2.4.0+cu118.html"
+format = "flat"
+explicit = true
+[[tool.uv.index]]
+name = "pyg-cu121"
+url  = "https://data.pyg.org/whl/torch-2.4.0+cu121.html"
+format = "flat"
+explicit = true
+[[tool.uv.index]]
+name = "pyg-cu124"
+url  = "https://data.pyg.org/whl/torch-2.4.0+cu124.html"
+format = "flat"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" }, { index = "pytorch-cu118", extra = "cu118" },
+    { index = "pytorch-cu121", extra = "cu121" }, { index = "pytorch-cu124", extra = "cu124" },
+]
+torch-scatter = [
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
+    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
+]
+torch-sparse = [
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
+    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
+]
+torch-cluster = [
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
+    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
+]
+torch-spline-conv = [
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
+    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
 ]
 
 # ruff (linter + formatter)

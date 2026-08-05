@@ -8,7 +8,7 @@
 # Ruff reads its configuration from pyproject.toml [tool.ruff] — no args needed.
 #
 # Setup (requires Git):
-#   pip install pre-commit        # or: conda install pre-commit
+#   pip install pre-commit        # or: uv tool install pre-commit
 #   pre-commit install            # install hooks into .git/hooks/
 #   pre-commit run --all-files    # run all hooks on entire codebase
 #
@@ -32,6 +32,7 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-added-large-files
+        args: ['--maxkb=1024']  # uv.lock (~760 KB, hashed) is a legitimate large tracked artifact
       - id: check-merge-conflict
       - id: debug-statements
 

@@ -22,8 +22,8 @@ Transformation System Integration Enhancements:
 
 import functools
 import hashlib
-import inspect
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -209,8 +209,10 @@ def setup_logging(
     and transformation system integration.
 
     Sets up a root logger with both console (stdout) and file handlers.
-    Logs are written to a file named after the main script, located in the
-    same directory as the script. Prevents handler duplication on
+    The log file ('milia.log') is written to $MILIA_LOG_DIR if set, else the
+    current working directory (never the package directory, which may be
+    read-only). If the file cannot be opened, logging falls back to console
+    only instead of raising. Prevents handler duplication on
     multiple calls. Also silences RDKit's logger to 'ERROR' level.
 
     Transformation System Integration Enhancements:
@@ -242,10 +244,13 @@ def setup_logging(
     # Ensure handlers are not duplicated if called multiple times
     if not logger.handlers:
         try:
-            # Get the name of the script without the .py extension
-            script_path: Path = Path(inspect.getfile(inspect.currentframe()))
-            log_file_name: str = script_path.with_suffix(".log").name
-            log_file_path: Path = script_path.parent / log_file_name
+            # Log file location: a WRITABLE directory, NEVER the package directory (which is
+            # read-only under a normal/site-packages install and for non-root containers, and
+            # was the cause of PermissionError on 'milia_pipeline/logging_config.log').
+            # Precedence: $MILIA_LOG_DIR, else the current working directory.
+            log_dir: Path = Path(os.environ.get("MILIA_LOG_DIR") or Path.cwd())
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file_path: Path = log_dir / "milia.log"
 
             # Create enhanced formatter that includes more context
             if enable_handler_logging or enable_migration_logging or enable_transform_logging:
@@ -283,10 +288,13 @@ def setup_logging(
                 logger.info(log_msg)
 
             except OSError as e:
-                raise LoggingConfigurationError(
-                    message=f"Failed to set up file logging to '{log_file_path}'.",
-                    details=f"OS Error: {e}",
-                ) from e
+                # Non-fatal: file logging is best-effort. A read-only filesystem or a
+                # permissions issue must not crash the pipeline — fall back to console only.
+                logger.warning(
+                    "File logging disabled: could not open '%s' (%s). Using console logging.",
+                    log_file_path,
+                    e,
+                )
 
         except Exception as e:
             logger.error(f"An unexpected error occurred during logging setup: {e}", exc_info=True)

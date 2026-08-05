@@ -79,3 +79,12 @@ Dockerfile
 
 # ---- Docs build output (source docs/ retained; only built output excluded) ----
 docs/_build/
+
+# ---- Heavy data not needed in the image (runtime never uses these; ~332 MB) ----
+# Keep small text fixtures (test_data/*.csv, *.xyz, *.sdf) that smoke tests may read;
+# exclude only the large binary datasets. Mirrors the .gitignore data policy.
+test_data/*.npz
+test_data/*.pt
+test_data/*.tar.gz
+test_data/*.h5
+archive/
