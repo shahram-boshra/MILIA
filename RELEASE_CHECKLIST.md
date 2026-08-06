@@ -194,12 +194,12 @@ Pushing the tag triggers the `.github/workflows/release.yml` workflow, which:
 
 ### Step 12 — Verify PyPI
 
-1. Check `https://pypi.org/project/milia/X.Y.Z/` for the published release.
+1. Check `https://pypi.org/project/milia-py/X.Y.Z/` for the published release.
 2. Verify the README renders correctly on the PyPI page.
 3. Test installation in a clean environment:
 
 ```bash
-pip install milia==X.Y.Z
+pip install milia-py==X.Y.Z
 python -c "from milia_pipeline import get_package_info; print(get_package_info())"
 ```
 

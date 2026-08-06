@@ -123,6 +123,7 @@ cu124 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-
 Homepage = "https://github.com/shahram-boshra/MILIA"
 Repository = "https://github.com/shahram-boshra/MILIA"
 Documentation = "https://milia.readthedocs.io"
+"PyPI" = "https://pypi.org/project/milia-py/"
 "Bug Tracker" = "https://github.com/shahram-boshra/MILIA/issues"
 Changelog = "https://github.com/shahram-boshra/MILIA/blob/main/CHANGELOG.md"
 
