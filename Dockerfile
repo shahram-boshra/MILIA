@@ -51,7 +51,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # therefore verify what actually matters, not the physical location:
 #   (a) the dist is installed (metadata resolves) and the package imports;
 #   (b) the compiled PyG companion kernels load AND run against this torch build (ABI/R1).
-RUN /app/.venv/bin/python -c "import importlib.metadata as md, milia_pipeline; print('milia', md.version('milia'), 'importable from', milia_pipeline.__file__)" && \
+RUN /app/.venv/bin/python -c "import importlib.metadata as md, milia_pipeline; print('milia-py', md.version('milia-py'), 'importable from', milia_pipeline.__file__)" && \
     /app/.venv/bin/python -c "import torch, torch_scatter; src=torch.tensor([1.,1.,1.,1.]); idx=torch.tensor([0,0,1,1]); assert torch_scatter.scatter_add(src, idx, dim=0).tolist()==[2.,2.]; print('OK torch', torch.__version__, '| torch_scatter', torch_scatter.__version__)"
 
 # ---- Stage 2: test — builder + dev tools, for CI in-image smoke tests (not published) ----
