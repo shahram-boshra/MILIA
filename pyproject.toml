@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 
 # ---- Project Metadata (PEP 621/639) ----
 [project]
-name = "milia"
+name = "milia-py"
 dynamic = ["version"]
 description = "Molecular graph processing and machine learning framework for molecular sciences"
 readme = "README.md"
