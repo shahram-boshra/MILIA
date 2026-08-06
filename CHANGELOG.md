@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-06
+
+### Changed
+
+- PyPI distribution name is now `milia-py` (installed via `pip install milia-py`).
+  The bare name `milia` was unavailable on PyPI (blocked by its name-similarity
+  check), so the distribution name is decoupled from the import name — a standard
+  practice (cf. `scikit-learn`/`sklearn`, `Pillow`/`PIL`). The import package
+  (`import milia_pipeline`), the `milia` CLI entry point, the GitHub repository
+  (`MILIA`), and the Zenodo/Mendeley DOIs are unchanged.
+
+### Added
+
+- First automated PyPI release via GitHub Actions **Trusted Publishing** (OIDC,
+  no API tokens), gated through a `pypi` deployment environment.
+- `PyPI` project URL in `[project.urls]`.
+
 ## [1.2.0] - 2026-06-26
 
 ### Added
@@ -46,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shahram-boshra/MILIA/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shahram-boshra/MILIA/releases/tag/v1.1.0
