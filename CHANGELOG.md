@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-08
+
+### Added
+
+- Bundled sample inputs under `test_data/` (`molecules.csv`, `molecules_inchi.csv`, `molecules.sdf`, `molecules.xyz`) covering every `--predict` input format; re-tracked via `.gitignore` (text fixtures only — heavy binaries remain ignored, and the samples stay excluded from the PyPI sdist/wheel).
+
+### Changed
+
+- `--predict` walkthrough in `README.md`, `QUICKSTART.md`, and `docs/getting-started.md` now points at the bundled `test_data/molecules.csv`.
+- Enabled the models master switch in `configs/models.yaml`.
+
+### Fixed
+
+- Corrected stale documentation: checkpoint filename `best_model.pt` → `best.pt`; test-suite counts `127` → 163 test files / 1,965 smoke; removed the inaccurate "pytest runs inside the container" claim (the runtime image has no test tooling).
+
 ## [1.2.1] - 2026-08-06
 
 ### Changed
@@ -63,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shahram-boshra/MILIA/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shahram-boshra/MILIA/releases/tag/v1.1.0

@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.2.0"  # Add QM40 dataset (162,954 neutral drug-like ZINC molecules)
+__version__ = "1.2.2"  # Ship bundled test_data fixtures; docs + metadata sync
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
