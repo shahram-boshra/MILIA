@@ -440,7 +440,7 @@ This section maps the headline claims from [`README.md` § Key Features](README.
 | **Optuna-based HPO** with 5 search algorithms and 5 pruning strategies; NAS for GNNs. | `milia_pipeline/models/hpo/` — 12 files. README § Key Features → "Advanced Hyperparameter Optimization" + Architecture row "models/hpo". |
 | **Three-tier plugin architecture** (descriptors, transformations, models) with YAML manifests. | `plugins/` directory at the repo root. README § Key Features → "Three-Tier Plugin Architecture" + § Datasets → "Adding a dataset" subsection describes the three-file extension pattern. |
 | **Pydantic V2 schema-validated configuration** with deep merge across split YAML files. | `milia_pipeline/config/` — 7 files. README § Key Features → "Flexible Configuration System" + Architecture row "config". |
-| **127 unit and integration tests** covering all core modules. | `tests/` directory. README § Testing. The smoke subset you ran in §5 is the fast-failing prefix of this suite. |
+| **163 test files** across all core modules (the `smoke` subset is 1,965 tests). | `tests/` directory. README § Testing. The smoke subset (§5) is the fast-failing prefix of this suite. |
 | **30+ pre-registered PyG transforms; 7-layer transformation system; 3 validation levels × 5 scopes.** | `milia_pipeline/transformations/` — 4 files, ~16K lines. README § Key Features → "Extensible Graph Transformation System" + Architecture row "transformations". |
 | **12 CLI argument groups; 12+ processing modes; interactive mode.** | `milia_pipeline/cli_manager.py` — single file, ~3,800 lines. README § Architecture (row "cli_manager"). |
 | **Per-dataset capability matrix is registry-driven, not hard-coded.** Eight feature flags (vibrational, uncertainty, atomization, orbital, HOMO–LUMO, plus three more) gate behaviour without consumers learning dataset names. | README § Datasets → "Per-dataset capability matrix". Each `BaseDataset` subclass declares an immutable `DatasetFeatures` record; queried at runtime via `_get_dataset_feature(dataset_type, feature_name)`. |
@@ -452,7 +452,7 @@ These are the things a peer reviewer can re-verify entirely from a freshly-pulle
 - **The image you pulled is the one CI built.** Compare `docker inspect --format='{{index .RepoDigests 0}}'` (§4.2) against the digest published in the GitHub Actions run that produced `latest`.
 - **The shipped configuration is laptop-runnable.** Step 5 (`milia --train`) of the README walkthrough completes on a CPU within the §5e.1 30-minute budget — your own clock is the witness.
 - **A trained model produces predictions on unseen molecules.** `predictions.csv` from §6 contains one row per SMILES string in your `--test-path` input — molecules the model was not trained on.
-- **The test suite is real.** `pytest` (without the `-m smoke` filter) inside the container exercises the full 127-test suite. README § Testing documents the markers; you do not have to take the README's word for the count — `pytest --collect-only -q | tail -n 1` prints it.
+- **The test suite is real.** The published runtime image is a lean production image with no test tooling, so `pytest` does not run inside it. From a source checkout, `uv run --extra cpu --extra dev pytest` (without the `-m smoke` filter) exercises the full suite; the same run happens in CI on every push/PR. README § Testing documents the markers; you do not have to take the README's word for the count — `uv run --extra cpu --extra dev pytest --collect-only -q | tail -n 1` prints it.
 
 ### Out of scope for this guide
 

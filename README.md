@@ -122,9 +122,9 @@ milia --train
 # Train with hyperparameter optimization (via CLI flag)
 milia --train --hpo
 
-# Run predictions on new molecules (supply your own CSV: header smiles,molecule_id)
+# Run predictions (bundled sample; or supply your own CSV: header smiles,molecule_id)
 milia --predict --model-path ./checkpoints/best.pt \
-      --test-path ./my_molecules.csv --preds-path ./predictions.csv
+      --test-path test_data/molecules.csv --preds-path ./predictions.csv
 
 # Validate configuration without processing
 milia --dry-run
@@ -221,10 +221,10 @@ milia --train
 # 6. (Optional) Train with hyperparameter optimization instead of step 5
 milia --train --hpo
 
-# 7. Run prediction on your own molecules (CSV with header: smiles,molecule_id)
+# 7. Run prediction (bundled sample; swap in your own CSV: header smiles,molecule_id)
 milia --predict \
     --model-path ./checkpoints/best.pt \
-    --test-path ./my_molecules.csv \
+    --test-path test_data/molecules.csv \
     --preds-path ./predictions.csv
 ```
 
@@ -265,7 +265,7 @@ CC(=O)O,acetic_acid
 c1ccccc1,benzene
 ```
 
-Supply your own file — no sample dataset is bundled with the repository.
+A ready-to-run sample is bundled at [`test_data/molecules.csv`](test_data/molecules.csv) (10 common small molecules); substitute your own file to predict on different molecules.
 
 ## Architecture
 
@@ -291,7 +291,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 |-----------|---------|
 | `configs/` | Split YAML configuration with per-dataset files (11 datasets) and deep-merge architecture |
 | `plugins/` | Plugin storage: descriptor plugins, transformation plugins, model plugins — with YAML manifests and user templates |
-| `tests/` | 127 unit and integration tests across all modules |
+| `tests/` | 163 test files spanning all core modules (the `smoke` subset is 1,965 tests) |
 
 ## Datasets
 
@@ -366,7 +366,7 @@ pytest -m integration        # Integration tests only
 pytest -m gpu                # GPU-specific tests only
 ```
 
-The test suite includes 127 unit and integration tests covering all core modules.
+The test suite spans 163 test files across all core modules; the `smoke` subset is 1,965 tests. Run `pytest --collect-only -q | tail -1` for the exact collected count in your checkout.
 
 ## Contributing
 

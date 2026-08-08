@@ -258,10 +258,26 @@ archive/
 # analysis. 2 still reference VQM24. No end-user value. (§1.1)
 scripts/
 
-# Dev-only test fixtures — fully local, NEVER tracked (relocated under archive/ per
-# project policy §1.1; the test suite uses /tmp with mocks, not this directory).
-# No sample data is shipped in the repo (users supply their own --test-path CSV).
-test_data/
+# Sample inputs for the --predict walkthrough. Track ONLY small, diffable text
+# fixtures (CSV/XYZ/SDF/MOL) + this directory's README; NEVER the heavy binaries
+# (npz/pt/h5/tar.gz), which bloat clones and do not diff (GitHub warns >50 MB /
+# blocks >100 MB; use external hosting or Git LFS if binary versioning is needed).
+# The `test_data/*` form (NOT a trailing-slash `test_data/`) is REQUIRED: a
+# trailing-slash rule makes git skip the directory entirely, so the `!` re-includes
+# below would never be evaluated (git-scm gitignore(5): "not possible to re-include
+# a file if a parent directory is excluded"). Mirrors the experiments/examples form
+# above and the .dockerignore binary split. The automated suite uses /tmp mocks.
+test_data/*
+!test_data/README.md
+!test_data/*.csv
+!test_data/*.xyz
+!test_data/*.sdf
+!test_data/*.mol
+# Belt-and-suspenders: keep heavy binaries ignored even if present locally.
+test_data/*.npz
+test_data/*.pt
+test_data/*.h5
+test_data/*.tar.gz
 
 # Experiment and example scaffolds — local-only per project policy (§1.1).
 # Directory structure is preserved in the repo via a tracked .gitkeep, but all

@@ -7,7 +7,7 @@
 # ───────────────────────────
 
 models:
-  enabled: false                         # MASTER SWITCH (true OR false) that controls whether the entire models module is active in the Milia pipeline.
+  enabled: true                         # MASTER SWITCH (true OR false) that controls whether the entire models module is active in the Milia pipeline.
 
   # ───────────────────────────────────────────────────────────
   # MODEL SELECTION (ENHANCED)

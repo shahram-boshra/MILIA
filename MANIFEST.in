@@ -51,7 +51,7 @@ recursive-include milia_pipeline *.py
 recursive-include milia_pipeline *.yaml *.yml
 
 # ---- Exclusions — directories not needed in source distribution -------------
-# tests/: 127 test files + fixtures — excluded from sdist per project policy.
+# tests/: 163 test files + fixtures — excluded from sdist per project policy.
 # Tests are available in the Git repository for contributors and CI/CD.
 recursive-exclude tests *
 

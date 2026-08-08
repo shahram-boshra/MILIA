@@ -44,8 +44,8 @@ milia --config configs/main.yaml --process
 
 # Run inference with a trained model
 milia --predict \
-    --model-path ./checkpoints/best_model.pt \
-    --test-path ./molecules.csv \
+    --model-path ./checkpoints/best.pt \
+    --test-path test_data/molecules.csv \
     --preds-path ./predictions.csv
 ```
 

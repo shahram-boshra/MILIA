@@ -98,7 +98,7 @@ milia --help
 
 ## Running Tests
 
-MILIA's test suite lives in the `tests/` directory (127 tests) and is configured in `pyproject.toml` under `[tool.pytest.ini_options]`. The project uses `--strict-markers` mode, so all custom markers must be registered.
+MILIA's test suite lives in the `tests/` directory (163 test files; 1,965 tests tagged `smoke`) and is configured in `pyproject.toml` under `[tool.pytest.ini_options]`. The project uses `--strict-markers` mode, so all custom markers must be registered.
 
 ```bash
 # Run the full test suite
@@ -232,7 +232,7 @@ Key directories for contributors:
 | Directory | Contents |
 |-----------|----------|
 | `milia_pipeline/` | Core package (11 submodules) |
-| `tests/` | Test suite (127 tests, `conftest.py` with shared fixtures) |
+| `tests/` | Test suite (163 test files, `conftest.py` with shared fixtures) |
 | `configs/` | Split YAML configuration files (7 root + 10 dataset-specific) |
 
 ## Questions?
