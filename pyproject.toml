@@ -67,7 +67,7 @@ classifiers = [
 # per-accelerator indexes in [tool.uv.sources]. See UV_MIGRATION_STRATEGY.md.
 dependencies = [
     "torch-geometric==2.6.1",       # pure-Python; compiled kernels are in the accelerator extras
-    "numpy==1.26.4",                # hold NumPy 1.x ABI
+    "numpy==2.2.6",                # hold NumPy 1.x ABI
     "scipy==1.15.2",
     "pandas==2.3.1",
     "pyyaml==6.0.2",
