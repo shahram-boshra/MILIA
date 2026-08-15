@@ -1631,6 +1631,33 @@ class PluginRegistry:
         logger.info(f"Disabled plugin: {plugin_name}")
 
     @classmethod
+    def set_trusted(cls, plugin_name: str, trusted: bool = True) -> None:
+        """
+        Mark a registered plugin as trusted (or revoke trust).
+
+        Additive mutator mirroring ``enable_plugin``/``disable_plugin``: it mutates
+        the live ``PluginMetadata`` held in the registry, so the change persists
+        (unlike ``get_plugin_info``, which returns a detached ``to_dict()`` copy).
+
+        Trusted plugins bypass security checks, so this fails closed: an unknown
+        plugin raises rather than being silently created or trusted.
+
+        Args:
+            plugin_name: Name of a registered plugin.
+            trusted: Trust flag to set (default True).
+
+        Raises:
+            PluginError: If the plugin is not registered.
+        """
+        instance = cls()
+
+        if plugin_name not in instance._plugins:
+            raise PluginError(f"Plugin '{plugin_name}' not found")
+
+        instance._plugins[plugin_name].trusted = trusted
+        logger.info(f"Set trusted={trusted} for plugin: {plugin_name}")
+
+    @classmethod
     def list_plugins(cls, validated_only: bool = False, enabled_only: bool = False) -> list[str]:
         """
         List registered plugins.

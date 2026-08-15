@@ -638,6 +638,26 @@ class TestPluginRegistryEnableDisable:
         with pytest.raises(PluginError, match="not found"):
             PluginRegistry.disable_plugin("nonexistent")
 
+    def test_set_trusted_persists_on_live_metadata(
+        self, reset_plugin_registry, sample_plugin_metadata
+    ):
+        """set_trusted mutates the live PluginMetadata (persists), and can revoke."""
+        registry = PluginRegistry()
+        metadata = sample_plugin_metadata
+        registry._plugins["test_plugin"] = metadata
+        assert registry._plugins["test_plugin"].trusted is False
+
+        PluginRegistry.set_trusted("test_plugin")
+        assert registry._plugins["test_plugin"].trusted is True
+
+        PluginRegistry.set_trusted("test_plugin", trusted=False)
+        assert registry._plugins["test_plugin"].trusted is False
+
+    def test_set_trusted_nonexistent_plugin_error(self, reset_plugin_registry):
+        """set_trusted fails closed: an unknown plugin raises rather than being trusted."""
+        with pytest.raises(PluginError, match="not found"):
+            PluginRegistry.set_trusted("nonexistent")
+
     def test_is_enabled_true(self, reset_plugin_registry, sample_plugin_metadata):
         """Test checking if plugin is enabled"""
         registry = PluginRegistry()

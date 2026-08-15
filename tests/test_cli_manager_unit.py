@@ -127,34 +127,6 @@ class MockConfigSchemasModule:
 
 
 # Mock plugin system
-class _MockPluginInfo(dict):
-    """
-    Test double for the dict returned by ``PluginRegistry.get_plugin_info()``.
-
-    The real accessor returns ``PluginMetadata.to_dict()`` — a plain dict. This
-    subclass behaves exactly as that dict for the corrected display consumers
-    (``_discover_plugins_operation`` / ``_list_plugins_operation`` /
-    ``_show_plugin_info_operation``), which read via ``.get()`` / ``[...]``.
-
-    It additionally tolerates attribute access so the intentionally-unscoped
-    ``_trust_plugin_operation`` (which sets ``info.trusted``) still runs without
-    crashing. That op cannot be corrected here: a faithful fix requires a new
-    ``PluginRegistry`` mutator (get_plugin_info returns a detached copy), which
-    the Blueprint invariant "no other core edit is permitted" forbids. This
-    preserves ``test_trust_plugin_operation_success``'s documented
-    "just verify it doesn't crash" intent without asserting the defect.
-    """
-
-    def __getattr__(self, item):
-        try:
-            return self[item]
-        except KeyError as exc:
-            raise AttributeError(item) from exc
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-
 class MockPluginMetadata:
     """Mock PluginMetadata mirroring the real Pydantic model fields + to_dict()."""
 
@@ -184,7 +156,7 @@ class MockPluginMetadata:
 
     def to_dict(self):
         """Return the same dict shape as PluginMetadata.to_dict()."""
-        return _MockPluginInfo(
+        return dict(
             {
                 "plugin_name": self.plugin_name,
                 "version": self.version,
@@ -219,6 +191,7 @@ class MockPluginRegistry:
 
     _plugins = {}
     _enabled = set()
+    _trusted = set()
 
     @classmethod
     def discover_plugins(cls, paths=None, auto_validate=False):
@@ -281,6 +254,16 @@ class MockPluginRegistry:
     def is_plugin_enabled(cls, name):
         """Check if plugin is enabled (alternate method name)"""
         return name in cls._enabled
+
+    @classmethod
+    def set_trusted(cls, name, trusted=True):
+        """Mock set_trusted mirroring the real mutator (KeyError on unknown)."""
+        if name not in ["test_plugin_1", "test_plugin_2"]:
+            raise KeyError(f"Plugin {name} not found")
+        if trusted:
+            cls._trusted.add(name)
+        else:
+            cls._trusted.discard(name)
 
 
 class MockPluginValidator:
@@ -1262,12 +1245,14 @@ class TestPluginOperations(unittest.TestCase):
     @patch("milia_pipeline.cli_manager.PluginRegistry", MockPluginRegistry)
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)
     def test_trust_plugin_operation_success(self):
-        """Test trust plugin operation success"""
-        # The mock doesn't actually update the trusted flag, so we just test it doesn't crash
+        """Test trust plugin operation persists trust via PluginRegistry.set_trusted."""
+        MockPluginRegistry._trusted.discard("test_plugin_1")
+
         self.cli._trust_plugin_operation("test_plugin_1")
 
-        # Just verify operation completed without error
-        self.assertTrue(True)
+        # The op must actually mark the plugin trusted (regression guard: it
+        # previously mutated a detached get_plugin_info() copy and persisted nothing).
+        self.assertIn("test_plugin_1", MockPluginRegistry._trusted)
 
     @patch("milia_pipeline.cli_manager.PluginRegistry", MockPluginRegistry)
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)

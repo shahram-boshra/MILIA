@@ -3710,8 +3710,7 @@ results = runner.run_experiment(
     def _trust_plugin_operation(self, plugin_name: str) -> None:
         """Execute trust plugin operation."""
         try:
-            info = PluginRegistry.get_plugin_info(plugin_name)
-            info.trusted = True
+            PluginRegistry.set_trusted(plugin_name)
             self.logger.info(f"🔒 Marked plugin as trusted: {plugin_name}")
             self.logger.warning(
                 "Trusted plugins bypass security checks. Only trust plugins from verified sources."
