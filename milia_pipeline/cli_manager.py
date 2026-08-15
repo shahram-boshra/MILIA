@@ -3412,7 +3412,7 @@ results = runner.run_experiment(
         print("=" * 70 + "\n")
 
         # Show registered paths before discovery
-        registered_paths = PluginRegistry.get_plugin_paths()  # Assumes this method exists
+        registered_paths = PluginRegistry.get_plugin_paths()
         if registered_paths:
             print(f"Searching in {len(registered_paths)} path(s):")
             for path in registered_paths:
@@ -3420,22 +3420,34 @@ results = runner.run_experiment(
             print()
 
         try:
-            plugins = PluginRegistry.discover_plugins(auto_validate=args.auto_validate)
+            # discover_plugins returns a list[str] of plugin names (public contract,
+            # asserted by test_plugin_system_unit.py). Resolve per-plugin metadata via
+            # get_plugin_info(name) -> dict (PluginMetadata.to_dict()); the metadata dict
+            # exposes ``registered_transforms`` (list), ``is_validated``, ``version``,
+            # ``author`` and ``description`` — there is no ``transforms`` attribute.
+            plugin_names = PluginRegistry.discover_plugins(auto_validate=args.auto_validate)
 
-            print(f"Discovered {len(plugins)} plugin(s):\n")
+            print(f"Discovered {len(plugin_names)} plugin(s):\n")
 
-            for plugin_name, metadata in plugins.items():
-                status = "✓ Validated" if metadata.is_validated else "○ Not validated"
-                print(f"  • {plugin_name} (v{metadata.version}) - {status}")
-                print(f"    Transforms: {', '.join(metadata.transforms)}")
-                print(f"    Author: {metadata.author}")
-                if metadata.description:
-                    print(f"    Description: {metadata.description}")
+            validated_count = 0
+            for plugin_name in plugin_names:
+                info = PluginRegistry.get_plugin_info(plugin_name)
+                if info is None:
+                    print(f"  • {plugin_name} (metadata unavailable)\n")
+                    continue
+                is_validated = bool(info.get("is_validated", False))
+                validated_count += int(is_validated)
+                status = "✓ Validated" if is_validated else "○ Not validated"
+                print(f"  • {plugin_name} (v{info.get('version', '?')}) - {status}")
+                transforms = info.get("registered_transforms", [])
+                print(f"    Transforms: {', '.join(sorted(transforms))}")
+                print(f"    Author: {info.get('author', '')}")
+                if info.get("description"):
+                    print(f"    Description: {info['description']}")
                 print()
 
             if args.auto_validate:
-                validated = sum(1 for m in plugins.values() if m.is_validated)
-                print(f"Validation Summary: {validated}/{len(plugins)} passed")
+                print(f"Validation Summary: {validated_count}/{len(plugin_names)} passed")
 
         except Exception as e:
             # Handle plugin-specific exceptions if plugin system is available
@@ -3471,26 +3483,29 @@ results = runner.run_experiment(
 
             for plugin_name in plugins:
                 info = PluginRegistry.get_plugin_info(plugin_name)
+                if info is None:
+                    print(f"📦 {plugin_name} (metadata unavailable)\n")
+                    continue
                 enabled = PluginRegistry.is_plugin_enabled(plugin_name)
 
                 status_parts = []
-                if info.is_validated:
+                if info.get("is_validated"):
                     status_parts.append("✓ Validated")
                 if enabled:
                     status_parts.append("✓ Enabled")
                 else:
                     status_parts.append("○ Disabled")
-                if info.trusted:
+                if info.get("trusted"):
                     status_parts.append("🔒 Trusted")
 
                 status = " | ".join(status_parts)
 
-                print(f"📦 {plugin_name} (v{info.version})")
+                print(f"📦 {plugin_name} (v{info.get('version', '?')})")
                 print(f"   Status: {status}")
-                print(f"   Transforms: {', '.join(info.transforms)}")
-                print(f"   Author: {info.author}")
-                if info.description:
-                    print(f"   Description: {info.description}")
+                print(f"   Transforms: {', '.join(sorted(info.get('registered_transforms', [])))}")
+                print(f"   Author: {info.get('author', '')}")
+                if info.get("description"):
+                    print(f"   Description: {info['description']}")
                 print()
 
             print(f"Total: {len(plugins)} plugin(s)")
@@ -3507,44 +3522,49 @@ results = runner.run_experiment(
 
         try:
             info = PluginRegistry.get_plugin_info(plugin_name)
+            if info is None:
+                raise CLIValidationError(f"Plugin '{plugin_name}' not found")
             enabled = PluginRegistry.is_plugin_enabled(plugin_name)
 
-            print(f"Name: {info.plugin_name}")
-            print(f"Version: {info.version}")
-            print(f"Author: {info.author}")
-            if info.email:
-                print(f"Email: {info.email}")
-            if info.license:
-                print(f"License: {info.license}")
-            if info.homepage:
-                print(f"Homepage: {info.homepage}")
+            print(f"Name: {info.get('plugin_name', plugin_name)}")
+            print(f"Version: {info.get('version', '?')}")
+            print(f"Author: {info.get('author', '')}")
+            if info.get("email"):
+                print(f"Email: {info['email']}")
+            if info.get("license"):
+                print(f"License: {info['license']}")
+            if info.get("homepage"):
+                print(f"Homepage: {info['homepage']}")
 
             print("\nStatus:")
-            print(f"  Validated: {'Yes' if info.is_validated else 'No'}")
+            print(f"  Validated: {'Yes' if info.get('is_validated') else 'No'}")
             print(f"  Enabled: {'Yes' if enabled else 'No'}")
-            print(f"  Trusted: {'Yes' if info.trusted else 'No'}")
+            print(f"  Trusted: {'Yes' if info.get('trusted') else 'No'}")
 
-            if info.validation_date:
-                print(f"  Last Validated: {info.validation_date}")
+            if info.get("validation_date"):
+                print(f"  Last Validated: {info['validation_date']}")
 
-            print(f"\nTransforms ({len(info.transforms)}):")
-            for transform in info.transforms:
+            transforms = sorted(info.get("registered_transforms", []))
+            print(f"\nTransforms ({len(transforms)}):")
+            for transform in transforms:
                 print(f"  • {transform}")
 
             print("\nDependencies:")
-            print(f"  milia: {info.milia_version}")
-            print(f"  PyG: {info.pyg_version}")
-            print(f"  Python: {info.python_version}")
+            print(f"  milia: {info.get('milia_version', '')}")
+            print(f"  PyG: {info.get('pyg_version', '')}")
+            print(f"  Python: {info.get('python_version', '')}")
 
-            if info.dependencies:
+            if info.get("dependencies"):
                 print("  Additional Packages:")
-                for dep in info.dependencies:
+                for dep in info["dependencies"]:
                     print(f"    • {dep}")
 
-            if info.description:
+            if info.get("description"):
                 print("\nDescription:")
-                print(f"  {info.description}")
+                print(f"  {info['description']}")
 
+        except CLIValidationError:
+            raise
         except KeyError:
             raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:

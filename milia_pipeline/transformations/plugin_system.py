@@ -1660,6 +1660,20 @@ class PluginRegistry:
         metadata = instance._plugins.get(plugin_name)
         return metadata.to_dict() if metadata else None
 
+    @classmethod
+    def get_plugin_paths(cls) -> list[Path]:
+        """
+        Return the registered plugin search paths.
+
+        Additive accessor mirroring ``add_plugin_path``; returns a copy of the
+        singleton's resolved search paths so callers cannot mutate registry state.
+
+        Returns:
+            List of registered plugin directory paths (may be empty).
+        """
+        instance = cls()
+        return list(instance._plugin_paths)
+
 
 class PluginValidator:
     """

@@ -573,6 +573,25 @@ class TestPluginRegistryCore:
         assert len(plugins) == 0
         assert plugins == []
 
+    def test_get_plugin_paths(self, reset_plugin_registry):
+        """get_plugin_paths returns the registered search paths as a safe copy."""
+        registry = PluginRegistry()
+
+        # Reset fixture clears paths, so the registry starts empty.
+        assert PluginRegistry.get_plugin_paths() == []
+
+        p1 = Path("/tmp/milia_plugins_a")
+        p2 = Path("/tmp/milia_plugins_b")
+        registry._plugin_paths.append(p1)
+        registry._plugin_paths.append(p2)
+
+        paths = PluginRegistry.get_plugin_paths()
+        assert paths == [p1, p2]
+
+        # The returned list must be a copy: mutating it cannot affect registry state.
+        paths.append(Path("/tmp/should_not_persist"))
+        assert PluginRegistry.get_plugin_paths() == [p1, p2]
+
 
 # =============================================================================
 # PluginRegistry Tests - Enable/Disable
