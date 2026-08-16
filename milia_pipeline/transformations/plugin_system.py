@@ -270,8 +270,8 @@ class PluginMetadata(BaseModel):
     homepage: str | None = None
 
     # Version dependencies
-    milia_version: str = ">=1.0.0"
-    pyg_version: str = ">=2.0.0"
+    milia_version: str = ">=1.2.2,<2.0.0"
+    pyg_version: str = ">=2.6.0,<2.7.0"
     python_version: str = ">=3.8"
     dependencies: list[str] = Field(default_factory=list)
 
@@ -1279,6 +1279,38 @@ class PluginRegistry:
         return results
 
     @staticmethod
+    def _check_version_compatibility(
+        spec_str: str, runtime_version: str | None, label: str
+    ) -> str | None:
+        """Return an error string if ``runtime_version`` violates ``spec_str``, else ``None``.
+
+        Uses ``packaging.SpecifierSet`` (PEP 440) for the comparison. A blank/empty
+        spec means "no constraint". A missing runtime version or an unparseable spec
+        yields a descriptive error so an incompatibility is never silently ignored
+        (fail-safe: unverifiable == reported, not assumed-OK).
+        """
+        if not spec_str:
+            return None
+        if runtime_version is None:
+            return f"{label} version unknown at runtime; cannot verify requirement '{spec_str}'"
+        try:
+            from packaging.specifiers import SpecifierSet
+            from packaging.version import Version
+        except Exception:  # packaging should always be present; never crash validation
+            return f"cannot verify {label} version '{spec_str}': packaging unavailable"
+        try:
+            specifier = SpecifierSet(spec_str)
+        except Exception:
+            return f"invalid {label} version specifier '{spec_str}'"
+        try:
+            satisfied = Version(runtime_version) in specifier
+        except Exception:
+            return f"unparseable runtime {label} version '{runtime_version}'"
+        if not satisfied:
+            return f"{label} {runtime_version} does not satisfy required '{spec_str}'"
+        return None
+
+    @staticmethod
     def _check_dependencies(metadata: PluginMetadata) -> dict:
         """
         Check if plugin dependencies are satisfied.
@@ -1288,14 +1320,21 @@ class PluginRegistry:
         """
         missing = []
 
-        # Check milia version
+        # Check milia version against the running interpreter (resolved at runtime,
+        # never hardcoded) using the plugin's declared PEP 440 specifier.
         try:
-            # Placeholder - would check actual milia version
-            pass
-        except Exception as e:
-            missing.append(f"milia version check failed: {e}")
+            import milia_pipeline
 
-        # Check PyG version
+            runtime_milia = getattr(milia_pipeline, "__version__", None)
+        except Exception:
+            runtime_milia = None
+        milia_error = PluginRegistry._check_version_compatibility(
+            metadata.milia_version, runtime_milia, "milia"
+        )
+        if milia_error:
+            missing.append(milia_error)
+
+        # Check PyG: presence first, then version compatibility against the runtime.
         try:
             _pyg_available = importlib.util.find_spec("torch_geometric") is not None
         except ValueError:
@@ -1305,6 +1344,18 @@ class PluginRegistry:
 
         if not _pyg_available:
             missing.append("PyTorch Geometric not installed")
+        else:
+            try:
+                import torch_geometric
+
+                runtime_pyg = getattr(torch_geometric, "__version__", None)
+            except Exception:
+                runtime_pyg = None
+            pyg_error = PluginRegistry._check_version_compatibility(
+                metadata.pyg_version, runtime_pyg, "PyTorch Geometric"
+            )
+            if pyg_error:
+                missing.append(pyg_error)
 
         # Check additional dependencies
         for dep in metadata.dependencies:

@@ -1298,6 +1298,12 @@ class TestPluginMetadataProperties:
         assert "numpy" not in m2.dependencies
         assert "bonus" not in m2.registered_transforms
 
+    def test_version_defaults_corrected(self):
+        """Default version specifiers reflect the real supported ranges (Step 4.3)."""
+        metadata = PluginMetadata(plugin_name="defaults", version="1.0.0", author="A")
+        assert metadata.milia_version == ">=1.2.2,<2.0.0"
+        assert metadata.pyg_version == ">=2.6.0,<2.7.0"
+
 
 # =============================================================================
 # PluginRegistry - Static Utility Methods
@@ -1585,6 +1591,47 @@ class TestPluginRegistryValidationInternal:
         result = PluginRegistry._check_dependencies(metadata)
         yaml_missing = [m for m in result["missing"] if "yaml" in m]
         assert len(yaml_missing) == 0
+
+    def test_check_dependencies_version_incompatible(self):
+        """An unsatisfiable milia specifier is reported and fails the dependency check."""
+        metadata = PluginMetadata(
+            plugin_name="bad_ver",
+            version="1.0.0",
+            author="A",
+            milia_version=">=99.0.0",  # cannot be satisfied by the running milia
+        )
+        result = PluginRegistry._check_dependencies(metadata)
+        assert result["passed"] is False
+        assert any("milia" in m and "99.0.0" in m for m in result["missing"])
+
+
+# =============================================================================
+# PluginRegistry - Version Compatibility (Step 4.3)
+# =============================================================================
+
+
+class TestVersionCompatibility:
+    """PEP 440 runtime version-compatibility helper."""
+
+    def test_blank_spec_is_unconstrained(self):
+        assert PluginRegistry._check_version_compatibility("", "1.2.2", "milia") is None
+
+    def test_satisfied_returns_none(self):
+        assert (
+            PluginRegistry._check_version_compatibility(">=1.2.2,<2.0.0", "1.2.2", "milia") is None
+        )
+
+    def test_unsatisfied_returns_message(self):
+        msg = PluginRegistry._check_version_compatibility(">=2.0.0", "1.2.2", "milia")
+        assert msg is not None and "does not satisfy" in msg
+
+    def test_unknown_runtime_reported(self):
+        msg = PluginRegistry._check_version_compatibility(">=1.0.0", None, "milia")
+        assert msg is not None and "unknown at runtime" in msg
+
+    def test_invalid_specifier_reported(self):
+        msg = PluginRegistry._check_version_compatibility("not-a-spec", "1.2.2", "milia")
+        assert msg is not None and "invalid" in msg
 
 
 # =============================================================================
