@@ -201,6 +201,15 @@ class TransformDeclaration(BaseModel):
     required_graph_attributes: list[str] = Field(default_factory=list)
     parameter_constraints: dict[str, Any] = Field(default_factory=dict)
 
+    # Inter-transform ordering/conflict contract (Step 6.4). Optional and
+    # non-breaking; mirrors graph_transforms.TransformDependency so a plugin can
+    # declare composition contracts in plugin.yaml.
+    depends_on: list[str] = Field(default_factory=list)
+    conflicts_with: list[str] = Field(default_factory=list)
+    recommended_before: list[str] = Field(default_factory=list)
+    recommended_after: list[str] = Field(default_factory=list)
+    modifies_attributes: list[str] = Field(default_factory=list)
+
     def to_dict(self) -> dict[str, Any]:
         """
         Convert to dictionary for serialization.
@@ -223,6 +232,11 @@ class TransformDeclaration(BaseModel):
             required_edge_features=data.get("required_edge_features", []),
             required_graph_attributes=data.get("required_graph_attributes", []),
             parameter_constraints=data.get("parameter_constraints", {}),
+            depends_on=data.get("depends_on", []),
+            conflicts_with=data.get("conflicts_with", []),
+            recommended_before=data.get("recommended_before", []),
+            recommended_after=data.get("recommended_after", []),
+            modifies_attributes=data.get("modifies_attributes", []),
         )
 
 

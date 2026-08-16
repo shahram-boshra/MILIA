@@ -325,6 +325,39 @@ class TestTransformMetadata:
         assert meta_dict["validated_datasets"] == []
         assert meta_dict["required_node_features"] == []
 
+    def test_metadata_ordering_fields_default_empty(self, minimal_metadata):
+        """The Step 6.4 ordering/conflict fields default to empty lists."""
+        meta_dict = minimal_metadata.to_dict()
+        for field in (
+            "depends_on",
+            "conflicts_with",
+            "recommended_before",
+            "recommended_after",
+            "modifies_attributes",
+        ):
+            assert meta_dict[field] == []
+
+    def test_metadata_ordering_fields_roundtrip(self):
+        """Ordering/conflict contract is accepted and survives to_dict()."""
+        meta = TransformMetadata(
+            name="OrderedTransform",
+            version="1.0.0",
+            author="Test Author",
+            category="structural",
+            description="declares an ordering contract",
+            depends_on=["AddSelfLoops"],
+            conflicts_with=["RemoveIsolatedNodes"],
+            recommended_before=["Distance"],
+            recommended_after=["ToUndirected"],
+            modifies_attributes=["edge_index", "x"],
+        )
+        meta_dict = meta.to_dict()
+        assert meta_dict["depends_on"] == ["AddSelfLoops"]
+        assert meta_dict["conflicts_with"] == ["RemoveIsolatedNodes"]
+        assert meta_dict["recommended_before"] == ["Distance"]
+        assert meta_dict["recommended_after"] == ["ToUndirected"]
+        assert meta_dict["modifies_attributes"] == ["edge_index", "x"]
+
     def test_metadata_str_representation(self, sample_metadata):
         """Test string representation of metadata"""
         str_repr = str(sample_metadata)

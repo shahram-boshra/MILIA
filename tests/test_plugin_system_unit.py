@@ -276,6 +276,44 @@ class TestTransformDeclaration:
         assert decl.required_edge_features == []
         assert decl.required_graph_attributes == []
         assert decl.parameter_constraints == {}
+        # Step 6.4 ordering/conflict fields default empty
+        assert decl.depends_on == []
+        assert decl.conflicts_with == []
+        assert decl.recommended_before == []
+        assert decl.recommended_after == []
+        assert decl.modifies_attributes == []
+
+    def test_transform_declaration_ordering_fields_roundtrip(self):
+        """Ordering/conflict contract round-trips through from_dict/to_dict."""
+        data = {
+            "name": "ordered",
+            "class_name": "OrderedTransform",
+            "module_path": "transforms.ordered",
+            "category": "structural",
+            "description": "declares an ordering contract",
+            "depends_on": ["AddSelfLoops"],
+            "conflicts_with": ["RemoveIsolatedNodes"],
+            "recommended_before": ["Distance"],
+            "recommended_after": ["ToUndirected"],
+            "modifies_attributes": ["edge_index"],
+        }
+
+        decl = TransformDeclaration.from_dict(data)
+        assert decl.depends_on == ["AddSelfLoops"]
+        assert decl.conflicts_with == ["RemoveIsolatedNodes"]
+        assert decl.recommended_before == ["Distance"]
+        assert decl.recommended_after == ["ToUndirected"]
+        assert decl.modifies_attributes == ["edge_index"]
+
+        result = decl.to_dict()
+        for key in (
+            "depends_on",
+            "conflicts_with",
+            "recommended_before",
+            "recommended_after",
+            "modifies_attributes",
+        ):
+            assert result[key] == data[key]
 
 
 # =============================================================================

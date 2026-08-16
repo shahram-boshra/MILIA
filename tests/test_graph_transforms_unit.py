@@ -315,6 +315,80 @@ class TestTransformMetadata:
         assert "ToUndirected" in dependency.recommended_after
 
 
+class TestInferDependencies:
+    """Metadata-driven dependency inference with heuristic fallback (Step 6.4)."""
+
+    def test_heuristic_fallback_for_known_name(self, mock_registry):
+        """A transform with no declared contract falls back to the heuristic table."""
+
+        class _Plain:  # no get_metadata -> heuristic applies
+            pass
+
+        dep = mock_registry._infer_dependencies("GCNNorm", _Plain)
+        assert dep.recommended_after == ["AddSelfLoops"]
+        assert dep.modifies_attributes == ["edge_weight"]
+
+    def test_unknown_name_returns_empty(self, mock_registry):
+        """Unknown name with no metadata yields an empty dependency set."""
+
+        class _Plain:
+            pass
+
+        dep = mock_registry._infer_dependencies("NoSuchTransform", _Plain)
+        assert dep.depends_on == []
+        assert dep.conflicts_with == []
+        assert dep.recommended_before == []
+        assert dep.recommended_after == []
+        assert dep.modifies_attributes == []
+
+    def test_metadata_overrides_heuristic(self, mock_registry):
+        """A self-declared ordering contract is authoritative over the heuristic."""
+
+        class _Declared:
+            @classmethod
+            def get_metadata(cls):
+                return {
+                    "depends_on": ["AddSelfLoops"],
+                    "conflicts_with": ["RemoveIsolatedNodes"],
+                    "recommended_before": ["Distance"],
+                    "recommended_after": ["ToUndirected"],
+                    "modifies_attributes": ["edge_index"],
+                    "required_graph_attributes": ["pos"],
+                }
+
+        dep = mock_registry._infer_dependencies("GCNNorm", _Declared)
+        assert dep.depends_on == ["AddSelfLoops"]
+        assert dep.conflicts_with == ["RemoveIsolatedNodes"]
+        assert dep.recommended_before == ["Distance"]
+        assert dep.recommended_after == ["ToUndirected"]
+        assert dep.modifies_attributes == ["edge_index"]
+        assert dep.required_graph_attributes == ["pos"]
+
+    def test_bare_data_requirement_does_not_trigger_metadata_mode(self, mock_registry):
+        """Only ordering/conflict fields trigger metadata mode, not data requirements."""
+
+        class _DataOnly:
+            @classmethod
+            def get_metadata(cls):
+                return {"required_graph_attributes": ["pos"]}
+
+        assert TransformRegistry._dependencies_from_metadata(_DataOnly) is None
+        dep = mock_registry._infer_dependencies("NoSuchTransform", _DataOnly)
+        assert dep.required_graph_attributes == []
+
+    def test_faulty_get_metadata_is_ignored(self, mock_registry):
+        """A raising get_metadata never breaks inference; heuristic still applies."""
+
+        class _Faulty:
+            @classmethod
+            def get_metadata(cls):
+                raise RuntimeError("boom")
+
+        assert TransformRegistry._dependencies_from_metadata(_Faulty) is None
+        dep = mock_registry._infer_dependencies("VirtualNode", _Faulty)
+        assert dep.conflicts_with == ["RemoveIsolatedNodes"]
+
+
 # =============================================================================
 # TEST SUITE: DynamicTransformDiscovery
 # =============================================================================

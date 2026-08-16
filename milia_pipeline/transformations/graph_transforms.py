@@ -2984,10 +2984,69 @@ class TransformRegistry:
 
         return complexity_map.get(name, 2.0)  # Default to moderate complexity
 
-    def _infer_dependencies(self, name: str, transform_class: type) -> TransformDependency:
-        """Infer transform dependencies"""
+    @staticmethod
+    def _dependencies_from_metadata(transform_class: type) -> "TransformDependency | None":
+        """Build a TransformDependency from a transform's declared metadata.
 
-        # Known dependency patterns
+        Reads the ordering/conflict contract a transform self-declares via its
+        ``get_metadata()`` (TransformMetadata fields ``depends_on``,
+        ``conflicts_with``, ``recommended_before``, ``recommended_after``,
+        ``modifies_attributes``, plus ``required_graph_attributes``). Shape-agnostic:
+        supports Pydantic models, namedtuples, plain objects, and dicts.
+
+        Returns a TransformDependency only when at least one ordering/conflict
+        field is populated (so a bare data-requirement declaration does not shadow
+        the heuristic table); otherwise ``None`` to signal "no explicit contract".
+        """
+        getter = getattr(transform_class, "get_metadata", None)
+        if not callable(getter):
+            return None
+        try:
+            meta = getter()
+        except Exception:
+            # Metadata is advisory here; never let a faulty get_metadata break registration.
+            return None
+        if meta is None:
+            return None
+
+        def _field(obj: Any, key: str) -> list[str]:
+            value = obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
+            return list(value) if value else []
+
+        depends_on = _field(meta, "depends_on")
+        conflicts_with = _field(meta, "conflicts_with")
+        recommended_before = _field(meta, "recommended_before")
+        recommended_after = _field(meta, "recommended_after")
+        modifies_attributes = _field(meta, "modifies_attributes")
+        required_graph_attributes = _field(meta, "required_graph_attributes")
+
+        if not any(
+            [depends_on, conflicts_with, recommended_before, recommended_after, modifies_attributes]
+        ):
+            return None
+
+        return TransformDependency(
+            depends_on=depends_on,
+            conflicts_with=conflicts_with,
+            recommended_before=recommended_before,
+            recommended_after=recommended_after,
+            required_graph_attributes=required_graph_attributes,
+            modifies_attributes=modifies_attributes,
+        )
+
+    def _infer_dependencies(self, name: str, transform_class: type) -> TransformDependency:
+        """Infer transform dependencies.
+
+        Metadata-driven with heuristic fallback: if ``transform_class`` self-declares
+        an ordering/conflict contract via ``get_metadata()``, that is authoritative;
+        otherwise fall back to the built-in table of known PyG transforms, and finally
+        to an empty dependency set.
+        """
+        declared = self._dependencies_from_metadata(transform_class)
+        if declared is not None:
+            return declared
+
+        # Known dependency patterns (fallback for transforms that do not self-declare)
         dependency_rules = {
             "GCNNorm": TransformDependency(
                 recommended_after=["AddSelfLoops"],

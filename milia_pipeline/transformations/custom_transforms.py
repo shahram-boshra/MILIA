@@ -211,6 +211,11 @@ class TransformMetadata(BaseModel):
         required_node_features: Required node attribute names (e.g., ['x', 'z'])
         required_edge_features: Required edge attribute names (e.g., ['edge_attr'])
         required_graph_attributes: Required graph-level attributes (e.g., ['energy', 'forces'])
+        depends_on: Transforms that must run before this one
+        conflicts_with: Transforms that must not be composed with this one
+        recommended_before: Transforms recommended to run before this one
+        recommended_after: Transforms recommended to run after this one
+        modifies_attributes: Graph attributes this transform writes/mutates
 
     Example:
         >>> metadata = TransformMetadata(
@@ -239,6 +244,16 @@ class TransformMetadata(BaseModel):
     required_node_features: list[str] = Field(default_factory=list)
     required_edge_features: list[str] = Field(default_factory=list)
     required_graph_attributes: list[str] = Field(default_factory=list)
+
+    # Inter-transform ordering/conflict contract (Step 6.4). All optional and
+    # non-breaking; mirror the fields of graph_transforms.TransformDependency so
+    # a transform can self-declare how it composes with others. Consumed by the
+    # registry's dependency inference (metadata-driven, heuristic fallback).
+    depends_on: list[str] = Field(default_factory=list)
+    conflicts_with: list[str] = Field(default_factory=list)
+    recommended_before: list[str] = Field(default_factory=list)
+    recommended_after: list[str] = Field(default_factory=list)
+    modifies_attributes: list[str] = Field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """
