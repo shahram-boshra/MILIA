@@ -1,0 +1,111 @@
+# milia_pipeline/plugins/combinatorial_dual/plugin.yaml
+#
+# Family D — Combinatorial & dual operators (NetworkX + NumPy/SciPy; no new dependency).
+# Single-module layout (module_path: transforms) per the plugin loader.
+
+plugin_name: "combinatorial_dual"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Combinatorial and dual graph operators: Levi/incidence, planar dual, quotient, SCC condensation, transitive closure/reduction, bipartite projection, k-hop, complement, adjacency power, MST, and proximity graphs (Gabriel/RNG)."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "ToLevi"
+    class_name: "ToLevi"
+    module_path: "transforms"
+    category: "structural"
+    description: "Levi/incidence graph (node per vertex and per edge)."
+    version: "1.0.0"
+
+  - name: "GraphDual"
+    class_name: "GraphDual"
+    module_path: "transforms"
+    category: "structural"
+    description: "Planar face dual graph."
+    version: "1.0.0"
+
+  - name: "QuotientGraph"
+    class_name: "QuotientGraph"
+    module_path: "transforms"
+    category: "structural"
+    description: "Quotient graph from a node partition."
+    version: "1.0.0"
+
+  - name: "CondensationTransform"
+    class_name: "CondensationTransform"
+    module_path: "transforms"
+    category: "structural"
+    description: "SCC condensation into a DAG of components."
+    version: "1.0.0"
+
+  - name: "TransitiveClosure"
+    class_name: "TransitiveClosure"
+    module_path: "transforms"
+    category: "structural"
+    description: "Transitive closure of the reachability relation."
+    version: "1.0.0"
+
+  - name: "TransitiveReduction"
+    class_name: "TransitiveReduction"
+    module_path: "transforms"
+    category: "structural"
+    description: "Transitive reduction (DAGs only)."
+    version: "1.0.0"
+
+  - name: "BipartiteProjection"
+    class_name: "BipartiteProjection"
+    module_path: "transforms"
+    category: "structural"
+    description: "Projection of a bipartite graph onto one node set."
+    version: "1.0.0"
+
+  - name: "KHopGraph"
+    class_name: "KHopGraph"
+    module_path: "transforms"
+    category: "structural"
+    description: "K-hop densification (connect pairs within k hops)."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "ComplementGraph"
+    class_name: "ComplementGraph"
+    module_path: "transforms"
+    category: "structural"
+    description: "Complement graph."
+    version: "1.0.0"
+
+  - name: "KNeighborGraphPower"
+    class_name: "KNeighborGraphPower"
+    module_path: "transforms"
+    category: "structural"
+    description: "k-th adjacency power A^k as a new edge set."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "MinimumSpanningTree"
+    class_name: "MinimumSpanningTree"
+    module_path: "transforms"
+    category: "structural"
+    description: "Minimum spanning tree skeleton."
+    version: "1.0.0"
+
+  - name: "GabrielGraph"
+    class_name: "GabrielGraph"
+    module_path: "transforms"
+    category: "structural"
+    description: "Gabriel proximity graph from node positions."
+    version: "1.0.0"
+
+  - name: "RelativeNeighborhoodGraph"
+    class_name: "RelativeNeighborhoodGraph"
+    module_path: "transforms"
+    category: "structural"
+    description: "Relative neighborhood proximity graph from node positions."
+    version: "1.0.0"
