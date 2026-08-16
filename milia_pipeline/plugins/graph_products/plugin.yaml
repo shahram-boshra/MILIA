@@ -1,0 +1,81 @@
+# milia_pipeline/plugins/graph_products/plugin.yaml
+#
+# Family C — Algebraic graph-product transforms (NetworkX-native; no new dependency).
+# Single-module layout (module_path: transforms) matches the plugin loader, which
+# resolves plugin_dir / f"{module_path}.py" and execs each class standalone.
+
+plugin_name: "graph_products"
+version: "1.0.0"                      # the PLUGIN's own semver (independent of MILIA's version)
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Algebraic graph-product transforms (Cartesian, tensor, strong, lexicographic, rooted, corona) plus stochastic-Kronecker generation."
+milia_version: ">=1.2.2,<2.0.0"       # PEP 440 compatibility range (host resolves & checks at runtime)
+pyg_version: ">=2.6.0,<2.7.0"         # matches the pinned 2.6.1
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []                      # networkx already provided by MILIA
+
+transforms:
+  - name: "CartesianProduct"
+    class_name: "CartesianProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Cartesian graph product G product H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "TensorProduct"
+    class_name: "TensorProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Tensor/categorical graph product G product H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "StrongProduct"
+    class_name: "StrongProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Strong graph product G product H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "LexicographicProduct"
+    class_name: "LexicographicProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Lexicographic graph product G product H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "RootedProduct"
+    class_name: "RootedProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Rooted graph product of G and H rooted in H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "CoronaProduct"
+    class_name: "CoronaProduct"
+    module_path: "transforms"
+    category: "structural"
+    description: "Corona graph product G product H."
+    version: "1.0.0"
+    parameter_constraints:
+      seed: {type: int}
+
+  - name: "KroneckerGraphGeneration"
+    class_name: "KroneckerGraphGeneration"
+    module_path: "transforms"
+    category: "structural"
+    description: "Stochastic Kronecker-product synthetic graph generation."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+      seed: {type: int}
