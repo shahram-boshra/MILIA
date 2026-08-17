@@ -1,0 +1,85 @@
+# milia_pipeline/plugins/spectral_signal/plugin.yaml
+#
+# Family E — Spectral & signal-decomposition transforms (in-scope subset; torch eigh, no new
+# dependency). Single-module layout (module_path: transforms) per the plugin loader. Every
+# transform is invariant to torch.linalg.eigh's eigenvector non-uniqueness (operator g(sL) or
+# Σ_k τ(λ_k) φ_k² form). PyG built-ins already bridged (AddLaplacianEigenvectorPE, AddRandomWalkPE,
+# LaplacianLambdaMax, SIGN, GDC) are NOT duplicated. E3/E4/E9/E10 deferred per the Blueprint.
+
+plugin_name: "spectral_signal"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Spectral and signal-decomposition node descriptors: spectral graph wavelets, fixed scattering cascade, GraphWave characteristic-function embedding, heat- and wave-kernel signatures, and sign-invariant low-frequency spectral coordinates."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "SpectralGraphWaveletTransform"
+    class_name: "SpectralGraphWaveletTransform"
+    module_path: "transforms"
+    category: "structural"
+    description: "E1: per-node multiscale spectral-graph-wavelet energy (Hammond et al. 2011)."
+    version: "1.0.0"
+    parameter_constraints:
+      kernel: {type: str}
+      attr_name: {type: str}
+
+  - name: "GraphScatteringTransform"
+    class_name: "GraphScatteringTransform"
+    module_path: "transforms"
+    category: "structural"
+    description: "E2: fixed (non-trainable) wavelet-modulus graph-scattering cascade."
+    version: "1.0.0"
+    parameter_constraints:
+      order: {type: int}
+      lowpass_scale: {type: float}
+      attr_name: {type: str}
+
+  - name: "GraphWaveEmbedding"
+    class_name: "GraphWaveEmbedding"
+    module_path: "transforms"
+    category: "structural"
+    description: "E5: GraphWave characteristic-function structural embedding (Donnat et al. 2018)."
+    version: "1.0.0"
+    parameter_constraints:
+      num_samples: {type: int}
+      t_max: {type: float}
+      attr_name: {type: str}
+
+  - name: "HeatKernelSignature"
+    class_name: "HeatKernelSignature"
+    module_path: "transforms"
+    category: "structural"
+    description: "E6: multiscale heat-kernel-signature node features (Sun et al. 2009)."
+    version: "1.0.0"
+    parameter_constraints:
+      num_times: {type: int}
+      t_min: {type: float}
+      t_max: {type: float}
+      attr_name: {type: str}
+
+  - name: "WaveKernelSignature"
+    class_name: "WaveKernelSignature"
+    module_path: "transforms"
+    category: "structural"
+    description: "E7: multiscale wave-kernel-signature node features (Aubry et al. 2011)."
+    version: "1.0.0"
+    parameter_constraints:
+      num_energies: {type: int}
+      sigma: {type: float}
+      attr_name: {type: str}
+
+  - name: "SpectralFeatureCoordinates"
+    class_name: "SpectralFeatureCoordinates"
+    module_path: "transforms"
+    category: "structural"
+    description: "E8: sign-invariant low-frequency Laplacian-eigenvector coordinates."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+      mode: {type: str}
+      attr_name: {type: str}
