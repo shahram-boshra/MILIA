@@ -1,0 +1,57 @@
+# milia_pipeline/plugins/static_padding/plugin.yaml
+#
+# Family H — Array layout & alignment for static compilation (torch-only; no new dependency).
+# Single-module layout (module_path: transforms) per the plugin loader.
+
+plugin_name: "static_padding"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Static-compilation layout operators: batch padding, virtual-node masking, power-of-two padding, GCN operator precompute, and edge_attr canonical padding."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "StaticBatchPadding"
+    class_name: "StaticBatchPadding"
+    module_path: "transforms"
+    category: "structural"
+    description: "Pad a graph to fixed (n_node, n_edge) budgets with real/pad masks."
+    version: "1.0.0"
+    parameter_constraints:
+      n_node: {type: int}
+
+  - name: "VirtualNodeMasking"
+    class_name: "VirtualNodeMasking"
+    module_path: "transforms"
+    category: "structural"
+    description: "Add masked virtual node(s) connected to all real nodes."
+    version: "1.0.0"
+    parameter_constraints:
+      num_virtual: {type: int}
+
+  - name: "PowerOfTwoPadding"
+    class_name: "PowerOfTwoPadding"
+    module_path: "transforms"
+    category: "structural"
+    description: "Pad node/edge counts up to the next power of two."
+    version: "1.0.0"
+
+  - name: "LayerPreprocess"
+    class_name: "LayerPreprocess"
+    module_path: "transforms"
+    category: "structural"
+    description: "Precompute cached GCN operator D^-1/2 (A+I) D^-1/2 as edge_weight."
+    version: "1.0.0"
+
+  - name: "EdgeAttrCanonicalPadding"
+    class_name: "EdgeAttrCanonicalPadding"
+    module_path: "transforms"
+    category: "structural"
+    description: "Zero-pad edge_attr to a canonical width across a dataset."
+    version: "1.0.0"
+    parameter_constraints:
+      width: {type: int}
