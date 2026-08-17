@@ -1,0 +1,84 @@
+# milia_pipeline/plugins/nonspatial_augment/plugin.yaml
+#
+# Family G — Strict non-spatial augmentations (in-scope subset; NetworkX + NumPy/Torch;
+# no new dependency). Single-module layout (module_path: transforms) per the plugin loader.
+# G1/G3/G4 + RandomNodeSample already ship in pyg_augmentation — NOT duplicated here.
+# G6/G9/G10/G11/G13/G14 are deferred (needs-model / needs-dataset) per the Blueprint.
+
+plugin_name: "nonspatial_augment"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Strict non-spatial graph augmentations: random edge addition, edge-feature masking, random-walk/BFS subgraph crop, personalized-PageRank subgraph sampling, NASA neighbour replacement, and submodular feature-salience selection."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "RandomEdgeAdd"
+    class_name: "RandomEdgeAdd"
+    module_path: "transforms"
+    category: "structural"
+    description: "G2: add seeded random non-existent edges (GraphCL edge perturbation)."
+    version: "1.0.0"
+    parameter_constraints:
+      p: {type: float}
+      seed: {type: int}
+
+  - name: "EdgeFeatureMasking"
+    class_name: "EdgeFeatureMasking"
+    module_path: "transforms"
+    category: "structural"
+    description: "G5: mask a seeded random subset of edge-feature dimensions (GCA)."
+    version: "1.0.0"
+    required_edge_features: ["edge_attr"]
+    parameter_constraints:
+      p: {type: float}
+      mask_value: {type: float}
+      seed: {type: int}
+
+  - name: "RandomWalkSubgraphCrop"
+    class_name: "RandomWalkSubgraphCrop"
+    module_path: "transforms"
+    category: "structural"
+    description: "G7: seeded random-walk/BFS connected-subgraph crop (GraphCL/GCC)."
+    version: "1.0.0"
+    parameter_constraints:
+      ratio: {type: float}
+      mode: {type: str}
+      seed: {type: int}
+
+  - name: "PPRSubgraphSampling"
+    class_name: "PPRSubgraphSampling"
+    module_path: "transforms"
+    category: "structural"
+    description: "G8: personalized-PageRank top-k subgraph sampling (SUBG-CON)."
+    version: "1.0.0"
+    parameter_constraints:
+      ratio: {type: float}
+      alpha: {type: float}
+      seed: {type: int}
+
+  - name: "NASANeighborReplace"
+    class_name: "NASANeighborReplace"
+    module_path: "transforms"
+    category: "structural"
+    description: "G12: replace a node's 1-hop neighbours with its k-hop neighbours (NASA)."
+    version: "1.0.0"
+    parameter_constraints:
+      hop: {type: int}
+      ratio: {type: float}
+      seed: {type: int}
+
+  - name: "SubmodularFeatureSalience"
+    class_name: "SubmodularFeatureSalience"
+    module_path: "transforms"
+    category: "structural"
+    description: "G15: greedy submodular (facility-location) node-feature-dim selection."
+    version: "1.0.0"
+    required_node_features: ["x"]
+    parameter_constraints:
+      ratio: {type: float}
+      seed: {type: int}
