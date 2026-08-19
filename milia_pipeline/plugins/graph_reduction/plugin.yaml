@@ -1,0 +1,91 @@
+# milia_pipeline/plugins/graph_reduction/plugin.yaml
+#
+# Family F.a/F.b — Sparsification & coarsening (in-scope subset; networkx + torch, no new
+# dependency). Single-module layout (module_path: transforms) per the plugin loader.
+# F2/F4/F7/F9/F10/F12/F13 deferred (correctness/dependency risk); F.c F16–F20 OUT (needs GNN
+# training). PyG built-ins already bridged (GDC, LargestConnectedComponents) are NOT duplicated.
+
+plugin_name: "graph_reduction"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Graph sparsification and coarsening: effective-resistance spectral sparsifier, t-spanner, top-k and local-degree sparsifiers, Kron (Schur-complement) reduction, heavy-edge-matching coarsening, and k-core / k-truss decomposition."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "EffectiveResistanceSparsify"
+    class_name: "EffectiveResistanceSparsify"
+    module_path: "transforms"
+    category: "structural"
+    description: "F1: effective-resistance spectral edge sampling (Spielman-Srivastava)."
+    version: "1.0.0"
+    parameter_constraints:
+      ratio: {type: float}
+      seed: {type: int}
+
+  - name: "SpannerSparsify"
+    class_name: "SpannerSparsify"
+    module_path: "transforms"
+    category: "structural"
+    description: "F3: t-spanner distance-preserving edge subset (Baswana-Sen)."
+    version: "1.0.0"
+    parameter_constraints:
+      stretch: {type: int}
+      seed: {type: int}
+
+  - name: "KNeighborSparsify"
+    class_name: "KNeighborSparsify"
+    module_path: "transforms"
+    category: "structural"
+    description: "F5: keep top-k highest-weight edges per node."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "LocalDegreeSparsify"
+    class_name: "LocalDegreeSparsify"
+    module_path: "transforms"
+    category: "structural"
+    description: "F6: keep edges to local hub (high-degree) neighbours (Lindner et al.)."
+    version: "1.0.0"
+    parameter_constraints:
+      alpha: {type: float}
+
+  - name: "KronReduction"
+    class_name: "KronReduction"
+    module_path: "transforms"
+    category: "structural"
+    description: "F8: Schur-complement (Kron) Laplacian reduction onto a node subset."
+    version: "1.0.0"
+    parameter_constraints:
+      ratio: {type: float}
+
+  - name: "HeavyEdgeMatching"
+    class_name: "HeavyEdgeMatching"
+    module_path: "transforms"
+    category: "structural"
+    description: "F11: contract a heavy-edge maximal matching into super-nodes (Graclus)."
+    version: "1.0.0"
+    parameter_constraints: {}
+
+  - name: "KCoreDecomposition"
+    class_name: "KCoreDecomposition"
+    module_path: "transforms"
+    category: "structural"
+    description: "F14: induce the k-core subgraph (Batagelj-Zaversnik)."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "KTrussDecomposition"
+    class_name: "KTrussDecomposition"
+    module_path: "transforms"
+    category: "structural"
+    description: "F15: retain edges in at least (k-2) triangles, the k-truss (Cohen)."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
