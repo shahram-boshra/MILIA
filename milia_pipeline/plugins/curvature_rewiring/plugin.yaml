@@ -1,0 +1,57 @@
+# milia_pipeline/plugins/curvature_rewiring/plugin.yaml
+#
+# Family B — Curvature & differential-geometric rewiring (in-scope subset; torch only, no new
+# dependency; L+ via torch.linalg.pinv). Single-module layout (module_path: transforms).
+# B1 (Ollivier/OT), B2 (Balanced-Forman gamma_max discrepancy), B4/B5/B8/B9/B10/B11 deferred.
+# Node set is preserved (edges added/pruned only); added edges get a zero edge_attr slice.
+
+plugin_name: "curvature_rewiring"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Curvature and differential-geometric rewiring: Forman-Ricci (SDRF) curvature rewiring, effective-resistance (GTR) rewiring, spectral-gap (FoSR) rewiring, and Devriendt-Lambiotte resistance-curvature rewiring."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "FormanRicciRewiring"
+    class_name: "FormanRicciRewiring"
+    module_path: "transforms"
+    category: "structural"
+    description: "B3: augmented Forman-Ricci curvature SDRF add/prune rewiring."
+    version: "1.0.0"
+    parameter_constraints:
+      num_iterations: {type: int}
+      prune: {type: bool}
+
+  - name: "EffectiveResistanceRewiring"
+    class_name: "EffectiveResistanceRewiring"
+    module_path: "transforms"
+    category: "structural"
+    description: "B6: add high effective-resistance pairs, prune low-resistance edges (GTR)."
+    version: "1.0.0"
+    parameter_constraints:
+      num_iterations: {type: int}
+      prune: {type: bool}
+
+  - name: "SpectralGapRewiring"
+    class_name: "SpectralGapRewiring"
+    module_path: "transforms"
+    category: "structural"
+    description: "B7: add edges maximising the Laplacian spectral gap (FoSR)."
+    version: "1.0.0"
+    parameter_constraints:
+      num_iterations: {type: int}
+
+  - name: "ResistanceCurvatureRewiring"
+    class_name: "ResistanceCurvatureRewiring"
+    module_path: "transforms"
+    category: "structural"
+    description: "B12: Devriendt-Lambiotte resistance-curvature add/prune rewiring."
+    version: "1.0.0"
+    parameter_constraints:
+      num_iterations: {type: int}
+      prune: {type: bool}
