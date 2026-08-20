@@ -1,0 +1,46 @@
+# milia_pipeline/plugins/topological_lifts/plugin.yaml
+#
+# Family A — Topological & higher-order lifts (zero-dependency Data->Data subset; torch only).
+# Single-module layout (module_path: transforms). Complex-producing lifts (A1/A2/A6/A7/A14/A15)
+# and TDA lifts (A3/A4/A5, H1 persistence) are deferred to a future toponetx/gudhi-backed extra,
+# per the catalogue's dependency guidance. The three here realise hypergraph lifts as ordinary
+# graphs (clique / star expansion) plus H0 persistence features.
+
+plugin_name: "topological_lifts"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Zero-dependency topological lifts: k-hop hypergraph clique expansion, k-hop hypergraph star expansion with meta-nodes, and zero-dimensional persistent-homology summary features."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "HypergraphCliqueExpansion"
+    class_name: "HypergraphCliqueExpansion"
+    module_path: "transforms"
+    category: "structural"
+    description: "A11: k-hop hypergraph clique expansion to a weighted graph."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "HypergraphStarExpansion"
+    class_name: "HypergraphStarExpansion"
+    module_path: "transforms"
+    category: "structural"
+    description: "A10: k-hop hypergraph star expansion with per-hyperedge meta-nodes."
+    version: "1.0.0"
+    parameter_constraints:
+      k: {type: int}
+
+  - name: "PersistentHomologyFeature"
+    class_name: "PersistentHomologyFeature"
+    module_path: "transforms"
+    category: "structural"
+    description: "A16 (H0): zero-dimensional persistent-homology summary features."
+    version: "1.0.0"
+    parameter_constraints:
+      attr_name: {type: str}
