@@ -1,0 +1,48 @@
+# milia_pipeline/plugins/latent_structural/plugin.yaml
+#
+# Family J — Latent-space & self-supervised structural transforms (deterministic zero-dependency
+# subset; torch + networkx). Single-module layout (module_path: transforms). J1 (latent-space
+# post-augmentation) is OUT (needs a trained model); learned variants of J3/J4 (struc2vec/RolX-NMF,
+# word2vec-AWE) are excluded in favour of their dependency-free explicit cores.
+
+plugin_name: "latent_structural"
+version: "1.0.0"
+author: "MILIA Team"
+plugin_type: "user_experimental"
+description: "Deterministic latent-structural transforms: ring-motif compression into super-nodes, recursive (ReFeX) structural-role node features, and anonymous-walk distribution graph embeddings."
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+license: "MIT"
+dependencies: []
+
+transforms:
+  - name: "MotifCompression"
+    class_name: "MotifCompression"
+    module_path: "transforms"
+    category: "structural"
+    description: "J2: contract ring motifs (cycle basis) into virtual super-nodes."
+    version: "1.0.0"
+    parameter_constraints:
+      max_ring_size: {type: int}
+
+  - name: "StructuralRoleEncoding"
+    class_name: "StructuralRoleEncoding"
+    module_path: "transforms"
+    category: "structural"
+    description: "J3: recursive (ReFeX) structural-role node feature encoding."
+    version: "1.0.0"
+    parameter_constraints:
+      iterations: {type: int}
+      attr_name: {type: str}
+
+  - name: "AnonymousWalkEmbedding"
+    class_name: "AnonymousWalkEmbedding"
+    module_path: "transforms"
+    category: "structural"
+    description: "J4: anonymous-walk distribution graph-level embedding."
+    version: "1.0.0"
+    parameter_constraints:
+      walk_length: {type: int}
+      max_walks_per_node: {type: int}
+      attr_name: {type: str}
