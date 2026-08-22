@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/static_padding/plugin.yaml
+# milia_pipeline/plugins/transformations/static_padding/plugin.yaml
 #
 # Family H — Array layout & alignment for static compilation (torch-only; no new dependency).
 # Single-module layout (module_path: transforms) per the plugin loader.

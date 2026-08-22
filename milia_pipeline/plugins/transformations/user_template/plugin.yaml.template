@@ -1,0 +1,29 @@
+# Transform Plugin Metadata Template
+# Copy this to plugin.yaml and fill in your information.
+
+plugin_name: "your_transform_plugin_name"
+version: "1.0.0"
+author: "Your Name"
+email: "your.email@example.com"
+description: "Brief description of your transform plugin category"
+license: "MIT"
+homepage: "https://github.com/yourusername/your-plugin"  # Optional
+
+# Version Requirements
+milia_version: ">=1.2.2,<2.0.0"
+pyg_version: ">=2.6.0,<2.7.0"
+python_version: ">=3.10"
+
+# Python Package Dependencies (optional; keep empty for zero-dependency plugins)
+dependencies: []
+
+# Transform Declarations
+transforms:
+  - name: "YourTransform"
+    class_name: "YourTransform"       # Python class in transforms.py
+    module_path: "transforms"         # module file (transforms.py) inside this plugin dir
+    category: "structural"
+    description: "What your transform does."
+    version: "1.0.0"
+    parameter_constraints:
+      example_param: {type: int}

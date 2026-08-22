@@ -13,7 +13,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.plugins.combinatorial_dual.transforms import (
+from milia_pipeline.plugins.transformations.combinatorial_dual.transforms import (
     BipartiteProjection,
     ComplementGraph,
     CondensationTransform,
@@ -438,7 +438,7 @@ def test_plugin_discovery_registers_all_thirteen():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=True)
     assert "combinatorial_dual" in names
 
@@ -468,7 +468,7 @@ def test_plugin_discovery_is_idempotent():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     assert "combinatorial_dual" in names
@@ -651,7 +651,7 @@ def test_every_declared_transform_is_discoverable_by_name():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     info = PluginRegistry.get_plugin_info("combinatorial_dual")
     registered = set(info["registered_transforms"])

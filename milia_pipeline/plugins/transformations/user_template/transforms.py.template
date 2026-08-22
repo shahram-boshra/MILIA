@@ -1,0 +1,50 @@
+"""
+Transform plugin implementation template.
+
+Copy this to ``transforms.py`` and implement your transforms. Each transform subclasses
+``CustomTransformBase`` and honours the purity contract: ``transform(data: Data) -> Data``
+(single PyG ``Data`` in/out; no model, no dataset, no labels). Keep imports absolute.
+"""
+
+from __future__ import annotations
+
+import torch
+from torch_geometric.data import Data
+
+from milia_pipeline.transformations.custom_transforms import (
+    CustomTransformBase,
+    TransformExecutionError,  # noqa: F401  (raise on invalid params / fail-closed)
+    TransformMetadata,
+)
+
+_AUTHOR = "Your Name"
+
+
+class YourTransform(CustomTransformBase):
+    """Replace with your transform. Deterministic unless you explicitly seed randomness."""
+
+    def __init__(self, example_param: int = 1):
+        super().__init__()
+        self.example_param = int(example_param)
+
+    def transform(self, data: Data) -> Data:
+        data = data.clone()  # never mutate the input
+        # ... implement your graph transformation here ...
+        _ = torch  # remove once torch is actually used
+        return data
+
+    @classmethod
+    def get_metadata(cls) -> TransformMetadata:
+        return TransformMetadata(
+            name="YourTransform",
+            version="1.0.0",
+            author=_AUTHOR,
+            category="structural",
+            description="What your transform does.",
+            paper_reference="Optional reference",
+            modifies_attributes=["edge_index"],
+        )
+
+    @classmethod
+    def get_parameter_constraints(cls) -> dict:
+        return {"example_param": {"type": int, "min": 1}}

@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/nonspatial_augment/plugin.yaml
+# milia_pipeline/plugins/transformations/nonspatial_augment/plugin.yaml
 #
 # Family G — Strict non-spatial augmentations (in-scope subset; NetworkX + NumPy/Torch;
 # no new dependency). Single-module layout (module_path: transforms) per the plugin loader.

@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/graph_products/plugin.yaml
+# milia_pipeline/plugins/transformations/graph_products/plugin.yaml
 #
 # Family C — Algebraic graph-product transforms (NetworkX-native; no new dependency).
 # Single-module layout (module_path: transforms) matches the plugin loader, which

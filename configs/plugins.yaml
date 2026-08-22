@@ -24,7 +24,7 @@ plugins:
   # Paths can be absolute or relative to the project root
   # Each directory should contain plugin packages with plugin.yaml metadata
   plugin_paths:
-    - milia_pipeline/plugins        # Local plugins directory (default)
+    - milia_pipeline/plugins/transformations  # Local transform plugins container (default)
     # - ~/.milia/plugins             # User-specific plugins
     # - /opt/milia/shared_plugins    # System-wide shared plugins
 

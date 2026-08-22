@@ -15,7 +15,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.plugins.static_padding.transforms import (
+from milia_pipeline.plugins.transformations.static_padding.transforms import (
     EdgeAttrCanonicalPadding,
     LayerPreprocess,
     PowerOfTwoPadding,
@@ -321,7 +321,7 @@ def test_plugin_discovery_registers_all_five():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=True)
     assert "static_padding" in names
 
@@ -343,7 +343,7 @@ def test_plugin_discovery_is_idempotent():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     assert "static_padding" in names

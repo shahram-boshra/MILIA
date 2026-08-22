@@ -14,7 +14,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.plugins.graph_reduction.transforms import (
+from milia_pipeline.plugins.transformations.graph_reduction.transforms import (
     EffectiveResistanceSparsify,
     HeavyEdgeMatching,
     KCoreDecomposition,
@@ -449,7 +449,7 @@ def test_plugin_discovery_registers_all_eight():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=True)
     assert "graph_reduction" in names
 
@@ -474,7 +474,7 @@ def test_plugin_discovery_is_idempotent():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     assert "graph_reduction" in names

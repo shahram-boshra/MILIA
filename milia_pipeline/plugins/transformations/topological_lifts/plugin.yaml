@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/topological_lifts/plugin.yaml
+# milia_pipeline/plugins/transformations/topological_lifts/plugin.yaml
 #
 # Family A — Topological & higher-order lifts (zero-dependency Data->Data subset; torch only).
 # Single-module layout (module_path: transforms). Complex-producing lifts (A1/A2/A6/A7/A14/A15)

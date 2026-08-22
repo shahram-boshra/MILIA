@@ -1,0 +1,45 @@
+"""
+Your Transform Plugin.
+
+Copy this to ``__init__.py``. Authoritative registration is via plugin discovery
+(``add_plugin_path`` + ``discover_plugins`` scanning ``plugin.yaml``); the lazy hooks below
+also enable direct-import use. List each transform class name in ``_transform_names``.
+"""
+
+import logging
+from typing import Any
+
+__version__ = "1.0.0"
+__author__ = "Your Name"
+
+PLUGIN_METADATA = {
+    "name": "your_transform_plugin_name",
+    "version": __version__,
+    "author": __author__,
+    "plugin_type": "user_experimental",
+    "description": "Brief description of your transform plugin category.",
+    "license": "MIT",
+    "milia_version": ">=1.2.2,<2.0.0",
+    "pyg_version": ">=2.6.0,<2.7.0",
+    "python_version": ">=3.10",
+}
+
+logger = logging.getLogger("milia_Main.PluginSystem.your_transform_plugin_name")
+
+_transform_names = [
+    "YourTransform",
+]
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily import transform classes from the local ``transforms`` module on first access."""
+    if name in _transform_names:
+        from . import transforms
+
+        return getattr(transforms, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def list_transforms() -> list[str]:
+    """Return the transform class names this plugin provides."""
+    return list(_transform_names)

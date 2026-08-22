@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/spectral_signal/plugin.yaml
+# milia_pipeline/plugins/transformations/spectral_signal/plugin.yaml
 #
 # Family E — Spectral & signal-decomposition transforms (in-scope subset; torch eigh, no new
 # dependency). Single-module layout (module_path: transforms) per the plugin loader. Every

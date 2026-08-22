@@ -13,7 +13,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.plugins.curvature_rewiring.transforms import (
+from milia_pipeline.plugins.transformations.curvature_rewiring.transforms import (
     EffectiveResistanceRewiring,
     FormanRicciRewiring,
     ResistanceCurvatureRewiring,
@@ -290,7 +290,7 @@ def test_plugin_discovery_registers_all_four():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=True)
     assert "curvature_rewiring" in names
 
@@ -311,7 +311,7 @@ def test_plugin_discovery_is_idempotent():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     assert "curvature_rewiring" in names

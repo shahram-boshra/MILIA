@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/combinatorial_dual/plugin.yaml
+# milia_pipeline/plugins/transformations/combinatorial_dual/plugin.yaml
 #
 # Family D — Combinatorial & dual operators (NetworkX + NumPy/SciPy; no new dependency).
 # Single-module layout (module_path: transforms) per the plugin loader.

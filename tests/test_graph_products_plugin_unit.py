@@ -14,7 +14,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.plugins.graph_products.transforms import (
+from milia_pipeline.plugins.transformations.graph_products.transforms import (
     CartesianProduct,
     CoronaProduct,
     KroneckerGraphGeneration,
@@ -156,7 +156,9 @@ def test_plugin_discovery_registers_all_transforms():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    plugins_parent = Path(plugins_pkg.__file__).parent  # discover_plugins globs */plugin.yaml
+    plugins_parent = (
+        Path(plugins_pkg.__file__).parent / "transformations"
+    )  # discover_plugins globs */plugin.yaml
 
     names = PluginRegistry.discover_plugins(paths=[plugins_parent], auto_validate=True)
     assert "graph_products" in names
@@ -369,7 +371,7 @@ def test_discovery_is_idempotent_and_declares_seven():
     import milia_pipeline.plugins as plugins_pkg
     from milia_pipeline.transformations.plugin_system import PluginRegistry
 
-    parent = [Path(plugins_pkg.__file__).parent]
+    parent = [Path(plugins_pkg.__file__).parent / "transformations"]
     PluginRegistry.discover_plugins(paths=parent, auto_validate=False)
     names = PluginRegistry.discover_plugins(paths=parent, auto_validate=False)  # second pass
 

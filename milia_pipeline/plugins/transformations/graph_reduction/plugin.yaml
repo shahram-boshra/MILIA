@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/graph_reduction/plugin.yaml
+# milia_pipeline/plugins/transformations/graph_reduction/plugin.yaml
 #
 # Family F.a/F.b — Sparsification & coarsening (in-scope subset; networkx + torch, no new
 # dependency). Single-module layout (module_path: transforms) per the plugin loader.

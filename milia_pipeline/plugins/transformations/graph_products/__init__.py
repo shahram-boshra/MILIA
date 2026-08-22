@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/graph_products/__init__
+# milia_pipeline/plugins/transformations/graph_products/__init__
 
 """
 Graph Products Plugin (catalogue Family C).

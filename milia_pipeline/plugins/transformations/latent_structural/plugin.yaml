@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/latent_structural/plugin.yaml
+# milia_pipeline/plugins/transformations/latent_structural/plugin.yaml
 #
 # Family J — Latent-space & self-supervised structural transforms (deterministic zero-dependency
 # subset; torch + networkx). Single-module layout (module_path: transforms). J1 (latent-space

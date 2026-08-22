@@ -13,20 +13,26 @@ Production-ready with:
 - Graceful handling of missing dependencies or broken plugins
 - Forward-compatible: new plugin sub-packages are auto-discovered
 
-Architecture:
+Architecture (organised by plugin KIND — one container per kind):
     milia_pipeline/plugins/
-    ├── __init__.py                  ← This file (package-level API)
-    ├── descriptors/                 # Descriptor plugins (filesystem-based, no __init__.py)
-    │   ├── example_descriptors/     # Discovered by DescriptorPluginLoader via plugin.yaml
-    │   └── user_template/           # Plugin template for users
-    ├── pyg_augmentation/            # PyG fallback transforms (plugin_type: pyg_fallback)
+    ├── __init__.py                  ← This file (package-level API + kind directory helpers)
+    ├── transformations/             # Transform plugins (kind-container, Python package)
     │   ├── __init__.py
-    │   ├── transforms.py
-    │   └── plugin.yaml
-    └── myplugins/                   # User experimental transforms (plugin_type: user_experimental)
-        ├── __init__.py
-        ├── transforms/
-        └── plugin.yaml
+    │   ├── <category>/              # e.g. graph_products, curvature_rewiring, pyg_augmentation
+    │   │   ├── __init__.py
+    │   │   ├── transforms.py
+    │   │   └── plugin.yaml          # Discovered by the transform PluginRegistry via plugin.yaml
+    │   └── user_template/           # Plugin template for users (transform kind)
+    ├── descriptors/                 # Descriptor plugins (filesystem-based container, no __init__.py)
+    │   ├── example_descriptors/     # Discovered by DescriptorPluginLoader via plugin.yaml
+    │   └── user_template/           # Plugin template for users (descriptor kind)
+    └── models/                      # Model plugins (filesystem-based container, no __init__.py)
+        └── user_template/           # Plugin template for users (model kind)
+
+The package-level sub-plugin API (``list_subplugins``/``__getattr__``/``get_subplugin_*``) operates
+on the ``transformations/`` kind-container: ``from milia_pipeline.plugins import graph_products``
+resolves to ``milia_pipeline.plugins.transformations.graph_products``. Descriptor and model plugins
+are managed by their own loaders (filesystem containers, no ``__init__.py``).
 
 Author: MILIA Team
 License: MIT
@@ -43,8 +49,7 @@ __version__ = "1.1.0"
 __author__ = "MILIA Team"
 
 # Logger consistent with project-wide naming convention
-# (see pyg_augmentation: "milia_Main.PluginSystem.pyg_augmentation",
-#  myplugins: "milia_Main.PluginSystem.myplugins")
+# (see e.g. pyg_augmentation: "milia_Main.PluginSystem.pyg_augmentation")
 logger = logging.getLogger("milia_Main.PluginSystem")
 
 # ──────────────────────────────────────────────────────────────────────
@@ -89,7 +94,9 @@ def _discover_subplugins() -> dict[str, Any]:
         _discovery_attempted = True
         _discovered_subplugins = {}
 
-        package_path = Path(__file__).parent
+        # Transform plugins live under the transformations/ kind-container. Scan it (not the
+        # plugins/ root, whose children are now kind-containers, not plugins).
+        package_path = Path(__file__).parent / "transformations"
 
         for _importer, modname, ispkg in pkgutil.iter_modules([str(package_path)]):
             if not ispkg:
@@ -117,7 +124,7 @@ def _get_subplugin_module(name: str) -> Any | None:
     Lazily import and cache a sub-plugin module by name.
 
     Args:
-        name: Sub-plugin package name (e.g., 'pyg_augmentation', 'myplugins')
+        name: Sub-plugin package name (e.g., 'pyg_augmentation', 'graph_products')
 
     Returns:
         The imported module, or None if import fails.
@@ -139,7 +146,7 @@ def _get_subplugin_module(name: str) -> Any | None:
             return subplugins[name]
 
         try:
-            module = importlib.import_module(f".{name}", package=__name__)
+            module = importlib.import_module(f".transformations.{name}", package=__name__)
             subplugins[name] = module
             logger.debug(f"Loaded sub-plugin module: {name}")
             return module
@@ -161,12 +168,12 @@ def __getattr__(name: str) -> Any:
     Enable lazy attribute access to sub-plugin packages.
 
     Allows ``from milia_pipeline.plugins import pyg_augmentation`` or
-    ``milia_pipeline.plugins.myplugins`` to work without eagerly importing
+    ``milia_pipeline.plugins.graph_products`` to work without eagerly importing
     all sub-plugins at package load time, avoiding circular dependencies
     with ``transformations.plugin_system`` → ``plugins`` → ``transformations``.
 
     This is consistent with the lazy-loading pattern used in:
-    - ``myplugins/__init__.py`` (``__getattr__`` for transform classes)
+    - ``transformations/<category>/__init__.py`` (``__getattr__`` for transform classes)
     - ``config/config_constants.py`` (``__getattr__`` for lazy constants)
 
     Args:
@@ -235,7 +242,7 @@ def get_subplugin_info(name: str) -> dict[str, Any] | None:
         except Exception as e:
             logger.warning(f"get_plugin_info() failed for '{name}': {e}")
 
-    # Fallback to PLUGIN_METADATA dict — present in both pyg_augmentation and myplugins
+    # Fallback to PLUGIN_METADATA dict — present in transform plugin packages
     if hasattr(module, "PLUGIN_METADATA"):
         return {"metadata": dict(module.PLUGIN_METADATA)}
 
@@ -337,7 +344,7 @@ def get_subplugin_transforms(name: str) -> list[str]:
         except Exception as e:
             logger.warning(f"list_transforms() failed for '{name}': {e}")
 
-    # myplugins uses list_available_transforms()
+    # some transform plugins use list_available_transforms()
     if hasattr(module, "list_available_transforms"):
         try:
             return module.list_available_transforms()
@@ -370,7 +377,7 @@ def get_transform(name: str, transform_name: str) -> type | None:
         except Exception as e:
             logger.warning(f"get_transform('{transform_name}') failed for '{name}': {e}")
 
-    # Fallback: try direct attribute access (consistent with __getattr__ in myplugins)
+    # Fallback: try direct attribute access (consistent with __getattr__ in transform plugins)
     try:
         return getattr(module, transform_name, None)
     except Exception:
@@ -415,6 +422,20 @@ def get_model_plugins_directory() -> Path:
         Path to the models plugin directory.
     """
     return Path(__file__).parent / "models"
+
+
+def get_transform_plugins_directory() -> Path:
+    """
+    Get the absolute path to the transformation plugins directory.
+
+    Package-relative (CWD-independent), mirroring ``get_descriptor_plugins_directory``.
+    This is the transform ``PluginRegistry`` search root (scanned for ``*/plugin.yaml``,
+    one level); it is the default value behind the ``plugins.plugin_paths`` config key.
+
+    Returns:
+        Path to the transformations plugin directory.
+    """
+    return Path(__file__).parent / "transformations"
 
 
 def get_system_status() -> dict[str, Any]:
@@ -469,6 +490,7 @@ __all__ = [
     "get_plugins_directory",
     "get_descriptor_plugins_directory",
     "get_model_plugins_directory",
+    "get_transform_plugins_directory",
     # System status
     "get_system_status",
 ]

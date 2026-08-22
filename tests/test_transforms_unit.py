@@ -43,7 +43,7 @@ from torch_geometric.data import Data
 from torch_geometric.transforms import BaseTransform
 
 # Import the module under test
-from milia_pipeline.plugins.pyg_augmentation.transforms import (
+from milia_pipeline.plugins.transformations.pyg_augmentation.transforms import (
     DropEdge,
     DropNode,
     MaskFeatures,

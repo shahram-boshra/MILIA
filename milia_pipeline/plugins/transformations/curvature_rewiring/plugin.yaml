@@ -1,4 +1,4 @@
-# milia_pipeline/plugins/curvature_rewiring/plugin.yaml
+# milia_pipeline/plugins/transformations/curvature_rewiring/plugin.yaml
 #
 # Family B — Curvature & differential-geometric rewiring (in-scope subset; torch only, no new
 # dependency; L+ via torch.linalg.pinv). Single-module layout (module_path: transforms).
