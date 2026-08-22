@@ -73,7 +73,6 @@ import milia_pipeline.logging_config as logging_config
 from milia_pipeline.exceptions import (
     ExperimentalSetupError,
     HandlerError,
-    LoggingConfigurationError,
     MigrationError,
     TransformCompositionError,
     TransformConfigurationError,
@@ -443,13 +442,10 @@ class TestSetupLogging(unittest.TestCase):
     @patch("milia_pipeline.logging_config._setup_migration_loggers")
     @patch("milia_pipeline.logging_config._setup_handler_loggers")
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_default_parameters(
-        self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
+        self, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with default parameters enables all logging."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging()
         self.assertIsInstance(logger, logging.Logger)
         mock_third_party.assert_called_once()
@@ -461,13 +457,10 @@ class TestSetupLogging(unittest.TestCase):
     @patch("milia_pipeline.logging_config._setup_migration_loggers")
     @patch("milia_pipeline.logging_config._setup_handler_loggers")
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_handler_logging(
-        self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
+        self, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with handler logging disabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_handler_logging=False)
         mock_handler.assert_not_called()
         mock_migration.assert_called_once()
@@ -477,13 +470,10 @@ class TestSetupLogging(unittest.TestCase):
     @patch("milia_pipeline.logging_config._setup_migration_loggers")
     @patch("milia_pipeline.logging_config._setup_handler_loggers")
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_migration_logging(
-        self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
+        self, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with migration logging disabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_migration_logging=False)
         mock_handler.assert_called_once()
         mock_migration.assert_not_called()
@@ -493,13 +483,10 @@ class TestSetupLogging(unittest.TestCase):
     @patch("milia_pipeline.logging_config._setup_migration_loggers")
     @patch("milia_pipeline.logging_config._setup_handler_loggers")
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_disable_transform_logging(
-        self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
+        self, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with transform logging disabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(enable_transform_logging=False)
         mock_handler.assert_called_once()
         mock_migration.assert_called_once()
@@ -509,13 +496,10 @@ class TestSetupLogging(unittest.TestCase):
     @patch("milia_pipeline.logging_config._setup_migration_loggers")
     @patch("milia_pipeline.logging_config._setup_handler_loggers")
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
     def test_setup_logging_all_disabled(
-        self, mock_inspect, mock_third_party, mock_handler, mock_migration, mock_transform
+        self, mock_third_party, mock_handler, mock_migration, mock_transform
     ):
         """Test setup_logging with all enhanced logging disabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         setup_logging(
             enable_handler_logging=False,
             enable_migration_logging=False,
@@ -527,38 +511,26 @@ class TestSetupLogging(unittest.TestCase):
         mock_third_party.assert_called_once()
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_log_level_debug(self, mock_inspect, mock_third_party):
+    def test_setup_logging_log_level_debug(self, mock_third_party):
         """Test setup_logging sets DEBUG level correctly."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="DEBUG")
         self.assertEqual(logger.level, logging.DEBUG)
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_log_level_warning(self, mock_inspect, mock_third_party):
+    def test_setup_logging_log_level_warning(self, mock_third_party):
         """Test setup_logging sets WARNING level correctly."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="WARNING")
         self.assertEqual(logger.level, logging.WARNING)
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_log_level_case_insensitive(self, mock_inspect, mock_third_party):
+    def test_setup_logging_log_level_case_insensitive(self, mock_third_party):
         """Test setup_logging handles case-insensitive log level strings."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(log_level="error")
         self.assertEqual(logger.level, logging.ERROR)
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_no_handler_duplication(self, mock_inspect, mock_third_party):
+    def test_setup_logging_no_handler_duplication(self, mock_third_party):
         """Test setup_logging does not duplicate handlers on multiple calls."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger1 = setup_logging()
         handler_count_first = len(logger1.handlers)
         logger2 = setup_logging()
@@ -567,20 +539,20 @@ class TestSetupLogging(unittest.TestCase):
         self.assertIs(logger1, logger2)
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_file_handler_oserror_raises(self, mock_inspect, mock_third_party):
-        """Test setup_logging raises LoggingConfigurationError on file handler OSError."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/nonexistent/deeply/nested/path/test_script.py"
-        with self.assertRaises(LoggingConfigurationError):
-            setup_logging()
+    def test_setup_logging_file_handler_oserror_falls_back_to_console(self, mock_third_party):
+        """File-handler OSError is non-fatal: setup_logging falls back to console, does not raise."""
+        with patch("logging.FileHandler", side_effect=OSError("simulated disk failure")):
+            logger = setup_logging()  # must not raise
+        # Console (StreamHandler) present; file handler absent after the fallback.
+        assert any(
+            isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)
+            for h in logger.handlers
+        )
+        assert not any(isinstance(h, logging.FileHandler) for h in logger.handlers)
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_enhanced_formatter_when_enabled(self, mock_inspect, mock_third_party):
+    def test_setup_logging_enhanced_formatter_when_enabled(self, mock_third_party):
         """Test enhanced formatter is used when any logging enhancement is enabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(enable_handler_logging=True)
         for handler in logger.handlers:
             if handler.formatter:
@@ -590,13 +562,8 @@ class TestSetupLogging(unittest.TestCase):
                 break
 
     @patch("milia_pipeline.logging_config._configure_third_party_loggers")
-    @patch("milia_pipeline.logging_config.inspect")
-    def test_setup_logging_standard_formatter_when_all_disabled(
-        self, mock_inspect, mock_third_party
-    ):
+    def test_setup_logging_standard_formatter_when_all_disabled(self, mock_third_party):
         """Test standard formatter is used when all enhancements are disabled."""
-        mock_inspect.currentframe.return_value = MagicMock()
-        mock_inspect.getfile.return_value = "/tmp/test_script.py"
         logger = setup_logging(
             enable_handler_logging=False,
             enable_migration_logging=False,

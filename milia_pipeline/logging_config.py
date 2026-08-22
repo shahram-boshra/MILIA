@@ -228,9 +228,10 @@ def setup_logging(
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
     Raises:
-        LoggingConfigurationError: If there's an issue setting up
-                                   file logging (e.g., permissions) or
-                                   any other unexpected error during setup.
+        LoggingConfigurationError: If an unexpected error occurs during logging
+                                   setup. File-permission/OS errors when opening
+                                   the log file are non-fatal and fall back to
+                                   console-only logging instead of raising.
 
     Returns:
         logging.Logger: The configured application logger instance.
