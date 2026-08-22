@@ -403,6 +403,20 @@ def get_descriptor_plugins_directory() -> Path:
     return Path(__file__).parent / "descriptors"
 
 
+def get_model_plugins_directory() -> Path:
+    """
+    Get the absolute path to the model plugins directory.
+
+    Package-relative (CWD-independent), mirroring ``get_descriptor_plugins_directory``.
+    Useful for the model plugin loader which scans for ``plugin.yaml`` files in this
+    directory tree.
+
+    Returns:
+        Path to the models plugin directory.
+    """
+    return Path(__file__).parent / "models"
+
+
 def get_system_status() -> dict[str, Any]:
     """
     Get comprehensive status of the plugins sub-package.
@@ -454,6 +468,7 @@ __all__ = [
     # Directory paths
     "get_plugins_directory",
     "get_descriptor_plugins_directory",
+    "get_model_plugins_directory",
     # System status
     "get_system_status",
 ]

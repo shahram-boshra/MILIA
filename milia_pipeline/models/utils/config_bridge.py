@@ -715,11 +715,22 @@ class DeploymentConfig(BaseModel):
         pass
 
 
+def _default_model_plugin_paths() -> list[str]:
+    """Package-relative default for model plugin discovery (CWD-independent).
+
+    Lazily imports the plugins-package helper to avoid import-time coupling; mirrors the
+    descriptor kind's package-relative resolution and fixes the prior CWD-relative default.
+    """
+    from milia_pipeline.plugins import get_model_plugins_directory
+
+    return [str(get_model_plugins_directory())]
+
+
 class PluginsConfig(BaseModel):
     """Plugins configuration."""
 
     enabled: bool = True
-    plugin_paths: list[str] = Field(default_factory=lambda: ["./plugins/models"])
+    plugin_paths: list[str] = Field(default_factory=_default_model_plugin_paths)
     auto_discover: bool = True
     auto_validate: bool = True
     validation_level: str = "standard"
@@ -1108,7 +1119,7 @@ class ModelConfig(BaseModel):
         plugins_dict = get_config("plugins", {})
         plugins = PluginsConfig(
             enabled=plugins_dict.get("enabled", True),
-            plugin_paths=plugins_dict.get("plugin_paths", ["./plugins/models"]),
+            plugin_paths=plugins_dict.get("plugin_paths", _default_model_plugin_paths()),
             auto_discover=plugins_dict.get("auto_discover", True),
             auto_validate=plugins_dict.get("auto_validate", True),
             validation_level=plugins_dict.get("validation_level", "standard"),

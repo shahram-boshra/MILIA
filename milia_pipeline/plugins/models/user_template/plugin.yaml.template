@@ -1,0 +1,28 @@
+# Model Plugin Metadata Template
+# Copy this to plugin.yaml and fill in your information.
+
+plugin_name: "your_model_plugin_name"
+version: "1.0.0"
+author: "Your Name"
+email: "your.email@example.com"
+description: "Brief description of your model plugin"
+license: "MIT"  # Or your preferred license
+homepage: "https://github.com/yourusername/your-plugin"  # Optional
+
+# Version Requirements
+milia_version: ">=1.2.2,<2.0.0"
+python_version: ">=3.10"
+min_pyg_version: "2.6.0"  # Optional minimum torch-geometric version
+
+# Python Package Dependencies (optional)
+dependencies:
+  # - "torch>=2.4.0"
+
+# Model Declarations
+models:
+  - name: "YourModelName"
+    class_name: "YourModelClass"      # Python class in the module below
+    module_path: "model"              # module file (model.py) inside this plugin dir
+    description: "What does this model do / what task is it for?"
+    version: "1.0.0"
+    # min_pyg_version: "2.6.0"        # Optional per-model override

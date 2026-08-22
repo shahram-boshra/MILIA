@@ -1134,7 +1134,10 @@ class TestPluginsConfig:
         """Test default plugins configuration."""
         config = PluginsConfig()
         assert config.enabled is True
-        assert config.plugin_paths == ["./plugins/models"]
+        # Package-relative default (CWD-independent), resolved via
+        # milia_pipeline.plugins.get_model_plugins_directory().
+        assert len(config.plugin_paths) == 1
+        assert config.plugin_paths[0].replace("\\", "/").endswith("milia_pipeline/plugins/models")
         assert config.auto_discover is True
         assert config.auto_validate is True
         assert config.validation_level == "standard"

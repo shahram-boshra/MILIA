@@ -1,0 +1,34 @@
+"""
+Model plugin implementation template.
+
+Copy this to ``model.py`` and implement your model. The ``class_name`` and ``module_path``
+declared in ``plugin.yaml`` must match the class defined here and this module's filename
+(``model``).
+
+Keep imports absolute (e.g. ``from milia_pipeline...``) so the module loads correctly
+regardless of where the plugin directory lives.
+"""
+
+from __future__ import annotations
+
+import torch
+from torch import nn
+
+
+class YourModelClass(nn.Module):
+    """Replace with your model.
+
+    Implement the interface expected by the MILIA model plugin loader (see the model
+    plugin system documentation). At minimum a standard ``torch.nn.Module`` with
+    ``__init__`` and ``forward`` is expected; wire any graph inputs (``x``,
+    ``edge_index``, ``edge_attr``, ``batch``) as your architecture requires.
+    """
+
+    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int):
+        super().__init__()
+        self.lin_in = nn.Linear(in_channels, hidden_channels)
+        self.lin_out = nn.Linear(hidden_channels, out_channels)
+
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        h = self.lin_in(x).relu()
+        return self.lin_out(h)

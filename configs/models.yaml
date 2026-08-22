@@ -1060,7 +1060,7 @@ models:
   plugins:
     enabled: true
     plugin_paths:
-      - ./plugins/models
+      - milia_pipeline/plugins/models
     auto_discover: true
     auto_validate: true
     validation_level: "standard"         # permissive, standard, strict
