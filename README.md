@@ -290,7 +290,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 | Directory | Purpose |
 |-----------|---------|
 | `configs/` | Split YAML configuration with per-dataset files (11 datasets) and deep-merge architecture |
-| `plugins/` | Plugin storage: descriptor plugins, transformation plugins, model plugins — with YAML manifests and user templates |
+| `plugins/` | Plugin kind-containers — `transformations/`, `descriptors/`, `models/` — each holding its plugin categories, a `user_template/` scaffold, and YAML manifests (discovered via config-driven `plugin_paths`) |
 | `tests/` | 163 test files spanning all core modules (the `smoke` subset is 1,965 tests) |
 
 ## Datasets

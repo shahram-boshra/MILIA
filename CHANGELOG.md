@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Reorganised `milia_pipeline/plugins/` into per-kind containers: transformation plugins now live under `plugins/transformations/` (symmetric with `plugins/descriptors/`), and a `plugins/models/` container was added. Introduced `user_template/` scaffolds for the transformation and model kinds and `get_transform_plugins_directory()` / `get_model_plugins_directory()` helpers; model plugin discovery now resolves package-relative (CWD-independent) instead of relative to the working directory. The `pyg_augmentation` plugin moved into `plugins/transformations/`; the empty `plugins/myplugins/` scaffold was removed (users add plugins via each kind's `user_template/` or an external `plugins.plugin_paths` entry).
+
+### Fixed
+
+- Logging setup tests: removed a stale `inspect` mock (the code no longer uses `inspect`) and corrected an obsolete file-handler-`OSError` expectation — `setup_logging` intentionally falls back to console-only logging on file errors rather than raising. Aligned the `Raises:` docstring accordingly.
+
 ## [1.2.2] - 2026-08-08
 
 ### Added
