@@ -822,10 +822,18 @@ class TestRandomNodeSample:
         assert transform.num is None
         assert transform.ratio == 0.5
 
-    def test_initialization_requires_parameter(self):
-        """Test RandomNodeSample requires either num or ratio"""
-        with pytest.raises(ValueError, match="Either 'num' or 'ratio' must be specified"):
-            RandomNodeSample()
+    def test_initialization_default_ratio(self):
+        """RandomNodeSample() is usable bare: when neither num nor ratio is given, ratio
+        defaults to 0.5, consistent with the sibling augmentation transforms (p=0.5)."""
+        transform = RandomNodeSample()
+        assert transform.num is None
+        assert transform.ratio == 0.5
+
+    def test_initialization_explicit_none_defaults_ratio(self):
+        """Explicitly passing both as None also falls back to the default ratio (no error)."""
+        transform = RandomNodeSample(num=None, ratio=None)
+        assert transform.num is None
+        assert transform.ratio == 0.5
 
     def test_initialization_invalid_num_negative(self):
         """Test RandomNodeSample rejects negative num"""

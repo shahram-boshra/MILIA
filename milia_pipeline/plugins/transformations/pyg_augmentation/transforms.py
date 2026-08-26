@@ -274,6 +274,9 @@ class RandomNodeSample(BaseTransform):
     Args:
         num (int): Absolute number of nodes to sample. Takes precedence.
         ratio (float): Fraction of nodes to sample (0-1). Used if num is None.
+            When neither num nor ratio is given, defaults to 0.5 (sample half the
+            nodes), consistent with the sibling augmentation transforms
+            (DropEdge/DropNode/MaskFeatures default p=0.5). With num set, ratio stays None.
 
     Algorithm:
         1. Determine sample size (num or ratio)
@@ -286,8 +289,11 @@ class RandomNodeSample(BaseTransform):
 
     def __init__(self, num: int = None, ratio: float = None):
         super().__init__()
+        # Usable bare: when neither num nor ratio is specified, default to sampling half the
+        # nodes — consistent with the sibling augmentation transforms (which default p=0.5).
+        # When num is given, ratio stays None (num takes precedence in forward()).
         if num is None and ratio is None:
-            raise ValueError("Either 'num' or 'ratio' must be specified")
+            ratio = 0.5
         if num is not None and num <= 0:
             raise ValueError(f"num must be positive, got {num}")
         if ratio is not None and not 0 < ratio <= 1:
