@@ -24,8 +24,19 @@ on:
       - 'docs/**'
       - '.github/**'
       - 'LICENSE'
-  # Allow manual trigger for first-time build
+    # Release tags publish immutable, versioned images (:X.Y.Z and :X.Y) alongside the
+    # PyPI release. `type=semver` (below) derives the version from the tag ref.
+    tags:
+      - 'v*.*.*'
+  # Manual trigger: first-time build, or a one-time versioned backfill via the `version`
+  # input (run from the release tag or main). Using workflow_dispatch — not re-pushing a
+  # tag — avoids re-firing release.yml (which would attempt a duplicate PyPI upload).
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional explicit image version (e.g. 1.3.0) for a manual backfill. Blank = normal latest/sha build.'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -69,6 +80,9 @@ jobs:
             type=raw,value=${{ matrix.accel }}
             type=sha,prefix=${{ matrix.accel }}-
             type=raw,value=latest,enable=${{ matrix.accel == 'cpu' }}
+            type=semver,pattern={{version}},enable=${{ matrix.accel == 'cpu' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ matrix.accel == 'cpu' }}
+            type=raw,value=${{ inputs.version }},enable=${{ matrix.accel == 'cpu' && inputs.version != '' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
