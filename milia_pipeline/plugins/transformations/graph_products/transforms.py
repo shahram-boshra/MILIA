@@ -39,6 +39,7 @@ from milia_pipeline.transformations.custom_transforms import (
     CustomTransformBase,
     TransformExecutionError,
     TransformMetadata,
+    TransformPreconditionError,
 )
 
 _AUTHOR = "MILIA Team"
@@ -72,7 +73,7 @@ class GraphProductBase(CustomTransformBase):
         if candidate is not None:
             return self._coerce_to_graph(candidate, source=f"data.{self.factor_graph_key}")
 
-        raise TransformExecutionError(
+        raise TransformPreconditionError(
             f"{type(self).__name__} requires a second operand graph H: pass "
             f"factor_graph=<nx.Graph|spec> or attach data.{self.factor_graph_key}.",
             transform_name=self._metadata.name,

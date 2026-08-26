@@ -1451,6 +1451,86 @@ class PluginRegistry:
             "details": "; ".join(details) if details else "No issues",
         }
 
+    @staticmethod
+    def _synthesize_param_value(spec: dict):
+        """Minimal valid value for a declared parameter-constraint dict, or None if unknown."""
+        ptype = spec.get("type") if isinstance(spec, dict) else None
+        if ptype is int:
+            return int(spec.get("min", 1))
+        if ptype is float:
+            return float(spec.get("min", 1.0))
+        if ptype is bool:
+            return bool(spec.get("default", False))
+        if ptype is str:
+            return str(spec.get("default", "x"))
+        return None
+
+    @classmethod
+    def _instantiate_transform_for_test(cls, transform_class, transform_name: str):
+        """Instantiate a transform for smoke-testing.
+
+        Returns ``(instance, skip_reason, synthesized)``:
+        - Tries a bare constructor first (``synthesized=False``).
+        - If required constructor parameters are missing, synthesizes minimal valid values
+          from the transform's declared ``get_parameter_constraints()`` (``synthesized=True``).
+        - If a required parameter cannot be synthesized, returns ``(None, reason, False)`` so
+          the caller SKIPS (not fails). This replaces the previous fragile string-matching of
+          error messages (e.g. ``"p" in str(e)``), which mis-fired on "missing 1 required
+          positional argument".
+        """
+        try:
+            return transform_class(), None, False
+        except (TypeError, ValueError) as bare_exc:
+            # TypeError: missing required positional args. ValueError: the constructor validates
+            # that the caller chose a configuration (e.g. one of several optional params). Either
+            # way, try to synthesize from declared constraints; otherwise skip (not fail).
+            bare_reason = f"{type(bare_exc).__name__}: {bare_exc}"
+            bare_error = bare_exc  # preserve; the `as` name is cleared after the except block
+
+        constraints = {}
+        try:
+            if hasattr(transform_class, "get_parameter_constraints"):
+                constraints = transform_class.get_parameter_constraints() or {}
+        except Exception:
+            constraints = {}
+
+        kwargs, missing = {}, []
+        had_configurable_param = False
+        try:
+            params = inspect.signature(transform_class.__init__).parameters
+        except (TypeError, ValueError):
+            return None, "constructor signature not introspectable", False
+        for pname, param in params.items():
+            if pname == "self" or param.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            had_configurable_param = True
+            if param.default is not inspect.Parameter.empty:
+                continue  # optional — let the constructor use its default
+            value = cls._synthesize_param_value(constraints.get(pname, {}))
+            if value is None:
+                missing.append(pname)
+            else:
+                kwargs[pname] = value
+
+        if not had_configurable_param:
+            # The constructor takes no configurable parameters yet still failed on a bare call:
+            # this is a genuine defect, not a configuration issue. Re-raise so the caller FAILS.
+            raise bare_error
+        if missing:
+            return None, f"requires constructor parameter(s) {missing}", False
+        if not kwargs:
+            # Bare instantiation failed and there are no synthesizable required params — the
+            # constructor requires caller configuration (e.g. one of several optional args, like
+            # RandomNodeSample's num/ratio). Correct behaviour, not a defect: skip, do not fail.
+            return None, f"requires configuration ({bare_reason})", False
+        try:
+            return transform_class(**kwargs), None, True
+        except Exception as exc:  # noqa: BLE001 - report why synthesis failed, do not crash
+            return None, f"instantiation with {kwargs} failed: {type(exc).__name__}: {exc}", False
+
     @classmethod
     def _test_transform_instantiation(cls, metadata: PluginMetadata) -> dict:
         """
@@ -1463,7 +1543,7 @@ class PluginRegistry:
         if TransformRegistry is None:
             return {"passed": False, "failures": [{"error": "TransformRegistry not available"}]}
 
-        results = {"passed": True, "failures": []}
+        results = {"passed": True, "failures": [], "skipped": []}
 
         # Access the module-level registry singleton (line 3170 of graph_transforms.py)
         from milia_pipeline.transformations.graph_transforms import registry
@@ -1477,17 +1557,13 @@ class PluginRegistry:
                 if transform_class is None:
                     raise PluginError(f"Transform '{transform_name}' not found in registry")
 
-                # Try instantiation with reasonable defaults for known parameter patterns
-                try:
-                    instance = transform_class()
-                except (ValueError, TypeError) as e:
-                    # If default instantiation fails, try with common fallback parameters
-                    if "num" in str(e) or "ratio" in str(e):
-                        instance = transform_class(num=10)
-                    elif "p" in str(e):
-                        instance = transform_class(p=0.5)
-                    else:
-                        raise
+                # Instantiate via declared constraints (no fragile error-string matching).
+                instance, skip_reason, _synth = cls._instantiate_transform_for_test(
+                    transform_class, transform_name
+                )
+                if skip_reason is not None:
+                    results["skipped"].append({"transform": transform_name, "reason": skip_reason})
+                    continue
 
                 # Verify it's callable
                 if not callable(instance):
@@ -1507,7 +1583,18 @@ class PluginRegistry:
                 )
                 logger.debug(f"Full traceback:\n{traceback.format_exc()}")
 
-        # Log summary of failures
+        # Log summary of skips (informational) and failures (errors)
+        if results["skipped"]:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(
+                f"Instantiation test: {len(results['skipped'])} transform(s) skipped "
+                f"(require constructor parameters)"
+            )
+            for skip in results["skipped"]:
+                logger.info(f"  ⊘ {skip['transform']}: {skip['reason']}")
+
         if results["failures"]:
             import logging
 
@@ -1591,6 +1678,7 @@ class PluginRegistry:
             return {"passed": False, "failures": [{"error": "TransformRegistry not available"}]}
 
         failures = []
+        skipped = []
 
         # Create sample milia-like data
         sample_data = Data(
@@ -1603,6 +1691,10 @@ class PluginRegistry:
             num_nodes=10,
         )
 
+        # A precondition error means the transform is correct but needs caller-supplied inputs
+        # (an operand graph, a partition, a graph property) the generic sample cannot provide.
+        from milia_pipeline.transformations.custom_transforms import TransformPreconditionError
+
         # Access the module-level registry singleton
         from milia_pipeline.transformations.graph_transforms import registry
 
@@ -1614,19 +1706,31 @@ class PluginRegistry:
                 if transform_class is None:
                     raise PluginError(f"Transform '{transform_name}' not found")
 
-                # Try instantiation with fallback parameters
-                try:
-                    transform = transform_class()
-                except (ValueError, TypeError) as e:
-                    if "num" in str(e) or "ratio" in str(e):
-                        transform = transform_class(num=10)
-                    elif "p" in str(e):
-                        transform = transform_class(p=0.5)
-                    else:
-                        raise
+                # Instantiate via declared constraints (no fragile error-string matching).
+                transform, skip_reason, synthesized = cls._instantiate_transform_for_test(
+                    transform_class, transform_name
+                )
+                if skip_reason is not None:
+                    skipped.append({"transform": transform_name, "reason": skip_reason})
+                    continue
+                if synthesized:
+                    # Instantiation verified, but synthesized parameters are not guaranteed
+                    # semantically valid for the generic sample graph, so skip the data run.
+                    skipped.append(
+                        {
+                            "transform": transform_name,
+                            "reason": "requires constructor parameters; data-compat run skipped",
+                        }
+                    )
+                    continue
 
                 # Try to apply transform
-                result = transform(sample_data.clone())
+                try:
+                    result = transform(sample_data.clone())
+                except TransformPreconditionError as e:
+                    # Correct input-validation, not a defect -> skip, do not fail.
+                    skipped.append({"transform": transform_name, "reason": str(e)})
+                    continue
 
                 # Verify result is still valid Data object
                 if result is not None and not isinstance(result, Data):
@@ -1645,7 +1749,18 @@ class PluginRegistry:
                 )
                 logger.debug(f"Full traceback:\n{traceback.format_exc()}")
 
-        # Log summary
+        # Log summary: skips are informational (not failures)
+        if skipped:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(
+                f"Compatibility test: {len(skipped)} transform(s) skipped "
+                f"(require caller-supplied inputs)"
+            )
+            for skip in skipped:
+                logger.info(f"  ⊘ {skip['transform']}: {skip['reason']}")
+
         if failures:
             import logging
 
@@ -1654,7 +1769,7 @@ class PluginRegistry:
             for failure in failures:
                 logger.error(f"  ✗ {failure['transform']}: {failure['error']}")
 
-        return {"passed": len(failures) == 0, "failures": failures}
+        return {"passed": len(failures) == 0, "failures": failures, "skipped": skipped}
 
     @classmethod
     def enable_plugin(cls, plugin_name: str) -> None:

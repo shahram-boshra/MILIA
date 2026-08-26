@@ -25,6 +25,7 @@ from milia_pipeline.transformations.custom_transforms import (
     CustomTransformBase,
     TransformExecutionError,
     TransformMetadata,
+    TransformPreconditionError,
 )
 
 _AUTHOR = "MILIA Team"
@@ -97,7 +98,7 @@ class CombinatorialDualBase(CustomTransformBase):
         candidate = getattr(data, key, None)
         if candidate is not None:
             return candidate
-        raise TransformExecutionError(
+        raise TransformPreconditionError(
             f"{type(self).__name__} requires {label}: pass it to the constructor or attach "
             f"data.{key}.",
             transform_name=self._metadata.name,
@@ -158,7 +159,7 @@ class GraphDual(CombinatorialDualBase):
         g = self._operand(data)
         is_planar, embedding = nx.check_planarity(g)
         if not is_planar:
-            raise TransformExecutionError(
+            raise TransformPreconditionError(
                 "GraphDual requires a planar graph; input is non-planar.",
                 transform_name=self._metadata.name,
             )
@@ -307,7 +308,7 @@ class TransitiveReduction(CombinatorialDualBase):
         data = data.clone()
         digraph = self._operand(data, directed=True)
         if not nx.is_directed_acyclic_graph(digraph):
-            raise TransformExecutionError(
+            raise TransformPreconditionError(
                 "TransitiveReduction requires a directed acyclic graph (input has cycles).",
                 transform_name=self._metadata.name,
             )
@@ -344,7 +345,7 @@ class BipartiteProjection(CombinatorialDualBase):
         data = data.clone()
         g = self._operand(data)
         if not nx.is_bipartite(g):
-            raise TransformExecutionError(
+            raise TransformPreconditionError(
                 "BipartiteProjection requires a bipartite graph.",
                 transform_name=self._metadata.name,
             )

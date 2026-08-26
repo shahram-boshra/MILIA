@@ -177,6 +177,20 @@ except ImportError:
             self.details = kwargs
 
 
+class TransformPreconditionError(TransformExecutionError):
+    """Raised when a transform's required input precondition is not satisfied.
+
+    Semantic subclass of ``TransformExecutionError`` for the case where a transform is
+    structurally sound but cannot run because a *caller-supplied* prerequisite is absent —
+    e.g. a required second operand graph, a partition, or a graph property (planarity,
+    acyclicity, bipartiteness). This is NOT a defect: given the required input the transform
+    works. Tooling (e.g. the plugin compatibility smoke-test) should treat this as
+    "skipped / requires inputs" rather than a failure, while still failing on genuine errors.
+    Being a subclass, existing ``except TransformExecutionError`` / ``pytest.raises(
+    TransformExecutionError)`` call-sites keep working unchanged.
+    """
+
+
 # Module logger
 logger = logging.getLogger(__name__)
 
@@ -2629,6 +2643,7 @@ __all__ = [
     "TransformValidationError",
     "TransformExecutionError",
     "TransformConfigurationError",
+    "TransformPreconditionError",
 ]
 
 

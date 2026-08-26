@@ -2502,5 +2502,115 @@ class TestPerformance:
         assert elapsed < 0.1  # 100ms for 1000 lookups
 
 
+class TestCompatibilityPreconditionHandling:
+    """ADR-2: the compat smoke-test skips (not fails) transforms that require caller-supplied
+    inputs, and distinguishes precondition errors from genuine defects by TYPE (not strings)."""
+
+    def test_precondition_error_is_execution_error_subclass(self):
+        from milia_pipeline.transformations.custom_transforms import (
+            TransformExecutionError,
+            TransformPreconditionError,
+        )
+
+        assert issubclass(TransformPreconditionError, TransformExecutionError)
+        # existing `pytest.raises(TransformExecutionError)` call-sites keep working
+        with pytest.raises(TransformExecutionError):
+            raise TransformPreconditionError("requires operand H")
+
+    def test_instantiate_bare(self):
+        class Bare:
+            def __init__(self):
+                pass
+
+        inst, reason, synth = PluginRegistry._instantiate_transform_for_test(Bare, "Bare")
+        assert inst is not None and reason is None and synth is False
+
+    def test_instantiate_synthesizes_required_param_from_constraints(self):
+        class NeedsInt:
+            def __init__(self, n_node: int):
+                self.n_node = n_node
+
+            @classmethod
+            def get_parameter_constraints(cls):
+                return {"n_node": {"type": int, "min": 2}}
+
+        inst, reason, synth = PluginRegistry._instantiate_transform_for_test(NeedsInt, "NeedsInt")
+        assert inst is not None and reason is None and synth is True
+        assert inst.n_node == 2  # synthesized from declared min, not a hardcoded p=0.5
+
+    def test_instantiate_skips_when_param_not_synthesizable(self):
+        class NeedsGraph:
+            def __init__(self, graph):  # no constraint, no default -> cannot synthesize
+                self.graph = graph
+
+        inst, reason, synth = PluginRegistry._instantiate_transform_for_test(
+            NeedsGraph, "NeedsGraph"
+        )
+        assert inst is None and synth is False
+        assert "requires constructor parameter" in reason
+
+    def test_instantiate_skips_when_constructor_requires_configuration(self):
+        # Optional params, but the constructor requires the caller to choose one (like
+        # RandomNodeSample's num/ratio). Bare init raises ValueError -> skip, not fail.
+        class NeedsConfig:
+            def __init__(self, num: int = None, ratio: float = None):
+                if num is None and ratio is None:
+                    raise ValueError("Either 'num' or 'ratio' must be specified")
+
+        inst, reason, synth = PluginRegistry._instantiate_transform_for_test(
+            NeedsConfig, "NeedsConfig"
+        )
+        assert inst is None and synth is False
+        assert "requires configuration" in reason
+
+    def test_instantiate_reraises_paramless_constructor_defect(self):
+        # A no-arg constructor that raises is a genuine defect, not a config issue -> must NOT
+        # be silently skipped (the caller's `except` turns the re-raised error into a failure).
+        class BrokenNoParams:
+            def __init__(self):
+                raise ValueError("internal boom")
+
+        with pytest.raises(ValueError):
+            PluginRegistry._instantiate_transform_for_test(BrokenNoParams, "BrokenNoParams")
+
+    def test_data_compat_skips_precondition_and_fails_genuine(self):
+        pytest.importorskip("torch_geometric")
+        from milia_pipeline.transformations.custom_transforms import TransformPreconditionError
+        from milia_pipeline.transformations.graph_transforms import registry
+
+        class NeedsOperand:
+            def __init__(self):
+                pass
+
+            def __call__(self, data):
+                raise TransformPreconditionError("requires a second operand graph H")
+
+        class GenuinelyBroken:
+            def __init__(self):
+                pass
+
+            def __call__(self, data):
+                raise ValueError("boom")  # a real defect, not a precondition
+
+        registry._custom_transforms["NeedsOperand"] = NeedsOperand
+        registry._custom_transforms["GenuinelyBroken"] = GenuinelyBroken
+        try:
+            metadata = PluginMetadata(
+                plugin_name="pc_test",
+                version="1.0.0",
+                author="A",
+                registered_transforms={"NeedsOperand", "GenuinelyBroken"},
+            )
+            result = PluginRegistry._test_data_compatibility(metadata)
+            skipped = {s["transform"] for s in result["skipped"]}
+            failed = {f["transform"] for f in result["failures"]}
+            assert "NeedsOperand" in skipped  # precondition -> skipped
+            assert "GenuinelyBroken" in failed  # real defect -> failed
+            assert result["passed"] is False  # a genuine failure still fails the plugin
+        finally:
+            registry._custom_transforms.pop("NeedsOperand", None)
+            registry._custom_transforms.pop("GenuinelyBroken", None)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
