@@ -2,7 +2,7 @@
 
 plugin_name: "example_descriptors"
 version: "1.0.0"
-author: "Asadollah (Shahram) Boshra, Ilia Boshra"
+author: "Asadollah (Shahram) Boshra"
 email: "a.boshra@gmail.com"
 description: "Example descriptor plugin demonstrating best practices"
 license: "MIT"

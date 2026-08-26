@@ -2,7 +2,7 @@
 
 plugin_name: "pyg_augmentation"
 version: "1.0.0"
-author: "Shahram Boshra, Ilia Boshra"
+author: "Asadollah (Shahram) Boshra"
 description: "PyG augmentation transforms missing from PyG 2.6.1"
 plugin_type: "pyg_fallback"  # ← PyG transforms fallback
 milia_version: ">=1.1.0"

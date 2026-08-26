@@ -23,13 +23,9 @@ authors:
     alias: "Shahram"
     email: "a.boshra@gmail.com"
     orcid: "https://orcid.org/0009-0004-8925-2868"
-  - family-names: "Boshra"
-    given-names: "Ilia"
-    email: "ilia.boshra@gmail.com"
-    orcid: "https://orcid.org/0009-0003-8540-1662"
 
-version: "1.2.2"
-date-released: "2026-08-08"
+version: "1.3.0"
+date-released: "2026-08-26"
 license: "MIT"
 
 repository-code: "https://github.com/shahram-boshra/MILIA"

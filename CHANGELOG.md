@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-26
+
+### Added
+
+- **55 novel graph transforms across 9 first-party plugin families**, all configuration-driven and composable: graph products (Cartesian, Tensor, Strong, Lexicographic, Rooted, Corona), combinatorial & dual operators (line/Levi graphs, quotient, transitive closure/reduction, bipartite projection, graph dual), curvature-based rewiring (Forman–Ricci, effective-resistance, spectral-gap, resistance-curvature), topological lifts (hypergraph clique/star expansion, persistent-homology features), spectral & signal transforms, graph reduction/coarsening, structural padding for static batching, non-spatial augmentation, and latent-structural encodings (motif compression, structural-role, anonymous-walk). Brings the discoverable transform total to 130+.
+
 ### Changed
 
 - Reorganised `milia_pipeline/plugins/` into per-kind containers: transformation plugins now live under `plugins/transformations/` (symmetric with `plugins/descriptors/`), and a `plugins/models/` container was added. Introduced `user_template/` scaffolds for the transformation and model kinds and `get_transform_plugins_directory()` / `get_model_plugins_directory()` helpers; model plugin discovery now resolves package-relative (CWD-independent) instead of relative to the working directory. The `pyg_augmentation` plugin moved into `plugins/transformations/`; the empty `plugins/myplugins/` scaffold was removed (users add plugins via each kind's `user_template/` or an external `plugins.plugin_paths` entry).
+- Made the plugin compatibility smoke-test precondition-aware: a new `TransformPreconditionError` distinguishes transforms that require caller-supplied inputs (a second operand graph, a partition, or a graph property such as planarity/acyclicity/bipartiteness) from genuine defects. Such transforms are now reported as skipped (informational) rather than failed; constructor parameters are synthesised from declared constraints where possible, and paramless-constructor defects are still surfaced as failures.
 
 ### Fixed
 
+- `RandomNodeSample` now defaults to `ratio=0.5` when neither `num` nor `ratio` is given, making it usable bare and consistent with the sibling augmentation transforms (which default `p=0.5`); with `num` set, `ratio` remains `None`.
 - Logging setup tests: removed a stale `inspect` mock (the code no longer uses `inspect`) and corrected an obsolete file-handler-`OSError` expectation — `setup_logging` intentionally falls back to console-only logging on file errors rather than raising. Aligned the `Raises:` docstring accordingly.
 
 ## [1.2.2] - 2026-08-08
@@ -86,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shahram-boshra/MILIA/compare/v1.1.0...v1.2.0

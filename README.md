@@ -6,6 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://docs.astral.sh/ruff/)
+[![Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/shahram-boshra/MILIA/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/shahram-boshra/MILIA)
 
 ---
 
@@ -36,10 +37,10 @@ Optuna-based optimization with 5 search algorithms (TPE, CMA-ES, Random, Grid, N
 Edge, cloud, and federated deployment strategies with model quantization and pruning. Production monitoring for drift detection and performance tracking. Checkpoint management with training state persistence, model loading, and fine-tuning via transfer learning.
 
 ### Extensible Graph Transformation System
-30+ pre-registered PyG transforms with a 7-layer architecture: dynamic discovery, registry, validation (semantic + dataset-aware), composition with intelligent caching, configuration bridge, error recovery, and production metrics (Prometheus/DataDog export). Three validation levels (Strict/Standard/Lenient) and five validation scopes. Edge-attr-aware parameter injection prevents shape mismatch errors.
+130+ discoverable transforms — the full PyG transform set plus **55 novel graph transforms across 9 first-party plugin families** that ship ready-to-deploy and configurable from YAML: **graph products** (Cartesian, Tensor, Strong, Lexicographic, Rooted, Corona), **combinatorial & dual operators** (line/Levi graphs, quotient, transitive closure/reduction, bipartite projection, graph dual), **curvature-based rewiring** (Forman–Ricci, effective-resistance, spectral-gap, resistance-curvature), **topological lifts** (hypergraph clique/star expansion, persistent-homology features), **spectral & signal** transforms, **graph reduction/coarsening**, **structural padding** for static batching, **non-spatial augmentation**, and **latent-structural encodings** (motif compression, structural-role, anonymous-walk). Built on a 7-layer architecture: dynamic discovery, registry, validation (semantic + dataset-aware, precondition-aware), composition with intelligent caching, configuration bridge, error recovery, and production metrics (Prometheus/DataDog export). Three validation levels (Strict/Standard/Lenient) and five validation scopes. Edge-attr-aware parameter injection prevents shape mismatch errors.
 
-### Three-Tier Plugin Architecture
-Extend descriptors, transformations, and models independently without modifying core code. Plugin discovery with YAML manifests, validation, and security controls. Ships with example plugins and user templates.
+### Kind-Container Plugin Architecture
+Extend descriptors, transformations, and models independently without modifying core code. Plugins are organised into per-kind containers (`plugins/transformations/`, `plugins/descriptors/`, `plugins/models/`), each with a `user_template/` scaffold and config-driven discovery via `plugin_paths` (in-tree or external, upgrade-safe). YAML manifests, validation, and security controls throughout. Ships with example plugins and user templates.
 
 ### Flexible Configuration System
 Schema-validated YAML with Pydantic V2 (10 frozen BaseModel containers, 60+ accessor functions). Split-file `configs/` directory as the sole configuration source with deep merge, CLI override, and configuration migration. Explicit single-file paths are supported via `--config`. Each dataset type has colocated configuration files for self-contained setup.
@@ -249,7 +250,7 @@ The CLI resolves checkpoint paths against `working_root_dir` automatically, so c
 These are read-only and useful for orientation:
 
 ```bash
-milia --list-transforms              # 30+ pre-registered PyG transforms + plugin transforms
+milia --list-transforms              # 130+ transforms: full PyG set + 55 novel across 9 plugin families
 milia --list-experimental-setups     # Available research/experiment configurations
 milia --help                         # Full CLI reference
 ```

@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 __version__ = "1.1.0"
-__author__ = "Shahram Boshra, Ilia Boshra"
+__author__ = "Asadollah (Shahram) Boshra"
 
 # Plugin metadata for milia plugin system
 PLUGIN_METADATA = {

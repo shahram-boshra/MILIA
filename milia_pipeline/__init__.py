@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.2.2"  # Ship bundled test_data fixtures; docs + metadata sync
+__version__ = "1.3.0"  # 55 graph transforms across 9 kind-container families; precondition-aware plugin validation
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

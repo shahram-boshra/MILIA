@@ -83,7 +83,7 @@ class DropEdge(BaseTransform):
         return Metadata(
             name="DropEdge",
             version="1.0.0",
-            author="Shahram Boshra, Ilia Boshra",
+            author="Asadollah (Shahram) Boshra",
             category="augmentation",
             description="Randomly drops edges for graph augmentation",
             paper_reference=None,
@@ -180,7 +180,7 @@ class DropNode(BaseTransform):
         return Metadata(
             name="DropNode",
             version="1.0.0",
-            author="Shahram Boshra, Ilia Boshra",
+            author="Asadollah (Shahram) Boshra",
             category="augmentation",
             description="Randomly drops nodes and incident edges",
             paper_reference=None,
@@ -253,7 +253,7 @@ class MaskFeatures(BaseTransform):
         return Metadata(
             name="MaskFeatures",
             version="1.0.0",
-            author="Shahram Boshra, Ilia Boshra",
+            author="Asadollah (Shahram) Boshra",
             category="augmentation",
             description="Randomly masks node features",
             paper_reference=None,
@@ -362,7 +362,7 @@ class RandomNodeSample(BaseTransform):
         return Metadata(
             name="RandomNodeSample",
             version="1.0.0",
-            author="Shahram Boshra, Ilia Boshra",
+            author="Asadollah (Shahram) Boshra",
             category="sampling",
             description="Randomly samples a subset of nodes",
             paper_reference=None,

@@ -31,11 +31,9 @@ license-files = ["LICENSE"]
 
 authors = [
     {name = "Asadollah (Shahram) Boshra", email = "a.boshra@gmail.com"},
-    {name = "Ilia Boshra", email = "ilia.boshra@gmail.com"},
 ]
 maintainers = [
     {name = "Asadollah (Shahram) Boshra", email = "a.boshra@gmail.com"},
-    {name = "Ilia Boshra", email = "ilia.boshra@gmail.com"},
 ]
 
 keywords = [
