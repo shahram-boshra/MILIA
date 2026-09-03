@@ -438,7 +438,7 @@ class DescriptorRegistry:
             plugin_name=plugin_name,
         )
 
-        logger.info(f"Registered descriptor: {name} (plugin={plugin_name}, builtin={is_builtin})")
+        logger.debug(f"Registered descriptor: {name} (plugin={plugin_name}, builtin={is_builtin})")
 
     def _register_internal(
         self,

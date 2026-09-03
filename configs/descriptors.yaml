@@ -10,6 +10,29 @@ molecular_descriptors:
   # Enable molecular descriptor calculation
   enabled: true
 
+  # ───────────────────────────────────
+  # DESCRIPTOR PLUGIN DISCOVERY
+  # ───────────────────────────────────
+  # Config-driven discovery for descriptor plugins (kind-container:
+  # milia_pipeline/plugins/descriptors/). Adding a plugin requires NO core-file edits —
+  # drop a directory with plugin.yaml + descriptors.py under a listed path.
+  # Consumed by descriptors.DescriptorPluginLoader.discover_plugins(paths=...).
+  plugins:
+    # Enable descriptor-plugin discovery/loading
+    enabled: true
+
+    # Directories scanned for descriptor plugins (each holds <plugin>/plugin.yaml).
+    # Package-relative default container; add external paths (absolute or ~-expanded) below.
+    plugin_paths:
+      - milia_pipeline/plugins/descriptors  # First-party container (addcore_3d, example_descriptors)
+      # - ~/.milia/plugins/descriptors       # User-specific descriptor plugins
+
+    # Discover plugins in plugin_paths at initialization
+    auto_discover: true
+
+    # Validate declarations/values on discovery (recommended)
+    auto_validate: true
+
   # Descriptor categories to compute
   # Each category can be individually enabled/disabled
   # NOTE: Category names must match DescriptorCategory enum values:

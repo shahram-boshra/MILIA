@@ -2743,7 +2743,9 @@ class TransformRegistry:
             f"[DEBUG] TransformRegistry.register_custom: _custom_transforms keys = {list(self._custom_transforms.keys())}"
         )
 
-        logger.info(f"Registered custom transform: {name} (category: {category}, author: {author})")
+        logger.debug(
+            f"Registered custom transform: {name} (category: {category}, author: {author})"
+        )
 
     @staticmethod
     def _validate_parameter_constraints(constraints: dict[str, dict]) -> None:

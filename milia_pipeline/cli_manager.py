@@ -137,6 +137,7 @@ from pathlib import Path
 from typing import Any
 
 from milia_pipeline.config.config_accessors import (
+    ensure_descriptor_plugins_discovered,
     list_experimental_setups,
 )
 
@@ -3281,6 +3282,10 @@ results = runner.run_experiment(
         Returns:
             True if operation was handled (should exit), False otherwise
         """
+        # Ensure config-declared descriptor plugins are registered before any
+        # list/validate operation, so plugin descriptors are visible and selectable.
+        ensure_descriptor_plugins_discovered()
+
         # List descriptors
         if args.list_descriptors:
             self._list_available_descriptors()

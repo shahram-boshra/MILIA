@@ -70,6 +70,10 @@ class DescriptorDeclaration(BaseModel):
         description: Brief description
         requires_3d: Whether 3D coordinates required
         requires_charges: Whether partial charges required
+        requires_extra: Name of an optional dependency extra this descriptor needs
+            (e.g. "descriptors-3d"); None if it depends only on core RDKit/stdlib.
+            Drives optional-dependency skip-not-fail wiring (Pace 1, v1.4.0).
+        block: Optional Dragon/Todeschini block provenance label (e.g. "WHIM").
         version: Descriptor version
     """
 
@@ -80,6 +84,8 @@ class DescriptorDeclaration(BaseModel):
     description: str = ""
     requires_3d: bool = False
     requires_charges: bool = False
+    requires_extra: str | None = None
+    block: str | None = None
     version: str = "1.0.0"
 
     def to_dict(self) -> dict[str, Any]:
@@ -104,6 +110,8 @@ class DescriptorDeclaration(BaseModel):
             description=data.get("description", ""),
             requires_3d=data.get("requires_3d", False),
             requires_charges=data.get("requires_charges", False),
+            requires_extra=data.get("requires_extra"),
+            block=data.get("block"),
             version=data.get("version", "1.0.0"),
         )
 
@@ -524,6 +532,7 @@ class DescriptorPluginLoader:
                 requires_charges=declaration.requires_charges,
                 description=declaration.description
                 or f"Plugin descriptor from {plugin_meta.plugin_name}",
+                block=declaration.block,
             )
 
             # Register with DescriptorRegistry
@@ -535,7 +544,7 @@ class DescriptorPluginLoader:
                 plugin_name=plugin_meta.plugin_name,
             )
 
-            logger.info(
+            logger.debug(
                 f"✓ {descriptor_name}: Registered from plugin "
                 f"[Plugin: {plugin_meta.plugin_name}, "
                 f"Function: {declaration.function_name}, "
@@ -873,15 +882,21 @@ class DescriptorPluginLoader:
         else:
             logger.info("  Status: ℹ No descriptors declared or registered")
 
-        # Registration details
+        # Registration details: per-item successes are DEBUG-level diagnostics
+        # (avoids flooding logs when a plugin declares hundreds/thousands of
+        # descriptors, e.g. addcore_3d); failures remain at INFO so they are always
+        # visible for root-cause analysis. The aggregate counts above stay at INFO.
         if registration_results:
-            logger.info("")
-            logger.info("Registration Details:")
+            failed_results = [r for r in registration_results if not r["registered"]]
+            logger.debug("Registration Details:")
             for result in registration_results:
                 desc_name = result.get("descriptor_name", "Unknown")
                 if result["registered"]:
-                    logger.info(f"  ✓ {desc_name}: {result['reason']}")
-                else:
+                    logger.debug(f"  ✓ {desc_name}: {result['reason']}")
+            if failed_results:
+                logger.info("Registration Failures:")
+                for result in failed_results:
+                    desc_name = result.get("descriptor_name", "Unknown")
                     logger.info(f"  ✗ {desc_name}: {result['reason']}")
 
         # Bonus discoveries

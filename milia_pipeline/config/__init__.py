@@ -303,6 +303,7 @@ from .config_accessors import (
     create_structural_features_config_container,
     create_transformation_config_container,
     create_transforms_from_config,
+    ensure_descriptor_plugins_discovered,
     get_all_transforms,
     get_atom_features,
     # Transform Registry & Discovery
@@ -947,6 +948,7 @@ __all__ = [
     # Descriptors
     "is_descriptors_enabled",
     "get_descriptor_config",
+    "ensure_descriptor_plugins_discovered",
     "get_selected_descriptors",
     # Utilities
     "get_transform",

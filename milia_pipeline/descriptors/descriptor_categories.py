@@ -61,6 +61,10 @@ class DescriptorMetadata(BaseModel, frozen=True):
         requires_charges: Whether partial charges are required
         description: Brief description of the descriptor
         rdkit_module: RDKit module path (e.g., "Descriptors", "Descriptors3D")
+        block: Optional fine-grained provenance label (Dragon/Todeschini block, e.g.
+            "WHIM", "GETAWAY"). Non-breaking metadata field (default None) that carries
+            sub-category provenance without expanding the 6-value category enum per
+            release. Introduced in the descriptor programme (Pace 1, v1.4.0).
     """
 
     name: str
@@ -69,6 +73,7 @@ class DescriptorMetadata(BaseModel, frozen=True):
     requires_charges: bool = False
     description: str = ""
     rdkit_module: str = "Descriptors"
+    block: str | None = None
 
     def __init__(
         self,
@@ -78,6 +83,7 @@ class DescriptorMetadata(BaseModel, frozen=True):
         requires_charges: bool = False,
         description: str = "",
         rdkit_module: str = "Descriptors",
+        block: str | None = None,
         **data,
     ):
         """
@@ -93,6 +99,7 @@ class DescriptorMetadata(BaseModel, frozen=True):
             requires_charges: Whether partial charges required (default: False)
             description: Brief description (default: "")
             rdkit_module: RDKit module path (default: "Descriptors")
+            block: Optional Dragon/Todeschini block provenance label (default: None)
         """
         super().__init__(
             name=name,
@@ -101,6 +108,7 @@ class DescriptorMetadata(BaseModel, frozen=True):
             requires_charges=requires_charges,
             description=description,
             rdkit_module=rdkit_module,
+            block=block,
             **data,
         )
 

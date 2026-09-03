@@ -154,7 +154,7 @@ class TestDescriptorDeclaration:
         assert decl.version == "2.1.0"
 
     def test_to_dict_returns_all_fields(self):
-        """Test that to_dict returns all 8 fields"""
+        """Test that to_dict returns all 10 fields (incl. requires_extra, block)"""
         decl = DescriptorDeclaration(
             name="test",
             function_name="calc",
@@ -168,7 +168,7 @@ class TestDescriptorDeclaration:
         result = decl.to_dict()
 
         assert isinstance(result, dict)
-        assert len(result) == 8
+        assert len(result) == 10
         assert result["name"] == "test"
         assert result["function_name"] == "calc"
         assert result["module_path"] == "mod"
@@ -177,6 +177,9 @@ class TestDescriptorDeclaration:
         assert result["requires_3d"] is True
         assert result["requires_charges"] is False
         assert result["version"] == "1.2.3"
+        # Non-breaking fields added in the descriptor programme (Pace 1, v1.4.0)
+        assert result["requires_extra"] is None
+        assert result["block"] is None
 
     def test_from_dict_with_all_fields(self):
         """Test from_dict with all fields present"""

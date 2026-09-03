@@ -614,7 +614,7 @@ class PluginRegistry:
                 native_class = TransformRegistry.get(transform_name)
 
                 if native_class is not None:
-                    logger.info(
+                    logger.debug(
                         f"✓ {transform_name}: Using PyG native implementation "
                         f"[Plugin: {plugin_meta.plugin_name}]"
                     )
@@ -712,7 +712,7 @@ class PluginRegistry:
                             f"✓ {transform_name} registered (verification skipped due to registry internals)"
                         )
 
-                logger.info(
+                logger.debug(
                     f"✓ {transform_name}: Registered from plugin implementation "
                     f"[Plugin: {plugin_meta.plugin_name}, "
                     f"Class: {declaration.class_name}, "
@@ -953,9 +953,12 @@ class PluginRegistry:
             logger.info("  Status: ℹ No transforms declared or registered")
 
         # Registration details
+        # Registration details: per-item successes are DEBUG-level diagnostics;
+        # failures remain at INFO so they are always visible for root-cause analysis.
+        # The aggregate counts above stay at INFO.
         if registration_results:
-            logger.info("")
-            logger.info("Registration Details:")
+            failed_results = [r for r in registration_results if not r["registered"]]
+            logger.debug("Registration Details:")
             for result in registration_results:
                 transform_name = result.get("transform_name", "Unknown")
                 if result["registered"]:
@@ -963,8 +966,11 @@ class PluginRegistry:
                         "pyg": "PyG native implementation",
                         "plugin": f"Plugin implementation ({result['details'].get('module', 'unknown')})",
                     }.get(result["source"], "Unknown source")
-                    logger.info(f"  ✓ {transform_name}: {source_label}")
-                else:
+                    logger.debug(f"  ✓ {transform_name}: {source_label}")
+            if failed_results:
+                logger.info("Registration Failures:")
+                for result in failed_results:
+                    transform_name = result.get("transform_name", "Unknown")
                     logger.info(f"  ✗ {transform_name}: {result['reason']}")
 
         # Bonus discoveries

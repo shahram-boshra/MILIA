@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-02
+
+### Added
+
+- **Molecular Descriptors — Pace 1: 1,019 ADD-CORE RDKit 3D descriptors** shipped as the first-party `addcore_3d` descriptor plugin (`plugins/descriptors/addcore_3d/`), extending the descriptor universe beyond the ~492-descriptor RDKit `HAVE` baseline. Blocks (RDKit-native, verified against the pinned runtime): WHIM (114), GETAWAY (273), RDF (210), 3D-MoRSE (224), Autocorr3D (80), USR (12), USRCAT (60), MQN (42), and heavy-atom oxidation-number aggregates (min/max/mean/sum). Vector blocks use a compute-once-per-molecule block-cache (`functools.lru_cache(maxsize=1)` keyed on the molecule), exposing each element as an individually-named scalar descriptor while issuing a single RDKit call per block. All descriptors are deterministic under the pinned ETKDG seed (42) and return `NaN` (never raise) on invalid input or unmet preconditions (e.g. USR's ≥3-atom requirement). One-per-family test module `tests/test_descriptor_addcore3d_unit.py` gates ground-truth-vs-RDKit-oracle equality, determinism, robustness, and contract (1,019 unique registrations, `block`/`category`/`requires_3d` metadata).
+- Descriptor-plugin discovery is now config-driven for the descriptor kind-container: `configs/descriptors.yaml` gains a `molecular_descriptors.plugins` block (`enabled`, `plugin_paths`, `auto_discover`, `auto_validate`) pointing at `milia_pipeline/plugins/descriptors/` — adding a descriptor plugin requires no core-file edits.
+
+### Changed
+
+- `DescriptorMetadata` (`descriptors/descriptor_categories.py`) gains a non-breaking optional `block` field carrying the Dragon/Todeschini block-provenance label (e.g. `WHIM`, `GETAWAY`), so descriptors record fine-grained provenance without expanding the six-value `DescriptorCategory` enum per release. `DescriptorDeclaration` (`descriptors/descriptor_plugin_system.py`) gains matching optional `block` and `requires_extra` fields (the latter reserved for optional-dependency skip-not-fail wiring in later paces); both are threaded from `plugin.yaml` through registration into the registry metadata. All additions default to `None`/absent — existing plugins and metadata are unaffected.
+- Pinned `rdkit==2025.3.5` → `rdkit==2025.3.6`. Release 2025.03.6 fixes GETAWAY nondeterminism ([rdkit#7264](https://github.com/rdkit/rdkit/issues/7264)); the previous pin was the last release exhibiting call-to-call GETAWAY variance, which would otherwise violate the descriptor determinism gate. Baseline descriptor values are bit-identical across the two patch releases (no regression).
+
+
 ## [1.3.0] - 2026-08-26
 
 ### Added
@@ -94,7 +107,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/shahram-boshra/MILIA/compare/v1.2.0...v1.2.1

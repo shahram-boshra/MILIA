@@ -4463,6 +4463,68 @@ def get_descriptor_config() -> dict[str, Any]:
         return {}
 
 
+_DESCRIPTOR_PLUGINS_DISCOVERED = False
+
+
+def ensure_descriptor_plugins_discovered(desc_config: dict[str, Any] | None = None) -> None:
+    """
+    Discover and register descriptor plugins from configuration (idempotent).
+
+    Config-driven discovery mirrors the transformation plugin system: it reads the
+    ``molecular_descriptors.plugins`` block (enabled / plugin_paths / auto_discover /
+    auto_validate) and registers every declared descriptor with the shared
+    DescriptorRegistry. This makes first-party and user descriptor plugins (e.g.
+    ``addcore_3d``) selectable for calculation across every pipeline entry point
+    (process / train / predict). Runs once per process; any failure degrades
+    gracefully to the built-in descriptor set.
+    """
+    global _DESCRIPTOR_PLUGINS_DISCOVERED
+    if _DESCRIPTOR_PLUGINS_DISCOVERED:
+        return
+
+    logger = logging.getLogger(__name__)
+    try:
+        cfg = desc_config if desc_config is not None else get_descriptor_config()
+        plugins_config = cfg.get("plugins", {}) if isinstance(cfg, dict) else {}
+        if not plugins_config.get("enabled", False) or not plugins_config.get(
+            "auto_discover", True
+        ):
+            _DESCRIPTOR_PLUGINS_DISCOVERED = True
+            return
+
+        from pathlib import Path
+
+        # …/milia_pipeline/config/config_accessors.py -> project root is parents[2]
+        package_root = Path(__file__).resolve().parents[2]
+        resolved_paths: list[Path] = []
+        for raw in plugins_config.get("plugin_paths", []) or []:
+            p = Path(raw).expanduser()
+            if not p.is_absolute():
+                p = (package_root / raw).resolve()
+            if p.is_dir():
+                resolved_paths.append(p)
+
+        if resolved_paths:
+            from milia_pipeline.descriptors.descriptor_plugin_system import (
+                discover_plugins as discover_descriptor_plugins,
+            )
+
+            discovered = discover_descriptor_plugins(
+                paths=resolved_paths,
+                auto_validate=bool(plugins_config.get("auto_validate", True)),
+            )
+            if discovered:
+                logger.info(
+                    f"Discovered {len(discovered)} descriptor plugin(s): "
+                    f"{', '.join(sorted(discovered))}"
+                )
+    except Exception as e:  # never let plugin discovery break descriptor selection
+        logger.warning(f"Descriptor plugin discovery failed: {e}")
+        logger.debug("Descriptor plugin discovery error details:", exc_info=True)
+
+    _DESCRIPTOR_PLUGINS_DISCOVERED = True
+
+
 def get_selected_descriptors() -> list[str]:
     """
     Get list of selected descriptors based on configuration.
@@ -4489,6 +4551,10 @@ def get_selected_descriptors() -> list[str]:
         # Check if enabled
         if not config.get("enabled", False):
             return []
+
+        # Register config-declared descriptor plugins before consulting the registry
+        # so plugin descriptors (e.g. addcore_3d) are selectable.
+        ensure_descriptor_plugins_discovered(config)
 
         # Get categories from config
         # Support both formats:
