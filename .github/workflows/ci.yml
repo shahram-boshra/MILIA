@@ -46,8 +46,17 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
+      # `uv lock --check` reads the PyG flat find-links indexes on data.pyg.org (a single
+      # third-party host outside PyPI). Transient DNS/host failures there are external and
+      # not retried by uv itself (uv's HTTP retry covers read-timeouts/5xx/429, NOT DNS —
+      # astral-sh/uv#17697), so wrap the step in a backed-off step-level retry.
       - name: Lockfile is in sync with pyproject
-        run: uv lock --check
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: uv lock --check
 
       - name: Ruff lint
         run: uvx ruff@0.15.0 check .
@@ -80,8 +89,17 @@ jobs:
       # out of sync with pyproject (drift gate). NOTE: use explicit `--extra cpu --extra dev`,
       # never `--all-extras` (the cpu/cu118/cu121/cu124 accelerator extras are mutually
       # exclusive via [tool.uv] conflicts).
+      # Fetches the full scientific stack incl. the compiled PyG companions from
+      # data.pyg.org. Wrapped in a backed-off step-level retry to absorb transient
+      # DNS/host failures on that single external index (not retried by uv — see the
+      # lint job note and astral-sh/uv#17697). `--locked` still enforces the drift gate.
       - name: Sync locked environment (CPU stack + dev tools)
-        run: uv sync --locked --extra cpu --extra dev
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: uv sync --locked --extra cpu --extra dev
 
       # Smoke tests are fully enforced: because the heavy deps are now present, any failure
       # fails CI. (The previous pip-only "tolerate exit 1/5" workaround is removed — it existed
