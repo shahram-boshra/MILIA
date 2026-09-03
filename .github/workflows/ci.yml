@@ -54,8 +54,8 @@ jobs:
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
         with:
           timeout_minutes: 5
-          max_attempts: 3
-          retry_wait_seconds: 30
+          max_attempts: 5
+          retry_wait_seconds: 60
           command: uv lock --check
 
       - name: Ruff lint
@@ -97,8 +97,8 @@ jobs:
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
         with:
           timeout_minutes: 20
-          max_attempts: 3
-          retry_wait_seconds: 30
+          max_attempts: 5
+          retry_wait_seconds: 60
           command: uv sync --locked --extra cpu --extra dev
 
       # Smoke tests are fully enforced: because the heavy deps are now present, any failure
