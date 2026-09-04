@@ -9,7 +9,8 @@ plugin support, and PyTorch Geometric integration.
 This module provides a complete framework for computing and managing molecular
 descriptors for the milia pipeline, including:
 
-- 400+ RDKit descriptors across 6 categories
+- 1,500+ molecular descriptors: ~492 built-in RDKit descriptors across 6 categories,
+  extensible via descriptor plugins (e.g. addcore_3d adds 1,019 ADD-CORE RDKit 3D descriptors)
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

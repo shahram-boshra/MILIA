@@ -763,10 +763,10 @@ class TestContractCategoryConstants:
 
     @pytest.mark.contract
     def test_descriptor_metadata_map_is_non_empty(self, desc_pkg):
-        """``DESCRIPTOR_METADATA_MAP`` is non-empty (400+ descriptors documented)."""
+        """``DESCRIPTOR_METADATA_MAP`` is non-empty (~492 built-in descriptors documented)."""
         obj = desc_pkg.DESCRIPTOR_METADATA_MAP
         assert len(obj) > 0, (
-            "DESCRIPTOR_METADATA_MAP should be non-empty (400+ descriptors documented)"
+            "DESCRIPTOR_METADATA_MAP should be non-empty (~492 built-in descriptors documented)"
         )
 
     @pytest.mark.contract
@@ -1023,7 +1023,7 @@ class TestContractRegistrySingletonHasListAll:
             pytest.fail(
                 "registry.list_all_descriptors() must return a sized collection (supports len())"
             )
-        # The project documents 400+ descriptors
+        # The project documents 1,500+ descriptors (~492 built-in + plugins)
         assert count >= 0, (
             "registry.list_all_descriptors() returned a collection with "
             "negative length — this should not happen"
