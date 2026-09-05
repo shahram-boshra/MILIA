@@ -6,23 +6,28 @@
 # Source: GitHub Docs — "Configuring Dependabot version updates"
 #
 # Two ecosystems monitored:
-#   1. pip — dev dependencies in pyproject.toml [project.optional-dependencies].dev
-#      (pytest, pytest-mock, ruff) plus runtime deps, all now uv/PyPI-managed via pyproject + uv.lock.
-#   2. github-actions — Actions versions in .github/workflows/ (checkout, setup-python, etc.)
+#   1. uv — Python deps in pyproject.toml + uv.lock (runtime + [project.optional-dependencies].dev).
+#      The `uv` ecosystem updates pyproject.toml AND regenerates uv.lock in the same PR, keeping the
+#      ci.yml `uv lock --check` drift gate green (the `pip` ecosystem does NOT touch uv.lock → red CI).
+#   2. github-actions — Actions versions in .github/workflows/ (checkout, setup-uv, etc.)
 #
-# Note: Dependabot reads pyproject.toml for pip ecosystem (GitHub Docs:
-#   "For package managers such as pipenv and poetry, you need to use the pip
-#    YAML value."). It will detect [project.optional-dependencies].dev entries.
+# Ref: Astral uv docs — "Using uv with Dependabot"; GitHub Docs — "Configuring Dependabot version updates".
 # =============================================================================
 
 version: 2
 
 updates:
-  # Python dev dependencies (pyproject.toml)
-  - package-ecosystem: "pip"
+  # Python dependencies — uv ecosystem (updates BOTH pyproject.toml AND uv.lock in the same PR).
+  # MUST be `uv`, not `pip`: the pip ecosystem edits pyproject.toml but leaves uv.lock stale, so
+  # ci.yml's `uv lock --check` (drift gate) fails on every bump PR. Astral docs: "Dependabot supports
+  # updating uv.lock files. To enable it, add the uv package-ecosystem." (docs.astral.sh/uv → Dependabot).
+  # cooldown avoids opening PRs before uv can resolve a freshly-published version.
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
     commit-message:
