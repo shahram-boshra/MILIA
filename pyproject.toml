@@ -97,7 +97,7 @@ dev = [
     # Python code blocks inside Markdown — failed `ruff format --check .` on
     # unchanged docs. Bump this and the pre-commit rev together in a deliberate
     # upgrade. Ref: astral-sh/ruff 0.16.0 release notes (Breaking changes).
-    "ruff==0.15.0",
+    "ruff==0.16.5",
 ]
 # Documentation build dependencies (installed via: pip install -e ".[docs]")
 # Sphinx <8.2: 8.2+ drops Python 3.10 support (sphinx-doc/sphinx#13325).
