@@ -25,7 +25,7 @@ name = "milia-py"
 dynamic = ["version"]
 description = "Molecular graph processing and machine learning framework for molecular sciences"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 
