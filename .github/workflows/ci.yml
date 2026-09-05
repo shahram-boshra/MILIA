@@ -51,7 +51,7 @@ jobs:
       # not retried by uv itself (uv's HTTP retry covers read-timeouts/5xx/429, NOT DNS —
       # astral-sh/uv#17697), so wrap the step in a backed-off step-level retry.
       - name: Lockfile is in sync with pyproject
-        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60  # v4.0.0
         with:
           timeout_minutes: 5
           max_attempts: 5
@@ -94,7 +94,7 @@ jobs:
       # DNS/host failures on that single external index (not retried by uv — see the
       # lint job note and astral-sh/uv#17697). `--locked` still enforces the drift gate.
       - name: Sync locked environment (CPU stack + dev tools)
-        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60  # v4.0.0
         with:
           timeout_minutes: 20
           max_attempts: 5
