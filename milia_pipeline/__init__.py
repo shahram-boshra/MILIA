@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.4.0"  # Descriptors Pace 1: +1,019 ADD-CORE RDKit 3D (addcore_3d)
+__version__ = "1.5.0"  # Descriptors Pace 2: +20 property/physicochemical (constitutional_property)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

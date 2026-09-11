@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-06
+
+### Added
+
+- **Molecular Descriptors — Pace 2: 20 constitutional-ext + property/physicochemical descriptors** shipped as the first-party `constitutional_property` descriptor plugin (`plugins/descriptors/constitutional_property/`), implemented `PLUGIN-NATIVE` from primary literature and validated against an oracle. Descriptors: McGowan characteristic volume (`VMcGowan`; Abraham & McGowan 1987), atom-and-bond vdW volume (`Vabc`; Zhao, Abraham & Zissimos 2003), atomic/bond polarizability (`apol`, `bpol`; Miller 1990), CarbonTypes (`C1SP1 C2SP1 C1SP2 C2SP2 C3SP2 C1SP3 C2SP3 C3SP3 C4SP3` + `HybRatio`; Todeschini & Consonni 2009, Yang et al. 2010), Bemis–Murcko framework ratio (`fMF`; Bemis & Murcko 1996), fragment complexity (`fragCpx`; Nilakantan et al. 2006), and the drug-likeness rule filters `Lipinski`, `GhoseFilter`, `VeberFilter`, `EganFilter` (Lipinski 2001; Ghose 1999; Veber 2002; Egan 2000). All are 2D (`requires_3d: false`), pure (RDKit + stdlib only), deterministic, and return `NaN` (never raise) on invalid input or an out-of-parameter element; boolean rule flags honour the scalar contract by returning `1.0`/`0.0`. The 18 Mordred-defined descriptors reproduce the `mordredcommunity` oracle to `rtol<=1e-4` (bit-identical on the validation panel); `VeberFilter`/`EganFilter` are gated against their published thresholds. Test module `tests/test_descriptor_constitutional_property_unit.py` gates a frozen oracle snapshot (with a live `mordredcommunity` cross-check when installed), determinism, robustness, and contract (20 unique registrations, `block`/`category`/`requires_3d` metadata). `FCSP3` is intentionally not shipped (numerically identical to the existing `HAVE` `FractionCSP3`, de-duplicated); MLFER/Abraham descriptors are deferred to the PaDEL/CDK-residual pace (no RDKit/mordred oracle).
+
 ## [1.4.0] - 2026-09-02
 
 ### Added
@@ -107,7 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/shahram-boshra/MILIA/compare/v1.2.1...v1.2.2

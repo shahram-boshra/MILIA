@@ -1,0 +1,218 @@
+# plugins/descriptors/constitutional_property/plugin.yaml
+#
+# Constitutional-ext + property/physicochemical descriptors (descriptor programme,
+# Pace 2 / v1.5.0). 20 PLUGIN-NATIVE descriptors, implemented from primary literature and
+# validated against the mordredcommunity oracle (18) / published rule definitions (2).
+
+plugin_name: "constitutional_property"
+version: "1.5.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Constitutional-ext + property/physicochemical descriptors: McGowan/vdW-ABC volume, polarizability, CarbonTypes, HybridizationRatio, Framework, FragmentComplexity, and Lipinski/Ghose/Veber/Egan rule filters."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.5.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+
+  - name: "VMcGowan"
+    function_name: "VMcGowan"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "McGowanVolume"
+    description: "McGowan characteristic volume (Abraham & McGowan 1987)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "Vabc"
+    function_name: "Vabc"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "VdwVolumeABC"
+    description: "van der Waals volume, atom-and-bond contribution (Zhao, Abraham & Zissimos 2003)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "apol"
+    function_name: "apol"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "Polarizability"
+    description: "Sum of atomic polarizabilities (Miller 1990)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "bpol"
+    function_name: "bpol"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "Polarizability"
+    description: "Sum of bond polarizability differences (Miller 1990)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C1SP1"
+    function_name: "C1SP1"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP carbon bound to 1 other carbon (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C2SP1"
+    function_name: "C2SP1"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP carbon bound to 2 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C1SP2"
+    function_name: "C1SP2"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP2 carbon bound to 1 other carbon (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C2SP2"
+    function_name: "C2SP2"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP2 carbon bound to 2 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C3SP2"
+    function_name: "C3SP2"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP2 carbon bound to 3 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C1SP3"
+    function_name: "C1SP3"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP3 carbon bound to 1 other carbon (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C2SP3"
+    function_name: "C2SP3"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP3 carbon bound to 2 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C3SP3"
+    function_name: "C3SP3"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP3 carbon bound to 3 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "C4SP3"
+    function_name: "C4SP3"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "SP3 carbon bound to 4 other carbons (Todeschini & Consonni 2009)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "HybRatio"
+    function_name: "HybRatio"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "CarbonTypes"
+    description: "Hybridization ratio N(SP3)/(N(SP2)+N(SP3)) (Yang et al. 2010)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "fMF"
+    function_name: "fMF"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "Framework"
+    description: "Bemis-Murcko molecular framework ratio (Bemis & Murcko 1996)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "fragCpx"
+    function_name: "fragCpx"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "FragmentComplexity"
+    description: "Fragment complexity |B^2-A^2+A|+H/100 (Nilakantan et al. 2006)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "Lipinski"
+    function_name: "Lipinski"
+    module_path: "descriptors"
+    category: "drug_likeness"
+    block: "Lipinski"
+    description: "Lipinski rule-of-five pass flag (Lipinski et al. 2001)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "GhoseFilter"
+    function_name: "GhoseFilter"
+    module_path: "descriptors"
+    category: "drug_likeness"
+    block: "Lipinski"
+    description: "Ghose filter pass flag (Ghose et al. 1999)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "VeberFilter"
+    function_name: "VeberFilter"
+    module_path: "descriptors"
+    category: "drug_likeness"
+    block: "DrugLikenessFilter"
+    description: "Veber oral-bioavailability filter pass flag (Veber et al. 2002)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
+
+  - name: "EganFilter"
+    function_name: "EganFilter"
+    module_path: "descriptors"
+    category: "drug_likeness"
+    block: "DrugLikenessFilter"
+    description: "Egan absorption filter pass flag (Egan et al. 2000)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.5.0"
