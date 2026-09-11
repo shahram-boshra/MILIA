@@ -25,19 +25,19 @@ authors:
     orcid: "https://orcid.org/0009-0004-8925-2868"
 
 version: "1.5.0"
-date-released: "2026-09-06"
+date-released: "2026-09-11"
 license: "MIT"
 
 # Zenodo DOIs (GitHub–Zenodo integration). The concept DOI always resolves to the
-# latest release and is the canonical citation; the version DOI pins v1.4.0.
+# latest release and is the canonical citation; the version DOI pins v1.5.0.
 doi: "10.5281/zenodo.20151553"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.20151553"
     description: "Concept DOI — always resolves to the latest MILIA release"
   - type: doi
-    value: "10.5281/zenodo.22291882"
-    description: "Version DOI — MILIA v1.4.0"
+    value: "10.5281/zenodo.22713567"
+    description: "Version DOI — MILIA v1.5.0"
 
 repository-code: "https://github.com/shahram-boshra/MILIA"
 url: "https://github.com/shahram-boshra/MILIA"
