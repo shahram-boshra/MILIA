@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-12
+
+### Added
+
+- **Molecular Descriptors — Pace 3: 107 topological/connectivity indices** shipped as the first-party `topological_connectivity` descriptor plugin (`plugins/descriptors/topological_connectivity/`), implemented `PLUGIN-NATIVE` from primary literature and validated against an oracle. Families: Wiener (`WPath`, `WPol`; Wiener 1947), Zagreb (`Zagreb1/2`, `mZagreb1/2`; Gutman & Trinajstić 1972), atom-bond connectivity (`ABC`, `ABCGG`; Estrada 1998, Graovac-Ghorbani 2016), eccentric connectivity (`ECIndex`; Sharma-Goswami-Madan 1997), topological shape (`Diameter`, `Radius`, `TopoShapeIndex`, `PetitjeanIndex`; Petitjean 1992), Schultz (`MTI`, `SchultzIndex`, `ModSchultzIndex`; Schultz 1989), Gálvez topological charge (`GGI1-10`, `JGI1-10`, `JGT10`; Gálvez et al. 1994), molecular distance edge (`MDEC/MDEO/MDEN`; Liu-Cai-Yao 1998), and the Kier-Hall Chi path/cluster/path-cluster/chain family (simple + valence; Kier & Hall 1976/1986). All are 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy), deterministic, and return `NaN` (never raise) on invalid input. The 104 Mordred-defined descriptors reproduce the `mordredcommunity` oracle **bit-exact** (`rtol <= 1e-4`); the 3 Schultz indices are gated against published reference values (benzene 132/54/54; propane 5/3) and the identity `MTI = Zagreb1 + 2·SchultzIndex`. Registered `name` equals `function_name` (a valid identifier, e.g. `Xp_0d`, `MDEC_11`; the canonical Mordred string `Xp-0d`/`MDEC-11` is preserved in each descriptor's description) — honouring the single-registration invariant so all 107 register exactly once with 0 bonus discoveries. Test module `tests/test_descriptor_topological_connectivity_unit.py` gates a frozen oracle snapshot (with a live `mordredcommunity` cross-check when installed), determinism, robustness, and contract (107 unique registrations). De-dup: the 5 valence-path low orders `Xp-0dv…Xp-4dv` are not shipped (identical to the existing `HAVE` RDKit `Chi0v…Chi4v`). The ~166 eigenvalue/matrix-spectra descriptors (Barysz/adjacency/distance/detour spectra, BCUT) are deferred to a dedicated pace.
+
 ## [1.5.0] - 2026-09-11
 
 ### Added
@@ -113,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/shahram-boshra/MILIA/compare/v1.2.2...v1.3.0

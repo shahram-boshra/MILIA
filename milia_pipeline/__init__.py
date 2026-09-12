@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.5.0"  # Descriptors Pace 2: +20 property/physicochemical (constitutional_property)
+__version__ = "1.6.0"  # Descriptors Pace 3: +107 topological (topological_connectivity)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

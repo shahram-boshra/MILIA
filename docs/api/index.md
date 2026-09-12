@@ -12,7 +12,7 @@ This section documents the public API of the `milia_pipeline` package.
 | `milia_pipeline.datasets` | PyTorch Geometric dataset implementations |
 | `milia_pipeline.handlers` | Unified dataset handler pattern |
 | `milia_pipeline.preprocessing` | Wavefunction data preprocessing |
-| `milia_pipeline.descriptors` | Molecular descriptor calculation (1,530+ descriptors: ~492 built-in + plugins, e.g. addcore_3d's 1,019 + constitutional_property's 20) |
+| `milia_pipeline.descriptors` | Molecular descriptor calculation (1,630+ descriptors: ~492 built-in + plugins, e.g. addcore_3d's 1,019 + constitutional_property's 20 + topological_connectivity's 107) |
 | `milia_pipeline.models` | Model training, evaluation, and deployment |
 | `milia_pipeline.plugins` | Plugin system for extensibility |
 | `milia_pipeline.cli_manager` | Command-line interface |

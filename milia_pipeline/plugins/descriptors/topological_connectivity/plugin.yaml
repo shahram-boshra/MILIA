@@ -1,0 +1,980 @@
+# plugins/descriptors/topological_connectivity/plugin.yaml
+#
+# Topological / connectivity indices (descriptor programme, Pace 3 / v1.6.0). 107 PLUGIN-NATIVE
+# descriptors, validated bit-exact against mordredcommunity (104) / published values (3 Schultz).
+
+plugin_name: "topological_connectivity"
+version: "1.6.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Topological/connectivity indices: Wiener, Zagreb, ABC, EccentricConnectivity, TopologicalIndex, Schultz, Galvez topological charge, MolecularDistanceEdge, and the Kier-Hall Chi path/cluster/path-cluster/chain family."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.6.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "WPath"
+    function_name: "WPath"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WienerIndex"
+    description: "WPath WienerIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "WPol"
+    function_name: "WPol"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WienerIndex"
+    description: "WPol WienerIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Zagreb1"
+    function_name: "Zagreb1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ZagrebIndex"
+    description: "Zagreb1 ZagrebIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Zagreb2"
+    function_name: "Zagreb2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ZagrebIndex"
+    description: "Zagreb2 ZagrebIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "mZagreb1"
+    function_name: "mZagreb1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ZagrebIndex"
+    description: "mZagreb1 ZagrebIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "mZagreb2"
+    function_name: "mZagreb2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ZagrebIndex"
+    description: "mZagreb2 ZagrebIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "ABC"
+    function_name: "ABC"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ABCIndex"
+    description: "ABC ABCIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "ABCGG"
+    function_name: "ABCGG"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ABCIndex"
+    description: "ABCGG ABCIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "ECIndex"
+    function_name: "ECIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "EccentricConnectivity"
+    description: "ECIndex EccentricConnectivity topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Diameter"
+    function_name: "Diameter"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalIndex"
+    description: "Diameter TopologicalIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Radius"
+    function_name: "Radius"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalIndex"
+    description: "Radius TopologicalIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "TopoShapeIndex"
+    function_name: "TopoShapeIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalIndex"
+    description: "TopoShapeIndex TopologicalIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "PetitjeanIndex"
+    function_name: "PetitjeanIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalIndex"
+    description: "PetitjeanIndex TopologicalIndex topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MTI"
+    function_name: "MTI"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Schultz"
+    description: "MTI Schultz topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "SchultzIndex"
+    function_name: "SchultzIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Schultz"
+    description: "SchultzIndex Schultz topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "ModSchultzIndex"
+    function_name: "ModSchultzIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Schultz"
+    description: "ModSchultzIndex Schultz topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_3d"
+    function_name: "Xch_3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_3d Chi topological/connectivity index (Mordred: Xch-3d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_4d"
+    function_name: "Xch_4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_4d Chi topological/connectivity index (Mordred: Xch-4d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_5d"
+    function_name: "Xch_5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_5d Chi topological/connectivity index (Mordred: Xch-5d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_6d"
+    function_name: "Xch_6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_6d Chi topological/connectivity index (Mordred: Xch-6d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_7d"
+    function_name: "Xch_7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_7d Chi topological/connectivity index (Mordred: Xch-7d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_3d"
+    function_name: "Xc_3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_3d Chi topological/connectivity index (Mordred: Xc-3d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_4d"
+    function_name: "Xc_4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_4d Chi topological/connectivity index (Mordred: Xc-4d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_5d"
+    function_name: "Xc_5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_5d Chi topological/connectivity index (Mordred: Xc-5d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_6d"
+    function_name: "Xc_6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_6d Chi topological/connectivity index (Mordred: Xc-6d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_4d"
+    function_name: "Xpc_4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_4d Chi topological/connectivity index (Mordred: Xpc-4d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_5d"
+    function_name: "Xpc_5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_5d Chi topological/connectivity index (Mordred: Xpc-5d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_6d"
+    function_name: "Xpc_6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_6d Chi topological/connectivity index (Mordred: Xpc-6d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_0d"
+    function_name: "Xp_0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_0d Chi topological/connectivity index (Mordred: Xp-0d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_0d"
+    function_name: "AXp_0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_0d Chi topological/connectivity index (Mordred: AXp-0d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_1d"
+    function_name: "Xp_1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_1d Chi topological/connectivity index (Mordred: Xp-1d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_1d"
+    function_name: "AXp_1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_1d Chi topological/connectivity index (Mordred: AXp-1d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_2d"
+    function_name: "Xp_2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_2d Chi topological/connectivity index (Mordred: Xp-2d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_2d"
+    function_name: "AXp_2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_2d Chi topological/connectivity index (Mordred: AXp-2d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_3d"
+    function_name: "Xp_3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_3d Chi topological/connectivity index (Mordred: Xp-3d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_3d"
+    function_name: "AXp_3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_3d Chi topological/connectivity index (Mordred: AXp-3d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_4d"
+    function_name: "Xp_4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_4d Chi topological/connectivity index (Mordred: Xp-4d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_4d"
+    function_name: "AXp_4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_4d Chi topological/connectivity index (Mordred: AXp-4d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_5d"
+    function_name: "Xp_5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_5d Chi topological/connectivity index (Mordred: Xp-5d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_5d"
+    function_name: "AXp_5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_5d Chi topological/connectivity index (Mordred: AXp-5d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_6d"
+    function_name: "Xp_6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_6d Chi topological/connectivity index (Mordred: Xp-6d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_6d"
+    function_name: "AXp_6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_6d Chi topological/connectivity index (Mordred: AXp-6d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_7d"
+    function_name: "Xp_7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_7d Chi topological/connectivity index (Mordred: Xp-7d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_7d"
+    function_name: "AXp_7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_7d Chi topological/connectivity index (Mordred: AXp-7d)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_3dv"
+    function_name: "Xch_3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_3dv Chi topological/connectivity index (Mordred: Xch-3dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_4dv"
+    function_name: "Xch_4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_4dv Chi topological/connectivity index (Mordred: Xch-4dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_5dv"
+    function_name: "Xch_5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_5dv Chi topological/connectivity index (Mordred: Xch-5dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_6dv"
+    function_name: "Xch_6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_6dv Chi topological/connectivity index (Mordred: Xch-6dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xch_7dv"
+    function_name: "Xch_7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xch_7dv Chi topological/connectivity index (Mordred: Xch-7dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_3dv"
+    function_name: "Xc_3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_3dv Chi topological/connectivity index (Mordred: Xc-3dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_4dv"
+    function_name: "Xc_4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_4dv Chi topological/connectivity index (Mordred: Xc-4dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_5dv"
+    function_name: "Xc_5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_5dv Chi topological/connectivity index (Mordred: Xc-5dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xc_6dv"
+    function_name: "Xc_6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xc_6dv Chi topological/connectivity index (Mordred: Xc-6dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_4dv"
+    function_name: "Xpc_4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_4dv Chi topological/connectivity index (Mordred: Xpc-4dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_5dv"
+    function_name: "Xpc_5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_5dv Chi topological/connectivity index (Mordred: Xpc-5dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xpc_6dv"
+    function_name: "Xpc_6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xpc_6dv Chi topological/connectivity index (Mordred: Xpc-6dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_0dv"
+    function_name: "AXp_0dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_0dv Chi topological/connectivity index (Mordred: AXp-0dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_1dv"
+    function_name: "AXp_1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_1dv Chi topological/connectivity index (Mordred: AXp-1dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_2dv"
+    function_name: "AXp_2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_2dv Chi topological/connectivity index (Mordred: AXp-2dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_3dv"
+    function_name: "AXp_3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_3dv Chi topological/connectivity index (Mordred: AXp-3dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_4dv"
+    function_name: "AXp_4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_4dv Chi topological/connectivity index (Mordred: AXp-4dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_5dv"
+    function_name: "Xp_5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_5dv Chi topological/connectivity index (Mordred: Xp-5dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_5dv"
+    function_name: "AXp_5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_5dv Chi topological/connectivity index (Mordred: AXp-5dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_6dv"
+    function_name: "Xp_6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_6dv Chi topological/connectivity index (Mordred: Xp-6dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_6dv"
+    function_name: "AXp_6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_6dv Chi topological/connectivity index (Mordred: AXp-6dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "Xp_7dv"
+    function_name: "Xp_7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "Xp_7dv Chi topological/connectivity index (Mordred: Xp-7dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "AXp_7dv"
+    function_name: "AXp_7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "Chi"
+    description: "AXp_7dv Chi topological/connectivity index (Mordred: AXp-7dv)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI1"
+    function_name: "GGI1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI1 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI2"
+    function_name: "GGI2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI2 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI3"
+    function_name: "GGI3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI3 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI4"
+    function_name: "GGI4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI4 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI5"
+    function_name: "GGI5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI5 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI6"
+    function_name: "GGI6"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI6 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI7"
+    function_name: "GGI7"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI7 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI8"
+    function_name: "GGI8"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI8 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI9"
+    function_name: "GGI9"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI9 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "GGI10"
+    function_name: "GGI10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "GGI10 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI1"
+    function_name: "JGI1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI1 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI2"
+    function_name: "JGI2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI2 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI3"
+    function_name: "JGI3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI3 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI4"
+    function_name: "JGI4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI4 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI5"
+    function_name: "JGI5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI5 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI6"
+    function_name: "JGI6"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI6 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI7"
+    function_name: "JGI7"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI7 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI8"
+    function_name: "JGI8"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI8 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI9"
+    function_name: "JGI9"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI9 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGI10"
+    function_name: "JGI10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGI10 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "JGT10"
+    function_name: "JGT10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "TopologicalCharge"
+    description: "JGT10 TopologicalCharge topological/connectivity index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_11"
+    function_name: "MDEC_11"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_11 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-11)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_12"
+    function_name: "MDEC_12"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_12 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-12)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_13"
+    function_name: "MDEC_13"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_13 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-13)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_14"
+    function_name: "MDEC_14"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_14 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-14)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_22"
+    function_name: "MDEC_22"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_22 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-22)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_23"
+    function_name: "MDEC_23"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_23 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-23)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_24"
+    function_name: "MDEC_24"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_24 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-24)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_33"
+    function_name: "MDEC_33"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_33 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-33)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_34"
+    function_name: "MDEC_34"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_34 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-34)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEC_44"
+    function_name: "MDEC_44"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEC_44 MolecularDistanceEdge topological/connectivity index (Mordred: MDEC-44)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEO_11"
+    function_name: "MDEO_11"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEO_11 MolecularDistanceEdge topological/connectivity index (Mordred: MDEO-11)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEO_12"
+    function_name: "MDEO_12"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEO_12 MolecularDistanceEdge topological/connectivity index (Mordred: MDEO-12)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEO_22"
+    function_name: "MDEO_22"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEO_22 MolecularDistanceEdge topological/connectivity index (Mordred: MDEO-22)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_11"
+    function_name: "MDEN_11"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_11 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-11)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_12"
+    function_name: "MDEN_12"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_12 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-12)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_13"
+    function_name: "MDEN_13"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_13 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-13)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_22"
+    function_name: "MDEN_22"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_22 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-22)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_23"
+    function_name: "MDEN_23"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_23 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-23)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"
+  - name: "MDEN_33"
+    function_name: "MDEN_33"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularDistanceEdge"
+    description: "MDEN_33 MolecularDistanceEdge topological/connectivity index (Mordred: MDEN-33)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.6.0"

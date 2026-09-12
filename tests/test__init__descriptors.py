@@ -1023,7 +1023,7 @@ class TestContractRegistrySingletonHasListAll:
             pytest.fail(
                 "registry.list_all_descriptors() must return a sized collection (supports len())"
             )
-        # The project documents 1,530+ descriptors (~492 built-in + plugins)
+        # The project documents 1,630+ descriptors (~492 built-in + plugins)
         assert count >= 0, (
             "registry.list_all_descriptors() returned a collection with "
             "negative length — this should not happen"
