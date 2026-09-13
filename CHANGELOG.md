@@ -11,13 +11,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Molecular Descriptors — Pace 3: 107 topological/connectivity indices** shipped as the first-party `topological_connectivity` descriptor plugin (`plugins/descriptors/topological_connectivity/`), implemented `PLUGIN-NATIVE` from primary literature and validated against an oracle. Families: Wiener (`WPath`, `WPol`; Wiener 1947), Zagreb (`Zagreb1/2`, `mZagreb1/2`; Gutman & Trinajstić 1972), atom-bond connectivity (`ABC`, `ABCGG`; Estrada 1998, Graovac-Ghorbani 2016), eccentric connectivity (`ECIndex`; Sharma-Goswami-Madan 1997), topological shape (`Diameter`, `Radius`, `TopoShapeIndex`, `PetitjeanIndex`; Petitjean 1992), Schultz (`MTI`, `SchultzIndex`, `ModSchultzIndex`; Schultz 1989), Gálvez topological charge (`GGI1-10`, `JGI1-10`, `JGT10`; Gálvez et al. 1994), molecular distance edge (`MDEC/MDEO/MDEN`; Liu-Cai-Yao 1998), and the Kier-Hall Chi path/cluster/path-cluster/chain family (simple + valence; Kier & Hall 1976/1986). All are 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy), deterministic, and return `NaN` (never raise) on invalid input. The 104 Mordred-defined descriptors reproduce the `mordredcommunity` oracle **bit-exact** (`rtol <= 1e-4`); the 3 Schultz indices are gated against published reference values (benzene 132/54/54; propane 5/3) and the identity `MTI = Zagreb1 + 2·SchultzIndex`. Registered `name` equals `function_name` (a valid identifier, e.g. `Xp_0d`, `MDEC_11`; the canonical Mordred string `Xp-0d`/`MDEC-11` is preserved in each descriptor's description) — honouring the single-registration invariant so all 107 register exactly once with 0 bonus discoveries. Test module `tests/test_descriptor_topological_connectivity_unit.py` gates a frozen oracle snapshot (with a live `mordredcommunity` cross-check when installed), determinism, robustness, and contract (107 unique registrations). De-dup: the 5 valence-path low orders `Xp-0dv…Xp-4dv` are not shipped (identical to the existing `HAVE` RDKit `Chi0v…Chi4v`). The ~166 eigenvalue/matrix-spectra descriptors (Barysz/adjacency/distance/detour spectra, BCUT) are deferred to a dedicated pace.
+- **Molecular Descriptors — Pace 3: 107 topological/connectivity indices** shipped as the first-party
+  `topological_connectivity` descriptor plugin (`plugins/descriptors/topological_connectivity/`),
+  implemented `PLUGIN-NATIVE` from primary literature and auto-discovered with zero core-file edits.
+  Families:
+  - **Wiener** — `WPath`, `WPol` (Wiener 1947)
+  - **Zagreb** — `Zagreb1`, `Zagreb2`, `mZagreb1`, `mZagreb2` (Gutman & Trinajstić 1972)
+  - **Atom-bond connectivity** — `ABC`, `ABCGG` (Estrada 1998; Graovac-Ghorbani 2016)
+  - **Eccentric connectivity** — `ECIndex` (Sharma, Goswami & Madan 1997)
+  - **Topological shape** — `Diameter`, `Radius`, `TopoShapeIndex`, `PetitjeanIndex` (Petitjean 1992)
+  - **Schultz** — `MTI`, `SchultzIndex`, `ModSchultzIndex` (Schultz 1989)
+  - **Gálvez topological charge** — `GGI1-10`, `JGI1-10`, `JGT10` (Gálvez et al. 1994)
+  - **Molecular distance edge** — `MDEC`/`MDEO`/`MDEN` (Liu, Cai & Yao 1998)
+  - **Kier-Hall Chi** — path/cluster/path-cluster/chain, simple + valence (Kier & Hall 1976/1986)
+- **Validation.** The 104 Mordred-defined descriptors reproduce the `mordredcommunity` oracle **bit-exact**
+  (`rtol ≤ 1e-4`); the 3 Schultz indices are gated against published reference values (benzene 132/54/54;
+  propane 5/3) and the identity `MTI = Zagreb1 + 2·SchultzIndex`. Test module
+  `tests/test_descriptor_topological_connectivity_unit.py` gates a frozen oracle snapshot (with a live
+  `mordredcommunity` cross-check when installed), determinism, robustness, and contract (107 unique
+  registrations).
+- **Design.** All are 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy), deterministic, and return
+  `NaN` (never raise) on invalid input. Registered `name` equals `function_name` (valid identifiers, e.g.
+  `Xp_0d`, `MDEC_11`; the canonical Mordred string is preserved in each descriptor's `description`) —
+  honouring the single-registration invariant, so all 107 register exactly once with 0 bonus discoveries.
+- **Scope.** The 5 valence-path low orders `Xp-0dv…Xp-4dv` are de-duplicated (not shipped — identical to
+  the existing `HAVE` RDKit `Chi0v…Chi4v`). The ~166 eigenvalue/matrix-spectra descriptors
+  (Barysz/adjacency/distance/detour spectra, BCUT) are deferred to a dedicated later pace.
 
 ## [1.5.0] - 2026-09-11
 
 ### Added
 
-- **Molecular Descriptors — Pace 2: 20 constitutional-ext + property/physicochemical descriptors** shipped as the first-party `constitutional_property` descriptor plugin (`plugins/descriptors/constitutional_property/`), implemented `PLUGIN-NATIVE` from primary literature and validated against an oracle. Descriptors: McGowan characteristic volume (`VMcGowan`; Abraham & McGowan 1987), atom-and-bond vdW volume (`Vabc`; Zhao, Abraham & Zissimos 2003), atomic/bond polarizability (`apol`, `bpol`; Miller 1990), CarbonTypes (`C1SP1 C2SP1 C1SP2 C2SP2 C3SP2 C1SP3 C2SP3 C3SP3 C4SP3` + `HybRatio`; Todeschini & Consonni 2009, Yang et al. 2010), Bemis–Murcko framework ratio (`fMF`; Bemis & Murcko 1996), fragment complexity (`fragCpx`; Nilakantan et al. 2006), and the drug-likeness rule filters `Lipinski`, `GhoseFilter`, `VeberFilter`, `EganFilter` (Lipinski 2001; Ghose 1999; Veber 2002; Egan 2000). All are 2D (`requires_3d: false`), pure (RDKit + stdlib only), deterministic, and return `NaN` (never raise) on invalid input or an out-of-parameter element; boolean rule flags honour the scalar contract by returning `1.0`/`0.0`. The 18 Mordred-defined descriptors reproduce the `mordredcommunity` oracle to `rtol<=1e-4` (bit-identical on the validation panel); `VeberFilter`/`EganFilter` are gated against their published thresholds. Test module `tests/test_descriptor_constitutional_property_unit.py` gates a frozen oracle snapshot (with a live `mordredcommunity` cross-check when installed), determinism, robustness, and contract (20 unique registrations, `block`/`category`/`requires_3d` metadata). `FCSP3` is intentionally not shipped (numerically identical to the existing `HAVE` `FractionCSP3`, de-duplicated); MLFER/Abraham descriptors are deferred to the PaDEL/CDK-residual pace (no RDKit/mordred oracle).
+- **Molecular Descriptors — Pace 2: 20 constitutional-ext + property/physicochemical descriptors** shipped
+  as the first-party `constitutional_property` descriptor plugin
+  (`plugins/descriptors/constitutional_property/`), implemented `PLUGIN-NATIVE` from primary literature and
+  auto-discovered with zero core-file edits. Descriptors:
+  - **McGowan volume** — `VMcGowan` (Abraham & McGowan 1987)
+  - **vdW volume (atom-and-bond)** — `Vabc` (Zhao, Abraham & Zissimos 2003)
+  - **Polarizability** — `apol`, `bpol` (Miller 1990)
+  - **CarbonTypes** — `C1SP1 C2SP1 C1SP2 C2SP2 C3SP2 C1SP3 C2SP3 C3SP3 C4SP3` + `HybRatio`
+    (Todeschini & Consonni 2009; Yang et al. 2010)
+  - **Framework / complexity** — `fMF` (Bemis & Murcko 1996), `fragCpx` (Nilakantan et al. 2006)
+  - **Drug-likeness rule filters** — `Lipinski`, `GhoseFilter`, `VeberFilter`, `EganFilter`
+    (Lipinski 2001; Ghose 1999; Veber 2002; Egan 2000)
+- **Validation.** The 18 Mordred-defined descriptors reproduce the `mordredcommunity` oracle to
+  `rtol ≤ 1e-4` (bit-identical on the validation panel); `VeberFilter`/`EganFilter` are gated against their
+  published thresholds. Test module `tests/test_descriptor_constitutional_property_unit.py` gates a frozen
+  oracle snapshot (with a live `mordredcommunity` cross-check when installed), determinism, robustness, and
+  contract (20 unique registrations, `block`/`category`/`requires_3d` metadata).
+- **Design.** All are 2D (`requires_3d: false`), pure (RDKit + stdlib only), deterministic, and return
+  `NaN` (never raise) on invalid input or an out-of-parameter element; boolean rule flags honour the scalar
+  contract by returning `1.0`/`0.0`.
+- **Scope.** `FCSP3` is not shipped (numerically identical to the existing `HAVE` `FractionCSP3`,
+  de-duplicated); MLFER/Abraham descriptors are deferred to the PaDEL/CDK-residual pace (no RDKit/mordred
+  oracle).
 
 ## [1.4.0] - 2026-09-02
 
