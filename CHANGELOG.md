@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-09-13
+
+### Added
+
+- **Molecular Descriptors — Pace 4: 86 walk/path + information-content descriptors** shipped as the
+  first-party `walk_path_information` descriptor plugin (`plugins/descriptors/walk_path_information/`),
+  implemented `PLUGIN-NATIVE` from primary literature and auto-discovered with zero core-file edits.
+  Families:
+  - **WalkCount** — `MWC01-10`, `TMWC10`, `SRW02-10`, `TSRW10` (Rücker & Rücker 1993; Harary 1969)
+  - **PathCount** — `MPC2-10`, `TMPC10`, `piPC1-10`, `TpiPC10` (Randić 1979)
+  - **DetourIndex** — `DetourIndex` (Trinajstić, *Chemical Graph Theory*)
+  - **InformationContent** — `IC/TIC/SIC/BIC/CIC/MIC/ZMIC` × orders 0-5 (Bonchev & Trinajstić 1977; Basak 1999)
+  - **VertexAdjacencyInformation** — `VAdjMat` (Todeschini & Consonni, *Handbook*)
+- **Validation.** All 86 reproduce the `mordredcommunity` oracle **bit-exact** (`rtol ≤ 1e-4`). Test module
+  `tests/test_descriptor_walk_path_information_unit.py` gates a frozen oracle snapshot (with a live
+  `mordredcommunity` cross-check when installed), determinism, robustness, and contract (86 unique
+  registrations, per-family composition, boundary values).
+- **Design.** All 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy), deterministic, `NaN` on invalid
+  input (never raises); `name == function_name` (all valid identifiers → 0 bonus discoveries). WalkCount /
+  PathCount / DetourIndex / VAdjMat use the heavy-atom graph; InformationContent uses the H-included,
+  kekulized graph (the oracle's default). The detour index (longest-simple-path, NP-hard) has a DFS
+  step-budget that returns `NaN` for pathological fused-polycyclics rather than hanging.
+- **Scope.** `MWC03 = 2·Zagreb2` is a known affine correlation (distinct value, not a duplicate) — both
+  shipped. The 13 detour-matrix eigenvalue-spectra (`SpAbs_Dt`/`VE*_Dt`/`VR*_Dt`/`SM1_Dt`/`LogEE_Dt`) are
+  deferred to the eigenvalue/matrix-spectra pace (Pace 5).
+
 ## [1.6.0] - 2026-09-12
 
 ### Added
@@ -166,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/shahram-boshra/MILIA/compare/v1.3.0...v1.4.0

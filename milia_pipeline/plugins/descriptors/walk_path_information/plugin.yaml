@@ -1,0 +1,791 @@
+# plugins/descriptors/walk_path_information/plugin.yaml
+#
+# Walk/path + detour + information-content descriptors (descriptor programme, Pace 4 / v1.7.0).
+# 86 PLUGIN-NATIVE descriptors, validated bit-exact against mordredcommunity.
+
+plugin_name: "walk_path_information"
+version: "1.7.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Walk/path counts, detour index, information-content indices, and vertex-adjacency information: WalkCount (MWC/SRW), PathCount (MPC/piPC), DetourIndex, InformationContent (IC/TIC/SIC/BIC/CIC/MIC/ZMIC), VAdjMat."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.7.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "MWC01"
+    function_name: "MWC01"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC01 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC02"
+    function_name: "MWC02"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC02 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC03"
+    function_name: "MWC03"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC03 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC04"
+    function_name: "MWC04"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC04 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC05"
+    function_name: "MWC05"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC05 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC06"
+    function_name: "MWC06"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC06 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC07"
+    function_name: "MWC07"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC07 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC08"
+    function_name: "MWC08"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC08 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC09"
+    function_name: "MWC09"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC09 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MWC10"
+    function_name: "MWC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "MWC10 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TMWC10"
+    function_name: "TMWC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "TMWC10 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW02"
+    function_name: "SRW02"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW02 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW03"
+    function_name: "SRW03"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW03 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW04"
+    function_name: "SRW04"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW04 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW05"
+    function_name: "SRW05"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW05 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW06"
+    function_name: "SRW06"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW06 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW07"
+    function_name: "SRW07"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW07 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW08"
+    function_name: "SRW08"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW08 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW09"
+    function_name: "SRW09"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW09 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SRW10"
+    function_name: "SRW10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "SRW10 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TSRW10"
+    function_name: "TSRW10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "WalkCount"
+    description: "TSRW10 WalkCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC2"
+    function_name: "MPC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC2 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC3"
+    function_name: "MPC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC3 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC4"
+    function_name: "MPC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC4 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC5"
+    function_name: "MPC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC5 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC6"
+    function_name: "MPC6"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC6 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC7"
+    function_name: "MPC7"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC7 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC8"
+    function_name: "MPC8"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC8 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC9"
+    function_name: "MPC9"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC9 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MPC10"
+    function_name: "MPC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "MPC10 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TMPC10"
+    function_name: "TMPC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "TMPC10 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC1"
+    function_name: "piPC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC1 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC2"
+    function_name: "piPC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC2 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC3"
+    function_name: "piPC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC3 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC4"
+    function_name: "piPC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC4 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC5"
+    function_name: "piPC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC5 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC6"
+    function_name: "piPC6"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC6 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC7"
+    function_name: "piPC7"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC7 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC8"
+    function_name: "piPC8"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC8 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC9"
+    function_name: "piPC9"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC9 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "piPC10"
+    function_name: "piPC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "piPC10 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TpiPC10"
+    function_name: "TpiPC10"
+    module_path: "descriptors"
+    category: "topological"
+    block: "PathCount"
+    description: "TpiPC10 PathCount descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "DetourIndex"
+    function_name: "DetourIndex"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourIndex"
+    description: "DetourIndex DetourIndex descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "VAdjMat"
+    function_name: "VAdjMat"
+    module_path: "descriptors"
+    category: "topological"
+    block: "VertexAdjacencyInformation"
+    description: "VAdjMat VertexAdjacencyInformation descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC0"
+    function_name: "IC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC0"
+    function_name: "TIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC0"
+    function_name: "SIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC0"
+    function_name: "BIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC0"
+    function_name: "CIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC0"
+    function_name: "MIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC0"
+    function_name: "ZMIC0"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC0 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC1"
+    function_name: "IC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC1"
+    function_name: "TIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC1"
+    function_name: "SIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC1"
+    function_name: "BIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC1"
+    function_name: "CIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC1"
+    function_name: "MIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC1"
+    function_name: "ZMIC1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC1 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC2"
+    function_name: "IC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC2"
+    function_name: "TIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC2"
+    function_name: "SIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC2"
+    function_name: "BIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC2"
+    function_name: "CIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC2"
+    function_name: "MIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC2"
+    function_name: "ZMIC2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC2 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC3"
+    function_name: "IC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC3"
+    function_name: "TIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC3"
+    function_name: "SIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC3"
+    function_name: "BIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC3"
+    function_name: "CIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC3"
+    function_name: "MIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC3"
+    function_name: "ZMIC3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC3 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC4"
+    function_name: "IC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC4"
+    function_name: "TIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC4"
+    function_name: "SIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC4"
+    function_name: "BIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC4"
+    function_name: "CIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC4"
+    function_name: "MIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC4"
+    function_name: "ZMIC4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC4 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "IC5"
+    function_name: "IC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "IC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "TIC5"
+    function_name: "TIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "TIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "SIC5"
+    function_name: "SIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "SIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "BIC5"
+    function_name: "BIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "BIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "CIC5"
+    function_name: "CIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "CIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "MIC5"
+    function_name: "MIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "MIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
+  - name: "ZMIC5"
+    function_name: "ZMIC5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "InformationContent"
+    description: "ZMIC5 InformationContent descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.7.0"
