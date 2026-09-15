@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-09-14
+
+### Added
+
+- **Molecular Descriptors — Pace 5: 177 eigenvalue/matrix-spectral descriptors** shipped as the
+  first-party `matrix_spectral` descriptor plugin (`plugins/descriptors/matrix_spectral/`), implemented
+  `PLUGIN-NATIVE` from primary literature and auto-discovered with zero core-file edits. Families:
+  - **AdjacencyMatrix** — `SpAbs/SpMax/SpDiam/SpAD/SpMAD/LogEE/VE1-3/VR1-3` (12)
+  - **DistanceMatrix** — same spectra (12)
+  - **DetourMatrix** — + `SM1` (13; Trinajstić)
+  - **BaryszMatrix** — spectra × 8 atomic-property weightings `Z/m/v/se/pe/are/p/i` (104; Barysz et al. 1983)
+  - **BCUT** — Burden eigenvalues × 12 weightings × hi/lo (24; Pearlman & Smith 1999)
+  - **MolecularId** — `MID/AMID` × {any, hetero, C, N, O, X} (12; Randić 1984)
+- **Validation.** All 177 reproduce the `mordredcommunity` oracle to `rtol ≤ 1e-4` (in practice ≤ 6e-8).
+  Test module `tests/test_descriptor_matrix_spectral_unit.py` gates a frozen oracle snapshot (with a live
+  cross-check when installed), determinism, robustness (invalid / disconnected → `NaN`), contract (177
+  unique registrations, per-family composition, BCUT name-sanitization), de-dup guards, and SM1-trace
+  boundary identities.
+- **Design.** All 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy, no networkx), deterministic;
+  `require_connected` → `NaN` on disconnected graphs, never raises. `name == function_name`; the 24 BCUT
+  names are hyphen-sanitized to valid identifiers (canonical Mordred string in each description) → 0 bonus.
+- **Scope.** mordred BCUT is kept (different Burden convention than the HAVE RDKit `BCUT2D`, not a
+  duplicate); the scalar `DetourIndex` is not shipped here (it is in `walk_path_information`, Pace 4).
+
 ## [1.7.0] - 2026-09-13
 
 ### Added
@@ -192,7 +216,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.7.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/shahram-boshra/MILIA/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/shahram-boshra/MILIA/compare/v1.4.0...v1.5.0

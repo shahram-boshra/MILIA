@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.7.0"  # Descriptors Pace 4: +86 walk/path/information (walk_path_information)
+__version__ = "1.8.0"  # Descriptors Pace 5: +177 eigenvalue/matrix-spectral (matrix_spectral)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

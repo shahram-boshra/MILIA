@@ -1,0 +1,1610 @@
+# plugins/descriptors/matrix_spectral/plugin.yaml
+#
+# Eigenvalue / matrix-spectral descriptors (descriptor programme, Pace 5 / v1.8.0). 177 PLUGIN-NATIVE
+# descriptors, validated against mordredcommunity (rel-err <= 1e-4).
+
+plugin_name: "matrix_spectral"
+version: "1.8.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Eigenvalue/matrix-spectral descriptors: adjacency/distance/detour/Barysz matrix spectra (SpAbs/SpMax/SpDiam/SpAD/SpMAD/LogEE/SM1/VE1-3/VR1-3), Burden eigenvalues (BCUT), and Randic molecular ID (MID/AMID)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.8.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "SpAbs_A"
+    function_name: "SpAbs_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "SpAbs_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_A"
+    function_name: "SpMax_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "SpMax_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_A"
+    function_name: "SpDiam_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "SpDiam_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_A"
+    function_name: "SpAD_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "SpAD_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_A"
+    function_name: "SpMAD_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "SpMAD_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_A"
+    function_name: "LogEE_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "LogEE_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_A"
+    function_name: "VE1_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VE1_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_A"
+    function_name: "VE2_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VE2_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_A"
+    function_name: "VE3_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VE3_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_A"
+    function_name: "VR1_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VR1_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_A"
+    function_name: "VR2_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VR2_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_A"
+    function_name: "VR3_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "AdjacencyMatrix"
+    description: "VR3_A AdjacencyMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_D"
+    function_name: "SpAbs_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "SpAbs_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_D"
+    function_name: "SpMax_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "SpMax_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_D"
+    function_name: "SpDiam_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "SpDiam_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_D"
+    function_name: "SpAD_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "SpAD_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_D"
+    function_name: "SpMAD_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "SpMAD_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_D"
+    function_name: "LogEE_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "LogEE_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_D"
+    function_name: "VE1_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VE1_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_D"
+    function_name: "VE2_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VE2_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_D"
+    function_name: "VE3_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VE3_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_D"
+    function_name: "VR1_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VR1_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_D"
+    function_name: "VR2_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VR2_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_D"
+    function_name: "VR3_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DistanceMatrix"
+    description: "VR3_D DistanceMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dt"
+    function_name: "SpAbs_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SpAbs_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dt"
+    function_name: "SpMax_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SpMax_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dt"
+    function_name: "SpDiam_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SpDiam_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dt"
+    function_name: "SpAD_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SpAD_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dt"
+    function_name: "SpMAD_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SpMAD_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dt"
+    function_name: "LogEE_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "LogEE_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dt"
+    function_name: "SM1_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "SM1_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dt"
+    function_name: "VE1_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VE1_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dt"
+    function_name: "VE2_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VE2_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dt"
+    function_name: "VE3_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VE3_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dt"
+    function_name: "VR1_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VR1_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dt"
+    function_name: "VR2_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VR2_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dt"
+    function_name: "VR3_Dt"
+    module_path: "descriptors"
+    category: "topological"
+    block: "DetourMatrix"
+    description: "VR3_Dt DetourMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_DzZ"
+    function_name: "SpAbs_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_DzZ"
+    function_name: "SpMax_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_DzZ"
+    function_name: "SpDiam_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_DzZ"
+    function_name: "SpAD_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_DzZ"
+    function_name: "SpMAD_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_DzZ"
+    function_name: "LogEE_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_DzZ"
+    function_name: "SM1_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_DzZ"
+    function_name: "VE1_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_DzZ"
+    function_name: "VE2_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_DzZ"
+    function_name: "VE3_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_DzZ"
+    function_name: "VR1_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_DzZ"
+    function_name: "VR2_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_DzZ"
+    function_name: "VR3_DzZ"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_DzZ BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzm"
+    function_name: "SpAbs_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzm"
+    function_name: "SpMax_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzm"
+    function_name: "SpDiam_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzm"
+    function_name: "SpAD_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzm"
+    function_name: "SpMAD_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzm"
+    function_name: "LogEE_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzm"
+    function_name: "SM1_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzm"
+    function_name: "VE1_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzm"
+    function_name: "VE2_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzm"
+    function_name: "VE3_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzm"
+    function_name: "VR1_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzm"
+    function_name: "VR2_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzm"
+    function_name: "VR3_Dzm"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzm BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzv"
+    function_name: "SpAbs_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzv"
+    function_name: "SpMax_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzv"
+    function_name: "SpDiam_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzv"
+    function_name: "SpAD_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzv"
+    function_name: "SpMAD_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzv"
+    function_name: "LogEE_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzv"
+    function_name: "SM1_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzv"
+    function_name: "VE1_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzv"
+    function_name: "VE2_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzv"
+    function_name: "VE3_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzv"
+    function_name: "VR1_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzv"
+    function_name: "VR2_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzv"
+    function_name: "VR3_Dzv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzv BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzse"
+    function_name: "SpAbs_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzse"
+    function_name: "SpMax_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzse"
+    function_name: "SpDiam_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzse"
+    function_name: "SpAD_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzse"
+    function_name: "SpMAD_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzse"
+    function_name: "LogEE_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzse"
+    function_name: "SM1_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzse"
+    function_name: "VE1_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzse"
+    function_name: "VE2_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzse"
+    function_name: "VE3_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzse"
+    function_name: "VR1_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzse"
+    function_name: "VR2_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzse"
+    function_name: "VR3_Dzse"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzse BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzpe"
+    function_name: "SpAbs_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzpe"
+    function_name: "SpMax_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzpe"
+    function_name: "SpDiam_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzpe"
+    function_name: "SpAD_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzpe"
+    function_name: "SpMAD_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzpe"
+    function_name: "LogEE_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzpe"
+    function_name: "SM1_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzpe"
+    function_name: "VE1_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzpe"
+    function_name: "VE2_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzpe"
+    function_name: "VE3_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzpe"
+    function_name: "VR1_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzpe"
+    function_name: "VR2_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzpe"
+    function_name: "VR3_Dzpe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzpe BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzare"
+    function_name: "SpAbs_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzare"
+    function_name: "SpMax_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzare"
+    function_name: "SpDiam_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzare"
+    function_name: "SpAD_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzare"
+    function_name: "SpMAD_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzare"
+    function_name: "LogEE_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzare"
+    function_name: "SM1_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzare"
+    function_name: "VE1_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzare"
+    function_name: "VE2_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzare"
+    function_name: "VE3_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzare"
+    function_name: "VR1_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzare"
+    function_name: "VR2_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzare"
+    function_name: "VR3_Dzare"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzare BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzp"
+    function_name: "SpAbs_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzp"
+    function_name: "SpMax_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzp"
+    function_name: "SpDiam_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzp"
+    function_name: "SpAD_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzp"
+    function_name: "SpMAD_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzp"
+    function_name: "LogEE_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzp"
+    function_name: "SM1_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzp"
+    function_name: "VE1_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzp"
+    function_name: "VE2_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzp"
+    function_name: "VE3_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzp"
+    function_name: "VR1_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzp"
+    function_name: "VR2_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzp"
+    function_name: "VR3_Dzp"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzp BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAbs_Dzi"
+    function_name: "SpAbs_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAbs_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMax_Dzi"
+    function_name: "SpMax_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMax_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpDiam_Dzi"
+    function_name: "SpDiam_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpDiam_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpAD_Dzi"
+    function_name: "SpAD_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpAD_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SpMAD_Dzi"
+    function_name: "SpMAD_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SpMAD_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "LogEE_Dzi"
+    function_name: "LogEE_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "LogEE_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "SM1_Dzi"
+    function_name: "SM1_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "SM1_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE1_Dzi"
+    function_name: "VE1_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE1_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE2_Dzi"
+    function_name: "VE2_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE2_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VE3_Dzi"
+    function_name: "VE3_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VE3_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR1_Dzi"
+    function_name: "VR1_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR1_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR2_Dzi"
+    function_name: "VR2_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR2_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "VR3_Dzi"
+    function_name: "VR3_Dzi"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BaryszMatrix"
+    description: "VR3_Dzi BaryszMatrix eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTc_1h"
+    function_name: "BCUTc_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTc_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTc-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTc_1l"
+    function_name: "BCUTc_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTc_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTc-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTdv_1h"
+    function_name: "BCUTdv_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTdv_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTdv-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTdv_1l"
+    function_name: "BCUTdv_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTdv_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTdv-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTd_1h"
+    function_name: "BCUTd_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTd_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTd-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTd_1l"
+    function_name: "BCUTd_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTd_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTd-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTs_1h"
+    function_name: "BCUTs_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTs_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTs-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTs_1l"
+    function_name: "BCUTs_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTs_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTs-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTZ_1h"
+    function_name: "BCUTZ_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTZ_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTZ-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTZ_1l"
+    function_name: "BCUTZ_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTZ_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTZ-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTm_1h"
+    function_name: "BCUTm_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTm_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTm-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTm_1l"
+    function_name: "BCUTm_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTm_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTm-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTv_1h"
+    function_name: "BCUTv_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTv_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTv-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTv_1l"
+    function_name: "BCUTv_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTv_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTv-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTse_1h"
+    function_name: "BCUTse_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTse_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTse-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTse_1l"
+    function_name: "BCUTse_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTse_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTse-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTpe_1h"
+    function_name: "BCUTpe_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTpe_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTpe-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTpe_1l"
+    function_name: "BCUTpe_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTpe_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTpe-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTare_1h"
+    function_name: "BCUTare_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTare_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTare-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTare_1l"
+    function_name: "BCUTare_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTare_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTare-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTp_1h"
+    function_name: "BCUTp_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTp_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTp-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTp_1l"
+    function_name: "BCUTp_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTp_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTp-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTi_1h"
+    function_name: "BCUTi_1h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTi_1h BCUT eigenvalue/spectral descriptor (Mordred: BCUTi-1h)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "BCUTi_1l"
+    function_name: "BCUTi_1l"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BCUT"
+    description: "BCUTi_1l BCUT eigenvalue/spectral descriptor (Mordred: BCUTi-1l)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID"
+    function_name: "MID"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID"
+    function_name: "AMID"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID_h"
+    function_name: "MID_h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID_h MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID_h"
+    function_name: "AMID_h"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID_h MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID_C"
+    function_name: "MID_C"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID_C MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID_C"
+    function_name: "AMID_C"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID_C MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID_N"
+    function_name: "MID_N"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID_N MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID_N"
+    function_name: "AMID_N"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID_N MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID_O"
+    function_name: "MID_O"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID_O MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID_O"
+    function_name: "AMID_O"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID_O MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "MID_X"
+    function_name: "MID_X"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "MID_X MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
+  - name: "AMID_X"
+    function_name: "AMID_X"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MolecularId"
+    description: "AMID_X MolecularId eigenvalue/spectral descriptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.8.0"
