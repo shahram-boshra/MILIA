@@ -1,0 +1,57 @@
+# =============================================================================
+# MILIA — Archive to Software Heritage on release
+# =============================================================================
+# Triggered when a GitHub Release is published (which also fires on version
+# tag push via the Release workflow). Sends a Save Code Now POST request to
+# the Software Heritage API for the repository's Git origin URL.
+#
+# Source evidence:
+#   - SWH Save Code Now API: https://archive.softwareheritage.org/api/1/origin/save/git/url/
+#   - SWH API docs: https://docs.softwareheritage.org/devel/getting-started/api.html
+#   - Production-grade pattern (timeout bounds per CodeRabbit review Sep 2026):
+#     https://github.com/hermes-labs-ai/agent-trash-guard/pull/8
+#
+# No secrets required for public repos (anonymous POST is accepted).
+# Adding SWH_TOKEN as a repository secret raises the anonymous rate limit.
+#
+# Why this workflow: the manual "Save Code Now" queue is shared and can stall
+# (v1.6.0-v1.8.0 stuck for days — SWH confirmed a scheduler bug). This Action
+# fires an independent per-release request that is decoupled from any prior
+# stuck visit, eliminating the manual step for all future paces.
+# =============================================================================
+
+name: Archive to Software Heritage
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  archive:
+    name: Save Code Now
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Request Software Heritage archival
+        env:
+          SWH_TOKEN: ${{ secrets.SWH_TOKEN }}
+        run: |
+          ORIGIN_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+          API_URL="https://archive.softwareheritage.org/api/1/origin/save/git/url/${ORIGIN_URL}/"
+
+          if [ -n "${SWH_TOKEN}" ]; then
+            AUTH_HEADER="Authorization: Bearer ${SWH_TOKEN}"
+          else
+            AUTH_HEADER=""
+          fi
+
+          echo "Requesting SWH Save Code Now for: ${ORIGIN_URL}"
+          curl --fail --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 60 \
+            --request POST \
+            ${AUTH_HEADER:+--header "${AUTH_HEADER}"} \
+            "${API_URL}"
+          echo "Save Code Now request submitted."
