@@ -9,12 +9,13 @@ plugin support, and PyTorch Geometric integration.
 This module provides a complete framework for computing and managing molecular
 descriptors for the milia pipeline, including:
 
-- 1,900+ molecular descriptors: ~492 built-in RDKit descriptors across 6 categories,
+- 2,500+ molecular descriptors: ~492 built-in RDKit descriptors across 6 categories,
   extensible via descriptor plugins (e.g. addcore_3d adds 1,019 ADD-CORE RDKit 3D descriptors,
   constitutional_property adds 20 constitutional-ext + property/physicochemical descriptors,
   topological_connectivity adds 107 topological/connectivity indices,
   walk_path_information adds 86 walk/path + information-content descriptors,
-  matrix_spectral adds 177 eigenvalue/matrix-spectral descriptors)
+  matrix_spectral adds 177 eigenvalue/matrix-spectral descriptors,
+  autocorrelation_2d adds 606 2D topological autocorrelation descriptors)
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

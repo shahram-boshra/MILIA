@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.8.0"  # Descriptors Pace 5: +177 eigenvalue/matrix-spectral (matrix_spectral)
+__version__ = "1.9.0"  # Descriptors Pace 6: +606 2D autocorrelations (autocorrelation_2d)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

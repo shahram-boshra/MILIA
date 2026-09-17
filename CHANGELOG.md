@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-09-16
+
+### Added
+
+- **Molecular Descriptors — Pace 6: 606 2D topological autocorrelation descriptors** shipped as the
+  first-party `autocorrelation_2d` descriptor plugin (`plugins/descriptors/autocorrelation_2d/`),
+  implemented `PLUGIN-NATIVE` from primary literature and auto-discovered with zero core-file edits.
+  Families (all H-included graph, `explicit_hydrogens=True`):
+  - **ATS** — Moreau-Broto autocorrelation w^T B_k w (Moreau & Broto 1980), 11 props × lags 0-8 (99)
+  - **AATS** — Averaged Moreau-Broto ATS_k / Δ_k, 11 props × lags 0-8 (99)
+  - **ATSC** — Centred Moreau-Broto, 12 props × lags 0-8 (108; Todeschini 2009)
+  - **AATSC** — Averaged + centred Moreau-Broto, 12 props × lags 0-8 (108)
+  - **MATS** — Moran coefficient N·AATSC_k/var(w_c), 12 props × lags 1-8 (96; Moran 1950)
+  - **GATS** — Geary coefficient, 12 props × lags 1-8 (96; Geary 1954)
+- **Validation.** All 606 reproduce the `mordredcommunity` oracle at `rtol ≤ 1e-4` (actual ≤ 6e-7).
+  Test module `tests/test_descriptor_autocorrelation_2d_unit.py` gates a frozen oracle snapshot (with
+  a live `mordredcommunity` cross-check when installed), determinism, robustness, contract (606
+  registrations, family composition), and assertive guards (AATS0 denominator regression, MATS/GATS
+  lag=0 engine guard, zero HAVE/addcore_3d name collision).
+- **Design.** All 2D (`requires_3d: false`), pure (RDKit + stdlib + numpy), deterministic, `NaN` on
+  failure. `name == function_name` (all valid Python identifiers, 0 bonus discoveries). Single
+  `_autocorr(mol, kind, lag, short)` engine shared across all 6 families.
+- **Scope.** Zero de-dup required: mordred 2D autocorrelations (named `ATS*/MATS*/GATS*`) are
+  entirely distinct from `addcore_3d`'s `AUTOCORR3D_*` (3D, conformer-based) and RDKit's
+  `AUTOCORR2D_*` (different weighting). **AATS0 normalization bug** (Δ_0 = n_atoms, not ½n)
+  was caught during the build and is regression-guarded in the test suite.
+
 ## [1.8.0] - 2026-09-15
 
 ### Added
@@ -216,7 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.8.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/shahram-boshra/MILIA/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/shahram-boshra/MILIA/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/shahram-boshra/MILIA/compare/v1.5.0...v1.6.0

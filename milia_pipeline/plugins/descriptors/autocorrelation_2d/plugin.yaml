@@ -1,0 +1,5471 @@
+# plugins/descriptors/autocorrelation_2d/plugin.yaml
+#
+# 2D topological autocorrelation descriptors (descriptor programme, Pace 6 / v1.9.0).
+# 606 PLUGIN-NATIVE descriptors, validated bit-exact against mordredcommunity.
+
+plugin_name: "autocorrelation_2d"
+version: "1.9.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "2D autocorrelation descriptors: Moreau-Broto (ATS/AATS), centred Moreau-Broto (ATSC/AATSC), Moran (MATS), and Geary (GATS) over 11-12 atomic-property weightings and lags 0-8 or 1-8."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.9.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "ATS0dv"
+    function_name: "ATS0dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1dv"
+    function_name: "ATS1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2dv"
+    function_name: "ATS2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3dv"
+    function_name: "ATS3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4dv"
+    function_name: "ATS4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5dv"
+    function_name: "ATS5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6dv"
+    function_name: "ATS6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7dv"
+    function_name: "ATS7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8dv"
+    function_name: "ATS8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0d"
+    function_name: "ATS0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1d"
+    function_name: "ATS1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2d"
+    function_name: "ATS2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3d"
+    function_name: "ATS3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4d"
+    function_name: "ATS4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5d"
+    function_name: "ATS5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6d"
+    function_name: "ATS6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7d"
+    function_name: "ATS7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8d"
+    function_name: "ATS8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0s"
+    function_name: "ATS0s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1s"
+    function_name: "ATS1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2s"
+    function_name: "ATS2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3s"
+    function_name: "ATS3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4s"
+    function_name: "ATS4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5s"
+    function_name: "ATS5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6s"
+    function_name: "ATS6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7s"
+    function_name: "ATS7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8s"
+    function_name: "ATS8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0Z"
+    function_name: "ATS0Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1Z"
+    function_name: "ATS1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2Z"
+    function_name: "ATS2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3Z"
+    function_name: "ATS3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4Z"
+    function_name: "ATS4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5Z"
+    function_name: "ATS5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6Z"
+    function_name: "ATS6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7Z"
+    function_name: "ATS7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8Z"
+    function_name: "ATS8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0m"
+    function_name: "ATS0m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1m"
+    function_name: "ATS1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2m"
+    function_name: "ATS2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3m"
+    function_name: "ATS3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4m"
+    function_name: "ATS4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5m"
+    function_name: "ATS5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6m"
+    function_name: "ATS6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7m"
+    function_name: "ATS7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8m"
+    function_name: "ATS8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0v"
+    function_name: "ATS0v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1v"
+    function_name: "ATS1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2v"
+    function_name: "ATS2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3v"
+    function_name: "ATS3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4v"
+    function_name: "ATS4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5v"
+    function_name: "ATS5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6v"
+    function_name: "ATS6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7v"
+    function_name: "ATS7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8v"
+    function_name: "ATS8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0se"
+    function_name: "ATS0se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1se"
+    function_name: "ATS1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2se"
+    function_name: "ATS2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3se"
+    function_name: "ATS3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4se"
+    function_name: "ATS4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5se"
+    function_name: "ATS5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6se"
+    function_name: "ATS6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7se"
+    function_name: "ATS7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8se"
+    function_name: "ATS8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0pe"
+    function_name: "ATS0pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1pe"
+    function_name: "ATS1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2pe"
+    function_name: "ATS2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3pe"
+    function_name: "ATS3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4pe"
+    function_name: "ATS4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5pe"
+    function_name: "ATS5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6pe"
+    function_name: "ATS6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7pe"
+    function_name: "ATS7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8pe"
+    function_name: "ATS8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0are"
+    function_name: "ATS0are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1are"
+    function_name: "ATS1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2are"
+    function_name: "ATS2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3are"
+    function_name: "ATS3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4are"
+    function_name: "ATS4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5are"
+    function_name: "ATS5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6are"
+    function_name: "ATS6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7are"
+    function_name: "ATS7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8are"
+    function_name: "ATS8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0p"
+    function_name: "ATS0p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1p"
+    function_name: "ATS1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2p"
+    function_name: "ATS2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3p"
+    function_name: "ATS3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4p"
+    function_name: "ATS4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5p"
+    function_name: "ATS5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6p"
+    function_name: "ATS6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7p"
+    function_name: "ATS7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8p"
+    function_name: "ATS8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS0i"
+    function_name: "ATS0i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 0 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS1i"
+    function_name: "ATS1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS2i"
+    function_name: "ATS2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS3i"
+    function_name: "ATS3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS4i"
+    function_name: "ATS4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS5i"
+    function_name: "ATS5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS6i"
+    function_name: "ATS6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS7i"
+    function_name: "ATS7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATS8i"
+    function_name: "ATS8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATS autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0dv"
+    function_name: "AATS0dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1dv"
+    function_name: "AATS1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2dv"
+    function_name: "AATS2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3dv"
+    function_name: "AATS3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4dv"
+    function_name: "AATS4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5dv"
+    function_name: "AATS5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6dv"
+    function_name: "AATS6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7dv"
+    function_name: "AATS7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8dv"
+    function_name: "AATS8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0d"
+    function_name: "AATS0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1d"
+    function_name: "AATS1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2d"
+    function_name: "AATS2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3d"
+    function_name: "AATS3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4d"
+    function_name: "AATS4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5d"
+    function_name: "AATS5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6d"
+    function_name: "AATS6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7d"
+    function_name: "AATS7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8d"
+    function_name: "AATS8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0s"
+    function_name: "AATS0s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1s"
+    function_name: "AATS1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2s"
+    function_name: "AATS2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3s"
+    function_name: "AATS3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4s"
+    function_name: "AATS4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5s"
+    function_name: "AATS5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6s"
+    function_name: "AATS6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7s"
+    function_name: "AATS7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8s"
+    function_name: "AATS8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0Z"
+    function_name: "AATS0Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1Z"
+    function_name: "AATS1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2Z"
+    function_name: "AATS2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3Z"
+    function_name: "AATS3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4Z"
+    function_name: "AATS4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5Z"
+    function_name: "AATS5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6Z"
+    function_name: "AATS6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7Z"
+    function_name: "AATS7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8Z"
+    function_name: "AATS8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0m"
+    function_name: "AATS0m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1m"
+    function_name: "AATS1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2m"
+    function_name: "AATS2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3m"
+    function_name: "AATS3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4m"
+    function_name: "AATS4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5m"
+    function_name: "AATS5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6m"
+    function_name: "AATS6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7m"
+    function_name: "AATS7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8m"
+    function_name: "AATS8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0v"
+    function_name: "AATS0v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1v"
+    function_name: "AATS1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2v"
+    function_name: "AATS2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3v"
+    function_name: "AATS3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4v"
+    function_name: "AATS4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5v"
+    function_name: "AATS5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6v"
+    function_name: "AATS6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7v"
+    function_name: "AATS7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8v"
+    function_name: "AATS8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0se"
+    function_name: "AATS0se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1se"
+    function_name: "AATS1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2se"
+    function_name: "AATS2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3se"
+    function_name: "AATS3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4se"
+    function_name: "AATS4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5se"
+    function_name: "AATS5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6se"
+    function_name: "AATS6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7se"
+    function_name: "AATS7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8se"
+    function_name: "AATS8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0pe"
+    function_name: "AATS0pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1pe"
+    function_name: "AATS1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2pe"
+    function_name: "AATS2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3pe"
+    function_name: "AATS3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4pe"
+    function_name: "AATS4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5pe"
+    function_name: "AATS5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6pe"
+    function_name: "AATS6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7pe"
+    function_name: "AATS7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8pe"
+    function_name: "AATS8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0are"
+    function_name: "AATS0are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1are"
+    function_name: "AATS1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2are"
+    function_name: "AATS2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3are"
+    function_name: "AATS3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4are"
+    function_name: "AATS4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5are"
+    function_name: "AATS5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6are"
+    function_name: "AATS6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7are"
+    function_name: "AATS7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8are"
+    function_name: "AATS8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0p"
+    function_name: "AATS0p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1p"
+    function_name: "AATS1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2p"
+    function_name: "AATS2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3p"
+    function_name: "AATS3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4p"
+    function_name: "AATS4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5p"
+    function_name: "AATS5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6p"
+    function_name: "AATS6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7p"
+    function_name: "AATS7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8p"
+    function_name: "AATS8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS0i"
+    function_name: "AATS0i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 0 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS1i"
+    function_name: "AATS1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS2i"
+    function_name: "AATS2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS3i"
+    function_name: "AATS3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS4i"
+    function_name: "AATS4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS5i"
+    function_name: "AATS5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS6i"
+    function_name: "AATS6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS7i"
+    function_name: "AATS7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATS8i"
+    function_name: "AATS8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATS autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0c"
+    function_name: "ATSC0c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1c"
+    function_name: "ATSC1c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2c"
+    function_name: "ATSC2c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3c"
+    function_name: "ATSC3c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4c"
+    function_name: "ATSC4c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5c"
+    function_name: "ATSC5c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6c"
+    function_name: "ATSC6c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7c"
+    function_name: "ATSC7c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8c"
+    function_name: "ATSC8c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0dv"
+    function_name: "ATSC0dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1dv"
+    function_name: "ATSC1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2dv"
+    function_name: "ATSC2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3dv"
+    function_name: "ATSC3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4dv"
+    function_name: "ATSC4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5dv"
+    function_name: "ATSC5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6dv"
+    function_name: "ATSC6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7dv"
+    function_name: "ATSC7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8dv"
+    function_name: "ATSC8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0d"
+    function_name: "ATSC0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1d"
+    function_name: "ATSC1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2d"
+    function_name: "ATSC2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3d"
+    function_name: "ATSC3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4d"
+    function_name: "ATSC4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5d"
+    function_name: "ATSC5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6d"
+    function_name: "ATSC6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7d"
+    function_name: "ATSC7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8d"
+    function_name: "ATSC8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0s"
+    function_name: "ATSC0s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1s"
+    function_name: "ATSC1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2s"
+    function_name: "ATSC2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3s"
+    function_name: "ATSC3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4s"
+    function_name: "ATSC4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5s"
+    function_name: "ATSC5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6s"
+    function_name: "ATSC6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7s"
+    function_name: "ATSC7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8s"
+    function_name: "ATSC8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0Z"
+    function_name: "ATSC0Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1Z"
+    function_name: "ATSC1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2Z"
+    function_name: "ATSC2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3Z"
+    function_name: "ATSC3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4Z"
+    function_name: "ATSC4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5Z"
+    function_name: "ATSC5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6Z"
+    function_name: "ATSC6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7Z"
+    function_name: "ATSC7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8Z"
+    function_name: "ATSC8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0m"
+    function_name: "ATSC0m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1m"
+    function_name: "ATSC1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2m"
+    function_name: "ATSC2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3m"
+    function_name: "ATSC3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4m"
+    function_name: "ATSC4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5m"
+    function_name: "ATSC5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6m"
+    function_name: "ATSC6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7m"
+    function_name: "ATSC7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8m"
+    function_name: "ATSC8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0v"
+    function_name: "ATSC0v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1v"
+    function_name: "ATSC1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2v"
+    function_name: "ATSC2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3v"
+    function_name: "ATSC3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4v"
+    function_name: "ATSC4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5v"
+    function_name: "ATSC5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6v"
+    function_name: "ATSC6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7v"
+    function_name: "ATSC7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8v"
+    function_name: "ATSC8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0se"
+    function_name: "ATSC0se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1se"
+    function_name: "ATSC1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2se"
+    function_name: "ATSC2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3se"
+    function_name: "ATSC3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4se"
+    function_name: "ATSC4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5se"
+    function_name: "ATSC5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6se"
+    function_name: "ATSC6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7se"
+    function_name: "ATSC7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8se"
+    function_name: "ATSC8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0pe"
+    function_name: "ATSC0pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1pe"
+    function_name: "ATSC1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2pe"
+    function_name: "ATSC2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3pe"
+    function_name: "ATSC3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4pe"
+    function_name: "ATSC4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5pe"
+    function_name: "ATSC5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6pe"
+    function_name: "ATSC6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7pe"
+    function_name: "ATSC7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8pe"
+    function_name: "ATSC8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0are"
+    function_name: "ATSC0are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1are"
+    function_name: "ATSC1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2are"
+    function_name: "ATSC2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3are"
+    function_name: "ATSC3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4are"
+    function_name: "ATSC4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5are"
+    function_name: "ATSC5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6are"
+    function_name: "ATSC6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7are"
+    function_name: "ATSC7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8are"
+    function_name: "ATSC8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0p"
+    function_name: "ATSC0p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1p"
+    function_name: "ATSC1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2p"
+    function_name: "ATSC2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3p"
+    function_name: "ATSC3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4p"
+    function_name: "ATSC4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5p"
+    function_name: "ATSC5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6p"
+    function_name: "ATSC6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7p"
+    function_name: "ATSC7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8p"
+    function_name: "ATSC8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC0i"
+    function_name: "ATSC0i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 0 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC1i"
+    function_name: "ATSC1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC2i"
+    function_name: "ATSC2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC3i"
+    function_name: "ATSC3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC4i"
+    function_name: "ATSC4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC5i"
+    function_name: "ATSC5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC6i"
+    function_name: "ATSC6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC7i"
+    function_name: "ATSC7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "ATSC8i"
+    function_name: "ATSC8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "ATSC autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0c"
+    function_name: "AATSC0c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1c"
+    function_name: "AATSC1c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2c"
+    function_name: "AATSC2c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3c"
+    function_name: "AATSC3c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4c"
+    function_name: "AATSC4c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5c"
+    function_name: "AATSC5c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6c"
+    function_name: "AATSC6c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7c"
+    function_name: "AATSC7c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8c"
+    function_name: "AATSC8c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0dv"
+    function_name: "AATSC0dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1dv"
+    function_name: "AATSC1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2dv"
+    function_name: "AATSC2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3dv"
+    function_name: "AATSC3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4dv"
+    function_name: "AATSC4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5dv"
+    function_name: "AATSC5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6dv"
+    function_name: "AATSC6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7dv"
+    function_name: "AATSC7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8dv"
+    function_name: "AATSC8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0d"
+    function_name: "AATSC0d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1d"
+    function_name: "AATSC1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2d"
+    function_name: "AATSC2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3d"
+    function_name: "AATSC3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4d"
+    function_name: "AATSC4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5d"
+    function_name: "AATSC5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6d"
+    function_name: "AATSC6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7d"
+    function_name: "AATSC7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8d"
+    function_name: "AATSC8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0s"
+    function_name: "AATSC0s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1s"
+    function_name: "AATSC1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2s"
+    function_name: "AATSC2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3s"
+    function_name: "AATSC3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4s"
+    function_name: "AATSC4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5s"
+    function_name: "AATSC5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6s"
+    function_name: "AATSC6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7s"
+    function_name: "AATSC7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8s"
+    function_name: "AATSC8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0Z"
+    function_name: "AATSC0Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1Z"
+    function_name: "AATSC1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2Z"
+    function_name: "AATSC2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3Z"
+    function_name: "AATSC3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4Z"
+    function_name: "AATSC4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5Z"
+    function_name: "AATSC5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6Z"
+    function_name: "AATSC6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7Z"
+    function_name: "AATSC7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8Z"
+    function_name: "AATSC8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0m"
+    function_name: "AATSC0m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1m"
+    function_name: "AATSC1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2m"
+    function_name: "AATSC2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3m"
+    function_name: "AATSC3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4m"
+    function_name: "AATSC4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5m"
+    function_name: "AATSC5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6m"
+    function_name: "AATSC6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7m"
+    function_name: "AATSC7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8m"
+    function_name: "AATSC8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0v"
+    function_name: "AATSC0v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1v"
+    function_name: "AATSC1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2v"
+    function_name: "AATSC2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3v"
+    function_name: "AATSC3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4v"
+    function_name: "AATSC4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5v"
+    function_name: "AATSC5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6v"
+    function_name: "AATSC6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7v"
+    function_name: "AATSC7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8v"
+    function_name: "AATSC8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0se"
+    function_name: "AATSC0se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1se"
+    function_name: "AATSC1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2se"
+    function_name: "AATSC2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3se"
+    function_name: "AATSC3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4se"
+    function_name: "AATSC4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5se"
+    function_name: "AATSC5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6se"
+    function_name: "AATSC6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7se"
+    function_name: "AATSC7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8se"
+    function_name: "AATSC8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0pe"
+    function_name: "AATSC0pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1pe"
+    function_name: "AATSC1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2pe"
+    function_name: "AATSC2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3pe"
+    function_name: "AATSC3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4pe"
+    function_name: "AATSC4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5pe"
+    function_name: "AATSC5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6pe"
+    function_name: "AATSC6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7pe"
+    function_name: "AATSC7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8pe"
+    function_name: "AATSC8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0are"
+    function_name: "AATSC0are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1are"
+    function_name: "AATSC1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2are"
+    function_name: "AATSC2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3are"
+    function_name: "AATSC3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4are"
+    function_name: "AATSC4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5are"
+    function_name: "AATSC5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6are"
+    function_name: "AATSC6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7are"
+    function_name: "AATSC7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8are"
+    function_name: "AATSC8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0p"
+    function_name: "AATSC0p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1p"
+    function_name: "AATSC1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2p"
+    function_name: "AATSC2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3p"
+    function_name: "AATSC3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4p"
+    function_name: "AATSC4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5p"
+    function_name: "AATSC5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6p"
+    function_name: "AATSC6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7p"
+    function_name: "AATSC7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8p"
+    function_name: "AATSC8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC0i"
+    function_name: "AATSC0i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 0 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC1i"
+    function_name: "AATSC1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC2i"
+    function_name: "AATSC2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC3i"
+    function_name: "AATSC3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC4i"
+    function_name: "AATSC4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC5i"
+    function_name: "AATSC5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC6i"
+    function_name: "AATSC6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC7i"
+    function_name: "AATSC7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "AATSC8i"
+    function_name: "AATSC8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "BrotoMoreau"
+    description: "AATSC autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1c"
+    function_name: "MATS1c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2c"
+    function_name: "MATS2c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3c"
+    function_name: "MATS3c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4c"
+    function_name: "MATS4c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5c"
+    function_name: "MATS5c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6c"
+    function_name: "MATS6c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7c"
+    function_name: "MATS7c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8c"
+    function_name: "MATS8c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1dv"
+    function_name: "MATS1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2dv"
+    function_name: "MATS2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3dv"
+    function_name: "MATS3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4dv"
+    function_name: "MATS4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5dv"
+    function_name: "MATS5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6dv"
+    function_name: "MATS6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7dv"
+    function_name: "MATS7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8dv"
+    function_name: "MATS8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1d"
+    function_name: "MATS1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2d"
+    function_name: "MATS2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3d"
+    function_name: "MATS3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4d"
+    function_name: "MATS4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5d"
+    function_name: "MATS5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6d"
+    function_name: "MATS6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7d"
+    function_name: "MATS7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8d"
+    function_name: "MATS8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1s"
+    function_name: "MATS1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2s"
+    function_name: "MATS2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3s"
+    function_name: "MATS3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4s"
+    function_name: "MATS4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5s"
+    function_name: "MATS5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6s"
+    function_name: "MATS6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7s"
+    function_name: "MATS7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8s"
+    function_name: "MATS8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1Z"
+    function_name: "MATS1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2Z"
+    function_name: "MATS2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3Z"
+    function_name: "MATS3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4Z"
+    function_name: "MATS4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5Z"
+    function_name: "MATS5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6Z"
+    function_name: "MATS6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7Z"
+    function_name: "MATS7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8Z"
+    function_name: "MATS8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1m"
+    function_name: "MATS1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2m"
+    function_name: "MATS2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3m"
+    function_name: "MATS3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4m"
+    function_name: "MATS4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5m"
+    function_name: "MATS5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6m"
+    function_name: "MATS6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7m"
+    function_name: "MATS7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8m"
+    function_name: "MATS8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1v"
+    function_name: "MATS1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2v"
+    function_name: "MATS2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3v"
+    function_name: "MATS3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4v"
+    function_name: "MATS4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5v"
+    function_name: "MATS5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6v"
+    function_name: "MATS6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7v"
+    function_name: "MATS7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8v"
+    function_name: "MATS8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1se"
+    function_name: "MATS1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2se"
+    function_name: "MATS2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3se"
+    function_name: "MATS3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4se"
+    function_name: "MATS4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5se"
+    function_name: "MATS5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6se"
+    function_name: "MATS6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7se"
+    function_name: "MATS7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8se"
+    function_name: "MATS8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1pe"
+    function_name: "MATS1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2pe"
+    function_name: "MATS2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3pe"
+    function_name: "MATS3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4pe"
+    function_name: "MATS4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5pe"
+    function_name: "MATS5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6pe"
+    function_name: "MATS6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7pe"
+    function_name: "MATS7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8pe"
+    function_name: "MATS8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1are"
+    function_name: "MATS1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2are"
+    function_name: "MATS2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3are"
+    function_name: "MATS3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4are"
+    function_name: "MATS4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5are"
+    function_name: "MATS5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6are"
+    function_name: "MATS6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7are"
+    function_name: "MATS7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8are"
+    function_name: "MATS8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1p"
+    function_name: "MATS1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2p"
+    function_name: "MATS2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3p"
+    function_name: "MATS3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4p"
+    function_name: "MATS4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5p"
+    function_name: "MATS5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6p"
+    function_name: "MATS6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7p"
+    function_name: "MATS7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8p"
+    function_name: "MATS8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS1i"
+    function_name: "MATS1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS2i"
+    function_name: "MATS2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS3i"
+    function_name: "MATS3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS4i"
+    function_name: "MATS4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS5i"
+    function_name: "MATS5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS6i"
+    function_name: "MATS6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS7i"
+    function_name: "MATS7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "MATS8i"
+    function_name: "MATS8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "MATS autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1c"
+    function_name: "GATS1c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2c"
+    function_name: "GATS2c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3c"
+    function_name: "GATS3c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4c"
+    function_name: "GATS4c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5c"
+    function_name: "GATS5c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6c"
+    function_name: "GATS6c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7c"
+    function_name: "GATS7c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8c"
+    function_name: "GATS8c"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property c"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1dv"
+    function_name: "GATS1dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2dv"
+    function_name: "GATS2dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3dv"
+    function_name: "GATS3dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4dv"
+    function_name: "GATS4dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5dv"
+    function_name: "GATS5dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6dv"
+    function_name: "GATS6dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7dv"
+    function_name: "GATS7dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8dv"
+    function_name: "GATS8dv"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property dv"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1d"
+    function_name: "GATS1d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2d"
+    function_name: "GATS2d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3d"
+    function_name: "GATS3d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4d"
+    function_name: "GATS4d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5d"
+    function_name: "GATS5d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6d"
+    function_name: "GATS6d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7d"
+    function_name: "GATS7d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8d"
+    function_name: "GATS8d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property d"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1s"
+    function_name: "GATS1s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2s"
+    function_name: "GATS2s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3s"
+    function_name: "GATS3s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4s"
+    function_name: "GATS4s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5s"
+    function_name: "GATS5s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6s"
+    function_name: "GATS6s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7s"
+    function_name: "GATS7s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8s"
+    function_name: "GATS8s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property s"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1Z"
+    function_name: "GATS1Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2Z"
+    function_name: "GATS2Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3Z"
+    function_name: "GATS3Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4Z"
+    function_name: "GATS4Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5Z"
+    function_name: "GATS5Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6Z"
+    function_name: "GATS6Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7Z"
+    function_name: "GATS7Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8Z"
+    function_name: "GATS8Z"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property Z"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1m"
+    function_name: "GATS1m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2m"
+    function_name: "GATS2m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3m"
+    function_name: "GATS3m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4m"
+    function_name: "GATS4m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5m"
+    function_name: "GATS5m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6m"
+    function_name: "GATS6m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7m"
+    function_name: "GATS7m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8m"
+    function_name: "GATS8m"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property m"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1v"
+    function_name: "GATS1v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2v"
+    function_name: "GATS2v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3v"
+    function_name: "GATS3v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4v"
+    function_name: "GATS4v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5v"
+    function_name: "GATS5v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6v"
+    function_name: "GATS6v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7v"
+    function_name: "GATS7v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8v"
+    function_name: "GATS8v"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property v"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1se"
+    function_name: "GATS1se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2se"
+    function_name: "GATS2se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3se"
+    function_name: "GATS3se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4se"
+    function_name: "GATS4se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5se"
+    function_name: "GATS5se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6se"
+    function_name: "GATS6se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7se"
+    function_name: "GATS7se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8se"
+    function_name: "GATS8se"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property se"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1pe"
+    function_name: "GATS1pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2pe"
+    function_name: "GATS2pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3pe"
+    function_name: "GATS3pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4pe"
+    function_name: "GATS4pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5pe"
+    function_name: "GATS5pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6pe"
+    function_name: "GATS6pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7pe"
+    function_name: "GATS7pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8pe"
+    function_name: "GATS8pe"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property pe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1are"
+    function_name: "GATS1are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2are"
+    function_name: "GATS2are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3are"
+    function_name: "GATS3are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4are"
+    function_name: "GATS4are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5are"
+    function_name: "GATS5are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6are"
+    function_name: "GATS6are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7are"
+    function_name: "GATS7are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8are"
+    function_name: "GATS8are"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property are"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1p"
+    function_name: "GATS1p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2p"
+    function_name: "GATS2p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3p"
+    function_name: "GATS3p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4p"
+    function_name: "GATS4p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5p"
+    function_name: "GATS5p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6p"
+    function_name: "GATS6p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7p"
+    function_name: "GATS7p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8p"
+    function_name: "GATS8p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property p"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS1i"
+    function_name: "GATS1i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 1 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS2i"
+    function_name: "GATS2i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 2 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS3i"
+    function_name: "GATS3i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 3 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS4i"
+    function_name: "GATS4i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 4 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS5i"
+    function_name: "GATS5i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 5 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS6i"
+    function_name: "GATS6i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 6 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS7i"
+    function_name: "GATS7i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 7 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
+  - name: "GATS8i"
+    function_name: "GATS8i"
+    module_path: "descriptors"
+    category: "topological"
+    block: "MoranGeary"
+    description: "GATS autocorrelation lag 8 property i"
+    requires_3d: false
+    requires_charges: false
+    version: "1.9.0"
