@@ -1,0 +1,1367 @@
+# plugins/descriptors/cats2d/plugin.yaml
+#
+# CATS2D topological pharmacophore-pair descriptors (descriptor programme, Pace 7 / v1.10.0).
+# 150 PLUGIN-NATIVE descriptors, validated bit-exact vs PyBioMed (scale=1, raw counts).
+
+plugin_name: "cats2d"
+version: "1.10.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "CATS2D topological pharmacophore-pair descriptors: 15 canonical potential-pharmacophore-point pairs (D/A/P/N/L) x 10 topological-distance bins (0-9), raw counts (Schneider 1999)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.10.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "CATS_DD0"
+    function_name: "CATS_DD0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD1"
+    function_name: "CATS_DD1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD2"
+    function_name: "CATS_DD2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD3"
+    function_name: "CATS_DD3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD4"
+    function_name: "CATS_DD4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD5"
+    function_name: "CATS_DD5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD6"
+    function_name: "CATS_DD6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD7"
+    function_name: "CATS_DD7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD8"
+    function_name: "CATS_DD8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DD9"
+    function_name: "CATS_DD9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DD pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA0"
+    function_name: "CATS_DA0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA1"
+    function_name: "CATS_DA1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA2"
+    function_name: "CATS_DA2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA3"
+    function_name: "CATS_DA3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA4"
+    function_name: "CATS_DA4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA5"
+    function_name: "CATS_DA5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA6"
+    function_name: "CATS_DA6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA7"
+    function_name: "CATS_DA7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA8"
+    function_name: "CATS_DA8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DA9"
+    function_name: "CATS_DA9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DA pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP0"
+    function_name: "CATS_DP0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP1"
+    function_name: "CATS_DP1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP2"
+    function_name: "CATS_DP2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP3"
+    function_name: "CATS_DP3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP4"
+    function_name: "CATS_DP4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP5"
+    function_name: "CATS_DP5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP6"
+    function_name: "CATS_DP6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP7"
+    function_name: "CATS_DP7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP8"
+    function_name: "CATS_DP8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DP9"
+    function_name: "CATS_DP9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DP pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN0"
+    function_name: "CATS_DN0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN1"
+    function_name: "CATS_DN1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN2"
+    function_name: "CATS_DN2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN3"
+    function_name: "CATS_DN3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN4"
+    function_name: "CATS_DN4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN5"
+    function_name: "CATS_DN5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN6"
+    function_name: "CATS_DN6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN7"
+    function_name: "CATS_DN7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN8"
+    function_name: "CATS_DN8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DN9"
+    function_name: "CATS_DN9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DN pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL0"
+    function_name: "CATS_DL0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL1"
+    function_name: "CATS_DL1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL2"
+    function_name: "CATS_DL2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL3"
+    function_name: "CATS_DL3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL4"
+    function_name: "CATS_DL4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL5"
+    function_name: "CATS_DL5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL6"
+    function_name: "CATS_DL6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL7"
+    function_name: "CATS_DL7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL8"
+    function_name: "CATS_DL8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_DL9"
+    function_name: "CATS_DL9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D DL pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA0"
+    function_name: "CATS_AA0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA1"
+    function_name: "CATS_AA1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA2"
+    function_name: "CATS_AA2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA3"
+    function_name: "CATS_AA3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA4"
+    function_name: "CATS_AA4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA5"
+    function_name: "CATS_AA5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA6"
+    function_name: "CATS_AA6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA7"
+    function_name: "CATS_AA7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA8"
+    function_name: "CATS_AA8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AA9"
+    function_name: "CATS_AA9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AA pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP0"
+    function_name: "CATS_AP0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP1"
+    function_name: "CATS_AP1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP2"
+    function_name: "CATS_AP2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP3"
+    function_name: "CATS_AP3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP4"
+    function_name: "CATS_AP4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP5"
+    function_name: "CATS_AP5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP6"
+    function_name: "CATS_AP6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP7"
+    function_name: "CATS_AP7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP8"
+    function_name: "CATS_AP8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AP9"
+    function_name: "CATS_AP9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AP pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN0"
+    function_name: "CATS_AN0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN1"
+    function_name: "CATS_AN1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN2"
+    function_name: "CATS_AN2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN3"
+    function_name: "CATS_AN3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN4"
+    function_name: "CATS_AN4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN5"
+    function_name: "CATS_AN5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN6"
+    function_name: "CATS_AN6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN7"
+    function_name: "CATS_AN7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN8"
+    function_name: "CATS_AN8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AN9"
+    function_name: "CATS_AN9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AN pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL0"
+    function_name: "CATS_AL0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL1"
+    function_name: "CATS_AL1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL2"
+    function_name: "CATS_AL2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL3"
+    function_name: "CATS_AL3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL4"
+    function_name: "CATS_AL4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL5"
+    function_name: "CATS_AL5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL6"
+    function_name: "CATS_AL6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL7"
+    function_name: "CATS_AL7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL8"
+    function_name: "CATS_AL8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_AL9"
+    function_name: "CATS_AL9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D AL pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP0"
+    function_name: "CATS_PP0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP1"
+    function_name: "CATS_PP1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP2"
+    function_name: "CATS_PP2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP3"
+    function_name: "CATS_PP3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP4"
+    function_name: "CATS_PP4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP5"
+    function_name: "CATS_PP5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP6"
+    function_name: "CATS_PP6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP7"
+    function_name: "CATS_PP7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP8"
+    function_name: "CATS_PP8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PP9"
+    function_name: "CATS_PP9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PP pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN0"
+    function_name: "CATS_PN0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN1"
+    function_name: "CATS_PN1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN2"
+    function_name: "CATS_PN2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN3"
+    function_name: "CATS_PN3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN4"
+    function_name: "CATS_PN4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN5"
+    function_name: "CATS_PN5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN6"
+    function_name: "CATS_PN6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN7"
+    function_name: "CATS_PN7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN8"
+    function_name: "CATS_PN8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PN9"
+    function_name: "CATS_PN9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PN pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL0"
+    function_name: "CATS_PL0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL1"
+    function_name: "CATS_PL1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL2"
+    function_name: "CATS_PL2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL3"
+    function_name: "CATS_PL3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL4"
+    function_name: "CATS_PL4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL5"
+    function_name: "CATS_PL5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL6"
+    function_name: "CATS_PL6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL7"
+    function_name: "CATS_PL7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL8"
+    function_name: "CATS_PL8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_PL9"
+    function_name: "CATS_PL9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D PL pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN0"
+    function_name: "CATS_NN0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN1"
+    function_name: "CATS_NN1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN2"
+    function_name: "CATS_NN2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN3"
+    function_name: "CATS_NN3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN4"
+    function_name: "CATS_NN4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN5"
+    function_name: "CATS_NN5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN6"
+    function_name: "CATS_NN6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN7"
+    function_name: "CATS_NN7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN8"
+    function_name: "CATS_NN8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NN9"
+    function_name: "CATS_NN9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NN pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL0"
+    function_name: "CATS_NL0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL1"
+    function_name: "CATS_NL1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL2"
+    function_name: "CATS_NL2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL3"
+    function_name: "CATS_NL3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL4"
+    function_name: "CATS_NL4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL5"
+    function_name: "CATS_NL5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL6"
+    function_name: "CATS_NL6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL7"
+    function_name: "CATS_NL7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL8"
+    function_name: "CATS_NL8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_NL9"
+    function_name: "CATS_NL9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D NL pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL0"
+    function_name: "CATS_LL0"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 0 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL1"
+    function_name: "CATS_LL1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 1 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL2"
+    function_name: "CATS_LL2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 2 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL3"
+    function_name: "CATS_LL3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 3 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL4"
+    function_name: "CATS_LL4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 4 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL5"
+    function_name: "CATS_LL5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 5 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL6"
+    function_name: "CATS_LL6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 6 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL7"
+    function_name: "CATS_LL7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 7 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL8"
+    function_name: "CATS_LL8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 8 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "CATS_LL9"
+    function_name: "CATS_LL9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "CATS2D"
+    description: "CATS2D LL pharmacophore pair at topological distance 9 (raw count)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"

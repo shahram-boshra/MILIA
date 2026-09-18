@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-09-17
+
+### Added
+
+- **Molecular Descriptors — Pace 7: 466 atom-typing descriptors** shipped as two first-party
+  `PLUGIN-NATIVE` descriptor plugins, auto-discovered with zero core-file edits:
+  - **`estate_atomtype` (316)** — Kier-Hall electrotopological-state (E-State) atom-type descriptors:
+    `N`/`S`/`MAX`/`MIN` (count, sum, max, min of E-State values) over 79 Kier-Hall atom types.
+    Computed RDKit-natively (`rdkit.Chem.EState` `TypeAtoms` + `EStateIndices`, H-suppressed graph),
+    `category: electronic`, `block: AtomTypeEState`.
+  - **`cats2d` (150)** — CATS2D topological pharmacophore-pair descriptors (Chemically Advanced
+    Template Search; Schneider et al. 1999): 15 canonical potential-pharmacophore-point pairs
+    (D/A/P/N/L) × 10 topological-distance bins (0-9), raw counts. `category: fragments`,
+    `block: CATS2D`.
+- **Validation.** All 466 reproduce an independent oracle bit-exact: E-State vs `mordredcommunity`
+  2.0.7 (3160/3160, rel-err 0; RDKit's 79-label vocabulary proven identical to the oracle), CATS2D vs
+  the peer-reviewed PyBioMed reference implementation (Dong et al. 2018) at `scale=1` raw counts
+  (2100/2100, 0 mismatches). Test modules `tests/test_descriptor_estate_atomtype_unit.py` (5082) and
+  `tests/test_descriptor_cats2d_unit.py` (2715) gate frozen oracle snapshots, determinism, robustness,
+  contract (registration counts, name==function_name, no HAVE/prior-pace collision), and assertive
+  guards.
+- **Design.** Both families 2D (`requires_3d: false`), pure (RDKit + stdlib), deterministic, `NaN` on
+  failure; 0-atom (invalid) molecule → `NaN` for all. `name == function_name` (all valid identifiers,
+  0 bonus discoveries). Compute-once-per-molecule block-cache (`functools.lru_cache(maxsize=1)`).
+- **Scope.** `MoeType` (53) was **excluded** — all 53 names (`LabuteASA`, `PEOE_VSA*`, `SMR_VSA*`,
+  `SlogP_VSA*`, `EState_VSA*`, `VSA_EState*`) are already in the HAVE RDKit baseline (name-uniqueness
+  invariant). The Ghose-Crippen `ALOGP`/`ALOGP2`/`AMR` triplet was **deferred to Pace 11**
+  (PaDEL/CDK residual): oracle identified and verified (PaDEL 2.21 via `padelpy`; distinct from HAVE
+  `MolLogP`/`MolMR`), but faithful native reproduction requires porting CDK's incomplete 120-type
+  atom-typer — disproportionate for 3 descriptors and squarely a CDK-residual task.
+
 ## [1.9.0] - 2026-09-17
 
 ### Added

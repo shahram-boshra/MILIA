@@ -1,0 +1,2861 @@
+# plugins/descriptors/estate_atomtype/plugin.yaml
+#
+# Kier-Hall E-State atom-type descriptors (descriptor programme, Pace 7 / v1.10.0).
+# 316 PLUGIN-NATIVE descriptors (RDKit-native), validated bit-close vs mordredcommunity.
+
+plugin_name: "estate_atomtype"
+version: "1.10.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Kier-Hall electrotopological-state (E-State) atom-type descriptors: count/sum/max/min of E-State values over 79 atom types (316 total)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.10.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "NsLi"
+    function_name: "NsLi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sLi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssBe"
+    function_name: "NssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssBe"
+    function_name: "NssssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssBH"
+    function_name: "NssBH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssBH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssB"
+    function_name: "NsssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssB"
+    function_name: "NssssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsCH3"
+    function_name: "NsCH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sCH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdCH2"
+    function_name: "NdCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssCH2"
+    function_name: "NssCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NtCH"
+    function_name: "NtCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type tCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdsCH"
+    function_name: "NdsCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dsCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaCH"
+    function_name: "NaaCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssCH"
+    function_name: "NsssCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NddC"
+    function_name: "NddC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ddC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NtsC"
+    function_name: "NtsC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type tsC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdssC"
+    function_name: "NdssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaasC"
+    function_name: "NaasC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aasC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaaC"
+    function_name: "NaaaC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaaC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssC"
+    function_name: "NssssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsNH3"
+    function_name: "NsNH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sNH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsNH2"
+    function_name: "NsNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssNH2"
+    function_name: "NssNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdNH"
+    function_name: "NdNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssNH"
+    function_name: "NssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaNH"
+    function_name: "NaaNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NtN"
+    function_name: "NtN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type tN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssNH"
+    function_name: "NsssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdsN"
+    function_name: "NdsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaN"
+    function_name: "NaaN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssN"
+    function_name: "NsssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NddsN"
+    function_name: "NddsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ddsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaasN"
+    function_name: "NaasN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aasN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssN"
+    function_name: "NssssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsOH"
+    function_name: "NsOH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sOH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdO"
+    function_name: "NdO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssO"
+    function_name: "NssO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaO"
+    function_name: "NaaO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsF"
+    function_name: "NsF"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sF"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsSiH3"
+    function_name: "NsSiH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sSiH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssSiH2"
+    function_name: "NssSiH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssSiH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssSiH"
+    function_name: "NsssSiH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssSiH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssSi"
+    function_name: "NssssSi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssSi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsPH2"
+    function_name: "NsPH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sPH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssPH"
+    function_name: "NssPH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssPH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssP"
+    function_name: "NsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdsssP"
+    function_name: "NdsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dsssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssssP"
+    function_name: "NsssssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsSH"
+    function_name: "NsSH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sSH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdS"
+    function_name: "NdS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssS"
+    function_name: "NssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaS"
+    function_name: "NaaS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdssS"
+    function_name: "NdssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NddssS"
+    function_name: "NddssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ddssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsCl"
+    function_name: "NsCl"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sCl"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsGeH3"
+    function_name: "NsGeH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sGeH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssGeH2"
+    function_name: "NssGeH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssGeH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssGeH"
+    function_name: "NsssGeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssGeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssGe"
+    function_name: "NssssGe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssGe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsAsH2"
+    function_name: "NsAsH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sAsH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssAsH"
+    function_name: "NssAsH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssAsH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssAs"
+    function_name: "NsssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssdAs"
+    function_name: "NsssdAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssdAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssssAs"
+    function_name: "NsssssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsSeH"
+    function_name: "NsSeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sSeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdSe"
+    function_name: "NdSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssSe"
+    function_name: "NssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NaaSe"
+    function_name: "NaaSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type aaSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NdssSe"
+    function_name: "NdssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type dssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NddssSe"
+    function_name: "NddssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ddssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsBr"
+    function_name: "NsBr"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sBr"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsSnH3"
+    function_name: "NsSnH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sSnH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssSnH2"
+    function_name: "NssSnH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssSnH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssSnH"
+    function_name: "NsssSnH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssSnH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssSn"
+    function_name: "NssssSn"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssSn"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsI"
+    function_name: "NsI"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sI"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsPbH3"
+    function_name: "NsPbH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sPbH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssPbH2"
+    function_name: "NssPbH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssPbH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NsssPbH"
+    function_name: "NsssPbH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type sssPbH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "NssssPb"
+    function_name: "NssssPb"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State count over atom type ssssPb"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsLi"
+    function_name: "SsLi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sLi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssBe"
+    function_name: "SssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssBe"
+    function_name: "SssssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssBH"
+    function_name: "SssBH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssBH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssB"
+    function_name: "SsssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssB"
+    function_name: "SssssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsCH3"
+    function_name: "SsCH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sCH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdCH2"
+    function_name: "SdCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssCH2"
+    function_name: "SssCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "StCH"
+    function_name: "StCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type tCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdsCH"
+    function_name: "SdsCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dsCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaCH"
+    function_name: "SaaCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssCH"
+    function_name: "SsssCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SddC"
+    function_name: "SddC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ddC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "StsC"
+    function_name: "StsC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type tsC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdssC"
+    function_name: "SdssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaasC"
+    function_name: "SaasC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aasC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaaC"
+    function_name: "SaaaC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaaC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssC"
+    function_name: "SssssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsNH3"
+    function_name: "SsNH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sNH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsNH2"
+    function_name: "SsNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssNH2"
+    function_name: "SssNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdNH"
+    function_name: "SdNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssNH"
+    function_name: "SssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaNH"
+    function_name: "SaaNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "StN"
+    function_name: "StN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type tN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssNH"
+    function_name: "SsssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdsN"
+    function_name: "SdsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaN"
+    function_name: "SaaN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssN"
+    function_name: "SsssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SddsN"
+    function_name: "SddsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ddsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaasN"
+    function_name: "SaasN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aasN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssN"
+    function_name: "SssssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsOH"
+    function_name: "SsOH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sOH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdO"
+    function_name: "SdO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssO"
+    function_name: "SssO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaO"
+    function_name: "SaaO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsF"
+    function_name: "SsF"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sF"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsSiH3"
+    function_name: "SsSiH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sSiH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssSiH2"
+    function_name: "SssSiH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssSiH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssSiH"
+    function_name: "SsssSiH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssSiH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssSi"
+    function_name: "SssssSi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssSi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsPH2"
+    function_name: "SsPH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sPH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssPH"
+    function_name: "SssPH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssPH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssP"
+    function_name: "SsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdsssP"
+    function_name: "SdsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dsssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssssP"
+    function_name: "SsssssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsSH"
+    function_name: "SsSH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sSH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdS"
+    function_name: "SdS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssS"
+    function_name: "SssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaS"
+    function_name: "SaaS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdssS"
+    function_name: "SdssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SddssS"
+    function_name: "SddssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ddssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsCl"
+    function_name: "SsCl"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sCl"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsGeH3"
+    function_name: "SsGeH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sGeH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssGeH2"
+    function_name: "SssGeH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssGeH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssGeH"
+    function_name: "SsssGeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssGeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssGe"
+    function_name: "SssssGe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssGe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsAsH2"
+    function_name: "SsAsH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sAsH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssAsH"
+    function_name: "SssAsH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssAsH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssAs"
+    function_name: "SsssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssdAs"
+    function_name: "SsssdAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssdAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssssAs"
+    function_name: "SsssssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsSeH"
+    function_name: "SsSeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sSeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdSe"
+    function_name: "SdSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssSe"
+    function_name: "SssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SaaSe"
+    function_name: "SaaSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type aaSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SdssSe"
+    function_name: "SdssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type dssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SddssSe"
+    function_name: "SddssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ddssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsBr"
+    function_name: "SsBr"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sBr"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsSnH3"
+    function_name: "SsSnH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sSnH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssSnH2"
+    function_name: "SssSnH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssSnH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssSnH"
+    function_name: "SsssSnH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssSnH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssSn"
+    function_name: "SssssSn"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssSn"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsI"
+    function_name: "SsI"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sI"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsPbH3"
+    function_name: "SsPbH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sPbH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssPbH2"
+    function_name: "SssPbH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssPbH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SsssPbH"
+    function_name: "SsssPbH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type sssPbH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "SssssPb"
+    function_name: "SssssPb"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State sum over atom type ssssPb"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsLi"
+    function_name: "MAXsLi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sLi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssBe"
+    function_name: "MAXssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssBe"
+    function_name: "MAXssssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssBH"
+    function_name: "MAXssBH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssBH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssB"
+    function_name: "MAXsssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssB"
+    function_name: "MAXssssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsCH3"
+    function_name: "MAXsCH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sCH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdCH2"
+    function_name: "MAXdCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssCH2"
+    function_name: "MAXssCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXtCH"
+    function_name: "MAXtCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type tCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdsCH"
+    function_name: "MAXdsCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dsCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaCH"
+    function_name: "MAXaaCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssCH"
+    function_name: "MAXsssCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXddC"
+    function_name: "MAXddC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ddC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXtsC"
+    function_name: "MAXtsC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type tsC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdssC"
+    function_name: "MAXdssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaasC"
+    function_name: "MAXaasC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aasC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaaC"
+    function_name: "MAXaaaC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaaC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssC"
+    function_name: "MAXssssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsNH3"
+    function_name: "MAXsNH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sNH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsNH2"
+    function_name: "MAXsNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssNH2"
+    function_name: "MAXssNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdNH"
+    function_name: "MAXdNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssNH"
+    function_name: "MAXssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaNH"
+    function_name: "MAXaaNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXtN"
+    function_name: "MAXtN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type tN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssNH"
+    function_name: "MAXsssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdsN"
+    function_name: "MAXdsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaN"
+    function_name: "MAXaaN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssN"
+    function_name: "MAXsssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXddsN"
+    function_name: "MAXddsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ddsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaasN"
+    function_name: "MAXaasN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aasN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssN"
+    function_name: "MAXssssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsOH"
+    function_name: "MAXsOH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sOH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdO"
+    function_name: "MAXdO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssO"
+    function_name: "MAXssO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaO"
+    function_name: "MAXaaO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsF"
+    function_name: "MAXsF"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sF"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsSiH3"
+    function_name: "MAXsSiH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sSiH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssSiH2"
+    function_name: "MAXssSiH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssSiH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssSiH"
+    function_name: "MAXsssSiH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssSiH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssSi"
+    function_name: "MAXssssSi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssSi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsPH2"
+    function_name: "MAXsPH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sPH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssPH"
+    function_name: "MAXssPH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssPH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssP"
+    function_name: "MAXsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdsssP"
+    function_name: "MAXdsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dsssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssssP"
+    function_name: "MAXsssssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsSH"
+    function_name: "MAXsSH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sSH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdS"
+    function_name: "MAXdS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssS"
+    function_name: "MAXssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaS"
+    function_name: "MAXaaS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdssS"
+    function_name: "MAXdssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXddssS"
+    function_name: "MAXddssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ddssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsCl"
+    function_name: "MAXsCl"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sCl"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsGeH3"
+    function_name: "MAXsGeH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sGeH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssGeH2"
+    function_name: "MAXssGeH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssGeH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssGeH"
+    function_name: "MAXsssGeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssGeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssGe"
+    function_name: "MAXssssGe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssGe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsAsH2"
+    function_name: "MAXsAsH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sAsH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssAsH"
+    function_name: "MAXssAsH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssAsH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssAs"
+    function_name: "MAXsssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssdAs"
+    function_name: "MAXsssdAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssdAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssssAs"
+    function_name: "MAXsssssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsSeH"
+    function_name: "MAXsSeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sSeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdSe"
+    function_name: "MAXdSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssSe"
+    function_name: "MAXssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXaaSe"
+    function_name: "MAXaaSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type aaSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXdssSe"
+    function_name: "MAXdssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type dssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXddssSe"
+    function_name: "MAXddssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ddssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsBr"
+    function_name: "MAXsBr"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sBr"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsSnH3"
+    function_name: "MAXsSnH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sSnH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssSnH2"
+    function_name: "MAXssSnH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssSnH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssSnH"
+    function_name: "MAXsssSnH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssSnH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssSn"
+    function_name: "MAXssssSn"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssSn"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsI"
+    function_name: "MAXsI"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sI"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsPbH3"
+    function_name: "MAXsPbH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sPbH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssPbH2"
+    function_name: "MAXssPbH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssPbH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXsssPbH"
+    function_name: "MAXsssPbH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type sssPbH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MAXssssPb"
+    function_name: "MAXssssPb"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State maximum over atom type ssssPb"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsLi"
+    function_name: "MINsLi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sLi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssBe"
+    function_name: "MINssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssBe"
+    function_name: "MINssssBe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssBe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssBH"
+    function_name: "MINssBH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssBH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssB"
+    function_name: "MINsssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssB"
+    function_name: "MINssssB"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssB"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsCH3"
+    function_name: "MINsCH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sCH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdCH2"
+    function_name: "MINdCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssCH2"
+    function_name: "MINssCH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssCH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINtCH"
+    function_name: "MINtCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type tCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdsCH"
+    function_name: "MINdsCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dsCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaCH"
+    function_name: "MINaaCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssCH"
+    function_name: "MINsssCH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssCH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINddC"
+    function_name: "MINddC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ddC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINtsC"
+    function_name: "MINtsC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type tsC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdssC"
+    function_name: "MINdssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaasC"
+    function_name: "MINaasC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aasC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaaC"
+    function_name: "MINaaaC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaaC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssC"
+    function_name: "MINssssC"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssC"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsNH3"
+    function_name: "MINsNH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sNH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsNH2"
+    function_name: "MINsNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssNH2"
+    function_name: "MINssNH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssNH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdNH"
+    function_name: "MINdNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssNH"
+    function_name: "MINssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaNH"
+    function_name: "MINaaNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINtN"
+    function_name: "MINtN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type tN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssNH"
+    function_name: "MINsssNH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssNH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdsN"
+    function_name: "MINdsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaN"
+    function_name: "MINaaN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssN"
+    function_name: "MINsssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINddsN"
+    function_name: "MINddsN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ddsN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaasN"
+    function_name: "MINaasN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aasN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssN"
+    function_name: "MINssssN"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssN"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsOH"
+    function_name: "MINsOH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sOH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdO"
+    function_name: "MINdO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssO"
+    function_name: "MINssO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaO"
+    function_name: "MINaaO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaO"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsF"
+    function_name: "MINsF"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sF"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsSiH3"
+    function_name: "MINsSiH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sSiH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssSiH2"
+    function_name: "MINssSiH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssSiH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssSiH"
+    function_name: "MINsssSiH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssSiH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssSi"
+    function_name: "MINssssSi"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssSi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsPH2"
+    function_name: "MINsPH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sPH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssPH"
+    function_name: "MINssPH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssPH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssP"
+    function_name: "MINsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdsssP"
+    function_name: "MINdsssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dsssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssssP"
+    function_name: "MINsssssP"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssssP"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsSH"
+    function_name: "MINsSH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sSH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdS"
+    function_name: "MINdS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssS"
+    function_name: "MINssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaS"
+    function_name: "MINaaS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdssS"
+    function_name: "MINdssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINddssS"
+    function_name: "MINddssS"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ddssS"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsCl"
+    function_name: "MINsCl"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sCl"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsGeH3"
+    function_name: "MINsGeH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sGeH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssGeH2"
+    function_name: "MINssGeH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssGeH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssGeH"
+    function_name: "MINsssGeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssGeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssGe"
+    function_name: "MINssssGe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssGe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsAsH2"
+    function_name: "MINsAsH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sAsH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssAsH"
+    function_name: "MINssAsH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssAsH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssAs"
+    function_name: "MINsssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssdAs"
+    function_name: "MINsssdAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssdAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssssAs"
+    function_name: "MINsssssAs"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssssAs"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsSeH"
+    function_name: "MINsSeH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sSeH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdSe"
+    function_name: "MINdSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssSe"
+    function_name: "MINssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINaaSe"
+    function_name: "MINaaSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type aaSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINdssSe"
+    function_name: "MINdssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type dssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINddssSe"
+    function_name: "MINddssSe"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ddssSe"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsBr"
+    function_name: "MINsBr"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sBr"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsSnH3"
+    function_name: "MINsSnH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sSnH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssSnH2"
+    function_name: "MINssSnH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssSnH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssSnH"
+    function_name: "MINsssSnH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssSnH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssSn"
+    function_name: "MINssssSn"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssSn"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsI"
+    function_name: "MINsI"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sI"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsPbH3"
+    function_name: "MINsPbH3"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sPbH3"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssPbH2"
+    function_name: "MINssPbH2"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssPbH2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINsssPbH"
+    function_name: "MINsssPbH"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type sssPbH"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
+  - name: "MINssssPb"
+    function_name: "MINssssPb"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "AtomTypeEState"
+    description: "E-State minimum over atom type ssssPb"
+    requires_3d: false
+    requires_charges: false
+    version: "1.10.0"
