@@ -1,0 +1,422 @@
+# plugins/descriptors/eta/plugin.yaml
+#
+# Extended Topochemical Atom (ETA) descriptors (descriptor programme, Pace 8 / v1.11.0).
+# 45 PLUGIN-NATIVE descriptors (RDKit-native), validated bit-exact vs mordredcommunity.
+
+plugin_name: "eta"
+version: "1.11.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Extended Topochemical Atom (ETA) indices of Roy & Ghosh: core count (alpha), shape, valence-electron-mobile counts (beta), composite/functionality/branching (eta), epsilon, psi and their averaged/difference forms (45 total)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.11.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "ETA_alpha"
+    function_name: "ETA_alpha"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA core count (alpha)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_alpha"
+    function_name: "AETA_alpha"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA core count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_shape_p"
+    function_name: "ETA_shape_p"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA shape index p (terminal)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_shape_y"
+    function_name: "ETA_shape_y"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA shape index y (degree-3)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_shape_x"
+    function_name: "ETA_shape_x"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA shape index x (degree-4)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_beta"
+    function_name: "ETA_beta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA valence electron mobile count (beta)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_beta"
+    function_name: "AETA_beta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_beta_s"
+    function_name: "ETA_beta_s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA sigma VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_beta_s"
+    function_name: "AETA_beta_s"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA sigma VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_beta_ns"
+    function_name: "ETA_beta_ns"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA nonsigma VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_beta_ns"
+    function_name: "AETA_beta_ns"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA nonsigma VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_beta_ns_d"
+    function_name: "ETA_beta_ns_d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_beta_ns_d"
+    function_name: "AETA_beta_ns_d"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA delta VEM count"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta"
+    function_name: "ETA_eta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta"
+    function_name: "AETA_eta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_L"
+    function_name: "ETA_eta_L"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "local ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_L"
+    function_name: "AETA_eta_L"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged local ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_R"
+    function_name: "ETA_eta_R"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "reference ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_R"
+    function_name: "AETA_eta_R"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged reference ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_RL"
+    function_name: "ETA_eta_RL"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "local reference ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_RL"
+    function_name: "AETA_eta_RL"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged local reference ETA composite index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_F"
+    function_name: "ETA_eta_F"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA functionality index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_F"
+    function_name: "AETA_eta_F"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA functionality index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_FL"
+    function_name: "ETA_eta_FL"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "local ETA functionality index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_FL"
+    function_name: "AETA_eta_FL"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged local ETA functionality index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_B"
+    function_name: "ETA_eta_B"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA branching index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_B"
+    function_name: "AETA_eta_B"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA branching index"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_eta_BR"
+    function_name: "ETA_eta_BR"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA branching index (ring-corrected)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_eta_BR"
+    function_name: "AETA_eta_BR"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA branching index (ring-corrected)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dAlpha_A"
+    function_name: "ETA_dAlpha_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta alpha A"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dAlpha_B"
+    function_name: "ETA_dAlpha_B"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta alpha B"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_epsilon_1"
+    function_name: "ETA_epsilon_1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA epsilon (all atoms)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_epsilon_2"
+    function_name: "ETA_epsilon_2"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA epsilon (heavy atoms)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_epsilon_3"
+    function_name: "ETA_epsilon_3"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA epsilon (reference alkane)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_epsilon_4"
+    function_name: "ETA_epsilon_4"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA epsilon (saturated skeleton)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_epsilon_5"
+    function_name: "ETA_epsilon_5"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA epsilon (heavy + hetero-H)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dEpsilon_A"
+    function_name: "ETA_dEpsilon_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta epsilon A (eps1-eps3)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dEpsilon_B"
+    function_name: "ETA_dEpsilon_B"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta epsilon B (eps1-eps4)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dEpsilon_C"
+    function_name: "ETA_dEpsilon_C"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta epsilon C (eps3-eps4)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dEpsilon_D"
+    function_name: "ETA_dEpsilon_D"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta epsilon D (eps2-eps5)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dBeta"
+    function_name: "ETA_dBeta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta beta (nonsigma-sigma)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "AETA_dBeta"
+    function_name: "AETA_dBeta"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "averaged ETA delta beta"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_psi_1"
+    function_name: "ETA_psi_1"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA psi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dPsi_A"
+    function_name: "ETA_dPsi_A"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta psi A"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"
+  - name: "ETA_dPsi_B"
+    function_name: "ETA_dPsi_B"
+    module_path: "descriptors"
+    category: "topological"
+    block: "ExtendedTopochemicalAtom"
+    description: "ETA delta psi B"
+    requires_3d: false
+    requires_charges: false
+    version: "1.11.0"

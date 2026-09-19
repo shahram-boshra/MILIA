@@ -17,7 +17,8 @@ descriptors for the milia pipeline, including:
   matrix_spectral adds 177 eigenvalue/matrix-spectral descriptors,
   autocorrelation_2d adds 606 2D topological autocorrelation descriptors,
   estate_atomtype adds 316 Kier-Hall E-State atom-type descriptors,
-  cats2d adds 150 CATS2D topological pharmacophore-pair descriptors)
+  cats2d adds 150 CATS2D topological pharmacophore-pair descriptors,
+  eta adds 45 Extended Topochemical Atom (ETA) indices)
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

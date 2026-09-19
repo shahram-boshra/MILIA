@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-09-17
+
+### Added
+
+- **Molecular Descriptors — Pace 8: 45 Extended Topochemical Atom (ETA) descriptors** shipped as the
+  first-party `eta` plugin (auto-discovered, zero core-file edits). Second-generation ETA indices of
+  Roy & Ghosh: core count (`ETA_alpha`), shape (`ETA_shape_p/y/x`), valence-electron-mobile counts
+  (`ETA_beta` sigma/nonsigma/delta), composite index (`ETA_eta` local/reference/functionality/branching),
+  `ETA_dAlpha`, epsilon (`ETA_epsilon_1..5`), `ETA_dEpsilon`, `ETA_dBeta`, `ETA_psi`/`ETA_dPsi`, each in
+  plain and averaged (`AETA_*`) forms. `category: topological`, `block: ExtendedTopochemicalAtom`.
+- **Validation.** All 45 reproduce the `mordredcommunity` 2.0.7 oracle
+  (`mordred.ExtendedTopochemicalAtom`) bit-exact (rel-err 0; 855/855 across a 19-molecule panel including
+  aromatic heterocycles, charged, halogen, triple-bond and fused-ring cases). Test module
+  `tests/test_descriptor_eta_unit.py` (985) gates the frozen snapshot + live cross-check, determinism,
+  robustness, contract, and analytical guards (e.g. alkane `ETA_alpha` == 0.5·heavy-count).
+- **Design.** RDKit + NumPy + stdlib only; 2D (`requires_3d: false`); deterministic; `NaN` on failure;
+  disconnected or 0-atom molecules → `NaN` for all (oracle `require_connected`). Reference (all-carbon,
+  single-bond) and saturated skeletons are built exactly as the oracle does. Compute-once-per-molecule
+  block-cache; `name == function_name` (all valid identifiers, 0 bonus discoveries).
+- **Scope.** Pace 8 was **re-scoped** from the Blueprint's original edge-adjacency + extended-rank Burden:
+  mordred has neither (its `BCUT` is only `1h/1l`, already shipped in `matrix_spectral`), so those
+  Dragon-specific families carry no mordred oracle and were **deferred to Pace 11** (PaDEL/CDK-residual).
+  ETA is the largest clean, mordred-backed, zero-collision 2D family that remained.
+
 ## [1.10.0] - 2026-09-17
 
 ### Added

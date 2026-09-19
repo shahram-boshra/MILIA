@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.10.0"  # Descriptors Pace 7: +466 (estate_atomtype 316 + cats2d 150)
+__version__ = "1.11.0"  # Descriptors Pace 8: +45 (eta / ExtendedTopochemicalAtom)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
