@@ -18,6 +18,19 @@
 # (v1.6.0-v1.8.0 stuck for days — SWH confirmed a scheduler bug). This Action
 # fires an independent per-release request that is decoupled from any prior
 # stuck visit, eliminating the manual step for all future paces.
+#
+# v1.11.0 root-cause fix: SWH keys every origin on the EXACT url — a ".git"
+# suffix / trailing slash / http-vs-https each create a DISTINCT origin with its
+# own visit history. This workflow previously saved ".../MILIA.git" while GitHub's
+# periodic crawler and the browse UI use ".../MILIA" (no ".git"), so requests
+# landed on an origin nobody browsed ("nothing shows up"). Now uses the canonical
+# no-".git" origin AND polls save_task_status to a terminal state (fail on
+# 'failed'/'rejected'; pass on 'succeeded'; in-progress prints a verify link).
+# Verify any release:
+#   curl -s "https://archive.softwareheritage.org/api/1/origin/https://github.com/shahram-boshra/MILIA/visits/?require_snapshot=true" | head
+#   browse: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/shahram-boshra/MILIA
+# (Add an SWH_TOKEN repo secret — from an archive.softwareheritage.org account —
+#  for authenticated, higher-priority requests.)
 # =============================================================================
 
 name: Archive to Software Heritage
@@ -38,20 +51,44 @@ jobs:
         env:
           SWH_TOKEN: ${{ secrets.SWH_TOKEN }}
         run: |
-          ORIGIN_URL="https://github.com/${GITHUB_REPOSITORY}.git"
-          API_URL="https://archive.softwareheritage.org/api/1/origin/save/git/url/${ORIGIN_URL}/"
-
-          if [ -n "${SWH_TOKEN}" ]; then
-            AUTH_HEADER="Authorization: Bearer ${SWH_TOKEN}"
-          else
-            AUTH_HEADER=""
-          fi
+          set -euo pipefail
+          # Canonical GitHub origin URL — NO ".git" suffix. SWH keys every origin on the
+          # EXACT url: ".git", a trailing slash or http/https each make a DISTINCT origin
+          # with its own visit history. GitHub's own periodic crawler and the browse UI use
+          # the no-".git" form, so we MUST match it or Save-Code-Now requests land on an
+          # origin nobody browses (root cause of the "nothing shows up" issue, v1.6.0-v1.11.0).
+          ORIGIN_URL="https://github.com/${GITHUB_REPOSITORY}"
+          SAVE_URL="https://archive.softwareheritage.org/api/1/origin/save/git/url/${ORIGIN_URL}/"
+          BROWSE_URL="https://archive.softwareheritage.org/browse/origin/?origin_url=${ORIGIN_URL}"
+          AUTH=(); [ -n "${SWH_TOKEN}" ] && AUTH=(--header "Authorization: Bearer ${SWH_TOKEN}")
 
           echo "Requesting SWH Save Code Now for: ${ORIGIN_URL}"
-          curl --fail --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 60 \
-            --request POST \
-            ${AUTH_HEADER:+--header "${AUTH_HEADER}"} \
-            "${API_URL}"
-          echo "Save Code Now request submitted."
+          resp="$(curl --fail --silent --show-error --connect-timeout 10 --max-time 60 \
+            --request POST "${AUTH[@]}" --header 'Accept: application/json' "${SAVE_URL}")"
+          echo "POST response: ${resp}"
+
+          req_status="$(printf '%s' "${resp}" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("save_request_status",""))')"
+          req_id="$(printf '%s' "${resp}" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("id",""))')"
+          if [ "${req_status}" = "rejected" ]; then
+            echo "::error::SWH rejected the save request for ${ORIGIN_URL}"; exit 1
+          fi
+          echo "Save request accepted (id=${req_id}). Polling task status (bounded)…"
+
+          # SWH loads known forges within a few hours; a GH Action can't wait that long.
+          # Poll ~15 min to catch fast failures; fail on 'failed', pass on 'succeeded',
+          # and treat still-running as an expected in-progress pass (verify link printed).
+          task=""
+          for _ in $(seq 1 30); do
+            sleep 30
+            info="$(curl --fail --silent --show-error --max-time 60 "${AUTH[@]}" \
+              --header 'Accept: application/json' "${SAVE_URL}" \
+              | python3 -c 'import sys,json;a=json.load(sys.stdin);a=a if isinstance(a,list) else [a];print(sorted(a,key=lambda r:r.get("save_request_date","") or "")[-1].get("save_task_status","") if a else "")')"
+            task="${info}"
+            echo "  save_task_status=${task}"
+            case "${task}" in
+              succeeded) echo "✓ Archived. Browse: ${BROWSE_URL}"; exit 0 ;;
+              failed)    echo "::error::SWH load FAILED for ${ORIGIN_URL}. Check ${BROWSE_URL}"; exit 1 ;;
+            esac
+          done
+          echo "::notice::SWH load still '${task:-pending}' after 15 min (normal — loads within hours)."
+          echo "::notice::Verify later: ${BROWSE_URL}"
