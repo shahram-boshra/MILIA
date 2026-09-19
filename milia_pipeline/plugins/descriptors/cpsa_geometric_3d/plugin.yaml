@@ -1,0 +1,467 @@
+# plugins/descriptors/cpsa_geometric_3d/plugin.yaml
+#
+# CPSA + gravitational + geometrical 3D descriptors (descriptor programme, Pace 9 / v1.12.0).
+# 50 PLUGIN-NATIVE 3D descriptors, validated bit-exact vs mordredcommunity.
+
+plugin_name: "cpsa_geometric_3d"
+version: "1.12.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "3D charged partial surface area (CPSA: PNSA/PPSA/DPSA/FNSA/FPSA/WNSA/WPSA + RNCG/RPCG/RNCS/RPCS/TASA/RASA/RPSA), gravitational-index (GRAV*) and geometrical-index (Geom*) descriptors, computed on the MILIA ETKDG conformer (50 total)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.12.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "PNSA1"
+    function_name: "PNSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial negative surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PNSA2"
+    function_name: "PNSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial negative surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PNSA3"
+    function_name: "PNSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial negative surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PNSA4"
+    function_name: "PNSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial negative surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PNSA5"
+    function_name: "PNSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial negative surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PPSA1"
+    function_name: "PPSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial positive surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PPSA2"
+    function_name: "PPSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial positive surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PPSA3"
+    function_name: "PPSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial positive surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PPSA4"
+    function_name: "PPSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial positive surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "PPSA5"
+    function_name: "PPSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "partial positive surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "DPSA1"
+    function_name: "DPSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "difference in charged partial surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "DPSA2"
+    function_name: "DPSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "difference in charged partial surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "DPSA3"
+    function_name: "DPSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "difference in charged partial surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "DPSA4"
+    function_name: "DPSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "difference in charged partial surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "DPSA5"
+    function_name: "DPSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "difference in charged partial surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FNSA1"
+    function_name: "FNSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial negative surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FNSA2"
+    function_name: "FNSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial negative surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FNSA3"
+    function_name: "FNSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial negative surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FNSA4"
+    function_name: "FNSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial negative surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FNSA5"
+    function_name: "FNSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial negative surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FPSA1"
+    function_name: "FPSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial positive surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FPSA2"
+    function_name: "FPSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial positive surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FPSA3"
+    function_name: "FPSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial positive surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FPSA4"
+    function_name: "FPSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial positive surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "FPSA5"
+    function_name: "FPSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "fractional charged partial positive surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WNSA1"
+    function_name: "WNSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial negative surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WNSA2"
+    function_name: "WNSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial negative surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WNSA3"
+    function_name: "WNSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial negative surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WNSA4"
+    function_name: "WNSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial negative surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WNSA5"
+    function_name: "WNSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial negative surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WPSA1"
+    function_name: "WPSA1"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial positive surface area (version 1)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WPSA2"
+    function_name: "WPSA2"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial positive surface area (version 2)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WPSA3"
+    function_name: "WPSA3"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial positive surface area (version 3)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WPSA4"
+    function_name: "WPSA4"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial positive surface area (version 4)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "WPSA5"
+    function_name: "WPSA5"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "surface-weighted charged partial positive surface area (version 5)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RNCG"
+    function_name: "RNCG"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative negative charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RPCG"
+    function_name: "RPCG"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative positive charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RNCS"
+    function_name: "RNCS"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative negative charge surface area"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RPCS"
+    function_name: "RPCS"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative positive charge surface area"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "TASA"
+    function_name: "TASA"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "total hydrophobic surface area"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RASA"
+    function_name: "RASA"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative hydrophobic surface area"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "RPSA"
+    function_name: "RPSA"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "CPSA"
+    description: "relative polar surface area"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GRAV"
+    function_name: "GRAV"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GravitationalIndex"
+    description: "gravitational index"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GRAVH"
+    function_name: "GRAVH"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GravitationalIndex"
+    description: "gravitational index (incl. H)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GRAVp"
+    function_name: "GRAVp"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GravitationalIndex"
+    description: "gravitational index (bonded pairs)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GRAVHp"
+    function_name: "GRAVHp"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GravitationalIndex"
+    description: "gravitational index (incl. H, bonded pairs)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GeomDiameter"
+    function_name: "GeomDiameter"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GeometricalIndex"
+    description: "geometric diameter"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GeomRadius"
+    function_name: "GeomRadius"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GeometricalIndex"
+    description: "geometric radius"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GeomShapeIndex"
+    function_name: "GeomShapeIndex"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GeometricalIndex"
+    description: "geometrical shape index"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"
+  - name: "GeomPetitjeanIndex"
+    function_name: "GeomPetitjeanIndex"
+    module_path: "descriptors"
+    category: "geometric"
+    block: "GeometricalIndex"
+    description: "geometric Petitjean index"
+    requires_3d: true
+    requires_charges: false
+    version: "1.12.0"

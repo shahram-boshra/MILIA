@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.11.0"  # Descriptors Pace 8: +45 (eta / ExtendedTopochemicalAtom)
+__version__ = "1.12.0"  # Descriptors Pace 9: +50 (cpsa_geometric_3d / CPSA+Grav+Geom 3D)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

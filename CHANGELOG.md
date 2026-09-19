@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-19
+
+### Added
+
+- **Molecular Descriptors — Pace 9: 50 charged-partial-surface-area, gravitational & geometrical 3D
+  descriptors** shipped as the first-party `cpsa_geometric_3d` plugin (auto-discovered, zero core edits).
+  Computed on the MILIA-core conformer (`AddHs → EmbedMolecule(randomSeed=42) → MMFFOptimizeMolecule`):
+  - **CPSA (42)** — Stanton & Jurs charged partial surface areas: `PNSA/PPSA/DPSA/FNSA/FPSA/WNSA/WPSA`
+    (versions 1–5), `RNCG/RPCG`, `RNCS/RPCS`, `TASA/RASA/RPSA`. Surface area = Shrake–Rupley dot
+    tessellation over a level-5 icosphere (vdW + 1.4 Å); charges = RDKit Gasteiger.
+  - **GravitationalIndex (4)** — `GRAV/GRAVH/GRAVp/GRAVHp`.
+  - **GeometricalIndex (4)** — `GeomDiameter/GeomRadius/GeomShapeIndex/GeomPetitjeanIndex`.
+  `category: geometric`, `requires_3d: true`, `dependencies: []`.
+- **Validation.** All 50 reproduce the `mordredcommunity` 2.0.7 oracle bit-exact (rel-err 0; 600/600 across
+  a 12-molecule panel), verified under both rdkit 2025.3.6 (repo pin) and 2026.03.6. The frozen snapshot
+  stores the exact conformer (MolBlock + full-precision coordinates) + mordred values, so the test
+  reconstructs the geometry rather than re-embedding — version-robust. Test module
+  `tests/test_descriptor_cpsa_geometric_3d_unit.py` (778) gates the snapshot, live mordred cross-check,
+  determinism, missing-conformer/None → NaN, contract, de-dup guards, and analytical identities.
+- **Design.** RDKit + NumPy + stdlib only; deterministic on the pinned conformer; `NaN` on any failure;
+  compute-once-per-molecule block-cache; `name == function_name` (0 bonus discoveries). Crosses **3,000+**
+  configurable descriptors (2,951 → 3,001).
+- **Scope.** Pace 9 was **re-scoped** from the Blueprint's "~90, DEP-BOUND `[descriptors-3d]`": 3D ships in
+  base like `addcore_3d` (RDKit-only), and after de-dup the real count is 50 — the mordred CPSA `TPSA`
+  (name-clash with HAVE topological TPSA), `MomentOfInertia` (= HAVE `PMI1/2/3`) and `PBF` (= HAVE) are
+  excluded.
+
 ## [1.11.0] - 2026-09-17
 
 ### Added
