@@ -24,8 +24,10 @@
 # own visit history. This workflow previously saved ".../MILIA.git" while GitHub's
 # periodic crawler and the browse UI use ".../MILIA" (no ".git"), so requests
 # landed on an origin nobody browsed ("nothing shows up"). Now uses the canonical
-# no-".git" origin AND polls save_task_status to a terminal state (fail on
-# 'failed'/'rejected'; pass on 'succeeded'; in-progress prints a verify link).
+# no-".git" origin AND polls save_task_status to a terminal state (FAIL on 'rejected'
+# = systematic; WARN non-fatal on a transient 'failed' load = SWH-side + rate-limited,
+# crawler-backstopped; pass on 'succeeded'; in-progress prints a verify link). A red
+# release is thus reserved for a real rejection, not an SWH loader blip (v1.12.0 lesson).
 # Verify any release:
 #   curl -s "https://archive.softwareheritage.org/api/1/origin/https://github.com/shahram-boshra/MILIA/visits/?require_snapshot=true" | head
 #   browse: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/shahram-boshra/MILIA
@@ -75,8 +77,10 @@ jobs:
           echo "Save request accepted (id=${req_id}). Polling task status (bounded)…"
 
           # SWH loads known forges within a few hours; a GH Action can't wait that long.
-          # Poll ~15 min to catch fast failures; fail on 'failed', pass on 'succeeded',
-          # and treat still-running as an expected in-progress pass (verify link printed).
+          # Poll ~15 min for a terminal status. A `rejected` request is systematic → fail.
+          # A `failed` LOAD is an SWH-side transient (empty note; rate-limited 1/hour so it
+          # cannot be retried here; the periodic GitHub crawler archives HEAD as a backstop)
+          # → warn, do NOT fail the release pipeline. `succeeded` → pass. Still running → notice.
           task=""
           for _ in $(seq 1 30); do
             sleep 30
@@ -87,7 +91,7 @@ jobs:
             echo "  save_task_status=${task}"
             case "${task}" in
               succeeded) echo "✓ Archived. Browse: ${BROWSE_URL}"; exit 0 ;;
-              failed)    echo "::error::SWH load FAILED for ${ORIGIN_URL}. Check ${BROWSE_URL}"; exit 1 ;;
+              failed)    echo "::warning::SWH load failed for ${ORIGIN_URL} (transient SWH-side; empty note; Save-Code-Now is rate-limited 1/hour so no in-workflow retry). The periodic GitHub crawler will archive current HEAD; to force a retry, re-run this workflow after ~1 hour. Verify: ${BROWSE_URL}"; exit 0 ;;
             esac
           done
           echo "::notice::SWH load still '${task:-pending}' after 15 min (normal — loads within hours)."
