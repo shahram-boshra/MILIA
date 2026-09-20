@@ -1,0 +1,244 @@
+# plugins/descriptors/eht_electronic/plugin.yaml
+#
+# Electronic / conceptual-DFT reactivity descriptors via RDKit extended Hückel (Pace 10 / v1.13.0).
+# 25 PLUGIN-NATIVE EHT-level descriptors, RDKit-native, deterministic, bit-exact.
+#
+# NOTE: EHT-level (qualitative, method- and geometry-dependent) reactivity descriptors, NOT DFT-grade.
+
+plugin_name: "eht_electronic"
+version: "1.13.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "Electronic / conceptual-DFT reactivity descriptors via RDKit extended Hückel (rdEHTTools): HOMO/LUMO/gap, ionization potential, electron affinity, electronegativity, chemical potential/hardness/softness, electrophilicity, electrodonating/accepting power, EHT charges, and condensed Fukui indices (25 total). EHT-level (qualitative, method-dependent)."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.13.0"
+python_version: ">=3.10"
+dependencies: []
+
+descriptors:
+  - name: "E_HOMO"
+    function_name: "E_HOMO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "EHT HOMO orbital energy (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "E_LUMO"
+    function_name: "E_LUMO"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "EHT LUMO orbital energy (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "HOMO_LUMO_Gap"
+    function_name: "HOMO_LUMO_Gap"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "EHT HOMO-LUMO gap (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "IonizationPotential"
+    function_name: "IonizationPotential"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "ionization potential -E_HOMO (Koopmans, eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ElectronAffinity"
+    function_name: "ElectronAffinity"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "electron affinity -E_LUMO (Koopmans, eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "Electronegativity"
+    function_name: "Electronegativity"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "Mulliken electronegativity chi=(IP+EA)/2 (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ChemicalPotential"
+    function_name: "ChemicalPotential"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "electronic chemical potential mu=-chi (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ChemicalHardness"
+    function_name: "ChemicalHardness"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "chemical hardness eta=(IP-EA)/2 (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ChemicalSoftness"
+    function_name: "ChemicalSoftness"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "chemical softness S=1/eta (1/eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ElectrophilicityIndex"
+    function_name: "ElectrophilicityIndex"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "Parr electrophilicity index omega=mu^2/(2 eta) (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ElectrodonatingPower"
+    function_name: "ElectrodonatingPower"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "electrodonating power omega- (Gazquez, eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "ElectroacceptingPower"
+    function_name: "ElectroacceptingPower"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "electroaccepting power omega+ (Gazquez, eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "EHT_TotalEnergy"
+    function_name: "EHT_TotalEnergy"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "EHT total electronic energy"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "EHT_FermiEnergy"
+    function_name: "EHT_FermiEnergy"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "EHT Fermi energy (eV)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxEHTCharge"
+    function_name: "MaxEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "maximum EHT (Mulliken) partial charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MinEHTCharge"
+    function_name: "MinEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "minimum EHT partial charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxAbsEHTCharge"
+    function_name: "MaxAbsEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "maximum absolute EHT partial charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MinAbsEHTCharge"
+    function_name: "MinAbsEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "minimum absolute EHT partial charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "SumAbsEHTCharge"
+    function_name: "SumAbsEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "sum of absolute EHT partial charges"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MeanAbsEHTCharge"
+    function_name: "MeanAbsEHTCharge"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "mean absolute EHT partial charge"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxFukuiNucleophilic"
+    function_name: "MaxFukuiNucleophilic"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "max condensed Fukui f+ (nucleophilic attack site)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxFukuiElectrophilic"
+    function_name: "MaxFukuiElectrophilic"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "max condensed Fukui f- (electrophilic attack site)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxFukuiRadical"
+    function_name: "MaxFukuiRadical"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "max condensed Fukui f0 (radical attack site)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MaxDualDescriptor"
+    function_name: "MaxDualDescriptor"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "max dual descriptor f+ - f- (electrophilic site)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"
+  - name: "MinDualDescriptor"
+    function_name: "MinDualDescriptor"
+    module_path: "descriptors"
+    category: "electronic"
+    block: "EHT"
+    description: "min dual descriptor f+ - f- (nucleophilic site)"
+    requires_3d: true
+    requires_charges: false
+    version: "1.13.0"

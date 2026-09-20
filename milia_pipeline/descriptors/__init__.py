@@ -19,7 +19,8 @@ descriptors for the milia pipeline, including:
   estate_atomtype adds 316 Kier-Hall E-State atom-type descriptors,
   cats2d adds 150 CATS2D topological pharmacophore-pair descriptors,
   eta adds 45 Extended Topochemical Atom (ETA) indices,
-  cpsa_geometric_3d adds 50 CPSA + gravitational + geometrical 3D descriptors)
+  cpsa_geometric_3d adds 50 CPSA + gravitational + geometrical 3D descriptors,
+  eht_electronic adds 25 extended-Hückel conceptual-DFT reactivity descriptors)
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

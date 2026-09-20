@@ -24,7 +24,7 @@ authors:
     email: "a.boshra@gmail.com"
     orcid: "https://orcid.org/0009-0004-8925-2868"
 
-version: "1.12.0"
+version: "1.13.0"
 date-released: "2026-09-17"
 license: "MIT"
 
@@ -37,7 +37,7 @@ identifiers:
     description: "Concept DOI — always resolves to the latest MILIA release"
   - type: doi
     value: "10.5281/zenodo.22847346"
-    description: "Version DOI — MILIA v1.12.0"
+    description: "Version DOI — MILIA v1.13.0 (backfill with the newly-minted v1.13.0 version DOI post-tag; 22847346 = prior v1.12.0 placeholder)"
 
 repository-code: "https://github.com/shahram-boshra/MILIA"
 url: "https://github.com/shahram-boshra/MILIA"

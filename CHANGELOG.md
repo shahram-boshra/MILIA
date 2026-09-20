@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-19
+
+### Added
+
+- **Molecular Descriptors — Pace 10: 25 extended-Hückel conceptual-DFT reactivity descriptors** shipped as
+  the first-party `eht_electronic` plugin (auto-discovered, zero core edits). Computed with RDKit's extended
+  Hückel engine (`rdkit.Chem.rdEHTTools` = YAeHMOP) on the MILIA-core conformer
+  (`AddHs → EmbedMolecule(randomSeed=42) → MMFFOptimizeMolecule`):
+  - Frontier orbitals — `E_HOMO`, `E_LUMO`, `HOMO_LUMO_Gap`.
+  - Conceptual DFT (Koopmans; Parr–Pearson/Gázquez) — `IonizationPotential`, `ElectronAffinity`,
+    `Electronegativity`, `ChemicalPotential`, `ChemicalHardness`, `ChemicalSoftness`, `ElectrophilicityIndex`,
+    `ElectrodonatingPower`, `ElectroacceptingPower`.
+  - `EHT_TotalEnergy`, `EHT_FermiEnergy`; EHT partial-charge descriptors; condensed **Fukui** indices
+    (f⁺/f⁻/f⁰ + dual descriptor) via finite differences on the N±1 species at fixed geometry.
+  `category: electronic`, `block: EHT`, `requires_3d: true`, `dependencies: []`. Crosses **3,026** descriptors.
+- **Level of theory (documented prominently).** These are **EHT-level (qualitative, semi-empirical),
+  method- and geometry-dependent** reactivity descriptors — not DFT-grade; use as relative QSAR features only.
+- **Validation.** RDKit-native and deterministic; frozen-conformer snapshot (MolBlock + full-precision
+  coordinates + values, pinned to `rdkit==2025.3.6`) → bit-exact (300/300); plus a live re-derivation of the
+  conceptual-DFT formulas from raw `rdEHTTools` primitives. Test module (401) covers the snapshot, formulas,
+  determinism, robustness, contract, and analytical identities.
+- **Scope decision (Blueprint §9 Pace-10 DECISION RECORD).** EHT was chosen over GFN2-xTB (`tblite`) and DFT
+  after full due diligence: mordred has no quantum oracle; mainstream descriptor platforms compute no QM;
+  GFN2-xTB is more accurate but is a heavy compiled dependency needing a tolerance (non-bit-exact) oracle and
+  is 3–5× slower (an SCF per molecule) — architecturally misplaced in MILIA's inline, cached featurizer,
+  where quantum-grade features belong in an offline/precomputed path. EHT is the canonical in-model choice
+  (RDKit-native, deterministic, bit-exact, zero-dependency). Disablable via `plugins.yaml disabled_plugins`.
+
 ## [1.12.0] - 2026-09-19
 
 ### Added
