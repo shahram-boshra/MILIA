@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-09-23
+
+### Fixed
+
+- **`[descriptors-cdk]` extra now installs `jpype1`.** The `cdk_substructure` plugin loads the CDK jar via
+  `jpype` directly, but `CDK-pywrapper` does not depend on jpype (it uses `install-jdk`), so the v1.14.0 extra
+  was missing `jpype1` — installing `milia-py[descriptors-cdk]` (or the CI `test-cdk` job) failed with
+  `ModuleNotFoundError: No module named 'jpype'`, and the plugin was silently skipped even with the extra
+  present. Added `jpype1>=1.5` (Python >= 3.11 marker, matching CDK-pywrapper) to the extra. No behavior change
+  for the base install or the default descriptor count (3,026); the CDK plugin (3,333 with the extra on
+  Python 3.11+ with a JRE) now activates and is gated by the `test-cdk` CI job as intended.
+
 ## [1.14.0] - 2026-09-20
 
 ### Added

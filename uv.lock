@@ -633,6 +633,26 @@ wheels = [
 ]
 
 [[package]]
+name = "jpype1"
+version = "1.7.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/48/a2/5d27e81d24eef64668bf702bfe0e091cc48388b4666f36e025243eb9d827/jpype1-1.7.1.tar.gz", hash = "sha256:3cd88838dc3d2d546f7eaeadaaff864e590010c15f2b6a44b6f37e60796a14b2", size = 783791, upload-time = "2026-05-06T23:55:10.664Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/c5/98c5ba221de29b341298341c07ad2221beae565886d18c2e6b821928db15/jpype1-1.7.1-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:80c4c8cbab99040b8b56f28ff834e0b089aefccaabe3b472b8b43bb1e4658b86", size = 408119, upload-time = "2026-05-06T23:53:51.382Z" },
+    { url = "https://files.pythonhosted.org/packages/37/3f/d3b7fd287d5bae63af0ae935b2f2c01291d18ea2e6cd706db8e4dda15354/jpype1-1.7.1-cp310-cp310-manylinux_2_24_i686.manylinux_2_28_i686.whl", hash = "sha256:9c9a08d06016afbe5391daaf843b9e76c79022181685bbb23b64cd3f9aaec30d", size = 454716, upload-time = "2026-05-06T23:53:53.937Z" },
+    { url = "https://files.pythonhosted.org/packages/56/ea/c4dabef3979ff5febc7abce045de8ff61e440b949e73e4ff8124dc739aba/jpype1-1.7.1-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6812c95155572f25cd194a9b878e407ee2844c57e8704ba47b426ece3e925cfb", size = 439324, upload-time = "2026-05-06T23:53:56.808Z" },
+    { url = "https://files.pythonhosted.org/packages/28/a9/08eb2c8556598043981692251180479babc56086c5464bb2631929b94acf/jpype1-1.7.1-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:fc68b8e94ba5981e6142b4bcbbfa262ebe41438a679e0ebc2daf0759cc8d3e19", size = 408134, upload-time = "2026-05-06T23:54:04.251Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/61/36001f0979fa0fffa28dac49f44cbb642cfcbd9f67e090d7fb9a8ace9e80/jpype1-1.7.1-cp311-cp311-manylinux_2_24_i686.manylinux_2_28_i686.whl", hash = "sha256:47bc10f263fc8ea3f97e46a753e355a565c317a61109f298169fcc4365ff415f", size = 454588, upload-time = "2026-05-06T23:54:06.804Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/e7/140c78ee6c0804b1ff5eb8313eb76a29e49e973da810539cabf6d454e6bc/jpype1-1.7.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4cabb1d0c23bd8455ab0ef027a6a4b62d6e49c95b96ef8ff652ea83cbba6de6c", size = 439352, upload-time = "2026-05-06T23:54:09.416Z" },
+    { url = "https://files.pythonhosted.org/packages/72/ad/e2db5dae7cd821385096f607deb79bcdd25331c07a58608318d4dade2e48/jpype1-1.7.1-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:158aee356b2c0bf489939d85f6fb31e54a800bd2d95a89b83e5bd7c07fdb048e", size = 407331, upload-time = "2026-05-06T23:54:15.87Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/97/f54c66ed8a9ce33fdc87991712260169c1f9ec514110e266b3a56b73ef13/jpype1-1.7.1-cp312-cp312-manylinux_2_24_i686.manylinux_2_28_i686.whl", hash = "sha256:1cde7f185ef36c2840daf9293423d609eace5b79c632e2267023d6c75ef52988", size = 453957, upload-time = "2026-05-06T23:54:18.684Z" },
+    { url = "https://files.pythonhosted.org/packages/03/ed/bc55cc34dd54864a5a717c3f76ff2771961154325aef683d8e4b85b7c51a/jpype1-1.7.1-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4de86ec7f9f381c7aea8cbbecaa189c020e5fb700620bd96f4762f954757656b", size = 438525, upload-time = "2026-05-06T23:54:21.395Z" },
+]
+
+[[package]]
 name = "jsonschema"
 version = "4.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -936,6 +956,7 @@ cu124 = [
 ]
 descriptors-cdk = [
     { name = "cdk-pywrapper", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "jpype1", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
 ]
 dev = [
     { name = "pytest" },
@@ -956,6 +977,7 @@ requires-dist = [
     { name = "cdk-pywrapper", marker = "python_full_version >= '3.11' and extra == 'descriptors-cdk'", specifier = ">=1.0" },
     { name = "h5py", specifier = "==3.16.0" },
     { name = "hydra-core", specifier = "==1.3.2" },
+    { name = "jpype1", marker = "python_full_version >= '3.11' and extra == 'descriptors-cdk'", specifier = ">=1.5" },
     { name = "kaleido", specifier = "==1.3.0" },
     { name = "matplotlib", specifier = "==3.10.3" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=4.0" },

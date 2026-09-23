@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.14.0"  # Descriptors Pace 11: +307 opt-in (cdk_substructure / CDK Laggner substructure counts, DEP-BOUND)
+__version__ = "1.14.1"  # Pace 11 patch: declare jpype1 in [descriptors-cdk] (plugin imports jpype directly; CDK-pywrapper does not pull it)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

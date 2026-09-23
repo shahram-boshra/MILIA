@@ -116,7 +116,8 @@ docs = [
 # (or `uv sync --extra descriptors-cdk`) on Python 3.11+ with a JRE present.
 # The base install and the default descriptor count (3,026) are unaffected without this extra.
 descriptors-cdk = [
-    "CDK-pywrapper>=1.0 ; python_version >= '3.11'",  # pulls jpype1 + a complete CDK jar in its wheel
+    "CDK-pywrapper>=1.0 ; python_version >= '3.11'",  # provides the complete CDK jar in its wheel
+    "jpype1>=1.5 ; python_version >= '3.11'",  # the plugin loads that jar via jpype directly (CDK-pywrapper itself does NOT depend on jpype)
 ]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu118 | cu121 | cu124).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].

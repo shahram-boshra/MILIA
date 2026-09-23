@@ -30,7 +30,7 @@ Design (zero core modification):
 
 Names: `SubFPC1..307` (CDK/PaDEL convention); the Laggner functional-group label of each is in
 its description. `category: fragments`, `block: SubstructureCount`, `requires_3d: false`,
-`dependencies: [CDK-pywrapper]`.
+`dependencies: [CDK-pywrapper, jpype1]`.
 
 Reproducibility: pinned to the CDK version shipped by the installed `CDK-pywrapper`; the frozen
 snapshot is CDK's own integer counts (self-consistent, cross-platform). Regenerate on a CDK bump.
