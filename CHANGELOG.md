@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-09-20
+
+### Added
+
+- **Molecular Descriptors — Pace 11: 307 CDK Laggner substructure-count descriptors** as the first-party
+  **DEP-BOUND, opt-in** `cdk_substructure` plugin (`SubFPC1..307`). Counts of the 307 Christian Laggner /
+  InteLigand functional-group SMARTS, computed with the **canonical CDK engine**
+  (`SubstructureFingerprinter.getCountFingerprint`) via a persistent in-process JVM (`jpype`), with the
+  complete CDK jar sourced from the `CDK-pywrapper` wheel. `category: fragments`, `block: SubstructureCount`,
+  `requires_3d: false`.
+- **Plugin system: completed the `requires_extra` optional-dependency gate (core).** The `requires_extra`
+  field existed since Pace 1 but was an inert stub; it is now wired end-to-end — a plugin that declares
+  `requires_extra: <extra>` is skipped cleanly at discovery (not registered or validated) when that extra is
+  not importable (probed via the plugin's own module import). This gives MILIA proper support for DEP-BOUND
+  plugins: `cdk_substructure` declares `requires_extra: descriptors-cdk`, so the default install (and any env
+  without the extra / Python < 3.11) keeps the count at **3,026** with the plugin cleanly absent, while an env
+  with the extra sees it discovered and validated. Only plugins that declare `requires_extra` are affected;
+  the other 11 plugins are untouched. Covered by a new core test (`test_requires_extra_gate`).
+- **Opt-in / DEP-BOUND (first dependency-gated plugin).** Requires the new `[descriptors-cdk]` extra
+  (`CDK-pywrapper` + `jpype1`), a JRE, and **Python ≥ 3.11** (CDK-pywrapper drops 3.10; marker-gated so
+  MILIA core stays 3.10-compatible and the plugin auto-skips on 3.10). Without them the plugin is auto-skipped by the optional-dependency
+  skip-not-fail mechanism, so the **base install and default descriptor count (3,026) are unaffected**;
+  installing the extra activates it (**→ 3,333**).
+- **Why an engine wrapper, not RDKit-native.** RDKit and CDK differ in aromaticity/SMARTS perception, so an
+  RDKit reimplementation reproduces CDK on only ~98.86% of the 307 patterns (~11 fused-heteroaromatic/tautomer
+  patterns diverge, unfixable by aromaticity-model choice). Using CDK itself makes the values canonical and
+  bit-exact by construction. Full evaluation (padelpy vs jpype; scyjava vs CDK-pywrapper; the zero-core-edit
+  and repo-size constraints; benchmarks) is recorded in the Blueprint §9 Pace-11 STRATEGY EVALUATION.
+- **Design.** Zero core modification: the plugin owns the JVM lifecycle (lazy boot ~0.4 s, then ~7 ms/mol) and
+  thread-safety (module lock; the descriptor calculator is sequential by default) entirely in-plugin;
+  block-cache; `name == function_name` (0 bonus); None/failure → NaN. The CDK jar is never bundled in the repo
+  (repo stays 3.8 MB) and never fetched from Maven at runtime (offline-safe).
+- **Validation.** Frozen CDK snapshot (307 integer counts × panel) — self-consistent (engine == oracle),
+  deterministic, cross-platform; test module (4007) covers the snapshot, determinism, contract, and NaN
+  robustness, and `importorskip`s the CDK engine so CI without Java skips cleanly.
+
 ## [1.13.0] - 2026-09-19
 
 ### Added

@@ -227,6 +227,23 @@ wheels = [
 ]
 
 [[package]]
+name = "cdk-pywrapper"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "filelock", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "install-jdk", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "more-itertools", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "numpy", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "pandas", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+    { name = "rdkit", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/31/30768a59220dcbae78aef12808647a332cba6d926f8841948a082956e666/cdk_pywrapper-1.0.0.tar.gz", hash = "sha256:62b1a8d94474d1da402fc3c4dff860e280314aef5c35656b84c7e8931bc2d1f7", size = 43190447, upload-time = "2026-07-16T21:28:46.722Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/92/a941fdd0a93ad8968b2f6efa649012ce00b76a8d50203e956ea06be20021/cdk_pywrapper-1.0.0-py3-none-any.whl", hash = "sha256:cf529decb916c02c105e0a602c5e84e48ae08a23564c351f00f4a585152fa80d", size = 43197110, upload-time = "2026-07-16T21:28:13.703Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.7.22"
 source = { registry = "https://pypi.org/simple" }
@@ -586,6 +603,15 @@ wheels = [
 ]
 
 [[package]]
+name = "install-jdk"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/67/502a753533e9b4deb691f3f7ba6303682494f2d8ee651d6253cd78045b66/install_jdk-1.1.0.tar.gz", hash = "sha256:2bfd53caf660e4916df0215a5715519dcb9547fa2a5f07421fd97a8046851eaa", size = 15181, upload-time = "2023-07-21T01:18:36.591Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/5e/af84054b0ff9f9fbe49a7079d46ba8b4ee7ab6192a0310d4bd2c91254626/install_jdk-1.1.0-py3-none-any.whl", hash = "sha256:b63f0fcd63f7abab3443d4120ba92716397753b8a8ea3c85762a629925a9936e", size = 15648, upload-time = "2023-07-21T01:18:35.501Z" },
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -908,6 +934,9 @@ cu124 = [
     { name = "torch-sparse", version = "0.6.18+pt24cu124", source = { registry = "https://data.pyg.org/whl/torch-2.4.0+cu124.html" } },
     { name = "torch-spline-conv", version = "1.2.2+pt24cu124", source = { registry = "https://data.pyg.org/whl/torch-2.4.0+cu124.html" } },
 ]
+descriptors-cdk = [
+    { name = "cdk-pywrapper", marker = "python_full_version >= '3.11' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu118') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu121') or (extra == 'extra-8-milia-py-cu118' and extra == 'extra-8-milia-py-cu124') or (extra == 'extra-8-milia-py-cu121' and extra == 'extra-8-milia-py-cu124')" },
+]
 dev = [
     { name = "pytest" },
     { name = "pytest-mock" },
@@ -924,6 +953,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = "==3.29.0" },
+    { name = "cdk-pywrapper", marker = "python_full_version >= '3.11' and extra == 'descriptors-cdk'", specifier = ">=1.0" },
     { name = "h5py", specifier = "==3.16.0" },
     { name = "hydra-core", specifier = "==1.3.2" },
     { name = "kaleido", specifier = "==1.3.0" },
@@ -971,7 +1001,16 @@ requires-dist = [
     { name = "torch-spline-conv", marker = "extra == 'cu124'", specifier = "==1.2.2", index = "https://data.pyg.org/whl/torch-2.4.0+cu124.html", conflict = { package = "milia-py", extra = "cu124" } },
     { name = "torchmetrics", specifier = "==1.9.0" },
 ]
-provides-extras = ["dev", "docs", "cpu", "cu118", "cu121", "cu124"]
+provides-extras = ["dev", "docs", "descriptors-cdk", "cpu", "cu118", "cu121", "cu124"]
+
+[[package]]
+name = "more-itertools"
+version = "11.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/1d/f4da6f02cdffe04d6362210b807146a26044c88d839208aec273bb0d9184/more_itertools-11.1.0.tar.gz", hash = "sha256:48e8f4d9e7e5878571ecf6f2b4e57634f93cd474cc8cfbd2376f2d11b396e30d", size = 145772, upload-time = "2026-05-22T14:14:29.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/3d/1087453384dbde46a8c7f9356eead2c58be8a7bf156bca40243377c85715/more_itertools-11.1.0-py3-none-any.whl", hash = "sha256:4b65538ae22f6fed0ce4874efd317463a7489796a0939fa66824dd542125a192", size = 72226, upload-time = "2026-05-22T14:14:28.824Z" },
+]
 
 [[package]]
 name = "mpmath"

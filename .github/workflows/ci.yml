@@ -107,6 +107,37 @@ jobs:
       - name: Run smoke tests
         run: uv run --no-sync pytest -m smoke --tb=short -q tests/
 
+  # Gate the opt-in DEP-BOUND `cdk_substructure` plugin (Pace 11 / v1.14.0). It requires the
+  # `[descriptors-cdk]` extra (CDK-pywrapper + jpype1), a JRE, and Python >= 3.11 (CDK-pywrapper
+  # drops 3.10) — so it cannot be exercised by the 3.10 matrix / the default pipeline, and its
+  # tests importorskip elsewhere. This job installs Java + the extra on Python 3.12 and runs the
+  # plugin's tests explicitly, so the CDK compute path is actually verified in CI.
+  test-cdk:
+    name: Test CDK plugin (Python 3.12 + Java)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install a headless JRE
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-jre-headless
+      - name: Sync deps (+ descriptors-cdk extra)
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          command: uv sync --locked --extra cpu --extra dev --extra descriptors-cdk
+      - name: Run cdk_substructure tests (fail — not skip — if the engine is broken)
+        run: |
+          uv run --no-sync python -c "import CDK_pywrapper, jpype; print('CDK engine deps present')"
+          # Assert the JVM/CDK actually boots, so a broken engine FAILS the job instead of the
+          # tests silently importorskip-ing (the false-green we are guarding against):
+          uv run --no-sync python -c "import importlib.util as u; s=u.spec_from_file_location('c', 'milia_pipeline/plugins/descriptors/cdk_substructure/descriptors.py'); m=u.module_from_spec(s); s.loader.exec_module(m); assert m._init_cdk(), 'CDK engine failed to initialise'; print('CDK engine OK')"
+          uv run --no-sync pytest tests/test_descriptor_cdk_substructure_unit.py -q --tb=short -rs
+
   # Placeholder for a future FULL test suite (all ~23k tests, not just smoke).
   # With uv the entire scientific stack installs from PyPI, so no conda is needed —
   # enable by uncommenting:

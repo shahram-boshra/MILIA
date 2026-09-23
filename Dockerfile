@@ -58,8 +58,16 @@ RUN /app/.venv/bin/python -c "import importlib.metadata as md, milia_pipeline; p
 # CI builds this with `--target test` to run `pytest -m smoke`; the published image is `runtime`.
 FROM builder AS test
 ARG ACCEL
+# Java (headless JRE) is needed to gate the opt-in `cdk_substructure` plugin's tests (Pace 11 /
+# v1.14.0), which call the CDK engine via jpype. Use the distro DEFAULT headless JRE
+# (`default-jre-headless`) rather than a pinned major version: the python:3.x-slim base tracks
+# Debian stable (now Trixie → Java 21; openjdk-17 was dropped), so pinning a JRE version breaks on
+# base bumps. CDK SubFPC values are integer SMARTS counts, independent of the JRE version.
+# Without Java these tests importorskip (skip).
+RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless && \
+    rm -rf /var/lib/apt/lists/*
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --extra ${ACCEL} --extra dev
+    uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk
 ENV PATH="/app/.venv/bin:$PATH" \
     MILIA_LOG_DIR=/tmp
 # e.g. docker run --rm <test-image> pytest -m smoke -q tests/

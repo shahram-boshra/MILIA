@@ -1,0 +1,2787 @@
+# plugins/descriptors/cdk_substructure/plugin.yaml
+#
+# CDK Laggner substructure-count descriptors (descriptor programme, Pace 11 / v1.14.0).
+# 307 DEP-BOUND descriptors via the canonical CDK engine (jpype + CDK-pywrapper jar).
+#
+# DEP-BOUND + opt-in: requires the [descriptors-cdk] extra (CDK-pywrapper + jpype1) and a JRE.
+# Ships DISABLED by default (configs/plugins.yaml disabled_plugins). Canonical CDK values.
+
+plugin_name: "cdk_substructure"
+version: "1.14.0"
+author: "Asadollah (Shahram) Boshra"
+email: "a.boshra@gmail.com"
+description: "CDK Laggner substructure-count descriptors: counts of the 307 Christian Laggner / InteLigand functional-group SMARTS via the canonical CDK engine (SubstructureFingerprinter.getCountFingerprint). DEP-BOUND (jpype + CDK-pywrapper), opt-in."
+license: "MIT"
+homepage: "https://github.com/shahram-boshra/MILIA"
+milia_version: ">=1.14.0"
+python_version: ">=3.11"  # CDK-pywrapper drops 3.10; on 3.10 the plugin is dependency-skipped
+dependencies:
+  - "CDK-pywrapper"
+# Optional-dependency gate: skip this whole plugin cleanly at discovery when the extra is absent
+# (default install / Python 3.10 without the JRE) — keeps the default count at 3,026.
+requires_extra: "descriptors-cdk"
+
+descriptors:
+  - name: "SubFPC1"
+    function_name: "SubFPC1"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Primary_carbon"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC2"
+    function_name: "SubFPC2"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_carbon"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC3"
+    function_name: "SubFPC3"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_carbon"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC4"
+    function_name: "SubFPC4"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quaternary_carbon"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC5"
+    function_name: "SubFPC5"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC6"
+    function_name: "SubFPC6"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkyne"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC7"
+    function_name: "SubFPC7"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Allene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC8"
+    function_name: "SubFPC8"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylchloride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC9"
+    function_name: "SubFPC9"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylfluoride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC10"
+    function_name: "SubFPC10"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylbromide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC11"
+    function_name: "SubFPC11"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkyliodide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC12"
+    function_name: "SubFPC12"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alcohol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC13"
+    function_name: "SubFPC13"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Primary_alcohol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC14"
+    function_name: "SubFPC14"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_alcohol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC15"
+    function_name: "SubFPC15"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_alcohol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC16"
+    function_name: "SubFPC16"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Dialkylether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC17"
+    function_name: "SubFPC17"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Dialkylthioether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC18"
+    function_name: "SubFPC18"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylarylether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC19"
+    function_name: "SubFPC19"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Diarylether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC20"
+    function_name: "SubFPC20"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylarylthioether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC21"
+    function_name: "SubFPC21"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Diarylthioether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC22"
+    function_name: "SubFPC22"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Oxonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC23"
+    function_name: "SubFPC23"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC24"
+    function_name: "SubFPC24"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Primary_aliph_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC25"
+    function_name: "SubFPC25"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_aliph_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC26"
+    function_name: "SubFPC26"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_aliph_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC27"
+    function_name: "SubFPC27"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quaternary_aliph_ammonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC28"
+    function_name: "SubFPC28"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Primary_arom_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC29"
+    function_name: "SubFPC29"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_arom_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC30"
+    function_name: "SubFPC30"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_arom_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC31"
+    function_name: "SubFPC31"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quaternary_arom_ammonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC32"
+    function_name: "SubFPC32"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_mixed_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC33"
+    function_name: "SubFPC33"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_mixed_amine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC34"
+    function_name: "SubFPC34"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quaternary_mixed_ammonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC35"
+    function_name: "SubFPC35"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Ammonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC36"
+    function_name: "SubFPC36"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylthiol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC37"
+    function_name: "SubFPC37"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Dialkylthioether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC38"
+    function_name: "SubFPC38"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkylarylthioether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC39"
+    function_name: "SubFPC39"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Disulfide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC40"
+    function_name: "SubFPC40"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,2-Aminoalcohol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC41"
+    function_name: "SubFPC41"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,2-Diol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC42"
+    function_name: "SubFPC42"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,1-Diol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC43"
+    function_name: "SubFPC43"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydroperoxide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC44"
+    function_name: "SubFPC44"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Peroxo"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC45"
+    function_name: "SubFPC45"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Organolithium_compounds"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC46"
+    function_name: "SubFPC46"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Organomagnesium_compounds"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC47"
+    function_name: "SubFPC47"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Organometallic_compounds"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC48"
+    function_name: "SubFPC48"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Aldehyde"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC49"
+    function_name: "SubFPC49"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Ketone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC50"
+    function_name: "SubFPC50"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioaldehyde"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC51"
+    function_name: "SubFPC51"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioketone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC52"
+    function_name: "SubFPC52"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC53"
+    function_name: "SubFPC53"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Immonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC54"
+    function_name: "SubFPC54"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Oxime"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC55"
+    function_name: "SubFPC55"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Oximether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC56"
+    function_name: "SubFPC56"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acetal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC57"
+    function_name: "SubFPC57"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hemiacetal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC58"
+    function_name: "SubFPC58"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Aminal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC59"
+    function_name: "SubFPC59"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hemiaminal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC60"
+    function_name: "SubFPC60"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioacetal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC61"
+    function_name: "SubFPC61"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiohemiacetal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC62"
+    function_name: "SubFPC62"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Halogen_acetal_like"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC63"
+    function_name: "SubFPC63"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acetal_like"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC64"
+    function_name: "SubFPC64"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Halogenmethylen_ester_and_similar"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC65"
+    function_name: "SubFPC65"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: NOS_methylen_ester_and_similar"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC66"
+    function_name: "SubFPC66"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_methylen_ester_and_similar"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC67"
+    function_name: "SubFPC67"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Cyanhydrine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC68"
+    function_name: "SubFPC68"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Chloroalkene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC69"
+    function_name: "SubFPC69"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Fluoroalkene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC70"
+    function_name: "SubFPC70"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Bromoalkene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC71"
+    function_name: "SubFPC71"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Iodoalkene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC72"
+    function_name: "SubFPC72"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Enol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC73"
+    function_name: "SubFPC73"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Endiol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC74"
+    function_name: "SubFPC74"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Enolether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC75"
+    function_name: "SubFPC75"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Enolester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC76"
+    function_name: "SubFPC76"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Enamine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC77"
+    function_name: "SubFPC77"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioenol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC78"
+    function_name: "SubFPC78"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioenolether"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC79"
+    function_name: "SubFPC79"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acylchloride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC80"
+    function_name: "SubFPC80"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acylfluoride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC81"
+    function_name: "SubFPC81"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acylbromide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC82"
+    function_name: "SubFPC82"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acyliodide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC83"
+    function_name: "SubFPC83"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acylhalide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC84"
+    function_name: "SubFPC84"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carboxylic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC85"
+    function_name: "SubFPC85"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carboxylic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC86"
+    function_name: "SubFPC86"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Lactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC87"
+    function_name: "SubFPC87"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carboxylic_anhydride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC88"
+    function_name: "SubFPC88"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carboxylic_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC89"
+    function_name: "SubFPC89"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC90"
+    function_name: "SubFPC90"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_S_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC91"
+    function_name: "SubFPC91"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_S_lactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC92"
+    function_name: "SubFPC92"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_O_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC93"
+    function_name: "SubFPC93"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_O_lactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC94"
+    function_name: "SubFPC94"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbothioic_halide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC95"
+    function_name: "SubFPC95"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbodithioic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC96"
+    function_name: "SubFPC96"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbodithioic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC97"
+    function_name: "SubFPC97"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbodithiolactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC98"
+    function_name: "SubFPC98"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC99"
+    function_name: "SubFPC99"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Primary_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC100"
+    function_name: "SubFPC100"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Secondary_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC101"
+    function_name: "SubFPC101"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Tertiary_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC102"
+    function_name: "SubFPC102"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Lactam"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC103"
+    function_name: "SubFPC103"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alkyl_imide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC104"
+    function_name: "SubFPC104"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: N_hetero_imide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC105"
+    function_name: "SubFPC105"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imide_acidic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC106"
+    function_name: "SubFPC106"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC107"
+    function_name: "SubFPC107"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiolactam"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC108"
+    function_name: "SubFPC108"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Oximester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC109"
+    function_name: "SubFPC109"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Amidine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC110"
+    function_name: "SubFPC110"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydroxamic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC111"
+    function_name: "SubFPC111"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydroxamic_acid_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC112"
+    function_name: "SubFPC112"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidoacid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC113"
+    function_name: "SubFPC113"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidoacid_cyclic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC114"
+    function_name: "SubFPC114"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC115"
+    function_name: "SubFPC115"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidolactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC116"
+    function_name: "SubFPC116"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidothioacid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC117"
+    function_name: "SubFPC117"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidothioacid_cyclic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC118"
+    function_name: "SubFPC118"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidothioester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC119"
+    function_name: "SubFPC119"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidothiolactone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC120"
+    function_name: "SubFPC120"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Amidine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC121"
+    function_name: "SubFPC121"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidolactam"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC122"
+    function_name: "SubFPC122"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidoylhalide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC123"
+    function_name: "SubFPC123"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Imidoylhalide_cyclic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC124"
+    function_name: "SubFPC124"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Amidrazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC125"
+    function_name: "SubFPC125"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alpha_aminoacid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC126"
+    function_name: "SubFPC126"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Alpha_hydroxyacid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC127"
+    function_name: "SubFPC127"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Peptide_middle"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC128"
+    function_name: "SubFPC128"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Peptide_C_term"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC129"
+    function_name: "SubFPC129"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Peptide_N_term"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC130"
+    function_name: "SubFPC130"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carboxylic_orthoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC131"
+    function_name: "SubFPC131"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Ketene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC132"
+    function_name: "SubFPC132"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Ketenacetal"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC133"
+    function_name: "SubFPC133"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitrile"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC134"
+    function_name: "SubFPC134"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Isonitrile"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC135"
+    function_name: "SubFPC135"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Vinylogous_carbonyl_or_carboxyl_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC136"
+    function_name: "SubFPC136"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Vinylogous_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC137"
+    function_name: "SubFPC137"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Vinylogous_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC138"
+    function_name: "SubFPC138"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Vinylogous_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC139"
+    function_name: "SubFPC139"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Vinylogous_halide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC140"
+    function_name: "SubFPC140"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbonic_acid_dieester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC141"
+    function_name: "SubFPC141"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbonic_acid_esterhalide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC142"
+    function_name: "SubFPC142"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbonic_acid_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC143"
+    function_name: "SubFPC143"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbonic_acid_derivatives"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC144"
+    function_name: "SubFPC144"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocarbonic_acid_dieester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC145"
+    function_name: "SubFPC145"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocarbonic_acid_esterhalide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC146"
+    function_name: "SubFPC146"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocarbonic_acid_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC147"
+    function_name: "SubFPC147"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Urea"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC148"
+    function_name: "SubFPC148"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiourea"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC149"
+    function_name: "SubFPC149"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Isourea"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC150"
+    function_name: "SubFPC150"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Isothiourea"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC151"
+    function_name: "SubFPC151"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Guanidine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC152"
+    function_name: "SubFPC152"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbaminic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC153"
+    function_name: "SubFPC153"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Urethan"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC154"
+    function_name: "SubFPC154"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Biuret"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC155"
+    function_name: "SubFPC155"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Semicarbazide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC156"
+    function_name: "SubFPC156"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbazide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC157"
+    function_name: "SubFPC157"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Semicarbazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC158"
+    function_name: "SubFPC158"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC159"
+    function_name: "SubFPC159"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiosemicarbazide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC160"
+    function_name: "SubFPC160"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocarbazide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC161"
+    function_name: "SubFPC161"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiosemicarbazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC162"
+    function_name: "SubFPC162"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocarbazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC163"
+    function_name: "SubFPC163"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Isocyanate"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC164"
+    function_name: "SubFPC164"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Cyanate"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC165"
+    function_name: "SubFPC165"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Isothiocyanate"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC166"
+    function_name: "SubFPC166"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thiocyanate"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC167"
+    function_name: "SubFPC167"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Carbodiimide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC168"
+    function_name: "SubFPC168"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Orthocarbonic_derivatives"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC169"
+    function_name: "SubFPC169"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phenol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC170"
+    function_name: "SubFPC170"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,2-Diphenol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC171"
+    function_name: "SubFPC171"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Arylchloride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC172"
+    function_name: "SubFPC172"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Arylfluoride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC173"
+    function_name: "SubFPC173"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Arylbromide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC174"
+    function_name: "SubFPC174"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Aryliodide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC175"
+    function_name: "SubFPC175"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Arylthiol"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC176"
+    function_name: "SubFPC176"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Iminoarene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC177"
+    function_name: "SubFPC177"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Oxoarene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC178"
+    function_name: "SubFPC178"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thioarene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC179"
+    function_name: "SubFPC179"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_N_basic_H"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC180"
+    function_name: "SubFPC180"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_N_basic_no_H"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC181"
+    function_name: "SubFPC181"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_N_nonbasic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC182"
+    function_name: "SubFPC182"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_O"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC183"
+    function_name: "SubFPC183"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hetero_S"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC184"
+    function_name: "SubFPC184"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Heteroaromatic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC185"
+    function_name: "SubFPC185"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitrite"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC186"
+    function_name: "SubFPC186"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Thionitrite"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC187"
+    function_name: "SubFPC187"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitrate"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC188"
+    function_name: "SubFPC188"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitro"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC189"
+    function_name: "SubFPC189"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitroso"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC190"
+    function_name: "SubFPC190"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Azide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC191"
+    function_name: "SubFPC191"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Acylazide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC192"
+    function_name: "SubFPC192"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Diazo"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC193"
+    function_name: "SubFPC193"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Diazonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC194"
+    function_name: "SubFPC194"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitrosamine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC195"
+    function_name: "SubFPC195"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Nitrosamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC196"
+    function_name: "SubFPC196"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: N-Oxide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC197"
+    function_name: "SubFPC197"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydrazine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC198"
+    function_name: "SubFPC198"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydrazone"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC199"
+    function_name: "SubFPC199"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Hydroxylamine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC200"
+    function_name: "SubFPC200"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfon"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC201"
+    function_name: "SubFPC201"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfoxide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC202"
+    function_name: "SubFPC202"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC203"
+    function_name: "SubFPC203"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC204"
+    function_name: "SubFPC204"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC205"
+    function_name: "SubFPC205"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_diester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC206"
+    function_name: "SubFPC206"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_monoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC207"
+    function_name: "SubFPC207"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_diamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC208"
+    function_name: "SubFPC208"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_esteramide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC209"
+    function_name: "SubFPC209"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfuric_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC210"
+    function_name: "SubFPC210"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC211"
+    function_name: "SubFPC211"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC212"
+    function_name: "SubFPC212"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC213"
+    function_name: "SubFPC213"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonic_halide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC214"
+    function_name: "SubFPC214"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfonic_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC215"
+    function_name: "SubFPC215"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfinic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC216"
+    function_name: "SubFPC216"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfinic_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC217"
+    function_name: "SubFPC217"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfinic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC218"
+    function_name: "SubFPC218"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfinic_halide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC219"
+    function_name: "SubFPC219"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfinic_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC220"
+    function_name: "SubFPC220"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfenic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC221"
+    function_name: "SubFPC221"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfenic_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC222"
+    function_name: "SubFPC222"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfenic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC223"
+    function_name: "SubFPC223"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfenic_halide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC224"
+    function_name: "SubFPC224"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sulfenic_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC225"
+    function_name: "SubFPC225"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC226"
+    function_name: "SubFPC226"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphine_oxide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC227"
+    function_name: "SubFPC227"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonium"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC228"
+    function_name: "SubFPC228"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphorylen"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC229"
+    function_name: "SubFPC229"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC230"
+    function_name: "SubFPC230"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC231"
+    function_name: "SubFPC231"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_diester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC232"
+    function_name: "SubFPC232"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_monoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC233"
+    function_name: "SubFPC233"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_diamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC234"
+    function_name: "SubFPC234"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_esteramide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC235"
+    function_name: "SubFPC235"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonic_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC236"
+    function_name: "SubFPC236"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC237"
+    function_name: "SubFPC237"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC238"
+    function_name: "SubFPC238"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_diester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC239"
+    function_name: "SubFPC239"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_triester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC240"
+    function_name: "SubFPC240"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_monoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC241"
+    function_name: "SubFPC241"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_diamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC242"
+    function_name: "SubFPC242"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_triamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC243"
+    function_name: "SubFPC243"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_monoestermonoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC244"
+    function_name: "SubFPC244"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_diestermonoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC245"
+    function_name: "SubFPC245"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_monoesterdiamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC246"
+    function_name: "SubFPC246"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphoric_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC247"
+    function_name: "SubFPC247"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinic_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC248"
+    function_name: "SubFPC248"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinic_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC249"
+    function_name: "SubFPC249"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinic_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC250"
+    function_name: "SubFPC250"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinic_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC251"
+    function_name: "SubFPC251"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC252"
+    function_name: "SubFPC252"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_monoester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC253"
+    function_name: "SubFPC253"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_diester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC254"
+    function_name: "SubFPC254"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_monoamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC255"
+    function_name: "SubFPC255"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_diamide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC256"
+    function_name: "SubFPC256"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_esteramide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC257"
+    function_name: "SubFPC257"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphonous_derivatives"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC258"
+    function_name: "SubFPC258"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinous_acid"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC259"
+    function_name: "SubFPC259"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinous_ester"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC260"
+    function_name: "SubFPC260"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinous_amide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC261"
+    function_name: "SubFPC261"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Phosphinous_derivatives"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC262"
+    function_name: "SubFPC262"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quart_silane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC263"
+    function_name: "SubFPC263"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Non-quart_silane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC264"
+    function_name: "SubFPC264"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Silylmonohalide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC265"
+    function_name: "SubFPC265"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Het_trialkylsilane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC266"
+    function_name: "SubFPC266"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Dihet_dialkylsilane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC267"
+    function_name: "SubFPC267"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Trihet_alkylsilane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC268"
+    function_name: "SubFPC268"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Silicic_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC269"
+    function_name: "SubFPC269"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Trialkylborane"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC270"
+    function_name: "SubFPC270"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Boric_acid_derivatives"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC271"
+    function_name: "SubFPC271"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Boronic_acid_derivative"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC272"
+    function_name: "SubFPC272"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Borohydride"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC273"
+    function_name: "SubFPC273"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Quaternary_boron"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC274"
+    function_name: "SubFPC274"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Aromatic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC275"
+    function_name: "SubFPC275"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Heterocyclic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC276"
+    function_name: "SubFPC276"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Epoxide"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC277"
+    function_name: "SubFPC277"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: NH_aziridine"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC278"
+    function_name: "SubFPC278"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Spiro"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC279"
+    function_name: "SubFPC279"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Annelated_rings"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC280"
+    function_name: "SubFPC280"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Bridged_rings"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC281"
+    function_name: "SubFPC281"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_1"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC282"
+    function_name: "SubFPC282"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_2"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC283"
+    function_name: "SubFPC283"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_combi"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC284"
+    function_name: "SubFPC284"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_2_reducing"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC285"
+    function_name: "SubFPC285"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_2_alpha"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC286"
+    function_name: "SubFPC286"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Sugar_pattern_2_beta"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC287"
+    function_name: "SubFPC287"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Conjugated_double_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC288"
+    function_name: "SubFPC288"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Conjugated_tripple_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC289"
+    function_name: "SubFPC289"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Cis_double_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC290"
+    function_name: "SubFPC290"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Trans_double_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC291"
+    function_name: "SubFPC291"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Mixed_anhydrides"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC292"
+    function_name: "SubFPC292"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Halogen_on_hetero"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC293"
+    function_name: "SubFPC293"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Halogen_multi_subst"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC294"
+    function_name: "SubFPC294"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Trifluoromethyl"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC295"
+    function_name: "SubFPC295"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: C_ONS_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC296"
+    function_name: "SubFPC296"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Charged"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC297"
+    function_name: "SubFPC297"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Anion"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC298"
+    function_name: "SubFPC298"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Kation"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC299"
+    function_name: "SubFPC299"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Salt"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC300"
+    function_name: "SubFPC300"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,3-Tautomerizable"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC301"
+    function_name: "SubFPC301"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: 1,5-Tautomerizable"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC302"
+    function_name: "SubFPC302"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Rotatable_bond"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC303"
+    function_name: "SubFPC303"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Michael_acceptor"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC304"
+    function_name: "SubFPC304"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Dicarbodiazene"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC305"
+    function_name: "SubFPC305"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: CH-acidic"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC306"
+    function_name: "SubFPC306"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: CH-acidic_strong"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"
+  - name: "SubFPC307"
+    function_name: "SubFPC307"
+    module_path: "descriptors"
+    category: "fragments"
+    block: "SubstructureCount"
+    description: "Laggner substructure count: Chiral_center_specified"
+    requires_3d: false
+    requires_charges: false
+    version: "1.14.0"

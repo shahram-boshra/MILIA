@@ -205,6 +205,66 @@ def calc_test{i}(mol):
         assert "test_plugin_0" in plugins, f"test_plugin_0 not found in {plugins}"
         assert "test_plugin_1" in plugins, f"test_plugin_1 not found in {plugins}"
 
+    def test_requires_extra_gate(self, tmp_path):
+        """`requires_extra` optional-dependency gate (Pace 11 / v1.14.0).
+
+        A plugin that declares an install extra it needs is skipped cleanly at discovery when that
+        extra is NOT importable (its module raises ImportError), and discovered normally when it IS.
+        Guards the DEP-BOUND failure mode where a dependency-gated plugin would otherwise register
+        NaN descriptors (polluting the count) or fail validation in environments without the extra.
+        """
+        # (a) gated plugin whose module imports an absent package -> must be SKIPPED
+        gated = tmp_path / "gated_plugin"
+        gated.mkdir()
+        (gated / "plugin.yaml").write_text("""
+plugin_name: "gated_plugin"
+version: "1.0.0"
+author: "Test"
+description: "DEP-BOUND plugin needing an absent extra"
+milia_version: ">=1.0.0"
+requires_extra: "some-absent-extra"
+
+descriptors:
+  - name: "GatedDesc"
+    function_name: "calc_gated"
+    module_path: "descriptors"
+    category: "constitutional"
+    description: "gated"
+""")
+        (gated / "descriptors.py").write_text(
+            "import totally_absent_pkg_xyz\n\ndef calc_gated(mol):\n    return 1.0\n"
+        )
+
+        # (b) control plugin that declares requires_extra but whose module imports fine -> DISCOVERED
+        avail = tmp_path / "avail_plugin"
+        avail.mkdir()
+        (avail / "plugin.yaml").write_text("""
+plugin_name: "avail_plugin"
+version: "1.0.0"
+author: "Test"
+description: "extra present"
+milia_version: ">=1.0.0"
+requires_extra: "present-extra"
+
+descriptors:
+  - name: "AvailDesc"
+    function_name: "calc_avail"
+    module_path: "descriptors"
+    category: "constitutional"
+    description: "avail"
+""")
+        (avail / "descriptors.py").write_text(
+            "import os  # always importable\n\ndef calc_avail(mol):\n    return 2.0\n"
+        )
+
+        plugins = discover_plugins(paths=[tmp_path])
+        assert "gated_plugin" not in plugins, (
+            f"gated_plugin must be skipped when its extra is absent: {plugins}"
+        )
+        assert "avail_plugin" in plugins, (
+            f"avail_plugin must be discovered when its extra is importable: {plugins}"
+        )
+
     def test_end_to_end_workflow(self):
         """Test complete workflow from discovery to calculation"""
         # Use absolute path from project root

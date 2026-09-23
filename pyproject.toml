@@ -108,6 +108,16 @@ docs = [
     "myst-parser>=4.0",
     "sphinx-copybutton>=0.5.2",
 ]
+# DEP-BOUND, opt-in: the `cdk_substructure` descriptor plugin (Pace 11 / v1.14.0). Provides the
+# 307 Laggner substructure counts via the CANONICAL CDK engine (jpype + CDK-pywrapper's bundled
+# CDK jar — offline-safe, not fetched from Maven at runtime). Requires a JRE at runtime AND
+# Python >= 3.11 (CDK-pywrapper 1.0.0 drops 3.10) — hence the marker; on Python 3.10 the extra is
+# empty and the plugin auto-skips (dependency-gated). Install: `pip install -e ".[descriptors-cdk]"`
+# (or `uv sync --extra descriptors-cdk`) on Python 3.11+ with a JRE present.
+# The base install and the default descriptor count (3,026) are unaffected without this extra.
+descriptors-cdk = [
+    "CDK-pywrapper>=1.0 ; python_version >= '3.11'",  # pulls jpype1 + a complete CDK jar in its wheel
+]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu118 | cu121 | cu124).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
 # CPU is the validated cutover target (matches the current cpuonly image + CPU-only dev/CI hardware);

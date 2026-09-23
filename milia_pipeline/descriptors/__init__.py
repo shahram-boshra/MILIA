@@ -20,7 +20,8 @@ descriptors for the milia pipeline, including:
   cats2d adds 150 CATS2D topological pharmacophore-pair descriptors,
   eta adds 45 Extended Topochemical Atom (ETA) indices,
   cpsa_geometric_3d adds 50 CPSA + gravitational + geometrical 3D descriptors,
-  eht_electronic adds 25 extended-Hückel conceptual-DFT reactivity descriptors)
+  eht_electronic adds 25 extended-Hückel conceptual-DFT reactivity descriptors;
+  cdk_substructure adds 307 CDK Laggner substructure counts (opt-in, [descriptors-cdk]))
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

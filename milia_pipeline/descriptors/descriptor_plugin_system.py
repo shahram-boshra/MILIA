@@ -171,6 +171,13 @@ class DescriptorPluginMetadata(BaseModel):
     milia_version: str = ">=1.0.0"
     python_version: str = ">=3.8"
     dependencies: list[str] = Field(default_factory=list)
+    # Optional-dependency gate (Pace 1 requires_extra, wiring completed Pace 11 / v1.14.0): the name
+    # of an optional install extra (e.g. "descriptors-cdk") that this whole plugin needs. When set and
+    # the extra is not importable, the plugin is skipped cleanly at discovery (see _extra_available /
+    # discover_plugins) — not registered and not validated — so DEP-BOUND plugins never pollute the
+    # default descriptor count or fail validation in environments without the extra. Null for
+    # core-only plugins.
+    requires_extra: str | None = None
 
     # Declarations vs Registrations (CRITICAL SEPARATION)
     descriptor_declarations: list[DescriptorDeclaration] = Field(default_factory=list)
@@ -400,6 +407,21 @@ class DescriptorPluginLoader:
                     if not plugin_meta:
                         continue
 
+                    # Optional-dependency gate (requires_extra): a plugin that declares an install
+                    # extra it needs is skipped cleanly — not discovered, registered, or validated —
+                    # when that extra is not importable. This keeps DEP-BOUND plugins (e.g.
+                    # cdk_substructure, which needs [descriptors-cdk] + Python >= 3.11 + a JRE) out of
+                    # the default install/count and out of validation where the extra is absent,
+                    # instead of registering NaN descriptors or failing validation.
+                    if plugin_meta.requires_extra and not self._extra_available(
+                        plugin_meta, plugin_yaml.parent
+                    ):
+                        logger.info(
+                            f"Skipping plugin '{plugin_meta.plugin_name}': optional extra "
+                            f"'{plugin_meta.requires_extra}' not installed"
+                        )
+                        continue
+
                     # Register plugin
                     self._plugins[plugin_meta.plugin_name] = plugin_meta
                     discovered_plugins.append(plugin_meta.plugin_name)
@@ -440,6 +462,38 @@ class DescriptorPluginLoader:
 
         logger.info(f"Plugin discovery complete: {len(discovered_plugins)} plugins discovered")
         return discovered_plugins
+
+    def _extra_available(self, plugin_meta: "DescriptorPluginMetadata", plugin_dir: Path) -> bool:
+        """Probe whether a DEP-BOUND plugin's optional extra is importable.
+
+        Completes the ``requires_extra`` optional-dependency gate (Pace 1 field, wiring added
+        Pace 11 / v1.14.0). Uses the plugin's own descriptor module as the probe: its module-level
+        imports of the extra's packages raise ImportError when the ``[requires_extra]`` extra is not
+        installed. Returns:
+            * False  -> the module raised ImportError => extra missing => skip the plugin cleanly.
+            * True   -> the module imported, OR raised a NON-ImportError (a real bug, not a missing
+                        extra, which must surface through normal registration rather than be hidden).
+
+        Only ever called for plugins that declare ``requires_extra``; core-only plugins are untouched.
+        """
+        for declaration in plugin_meta.descriptor_declarations:
+            module_file = plugin_dir / f"{declaration.module_path}.py"
+            if not module_file.exists():
+                continue
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    f"_extra_probe_{plugin_meta.plugin_name}", module_file
+                )
+                if spec is None or spec.loader is None:
+                    return True
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                return True
+            except ImportError:
+                return False
+            except Exception:
+                return True
+        return True
 
     def _load_plugin_metadata_from_yaml(self, yaml_path: Path) -> DescriptorPluginMetadata | None:
         """

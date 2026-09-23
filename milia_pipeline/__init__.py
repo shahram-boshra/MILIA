@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.13.0"  # Descriptors Pace 10: +25 (eht_electronic / extended-Hückel conceptual-DFT)
+__version__ = "1.14.0"  # Descriptors Pace 11: +307 opt-in (cdk_substructure / CDK Laggner substructure counts, DEP-BOUND)
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
