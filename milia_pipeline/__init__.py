@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.14.1"  # Pace 11 patch: declare jpype1 in [descriptors-cdk] (plugin imports jpype directly; CDK-pywrapper does not pull it)
+__version__ = "1.15.0"  # Descriptors Pace 11 follow-up: cdk_substructure +3 (Ghose-Crippen ALogP/ALogp2/AMR via CDK) -> 310 opt-in
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-09-24
+
+### Added
+
+- **Molecular Descriptors — Pace 11 follow-up: 3 Ghose-Crippen descriptors** (`ALogP`, `ALogp2`, `AMR`) added
+  to the DEP-BOUND `cdk_substructure` plugin, computed with the canonical CDK engine (`ALOGPDescriptor`) via
+  the same persistent-JVM path as the 307 Laggner substructure counts. `category: constitutional`,
+  `block: ALOGP`. The plugin now provides **310** descriptors (307 + 3); with `[descriptors-cdk]` on Python
+  3.11+ the total is **3,336** (default install unchanged at 3,026). Deterministic; validated against the
+  CDK-generated frozen snapshot (self-consistent, engine == oracle). Ghose-Crippen ALogP/AMR are distinct from
+  the RDKit `MolLogP`/`MolMR` already in the base (different atom-typed implementation).
+- **Scope note:** the originally-planned edge-adjacency `EE_*` family (9) was dropped — it has no CDK
+  descriptor class (it is PaDEL-specific), so it cannot use the persistent-JVM CDK engine, and it is of
+  marginal value over the 177 existing `matrix_spectral` spectral descriptors.
+
+### Fixed
+
+- **Performance tests hardened against CI flakiness (root-cause fix).** `test_single_descriptor_speed` and
+  `test_multiple_descriptors_speed` used a single absolute wall-clock measurement (`assert elapsed < 1.0/2.0`),
+  a known flaky anti-pattern on shared CI (a load spike made a trivial 100×`MolWt` run take ~2.9 s). Rewritten
+  to **warm up + measure best-of-5 (minimum), clearing the cache each run** so they time real compute. Per the
+  Python `timeit` docs the minimum is the machine's lower bound — higher values come from other processes
+  interfering, not the code — so min-of-N is immune to load spikes. Registered a `perf` marker for optional
+  separate running. No production-code change; the tests remain in the gate but no longer flake.
+
 ## [1.14.1] - 2026-09-23
 
 ### Fixed

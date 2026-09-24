@@ -1,7 +1,7 @@
 # `cdk_substructure` — CDK Laggner substructure-count descriptors (DEP-BOUND)
 
 First-party **DEP-BOUND, opt-in** descriptor plugin shipped with MILIA (descriptor programme,
-**Pace 11 / v1.14.0**). 307 Laggner functional-group **substructure counts**, computed with the
+**Pace 11 / v1.14.0**). 307 Laggner functional-group **substructure counts** plus 3 **Ghose-Crippen** descriptors (ALogP/ALogp2/AMR), computed with the
 **canonical CDK engine** (`SubstructureFingerprinter.getCountFingerprint`; the Christian Laggner /
 InteLigand SMARTS set) — **not** an RDKit reimplementation.
 
@@ -27,7 +27,9 @@ Blueprint **§9 Pace-11 STRATEGY EVALUATION + DECISION RECORD**.
 
 ## Contents
 
-307 descriptors `SubFPC1..307` — counts of the 307 Laggner functional-group SMARTS (each
+**310 descriptors.** `SubFPC1..307` — counts of the 307 Laggner functional-group SMARTS; plus `ALogP`, `ALogp2`, `AMR` — Ghose-Crippen atomic LogP / its square / molar refractivity (CDK `ALOGPDescriptor`, `category: constitutional`, `block: ALOGP`; distinct from the base RDKit `MolLogP`/`MolMR`).
+
+`SubFPC1..307` — counts of the 307 Laggner functional-group SMARTS (each
 descriptor's Laggner label is in its `description`, e.g. `SubFPC1` = *Primary_carbon*, `SubFPC2` =
 *Secondary_carbon*, …). `category: fragments`, `block: SubstructureCount`, `requires_3d: false`,
 `dependencies: [CDK-pywrapper]`.

@@ -67,7 +67,11 @@ _NAME_IDS = [pytest.param(n, id=n) for n in _NAMES]
 @pytest.mark.parametrize("smiles,mol,name,expected", _SNAPSHOT_CASES)
 def test_oracle_snapshot(smiles, mol, name, expected):
     got = getattr(cdk, name)(Chem.MolFromSmiles(smiles))
-    assert not math.isnan(got) and int(got) == int(expected), f"{mol}/{name}"
+    assert not math.isnan(got), f"{mol}/{name}"
+    if name in ("ALogP", "ALogp2", "AMR"):  # Ghose-Crippen floats
+        assert math.isclose(got, float(expected), rel_tol=1e-9, abs_tol=1e-9), f"{mol}/{name}"
+    else:  # SubFPC integer counts
+        assert int(got) == int(expected), f"{mol}/{name}"
 
 
 # 2. determinism + robustness
@@ -86,23 +90,27 @@ def test_none_returns_nan(name):
 
 # 3. contract / invariants (do NOT require the CDK engine)
 def test_total_count():
-    assert len(_DECLS) == 307
-    assert len(set(cdk.ALL_DESCRIPTOR_NAMES)) == 307
+    assert len(_DECLS) == 310
+    assert len(set(cdk.ALL_DESCRIPTOR_NAMES)) == 310
 
 
 def test_name_equals_function_name():
     for d in _DECLS:
         assert d["name"] == d["function_name"], d["name"]
         assert callable(getattr(cdk, d["function_name"], None))
-        assert d["category"] == "fragments"
-        assert d["block"] == "SubstructureCount"
+        if d["name"] in ("ALogP", "ALogp2", "AMR"):
+            assert d["category"] == "constitutional" and d["block"] == "ALOGP"
+        else:
+            assert d["category"] == "fragments" and d["block"] == "SubstructureCount"
         assert d["requires_3d"] is False
 
 
 def test_declares_cdk_dependency():
     doc = _yaml.safe_load(_YAML.read_text())
     assert any("CDK-pywrapper" in str(dep) for dep in (doc.get("dependencies") or []))
-    assert all(n.startswith("SubFPC") for n in cdk.ALL_DESCRIPTOR_NAMES)
+    assert all(
+        n.startswith("SubFPC") or n in ("ALogP", "ALogp2", "AMR") for n in cdk.ALL_DESCRIPTOR_NAMES
+    )
 
 
 # 4. counts are non-negative integers (when CDK present)
@@ -111,5 +119,7 @@ def test_declares_cdk_dependency():
 def test_counts_are_nonneg_integers(smiles):
     m = Chem.MolFromSmiles(smiles)
     for n in _NAMES:
+        if n in ("ALogP", "ALogp2", "AMR"):
+            continue  # Ghose-Crippen floats, not non-negative integer counts
         v = getattr(cdk, n)(m)
         assert not math.isnan(v) and v >= 0 and float(v).is_integer()

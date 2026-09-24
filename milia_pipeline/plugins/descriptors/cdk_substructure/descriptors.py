@@ -2,7 +2,7 @@
 CDK Laggner substructure-count descriptors for MILIA
 (descriptor programme, Pace 11 / v1.14.0).
 
-DEP-BOUND, opt-in plugin. Computes the 307 Laggner functional-group substructure COUNTS
+DEP-BOUND, opt-in plugin. Computes the 307 Laggner functional-group substructure COUNTS plus 3 Ghose-Crippen values (ALogP/ALogp2/AMR)
 (CDK `SubstructureFingerprinter.getCountFingerprint`; the Christian Laggner / InteLigand
 SMARTS set) by calling the CANONICAL CDK engine directly via a persistent in-process JVM
 (`jpype`), with the complete CDK jar sourced from the `CDK-pywrapper` dependency (its wheel,
@@ -84,6 +84,9 @@ def _init_cdk():
             _CDK["ACM"] = jpype.JClass(
                 "org.openscience.cdk.tools.manipulator.AtomContainerManipulator"
             )
+            _CDK["ALOGP"] = jpype.JClass(
+                "org.openscience.cdk.qsar.descriptors.molecular.ALOGPDescriptor"
+            )
             _CDK["ready"] = True
         except Exception as exc:  # jpype / CDK-pywrapper / Java absent
             logger.warning("cdk_substructure: CDK engine unavailable (%s); descriptors -> NaN", exc)
@@ -93,7 +96,8 @@ def _init_cdk():
 
 @functools.lru_cache(maxsize=1)
 def _cdk_block(mol):
-    """Compute all 307 Laggner substructure counts once per molecule (single-slot memoised)."""
+    """Compute all 310 CDK descriptors once per molecule (single-slot memoised):
+    307 Laggner substructure counts + 3 Ghose-Crippen values (ALogP/ALogp2/AMR)."""
     out = {name: _NAN for name in ALL_DESCRIPTOR_NAMES}
     if mol is None or not _init_cdk():
         return out
@@ -104,6 +108,7 @@ def _cdk_block(mol):
         if not smiles:
             return out
         counts = [0] * 307
+        alogp_vals = None
         with _LOCK:
             parser = _CDK["SmilesParser"](_CDK["builder"])
             ac = parser.parseSmiles(smiles)
@@ -111,8 +116,16 @@ def _cdk_block(mol):
             cf = _CDK["Fingerprinter"]().getCountFingerprint(ac)
             for i in range(cf.numOfPopulatedbins()):
                 counts[int(cf.getHash(i))] = int(cf.getCount(i))
+            try:
+                raw = str(_CDK["ALOGP"]().calculate(ac).getValue()).split(",")
+                if len(raw) >= 3:
+                    alogp_vals = [float(raw[0]), float(raw[1]), float(raw[2])]
+            except Exception:
+                alogp_vals = None
         for i in range(307):
             out[f"SubFPC{i + 1}"] = float(counts[i])
+        if alogp_vals is not None:
+            out["ALogP"], out["ALogp2"], out["AMR"] = alogp_vals
     except Exception:
         return {name: _NAN for name in ALL_DESCRIPTOR_NAMES}
     return out
@@ -435,6 +448,9 @@ _SubFPC304 = _make("SubFPC304")
 _SubFPC305 = _make("SubFPC305")
 _SubFPC306 = _make("SubFPC306")
 _SubFPC307 = _make("SubFPC307")
+_ALogP = _make("ALogP")
+_ALogp2 = _make("ALogp2")
+_AMR = _make("AMR")
 
 
 # ---- public wrappers (name == function_name; declared -> 0 bonus) ----
@@ -1975,6 +1991,21 @@ def SubFPC307(mol):
     return _SubFPC307(mol)
 
 
+def ALogP(mol):
+    """Ghose-Crippen atomic LogP (CDK ALOGPDescriptor)."""
+    return _ALogP(mol)
+
+
+def ALogp2(mol):
+    """Square of the Ghose-Crippen ALogP (CDK ALOGPDescriptor)."""
+    return _ALogp2(mol)
+
+
+def AMR(mol):
+    """Ghose-Crippen atomic molar refractivity (CDK ALOGPDescriptor)."""
+    return _AMR(mol)
+
+
 ALL_DESCRIPTOR_NAMES = (
     "SubFPC1",
     "SubFPC2",
@@ -2283,4 +2314,7 @@ ALL_DESCRIPTOR_NAMES = (
     "SubFPC305",
     "SubFPC306",
     "SubFPC307",
+    "ALogP",
+    "ALogp2",
+    "AMR",
 )

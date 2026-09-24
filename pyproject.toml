@@ -283,6 +283,7 @@ markers = [
     "regression: Regression protection tests",
     "thread_safety: Concurrent access tests",
     "slow: Tests taking > 30 seconds (deselect with '-m \"not slow\"')",
+    "perf: Performance benchmarks — wall-clock timing, measured best-of-N (min); the min is the machine lower bound, immune to CI load spikes (timeit docs)",
     "integration: marks integration tests",
     "gpu: marks tests requiring GPU",
 ]

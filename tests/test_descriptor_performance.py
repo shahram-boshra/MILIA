@@ -145,35 +145,57 @@ class TestDescriptorPerformance:
             generate_conformers=False,  # Disable to avoid 3D generation overhead
         )
 
+    @pytest.mark.perf
     def test_single_descriptor_speed(self, calculator, molecules):
-        """Test speed of single descriptor calculation"""
-        start = time.time()
-        for mol in molecules:
-            result = calculator.calculate_single(mol, "MolWt", "test_mol")
-            assert result.success
-        elapsed = time.time() - start
+        """Speed of single-descriptor calculation.
 
-        # Should calculate 100 molecules in < 1 second
-        assert elapsed < 1.0, f"Single descriptor took {elapsed:.3f}s, expected < 1.0s"
+        Measured best-of-N: each run clears the cache (so it measures real compute, not cache
+        hits) and is timed; the MINIMUM across runs is asserted. Per the Python ``timeit`` docs the
+        minimum is the machine's lower bound — higher values come from other processes interfering
+        with timing, not from the code — so min-of-N is immune to CI load spikes and is not flaky.
+        """
 
-        per_molecule = elapsed / len(molecules)
-        print(f"\nSingle descriptor: {per_molecule * 1000:.2f} ms per molecule")
+        def _run():
+            calculator.clear_cache()
+            start = time.perf_counter()
+            for mol in molecules:
+                assert calculator.calculate_single(mol, "MolWt", "test_mol").success
+            return time.perf_counter() - start
 
+        _run()  # warmup — discard cold-start (imports, RDKit/JIT, allocator warm-up)
+        best = min(_run() for _ in range(5))
+
+        # 100 trivial MolWt calculations; the machine lower bound is milliseconds, so 1.0s is a
+        # generous ceiling that only a genuine ~1000x regression would breach.
+        assert best < 1.0, f"Single descriptor best-of-5 took {best:.3f}s, expected < 1.0s"
+
+        print(
+            f"\nSingle descriptor: {best / len(molecules) * 1000:.3f} ms per molecule (best of 5)"
+        )
+
+    @pytest.mark.perf
     def test_multiple_descriptors_speed(self, calculator, molecules):
-        """Test speed of multiple descriptor calculations via batch"""
+        """Speed of multi-descriptor batch calculation (best-of-N min; see
+        test_single_descriptor_speed for why the minimum is used)."""
         descriptors = ["MolWt", "TPSA", "NumRotatableBonds", "NumHDonors", "NumHAcceptors"]
 
-        start = time.time()
-        for mol in molecules:
-            result = calculator.calculate_batch(mol, descriptors, "test_mol")
-            assert len(result.successful) == len(descriptors)
-        elapsed = time.time() - start
+        def _run():
+            calculator.clear_cache()
+            start = time.perf_counter()
+            for mol in molecules:
+                result = calculator.calculate_batch(mol, descriptors, "test_mol")
+                assert len(result.successful) == len(descriptors)
+            return time.perf_counter() - start
 
-        # Should calculate 5 descriptors for 100 molecules in < 2 seconds
-        assert elapsed < 2.0, f"Multiple descriptors took {elapsed:.3f}s, expected < 2.0s"
+        _run()  # warmup
+        best = min(_run() for _ in range(5))
 
-        per_molecule = elapsed / len(molecules)
-        print(f"\nMultiple descriptors: {per_molecule * 1000:.2f} ms per molecule")
+        # 5 trivial descriptors × 100 molecules; 2.0s is a generous ceiling on the machine minimum.
+        assert best < 2.0, f"Multiple descriptors best-of-5 took {best:.3f}s, expected < 2.0s"
+
+        print(
+            f"\nMultiple descriptors: {best / len(molecules) * 1000:.3f} ms per molecule (best of 5)"
+        )
 
     def test_batch_calculation_overhead(self, calculator, molecules, mock_registry):
         """Test overhead of batch descriptor calculation"""

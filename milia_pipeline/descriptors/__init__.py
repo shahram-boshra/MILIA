@@ -21,7 +21,7 @@ descriptors for the milia pipeline, including:
   eta adds 45 Extended Topochemical Atom (ETA) indices,
   cpsa_geometric_3d adds 50 CPSA + gravitational + geometrical 3D descriptors,
   eht_electronic adds 25 extended-Hückel conceptual-DFT reactivity descriptors;
-  cdk_substructure adds 307 CDK Laggner substructure counts (opt-in, [descriptors-cdk]))
+  cdk_substructure adds 310 CDK descriptors — 307 Laggner substructure counts + 3 Ghose-Crippen ALogP/ALogp2/AMR (opt-in, [descriptors-cdk]))
 - Auto-discovery and registration system
 - Plugin architecture for custom descriptors
 - Batch processing with caching

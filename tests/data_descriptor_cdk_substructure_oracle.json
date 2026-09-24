@@ -1,5 +1,5 @@
 {
-  "_comment": "Frozen CDK SubstructureFingerprinter.getCountFingerprint oracle for cdk_substructure (Pace 11/v1.14.0). Canonical CDK values via the CDK-pywrapper jar (jpype). Per mol: SMILES + 307 integer counts. Engine == oracle (self-consistent). Regenerate on CDK-pywrapper/CDK version bump.",
+  "_comment": "Frozen CDK SubstructureFingerprinter.getCountFingerprint oracle for cdk_substructure (Pace 11/v1.14.0). Canonical CDK values via the CDK-pywrapper jar (jpype). Per mol: SMILES + 307 integer counts + 3 Ghose-Crippen floats (ALogP/ALogp2/AMR). Engine == oracle (self-consistent). Regenerate on CDK-pywrapper/CDK version bump.",
   "_oracle": "CDK via CDK-pywrapper (jpype); RDKit-mol -> canonical SMILES -> CDK; snapshot rows are ints",
   "panel": {
     "acetic_acid": "CC(=O)O",
@@ -17,6 +17,9 @@
   },
   "values": {
     "acetic_acid": {
+      "ALogP": -0.22990000000000016,
+      "ALogp2": 0.052854010000000076,
+      "AMR": 12.643699999999999,
       "SubFPC1": 1,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -326,6 +329,9 @@
       "SubFPC99": 0
     },
     "aniline": {
+      "ALogP": 1.0834000000000001,
+      "ALogp2": 1.1737555600000003,
+      "AMR": 30.7584,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -635,6 +641,9 @@
       "SubFPC99": 0
     },
     "aspirin": {
+      "ALogP": 1.2020999999999997,
+      "ALogp2": 1.4450444099999993,
+      "AMR": 43.948800000000006,
       "SubFPC1": 1,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -944,6 +953,9 @@
       "SubFPC99": 0
     },
     "benzene": {
+      "ALogP": 1.8299999999999996,
+      "ALogp2": 3.3488999999999987,
+      "AMR": 26.058,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -1253,6 +1265,9 @@
       "SubFPC99": 0
     },
     "caffeine": {
+      "ALogP": 0.8221999999999999,
+      "ALogp2": 0.6760128399999998,
+      "AMR": 49.488600000000005,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -1562,6 +1577,9 @@
       "SubFPC99": 0
     },
     "ethanol": {
+      "ALogP": -0.009199999999999875,
+      "ALogp2": 8.46399999999977e-05,
+      "AMR": 13.0093,
       "SubFPC1": 1,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -1871,6 +1889,9 @@
       "SubFPC99": 0
     },
     "glycine": {
+      "ALogP": -0.9781,
+      "ALogp2": 0.9566796099999999,
+      "AMR": 16.1536,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -2180,6 +2201,9 @@
       "SubFPC99": 0
     },
     "ibuprofen": {
+      "ALogP": 3.5821000000000027,
+      "ALogp2": 12.83144041000002,
+      "AMR": 60.73190000000001,
       "SubFPC1": 3,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -2489,6 +2513,9 @@
       "SubFPC99": 0
     },
     "imidazole": {
+      "ALogP": 0.9237,
+      "ALogp2": 0.8532216899999999,
+      "AMR": 20.8168,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -2798,6 +2825,9 @@
       "SubFPC99": 0
     },
     "phenol": {
+      "ALogP": 1.5626000000000002,
+      "ALogp2": 2.4417187600000005,
+      "AMR": 27.7521,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -3107,6 +3137,9 @@
       "SubFPC99": 0
     },
     "pyridine": {
+      "ALogP": 0.6793999999999998,
+      "ALogp2": 0.4615843599999997,
+      "AMR": 23.9011,
       "SubFPC1": 0,
       "SubFPC10": 0,
       "SubFPC100": 0,
@@ -3416,6 +3449,9 @@
       "SubFPC99": 0
     },
     "toluene": {
+      "ALogP": 2.3162000000000003,
+      "ALogp2": 5.364782440000001,
+      "AMR": 31.0992,
       "SubFPC1": 1,
       "SubFPC10": 0,
       "SubFPC100": 0,

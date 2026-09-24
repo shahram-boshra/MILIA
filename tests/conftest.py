@@ -874,6 +874,10 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
+        "perf: Performance benchmarks — wall-clock timing, measured best-of-N (min)",
+    )
+    config.addinivalue_line(
+        "markers",
         "thread_safety: Concurrent access tests",
     )
     config.addinivalue_line(

@@ -7,10 +7,10 @@
 # Ships DISABLED by default (configs/plugins.yaml disabled_plugins). Canonical CDK values.
 
 plugin_name: "cdk_substructure"
-version: "1.14.0"
+version: "1.15.0"
 author: "Asadollah (Shahram) Boshra"
 email: "a.boshra@gmail.com"
-description: "CDK Laggner substructure-count descriptors: counts of the 307 Christian Laggner / InteLigand functional-group SMARTS via the canonical CDK engine (SubstructureFingerprinter.getCountFingerprint). DEP-BOUND (jpype + CDK-pywrapper), opt-in."
+description: "CDK Laggner substructure-count + Ghose-Crippen descriptors: counts of the 307 Christian Laggner / InteLigand functional-group SMARTS (SubstructureFingerprinter.getCountFingerprint) plus ALogP/ALogp2/AMR (ALOGPDescriptor), via the canonical CDK engine. DEP-BOUND (jpype + CDK-pywrapper), opt-in (310 total)."
 license: "MIT"
 homepage: "https://github.com/shahram-boshra/MILIA"
 milia_version: ">=1.14.0"
@@ -2786,3 +2786,30 @@ descriptors:
     requires_3d: false
     requires_charges: false
     version: "1.14.0"
+  - name: "ALogP"
+    function_name: "ALogP"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "ALOGP"
+    description: "Ghose-Crippen atomic LogP (CDK ALOGPDescriptor)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.15.0"
+  - name: "ALogp2"
+    function_name: "ALogp2"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "ALOGP"
+    description: "Square of the Ghose-Crippen ALogP (CDK ALOGPDescriptor)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.15.0"
+  - name: "AMR"
+    function_name: "AMR"
+    module_path: "descriptors"
+    category: "constitutional"
+    block: "ALOGP"
+    description: "Ghose-Crippen atomic molar refractivity (CDK ALOGPDescriptor)"
+    requires_3d: false
+    requires_charges: false
+    version: "1.15.0"
