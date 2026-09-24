@@ -36,8 +36,8 @@ identifiers:
     value: "10.5281/zenodo.20151553"
     description: "Concept DOI — always resolves to the latest MILIA release"
   - type: doi
-    value: "10.5281/zenodo.22858504"
-    description: "Version DOI — MILIA v1.14.1 (backfill with the newly-minted v1.14.1 version DOI post-tag; 22858504 = prior v1.13.0 placeholder)"
+    value: "10.5281/zenodo.22926641"
+    description: "Version DOI — MILIA v1.14.1"
 
 repository-code: "https://github.com/shahram-boshra/MILIA"
 url: "https://github.com/shahram-boshra/MILIA"
