@@ -70,7 +70,7 @@ dependencies = [
     "pandas==2.3.1",
     "pyyaml==6.0.2",
     "rdkit==2025.3.6",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
-    "matplotlib==3.10.3",
+    "matplotlib==3.10.9",
     "scikit-learn==1.5.2",
     "pydantic-settings==2.10.1",
     "torchmetrics==1.9.0",
