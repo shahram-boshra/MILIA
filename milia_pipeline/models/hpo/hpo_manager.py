@@ -1131,11 +1131,45 @@ class HPOManager:
                 "Backend not initialized", details="Call from_config() or ensure enabled=True"
             )
 
+        return self._run_optimization(
+            model_name=model_name,
+            dataset=dataset,
+            base_hyperparameters=base_hyperparameters,
+            trainer_kwargs=trainer_kwargs,
+            callbacks=callbacks,
+            config_dict=config_dict,
+            study_name=self.config.study.study_name,
+            storage=self.config.study.storage,
+            load_if_exists=self.config.study.load_if_exists,
+            n_trials=self.config.n_trials,
+        )
+
+    def _run_optimization(
+        self,
+        *,
+        model_name: str,
+        dataset,
+        base_hyperparameters: dict[str, Any] | None,
+        trainer_kwargs: dict[str, Any] | None,
+        callbacks: list | None,
+        config_dict: dict[str, Any] | None,
+        study_name: str,
+        storage: str | None,
+        load_if_exists: bool,
+        n_trials: int,
+    ) -> dict[str, Any]:
+        """Create the sampler, pruner and study, then run ``n_trials`` trials (P1-2a).
+
+        Shared by :meth:`optimize` (study identity and trial budget from ``self.config``) and
+        :meth:`resume_study` (explicit study identity, ``load_if_exists=True``,
+        ``n_trials=additional_trials``), so both paths build the objective, sampler and pruner
+        identically. Callers perform the enabled/backend guards.
+        """
         base_hyperparameters = base_hyperparameters or {}
         trainer_kwargs = trainer_kwargs or {}
         callbacks = callbacks or []
 
-        logger.info(f"Starting HPO for model '{model_name}' with {self.config.n_trials} trials")
+        logger.info(f"Starting HPO for model '{model_name}' with {n_trials} trials")
 
         # Get model factory
         self._model_factory = get_factory() if get_factory else None
@@ -1184,10 +1218,10 @@ class HPOManager:
 
         # Create study
         self.study = self.backend.create_study(
-            study_name=self.config.study.study_name,
+            study_name=study_name,
             direction=self.config.study.direction.value,
-            storage=self.config.study.storage,
-            load_if_exists=self.config.study.load_if_exists,
+            storage=storage,
+            load_if_exists=load_if_exists,
             sampler=sampler,
             pruner=pruner,
         )
@@ -1208,7 +1242,7 @@ class HPOManager:
         self.backend.optimize(
             study=self.study,
             objective_fn=objective_fn,
-            n_trials=self.config.n_trials,
+            n_trials=n_trials,
             timeout=self.config.timeout,
             n_jobs=self.config.n_jobs,
             catch=(Exception,),
@@ -2326,6 +2360,13 @@ class HPOManager:
         study_name: str,
         storage: str,
         additional_trials: int = 0,
+        *,
+        model_name: str | None = None,
+        dataset=None,
+        base_hyperparameters: dict[str, Any] | None = None,
+        trainer_kwargs: dict[str, Any] | None = None,
+        callbacks: list | None = None,
+        config_dict: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Resume an existing study from storage.
@@ -2337,20 +2378,58 @@ class HPOManager:
             study_name: Name of existing study
             storage: Storage URL (e.g., "sqlite:///optuna.db")
             additional_trials: Number of additional trials to run (0 = just load)
+            model_name: Model to optimize; required when ``additional_trials > 0``
+            dataset: Dataset for the objective; required when ``additional_trials > 0``
+            base_hyperparameters: Fixed hyperparameters (as for :meth:`optimize`)
+            trainer_kwargs: Additional Trainer kwargs (as for :meth:`optimize`)
+            callbacks: Additional callbacks (as for :meth:`optimize`)
+            config_dict: Config for target selection (as for :meth:`optimize`)
 
         Returns:
             Best parameters from the study
 
         Raises:
             StudyNotFoundError: If study not found in storage
-            HPOError: If loading or optimization fails
+            HPOError: If loading or optimization fails, ``additional_trials`` is negative, or
+                ``additional_trials > 0`` without ``model_name``/``dataset``
         """
         if self.backend is None:
             raise HPOError(
                 "Backend not initialized", details="Initialize HPOManager with enabled=True"
             )
 
+        if additional_trials < 0:
+            raise HPOError(f"additional_trials must be >= 0, got {additional_trials}")
+
+        if additional_trials > 0:
+            # P1-2a: continuing a study needs the same objective inputs as optimize(); a silent
+            # load-only no-op would drop the requested trials.
+            missing = [
+                name
+                for name, value in (("model_name", model_name), ("dataset", dataset))
+                if value is None
+            ]
+            if missing:
+                raise HPOError(
+                    f"resume_study(additional_trials={additional_trials}) requires "
+                    f"{', '.join(missing)} to build the objective"
+                )
+
         logger.info(f"Resuming study '{study_name}' from {redact_url(storage)}")
+
+        if additional_trials > 0:
+            return self._run_optimization(
+                model_name=model_name,
+                dataset=dataset,
+                base_hyperparameters=base_hyperparameters,
+                trainer_kwargs=trainer_kwargs,
+                callbacks=callbacks,
+                config_dict=config_dict,
+                study_name=study_name,
+                storage=storage,
+                load_if_exists=True,
+                n_trials=additional_trials,
+            )
 
         try:
             # Load existing study

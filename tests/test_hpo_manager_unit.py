@@ -1286,6 +1286,81 @@ class TestHPOManagerResumeStudy:
             with pytest.raises(StudyNotFoundError):
                 manager.resume_study("nonexistent", "sqlite:///test.db")
 
+    def test_resume_study_runs_additional_trials(self, mock_backend, mock_dataset):
+        """P1-2a: additional_trials > 0 continues the named study with a fresh sampler/pruner."""
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=MagicMock()),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True, n_trials=50))
+            manager.resume_study(
+                "existing_study",
+                "sqlite:///test.db",
+                additional_trials=3,
+                model_name="GCN",
+                dataset=mock_dataset,
+            )
+
+        mock_backend.optimize.assert_called_once()
+        assert mock_backend.optimize.call_args[1]["n_trials"] == 3  # not config.n_trials (50)
+        study_kwargs = mock_backend.create_study.call_args[1]
+        assert study_kwargs["study_name"] == "existing_study"
+        assert study_kwargs["storage"] == "sqlite:///test.db"
+        assert study_kwargs["load_if_exists"] is True
+        assert study_kwargs["sampler"] is mock_backend.create_sampler.return_value
+        assert study_kwargs["pruner"] is mock_backend.create_pruner.return_value
+
+    def test_resume_study_additional_trials_require_objective_inputs(self, mock_backend):
+        """P1-2a: continuing a study without model_name/dataset is an explicit error, not a no-op."""
+        from milia_pipeline.exceptions import HPOError
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            with pytest.raises(HPOError, match="model_name"):
+                manager.resume_study("existing_study", "sqlite:///test.db", additional_trials=3)
+
+        mock_backend.optimize.assert_not_called()
+
+    def test_resume_study_zero_additional_trials_only_loads(self, mock_backend, mock_study):
+        """P1-2a guard: the default (additional_trials=0) still loads without optimizing."""
+        mock_backend.create_study.return_value = mock_study
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            manager.resume_study("existing_study", "sqlite:///test.db")
+
+        mock_backend.optimize.assert_not_called()
+        mock_backend.create_sampler.assert_not_called()
+
+    def test_resume_study_negative_additional_trials_raises(self, mock_backend):
+        """P1-2a guard: a negative trial count is rejected before touching storage."""
+        from milia_pipeline.exceptions import HPOError
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            with pytest.raises(HPOError, match="additional_trials"):
+                manager.resume_study("existing_study", "sqlite:///test.db", additional_trials=-1)
+
+        mock_backend.create_study.assert_not_called()
+
     def test_resume_study_never_exposes_storage_password(self, mock_backend, caplog):
         """P1-1 (F10): the storage password appears neither in logs nor in the raised error."""
         import logging
