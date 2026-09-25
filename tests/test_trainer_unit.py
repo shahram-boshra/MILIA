@@ -613,6 +613,36 @@ class TestHPOCallback:
         # HPO callback should be at the end
         assert trainer.callbacks[-1] == mock_hpo_callback
 
+    def test_hpo_callback_registered_once_when_passed_twice(
+        self, mock_model, mock_train_loader, mock_optimizer, mock_hpo_callback
+    ):
+        """P1-0b: passing the HPO callback via callbacks= and hpo_callback= registers it once."""
+        trainer = Trainer(
+            model=mock_model,
+            train_loader=mock_train_loader,
+            optimizer=mock_optimizer,
+            callbacks=[mock_hpo_callback],
+            hpo_callback=mock_hpo_callback,
+        )
+
+        assert sum(cb is mock_hpo_callback for cb in trainer.callbacks) == 1
+
+    def test_caller_callback_list_not_mutated(
+        self, mock_model, mock_train_loader, mock_optimizer, mock_callback, mock_hpo_callback
+    ):
+        """P1-0b: the Trainer owns a copy of the callbacks list; the caller's list is untouched."""
+        caller_callbacks = [mock_callback]
+        trainer = Trainer(
+            model=mock_model,
+            train_loader=mock_train_loader,
+            optimizer=mock_optimizer,
+            callbacks=caller_callbacks,
+            hpo_callback=mock_hpo_callback,
+        )
+
+        assert caller_callbacks == [mock_callback]
+        assert trainer.callbacks is not caller_callbacks
+
     def test_hpo_callback_set_trainer_called(
         self, mock_model, mock_train_loader, mock_optimizer, mock_hpo_callback
     ):

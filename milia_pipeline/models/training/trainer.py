@@ -235,7 +235,8 @@ class Trainer:
         self.loss_fn = loss_fn or nn.MSELoss()
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.callbacks = callbacks or []
+        # P1-0b: own a copy so registering the HPO callback never mutates the caller's list
+        self.callbacks = list(callbacks) if callbacks else []
         self.max_epochs = max_epochs
         self.log_every_n_steps = log_every_n_steps
         self.checkpoint_dir = Path(checkpoint_dir) if checkpoint_dir else None
@@ -287,10 +288,13 @@ class Trainer:
                 f"out_channels={self._out_channels}"
             )
 
-        # If HPO callback provided, add to callbacks list
+        # If HPO callback provided, add to callbacks list exactly once (P1-0b: callers such as
+        # HPOManager may also pass it inside `callbacks`; a double registration would run
+        # on_epoch_end/should_prune twice per epoch). Identity, not equality, decides membership.
         if self.hpo_callback is not None:
-            self.callbacks.append(self.hpo_callback)
-            logger.debug(f"HPO callback added: {self.hpo_callback.__class__.__name__}")
+            if not any(cb is self.hpo_callback for cb in self.callbacks):
+                self.callbacks.append(self.hpo_callback)
+            logger.debug(f"HPO callback registered: {self.hpo_callback.__class__.__name__}")
 
         # Auto-detect device
         if device is None:
