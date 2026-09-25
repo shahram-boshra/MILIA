@@ -5627,9 +5627,27 @@ class TestTrialPrunedPropagation:
             loss_fn=mock_loss_fn,
             max_epochs=5,
         )
-        # TrialPruned should propagate and cause TrainingError
-        with pytest.raises((optuna.TrialPruned, TrainingError)):
+        # P1-0 (F17): TrialPruned is a control-flow signal and must leave fit() unwrapped,
+        # after on_train_end cleanup ran. Wrapping it in TrainingError makes the HPO objective
+        # record the trial as FAIL instead of PRUNED.
+        with pytest.raises(optuna.TrialPruned):
             trainer.fit()
+        callback.on_train_end.assert_called_once()
+
+    def test_is_trial_pruned_classifies_exceptions(self):
+        """P1-0: only optuna.TrialPruned is classified as the pruning signal."""
+        optuna = pytest.importorskip("optuna")
+        from milia_pipeline.models.training.trainer import _is_trial_pruned
+
+        assert _is_trial_pruned(optuna.TrialPruned()) is True
+        assert _is_trial_pruned(RuntimeError("training failure")) is False
+
+    def test_is_trial_pruned_false_when_optuna_unavailable(self, monkeypatch):
+        """P1-0: the pruning check degrades to False where Optuna cannot be imported."""
+        from milia_pipeline.models.training.trainer import _is_trial_pruned
+
+        monkeypatch.setitem(sys.modules, "optuna", None)  # `import optuna` -> ImportError
+        assert _is_trial_pruned(RuntimeError("not a prune signal")) is False
 
 
 # =============================================================================

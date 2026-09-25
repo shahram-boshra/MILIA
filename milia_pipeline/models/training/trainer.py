@@ -57,6 +57,26 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# HPO CONTROL-FLOW SIGNAL (P1-0 / F17)
+# =============================================================================
+# `optuna.TrialPruned` is a control-flow signal raised by the pruning callback, not
+# a training failure. It must leave `Trainer.fit()` unwrapped so Optuna records the
+# trial as PRUNED (TPE learns only from COMPLETE and PRUNED trials; MaxTrialsCallback
+# counts only those states). Optuna is imported lazily: the Trainer must keep working
+# where Optuna is not installed.
+# =============================================================================
+
+
+def _is_trial_pruned(exc: BaseException) -> bool:
+    """Return True if ``exc`` is ``optuna.TrialPruned``; False if Optuna is unavailable."""
+    try:
+        import optuna
+    except ImportError:
+        return False
+    return isinstance(exc, optuna.TrialPruned)
+
+
+# =============================================================================
 # SAFE CHECKPOINT LOAD HELPER (aligned with CheckpointManager.load() pattern)
 # =============================================================================
 # PyTorch >= 2.6 made `weights_only=True` the default for torch.load(). This
@@ -448,6 +468,10 @@ class Trainer:
             }
 
         except Exception as e:
+            if _is_trial_pruned(e):
+                logger.info(f"Training stopped by HPO pruning: {e}")
+                self._on_train_end()
+                raise
             logger.error(f"Training failed: {e}")
             self._on_train_end()
             raise TrainingError(f"Training failed: {e}") from e
@@ -2205,13 +2229,8 @@ class Trainer:
                 callback.on_epoch_end(self, self.current_epoch, metrics)
             except Exception as e:
                 # Don't catch optuna.TrialPruned - let it propagate!
-                try:
-                    import optuna
-
-                    if isinstance(e, optuna.TrialPruned):
-                        raise
-                except ImportError:
-                    pass
+                if _is_trial_pruned(e):
+                    raise
                 logger.warning(f"Callback {callback.__class__.__name__}.on_epoch_end failed: {e}")
 
     def _on_train_end(self):
