@@ -118,6 +118,7 @@ from milia_pipeline.exceptions import (
     HPOError,
     StudyNotFoundError,
     TrialFailedError,
+    redact_url,
 )
 
 from .backends import HPOBackendProtocol, get_backend
@@ -2349,7 +2350,7 @@ class HPOManager:
                 "Backend not initialized", details="Initialize HPOManager with enabled=True"
             )
 
-        logger.info(f"Resuming study '{study_name}' from {storage}")
+        logger.info(f"Resuming study '{study_name}' from {redact_url(storage)}")
 
         try:
             # Load existing study

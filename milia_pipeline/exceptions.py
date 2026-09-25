@@ -3124,6 +3124,45 @@ class TrialFailedError(HPOError):
         return msg
 
 
+# =============================================================================
+# STORAGE URL REDACTION (P1-1 / F10)
+# =============================================================================
+# Optuna RDB storage URLs may carry a password in their userinfo component (RFC 3986 §3.2.1).
+# Every log line and exception that renders a storage location goes through ``redact_url``.
+# SQLAlchemy is imported lazily so this leaf module keeps no import-time dependency; SQLAlchemy is
+# always present where Optuna is (Optuna's RDB storage is built on it).
+# =============================================================================
+
+_UNPARSEABLE_STORAGE_URL = "<unparseable storage URL>"
+
+
+def redact_url(url: object) -> str | None:
+    """Return a credential-free rendering of an Optuna storage location.
+
+    Args:
+        url: Storage URL string, storage object, or ``None``.
+
+    Returns:
+        ``None`` for ``None``; the URL with its password masked (``user:***@host``) for a parseable URL
+        string; ``"<ClassName>"`` for a storage object; a fixed placeholder when the string cannot be
+        parsed, so a malformed URL that may still contain a secret is never echoed.
+    """
+    if url is None:
+        return None
+    if not isinstance(url, str):
+        return f"<{type(url).__name__}>"
+    try:
+        from sqlalchemy.engine import make_url
+        from sqlalchemy.exc import ArgumentError
+    except ImportError:
+        return _UNPARSEABLE_STORAGE_URL
+    try:
+        return make_url(url).render_as_string(hide_password=True)
+    except (ArgumentError, ValueError):
+        # ArgumentError: not a URL; ValueError: e.g. non-numeric port (verified, SQLAlchemy 2.0).
+        return _UNPARSEABLE_STORAGE_URL
+
+
 class StudyNotFoundError(HPOError):
     """
     Exception raised when a requested study is not found.
@@ -3156,7 +3195,8 @@ class StudyNotFoundError(HPOError):
     ):
         super().__init__(message, study_name=study_name, **kwargs)
         self.available_studies = available_studies or []
-        self.storage_url = storage_url
+        # P1-1: never keep a credentialed URL on the exception (it is logged and rendered)
+        self.storage_url = redact_url(storage_url)
 
     def __str__(self) -> str:
         msg = super().__str__()

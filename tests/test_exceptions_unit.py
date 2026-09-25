@@ -1866,6 +1866,45 @@ class TestHPOExceptions:
         assert error.available_studies == available
         assert error.storage_url == "sqlite:///optuna.db"
 
+    def test_study_not_found_error_redacts_storage_password(self):
+        """P1-1 (F10): a credentialed storage URL is stored and rendered without its password."""
+        error = StudyNotFoundError(
+            message="Failed to load study",
+            study_name="gcn_hpo",
+            storage_url="postgresql+psycopg://milia:s3cr3t@db.example:5432/optuna",  # pragma: allowlist secret
+        )
+        assert error.storage_url == "postgresql+psycopg://milia:***@db.example:5432/optuna"
+        assert "s3cr3t" not in str(error)
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            (None, None),
+            ("sqlite:///optuna.db", "sqlite:///optuna.db"),
+            ("postgresql://u:p%40ss@h/db", "postgresql://u:***@h/db"),  # pragma: allowlist secret
+            ("mysql+pymysql://u@h/db", "mysql+pymysql://u@h/db"),
+            ("not a url", "<unparseable storage URL>"),
+            (
+                "postgresql://u:s3cr3t@h:badport/db",  # pragma: allowlist secret
+                "<unparseable storage URL>",
+            ),
+        ],
+    )
+    def test_redact_url_contract(self, url, expected):
+        """P1-1: redact_url masks passwords and never echoes an unparseable string."""
+        from milia_pipeline.exceptions import redact_url
+
+        assert redact_url(url) == expected
+
+    def test_redact_url_storage_object_renders_type_name(self):
+        """P1-1: storage objects are rendered by type, never by repr (which may hold a URL)."""
+        from milia_pipeline.exceptions import redact_url
+
+        class RDBStorage:
+            url = "postgresql://u:s3cr3t@h/db"  # pragma: allowlist secret
+
+        assert redact_url(RDBStorage()) == "<RDBStorage>"
+
     def test_study_not_found_error_str_method(self):
         """Test StudyNotFoundError __str__ includes available studies."""
         error = StudyNotFoundError(message="Error", study_name="test", available_studies=["a", "b"])

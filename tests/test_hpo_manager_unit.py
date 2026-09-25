@@ -1286,6 +1286,35 @@ class TestHPOManagerResumeStudy:
             with pytest.raises(StudyNotFoundError):
                 manager.resume_study("nonexistent", "sqlite:///test.db")
 
+    def test_resume_study_never_exposes_storage_password(self, mock_backend, caplog):
+        """P1-1 (F10): the storage password appears neither in logs nor in the raised error."""
+        import logging
+
+        from milia_pipeline.exceptions import StudyNotFoundError
+
+        secret_url = (
+            "postgresql+psycopg://milia:s3cr3t@db.example:5432/optuna"  # pragma: allowlist secret
+        )
+        mock_backend.create_study.side_effect = Exception("connection refused")
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+
+            with (
+                caplog.at_level(logging.INFO, logger="milia_pipeline.models.hpo.hpo_manager"),
+                pytest.raises(StudyNotFoundError) as exc_info,
+            ):
+                manager.resume_study("existing_study", secret_url)
+
+        assert "s3cr3t" not in caplog.text
+        assert "milia:***@db.example" in caplog.text  # still identifies the target
+        assert "s3cr3t" not in str(exc_info.value)
+
     def test_resume_study_logs_info(self, mock_backend, mock_study):
         """Test resume_study logs appropriate messages."""
         mock_backend.create_study.return_value = mock_study
