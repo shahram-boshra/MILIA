@@ -25,8 +25,10 @@ ARG ACCEL=cpu                  # cpu | cu118 | cu121 | cu124
 # A FROM instruction CAN expand a global ARG, so we alias here and COPY by stage name.
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
-# ---- Stage 1: builder — resolve + install into /app/.venv from the committed lock ----
-FROM python:${PYTHON_VERSION}-slim AS builder
+# ---- Stage 1: deps — third-party dependencies from the committed lock (no project source) ----
+# Shared base of `builder` (→ runtime) and `test-deps` (→ test). Cached until pyproject.toml/uv.lock
+# change, so source edits never re-run dependency installation in either chain.
+FROM python:${PYTHON_VERSION}-slim AS deps
 COPY --from=uv /uv /uvx /usr/local/bin/
 ARG ACCEL
 ENV UV_COMPILE_BYTECODE=1 \
@@ -35,28 +37,26 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/app/.venv
 WORKDIR /app
 
-# 1) Dependencies only (no project) — this layer is cached until pyproject.toml/uv.lock change.
+# Dependencies only (no project) — this layer is cached until pyproject.toml/uv.lock change.
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-dev --extra ${ACCEL}
 
-# 2) Project source, then install MILIA itself against the already-locked deps.
+# ---- Stage 2: builder — project source + MILIA itself (feeds `runtime`) ----
+FROM deps AS builder
+ARG ACCEL
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --extra ${ACCEL}
 
-# Build-time verification (fails the build early). uv installs the project EDITABLE by
-# default (PEP 660), so `milia_pipeline` legitimately resolves to the baked /app source —
-# that is the single-copy state we want (a --no-editable copy would leave two trees). We
-# therefore verify what actually matters, not the physical location:
-#   (a) the dist is installed (metadata resolves) and the package imports;
-#   (b) the compiled PyG companion kernels load AND run against this torch build (ABI/R1).
-RUN /app/.venv/bin/python -c "import importlib.metadata as md, milia_pipeline; print('milia-py', md.version('milia-py'), 'importable from', milia_pipeline.__file__)" && \
-    /app/.venv/bin/python -c "import torch, torch_scatter; src=torch.tensor([1.,1.,1.,1.]); idx=torch.tensor([0,0,1,1]); assert torch_scatter.scatter_add(src, idx, dim=0).tolist()==[2.,2.]; print('OK torch', torch.__version__, '| torch_scatter', torch_scatter.__version__)"
+# Build-time verification (fails the build early): dist metadata + import, and the compiled PyG
+# kernels run against this torch build (ABI/R1). Defined once in docker/verify_build.py and shared
+# with the `test` stage. uv installs the project EDITABLE by default (PEP 660), so `milia_pipeline`
+# legitimately resolves to the baked /app source — the single-copy state we want.
+RUN /app/.venv/bin/python /app/docker/verify_build.py
 
-# ---- Stage 2: test — builder + dev tools, for CI in-image smoke tests (not published) ----
-# CI builds this with `--target test` to run `pytest -m smoke`; the published image is `runtime`.
-FROM builder AS test
+# ---- Stage 3: test-deps — JRE + dev/test dependencies, cached independently of project source ----
+FROM deps AS test-deps
 ARG ACCEL
 # Java (headless JRE) is needed to gate the opt-in `cdk_substructure` plugin's tests (Pace 11 /
 # v1.14.0), which call the CDK engine via jpype. Use the distro DEFAULT headless JRE
@@ -67,12 +67,22 @@ ARG ACCEL
 RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless && \
     rm -rf /var/lib/apt/lists/*
 RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-install-project --extra ${ACCEL} --extra dev --extra descriptors-cdk
+
+# ---- Stage 4: test — test-deps + project source, for in-image test runs (not published) ----
+# Built with `--target test`; BuildKit builds only this chain (deps → test-deps → test), never
+# `builder`/`runtime`. A source change re-runs only COPY + project install + verification.
+FROM test-deps AS test
+ARG ACCEL
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk
+RUN /app/.venv/bin/python /app/docker/verify_build.py
 ENV PATH="/app/.venv/bin:$PATH" \
     MILIA_LOG_DIR=/tmp
 # e.g. docker run --rm <test-image> pytest -m smoke -q tests/
 
-# ---- Stage 3: runtime — minimal, non-root, production (DEFAULT build target) ----
+# ---- Stage 5: runtime — minimal, non-root, production (DEFAULT build target) ----
 FROM python:${PYTHON_VERSION}-slim AS runtime
 # libgomp1: OpenMP runtime required by torch / scikit-learn at import.
 # (If a runtime ImportError reports another missing .so — e.g. libXrender for some RDKit
