@@ -1039,11 +1039,6 @@ class TestHPOConfigValidCreation:
         config = HPOConfig(n_jobs=4)
         assert config.n_jobs == 4
 
-    def test_ray_tune_backend(self):
-        """Test HPOConfig with ray_tune backend."""
-        config = HPOConfig(backend="ray_tune")
-        assert config.backend == "ray_tune"
-
     def test_cv_folds_configuration(self):
         """Test HPOConfig with cross-validation folds."""
         config = HPOConfig(cv_folds=5)
@@ -1375,6 +1370,27 @@ class TestHPOConfigFromDict:
         config = HPOConfig.from_dict(config_dict)
 
         assert config.task_type is None
+
+
+class TestUnsupportedChoicesRejected:
+    """P1-6 (F13): choices the pinned stack cannot execute fail at config validation, not mid-run."""
+
+    def test_motpe_sampler_rejected(self):
+        """MOTPESampler does not exist in optuna 4.9.0 (pinned); TPE is the multi-objective replacement."""
+        with pytest.raises(ValueError, match="motpe"):
+            SamplerConfig(type=SamplerType.MOTPE)
+        with pytest.raises(ValueError, match="motpe"):
+            HPOConfig.from_dict({"sampler": {"type": "motpe"}})
+
+    def test_ray_tune_backend_rejected(self):
+        """No Ray Tune backend is registered (get_backend supports only 'optuna')."""
+        with pytest.raises(ValueError, match="ray_tune"):
+            HPOConfig(backend="ray_tune")
+
+    @pytest.mark.parametrize("sampler", ["tpe", "random", "cmaes", "grid", "nsgaii", "qmc"])
+    def test_supported_samplers_still_accepted(self, sampler):
+        """Guard: every other sampler value keeps validating."""
+        assert HPOConfig.from_dict({"sampler": {"type": sampler}}).sampler.type.value == sampler
 
 
 class TestHPOConfigFromDictValidationErrors:

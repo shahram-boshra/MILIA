@@ -190,6 +190,16 @@ class SamplerType(Enum):
     QMCSAMPLER = "qmc"
 
 
+# Sampler types kept in SamplerType for backward compatibility but not executable on the pinned stack
+# (pyproject.toml: optuna==4.9.0). Value → reason shown to the user (P1-6 / F13).
+UNSUPPORTED_SAMPLERS: dict[SamplerType, str] = {
+    SamplerType.MOTPE: (
+        "optuna 4.9.0 (pinned) has no MOTPESampler; use 'tpe' — TPESampler supports multi-objective "
+        "optimization"
+    ),
+}
+
+
 class SamplerConfig(BaseModel, frozen=True):
     """
     Sampler configuration for hyperparameter suggestion.
@@ -223,6 +233,18 @@ class SamplerConfig(BaseModel, frozen=True):
     seed: int | None = None
     multivariate: bool = True
     constant_liar: bool = False
+
+    @field_validator("type")
+    @classmethod
+    def validate_type_supported(cls, v: SamplerType) -> SamplerType:
+        """Reject sampler types the pinned Optuna cannot build (P1-6 / F13).
+
+        The enum member is kept for backward compatibility (removing it is a MAJOR change); selecting it
+        fails here, at config validation, instead of at ``create_sampler`` mid-run.
+        """
+        if v in UNSUPPORTED_SAMPLERS:
+            raise ValueError(f"Sampler '{v.value}' is not available: {UNSUPPORTED_SAMPLERS[v]}")
+        return v
 
     @field_validator("n_startup_trials")
     @classmethod
@@ -489,10 +511,15 @@ class HPOConfig(BaseModel, frozen=True):
     @field_validator("backend")
     @classmethod
     def validate_backend(cls, v: str) -> str:
-        """Validate backend is a supported HPO backend."""
-        valid_backends = ("optuna", "ray_tune")
-        if v not in valid_backends:
-            raise ValueError(f"Unknown HPO backend: '{v}'. Must be 'optuna' or 'ray_tune'")
+        """Validate backend is an implemented HPO backend (P1-6 / F13).
+
+        ``backends.get_backend`` registers only ``optuna``; ``ray_tune`` is reserved (no backend, no
+        callback) and is rejected here rather than failing when the run starts.
+        """
+        if v == "ray_tune":
+            raise ValueError("HPO backend 'ray_tune' is not implemented yet; use 'optuna'")
+        if v != "optuna":
+            raise ValueError(f"Unknown HPO backend: '{v}'. Must be 'optuna'")
         return v
 
     @field_validator("n_trials")
