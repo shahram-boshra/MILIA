@@ -2664,12 +2664,17 @@ class TestDownloadFunctionality(BaseTestCase):
 
     @patch("milia_pipeline.datasets.milia_dataset.requests.get")
     def test_download_handles_connection_error(self, mock_get):
-        """Test download handles ConnectionError gracefully."""
+        """Test download handles ConnectionError gracefully.
+
+        P0c: ``time.sleep`` is patched in the module under test, so the exponential backoff
+        (5 + 10 + 20 + 40 s with the defaults) is asserted instead of actually waited out.
+        """
         mock_get.side_effect = ConnectionError("Network unreachable")
 
         with (
             patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
             patch.object(miliaDataset, "_process", return_value=None),
+            patch("milia_pipeline.datasets.milia_dataset.time.sleep") as mock_sleep,
             self.assertRaises((ConnectionError, RequestException, Exception)),
         ):
             miliaDataset.download_file(
@@ -2678,15 +2683,18 @@ class TestDownloadFunctionality(BaseTestCase):
                 raw_dir=str(self.test_dir),
                 logger=logging.getLogger(__name__),
             )
+        self.assertEqual(mock_get.call_count, 5)  # max_retries default
+        self.assertEqual([c.args[0] for c in mock_sleep.call_args_list], [5, 10, 20, 40])
         print("✅ Download handles ConnectionError")
 
     @patch("milia_pipeline.datasets.milia_dataset.requests.get")
     def test_download_handles_timeout(self, mock_get):
-        """Test download handles Timeout gracefully."""
+        """Test download handles Timeout gracefully (P0c: backoff asserted, not slept)."""
         mock_get.side_effect = Timeout("Connection timed out")
 
         with (
             patch("milia_pipeline.datasets.milia_dataset.HANDLERS_AVAILABLE", False),
+            patch("milia_pipeline.datasets.milia_dataset.time.sleep") as mock_sleep,
             self.assertRaises((Timeout, RequestException, Exception)),
         ):
             miliaDataset.download_file(
@@ -2695,6 +2703,8 @@ class TestDownloadFunctionality(BaseTestCase):
                 raw_dir=str(self.test_dir),
                 logger=logging.getLogger(__name__),
             )
+        self.assertEqual(mock_get.call_count, 5)  # max_retries default
+        self.assertEqual([c.args[0] for c in mock_sleep.call_args_list], [5, 10, 20, 40])
         print("✅ Download handles Timeout")
 
     def test_extract_filename_from_url(self):
