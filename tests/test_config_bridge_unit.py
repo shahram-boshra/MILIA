@@ -17,6 +17,7 @@ mock pollution that can break pytest collection for subsequent test files.
 Instead, it uses test-level @patch decorators and proper fixture-based isolation.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -296,8 +297,8 @@ class TestHPOParamTypeEnum:
         assert HPOParamType.LOGUNIFORM.value == "loguniform"
 
     def test_param_type_count(self):
-        """Test number of param types."""
-        assert len(HPOParamType) == 4
+        """Test number of param types (P1-4: parity with search_spaces.param_types.ParamType)."""
+        assert len(HPOParamType) == 7
 
     def test_param_type_from_string(self):
         """Test creating HPOParamType from string."""
@@ -320,8 +321,8 @@ class TestHPOPrunerTypeEnum:
         assert HPOPrunerType.NONE.value == "none"
 
     def test_pruner_type_count(self):
-        """Test number of pruner types."""
-        assert len(HPOPrunerType) == 4
+        """Test number of pruner types (P1-4: parity with hpo_config.PrunerType)."""
+        assert len(HPOPrunerType) == 7
 
     def test_pruner_type_from_string(self):
         """Test creating HPOPrunerType from string."""
@@ -339,8 +340,8 @@ class TestHPOSamplerTypeEnum:
         assert HPOSamplerType.GRID.value == "grid"
 
     def test_sampler_type_count(self):
-        """Test number of sampler types."""
-        assert len(HPOSamplerType) == 4
+        """Test number of sampler types (P1-4: parity with hpo_config.SamplerType)."""
+        assert len(HPOSamplerType) == 7
 
     def test_sampler_type_from_string(self):
         """Test creating HPOSamplerType from string."""
@@ -1593,25 +1594,76 @@ class TestModelConfig:
         assert config.hpo.pruner.type == HPOPrunerType.MEDIAN
         assert config.hpo.sampler.type == HPOSamplerType.TPE
 
-    def test_from_dict_with_invalid_hpo_types_fallback(self):
-        """Test from_dict handles invalid HPO enum types with fallback."""
+    @pytest.mark.parametrize(
+        ("hpo_section", "key", "value"),
+        [
+            ({"pruner": {"type": "invalid_pruner"}}, "pruner.type", "invalid_pruner"),
+            ({"sampler": {"type": "invalid_sampler"}}, "sampler.type", "invalid_sampler"),
+            ({"study": {"direction": "invalid_direction"}}, "study.direction", "invalid_direction"),
+            (
+                {"search_space": {"test": {"param": {"type": "invalid_param_type"}}}},
+                "search_space.test.param.type",
+                "invalid_param_type",
+            ),
+        ],
+    )
+    def test_from_dict_invalid_hpo_value_raises(self, hpo_section, key, value):
+        """P1-4 (F15): an invalid HPO enum value fails fast (as HPOConfig.from_dict does), naming the
+        key and the value — never a silent fallback to a default. Applies even with HPO disabled."""
         config_dict = {
             "enabled": True,
             "selection": {"task_type": "graph_regression", "model_name": "GCN"},
-            "hpo": {
-                "enabled": False,
-                "pruner": {"type": "invalid_pruner"},
-                "sampler": {"type": "invalid_sampler"},
-                "study": {"direction": "invalid_direction"},
-                "search_space": {"test": {"param": {"type": "invalid_param_type"}}},
-            },
+            "hpo": {"enabled": False, **hpo_section},
         }
-        config = ModelConfig.from_dict(config_dict)
-        # Should fallback to defaults for invalid types
-        assert config.hpo.pruner.type == HPOPrunerType.MEDIAN
-        assert config.hpo.sampler.type == HPOSamplerType.TPE
-        assert config.hpo.study.direction == HPODirection.MINIMIZE
-        assert config.hpo.search_space["test"]["param"].type == HPOParamType.FLOAT
+        with pytest.raises(ValueError, match=rf"Invalid models\.hpo\.{re.escape(key)} '{value}'"):
+            ModelConfig.from_dict(config_dict)
+
+    @pytest.mark.parametrize(
+        ("bridge_name", "module_path", "authoritative_name"),
+        [
+            ("HPOPrunerType", "milia_pipeline.models.hpo.hpo_config", "PrunerType"),
+            ("HPOSamplerType", "milia_pipeline.models.hpo.hpo_config", "SamplerType"),
+            ("HPODirection", "milia_pipeline.models.hpo.hpo_config", "OptimizationDirection"),
+            ("HPOParamType", "milia_pipeline.models.hpo.search_spaces.param_types", "ParamType"),
+        ],
+    )
+    def test_bridge_enum_values_match_authoritative(
+        self, bridge_name, module_path, authoritative_name
+    ):
+        """P1-4 (F15): the bridge accepts exactly the values the authoritative HPO config accepts, so
+        failing fast in the bridge can never reject a config HPOConfig accepts (drift guard)."""
+        import importlib
+
+        from milia_pipeline.models.utils import config_bridge
+
+        bridge_values = {member.value for member in getattr(config_bridge, bridge_name)}
+        authoritative = getattr(importlib.import_module(module_path), authoritative_name)
+        assert bridge_values == {member.value for member in authoritative}
+
+    @pytest.mark.parametrize(
+        ("hpo_section", "attribute_path", "expected"),
+        [
+            ({"sampler": {"type": "qmc"}}, ("sampler", "type"), "qmc"),
+            ({"pruner": {"type": "threshold"}}, ("pruner", "type"), "threshold"),
+            (
+                {"search_space": {"model": {"lr": {"type": "uniform", "low": 0.0, "high": 1.0}}}},
+                ("search_space", "model", "lr", "type"),
+                "uniform",
+            ),
+        ],
+    )
+    def test_from_dict_accepts_authoritative_values(self, hpo_section, attribute_path, expected):
+        """P1-4: values HPOConfig accepts (previously silently rewritten to TPE/MEDIAN/FLOAT) now parse to
+        their own member."""
+        config_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, **hpo_section},
+        }
+        node = ModelConfig.from_dict(config_dict).hpo
+        for part in attribute_path:
+            node = node[part] if isinstance(node, dict) else getattr(node, part)
+        assert node.value == expected
 
     def test_from_dict_empty(self):
         """Test creating config from empty dictionary."""

@@ -179,37 +179,64 @@ class DeploymentStrategy(Enum):
 
 
 class HPOParamType(Enum):
-    """HPO parameter types for config bridge."""
+    """HPO parameter types for config bridge.
+
+    Values mirror ``milia_pipeline.models.hpo.search_spaces.param_types.ParamType`` (P1-4 / F15; pinned
+    by ``test_bridge_enum_values_match_authoritative``). Kept as a separate enum so this lightweight
+    module never imports the HPO package.
+    """
 
     INT = "int"
     FLOAT = "float"
     CATEGORICAL = "categorical"
     LOGUNIFORM = "loguniform"
+    UNIFORM = "uniform"
+    INT_UNIFORM = "int_uniform"
+    DISCRETE_UNIFORM = "discrete_uniform"
 
 
 class HPOPrunerType(Enum):
-    """HPO pruner types for config bridge."""
+    """HPO pruner types for config bridge (values mirror ``hpo_config.PrunerType``, P1-4)."""
 
     MEDIAN = "median"
     HYPERBAND = "hyperband"
     PERCENTILE = "percentile"
     NONE = "none"
+    SUCCESSIVE_HALVING = "successive_halving"
+    THRESHOLD = "threshold"
+    PATIENT = "patient"
 
 
 class HPOSamplerType(Enum):
-    """HPO sampler types for config bridge."""
+    """HPO sampler types for config bridge (values mirror ``hpo_config.SamplerType``, P1-4)."""
 
     TPE = "tpe"
     RANDOM = "random"
     CMAES = "cmaes"
     GRID = "grid"
+    NSGAII = "nsgaii"
+    MOTPE = "motpe"
+    QMCSAMPLER = "qmc"
 
 
 class HPODirection(Enum):
-    """HPO optimization direction."""
+    """HPO optimization direction (values mirror ``hpo_config.OptimizationDirection``)."""
 
     MINIMIZE = "minimize"
     MAXIMIZE = "maximize"
+
+
+def _parse_hpo_enum(enum_cls: type[Enum], value: Any, key: str) -> Enum:
+    """Convert a YAML value to ``enum_cls`` or fail fast naming the key and valid values (P1-4 / F15).
+
+    Replaces silent fallbacks to defaults, matching ``HPOConfig.from_dict`` (which raises ``ValueError``)
+    and the module's error convention.
+    """
+    try:
+        return enum_cls(value)
+    except ValueError:
+        valid = [member.value for member in enum_cls]
+        raise ValueError(f"Invalid models.hpo.{key} '{value}'. Must be one of: {valid}") from None
 
 
 # =============================================================================
@@ -1276,10 +1303,7 @@ class ModelConfig(BaseModel):
         # Parse pruner config
         pruner_dict = hpo_dict.get("pruner", {})
         pruner_type_str = pruner_dict.get("type", "median")
-        try:
-            pruner_type = HPOPrunerType(pruner_type_str)
-        except ValueError:
-            pruner_type = HPOPrunerType.MEDIAN
+        pruner_type = _parse_hpo_enum(HPOPrunerType, pruner_type_str, "pruner.type")
 
         pruner = HPOPrunerConfigBridge(
             type=pruner_type,
@@ -1292,10 +1316,7 @@ class ModelConfig(BaseModel):
         # Parse sampler config
         sampler_dict = hpo_dict.get("sampler", {})
         sampler_type_str = sampler_dict.get("type", "tpe")
-        try:
-            sampler_type = HPOSamplerType(sampler_type_str)
-        except ValueError:
-            sampler_type = HPOSamplerType.TPE
+        sampler_type = _parse_hpo_enum(HPOSamplerType, sampler_type_str, "sampler.type")
 
         sampler = HPOSamplerConfigBridge(
             type=sampler_type,
@@ -1308,10 +1329,7 @@ class ModelConfig(BaseModel):
         # Parse study config
         study_dict = hpo_dict.get("study", {})
         direction_str = study_dict.get("direction", "minimize")
-        try:
-            direction = HPODirection(direction_str)
-        except ValueError:
-            direction = HPODirection.MINIMIZE
+        direction = _parse_hpo_enum(HPODirection, direction_str, "study.direction")
 
         study = HPOStudyConfigBridge(
             direction=direction,
@@ -1329,10 +1347,11 @@ class ModelConfig(BaseModel):
             search_space[category] = {}
             for param_name, param_config in params.items():
                 param_type_str = param_config.get("type", "float")
-                try:
-                    param_type = HPOParamType(param_type_str)
-                except ValueError:
-                    param_type = HPOParamType.FLOAT
+                param_type = _parse_hpo_enum(
+                    HPOParamType,
+                    param_type_str,
+                    f"search_space.{category}.{param_name}.type",
+                )
 
                 search_space[category][param_name] = HPOSearchSpaceParamBridge(
                     type=param_type,
