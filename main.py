@@ -4244,11 +4244,19 @@ def _run_hpo_training(
         # 4. Create HPO Manager
         manager = HPOManager(hpo_config)
 
-        # 5. Resume study if requested
+        # 5. Resume study if requested (P1-2c): continue the named study from persistent storage.
+        #    Validated before dataset/model preparation so a misconfiguration fails fast.
         resume_study_name = getattr(args, "resume_study", None)
         if resume_study_name:
+            if hpo_config.study.storage is None:
+                raise HPOError(
+                    f"--resume-study '{resume_study_name}' requires persistent storage",
+                    details=(
+                        "Set models.hpo.study.storage (e.g. sqlite:///optuna.db) to the storage "
+                        "that holds the study"
+                    ),
+                )
             logger.info(f"Resuming study: {resume_study_name}")
-            # HPOManager handles study resumption internally via study config
 
         # For custom/ensemble modes, use the mode name
         if mode == "custom":
@@ -4322,15 +4330,31 @@ def _run_hpo_training(
             "max_epochs": training_config.get("epochs", 100),
         }
 
-        # 8. Run optimization
-        logger.info("Starting HPO optimization...")
-        best_params = manager.optimize(
-            model_name=model_name,
-            dataset=dataset,
-            base_hyperparameters=base_hyperparameters,
-            trainer_kwargs=trainer_kwargs,
-            config_dict=models_config,  # NEW: For target selection
-        )
+        # 8. Run optimization (P1-2c: --resume-study continues the named study; resume_study()
+        #    requires it to exist and to match the configured direction/metric — P1-2a/P1-2b)
+        if resume_study_name:
+            logger.info(
+                f"Continuing study '{resume_study_name}' with {hpo_config.n_trials} trials..."
+            )
+            best_params = manager.resume_study(
+                resume_study_name,
+                hpo_config.study.storage,
+                additional_trials=hpo_config.n_trials,
+                model_name=model_name,
+                dataset=dataset,
+                base_hyperparameters=base_hyperparameters,
+                trainer_kwargs=trainer_kwargs,
+                config_dict=models_config,
+            )
+        else:
+            logger.info("Starting HPO optimization...")
+            best_params = manager.optimize(
+                model_name=model_name,
+                dataset=dataset,
+                base_hyperparameters=base_hyperparameters,
+                trainer_kwargs=trainer_kwargs,
+                config_dict=models_config,  # NEW: For target selection
+            )
 
         # 9. Report results
         logger.info("=" * 60)

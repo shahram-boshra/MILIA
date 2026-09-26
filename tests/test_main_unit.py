@@ -2324,6 +2324,9 @@ class TestHPOTraining(unittest.TestCase):
         self.mock_args.hpo_study_name = "test_study"
         self.mock_args.hpo_direction = "minimize"
         self.mock_args.output_dir = "/tmp/hpo"
+        # argparse always defines --resume-study (default None, cli_manager.py); a bare Mock would
+        # otherwise return a truthy Mock attribute (P1-2c)
+        self.mock_args.resume_study = None
 
         self.mock_dataset = Mock()
         self.mock_dataset.__len__ = Mock(return_value=100)
@@ -2334,6 +2337,54 @@ class TestHPOTraining(unittest.TestCase):
         """Test that _run_hpo_training function exists"""
         self.assertTrue(hasattr(main, "_run_hpo_training"))
         self.assertTrue(callable(main._run_hpo_training))
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
+    @patch("main._save_hpo_results")
+    def test_run_hpo_training_resume_study_continues_named_study(
+        self, mock_save, mock_manager_cls, mock_hpo_config
+    ):
+        """P1-2c: --resume-study continues that study (its storage, n_trials more trials)."""
+        mock_hpo_config.from_dict.return_value = Mock(
+            n_trials=5, study=Mock(storage="sqlite:///hpo.db")
+        )
+        mock_manager = Mock()
+        mock_manager.resume_study.return_value = {"learning_rate": 0.01}
+        mock_manager.get_best_value.return_value = 0.1
+        mock_manager_cls.return_value = mock_manager
+        self.mock_args.resume_study = "prior_study"
+
+        result = _run_hpo_training(
+            self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
+        )
+
+        self.assertEqual(result, 0)
+        mock_manager.optimize.assert_not_called()
+        mock_manager.resume_study.assert_called_once()
+        call = mock_manager.resume_study.call_args
+        self.assertEqual(call.args[:2], ("prior_study", "sqlite:///hpo.db"))
+        self.assertEqual(call.kwargs["additional_trials"], 5)
+        self.assertEqual(call.kwargs["model_name"], "GCN")
+        self.assertIs(call.kwargs["dataset"], self.mock_dataset)
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
+    def test_run_hpo_training_resume_study_requires_storage(
+        self, mock_manager_cls, mock_hpo_config
+    ):
+        """P1-2c: --resume-study without persistent storage fails fast, before any optimization."""
+        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=Mock(storage=None))
+        mock_manager = Mock()
+        mock_manager_cls.return_value = mock_manager
+        self.mock_args.resume_study = "prior_study"
+
+        result = _run_hpo_training(
+            self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
+        )
+
+        self.assertEqual(result, 1)
+        mock_manager.optimize.assert_not_called()
+        mock_manager.resume_study.assert_not_called()
 
     @patch("main.HPOConfig")
     @patch("main.HPOManager")
