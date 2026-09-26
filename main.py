@@ -4166,6 +4166,16 @@ def _run_standard_training(
         return 1
 
 
+def _cli_override(args: argparse.Namespace, name: str, fallback: Any) -> Any:
+    """Resolve one HPO setting with CLI > YAML > built-in default precedence (P1-3a / F14).
+
+    Every HPO CLI option defaults to ``None`` (``cli_manager.py``), so ``None`` means "not passed".
+    An explicitly passed falsy value (e.g. ``--cv-folds 0``) is honoured; ``or`` would drop it.
+    """
+    value = getattr(args, name, None)
+    return fallback if value is None else value
+
+
 def _run_hpo_training(
     args: argparse.Namespace,
     logger: logging.Logger,
@@ -4192,18 +4202,18 @@ def _run_hpo_training(
         models_config = config.get("models", {})
         hpo_config_dict = models_config.get("hpo", {})
 
-        # CLI overrides
-        n_trials = getattr(args, "n_trials", None) or hpo_config_dict.get("n_trials", 100)
-        timeout = getattr(args, "hpo_timeout", None) or hpo_config_dict.get("timeout", None)
-        cv_folds = getattr(args, "cv_folds", None) or hpo_config_dict.get("cv_folds", 0)
-        backend = getattr(args, "hpo_backend", None) or hpo_config_dict.get("backend", "optuna")
+        # CLI overrides (CLI > YAML > default; P1-3a)
+        n_trials = _cli_override(args, "n_trials", hpo_config_dict.get("n_trials", 100))
+        timeout = _cli_override(args, "hpo_timeout", hpo_config_dict.get("timeout", None))
+        cv_folds = _cli_override(args, "cv_folds", hpo_config_dict.get("cv_folds", 0))
+        backend = _cli_override(args, "hpo_backend", hpo_config_dict.get("backend", "optuna"))
 
         # CLI overrides for sampler/pruner
-        sampler_type = getattr(args, "sampler", None) or hpo_config_dict.get("sampler", {}).get(
-            "type", "tpe"
+        sampler_type = _cli_override(
+            args, "sampler", hpo_config_dict.get("sampler", {}).get("type", "tpe")
         )
-        pruner_type = getattr(args, "pruner", None) or hpo_config_dict.get("pruner", {}).get(
-            "type", "median"
+        pruner_type = _cli_override(
+            args, "pruner", hpo_config_dict.get("pruner", {}).get("type", "median")
         )
 
         logger.info(f"HPO Trials: {n_trials}")

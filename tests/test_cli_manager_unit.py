@@ -2015,9 +2015,9 @@ class TestHPOArguments(unittest.TestCase):
             self.assertEqual(args.hpo_backend, backend)
 
     def test_parse_hpo_backend_default(self):
-        """Test --hpo-backend default is 'optuna'"""
+        """P1-3a (F14): --hpo-backend unset is None, so models.hpo.backend (YAML) applies."""
         args = self._parse_only([])
-        self.assertEqual(args.hpo_backend, "optuna")
+        self.assertIsNone(args.hpo_backend)
 
     def test_parse_hpo_backend_invalid_rejected(self):
         """Test that invalid --hpo-backend values are rejected"""
@@ -2068,9 +2068,9 @@ class TestHPOArguments(unittest.TestCase):
             self.assertEqual(args.sampler, sampler)
 
     def test_parse_sampler_default(self):
-        """Test --sampler default is 'tpe'"""
+        """P1-3a (F14): --sampler unset is None, so models.hpo.sampler.type (YAML) applies."""
         args = self._parse_only([])
-        self.assertEqual(args.sampler, "tpe")
+        self.assertIsNone(args.sampler)
 
     def test_parse_sampler_invalid_rejected(self):
         """Test that invalid --sampler values are rejected"""
@@ -2088,9 +2088,9 @@ class TestHPOArguments(unittest.TestCase):
             self.assertEqual(args.pruner, pruner)
 
     def test_parse_pruner_default(self):
-        """Test --pruner default is 'median'"""
+        """P1-3a (F14): --pruner unset is None, so models.hpo.pruner.type (YAML) applies."""
         args = self._parse_only([])
-        self.assertEqual(args.pruner, "median")
+        self.assertIsNone(args.pruner)
 
     def test_parse_pruner_invalid_rejected(self):
         """Test that invalid --pruner values are rejected"""

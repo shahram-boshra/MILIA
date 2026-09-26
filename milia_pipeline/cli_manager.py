@@ -1394,9 +1394,9 @@ class CLIManager:
         training.add_argument(
             "--hpo-backend",
             type=str,
-            default="optuna",
+            default=None,
             choices=["optuna", "ray_tune"],
-            help="HPO backend to use",
+            help="HPO backend to use (default: models.hpo.backend, else 'optuna')",
         )
 
         training.add_argument(
@@ -1413,17 +1413,17 @@ class CLIManager:
         training.add_argument(
             "--sampler",
             type=str,
-            default="tpe",
+            default=None,
             choices=["tpe", "random", "cmaes", "grid"],
-            help="HPO sampler type",
+            help="HPO sampler type (default: models.hpo.sampler.type, else 'tpe')",
         )
 
         training.add_argument(
             "--pruner",
             type=str,
-            default="median",
+            default=None,
             choices=["median", "hyperband", "percentile", "none"],
-            help="HPO pruner type",
+            help="HPO pruner type (default: models.hpo.pruner.type, else 'median')",
         )
 
     def _add_prediction_arguments(self, parser: argparse.ArgumentParser) -> None:

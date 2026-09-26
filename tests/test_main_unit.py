@@ -2369,6 +2369,56 @@ class TestHPOTraining(unittest.TestCase):
 
     @patch("main.HPOConfig")
     @patch("main.HPOManager")
+    @patch("main._save_hpo_results")
+    def test_run_hpo_training_cli_zero_overrides_yaml(
+        self, mock_save, mock_manager_cls, mock_hpo_config
+    ):
+        """P1-3a (F14): an explicit --cv-folds 0 wins over models.hpo.cv_folds (not dropped by `or`)."""
+        mock_hpo_config.from_dict.return_value = Mock()
+        mock_manager_cls.return_value = Mock()
+        for name in ("n_trials", "hpo_timeout", "hpo_backend", "sampler", "pruner"):
+            setattr(self.mock_args, name, None)
+        self.mock_args.cv_folds = 0
+        config = {"models": {"hpo": {"enabled": True, "cv_folds": 5}}}
+
+        _run_hpo_training(self.mock_args, self.mock_logger, self.mock_dataset, config)
+
+        merged = mock_hpo_config.from_dict.call_args[0][0]
+        self.assertEqual(merged["cv_folds"], 0)
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
+    @patch("main._save_hpo_results")
+    def test_run_hpo_training_unset_cli_uses_yaml(
+        self, mock_save, mock_manager_cls, mock_hpo_config
+    ):
+        """P1-3a: options not given on the CLI (None) take the YAML values."""
+        mock_hpo_config.from_dict.return_value = Mock()
+        mock_manager_cls.return_value = Mock()
+        for name in ("n_trials", "hpo_timeout", "cv_folds", "hpo_backend", "sampler", "pruner"):
+            setattr(self.mock_args, name, None)
+        config = {
+            "models": {
+                "hpo": {
+                    "enabled": True,
+                    "n_trials": 7,
+                    "cv_folds": 3,
+                    "sampler": {"type": "random"},
+                    "pruner": {"type": "hyperband"},
+                }
+            }
+        }
+
+        _run_hpo_training(self.mock_args, self.mock_logger, self.mock_dataset, config)
+
+        merged = mock_hpo_config.from_dict.call_args[0][0]
+        self.assertEqual(merged["n_trials"], 7)
+        self.assertEqual(merged["cv_folds"], 3)
+        self.assertEqual(merged["sampler"]["type"], "random")
+        self.assertEqual(merged["pruner"]["type"], "hyperband")
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
     def test_run_hpo_training_resume_study_requires_storage(
         self, mock_manager_cls, mock_hpo_config
     ):
