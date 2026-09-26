@@ -901,6 +901,133 @@ class TestCreateStudyLoadIfExists:
         assert len(study2.trials) == initial_trials
 
 
+class TestStudyCompatibilityGuard:
+    """P1-2b (R20, F29): a loaded study must match direction/metric; resume must not create a study."""
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_direction_mismatch_raises(self, backend_instance, tmp_path):
+        """Loading a MAXIMIZE study with direction='minimize' is an error, not a silent reuse."""
+        import optuna
+
+        from milia_pipeline.exceptions import HPOError
+
+        storage = f"sqlite:///{tmp_path}/guard_direction.db"
+        optuna.create_study(study_name="s", direction="maximize", storage=storage)
+
+        with pytest.raises(HPOError, match="direction"):
+            backend_instance.create_study(
+                study_name="s", direction="minimize", storage=storage, load_if_exists=True
+            )
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_duplicated_study_path_checks_direction(self, backend_instance, tmp_path):
+        """load_if_exists=False on an existing study (DuplicatedStudyError path) is also checked."""
+        import optuna
+
+        from milia_pipeline.exceptions import HPOError
+
+        storage = f"sqlite:///{tmp_path}/guard_duplicated.db"
+        optuna.create_study(study_name="s", direction="maximize", storage=storage)
+
+        with pytest.raises(HPOError, match="direction"):
+            backend_instance.create_study(
+                study_name="s", direction="minimize", storage=storage, load_if_exists=False
+            )
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_metric_mismatch_raises(self, backend_instance, tmp_path):
+        """A study recorded for another metric is not silently reused."""
+        import optuna
+
+        from milia_pipeline.exceptions import HPOError
+
+        storage = f"sqlite:///{tmp_path}/guard_metric.db"
+        study = optuna.create_study(study_name="s", direction="minimize", storage=storage)
+        study.set_user_attr("milia.metric", "val_acc")
+
+        with pytest.raises(HPOError, match="metric"):
+            backend_instance.create_study(
+                study_name="s",
+                direction="minimize",
+                storage=storage,
+                load_if_exists=True,
+                metric="val_loss",
+            )
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_must_exist_missing_study_raises(self, backend_instance, tmp_path):
+        """Resume semantics: a missing study raises instead of creating an empty one (F29)."""
+        from milia_pipeline.exceptions import StudyNotFoundError
+
+        storage = f"sqlite:///{tmp_path}/guard_missing.db"
+
+        with pytest.raises(StudyNotFoundError):
+            backend_instance.create_study(
+                study_name="never_created",
+                direction="minimize",
+                storage=storage,
+                load_if_exists=True,
+                must_exist=True,
+            )
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_matching_resume_continues(self, backend_instance, tmp_path):
+        """Same direction and metric: the existing study (with its trials) is returned."""
+        import optuna
+
+        storage = f"sqlite:///{tmp_path}/guard_match.db"
+        study = optuna.create_study(study_name="s", direction="minimize", storage=storage)
+        study.set_user_attr("milia.metric", "val_loss")
+        study.optimize(lambda trial: trial.suggest_float("x", 0, 1), n_trials=2)
+
+        resumed = backend_instance.create_study(
+            study_name="s",
+            direction="minimize",
+            storage=storage,
+            load_if_exists=True,
+            metric="val_loss",
+            must_exist=True,
+        )
+        assert len(resumed.trials) == 2
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_new_study_records_metric(self, backend_instance, tmp_path):
+        """A new study records the metric it optimizes (stable user-attr API)."""
+        import optuna
+
+        storage = f"sqlite:///{tmp_path}/guard_record.db"
+        backend_instance.create_study(
+            study_name="n", direction="maximize", storage=storage, metric="val_acc"
+        )
+        stored = optuna.load_study(study_name="n", storage=storage).user_attrs
+        assert stored.get("milia.metric") == "val_acc"
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_pre_existing_study_without_metric_gets_recorded(self, backend_instance, tmp_path):
+        """A study created before P1-2b (no recorded metric) is adopted and recorded, not rejected."""
+        import optuna
+
+        storage = f"sqlite:///{tmp_path}/guard_legacy.db"
+        study = optuna.create_study(study_name="L", direction="minimize", storage=storage)
+        study.optimize(lambda trial: trial.suggest_float("x", 0, 1), n_trials=1)
+
+        backend_instance.create_study(
+            study_name="L", direction="minimize", storage=storage, metric="val_loss"
+        )
+        stored = optuna.load_study(study_name="L", storage=storage).user_attrs
+        assert stored.get("milia.metric") == "val_loss"
+
+    @pytest.mark.skipif(not OPTUNA_INSTALLED, reason="Optuna not installed")
+    def test_must_exist_in_memory_raises(self, backend_instance):
+        """In-memory storage never holds a study to resume."""
+        from milia_pipeline.exceptions import StudyNotFoundError
+
+        with pytest.raises(StudyNotFoundError):
+            backend_instance.create_study(
+                study_name="m", direction="minimize", storage=None, must_exist=True
+            )
+
+
 class TestCreateStudyLogging:
     """Test create_study logging behavior."""
 
@@ -977,6 +1104,8 @@ class TestCreateStudyErrorHandling:
         mock_study = MagicMock()
         mock_study.study_name = "existing_study"
         mock_study.trials = [MagicMock()]  # Has existing trials
+        # P1-2b: a loaded study is checked against the requested direction — model a real one
+        mock_study.directions = [optuna.study.StudyDirection.MINIMIZE]
 
         with (
             patch("optuna.create_study", side_effect=mock_duplicated_error),

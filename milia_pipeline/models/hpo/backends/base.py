@@ -45,6 +45,9 @@ class HPOBackendProtocol(Protocol):
         load_if_exists: bool = True,
         sampler: Any | None = None,
         pruner: Any | None = None,
+        *,
+        metric: str | None = None,
+        must_exist: bool = False,
     ) -> Any:
         """
         Create or load an HPO study.
@@ -56,6 +59,8 @@ class HPOBackendProtocol(Protocol):
             load_if_exists: Whether to resume existing study
             sampler: Sampler instance
             pruner: Pruner instance
+            metric: Objective metric name; recorded on new studies, checked on loaded ones
+            must_exist: Load only; raise StudyNotFoundError instead of creating a missing study
 
         Returns:
             Study object (backend-specific type)

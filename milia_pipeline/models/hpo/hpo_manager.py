@@ -1157,13 +1157,16 @@ class HPOManager:
         storage: str | None,
         load_if_exists: bool,
         n_trials: int,
+        must_exist: bool = False,
     ) -> dict[str, Any]:
         """Create the sampler, pruner and study, then run ``n_trials`` trials (P1-2a).
 
         Shared by :meth:`optimize` (study identity and trial budget from ``self.config``) and
         :meth:`resume_study` (explicit study identity, ``load_if_exists=True``,
         ``n_trials=additional_trials``), so both paths build the objective, sampler and pruner
-        identically. Callers perform the enabled/backend guards.
+        identically. Callers perform the enabled/backend guards. ``must_exist=True`` (resume) loads the
+        study and raises ``StudyNotFoundError`` if it is missing; the backend rejects a loaded study
+        whose direction or recorded metric differs from ``self.config.study`` (P1-2b).
         """
         base_hyperparameters = base_hyperparameters or {}
         trainer_kwargs = trainer_kwargs or {}
@@ -1224,6 +1227,8 @@ class HPOManager:
             load_if_exists=load_if_exists,
             sampler=sampler,
             pruner=pruner,
+            metric=self.config.study.metric,
+            must_exist=must_exist,
         )
 
         # Create objective function
@@ -2429,15 +2434,18 @@ class HPOManager:
                 storage=storage,
                 load_if_exists=True,
                 n_trials=additional_trials,
+                must_exist=True,
             )
 
         try:
-            # Load existing study
+            # Load existing study (must exist: never create one on resume — F29)
             self.study = self.backend.create_study(
                 study_name=study_name,
                 direction=self.config.study.direction.value,
                 storage=storage,
                 load_if_exists=True,
+                metric=self.config.study.metric,
+                must_exist=True,
             )
 
             existing_trials = len(self.backend.get_all_trials(self.study))
@@ -2448,6 +2456,9 @@ class HPOManager:
 
             return self.best_params
 
+        except (StudyNotFoundError, HPOConfigurationError):
+            # Already precise (missing study / direction or metric mismatch): do not re-wrap.
+            raise
         except Exception as e:
             raise StudyNotFoundError(
                 f"Failed to resume study: {e}",

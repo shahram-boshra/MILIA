@@ -1329,6 +1329,74 @@ class TestHPOManagerResumeStudy:
 
         mock_backend.optimize.assert_not_called()
 
+    def test_resume_study_requires_existing_study_and_checks_metric(
+        self, mock_backend, mock_dataset
+    ):
+        """P1-2b (F29): both resume paths load with must_exist=True and pass the configured metric."""
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=MagicMock()),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            manager.resume_study("existing_study", "sqlite:///test.db")
+            load_only_kwargs = mock_backend.create_study.call_args[1]
+            manager.resume_study(
+                "existing_study",
+                "sqlite:///test.db",
+                additional_trials=2,
+                model_name="GCN",
+                dataset=mock_dataset,
+            )
+            continue_kwargs = mock_backend.create_study.call_args[1]
+
+        for kwargs in (load_only_kwargs, continue_kwargs):
+            assert kwargs.get("must_exist") is True
+            assert kwargs.get("metric") == "val_loss"
+
+    def test_optimize_creates_or_loads_and_records_metric(self, mock_backend, mock_dataset):
+        """P1-2b: optimize() may create a study (must_exist=False) and passes the configured metric."""
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=MagicMock()),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            manager.optimize(model_name="GCN", dataset=mock_dataset)
+
+        kwargs = mock_backend.create_study.call_args[1]
+        assert kwargs.get("must_exist") is False
+        assert kwargs.get("metric") == "val_loss"
+
+    @pytest.mark.parametrize("error_name", ["HPOConfigurationError", "StudyNotFoundError"])
+    def test_resume_study_propagates_precise_errors(self, mock_backend, error_name):
+        """P1-2b: a mismatch or missing-study error from the backend reaches the caller unchanged."""
+        import milia_pipeline.exceptions as exc
+
+        error_cls = getattr(exc, error_name)
+        error = (
+            error_cls("precise backend error", study_name="existing_study")
+            if error_cls is exc.StudyNotFoundError
+            else error_cls("precise backend error")
+        )
+        mock_backend.create_study.side_effect = error
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True))
+            with pytest.raises(getattr(exc, error_name)) as exc_info:
+                manager.resume_study("existing_study", "sqlite:///test.db")
+
+        assert exc_info.value is error
+
     def test_resume_study_zero_additional_trials_only_loads(self, mock_backend, mock_study):
         """P1-2a guard: the default (additional_trials=0) still loads without optimizing."""
         mock_backend.create_study.return_value = mock_study

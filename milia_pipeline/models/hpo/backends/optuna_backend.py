@@ -39,9 +39,18 @@ except ImportError:
     _OPTUNA_VERSION = None
     _OPTUNA_RESTART_STRATEGY_DEPRECATED_IN = None
 
-from milia_pipeline.exceptions import BackendError, HPOError
+from milia_pipeline.exceptions import (
+    BackendError,
+    HPOConfigurationError,
+    HPOError,
+    StudyNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
+
+# Study user attribute recording the objective metric a study optimizes (P1-2b). Uses the stable
+# ``Study.set_user_attr`` API rather than the experimental ``Study.set_metric_names``.
+_METRIC_USER_ATTR = "milia.metric"
 
 
 class OptunaBackend:
@@ -83,6 +92,9 @@ class OptunaBackend:
         load_if_exists: bool = True,
         sampler: Any | None = None,
         pruner: Any | None = None,
+        *,
+        metric: str | None = None,
+        must_exist: bool = False,
     ) -> "optuna.Study":
         """
         Create or load an Optuna study.
@@ -94,44 +106,131 @@ class OptunaBackend:
             load_if_exists: Whether to resume existing study
             sampler: Optuna sampler instance
             pruner: Optuna pruner instance
+            metric: Objective metric name; recorded on new studies and checked against the metric
+                recorded on loaded studies (P1-2b)
+            must_exist: Resume semantics — load the study and raise ``StudyNotFoundError`` if it does
+                not exist, instead of creating it (F29)
 
         Returns:
             Optuna Study object
+
+        Raises:
+            StudyNotFoundError: ``must_exist=True`` and the study is not in ``storage``
+            HPOConfigurationError: A loaded study's direction or recorded metric differs from the request
+            BackendError: Any other storage/Optuna failure
         """
+        if must_exist:
+            study = self._load_existing_study(study_name, storage, sampler, pruner)
+        else:
+            try:
+                study = optuna.create_study(
+                    study_name=study_name,
+                    direction=direction,
+                    storage=storage,
+                    load_if_exists=load_if_exists,
+                    sampler=sampler,
+                    pruner=pruner,
+                )
+            except optuna.exceptions.DuplicatedStudyError:
+                # load_if_exists=False on an existing study: it is loaded, so it is checked below too
+                logger.warning(f"Study '{study_name}' exists, loading...")
+                study = optuna.load_study(
+                    study_name=study_name,
+                    storage=storage,
+                    sampler=sampler,
+                    pruner=pruner,
+                )
+            except Exception as e:
+                raise BackendError(
+                    f"Failed to create study: {e}",
+                    backend_name="optuna",
+                    operation="create_study",
+                    details=str(e),
+                ) from e
+
+        # Outside the try: a compatibility error must not be re-wrapped as a creation failure.
+        self._check_study_compatibility(study, study_name, direction, metric)
+
+        n_existing = len(study.trials)
+        if n_existing > 0:
+            logger.info(f"Resumed study '{study_name}' with {n_existing} existing trials")
+        else:
+            logger.info(f"Created new study '{study_name}'")
+
+        return study
+
+    @staticmethod
+    def _load_existing_study(
+        study_name: str,
+        storage: str | None,
+        sampler: Any | None,
+        pruner: Any | None,
+    ) -> "optuna.Study":
+        """Load a study that must already exist (P1-2b / F29); never creates one."""
+        if storage is None:
+            raise StudyNotFoundError(
+                f"Study '{study_name}' cannot be resumed from in-memory storage",
+                study_name=study_name,
+            )
         try:
-            study = optuna.create_study(
-                study_name=study_name,
-                direction=direction,
-                storage=storage,
-                load_if_exists=load_if_exists,
-                sampler=sampler,
-                pruner=pruner,
-            )
-
-            n_existing = len(study.trials)
-            if n_existing > 0:
-                logger.info(f"Resumed study '{study_name}' with {n_existing} existing trials")
-            else:
-                logger.info(f"Created new study '{study_name}'")
-
-            return study
-
-        except optuna.exceptions.DuplicatedStudyError:
-            # This shouldn't happen with load_if_exists=True, but handle it
-            logger.warning(f"Study '{study_name}' exists, loading...")
             return optuna.load_study(
-                study_name=study_name,
-                storage=storage,
-                sampler=sampler,
-                pruner=pruner,
+                study_name=study_name, storage=storage, sampler=sampler, pruner=pruner
             )
+        except KeyError:
+            # optuna.load_study raises KeyError for an unknown study name (verified, R26)
+            try:
+                available = optuna.study.get_all_study_names(storage=storage)
+            except Exception:
+                available = []
+            raise StudyNotFoundError(
+                f"Study '{study_name}' not found",
+                study_name=study_name,
+                storage_url=storage,
+                available_studies=available,
+            ) from None
         except Exception as e:
             raise BackendError(
-                f"Failed to create study: {e}",
+                f"Failed to load study: {e}",
                 backend_name="optuna",
                 operation="create_study",
                 details=str(e),
             ) from e
+
+    @staticmethod
+    def _check_study_compatibility(
+        study: "optuna.Study",
+        study_name: str,
+        direction: str,
+        metric: str | None,
+    ) -> None:
+        """Reject a loaded study whose direction or recorded metric differs; record the metric (P1-2b).
+
+        A newly created study matches by construction. A loaded study keeps its stored direction in
+        Optuna (a different requested direction is silently ignored, R20), so it is compared here.
+        """
+        stored_directions = [d.name.lower() for d in study.directions]
+        if stored_directions != [direction]:
+            raise HPOConfigurationError(
+                f"Study '{study_name}' was created with direction {stored_directions}, but "
+                f"direction '{direction}' was requested",
+                config_key="study.direction",
+                actual_value=stored_directions,
+                expected_value=direction,
+            )
+        if metric is None:
+            return
+        stored_metric = study.user_attrs.get(_METRIC_USER_ATTR)
+        if stored_metric is None:
+            # New study, or one created before P1-2b: record the metric it is optimized for.
+            study.set_user_attr(_METRIC_USER_ATTR, metric)
+        elif stored_metric != metric:
+            raise HPOConfigurationError(
+                f"Study '{study_name}' optimizes metric '{stored_metric}', but metric "
+                f"'{metric}' was requested",
+                config_key="study.metric",
+                actual_value=stored_metric,
+                expected_value=metric,
+            )
 
     def optimize(
         self,
