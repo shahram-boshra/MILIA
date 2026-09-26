@@ -65,7 +65,11 @@ except ImportError:
 
 try:
     import optuna
-    from optuna.importance import FanovaImportanceEvaluator, get_param_importances
+    from optuna.importance import (
+        FanovaImportanceEvaluator,
+        MeanDecreaseImpurityImportanceEvaluator,
+        get_param_importances,
+    )
     from optuna.trial import TrialState
 
     OPTUNA_AVAILABLE = True
@@ -74,11 +78,12 @@ except ImportError:
     TrialState = None
     get_param_importances = None
     FanovaImportanceEvaluator = None
+    MeanDecreaseImpurityImportanceEvaluator = None
     OPTUNA_AVAILABLE = False
 
 # Import HPO-specific modules
 from milia_pipeline.exceptions import (
-    HPOConfigurationError,  # noqa: F401 — required as module attr for test mock.patch
+    HPOConfigurationError,
     HPOError,
     StudyNotFoundError,
 )
@@ -471,6 +476,24 @@ class StudyAnalyzer:
     # PARAMETER IMPORTANCE ANALYSIS
     # =========================================================================
 
+    @staticmethod
+    def _importance_evaluator(method: "ImportanceMethod"):
+        """Return the Optuna importance evaluator for ``method`` (P1-5 / F16).
+
+        Resolved at call time from the module namespace so the class used is the one currently bound
+        (keeps ``unittest.mock.patch`` of the module attributes effective).
+        """
+        if method == ImportanceMethod.FANOVA:
+            return FanovaImportanceEvaluator()
+        if method == ImportanceMethod.MDI:
+            return MeanDecreaseImpurityImportanceEvaluator()
+        raise HPOConfigurationError(
+            f"Unsupported importance method '{method}'",
+            config_key="importance_method",
+            actual_value=method,
+            expected_value=[m.value for m in ImportanceMethod],
+        )
+
     def get_parameter_importance(
         self,
         method: ImportanceMethod | None = None,
@@ -517,11 +540,11 @@ class StudyAnalyzer:
             )
 
         method = method or self.config.importance_method
+        # P1-5 (F16): pass the evaluator explicitly for every method —
+        # get_param_importances(evaluator=None) silently falls back to fANOVA (optuna 4.9.0).
+        evaluator = self._importance_evaluator(method)
 
         try:
-            # FANOVA uses dedicated evaluator; MDI uses default (None)
-            evaluator = FanovaImportanceEvaluator() if method == ImportanceMethod.FANOVA else None
-
             importance = get_param_importances(
                 self.study,
                 evaluator=evaluator,

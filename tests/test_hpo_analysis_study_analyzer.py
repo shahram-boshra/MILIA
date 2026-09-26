@@ -2375,6 +2375,59 @@ class TestGetParameterImportance:
 
 
 # =============================================================================
+# IMPORTANCE EVALUATOR SELECTION (P1-5 / F16)
+# =============================================================================
+
+
+class TestImportanceEvaluatorSelection:
+    """P1-5 (F16): optuna.importance.get_param_importances(evaluator=None) silently uses fANOVA
+    (optuna 4.9.0 source), so every method must pass its own evaluator explicitly."""
+
+    @staticmethod
+    def _real_study():
+        optuna = pytest.importorskip("optuna")
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        study = optuna.create_study(sampler=optuna.samplers.RandomSampler(seed=0))
+        study.optimize(
+            lambda trial: trial.suggest_float("x", 0, 1) + trial.suggest_float("y", 0, 1),
+            n_trials=8,
+        )
+        return study
+
+    @pytest.mark.parametrize(
+        ("method_name", "evaluator_name"),
+        [
+            ("MDI", "MeanDecreaseImpurityImportanceEvaluator"),
+            ("FANOVA", "FanovaImportanceEvaluator"),
+        ],
+    )
+    def test_method_passes_its_evaluator(self, method_name, evaluator_name):
+        """The evaluator that reaches Optuna matches the requested method (never None)."""
+        import optuna.importance
+
+        from milia_pipeline.models.hpo.analysis import study_analyzer as sa
+
+        study = self._real_study()
+        seen = []
+        real_get_param_importances = optuna.importance.get_param_importances
+
+        def spy(study_arg, evaluator=None, target=None, **kwargs):
+            seen.append(evaluator)
+            return real_get_param_importances(
+                study_arg, evaluator=evaluator, target=target, **kwargs
+            )
+
+        with patch.object(sa, "get_param_importances", spy):
+            importance = sa.StudyAnalyzer(study).get_parameter_importance(
+                method=getattr(sa.ImportanceMethod, method_name), use_cache=False
+            )
+
+        assert set(importance) == {"x", "y"}
+        assert len(seen) == 1
+        assert isinstance(seen[0], getattr(optuna.importance, evaluator_name))
+
+
+# =============================================================================
 # GET_PARAMETER_IMPORTANCE_RANKING TESTS
 # =============================================================================
 
