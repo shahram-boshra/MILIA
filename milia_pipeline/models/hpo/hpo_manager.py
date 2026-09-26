@@ -1427,6 +1427,20 @@ class HPOManager:
 
                 # 6. Handle cross-validation if configured
                 if config.cv_folds > 0:
+                    # P1-7 (F20): pruning in CV is fold-level — each fold's score is reported at
+                    # step=fold_idx inside _run_cross_validation. The epoch-level hpo_callback is NOT
+                    # passed into the folds: one trial shared across folds would reuse epoch steps.
+                    if (
+                        config.pruner.type.value != "none"
+                        and config.pruner.n_warmup_steps >= config.cv_folds
+                        and not hasattr(objective, "_cv_warmup_warned")
+                    ):
+                        logger.warning(
+                            f"Pruning is inactive in CV mode: pruner n_warmup_steps="
+                            f"{config.pruner.n_warmup_steps} >= cv_folds={config.cv_folds} "
+                            f"(fold steps are 0..{config.cv_folds - 1})"
+                        )
+                        objective._cv_warmup_warned = True
                     metric_value = _run_cross_validation(
                         model_name=model_name,
                         dataset=dataset,
@@ -1435,7 +1449,7 @@ class HPOManager:
                         scheduler_params=scheduler_params,
                         loss_params=loss_params,
                         trainer_kwargs=trainer_kwargs,
-                        callbacks=all_callbacks,
+                        callbacks=additional_callbacks,
                         n_folds=config.cv_folds,
                         metric=config.study.metric,
                         aggregation=config.cv_metric_aggregation,
@@ -1443,6 +1457,7 @@ class HPOManager:
                         task_type=task_type,
                         discretize_config=discretize_config,
                         target_selection_config=target_selection_config,  # Pass to CV
+                        trial=trial,
                     )
                 # -------
                 else:
@@ -2698,12 +2713,19 @@ def _run_cross_validation(
     task_type: str,
     discretize_config: dict[str, Any] | None = None,
     target_selection_config: TargetSelectionConfig | None = None,
+    *,
+    trial: Any | None = None,
 ) -> float:
     """
     Run k-fold cross-validation for a trial.
 
     Uses DataSplitter.k_fold_split() from data_splitting.py to create
     folds and trains a fresh model on each fold.
+
+    P1-7 (F20): with ``trial`` given, each fold's score is reported at ``step=fold_idx`` and a pruning
+    decision is taken between folds (``optuna.TrialPruned`` stops the remaining folds). Folds are
+    deterministic (``random_seed=42``), so step k compares fold k across trials. Callers must not pass an
+    epoch-level pruning callback in ``callbacks``: every fold would reuse the same epoch steps.
 
     Args:
         model_name: Model name for factory
@@ -2713,7 +2735,7 @@ def _run_cross_validation(
         scheduler_params: Scheduler hyperparameters
         loss_params: Loss function hyperparameters
         trainer_kwargs: Additional trainer configuration
-        callbacks: Callbacks to use (including HPO callback)
+        callbacks: Additional callbacks for every fold's Trainer (no epoch-level pruning callback)
         n_folds: Number of cross-validation folds
         metric: Metric name to aggregate
         aggregation: Aggregation method ("mean", "median", "min", "max")
@@ -2721,12 +2743,14 @@ def _run_cross_validation(
         task_type: Task type string
         discretize_config: Optional config for DiscretizeTargets transform
         target_selection_config: Optional target selection config for node/edge tasks
+        trial: HPO trial for fold-level reporting and pruning (None: plain CV, no reporting)
 
     Returns:
         Aggregated metric value across all folds
 
     Raises:
         HPOError: If no valid fold metrics obtained
+        optuna.TrialPruned: If the pruner stops the trial after a fold (only with ``trial``)
         ImportError: If DataSplitter or Trainer not available
     """
     from statistics import mean, median
@@ -2814,6 +2838,17 @@ def _run_cross_validation(
         if fold_value is not None:
             fold_metrics.append(fold_value)
             logger.debug(f"    Fold {fold_idx + 1} {metric}: {fold_value:.6f}")
+
+            # P1-7 (F20): fold-level reporting; prune between folds, never mid-fold
+            if trial is not None:
+                trial.report(fold_value, step=fold_idx)
+                if trial.should_prune():
+                    import optuna
+
+                    raise optuna.TrialPruned(
+                        f"Trial pruned after CV fold {fold_idx + 1}/{n_folds} "
+                        f"with {metric}={fold_value}"
+                    )
 
     # Aggregate fold metrics
     if not fold_metrics:

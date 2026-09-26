@@ -911,6 +911,56 @@ class TestHPOManagerCreateObjective:
             with pytest.raises(TrialFailedError):
                 objective(mock_trial)
 
+    def test_objective_cv_branch_reports_per_fold_not_per_epoch(
+        self, mock_backend, mock_dataset, mock_trial
+    ):
+        """P1-7 (F20): with cv_folds > 0 the objective hands the trial to _run_cross_validation for
+        fold-level reporting and does NOT inject the epoch-level pruning callback into the folds
+        (whose epoch steps would collide across folds)."""
+        hpo_callback = MagicMock(name="epoch_level_hpo_callback")
+        user_callback = MagicMock(name="user_callback")
+        cv_spy = MagicMock(return_value=0.1)
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=mock_backend),
+            patch("milia_pipeline.models.hpo.hpo_manager.get_factory", return_value=MagicMock()),
+            patch("milia_pipeline.models.hpo.hpo_manager._flatten_params", return_value={}),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager._extract_param_categories",
+                return_value=({}, {}, {}, {}, {}),
+            ),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager.infer_task_type",
+                return_value="graph_regression",
+            ),
+            patch("milia_pipeline.models.hpo.hpo_manager._TARGET_SELECTION_AVAILABLE", False),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager.create_hpo_callback",
+                return_value=hpo_callback,
+            ),
+            patch("milia_pipeline.models.hpo.hpo_manager._run_cross_validation", cv_spy),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+            manager = HPOManager(MockHPOConfig(enabled=True, cv_folds=3))
+            manager._model_factory = MagicMock()
+            with patch.object(HPOManager, "_build_composite_hyperparameters", return_value={}):
+                objective = manager._create_objective(
+                    model_name="GCN",
+                    dataset=mock_dataset,
+                    base_hyperparameters={},
+                    trainer_kwargs={},
+                    additional_callbacks=[user_callback],
+                )
+                assert objective(mock_trial) == 0.1
+
+        cv_spy.assert_called_once()
+        kwargs = cv_spy.call_args.kwargs
+        assert kwargs.get("trial") is mock_trial
+        assert hpo_callback not in kwargs["callbacks"]
+        assert user_callback in kwargs["callbacks"]
+
 
 # =============================================================================
 # HPOMANAGER.GET_BEST_VALUE TESTS
@@ -2171,6 +2221,77 @@ class TestRunCrossValidation:
                 )
 
             assert "trainer" in str(exc_info.value).lower()
+
+    @staticmethod
+    def _run_cv_with_trial(trial, fold_values):
+        """Run _run_cross_validation over len(fold_values) mocked folds; return (result, trainer_class)."""
+        import torch.nn as nn
+
+        mock_datasplitter = MagicMock()
+        mock_train = MagicMock()
+        mock_train.__getitem__ = MagicMock(return_value=MagicMock())
+        mock_datasplitter.k_fold_split.return_value = [(mock_train, MagicMock())] * len(fold_values)
+
+        mock_trainer_instance = MagicMock()
+        mock_trainer_instance.fit.side_effect = [{"val_loss": v} for v in fold_values]
+        mock_trainer_class = MagicMock(return_value=mock_trainer_instance)
+
+        mock_factory = MagicMock()
+        mock_factory.create_model_with_info.return_value = (nn.Linear(10, 1), {})
+
+        with (
+            patch("milia_pipeline.models.hpo.hpo_manager.DataSplitter", mock_datasplitter),
+            patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
+            patch("torch_geometric.loader.DataLoader", return_value=MagicMock()),
+        ):
+            from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
+
+            result = _run_cross_validation(
+                model_name="GCN",
+                dataset=MagicMock(),
+                model_params={},
+                optimizer_params={},
+                scheduler_params={},
+                loss_params={},
+                trainer_kwargs={},
+                callbacks=[],
+                n_folds=len(fold_values),
+                metric="val_loss",
+                aggregation="mean",
+                factory=mock_factory,
+                task_type="graph_regression",
+                trial=trial,
+            )
+        return result, mock_trainer_class
+
+    def test_run_cv_reports_each_fold_at_fold_step(self):
+        """P1-7 (F20): each fold's score is reported once at step=fold_idx (not per-epoch steps that
+        collide across folds)."""
+        from unittest.mock import call
+
+        trial = MagicMock()
+        trial.should_prune.return_value = False
+
+        result, _ = self._run_cv_with_trial(trial, [0.3, 0.2, 0.1])
+
+        assert result == pytest.approx(0.2)
+        assert trial.report.call_args_list == [
+            call(0.3, step=0),
+            call(0.2, step=1),
+            call(0.1, step=2),
+        ]
+
+    def test_run_cv_prunes_between_folds(self):
+        """P1-7 (F20): a pruning decision after a fold stops the remaining folds."""
+        import optuna
+
+        trial = MagicMock()
+        trial.should_prune.return_value = True
+
+        with pytest.raises(optuna.TrialPruned):
+            self._run_cv_with_trial(trial, [0.3, 0.2, 0.1])
+
+        assert trial.report.call_count == 1  # only the first fold ran before pruning
 
     def test_run_cv_aggregation_mean(self):
         """Test cross-validation with mean aggregation."""
