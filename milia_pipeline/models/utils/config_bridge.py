@@ -226,17 +226,24 @@ class HPODirection(Enum):
     MAXIMIZE = "maximize"
 
 
-def _parse_hpo_enum(enum_cls: type[Enum], value: Any, key: str) -> Enum:
+def _parse_hpo_enum(enum_cls: type[Enum], value: Any, key: str, excluded: Any = ()) -> Enum:
     """Convert a YAML value to ``enum_cls`` or fail fast naming the key and valid values (P1-4 / F15).
 
     Replaces silent fallbacks to defaults, matching ``HPOConfig.from_dict`` (which raises ``ValueError``)
-    and the module's error convention.
+    and the module's error convention. ``excluded`` members are never offered (P1-6b).
     """
     try:
         return enum_cls(value)
     except ValueError:
-        valid = [member.value for member in enum_cls]
+        valid = [member.value for member in enum_cls if member not in excluded]
         raise ValueError(f"Invalid models.hpo.{key} '{value}'. Must be one of: {valid}") from None
+
+
+# Choices the execution gate (``hpo_config.HPOConfig``) rejects (P1-6), mirrored here so both config views
+# accept exactly the same values (P1-6b / F31). Kept local so this module never imports the HPO package;
+# ``test_{sampler,backend}_acceptance_matches_hpo_config`` pin behavioural parity.
+_UNSUPPORTED_HPO_SAMPLERS: frozenset[HPOSamplerType] = frozenset({HPOSamplerType.MOTPE})
+_SUPPORTED_HPO_BACKENDS: tuple[str, ...] = ("optuna",)
 
 
 # =============================================================================
@@ -868,7 +875,7 @@ class HPOConfigBridge(BaseModel):
 
     Attributes:
         enabled: MASTER SWITCH - enables HPO when True
-        backend: HPO backend ("optuna" or "ray_tune")
+        backend: HPO backend ("optuna"; "ray_tune" is reserved and rejected)
         n_trials: Number of trials to run
         timeout: Maximum time in seconds (None for no limit)
         n_jobs: Number of parallel jobs (1 for sequential)
@@ -895,9 +902,13 @@ class HPOConfigBridge(BaseModel):
     @field_validator("backend")
     @classmethod
     def validate_backend(cls, v: str) -> str:
-        """Validate backend is a supported HPO backend."""
-        if v not in ("optuna", "ray_tune"):
-            raise ValueError(f"Unknown HPO backend: '{v}'. Must be 'optuna' or 'ray_tune'")
+        """Validate backend is an implemented HPO backend (same rule as ``HPOConfig``, P1-6b)."""
+        if v == "ray_tune":
+            raise ValueError("HPO backend 'ray_tune' is not implemented yet; use 'optuna'")
+        if v not in _SUPPORTED_HPO_BACKENDS:
+            raise ValueError(
+                f"Unknown HPO backend: '{v}'. Must be one of: {list(_SUPPORTED_HPO_BACKENDS)}"
+            )
         return v
 
     @field_validator("n_trials")
@@ -1316,7 +1327,14 @@ class ModelConfig(BaseModel):
         # Parse sampler config
         sampler_dict = hpo_dict.get("sampler", {})
         sampler_type_str = sampler_dict.get("type", "tpe")
-        sampler_type = _parse_hpo_enum(HPOSamplerType, sampler_type_str, "sampler.type")
+        sampler_type = _parse_hpo_enum(
+            HPOSamplerType, sampler_type_str, "sampler.type", _UNSUPPORTED_HPO_SAMPLERS
+        )
+        if sampler_type in _UNSUPPORTED_HPO_SAMPLERS:
+            raise ValueError(
+                f"Sampler '{sampler_type.value}' is not available on the pinned Optuna; use 'tpe' "
+                "(TPESampler supports multi-objective optimization)"
+            )
 
         sampler = HPOSamplerConfigBridge(
             type=sampler_type,

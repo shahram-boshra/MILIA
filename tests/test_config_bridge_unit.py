@@ -1363,9 +1363,9 @@ class TestHPOConfigBridge:
             HPOConfigBridge(enabled=True, cv_metric_aggregation="invalid")
 
     def test_validation_ray_tune_backend(self):
-        """Test validation succeeds with ray_tune backend."""
-        config = HPOConfigBridge(enabled=True, backend="ray_tune")
-        config.validate()  # Should not raise
+        """P1-6b (F31): ray_tune is rejected, as by HPOConfig (no Ray Tune backend is registered)."""
+        with pytest.raises(PydanticValidationError, match="ray_tune"):
+            HPOConfigBridge(enabled=True, backend="ray_tune")
 
     def test_with_search_space(self):
         """Test HPO config with search space."""
@@ -1639,6 +1639,39 @@ class TestModelConfig:
         bridge_values = {member.value for member in getattr(config_bridge, bridge_name)}
         authoritative = getattr(importlib.import_module(module_path), authoritative_name)
         assert bridge_values == {member.value for member in authoritative}
+
+    @staticmethod
+    def _accepts(build) -> bool:
+        try:
+            build()
+        except ValueError:  # pydantic.ValidationError subclasses ValueError
+            return False
+        return True
+
+    @pytest.mark.parametrize(
+        "sampler", ["tpe", "random", "cmaes", "grid", "nsgaii", "motpe", "qmc", "bogus"]
+    )
+    def test_sampler_acceptance_matches_hpo_config(self, sampler):
+        """P1-6b (F31): the bridge accepts a sampler value iff the execution gate (HPOConfig) does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, "sampler": {"type": sampler}},
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict({"sampler": {"type": sampler}}))
+        assert bridge_ok == gate_ok, f"sampler '{sampler}': bridge={bridge_ok}, HPOConfig={gate_ok}"
+
+    @pytest.mark.parametrize("backend", ["optuna", "ray_tune", "bogus"])
+    def test_backend_acceptance_matches_hpo_config(self, backend):
+        """P1-6b (F31): the bridge accepts a backend iff the execution gate (HPOConfig) does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_ok = self._accepts(lambda: HPOConfigBridge(enabled=True, backend=backend))
+        gate_ok = self._accepts(lambda: HPOConfig(backend=backend))
+        assert bridge_ok == gate_ok, f"backend '{backend}': bridge={bridge_ok}, HPOConfig={gate_ok}"
 
     @pytest.mark.parametrize(
         ("hpo_section", "attribute_path", "expected"),
