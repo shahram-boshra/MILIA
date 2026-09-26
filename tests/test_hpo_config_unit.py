@@ -1372,6 +1372,37 @@ class TestHPOConfigFromDict:
         assert config.task_type is None
 
 
+class TestFromDictErrorsListValidValues:
+    """P1-3b: with CLI `choices` removed, HPOConfig.from_dict is the single validator of HPO enum values,
+    so its errors must name the key and list the accepted values (unsupported ones excluded)."""
+
+    @pytest.mark.parametrize(
+        ("config_dict", "key", "value"),
+        [
+            ({"sampler": {"type": "bogus"}}, "sampler.type", "bogus"),
+            ({"pruner": {"type": "bogus"}}, "pruner.type", "bogus"),
+            ({"study": {"direction": "bogus"}}, "study.direction", "bogus"),
+            (
+                {"search_space": {"model": {"lr": {"type": "bogus", "low": 0.0, "high": 1.0}}}},
+                "search_space.model.lr.type",
+                "bogus",
+            ),
+        ],
+    )
+    def test_invalid_value_error_names_key_and_valid_values(self, config_dict, key, value):
+        with pytest.raises(ValueError) as exc_info:
+            HPOConfig.from_dict(config_dict)
+        message = str(exc_info.value)
+        assert f"Invalid models.hpo.{key} '{value}'. Must be one of: [" in message
+
+    def test_sampler_error_does_not_offer_unsupported_values(self):
+        with pytest.raises(ValueError) as exc_info:
+            HPOConfig.from_dict({"sampler": {"type": "bogus"}})
+        message = str(exc_info.value)
+        assert "'tpe'" in message
+        assert "motpe" not in message  # rejected by P1-6; never suggested
+
+
 class TestUnsupportedChoicesRejected:
     """P1-6 (F13): choices the pinned stack cannot execute fail at config validation, not mid-run."""
 

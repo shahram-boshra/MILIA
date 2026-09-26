@@ -2020,9 +2020,10 @@ class TestHPOArguments(unittest.TestCase):
         self.assertIsNone(args.hpo_backend)
 
     def test_parse_hpo_backend_invalid_rejected(self):
-        """Test that invalid --hpo-backend values are rejected"""
-        with self.assertRaises(SystemExit):
-            self._parse_only(["--hpo-backend", "invalid_backend"])
+        """P1-3b: the parser no longer hard-codes backend choices (they drifted from HPOConfig);
+        the value is passed through and validated by HPOConfig.from_dict."""
+        args = self._parse_only(["--hpo-backend", "invalid_backend"])
+        self.assertEqual(args.hpo_backend, "invalid_backend")
 
     # -------------------------------------------------------------------------
     # Cross-Validation Arguments
@@ -2073,9 +2074,10 @@ class TestHPOArguments(unittest.TestCase):
         self.assertIsNone(args.sampler)
 
     def test_parse_sampler_invalid_rejected(self):
-        """Test that invalid --sampler values are rejected"""
-        with self.assertRaises(SystemExit):
-            self._parse_only(["--sampler", "invalid_sampler"])
+        """P1-3b: sampler values are validated by HPOConfig, not by stale parser choices
+        (which rejected the valid 'qmc'/'nsgaii')."""
+        for value in ("invalid_sampler", "qmc", "nsgaii"):
+            self.assertEqual(self._parse_only(["--sampler", value]).sampler, value)
 
     # -------------------------------------------------------------------------
     # Pruner Configuration
@@ -2093,9 +2095,10 @@ class TestHPOArguments(unittest.TestCase):
         self.assertIsNone(args.pruner)
 
     def test_parse_pruner_invalid_rejected(self):
-        """Test that invalid --pruner values are rejected"""
-        with self.assertRaises(SystemExit):
-            self._parse_only(["--pruner", "invalid_pruner"])
+        """P1-3b: pruner values are validated by HPOConfig, not by stale parser choices
+        (which rejected the valid 'successive_halving'/'threshold'/'patient')."""
+        for value in ("invalid_pruner", "successive_halving", "threshold", "patient"):
+            self.assertEqual(self._parse_only(["--pruner", value]).pruner, value)
 
     # -------------------------------------------------------------------------
     # Combined HPO Arguments

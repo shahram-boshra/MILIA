@@ -200,6 +200,20 @@ UNSUPPORTED_SAMPLERS: dict[SamplerType, str] = {
 }
 
 
+def _parse_hpo_enum(enum_cls: type[Enum], value: Any, key: str, excluded: Any = ()) -> Enum:
+    """Convert a config value to ``enum_cls``; on failure name the key and list the valid values.
+
+    P1-3b: CLI ``choices`` were removed (they had drifted), so ``HPOConfig.from_dict`` is the single
+    validator of HPO enum values. ``excluded`` members (e.g. ``UNSUPPORTED_SAMPLERS``) are never offered.
+    Same message format as ``config_bridge._parse_hpo_enum`` (P1-4).
+    """
+    try:
+        return enum_cls(value)
+    except ValueError:
+        valid = [member.value for member in enum_cls if member not in excluded]
+        raise ValueError(f"Invalid models.hpo.{key} '{value}'. Must be one of: {valid}") from None
+
+
 class SamplerConfig(BaseModel, frozen=True):
     """
     Sampler configuration for hyperparameter suggestion.
@@ -609,13 +623,17 @@ class HPOConfig(BaseModel, frozen=True):
 
         if "type" in pruner_dict:
             pruner_dict = pruner_dict.copy()
-            pruner_dict["type"] = PrunerType(pruner_dict["type"])
+            pruner_dict["type"] = _parse_hpo_enum(PrunerType, pruner_dict["type"], "pruner.type")
         if "type" in sampler_dict:
             sampler_dict = sampler_dict.copy()
-            sampler_dict["type"] = SamplerType(sampler_dict["type"])
+            sampler_dict["type"] = _parse_hpo_enum(
+                SamplerType, sampler_dict["type"], "sampler.type", UNSUPPORTED_SAMPLERS
+            )
         if "direction" in study_dict:
             study_dict = study_dict.copy()
-            study_dict["direction"] = OptimizationDirection(study_dict["direction"])
+            study_dict["direction"] = _parse_hpo_enum(
+                OptimizationDirection, study_dict["direction"], "study.direction"
+            )
 
         search_space: dict[str, dict[str, SearchSpaceParamConfig]] = {}
         raw_search_space = config_dict.get("search_space", {})
@@ -623,7 +641,11 @@ class HPOConfig(BaseModel, frozen=True):
             search_space[category] = {}
             for param_name, param_config in params.items():
                 param_config_copy = param_config.copy()
-                param_config_copy["type"] = ParamType(param_config_copy["type"])
+                param_config_copy["type"] = _parse_hpo_enum(
+                    ParamType,
+                    param_config_copy["type"],
+                    f"search_space.{category}.{param_name}.type",
+                )
                 search_space[category][param_name] = SearchSpaceParamConfig(**param_config_copy)
 
         return cls(
