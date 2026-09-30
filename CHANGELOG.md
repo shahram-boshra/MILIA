@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.15.1] - 2026-09-29
+## [1.15.1] - 2026-09-30
 
 HPO correctness patch. **Behaviour note:** HPO configuration values that were previously rewritten
 silently or failed only mid-run now fail at configuration validation with a message listing the accepted
