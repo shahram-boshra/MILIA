@@ -899,7 +899,9 @@ models:
       metric: "val_loss"              # Metric to optimize
       study_name: "milia_hpo"         # Study name for persistence
       storage: null                   # null = in-memory
-                                      # "sqlite:///hpo_results.db" for persistence
+                                      # "sqlite:///hpo_results.db" for persistence (and --resume-study)
+                                      # SQLite: one process only — parallel/multi-node HPO needs an
+                                      # RDB server (e.g. PostgreSQL), not SQLite
       load_if_exists: true            # Resume existing study
 
     # =========================================================================

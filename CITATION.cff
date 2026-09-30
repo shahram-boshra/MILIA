@@ -24,12 +24,13 @@ authors:
     email: "a.boshra@gmail.com"
     orcid: "https://orcid.org/0009-0004-8925-2868"
 
-version: "1.15.0"
-date-released: "2026-09-17"
+version: "1.15.1"
+date-released: "2026-09-29"
 license: "MIT"
 
 # Zenodo DOIs (GitHub–Zenodo integration). The concept DOI always resolves to the
-# latest release and is the canonical citation; the version DOI pins v1.9.0.
+# latest release and is the canonical citation; the version DOI pins the release named
+# in its description (backfilled after Zenodo mints the DOI for each new release).
 doi: "10.5281/zenodo.20151553"
 identifiers:
   - type: doi

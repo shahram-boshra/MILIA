@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.15.0"  # Descriptors Pace 11 follow-up: cdk_substructure +3 (Ghose-Crippen ALogP/ALogp2/AMR via CDK) -> 310 opt-in
+__version__ = "1.15.1"  # HPO correctness patch (Phase 1): pruned state, credential redaction, resume, CLI precedence, config fail-fast, importance, CV pruning
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

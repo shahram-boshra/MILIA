@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-09-29
+
+HPO correctness patch. **Behaviour note:** HPO configuration values that were previously rewritten
+silently or failed only mid-run now fail at configuration validation with a message listing the accepted
+values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backend `ray_tune`).
+
+### Security
+
+- Storage URLs are redacted (`user:***@host`) in logs and in `StudyNotFoundError`; malformed URLs are never
+  echoed (`milia_pipeline.exceptions.redact_url`).
+
+### Fixed
+
+- Pruned HPO trials are recorded as `PRUNED`, not `FAIL`: `Trainer.fit()` no longer wraps
+  `optuna.TrialPruned` in `TrainingError`, so TPE learns from pruned trials.
+- The HPO callback is registered once, and `Trainer` no longer mutates the caller's callbacks list.
+- `resume_study(additional_trials=N)` runs the requested trials (new keyword-only objective inputs); it no
+  longer silently creates a new study when the name does not exist, and rejects a stored study whose
+  direction or recorded metric differs from the configuration.
+- `--resume-study` continues the named study via `resume_study()` and requires persistent storage.
+- CLI > YAML > default precedence for `--hpo-backend`, `--sampler`, `--pruner` (YAML values were ignored),
+  and explicit zero values such as `--cv-folds 0` are honoured.
+- `config_bridge` fails fast on invalid HPO enum values instead of falling back to defaults; its enums now
+  accept the same values as the HPO configuration.
+- Parameter importance `mdi` uses `MeanDecreaseImpurityImportanceEvaluator` (it silently computed fANOVA).
+- Cross-validation pruning is fold-level: each fold's score is reported at `step=fold_idx` and pruning is
+  decided between folds; a warning is logged when `n_warmup_steps >= cv_folds` disables pruning.
+
+### Changed
+
+- The HPO configuration is the single validator of `--hpo-backend`/`--sampler`/`--pruner` values; the CLI
+  no longer hard-codes choices (they had drifted and rejected valid values such as `qmc`, `nsgaii`).
+- Sampler `motpe` (absent in the pinned Optuna 4.9.0; use `tpe`) and backend `ray_tune` (not implemented)
+  are rejected at validation, in both the HPO configuration and the config bridge.
+- Test image: JRE and dev dependencies are cached in a `test-deps` stage; build verification is shared
+  (`docker/verify_build.py`). The published `runtime` image is unchanged.
+
 ## [1.15.0] - 2026-09-24
 
 ### Added
@@ -426,7 +463,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.9.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...HEAD
+[1.15.1]: https://github.com/shahram-boshra/MILIA/compare/v1.15.0...v1.15.1
+[1.15.0]: https://github.com/shahram-boshra/MILIA/compare/v1.14.1...v1.15.0
+[1.14.1]: https://github.com/shahram-boshra/MILIA/compare/v1.14.0...v1.14.1
+[1.14.0]: https://github.com/shahram-boshra/MILIA/compare/v1.13.0...v1.14.0
+[1.13.0]: https://github.com/shahram-boshra/MILIA/compare/v1.12.0...v1.13.0
+[1.12.0]: https://github.com/shahram-boshra/MILIA/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/shahram-boshra/MILIA/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/shahram-boshra/MILIA/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/shahram-boshra/MILIA/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/shahram-boshra/MILIA/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/shahram-boshra/MILIA/compare/v1.6.0...v1.7.0
