@@ -84,6 +84,11 @@ dependencies = [
     "ray[tune]==2.56.1",
     "psutil==7.2.2",                # implicit direct dep (3 import sites); conda supplied, never declared
     "h5py==3.16.0",                 # implicit direct dep (4 preprocessor import sites)
+    # torch.compile runtime dep (used by models/acceleration/computation_optimization.py): Inductor
+    # imports torch.utils.cpp_extension, whose line 10 is `import setuptools` (torch 2.4.0); torch
+    # declares setuptools only for Python >= 3.12 and uv/venv environments do not ship it, so on 3.10 /
+    # 3.11 torch.compile fails with ModuleNotFoundError (pytorch#113940). Same version as the build floor.
+    "setuptools==82.0.1",
 ]
 
 [project.optional-dependencies]

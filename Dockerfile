@@ -92,7 +92,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
 FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS runtime
 # libgomp1: OpenMP runtime required by torch / scikit-learn at import.
 # gcc g++ libc6-dev (PA-0b): torch.compile's default Inductor backend generates C++ kernels and compiles
-# them at run time; without a working C++ compiler it raises InvalidCxxCompiler. Verified at build time
+# them at run time; without a working C++ compiler it raises InvalidCxxCompiler. Inductor also imports
+# setuptools (torch.utils.cpp_extension), declared in pyproject.toml. Both are verified at build time
 # below (verify_build.py --compile).
 # (If a runtime ImportError reports another missing .so — e.g. libXrender for some RDKit
 #  drawing paths — add the minimal lib here; keep the set tight.)
