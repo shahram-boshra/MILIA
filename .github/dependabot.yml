@@ -29,6 +29,20 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    ignore:
+      # Coupled set: torch is sourced from the pytorch-* indexes and the compiled PyG companions from
+      # the torch-2.4.0-specific pyg-* flat pages ([tool.uv.sources] / [[tool.uv.index]] in
+      # pyproject.toml); torch-geometric is validated against that pair. A single-package bump breaks the
+      # ABI pairing, so these move together in a deliberate, tested pace — never via Dependabot.
+      - dependency-name: "torch"
+      - dependency-name: "torch-scatter"
+      - dependency-name: "torch-sparse"
+      - dependency-name: "torch-cluster"
+      - dependency-name: "torch-spline-conv"
+      - dependency-name: "torch-geometric"
+      # Optuna 5 is a gated phase of the HPO strategy; minor/patch updates stay automated.
+      - dependency-name: "optuna"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
     commit-message:
