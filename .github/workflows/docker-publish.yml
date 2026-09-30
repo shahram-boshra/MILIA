@@ -46,7 +46,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -141,7 +141,7 @@ jobs:
     needs: build-and-push
     # PA-0a: a build-only run (non-publishing ref) has no registry image to pull.
     if: needs.build-and-push.outputs.publish == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read

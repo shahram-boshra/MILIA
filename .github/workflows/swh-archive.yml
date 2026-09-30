@@ -44,7 +44,7 @@ on:
 jobs:
   archive:
     name: Save Code Now
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 

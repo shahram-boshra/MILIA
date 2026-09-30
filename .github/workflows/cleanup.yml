@@ -53,7 +53,7 @@ permissions:
 jobs:
   cleanup:
     name: Delete old workflow runs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@0cf693bc9909e5e867ee8f27b813224ba862939c  # v2
