@@ -7,10 +7,18 @@ Checks:
   (a) the ``milia-py`` distribution is installed (metadata resolves) and ``milia_pipeline`` imports.
       uv installs the project editable by default (PEP 660), so the package legitimately resolves to
       the baked ``/app`` source tree;
-  (b) the compiled PyG companion kernels load and run against the installed torch build (ABI check).
+  (b) the compiled PyG companion kernels load and run against the installed torch build (ABI check);
+  (c) ``--accel <variant>``: the installed torch build matches the image variant (PA-0b) — ``cpu`` has
+      no CUDA runtime, ``cuXYZ`` bundles CUDA ``X.Y`` (e.g. ``cu124`` → ``12.4``);
+  (d) ``--compile`` (runtime stage only, where the C/C++ toolchain is installed): ``torch.compile`` with
+      the default Inductor backend builds and runs a CPU kernel. Inductor generates C++ and raises
+      ``InvalidCxxCompiler`` when no working compiler exists, so this proves the published image can
+      run compiled models (PA-0b).
 """
 
+import argparse
 import importlib.metadata
+import re
 
 import torch
 import torch_scatter
@@ -18,7 +26,51 @@ import torch_scatter
 import milia_pipeline
 
 
+def expected_cuda_version(accel: str) -> str | None:
+    """Return the CUDA version a torch build for ``accel`` reports (``torch.version.cuda``).
+
+    ``cpu`` → ``None``; ``cu<major><minor>`` → ``"<major>.<minor>"`` (the last digit is the minor
+    version: ``cu118`` → ``11.8``, ``cu124`` → ``12.4``). Any other value is a configuration error.
+    """
+    if accel == "cpu":
+        return None
+    match = re.fullmatch(r"cu(\d+)(\d)", accel)
+    if match is None:
+        raise SystemExit(f"Unknown accelerator variant '{accel}': expected 'cpu' or 'cu<digits>'")
+    return f"{int(match.group(1))}.{match.group(2)}"
+
+
+def check_accelerator(accel: str) -> None:
+    expected = expected_cuda_version(accel)
+    actual = torch.version.cuda
+    if actual != expected:
+        raise SystemExit(
+            f"torch build mismatch for ACCEL={accel}: torch.version.cuda={actual!r}, "
+            f"expected {expected!r} (torch {torch.__version__})"
+        )
+    print(f"OK accelerator {accel}: torch.version.cuda={actual!r}")
+
+
+def check_compile() -> None:
+    def double(x: torch.Tensor) -> torch.Tensor:
+        return x * 2
+
+    result = torch.compile(double)(torch.ones(2)).tolist()
+    if result != [2.0, 2.0]:
+        raise SystemExit(f"torch.compile check failed: got {result}, expected [2.0, 2.0]")
+    print("OK torch.compile (Inductor, CPU)")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--accel", help="image variant to verify the torch build against (cpu, cu124, ...)"
+    )
+    parser.add_argument(
+        "--compile", action="store_true", help="also verify torch.compile (needs a C/C++ compiler)"
+    )
+    args = parser.parse_args()
+
     print(
         "milia-py",
         importlib.metadata.version("milia-py"),
@@ -33,6 +85,10 @@ def main() -> None:
             f"torch_scatter.scatter_add ABI check failed: got {result}, expected [2.0, 2.0]"
         )
     print("OK torch", torch.__version__, "| torch_scatter", torch_scatter.__version__)
+    if args.accel is not None:
+        check_accelerator(args.accel)
+    if args.compile:
+        check_compile()
 
 
 if __name__ == "__main__":

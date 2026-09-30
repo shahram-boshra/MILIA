@@ -5,11 +5,12 @@
 #
 # Source: GitHub Docs — "Configuring Dependabot version updates"
 #
-# Two ecosystems monitored:
+# Three ecosystems monitored:
 #   1. uv — Python deps in pyproject.toml + uv.lock (runtime + [project.optional-dependencies].dev).
 #      The `uv` ecosystem updates pyproject.toml AND regenerates uv.lock in the same PR, keeping the
 #      ci.yml `uv lock --check` drift gate green (the `pip` ecosystem does NOT touch uv.lock → red CI).
-#   2. github-actions — Actions versions in .github/workflows/ (checkout, setup-uv, etc.)
+#   2. docker — the digest-pinned Python base image in /Dockerfile (digest refreshes only).
+#   3. github-actions — Actions versions in .github/workflows/ (checkout, setup-uv, etc.)
 #
 # Ref: Astral uv docs — "Using uv with Dependabot"; GitHub Docs — "Configuring Dependabot version updates".
 # =============================================================================
@@ -30,6 +31,24 @@ updates:
       default-days: 7
     labels:
       - "dependencies"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+
+  # Docker base images in /Dockerfile (PA-0b / F33). The Python base is pinned by digest; Dependabot
+  # raises a PR when the digest behind the same tag changes (security patches of the base OS). Python
+  # minor/major bumps (e.g. 3.10 → 3.11) are ignored: a new Python needs matching torch/PyG wheels and is
+  # a deliberate, tested change — never an automated one.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    labels:
+      - "dependencies"
+      - "docker"
     commit-message:
       prefix: "build(deps)"
       include: "scope"

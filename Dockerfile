@@ -15,9 +15,14 @@
 # =============================================================================
 
 # Global build args (available to FROM lines; re-declared inside stages for RUN use).
-ARG PYTHON_VERSION=3.10        # matches the current image; local dev also validated on 3.12
 ARG UV_VERSION=0.12.0          # pin uv for reproducible builds (the version used to validate the lock)
 ARG ACCEL=cpu                  # cpu | cu118 | cu121 | cu124
+
+# Python base image — pinned by DIGEST (PA-0b / F33): a tag is mutable and can point to a different
+# image on rebuild (Docker build best practices: "Pin base image versions"). This is the
+# python:3.10-slim image that passed the v1.15.1 release gate. Written literally (not via an ARG) so
+# Dependabot's `docker` ecosystem can refresh the digest by PR (.github/dependabot.yml, which ignores
+# Python minor/major bumps: a new Python needs matching torch/PyG wheels). Both stages below use it.
 
 # uv binary — aliased via FROM so the version ARG expands. Using ${ARG} directly in a
 # `COPY --from=<image>:${ARG}` reference is an unresolved BuildKit limitation
@@ -28,7 +33,7 @@ FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 # ---- Stage 1: deps — third-party dependencies from the committed lock (no project source) ----
 # Shared base of `builder` (→ runtime) and `test-deps` (→ test). Cached until pyproject.toml/uv.lock
 # change, so source edits never re-run dependency installation in either chain.
-FROM python:${PYTHON_VERSION}-slim AS deps
+FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS deps
 COPY --from=uv /uv /uvx /usr/local/bin/
 ARG ACCEL
 ENV UV_COMPILE_BYTECODE=1 \
@@ -53,7 +58,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # kernels run against this torch build (ABI/R1). Defined once in docker/verify_build.py and shared
 # with the `test` stage. uv installs the project EDITABLE by default (PEP 660), so `milia_pipeline`
 # legitimately resolves to the baked /app source — the single-copy state we want.
-RUN /app/.venv/bin/python /app/docker/verify_build.py
+# --accel: the installed torch build must match this variant (cpu → no CUDA; cu124 → CUDA 12.4).
+RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 
 # ---- Stage 3: test-deps — JRE + dev/test dependencies, cached independently of project source ----
 FROM deps AS test-deps
@@ -77,17 +83,20 @@ ARG ACCEL
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk
-RUN /app/.venv/bin/python /app/docker/verify_build.py
+RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 ENV PATH="/app/.venv/bin:$PATH" \
     MILIA_LOG_DIR=/tmp
 # e.g. docker run --rm <test-image> pytest -m smoke -q tests/
 
 # ---- Stage 5: runtime — minimal, non-root, production (DEFAULT build target) ----
-FROM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS runtime
 # libgomp1: OpenMP runtime required by torch / scikit-learn at import.
+# gcc g++ libc6-dev (PA-0b): torch.compile's default Inductor backend generates C++ kernels and compiles
+# them at run time; without a working C++ compiler it raises InvalidCxxCompiler. Verified at build time
+# below (verify_build.py --compile).
 # (If a runtime ImportError reports another missing .so — e.g. libXrender for some RDKit
 #  drawing paths — add the minimal lib here; keep the set tight.)
-RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && \
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 gcc g++ libc6-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Non-root user — safe now that logging writes to $MILIA_LOG_DIR, not the package dir.
@@ -96,16 +105,32 @@ RUN useradd --create-home --uid 10001 milia
 # Copy the fully-built app (source + /app/.venv) from the builder, owned by the app user.
 COPY --from=builder --chown=milia:milia /app /app
 
+# NVIDIA Container Toolkit: NVIDIA_VISIBLE_DEVICES "void"/unset → the NVIDIA runtime behaves like runc
+# (no GPU exposed); "all" exposes every GPU when run with --runtime=nvidia. `--gpus` sets devices
+# itself. Default "void" keeps the CPU image GPU-free; GPU variants pass --build-arg
+# NVIDIA_VISIBLE_DEVICES=all (PA-0c). NVIDIA_DRIVER_CAPABILITIES is left unset: its documented default
+# is "utility,compute", exactly what CUDA + nvidia-smi need.
+ARG NVIDIA_VISIBLE_DEVICES=void
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     MILIA_LOG_DIR=/tmp \
     HOME=/tmp \
-    MPLCONFIGDIR=/tmp/matplotlib
+    MPLCONFIGDIR=/tmp/matplotlib \
+    NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}
 WORKDIR /app
 USER milia
 
-# Re-declare so the build-arg value reaches this stage's provenance label.
+# Re-declare so the build-arg value reaches this stage's provenance label and the check below.
 ARG ACCEL
+
+# Build-time proof on the image users actually run (non-root, with the toolchain): torch build matches
+# the variant, and torch.compile builds + runs a CPU kernel. All scratch output (Inductor cache, logs)
+# goes to one directory removed in the same layer; no .pyc is written, so the image content is unchanged.
+RUN VERIFY_DIR="$(mktemp -d)" && \
+    PYTHONDONTWRITEBYTECODE=1 HOME="${VERIFY_DIR}" MPLCONFIGDIR="${VERIFY_DIR}/mpl" \
+    MILIA_LOG_DIR="${VERIFY_DIR}" TORCHINDUCTOR_CACHE_DIR="${VERIFY_DIR}/inductor" \
+    /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}" --compile && \
+    rm -rf "${VERIFY_DIR}"
 LABEL org.opencontainers.image.source="https://github.com/shahram-boshra/MILIA" \
       org.opencontainers.image.title="MILIA" \
       org.opencontainers.image.description="Molecular graph ML/DL pipeline (uv build, accelerator=${ACCEL})"
