@@ -22,6 +22,7 @@ Version: 1.1.0
 
 from __future__ import annotations
 
+import contextlib
 import inspect
 import logging
 from collections import defaultdict
@@ -35,6 +36,10 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
 if TYPE_CHECKING:
+    # Type-only: models.acceleration imports this module (_safe_torch_load), so a runtime
+    # import here would be circular. The Trainer only calls the passed object's methods.
+    from milia_pipeline.models.acceleration import AccelerationManager
+
     from .callbacks import Callback
 
 # Import exceptions with fallback
@@ -194,6 +199,7 @@ class Trainer:
         model_info: dict[str, Any] | None = None,
         # NEW: Metrics for evaluation
         metrics: dict[str, nn.Module] | None = None,
+        acceleration: AccelerationManager | None = None,
     ):
         """
         Initialize trainer.
@@ -227,6 +233,13 @@ class Trainer:
                     When provided via MetricsRegistry.get_metrics_for_task(), enables
                     automatic computation of evaluation metrics (MSE, MAE, R2, etc.)
                     during validation and test. Metrics are moved to device automatically.
+            acceleration: AccelerationManager (optional, PA-1b). When provided, each training
+                    step runs forward + loss inside ``acceleration.autocast()`` and uses its
+                    GradScaler when one exists (fp16 on CUDA; unscaled before clipping, stepped
+                    once per accumulation boundary). Validation and test stay in fp32 so the
+                    HPO objective and metrics are comparable across trials. If ``device`` is not
+                    given, the manager's device is used; a different device type is an error.
+                    ``None`` (default) leaves training exactly as before.
         """
         self.model = model
         self.train_loader = train_loader
@@ -295,6 +308,22 @@ class Trainer:
             if not any(cb is self.hpo_callback for cb in self.callbacks):
                 self.callbacks.append(self.hpo_callback)
             logger.debug(f"HPO callback registered: {self.hpo_callback.__class__.__name__}")
+
+        # PA-1b: an AccelerationManager owns the device its autocast targets, so it decides the
+        # device when none is given, and a conflicting explicit device fails fast (autocast keyed
+        # on another device type would silently not apply).
+        self.acceleration = acceleration
+        self._grad_scaler = None
+        if acceleration is not None:
+            accel_device = acceleration.get_device()
+            if device is None:
+                device = accel_device
+            elif torch.device(device).type != accel_device.type:
+                raise TrainingError(
+                    f"Trainer device '{device}' conflicts with the acceleration device "
+                    f"'{accel_device}'; pass one device (or omit `device`)."
+                )
+            self._grad_scaler = acceleration.get_grad_scaler()
 
         # Auto-detect device
         if device is None:
@@ -480,6 +509,12 @@ class Trainer:
             self._on_train_end()
             raise TrainingError(f"Training failed: {e}") from e
 
+    def _train_autocast(self):
+        """Autocast context for a training step: the AccelerationManager's, or a no-op (PA-1b)."""
+        if self.acceleration is None:
+            return contextlib.nullcontext()
+        return self.acceleration.autocast()
+
     def _train_epoch(self) -> dict[str, float]:
         """
         Train for one epoch.
@@ -511,28 +546,40 @@ class Trainer:
                         "[DIAGNOSTIC] _train_epoch: Batch moved to device, calling _forward_pass"
                     )
 
-                    # Forward pass
-                    out = self._forward_pass(batch)
-                    # Get appropriate target based on task type
-                    target = self._get_target(batch)
-                    loss = self.loss_fn(out, target)
+                    # Forward pass + loss (inside autocast when acceleration is enabled, PA-1b;
+                    # a no-op context otherwise)
+                    with self._train_autocast():
+                        out = self._forward_pass(batch)
+                        # Get appropriate target based on task type
+                        target = self._get_target(batch)
+                        loss = self.loss_fn(out, target)
 
                     # Scale loss for gradient accumulation
                     loss = loss / self.accumulate_grad_batches
 
-                    # Backward pass
-                    loss.backward()
+                    # Backward pass (fp16 GradScaler scales the loss; PyTorch AMP protocol)
+                    scaler = self._grad_scaler
+                    if scaler is not None:
+                        scaler.scale(loss).backward()
+                    else:
+                        loss.backward()
 
                     # Gradient accumulation
                     if (batch_idx + 1) % self.accumulate_grad_batches == 0:
-                        # Gradient clipping
+                        # Gradient clipping — on unscaled gradients: unscale_ first, once per step
                         if self.gradient_clip_val is not None:
+                            if scaler is not None:
+                                scaler.unscale_(self.optimizer)
                             torch.nn.utils.clip_grad_norm_(
                                 self.model.parameters(), self.gradient_clip_val
                             )
 
-                        # Optimizer step
-                        self.optimizer.step()
+                        # Optimizer step (scaler.step skips it if gradients overflowed)
+                        if scaler is not None:
+                            scaler.step(self.optimizer)
+                            scaler.update()
+                        else:
+                            self.optimizer.step()
                         self.optimizer.zero_grad()
 
                     # Track metrics

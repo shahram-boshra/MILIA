@@ -198,8 +198,15 @@ class MemoryOptimizer:
         # Validate configuration
         self._validate_config()
 
-        # Initialize grad scaler for mixed precision
-        if self.config.mixed_precision and self.device.type == "cuda":
+        # Initialize grad scaler for fp16 mixed precision only (PA-1b / F18). Gradient scaling
+        # exists to keep small fp16 gradients from underflowing; bf16 has float32's exponent range
+        # and needs no scaler (PyTorch AMP docs). Runs after _validate_config, so a bf16→fp16
+        # fallback on a GPU without bf16 support correctly gets a scaler.
+        if (
+            self.config.mixed_precision
+            and self.config.precision == "fp16"
+            and self.device.type == "cuda"
+        ):
             # PyTorch 2.4+ unified API requires the device-type string as the
             # first positional arg. `torch.amp.GradScaler("cuda")` is the
             # functional equivalent of the legacy `torch.cuda.amp.GradScaler()`
