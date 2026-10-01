@@ -30,17 +30,23 @@ ARG ACCEL=cpu                  # cpu | cu118 | cu121 | cu124
 # A FROM instruction CAN expand a global ARG, so we alias here and COPY by stage name.
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
-# ---- Stage 1: deps — third-party dependencies from the committed lock (no project source) ----
-# Shared base of `builder` (→ runtime) and `test-deps` (→ test). Cached until pyproject.toml/uv.lock
-# change, so source edits never re-run dependency installation in either chain.
-FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS deps
+# ---- Stage 0: base — pinned Python + uv + uv settings (no lock, no source) ----
+# Common parent of the `deps` (→ builder → runtime) and `test-base` (→ test) chains. Nothing here
+# depends on pyproject.toml/uv.lock, so everything derived from it before a `COPY ... uv.lock` stays
+# cached across lock changes (Docker: a changed layer invalidates all later layers) — PA-0h / F36.
+FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS base
 COPY --from=uv /uv /uvx /usr/local/bin/
-ARG ACCEL
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
     UV_PROJECT_ENVIRONMENT=/app/.venv
 WORKDIR /app
+
+# ---- Stage 1: deps — third-party runtime dependencies from the committed lock (no project source) ----
+# Base of `builder` (→ runtime). Cached until pyproject.toml/uv.lock change, so source edits never
+# re-run dependency installation.
+FROM base AS deps
+ARG ACCEL
 
 # Dependencies only (no project) — this layer is cached until pyproject.toml/uv.lock change.
 COPY pyproject.toml uv.lock ./
@@ -61,9 +67,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # --accel: the installed torch build must match this variant (cpu → no CUDA; cu124 → CUDA 12.4).
 RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 
-# ---- Stage 3: test-deps — JRE + dev/test dependencies, cached independently of project source ----
-FROM deps AS test-deps
-ARG ACCEL
+# ---- Stage 3a: test-base — base + headless JRE (no lock): cached across uv.lock changes (PA-0h) ----
+FROM base AS test-base
 # Java (headless JRE) is needed to gate the opt-in `cdk_substructure` plugin's tests (Pace 11 /
 # v1.14.0), which call the CDK engine via jpype. Use the distro DEFAULT headless JRE
 # (`default-jre-headless`) rather than a pinned major version: the python:3.x-slim base tracks
@@ -72,12 +77,20 @@ ARG ACCEL
 # Without Java these tests importorskip (skip).
 RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless && \
     rm -rf /var/lib/apt/lists/*
+
+# ---- Stage 3b: test-deps — full test environment (runtime + dev + cdk) from the lock ----
+# Independent of `deps`: a `--target test` build never builds the runtime-deps chain, and a lock change
+# re-runs only this sync (packages come from the BuildKit uv cache mount), not the JRE layer.
+FROM test-base AS test-deps
+ARG ACCEL
+COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --extra ${ACCEL} --extra dev --extra descriptors-cdk
 
 # ---- Stage 4: test — test-deps + project source, for in-image test runs (not published) ----
-# Built with `--target test`; BuildKit builds only this chain (deps → test-deps → test), never
-# `builder`/`runtime`. A source change re-runs only COPY + project install + verification.
+# Built with `--target test`; BuildKit builds only this chain (base → test-base → test-deps → test),
+# never `deps`/`builder`/`runtime`. A source change re-runs only COPY + project install + verification;
+# a lock change re-runs test-deps' sync, never the JRE.
 FROM test-deps AS test
 ARG ACCEL
 COPY . /app
