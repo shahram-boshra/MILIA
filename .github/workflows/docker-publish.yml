@@ -45,7 +45,26 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # PA-0d: the variant list is computed ONCE and consumed by build-and-push and smoke-test, so the
+  # images built and the images smoke-tested can never diverge. `cpu` on every run; `cu124` only on
+  # release tags (v*) and manual dispatch (PA-0c cadence).
+  plan:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    outputs:
+      accel: ${{ steps.variants.outputs.accel }}
+    steps:
+      - name: Select image variants
+        id: variants
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo 'accel=["cpu", "cu124"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'accel=["cpu"]' >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
+    needs: plan
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -55,12 +74,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # PA-0c (F24): `cpu` on every run; `cu124` only on release tags (v*) and manual dispatch —
-        # GPU images BUILD on a CPU runner (the torch/PyG wheels bundle the CUDA runtime) and are
-        # large, so they follow the release cadence, not every push to main. A dispatch from a
-        # non-main branch stays build-only for both (PA-0a). TPU is intentionally excluded (PyG's
-        # compiled kernels have no XLA backend). One image = one accelerator.
-        accel: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && '["cpu", "cu124"]' || '["cpu"]') }}
+        # PA-0c (F24) cadence, computed by the `plan` job (PA-0d). GPU images BUILD on a CPU runner
+        # (the torch/PyG wheels bundle the CUDA runtime). A dispatch from a non-main branch stays
+        # build-only for every variant (PA-0a). TPU is intentionally excluded (PyG's compiled
+        # kernels have no XLA backend). One image = one accelerator.
+        accel: ${{ fromJSON(needs.plan.outputs.accel) }}
 
     steps:
       - name: Checkout repository
@@ -82,19 +100,12 @@ jobs:
             echo "Build-only: ref ${GITHUB_REF} is not main or a release tag (nothing is pushed)"
           fi
 
-      # PA-0c: GPU images (torch +cuXXX and nvidia-*-cu12 runtime wheels) exceed what a standard
-      # runner's 14 GB disk leaves free during a multi-stage build. Remove preinstalled toolchains
-      # MILIA never uses; directories absent on the current runner image are skipped, and the
-      # before/after `df` records the real budget in the run log.
-      - name: Reclaim runner disk (GPU variants)
+      # PA-0d: diagnostic only. The ubuntu-24.04 runner measured 87 GB free before any cleanup
+      # (run 36823264572) — far above the GPU build's needs — so nothing is deleted. If a future
+      # runner image shrinks, the build fails on disk and this line shows the budget.
+      - name: Record runner disk (GPU variants)
         if: matrix.accel != 'cpu'
-        run: |
-          df -h /
-          for d in /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL; do
-            if [ -d "$d" ]; then sudo rm -rf "$d" && echo "removed $d"; fi
-          done
-          docker image prune --all --force
-          df -h /
+        run: df -h /
 
       - name: Log in to GitHub Container Registry
         if: steps.publish.outputs.enabled == 'true'
@@ -159,13 +170,18 @@ jobs:
   #            invocation against /app/tests/ (verified present in the image
   #            via Dockerfile's `COPY . /app`).
   smoke-test:
-    needs: build-and-push
+    needs: [plan, build-and-push]
     # PA-0a: a build-only run (non-publishing ref) has no registry image to pull.
     if: needs.build-and-push.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # PA-0d: every variant built in this run is smoke-tested (same list as build-and-push).
+        accel: ${{ fromJSON(needs.plan.outputs.accel) }}
     steps:
       - name: Compute lowercase image reference
         # Docker reference-format spec requires lowercase repository names
@@ -174,11 +190,14 @@ jobs:
         # via `tr` here. The `docker/metadata-action@v5` used in build-and-push
         # auto-lowercases, which is why the push succeeded; here we replicate
         # that behavior at the shell level.
+        # PA-0d: pull the IMMUTABLE `<accel>-<short sha>` tag this run published (metadata-action
+        # `type=sha` short form = 7 chars), not a moving tag that another run could have replaced.
         id: image
         run: |
           IMAGE_LOWER=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "ref=${IMAGE_LOWER}:latest" >> "$GITHUB_OUTPUT"
-          echo "Computed image reference: ${IMAGE_LOWER}:latest"
+          REF="${IMAGE_LOWER}:${{ matrix.accel }}-${GITHUB_SHA::7}"
+          echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+          echo "Computed image reference: ${REF}"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4
@@ -212,3 +231,51 @@ jobs:
       # smoke suite runs in ci.yml under the locked uv env (`--extra dev`) across the
       # Python matrix. This job validates that the published image *runs* (entry point,
       # non-root, config resolution); ci.yml validates the test suite.
+
+  # =========================================================================
+  # GPU smoke test (PA-0d) — dormant unless a GPU runner is configured
+  # =========================================================================
+  # Runs only when the repository variable GPU_RUNNER_LABEL names a GPU runner (GitHub GPU larger
+  # runners need a Team/Enterprise Cloud organization; a self-hosted runner works too) AND this run
+  # published a cu124 image. Publishing happens only on `main` and release tags (PA-0a), so this job
+  # never runs for pull requests — required for a self-hosted runner on a public repository.
+  gpu-smoke:
+    needs: [plan, build-and-push]
+    if: >-
+      vars.GPU_RUNNER_LABEL != '' &&
+      needs.build-and-push.outputs.publish == 'true' &&
+      contains(needs.plan.outputs.accel, 'cu124')
+    runs-on: ${{ vars.GPU_RUNNER_LABEL }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Compute lowercase image reference
+        id: image
+        run: |
+          IMAGE_LOWER=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          REF="${IMAGE_LOWER}:cu124-${GITHUB_SHA::7}"
+          echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+          echo "Computed image reference: ${REF}"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull the cu124 image
+        run: docker pull ${{ steps.image.outputs.ref }}
+
+      - name: CUDA runtime — torch on the GPU + a PyG CUDA kernel
+        run: |
+          docker run --rm --gpus all --entrypoint python ${{ steps.image.outputs.ref }} -c "
+          import torch, torch_scatter
+          assert torch.cuda.is_available(), 'CUDA not available inside the container'
+          x = torch.ones(4, device='cuda')
+          idx = torch.tensor([0, 0, 1, 1], device='cuda')
+          out = torch_scatter.scatter_add(x, idx, dim=0)
+          assert out.tolist() == [2.0, 2.0], out.tolist()
+          print('OK CUDA', torch.version.cuda, '|', torch.cuda.get_device_name(0), '| torch_scatter CUDA kernel ok')
+          "
