@@ -88,7 +88,7 @@ dependencies = [
     # imports torch.utils.cpp_extension, whose line 10 is `import setuptools` (torch 2.4.0); torch
     # declares setuptools only for Python >= 3.12 and uv/venv environments do not ship it, so on 3.10 /
     # 3.11 torch.compile fails with ModuleNotFoundError (pytorch#113940). Same version as the build floor.
-    "setuptools==82.0.1",
+    "setuptools==84.0.0",
 ]
 
 [project.optional-dependencies]
