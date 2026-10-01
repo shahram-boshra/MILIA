@@ -43,6 +43,10 @@ updates:
       # Optuna 5 is a gated phase of the HPO strategy; minor/patch updates stay automated.
       - dependency-name: "optuna"
         update-types: ["version-update:semver-major"]
+      # pyproject.toml holds the NumPy 1.x ABI (numpy==1.26.4) for the compiled stack; NumPy 2 is a
+      # deliberate, tested change. Minor/patch updates stay automated.
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
     commit-message:
