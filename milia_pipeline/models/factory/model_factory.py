@@ -303,6 +303,10 @@ class GraphLevelModelWrapper(torch.nn.Module):
         >>> out = wrapped(z=z, pos=pos, batch=batch)  # [num_graphs, 8]
     """
 
+    # PA-1d: forward accepts `num_graphs=`; it is consumed here and forwarded only to an inner
+    # model that also declares `accepts_num_graphs` (never to a plain PyG model).
+    accepts_num_graphs = True
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -350,7 +354,11 @@ class GraphLevelModelWrapper(torch.nn.Module):
         return self.task_type.lower().startswith("graph_")
 
     def _apply_global_pooling(
-        self, x: torch.Tensor, batch: torch.Tensor | None, pooling_method: str = "mean"
+        self,
+        x: torch.Tensor,
+        batch: torch.Tensor | None,
+        pooling_method: str = "mean",
+        size: int | None = None,
     ) -> torch.Tensor:
         """
         Apply global pooling to convert node features to graph features.
@@ -359,24 +367,27 @@ class GraphLevelModelWrapper(torch.nn.Module):
             x: Node features [num_nodes, features]
             batch: Batch assignment vector [num_nodes]
             pooling_method: One of 'mean', 'max', 'add'
+            size: Number of graphs (PA-1d). When given, PyG does not infer it from
+                  ``batch`` (which costs a device→host sync).
 
         Returns:
             Graph features [num_graphs, features]
         """
-        # Handle single graph case (no batch vector)
+        # Handle single graph case (no batch vector): one graph, size known
         if batch is None:
             batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
+            size = 1
 
         # Apply pooling based on method
         if pooling_method == "mean":
-            return global_mean_pool(x, batch)
+            return global_mean_pool(x, batch, size=size)
         elif pooling_method == "max":
-            return global_max_pool(x, batch)
+            return global_max_pool(x, batch, size=size)
         elif pooling_method == "add":
-            return global_add_pool(x, batch)
+            return global_add_pool(x, batch, size=size)
         else:
             logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
-            return global_mean_pool(x, batch)
+            return global_mean_pool(x, batch, size=size)
 
     def forward(self, *args, **kwargs) -> torch.Tensor:
         """
@@ -392,25 +403,47 @@ class GraphLevelModelWrapper(torch.nn.Module):
             Model output, with global pooling applied for graph-level tasks,
             and output projection applied if out_channels doesn't match model output
         """
+        # PA-1d (F19): graph count, consumed here — from the caller (Trainer) or a collated Batch's
+        # `num_graphs` (a Python int). Forwarded only to an inner model that declares
+        # `accepts_num_graphs` (e.g. a MILIA ensemble), never to a plain PyG model.
+        num_graphs = kwargs.pop("num_graphs", None)
+
         # Extract batch from kwargs or args
         batch = kwargs.get("batch")
 
         # Check if first argument is a Data object
         if len(args) > 0 and hasattr(args[0], "batch"):
             batch = args[0].batch
+            if num_graphs is None:
+                num_graphs = getattr(args[0], "num_graphs", None)
+        if not isinstance(num_graphs, int):
+            num_graphs = None  # only a real count is trusted (e.g. not a mock attribute)
+
+        inner_kwargs = kwargs
+        if (
+            num_graphs is not None
+            and getattr(type(self.model), "accepts_num_graphs", False) is True
+        ):
+            inner_kwargs = {**kwargs, "num_graphs": num_graphs}
 
         # Forward through wrapped model
-        out = self.model(*args, **kwargs)
+        out = self.model(*args, **inner_kwargs)
 
         # Apply global pooling for graph-level tasks
         if self._is_graph_level_task():
             # Check if output is node-level (needs pooling)
             # Node-level: [num_nodes, features], Graph-level: [num_graphs, features]
             if batch is not None:
-                num_graphs = batch.max().item() + 1
-                # If output size doesn't match num_graphs, apply pooling
-                if out.size(0) != num_graphs:
-                    out = self._apply_global_pooling(out, batch, self.pooling_method)
+                # Decided without reading tensor values: known count → original rule; unknown →
+                # node-level iff one row per node.
+                if num_graphs is not None:
+                    is_node_level = out.size(0) != num_graphs
+                else:
+                    is_node_level = out.size(0) == batch.numel()
+                if is_node_level:
+                    out = self._apply_global_pooling(
+                        out, batch, self.pooling_method, size=num_graphs
+                    )
                     logger.debug(
                         f"Applied {self.pooling_method} pooling: "
                         f"[{out.size(0)}, {out.size(1) if out.dim() > 1 else 1}]"

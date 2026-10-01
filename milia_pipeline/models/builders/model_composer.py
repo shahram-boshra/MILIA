@@ -36,6 +36,64 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# GRAPH POOLING WITHOUT HOST SYNCS (PA-1d / F19)
+# =============================================================================
+# PyG's scatter computes `int(index.max()) + 1` when no output size is given — a device→host
+# sync on every pooled forward pass. The graph count is known for free: `Batch.num_graphs` is a
+# Python int set at collation. These helpers thread that count through, so composed models pool
+# with `size=` and decide "node-level vs graph-level" without reading tensor values.
+
+
+def _global_pool(
+    x: torch.Tensor,
+    batch: torch.Tensor | None,
+    pooling_method: str = "mean",
+    size: int | None = None,
+) -> torch.Tensor:
+    """Pool node features to graph features; ``size`` (graph count) avoids PyG's inferred size."""
+    from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
+
+    if batch is None:
+        # Single graph case - pool all nodes into one representation
+        if pooling_method == "max":
+            return x.max(dim=0, keepdim=True)[0]
+        if pooling_method == "add":
+            return x.sum(dim=0, keepdim=True)
+        return x.mean(dim=0, keepdim=True)
+
+    pools = {"mean": global_mean_pool, "max": global_max_pool, "add": global_add_pool}
+    pool = pools.get(pooling_method)
+    if pool is None:
+        logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
+        pool = global_mean_pool
+    return pool(x, batch, size=size)
+
+
+def _resolve_num_graphs(num_graphs: int | None, batch: torch.Tensor | None) -> int | None:
+    """Graph count without a device sync: given count; 1 without a batch vector; else unknown.
+
+    Only a real ``int`` is trusted as a given count (anything else — e.g. a mock attribute — is
+    treated as unknown and decided from shapes).
+    """
+    if isinstance(num_graphs, int):
+        return num_graphs
+    if batch is None or batch.numel() == 0:
+        return 1
+    return None
+
+
+def _needs_graph_pooling(rows: int, num_graphs: int | None, batch: torch.Tensor | None) -> bool:
+    """True when an output with ``rows`` rows is node-level and must be pooled.
+
+    Known count → the original rule (``rows > num_graphs``). Unknown count → node-level iff one
+    row per node (``rows == batch.numel()``), a shape comparison that reads no tensor values.
+    """
+    if num_graphs is not None:
+        return rows > num_graphs
+    return batch is not None and rows == batch.numel()
+
+
+# =============================================================================
 # PYDANTIC MODELS
 # =============================================================================
 
@@ -682,6 +740,9 @@ class ParallelEnsemble(nn.Module):
         Input → [Model1, Model2, ..., ModelN] → Fusion → Output
     """
 
+    # PA-1d: forward accepts `num_graphs=` (consumed here, never passed to members).
+    accepts_num_graphs = True
+
     def __init__(
         self,
         models: list[nn.Module],
@@ -748,7 +809,11 @@ class ParallelEnsemble(nn.Module):
         return task_lower.startswith("graph_")
 
     def _apply_global_pooling(
-        self, x: torch.Tensor, batch: torch.Tensor | None, pooling_method: str = "mean"
+        self,
+        x: torch.Tensor,
+        batch: torch.Tensor | None,
+        pooling_method: str = "mean",
+        size: int | None = None,
     ) -> torch.Tensor:
         """
         Apply global pooling to convert node-level to graph-level predictions.
@@ -761,33 +826,13 @@ class ParallelEnsemble(nn.Module):
             batch: Batch assignment tensor [num_nodes] mapping nodes to graphs.
                    If None, assumes single graph.
             pooling_method: Pooling method - 'mean', 'max', or 'add'
+            size: Number of graphs (PA-1d). When given, PyG does not infer it from
+                  ``batch`` (which costs a device→host sync).
 
         Returns:
             Graph-level features [num_graphs, out_channels]
         """
-        from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
-
-        if batch is None:
-            # Single graph case - pool all nodes into one representation
-            if pooling_method == "mean":
-                return x.mean(dim=0, keepdim=True)
-            elif pooling_method == "max":
-                return x.max(dim=0, keepdim=True)[0]
-            elif pooling_method == "add":
-                return x.sum(dim=0, keepdim=True)
-            else:
-                return x.mean(dim=0, keepdim=True)
-
-        # Multiple graphs - use PyG's native pooling
-        if pooling_method == "mean":
-            return global_mean_pool(x, batch)
-        elif pooling_method == "max":
-            return global_max_pool(x, batch)
-        elif pooling_method == "add":
-            return global_add_pool(x, batch)
-        else:
-            logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
-            return global_mean_pool(x, batch)
+        return _global_pool(x, batch, pooling_method, size)
 
     def _get_innermost_model(self, model: nn.Module) -> nn.Module:
         """
@@ -1177,6 +1222,11 @@ class ParallelEnsemble(nn.Module):
             - Graph-level tasks: [num_graphs, out_channels]
             - Edge-level tasks: [num_edges] or [num_edge_pairs]
         """
+        # PA-1d: graph count (never forwarded to members) — explicit kwarg, else a collated Batch's
+        # `num_graphs` (a Python int), read before `x` is replaced by its tensors.
+        num_graphs = kwargs.pop("num_graphs", None)
+        if num_graphs is None and hasattr(x, "num_graphs") and hasattr(x, "edge_index"):
+            num_graphs = x.num_graphs
         # ================================================================
         # DATABATCH DETECTION AND EXTRACTION (Fix 26)
         # ================================================================
@@ -1216,10 +1266,8 @@ class ParallelEnsemble(nn.Module):
         # Extract pooling method from kwargs (don't pass to _call_model_with_signature)
         pooling_method = kwargs.pop("pooling_method", "mean")
 
-        # Calculate number of graphs for shape validation
-        num_graphs = 1
-        if batch is not None and batch.numel() > 0:
-            num_graphs = int(batch.max().item()) + 1
+        # Number of graphs for shape validation — without a device sync (PA-1d / F19)
+        num_graphs = _resolve_num_graphs(num_graphs, batch)
 
         # Collect predictions from all models
         predictions = []
@@ -1254,8 +1302,8 @@ class ParallelEnsemble(nn.Module):
                 raise
 
             # For graph-level tasks: apply pooling if output is node-level
-            if is_graph_task and pred.size(0) > num_graphs:
-                pred = self._apply_global_pooling(pred, batch, pooling_method)
+            if is_graph_task and _needs_graph_pooling(pred.size(0), num_graphs, batch):
+                pred = self._apply_global_pooling(pred, batch, pooling_method, size=num_graphs)
 
             predictions.append(pred)
             # -------
@@ -1411,6 +1459,9 @@ class SequentialStack(nn.Module):
     models require atomic numbers (z) and 3D coordinates (pos).
     """
 
+    # PA-1d: forward accepts `num_graphs=` (consumed here, never passed to members).
+    accepts_num_graphs = True
+
     def __init__(
         self, models: list[nn.Module], task_type: str | None = None, name: str = "SequentialStack"
     ):
@@ -1448,7 +1499,11 @@ class SequentialStack(nn.Module):
         return task_lower.startswith("graph_")
 
     def _apply_global_pooling(
-        self, x: torch.Tensor, batch: torch.Tensor | None, pooling_method: str = "mean"
+        self,
+        x: torch.Tensor,
+        batch: torch.Tensor | None,
+        pooling_method: str = "mean",
+        size: int | None = None,
     ) -> torch.Tensor:
         """
         Apply global pooling to convert node-level to graph-level predictions.
@@ -1460,33 +1515,12 @@ class SequentialStack(nn.Module):
             batch: Batch assignment tensor [num_nodes] mapping nodes to graphs.
                    If None, assumes single graph.
             pooling_method: Pooling method - 'mean', 'max', or 'add'
+            size: Number of graphs (PA-1d); avoids PyG inferring it with a device sync.
 
         Returns:
             Graph-level features [num_graphs, out_channels]
         """
-        from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
-
-        if batch is None:
-            # Single graph case - pool all nodes into one representation
-            if pooling_method == "mean":
-                return x.mean(dim=0, keepdim=True)
-            elif pooling_method == "max":
-                return x.max(dim=0, keepdim=True)[0]
-            elif pooling_method == "add":
-                return x.sum(dim=0, keepdim=True)
-            else:
-                return x.mean(dim=0, keepdim=True)
-
-        # Multiple graphs - use PyG's native pooling
-        if pooling_method == "mean":
-            return global_mean_pool(x, batch)
-        elif pooling_method == "max":
-            return global_max_pool(x, batch)
-        elif pooling_method == "add":
-            return global_add_pool(x, batch)
-        else:
-            logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
-            return global_mean_pool(x, batch)
+        return _global_pool(x, batch, pooling_method, size)
 
     def _get_innermost_model(self, model: nn.Module) -> nn.Module:
         """
@@ -1867,6 +1901,11 @@ class SequentialStack(nn.Module):
             - Graph-level tasks: [num_graphs, out_channels]
             - Edge-level tasks: [num_edges] or [num_edge_pairs]
         """
+        # PA-1d: graph count (never forwarded to members) — explicit kwarg, else a collated Batch's
+        # `num_graphs` (a Python int), read before `x` is replaced by its tensors.
+        num_graphs = kwargs.pop("num_graphs", None)
+        if num_graphs is None and hasattr(x, "num_graphs") and hasattr(x, "edge_index"):
+            num_graphs = x.num_graphs
         # ================================================================
         # DATABATCH DETECTION AND EXTRACTION (Fix 26)
         # ================================================================
@@ -1906,10 +1945,8 @@ class SequentialStack(nn.Module):
         # Extract pooling method from kwargs (don't pass to _call_model_with_signature)
         pooling_method = kwargs.pop("pooling_method", "mean")
 
-        # Calculate number of graphs for shape validation
-        num_graphs = 1
-        if batch is not None and batch.numel() > 0:
-            num_graphs = int(batch.max().item()) + 1
+        # Number of graphs for shape validation — without a device sync (PA-1d / F19)
+        num_graphs = _resolve_num_graphs(num_graphs, batch)
 
         current = x
         num_models = len(self.models)
@@ -1957,8 +1994,8 @@ class SequentialStack(nn.Module):
                 raise
 
         # For graph-level tasks: apply pooling if final output is node-level
-        if is_graph_task and current.size(0) > num_graphs:
-            current = self._apply_global_pooling(current, batch, pooling_method)
+        if is_graph_task and _needs_graph_pooling(current.size(0), num_graphs, batch):
+            current = self._apply_global_pooling(current, batch, pooling_method, size=num_graphs)
 
         return current
         # -------
@@ -1981,6 +2018,9 @@ class HierarchicalComposition(nn.Module):
                 Level1[Model3, Model4, ...] → Fusion →
                 ... → Output
     """
+
+    # PA-1d: forward accepts `num_graphs=` and passes it to each level ensemble.
+    accepts_num_graphs = True
 
     def __init__(
         self,
@@ -2066,6 +2106,11 @@ class HierarchicalComposition(nn.Module):
             - Graph-level tasks: [num_graphs, out_channels]
             - Edge-level tasks: [num_edges] or [num_edge_pairs]
         """
+        # PA-1d: levels receive tensors only, so the graph count is resolved here (explicit kwarg,
+        # else the collated Batch's Python-int `num_graphs`) and passed to every level.
+        num_graphs = kwargs.pop("num_graphs", None)
+        if num_graphs is None and hasattr(x, "num_graphs") and hasattr(x, "edge_index"):
+            num_graphs = x.num_graphs
         # ================================================================
         # DATABATCH DETECTION AND EXTRACTION (Fix 26)
         # ================================================================
@@ -2114,11 +2159,17 @@ class HierarchicalComposition(nn.Module):
                     edge_attr=edge_attr,
                     batch=batch,
                     edge_label_index=edge_label_index,
+                    num_graphs=num_graphs,
                     **kwargs,
                 )
             else:
                 current = ensemble(
-                    current, edge_index=edge_index, edge_attr=edge_attr, batch=batch, **kwargs
+                    current,
+                    edge_index=edge_index,
+                    edge_attr=edge_attr,
+                    batch=batch,
+                    num_graphs=num_graphs,
+                    **kwargs,
                 )
 
         return current

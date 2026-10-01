@@ -926,6 +926,20 @@ class Trainer:
             self._accepts_3d_params = False
             return False
 
+    def _num_graphs_kwargs(self, batch: Data | Batch) -> dict[str, int]:
+        """``{"num_graphs": n}`` for MILIA models that declare ``accepts_num_graphs`` (PA-1d).
+
+        ``Batch.num_graphs`` is a Python int set at collation, so passing it lets graph-level
+        wrappers and ensembles pool with ``size=`` instead of PyG inferring it from the batch
+        vector (a device→host sync). Plain PyG models never receive the keyword.
+        """
+        # Explicit opt-in: the CLASS must declare the marker (`is True`), so proxies whose every
+        # attribute is truthy (e.g. mocks) never receive the keyword; the count must be an int.
+        if getattr(type(self.model), "accepts_num_graphs", False) is not True:
+            return {}
+        num_graphs = getattr(batch, "num_graphs", None)
+        return {"num_graphs": num_graphs} if isinstance(num_graphs, int) else {}
+
     def _forward_with_dynamic_signature(self, batch: Data | Batch) -> torch.Tensor | None:
         """
         Execute forward pass using dynamically introspected signature.
@@ -1036,6 +1050,9 @@ class Trainer:
                     return None
         except Exception as e:
             logger.warning(f"Dynamic forward: Signature validation failed: {e}")
+
+        # PA-1d: graph count for MILIA wrappers/ensembles (consumed by the outer model)
+        kwargs.update(self._num_graphs_kwargs(batch))
 
         # Try the dynamic forward call
         try:
@@ -1203,8 +1220,8 @@ class Trainer:
         Returns:
             Model output tensor
         """
-        # Build kwargs for optional parameters
-        extra_kwargs = {}
+        # Build kwargs for optional parameters (PA-1d: graph count for MILIA wrappers/ensembles)
+        extra_kwargs = self._num_graphs_kwargs(batch)
 
         # Link prediction support
         if has_edge_label_index:
@@ -1303,8 +1320,8 @@ class Trainer:
         Returns:
             Model output tensor
         """
-        # Build kwargs for optional parameters
-        extra_kwargs = {}
+        # Build kwargs for optional parameters (PA-1d: graph count for MILIA wrappers/ensembles)
+        extra_kwargs = self._num_graphs_kwargs(batch)
 
         # Link prediction support
         if has_edge_label_index:

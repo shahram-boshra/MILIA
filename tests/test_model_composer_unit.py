@@ -55,29 +55,29 @@ mock_pyg_nn = Mock()
 
 
 # Create mock pooling functions that return appropriately shaped tensors
-def mock_global_mean_pool(x, batch):
-    """Mock global mean pool - returns one row per unique batch index."""
+def mock_global_mean_pool(x, batch, size=None):
+    """Mock global mean pool - one row per graph; mirrors PyG's (x, batch, size=None) signature."""
     if batch is None:
         return x.mean(dim=0, keepdim=True)
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     out_channels = x.size(-1)
     return torch.zeros(num_graphs, out_channels)
 
 
-def mock_global_max_pool(x, batch):
-    """Mock global max pool - returns one row per unique batch index."""
+def mock_global_max_pool(x, batch, size=None):
+    """Mock global max pool - one row per graph; mirrors PyG's (x, batch, size=None) signature."""
     if batch is None:
         return x.max(dim=0, keepdim=True)[0]
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     out_channels = x.size(-1)
     return torch.zeros(num_graphs, out_channels)
 
 
-def mock_global_add_pool(x, batch):
-    """Mock global add pool - returns one row per unique batch index."""
+def mock_global_add_pool(x, batch, size=None):
+    """Mock global add pool - one row per graph; mirrors PyG's (x, batch, size=None) signature."""
     if batch is None:
         return x.sum(dim=0, keepdim=True)
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     out_channels = x.size(-1)
     return torch.zeros(num_graphs, out_channels)
 

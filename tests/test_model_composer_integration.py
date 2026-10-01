@@ -46,27 +46,27 @@ _mock_modules["torch_geometric.utils"] = mock_pyg_utils
 mock_pyg_nn = Mock()
 
 
-def mock_global_mean_pool(x, batch):
-    """Mock global mean pool."""
+def mock_global_mean_pool(x, batch, size=None):
+    """Mock global mean pool (PyG signature: x, batch, size=None)."""
     if batch is None:
         return x.mean(dim=0, keepdim=True)
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     return torch.zeros(num_graphs, x.size(-1))
 
 
-def mock_global_max_pool(x, batch):
-    """Mock global max pool."""
+def mock_global_max_pool(x, batch, size=None):
+    """Mock global max pool (PyG signature: x, batch, size=None)."""
     if batch is None:
         return x.max(dim=0, keepdim=True)[0]
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     return torch.zeros(num_graphs, x.size(-1))
 
 
-def mock_global_add_pool(x, batch):
-    """Mock global add pool."""
+def mock_global_add_pool(x, batch, size=None):
+    """Mock global add pool (PyG signature: x, batch, size=None)."""
     if batch is None:
         return x.sum(dim=0, keepdim=True)
-    num_graphs = int(batch.max().item()) + 1
+    num_graphs = size if size is not None else int(batch.max().item()) + 1
     return torch.zeros(num_graphs, x.size(-1))
 
 
