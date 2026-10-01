@@ -55,12 +55,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # CPU is the validated variant published on every push. Add GPU tags by extending
-        # this list (e.g. `cu121`, `cu124`): they BUILD on a CPU runner (the torch/PyG wheels
-        # bundle the CUDA runtime) but are runtime-validated only on a GPU runner, so they are
-        # added deliberately, not auto-published on every push. TPU is intentionally excluded
-        # (PyG's compiled kernels have no XLA backend). One image = one accelerator.
-        accel: [cpu]
+        # PA-0c (F24): `cpu` on every run; `cu124` only on release tags (v*) and manual dispatch —
+        # GPU images BUILD on a CPU runner (the torch/PyG wheels bundle the CUDA runtime) and are
+        # large, so they follow the release cadence, not every push to main. A dispatch from a
+        # non-main branch stays build-only for both (PA-0a). TPU is intentionally excluded (PyG's
+        # compiled kernels have no XLA backend). One image = one accelerator.
+        accel: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && '["cpu", "cu124"]' || '["cpu"]') }}
 
     steps:
       - name: Checkout repository
@@ -82,6 +82,20 @@ jobs:
             echo "Build-only: ref ${GITHUB_REF} is not main or a release tag (nothing is pushed)"
           fi
 
+      # PA-0c: GPU images (torch +cuXXX and nvidia-*-cu12 runtime wheels) exceed what a standard
+      # runner's 14 GB disk leaves free during a multi-stage build. Remove preinstalled toolchains
+      # MILIA never uses; directories absent on the current runner image are skipped, and the
+      # before/after `df` records the real budget in the run log.
+      - name: Reclaim runner disk (GPU variants)
+        if: matrix.accel != 'cpu'
+        run: |
+          df -h /
+          for d in /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL; do
+            if [ -d "$d" ]; then sudo rm -rf "$d" && echo "removed $d"; fi
+          done
+          docker image prune --all --force
+          df -h /
+
       - name: Log in to GitHub Container Registry
         if: steps.publish.outputs.enabled == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4
@@ -95,23 +109,30 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # Per-accelerator tags: moving `:<accel>`, immutable `:<accel>-<sha>`, and `:latest`
-          # only for the cpu (default) variant.
+          # Per-accelerator tags: moving `:<accel>`, immutable `:<accel>-<sha>`; `:latest` and bare
+          # semver only for the cpu (default) variant; GPU variants get suffixed semver
+          # (`:X.Y.Z-cu124`, `:X.Y-cu124`) and never `latest` (PA-0c; per-tag suffix/enable —
+          # a global `flavor: suffix` would also suffix the `<accel>` raw/sha tags).
           tags: |
             type=raw,value=${{ matrix.accel }}
             type=sha,prefix=${{ matrix.accel }}-
             type=raw,value=latest,enable=${{ matrix.accel == 'cpu' }}
             type=semver,pattern={{version}},enable=${{ matrix.accel == 'cpu' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ matrix.accel == 'cpu' }}
+            type=semver,pattern={{version}},suffix=-${{ matrix.accel }},enable=${{ matrix.accel != 'cpu' }}
+            type=semver,pattern={{major}}.{{minor}},suffix=-${{ matrix.accel }},enable=${{ matrix.accel != 'cpu' }}
             type=raw,value=${{ inputs.version }},enable=${{ matrix.accel == 'cpu' && inputs.version != '' }}
+            type=raw,value=${{ inputs.version }}-${{ matrix.accel }},enable=${{ matrix.accel != 'cpu' && inputs.version != '' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
         with:
           context: .
           push: ${{ steps.publish.outputs.enabled == 'true' }}
+          # GPU variants expose all GPUs under --runtime=nvidia; cpu stays "void" (runc behaviour) — PA-0b.
           build-args: |
             ACCEL=${{ matrix.accel }}
+            NVIDIA_VISIBLE_DEVICES=${{ matrix.accel == 'cpu' && 'void' || 'all' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
