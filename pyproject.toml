@@ -295,9 +295,10 @@ markers = [
 
 # uv — accelerator-aware resolution (see UV_MIGRATION_STRATEGY.md)
 [tool.uv]
-# Lock scoped to Linux (matches the deployed image + validated spike). Broaden with darwin
-# markers when MPS support is validated on macOS.
-environments = ["sys_platform == 'linux'"]
+# Lock scoped to Linux x86_64 (matches the deployed amd64 image, CI runners and the validated
+# spike). PyG publishes no linux_aarch64 wheels for torch 2.4 (cpu or cuXXX), so an aarch64 split is
+# unsatisfiable (PA-0i / F41). Broaden only when every platform-specific wheel exists for the target.
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 # The accelerator extras are mutually exclusive — uv refuses to resolve two at once.
 conflicts = [[{ extra = "cpu" }, { extra = "cu118" }, { extra = "cu121" }, { extra = "cu124" }]]
 
