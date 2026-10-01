@@ -917,7 +917,8 @@ models:
   # ───────────────────────────────────────────────────────────
 
   acceleration:
-    enabled: false                       # ⚠️ Set to true to enable
+    enabled: false                       # ⚠️ Set to true to enable; the settings below are then
+                                         # checked against what the runtime can execute
 
     # Device Configuration
     device:
@@ -928,7 +929,8 @@ models:
     # Distributed Training (Single/Multi-Node)
     distributed:
       enabled: false
-      strategy: "ddp"                    # ddp, fsdp, deepspeed, horovod, none
+      strategy: "ddp"                    # ddp, dp, fsdp; horovod needs `pip install horovod`;
+                                         # deepspeed is not implemented (rejected when enabled)
 
       # DDP Configuration
       ddp:
@@ -958,7 +960,7 @@ models:
 
     # Memory Optimization
     memory:
-      mixed_precision: "no"              # no, fp16, bf16, fp8 (if supported)
+      mixed_precision: "no"              # no, fp16, bf16 (fp8: no runtime support — rejected when enabled)
       gradient_checkpointing: false
       gradient_accumulation_steps: 1
       max_memory_per_gpu: null           # null = auto, or specify in GB

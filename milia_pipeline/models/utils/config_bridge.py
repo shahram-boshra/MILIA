@@ -19,6 +19,7 @@ Author: Milia Team
 Version: 1.1.0
 """
 
+import importlib.util
 import logging
 import warnings
 from enum import Enum
@@ -148,6 +149,7 @@ class DistributedStrategy(Enum):
     """Distributed training strategies."""
 
     DDP = "ddp"
+    DP = "dp"  # DataParallel — implemented by acceleration.distributed_strategies (PA-1a parity)
     FSDP = "fsdp"
     DEEPSPEED = "deepspeed"
     HOROVOD = "horovod"
@@ -608,6 +610,66 @@ class ComputationConfig(BaseModel):
     dataloader: DataLoaderConfig = Field(default_factory=DataLoaderConfig)
 
 
+# PA-1a (F18): what MILIA's acceleration runtime (models/acceleration) can actually execute. Values the
+# schema accepts but the runtime cannot honour are rejected when acceleration is enabled, so a
+# misconfiguration fails at config load instead of mid-run (or silently, as fp8 → fp32 did).
+_UNSUPPORTED_PRECISIONS: dict[str, str] = {
+    "fp8": "the acceleration runtime has no fp8 autocast path (it would silently run in fp32); "
+    "use 'bf16' or 'fp16'",
+}
+_UNIMPLEMENTED_STRATEGIES: dict[str, str] = {
+    "deepspeed": "DeepSpeed is not implemented by MILIA's distributed runtime (wrap_model raises "
+    "DistributedError); use 'ddp' or 'fsdp'",
+}
+# Strategies that need a package MILIA does not depend on: strategy → importable module name.
+_OPTIONAL_STRATEGY_PACKAGES: dict[str, str] = {"horovod": "horovod"}
+
+
+def _module_available(name: str) -> bool:
+    """True when ``name`` is importable, without importing it (same probe as the runtime)."""
+    try:
+        return importlib.util.find_spec(name) is not None
+    except ValueError:
+        # Already in sys.modules with __spec__ unset (documented CPython behaviour) → present.
+        return True
+
+
+def _distributed_problems(dist: DistributedConfig) -> list[str]:
+    """Runtime-support and topology problems of an ENABLED distributed configuration."""
+    problems: list[str] = []
+    strategy = dist.strategy
+    if strategy == DistributedStrategy.NONE.value:
+        problems.append(
+            "distributed.strategy is 'none' while distributed.enabled is true — "
+            "set distributed.enabled: false for single-device training"
+        )
+    elif strategy in _UNIMPLEMENTED_STRATEGIES:
+        problems.append(f"distributed.strategy '{strategy}': {_UNIMPLEMENTED_STRATEGIES[strategy]}")
+    elif strategy in _OPTIONAL_STRATEGY_PACKAGES and not _module_available(
+        _OPTIONAL_STRATEGY_PACKAGES[strategy]
+    ):
+        package = _OPTIONAL_STRATEGY_PACKAGES[strategy]
+        problems.append(
+            f"distributed.strategy '{strategy}' requires the '{package}' package, which is not "
+            f"installed (not a MILIA dependency)"
+        )
+    if dist.num_nodes < 1:
+        problems.append(f"distributed.num_nodes must be >= 1 (got {dist.num_nodes})")
+    elif dist.world_size < dist.num_nodes:
+        problems.append(
+            f"distributed.world_size ({dist.world_size}) must be >= num_nodes ({dist.num_nodes}): "
+            f"each node runs at least one process"
+        )
+    if dist.num_nodes >= 1 and not 0 <= dist.node_rank < dist.num_nodes:
+        problems.append(
+            f"distributed.node_rank must be in [0, num_nodes) = [0, {dist.num_nodes}) "
+            f"(got {dist.node_rank})"
+        )
+    if not 1 <= dist.master_port <= 65535:
+        problems.append(f"distributed.master_port must be in [1, 65535] (got {dist.master_port})")
+    return problems
+
+
 class AccelerationConfig(BaseModel):
     """Hardware acceleration configuration."""
 
@@ -616,6 +678,30 @@ class AccelerationConfig(BaseModel):
     distributed: DistributedConfig = Field(default_factory=DistributedConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     computation: ComputationConfig = Field(default_factory=ComputationConfig)
+
+    @model_validator(mode="after")
+    def validate_runtime_support(self) -> "AccelerationConfig":
+        """When enabled, reject settings the acceleration runtime cannot execute (PA-1a).
+
+        Inactive when ``enabled`` is false, so a disabled section keeps loading exactly as before.
+        All problems are reported together.
+        """
+        if not self.enabled:
+            return self
+        problems: list[str] = []
+        precision = self.memory.mixed_precision
+        if precision in _UNSUPPORTED_PRECISIONS:
+            problems.append(
+                f"memory.mixed_precision '{precision}': {_UNSUPPORTED_PRECISIONS[precision]}"
+            )
+        if self.distributed.enabled:
+            problems.extend(_distributed_problems(self.distributed))
+        if problems:
+            raise ValueError(
+                "Invalid acceleration configuration (acceleration.enabled: true):\n  - "
+                + "\n  - ".join(problems)
+            )
+        return self
 
     def validate(self):
         """Backward compatible validate method (validation happens on construction)."""

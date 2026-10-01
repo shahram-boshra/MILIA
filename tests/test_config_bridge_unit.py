@@ -240,6 +240,7 @@ class TestDistributedStrategyEnum:
     def test_strategy_values(self):
         """Test all distributed strategies."""
         assert DistributedStrategy.DDP.value == "ddp"
+        assert DistributedStrategy.DP.value == "dp"
         assert DistributedStrategy.FSDP.value == "fsdp"
         assert DistributedStrategy.DEEPSPEED.value == "deepspeed"
         assert DistributedStrategy.HOROVOD.value == "horovod"
@@ -247,7 +248,15 @@ class TestDistributedStrategyEnum:
 
     def test_strategy_count(self):
         """Test number of strategies."""
-        assert len(DistributedStrategy) == 5
+        assert len(DistributedStrategy) == 6
+
+    def test_parity_with_runtime_strategies(self):
+        """PA-1a: the bridge accepts exactly the strategies the acceleration runtime defines."""
+        from milia_pipeline.models.acceleration.distributed_strategies import (
+            DistributedStrategy as RuntimeStrategy,
+        )
+
+        assert {s.value for s in DistributedStrategy} == {s.value for s in RuntimeStrategy}
 
 
 class TestMixedPrecisionEnum:
@@ -968,6 +977,115 @@ class TestAccelerationConfig:
         """
         with pytest.raises(PydanticValidationError):
             AccelerationConfig(enabled=True, device=DeviceConfig(type="invalid"))
+
+
+class TestAccelerationRuntimeSupport:
+    """PA-1a: enabled acceleration rejects settings the runtime cannot execute; disabled is unchanged."""
+
+    @staticmethod
+    def _enabled(**dist_kwargs) -> AccelerationConfig:
+        return AccelerationConfig(
+            enabled=True, distributed=DistributedConfig(enabled=True, **dist_kwargs)
+        )
+
+    # --- disabled acceleration: no new checks (backward compatible) ---
+    def test_disabled_accepts_fp8_and_deepspeed(self):
+        config = AccelerationConfig(
+            enabled=False,
+            memory=MemoryConfig(mixed_precision="fp8"),
+            distributed=DistributedConfig(enabled=True, strategy="deepspeed"),
+        )
+        assert config.memory.mixed_precision == "fp8"
+
+    def test_enabled_but_distributed_disabled_ignores_strategy(self):
+        config = AccelerationConfig(
+            enabled=True, distributed=DistributedConfig(enabled=False, strategy="deepspeed")
+        )
+        assert config.distributed.strategy == "deepspeed"
+
+    # --- precision ---
+    @pytest.mark.parametrize("precision", ["no", "fp16", "bf16"])
+    def test_supported_precisions(self, precision):
+        AccelerationConfig(enabled=True, memory=MemoryConfig(mixed_precision=precision))
+
+    def test_fp8_rejected_when_enabled(self):
+        with pytest.raises(PydanticValidationError, match="mixed_precision 'fp8'"):
+            AccelerationConfig(enabled=True, memory=MemoryConfig(mixed_precision="fp8"))
+
+    # --- strategies ---
+    @pytest.mark.parametrize("strategy", ["ddp", "dp", "fsdp"])
+    def test_implemented_strategies_accepted(self, strategy):
+        assert self._enabled(strategy=strategy).distributed.strategy == strategy
+
+    def test_deepspeed_rejected(self):
+        with pytest.raises(PydanticValidationError, match="DeepSpeed is not implemented"):
+            self._enabled(strategy="deepspeed")
+
+    def test_none_strategy_contradicts_enabled(self):
+        with pytest.raises(PydanticValidationError, match="strategy is 'none'"):
+            self._enabled(strategy="none")
+
+    def test_horovod_rejected_when_not_installed(self):
+        with (
+            patch(
+                "milia_pipeline.models.utils.config_bridge._module_available", return_value=False
+            ),
+            pytest.raises(PydanticValidationError, match="requires the 'horovod' package"),
+        ):
+            self._enabled(strategy="horovod")
+
+    def test_horovod_accepted_when_installed(self):
+        with patch(
+            "milia_pipeline.models.utils.config_bridge._module_available", return_value=True
+        ):
+            assert self._enabled(strategy="horovod").distributed.strategy == "horovod"
+
+    # --- topology ---
+    def test_multi_node_topology_valid(self):
+        self._enabled(num_nodes=2, world_size=8, node_rank=1, master_port=29500)
+
+    @pytest.mark.parametrize(
+        ("kwargs", "message"),
+        [
+            ({"num_nodes": 0}, "num_nodes must be >= 1"),
+            ({"num_nodes": 2, "world_size": 1}, r"world_size \(1\) must be >= num_nodes \(2\)"),
+            (
+                {"num_nodes": 2, "world_size": 2, "node_rank": 2},
+                r"node_rank must be in \[0, num_nodes\)",
+            ),
+            ({"node_rank": -1}, r"node_rank must be in \[0, num_nodes\)"),
+            ({"master_port": 0}, r"master_port must be in \[1, 65535\]"),
+            ({"master_port": 65536}, r"master_port must be in \[1, 65535\]"),
+        ],
+    )
+    def test_invalid_topology_rejected(self, kwargs, message):
+        with pytest.raises(PydanticValidationError, match=message):
+            self._enabled(**kwargs)
+
+    # --- reporting ---
+    def test_all_problems_reported_together(self):
+        with pytest.raises(PydanticValidationError) as exc:
+            AccelerationConfig(
+                enabled=True,
+                memory=MemoryConfig(mixed_precision="fp8"),
+                distributed=DistributedConfig(enabled=True, strategy="deepspeed", master_port=0),
+            )
+        text = str(exc.value)
+        assert "mixed_precision 'fp8'" in text
+        assert "DeepSpeed is not implemented" in text
+        assert "master_port must be in [1, 65535]" in text
+
+    def test_from_dict_rejects_unsupported_enabled_acceleration(self):
+        config_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "acceleration": {
+                "enabled": True,
+                "memory": {"mixed_precision": "fp8"},
+            },
+        }
+        with pytest.raises(PydanticValidationError, match="mixed_precision 'fp8'"):
+            ModelConfig.from_dict(config_dict)
 
 
 # =============================================================================
