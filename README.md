@@ -81,11 +81,34 @@ Or build locally from the Dockerfile:
 ```bash
 git clone https://github.com/shahram-boshra/MILIA.git
 cd MILIA
-docker build -t milia:cpu .                    # CPU (default); GPU: --build-arg ACCEL=cu124
+docker build -t milia:cpu .                    # CPU (default); GPU: see "GPU images" below
 docker run --rm milia:cpu --help
 ```
 
 > The published image is a lean production runtime (no test tools). The smoke suite runs in CI (and locally via `uv run --extra cpu --extra dev pytest -m smoke`), not inside the runtime image.
+
+#### GPU images (CUDA 12.4)
+
+Host prerequisites: an NVIDIA GPU, an NVIDIA driver **≥ 525.60.13** (the CUDA 12.x minimum for minor-version compatibility; a current driver is recommended), and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). The CUDA runtime ships inside the image's PyTorch/PyG wheels — no CUDA toolkit is needed on the host.
+
+```bash
+docker pull ghcr.io/shahram-boshra/milia:cu124
+docker run --rm --gpus all ghcr.io/shahram-boshra/milia:cu124 --help
+
+# Confirm the GPU is visible inside the container:
+docker run --rm --gpus all --entrypoint python ghcr.io/shahram-boshra/milia:cu124 \
+  -c "import torch; print(torch.cuda.is_available(), torch.version.cuda, torch.cuda.get_device_name(0))"
+```
+
+| Tag | Variant |
+|---|---|
+| `latest`, `cpu`, `X.Y.Z`, `X.Y` | CPU (`latest` is always the CPU image) |
+| `cu124`, `X.Y.Z-cu124`, `X.Y-cu124` | CUDA 12.4 — versioned GPU tags start with release 1.16.0 |
+| `cpu-<sha>`, `cu124-<sha>` | Immutable per-commit builds |
+
+Images are `linux/amd64`. **Validation level:** every published `cu124` image is built and verified on a CPU CI runner (PyTorch reports CUDA 12.4; MILIA and the PyG kernels import; `torch.compile` runs) and smoke-tested through the CLI; execution on a GPU is verified in CI only when a GPU runner is configured — run the check above on your host.
+
+To build a GPU image locally: `docker build --build-arg ACCEL=cu124 --build-arg NVIDIA_VISIBLE_DEVICES=all -t milia:cu124 .`
 
 ### Method 2: uv (Without Docker)
 
@@ -102,7 +125,9 @@ cd MILIA
 uv sync --locked --extra cpu
 ```
 
-For GPU support, choose a CUDA accelerator extra instead of `cpu` — e.g. `uv sync --locked --extra cu124` (pick the one matching your CUDA runtime; requires an NVIDIA driver + container toolkit at run time).
+For GPU support, choose a CUDA accelerator extra instead of `cpu` — e.g. `uv sync --locked --extra cu124` (the CUDA runtime comes with the PyTorch/PyG wheels; the host needs an NVIDIA driver supporting that CUDA version — for CUDA 12.x, ≥ 525.60.13). The NVIDIA Container Toolkit is needed only for Docker.
+
+Supported platform: **Linux x86_64** — natively via the lockfile, or through the `linux/amd64` Docker image. PyG publishes no `linux_aarch64` wheels for this PyTorch version, so the lock does not resolve for ARM Linux.
 
 For development (adds pytest and ruff):
 
