@@ -1007,6 +1007,7 @@ class TestContractAccelerationManagerSignature:
             "gradient_checkpointing",
             "compile_model",
             "compile_mode",
+            "compile_dynamic",  # PA-1c
             "cudnn_benchmark",
             "distributed_strategy",
             "distributed_backend",

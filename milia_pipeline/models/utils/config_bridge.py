@@ -600,14 +600,34 @@ class DataLoaderConfig(BaseModel):
     persistent_workers: bool = False
 
 
+# torch.compile modes accepted by torch 2.4 (`_TorchCompileInductorWrapper.apply_mode`). The
+# "reduce-overhead" and "max-autotune" modes use CUDA graphs, which suit fixed-size inputs;
+# "max-autotune-no-cudagraphs" autotunes without them.
+_TORCH_COMPILE_MODES = ("default", "reduce-overhead", "max-autotune", "max-autotune-no-cudagraphs")
+
+
 class ComputationConfig(BaseModel):
     """Computation optimization configuration."""
 
     compile_model: bool = False
     compile_mode: str = "default"
+    # PA-1c: torch.compile `dynamic`. True (default) builds shape-generic kernels up front — PyG's
+    # guidance for mini-batches whose graph sizes vary; False always specializes (recompiles per
+    # new shape, then eager after torch's recompile limit); None lets torch auto-detect.
+    compile_dynamic: bool | None = True
     use_cudnn_benchmark: bool = True
     enable_tf32: bool = True
     dataloader: DataLoaderConfig = Field(default_factory=DataLoaderConfig)
+
+    @field_validator("compile_mode")
+    @classmethod
+    def validate_compile_mode(cls, v: str) -> str:
+        """Reject modes torch.compile does not recognize (it would raise only at model build)."""
+        if v not in _TORCH_COMPILE_MODES:
+            raise ValueError(
+                f"Invalid compile_mode '{v}'. Must be one of: {list(_TORCH_COMPILE_MODES)}"
+            )
+        return v
 
 
 # PA-1a (F18): what MILIA's acceleration runtime (models/acceleration) can actually execute. Values the
@@ -1308,6 +1328,7 @@ class ModelConfig(BaseModel):
         computation = ComputationConfig(
             compile_model=comp_dict.get("compile_model", False),
             compile_mode=comp_dict.get("compile_mode", "default"),
+            compile_dynamic=comp_dict.get("compile_dynamic", True),
             use_cudnn_benchmark=comp_dict.get("use_cudnn_benchmark", True),
             enable_tf32=comp_dict.get("enable_tf32", True),
             dataloader=DataLoaderConfig(**dataloader_dict),

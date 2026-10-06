@@ -231,6 +231,7 @@ class AccelerationManager:
         gradient_checkpointing: bool = False,
         compile_model: bool = False,
         compile_mode: str = "default",
+        compile_dynamic: bool | None = True,
         cudnn_benchmark: bool = True,
         distributed_strategy: str | DistributedStrategy = "none",
         distributed_backend: str | DistributedBackend = "auto",
@@ -245,7 +246,11 @@ class AccelerationManager:
             precision: Precision type (fp16, bf16, fp32)
             gradient_checkpointing: Enable gradient checkpointing
             compile_model: Enable torch.compile
-            compile_mode: Compilation mode (default, reduce-overhead, max-autotune)
+            compile_mode: Compilation mode (default, reduce-overhead, max-autotune,
+                max-autotune-no-cudagraphs)
+            compile_dynamic: torch.compile ``dynamic`` (PA-1c). True (default) compiles
+                shape-generic kernels up front — PyG's guidance for mini-batches whose graph
+                sizes vary; False always specializes (fixed-size inputs only); None = auto-detect.
             cudnn_benchmark: Enable cuDNN benchmark mode
             distributed_strategy: Distributed strategy (none, dp, ddp, fsdp)
             distributed_backend: Communication backend (auto, nccl, gloo, mpi)
@@ -270,6 +275,7 @@ class AccelerationManager:
         self.computation_optimizer = ComputationOptimizer(
             compile_model=compile_model,
             compile_mode=compile_mode,
+            compile_dynamic=compile_dynamic,
             cudnn_benchmark=cudnn_benchmark,
             device=self.device_manager.get_device(),
             verbose=verbose,

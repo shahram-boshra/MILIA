@@ -969,7 +969,11 @@ models:
     # Computation Optimization
     computation:
       compile_model: false               # torch.compile (PyTorch 2.0+)
-      compile_mode: "default"            # default, reduce-overhead, max-autotune
+      compile_mode: "default"            # default, reduce-overhead, max-autotune,
+                                         # max-autotune-no-cudagraphs (CUDA-graph modes suit
+                                         # fixed-size inputs; mini-batch graph sizes vary)
+      compile_dynamic: true              # shape-generic kernels for varying graph sizes (PyG
+                                         # guidance); false = specialize per shape (recompiles)
       use_cudnn_benchmark: true          # Enable cuDNN auto-tuner
       enable_tf32: true                  # TensorFloat-32 on Ampere+ GPUs
 

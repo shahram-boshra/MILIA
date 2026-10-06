@@ -215,7 +215,7 @@ class TestComputationConfig:
 
         assert config.compile_model is False
         assert config.compile_mode == "default"
-        assert config.compile_dynamic is False
+        assert config.compile_dynamic is True  # PA-1c: PyG guidance for varying graph sizes
         assert config.cudnn_benchmark is True
         assert config.cudnn_deterministic is False
         assert config.use_tf32 is True
@@ -259,7 +259,7 @@ class TestComputationConfig:
         assert isinstance(result, dict)
         assert result["compile_model"] is True
         assert result["compile_mode"] == "reduce-overhead"
-        assert result["compile_dynamic"] is False
+        assert result["compile_dynamic"] is True  # PA-1c default
         assert result["cudnn_benchmark"] is True
         assert result["cudnn_deterministic"] is False
         assert result["use_tf32"] is True
@@ -402,7 +402,7 @@ class TestComputationConfig:
 
         # Default fields should have their default values
         assert config.compile_mode == "default"
-        assert config.compile_dynamic is False
+        assert config.compile_dynamic is True  # PA-1c default
         assert config.cudnn_benchmark is True
         assert config.cudnn_deterministic is False
         assert config.use_tf32 is True

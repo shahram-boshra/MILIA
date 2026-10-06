@@ -33,6 +33,7 @@ from functools import wraps
 from typing import Any
 
 import torch
+import torch._dynamo  # PA-1c: dynamo config (suppress_errors) checked before compiling
 import torch.nn as nn
 from pydantic import BaseModel
 
@@ -78,7 +79,9 @@ class ComputationConfig(BaseModel):
     Attributes:
         compile_model: Enable torch.compile (PyTorch 2.0+)
         compile_mode: Compilation mode (default, reduce-overhead, max-autotune)
-        compile_dynamic: Enable dynamic shapes in compilation
+        compile_dynamic: torch.compile ``dynamic`` — True (default, PA-1c) builds shape-generic
+            kernels, as PyG recommends for mini-batches of varying graph sizes; False always
+            specializes (recompiles per new shape, eager after the recompile limit); None = auto
         cudnn_benchmark: Enable cuDNN benchmark mode
         cudnn_deterministic: Enable deterministic operations
         use_tf32: Enable TensorFloat-32 on Ampere+ GPUs
@@ -89,8 +92,8 @@ class ComputationConfig(BaseModel):
     """
 
     compile_model: bool = False
-    compile_mode: str = "default"  # default, reduce-overhead, max-autotune
-    compile_dynamic: bool = False
+    compile_mode: str = "default"  # default, reduce-overhead, max-autotune(-no-cudagraphs)
+    compile_dynamic: bool | None = True
     cudnn_benchmark: bool = True
     cudnn_deterministic: bool = False
     use_tf32: bool = True
@@ -144,7 +147,7 @@ class ComputationOptimizer:
         self,
         compile_model: bool = False,
         compile_mode: str = "default",
-        compile_dynamic: bool = False,
+        compile_dynamic: bool | None = True,
         cudnn_benchmark: bool = True,
         cudnn_deterministic: bool = False,
         use_tf32: bool = True,
@@ -272,6 +275,19 @@ class ComputationOptimizer:
         mode = mode or self.config.compile_mode
         dynamic = dynamic if dynamic is not None else self.config.compile_dynamic
 
+        # PA-1c (explicit failure): compilation is lazy — it runs at the first forward and raises
+        # there (torch 2.4: torch._dynamo.config.suppress_errors defaults to False). With
+        # TORCHDYNAMO_SUPPRESS_ERRORS set, dynamo would instead fall back to eager silently, so a
+        # requested compile could quietly never happen; refuse that configuration.
+        if torch._dynamo.config.suppress_errors:
+            raise OptimizationError(
+                "torch.compile requested, but torch._dynamo.config.suppress_errors is enabled "
+                "(TORCHDYNAMO_SUPPRESS_ERRORS): compilation errors would silently fall back to "
+                "eager. Unset it, or disable computation.compile_model."
+            )
+
+        # Construction-time errors (e.g. an unrecognized mode) raise here; compilation errors
+        # raise at the first forward call.
         try:
             compiled_model = torch.compile(
                 model, mode=mode, dynamic=dynamic, fullgraph=fullgraph, backend=backend
