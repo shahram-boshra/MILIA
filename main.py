@@ -3927,6 +3927,14 @@ def _run_standard_training(
         # DYNAMIC: _get_loss_function now auto-selects appropriate loss based on task_type
         # This prevents dtype mismatch errors between loss functions and targets
 
+        # 6.4 Acceleration from models.acceleration (PA-1e / F42): None when disabled → unchanged.
+        # The Trainer receives the optimized (device-placed, optionally compiled) model; `model`
+        # stays the original module, so later saves keep standard state_dict keys.
+        from milia_pipeline.models.acceleration.config_builder import build_acceleration
+
+        acceleration = build_acceleration(models_config)
+        train_model = acceleration.optimize_model(model) if acceleration is not None else model
+
         loss_fn = _get_loss_function(training_config, task_type=task_type)
         optimizer = _get_optimizer(model, training_config)
         scheduler = _get_scheduler(optimizer, training_config)
@@ -3976,7 +3984,7 @@ def _run_standard_training(
 
         # 7. Create trainer with model_info for target selection
         trainer = Trainer(
-            model=model,
+            model=train_model,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
@@ -3987,6 +3995,7 @@ def _run_standard_training(
             callbacks=callbacks,
             model_info=model_info,  # NEW: Pass model_info for target selection
             metrics=metrics,  # NEW: Pass metrics for evaluation
+            acceleration=acceleration,  # PA-1e: AMP via the manager (None = unchanged)
         )
 
         # 8. Check for checkpoint resume

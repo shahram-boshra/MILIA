@@ -35,6 +35,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
+from .module_utils import unwrap_compiled
+
 if TYPE_CHECKING:
     # Type-only: models.acceleration imports this module (_safe_torch_load), so a runtime
     # import here would be circular. The Trainer only calls the passed object's methods.
@@ -509,6 +511,17 @@ class Trainer:
             self._on_train_end()
             raise TrainingError(f"Training failed: {e}") from e
 
+    @property
+    def unwrapped_model(self) -> nn.Module:
+        """The module whose parameters are trained, without a ``torch.compile`` wrapper (PA-1e).
+
+        ``torch.compile`` returns an ``OptimizedModule`` holding the original as child
+        ``_orig_mod``; its ``state_dict()`` keys are therefore prefixed ``_orig_mod.``. Both share
+        the same parameters, so checkpoints are saved from and loaded into this module, keeping
+        them loadable by an uncompiled model.
+        """
+        return unwrap_compiled(self.model)
+
     def _train_autocast(self):
         """Autocast context for a training step: the AccelerationManager's, or a no-op (PA-1b)."""
         if self.acceleration is None:
@@ -935,7 +948,9 @@ class Trainer:
         """
         # Explicit opt-in: the CLASS must declare the marker (`is True`), so proxies whose every
         # attribute is truthy (e.g. mocks) never receive the keyword; the count must be an int.
-        if getattr(type(self.model), "accepts_num_graphs", False) is not True:
+        # The compiled wrapper (OptimizedModule) forwards calls to the original, so the marker is
+        # read from the unwrapped module's class (PA-1e).
+        if getattr(type(self.unwrapped_model), "accepts_num_graphs", False) is not True:
             return {}
         num_graphs = getattr(batch, "num_graphs", None)
         return {"num_graphs": num_graphs} if isinstance(num_graphs, int) else {}
@@ -1898,7 +1913,8 @@ class Trainer:
             checkpoint = {
                 "epoch": self.current_epoch,
                 "global_step": self.global_step,
-                "model_state_dict": self.model.state_dict(),
+                # PA-1e: unwrapped → keys loadable by an uncompiled model
+                "model_state_dict": self.unwrapped_model.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
                 "metrics_history": dict(self.metrics_history),
                 "best_val_loss": self.best_val_loss,
@@ -2036,7 +2052,8 @@ class Trainer:
             # =================================================================
             # LOAD TRAINING STATE (Unchanged - backward compatible)
             # =================================================================
-            self.model.load_state_dict(checkpoint["model_state_dict"])
+            # PA-1e: into the unwrapped module (shares parameters with a compiled wrapper)
+            self.unwrapped_model.load_state_dict(checkpoint["model_state_dict"])
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
             if "scheduler_state_dict" in checkpoint and self.scheduler is not None:

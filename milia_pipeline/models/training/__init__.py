@@ -94,7 +94,11 @@ Module Structure:
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    # Type-only (models.acceleration imports the training package): no runtime cycle.
+    from milia_pipeline.models.acceleration import AccelerationManager
 
 logger = logging.getLogger(__name__)
 
@@ -392,6 +396,7 @@ def create_training_pipeline(
     enable_tensorboard: bool = False,
     tensorboard_log_dir: str | None = None,
     device: str | None = None,
+    acceleration: "AccelerationManager | None" = None,
 ) -> tuple["Trainer", dict[str, Any]]:
     """
     Create a complete training pipeline with sensible defaults.
@@ -420,6 +425,9 @@ def create_training_pipeline(
         enable_tensorboard: Enable TensorBoard logging (default: False)
         tensorboard_log_dir: TensorBoard log directory (default: None)
         device: Device to use (default: auto-detect)
+        acceleration: Optional AccelerationManager (PA-1e), e.g. from
+            ``build_acceleration(models_config)``; the model is optimized before the optimizer
+            is built and the manager is passed to the Trainer. None leaves training unchanged.
 
     Returns:
         Tuple of (trainer, info_dict) where info_dict contains component details
@@ -451,6 +459,9 @@ def create_training_pipeline(
     info["loss"] = loss_name
 
     # Setup optimizer
+    # PA-1e: device placement / compile first — must precede optimizer construction
+    train_model = acceleration.optimize_model(model) if acceleration is not None else model
+
     optimizer = get_optimizer(optimizer_name, model.parameters(), optimizer_params)
     info["optimizer"] = optimizer_name
     info["optimizer_params"] = optimizer_params
@@ -520,15 +531,18 @@ def create_training_pipeline(
 
     info["callbacks"] = callbacks
 
-    # Determine device
-    if device is None:
-        device_obj = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    else:
+    # Determine device. With an AccelerationManager and no explicit device, the manager's device
+    # is authoritative (the Trainer takes it); an explicit device must then agree (PA-1b check).
+    if device is not None:
         device_obj = torch.device(device)
+    elif acceleration is not None:
+        device_obj = None
+    else:
+        device_obj = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create trainer
     trainer = Trainer(
-        model=model,
+        model=train_model,
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
@@ -538,6 +552,7 @@ def create_training_pipeline(
         device=device_obj,
         callbacks=callbacks,
         max_epochs=max_epochs,
+        acceleration=acceleration,
     )
 
     logger.info(

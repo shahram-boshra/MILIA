@@ -15,6 +15,8 @@ from typing import Any
 
 import torch
 
+from .module_utils import unwrap_compiled
+
 # Import exceptions with fallback
 try:
     from milia_pipeline.exceptions import CheckpointError
@@ -538,7 +540,8 @@ class ModelCheckpoint(Callback):
         checkpoint = {
             "epoch": epoch,
             "global_step": trainer.global_step,
-            "model_state_dict": trainer.model.state_dict(),
+            # PA-1e: unwrapped → keys loadable by an uncompiled model
+            "model_state_dict": unwrap_compiled(trainer.model).state_dict(),
             "optimizer_state_dict": trainer.optimizer.state_dict(),
             "metrics_history": dict(trainer.metrics_history),
             "best_val_loss": trainer.best_val_loss,

@@ -1307,6 +1307,15 @@ class HPOManager:
         models_config = config_dict or {}  # Default to empty dict if None
         filtered_search_space = self._filtered_search_space  # Capture for closure
 
+        # PA-1e (F42): validate models.acceleration once — an invalid section fails the run here,
+        # not every trial (Optuna records objective exceptions as failed trials and continues).
+        from milia_pipeline.models.acceleration.config_builder import (
+            build_acceleration,
+            load_acceleration_config,
+        )
+
+        load_acceleration_config(models_config)
+
         def objective(trial) -> float:
             """Objective function for single trial."""
             trial_number = trial.number
@@ -1458,6 +1467,7 @@ class HPOManager:
                         discretize_config=discretize_config,
                         target_selection_config=target_selection_config,  # Pass to CV
                         trial=trial,
+                        models_config=models_config,  # PA-1e: per-fold acceleration
                     )
                 # -------
                 else:
@@ -1529,6 +1539,12 @@ class HPOManager:
                         val_data_prepared, batch_size=batch_size, shuffle=False
                     )
 
+                    # PA-1e: a fresh manager per trial (None when disabled → unchanged)
+                    acceleration = build_acceleration(models_config)
+                    train_model = (
+                        acceleration.optimize_model(model) if acceleration is not None else model
+                    )
+
                     # Create optimizer using registry (handles param filtering automatically)
                     optimizer = _create_optimizer_from_registry(
                         model.parameters(), optimizer_params
@@ -1548,7 +1564,7 @@ class HPOManager:
 
                     # Create trainer with all required components
                     trainer = Trainer(
-                        model=model,
+                        model=train_model,
                         train_loader=train_loader,
                         val_loader=val_loader,
                         optimizer=optimizer,
@@ -1558,6 +1574,7 @@ class HPOManager:
                         callbacks=all_callbacks,
                         hpo_callback=hpo_callback,
                         model_info=model_info,
+                        acceleration=acceleration,
                     )
 
                     # Train model
@@ -2317,6 +2334,13 @@ class HPOManager:
         # =================================================================
         # 8. CREATE LOSS, OPTIMIZER, SCHEDULER USING REGISTRIES
         # =================================================================
+        # PA-1e: acceleration first — optimize_model moves the model to its device, which must
+        # precede optimizer construction (torch.optim docs). None when disabled → unchanged.
+        from milia_pipeline.models.acceleration.config_builder import build_acceleration
+
+        acceleration = build_acceleration(config_dict)
+        train_model = acceleration.optimize_model(model) if acceleration is not None else model
+
         # Uses the refactored registries with automatic parameter filtering
         loss_fn = _create_loss_from_registry(task_type, loss_params)
 
@@ -2354,7 +2378,7 @@ class HPOManager:
         # 10. CREATE TRAINER AND TRAIN
         # =================================================================
         trainer = Trainer(
-            model=model,
+            model=train_model,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
@@ -2364,6 +2388,7 @@ class HPOManager:
             max_epochs=final_epochs,
             callbacks=callbacks,
             model_info=model_info,
+            acceleration=acceleration,
         )
 
         logger.info(f"Starting final model training for {final_epochs} epochs...")
@@ -2715,6 +2740,7 @@ def _run_cross_validation(
     target_selection_config: TargetSelectionConfig | None = None,
     *,
     trial: Any | None = None,
+    models_config: dict[str, Any] | None = None,
 ) -> float:
     """
     Run k-fold cross-validation for a trial.
@@ -2804,6 +2830,12 @@ def _run_cross_validation(
         val_loader = PyGDataLoader(val_subset, batch_size=batch_size, shuffle=False)
         # -------
 
+        # PA-1e: a fresh manager per fold (each fold is its own training run; None = unchanged)
+        from milia_pipeline.models.acceleration.config_builder import build_acceleration
+
+        acceleration = build_acceleration(models_config)
+        train_model = acceleration.optimize_model(model) if acceleration is not None else model
+
         # Create optimizer using registry (handles param filtering automatically)
         optimizer = _create_optimizer_from_registry(model.parameters(), optimizer_params)
 
@@ -2818,7 +2850,7 @@ def _run_cross_validation(
 
         # Create trainer with all required components
         trainer = Trainer(
-            model=model,
+            model=train_model,
             train_loader=train_loader,
             val_loader=val_loader,
             optimizer=optimizer,
@@ -2827,6 +2859,7 @@ def _run_cross_validation(
             max_epochs=max_epochs,
             callbacks=callbacks.copy(),
             model_info=model_info,
+            acceleration=acceleration,
         )
 
         # Train model
