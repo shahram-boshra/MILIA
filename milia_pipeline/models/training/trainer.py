@@ -37,6 +37,36 @@ from torch_geometric.data import Batch, Data
 
 from .module_utils import unwrap_compiled
 
+
+class _DeviceLossSum:
+    """Sum of per-batch losses kept on the device; one host read per epoch (PA-3).
+
+    ``loss.item()`` per batch forces a device→host synchronization on every step. The running sum
+    is instead accumulated on the loss's device and read once. It uses float64 — the precision of
+    the Python floats it replaces, so epoch means are bit-identical — except on MPS, which has no
+    float64 support (float32 is used there). Losses are detached so no graph is retained.
+    """
+
+    @staticmethod
+    def accumulator_dtype(device: torch.device | str) -> torch.dtype:
+        """float64 (the precision of Python floats) unless the device lacks it (MPS → float32)."""
+        return torch.float32 if torch.device(device).type == "mps" else torch.float64
+
+    def __init__(self, device: torch.device | str) -> None:
+        self._sum = torch.zeros(
+            (), dtype=self.accumulator_dtype(device), device=torch.device(device)
+        )
+        self.count = 0
+
+    def add(self, loss: torch.Tensor, scale: int | float = 1) -> None:
+        self._sum += loss.detach().to(self._sum.dtype) * scale
+        self.count += 1
+
+    def mean(self, empty: float) -> float:
+        """Mean over added batches (one host sync), or ``empty`` when nothing was added."""
+        return self._sum.item() / self.count if self.count else empty
+
+
 if TYPE_CHECKING:
     # Type-only: models.acceleration imports this module (_safe_torch_load), so a runtime
     # import here would be circular. The Trainer only calls the passed object's methods.
@@ -539,8 +569,7 @@ class Trainer:
         logger.debug("[DIAGNOSTIC] _train_epoch: Calling model.train()")
         self.model.train()
         logger.debug("[DIAGNOSTIC] _train_epoch: model.train() completed")
-        epoch_loss = 0.0
-        num_batches = 0
+        loss_sum = _DeviceLossSum(self.device)  # PA-3: no per-batch host sync
 
         # Zero gradients at start
         logger.debug("[DIAGNOSTIC] _train_epoch: Calling optimizer.zero_grad()")
@@ -595,13 +624,15 @@ class Trainer:
                             self.optimizer.step()
                         self.optimizer.zero_grad()
 
-                    # Track metrics
-                    epoch_loss += loss.item() * self.accumulate_grad_batches
-                    num_batches += 1
+                    # Track metrics (on device; unscaled by the accumulation factor)
+                    loss_sum.add(loss, scale=self.accumulate_grad_batches)
                     self.global_step += 1
 
-                    # Logging
-                    if batch_idx % self.log_every_n_steps == 0:
+                    # Logging — the f-string reads the loss (a host sync), so it is built only when
+                    # DEBUG is actually enabled (Python logging HOWTO: avoid expensive arguments)
+                    if batch_idx % self.log_every_n_steps == 0 and logger.isEnabledFor(
+                        logging.DEBUG
+                    ):
                         logger.debug(
                             f"Epoch {self.current_epoch} | "
                             f"Batch {batch_idx}/{len(self.train_loader)} | "
@@ -619,7 +650,7 @@ class Trainer:
             logger.debug(f"[DIAGNOSTIC] Full traceback:\n{traceback.format_exc()}")
             raise
 
-        avg_loss = epoch_loss / num_batches if num_batches > 0 else 0.0
+        avg_loss = loss_sum.mean(empty=0.0)
         return {"train_loss": avg_loss}
 
     @torch.no_grad()
@@ -637,8 +668,7 @@ class Trainer:
             Dictionary with validation metrics (val_loss, val_mse, val_mae, etc.)
         """
         self.model.eval()
-        epoch_loss = 0.0
-        num_batches = 0
+        loss_sum = _DeviceLossSum(self.device)  # PA-3: no per-batch host sync
 
         # Collect all predictions and targets for metric computation
         all_preds = []
@@ -656,8 +686,7 @@ class Trainer:
                 # Get appropriate target based on task type
                 target = self._get_target(batch)
                 loss = self.loss_fn(out, target)
-                epoch_loss += loss.item()
-                num_batches += 1
+                loss_sum.add(loss)
 
                 # Collect predictions and targets for metrics
                 all_preds.append(out.detach())
@@ -674,7 +703,7 @@ class Trainer:
                 logger.warning(f"Error in validation batch: {e}")
                 continue
 
-        avg_loss = epoch_loss / num_batches if num_batches > 0 else float("inf")
+        avg_loss = loss_sum.mean(empty=float("inf"))
         results = {"val_loss": avg_loss}
 
         # Compute final metric values
@@ -726,8 +755,7 @@ class Trainer:
             return {}
 
         self.model.eval()
-        test_loss = 0.0
-        num_batches = 0
+        loss_sum = _DeviceLossSum(self.device)  # PA-3: no per-batch host sync
 
         # Collect all predictions and targets for metric computation
         all_preds = []
@@ -745,8 +773,7 @@ class Trainer:
                 # Get appropriate target based on task type
                 target = self._get_target(batch)
                 loss = self.loss_fn(out, target)
-                test_loss += loss.item()
-                num_batches += 1
+                loss_sum.add(loss)
 
                 # Collect predictions and targets for metrics
                 all_preds.append(out.detach())
@@ -763,7 +790,7 @@ class Trainer:
                 logger.warning(f"Error in test batch: {e}")
                 continue
 
-        avg_loss = test_loss / num_batches if num_batches > 0 else float("inf")
+        avg_loss = loss_sum.mean(empty=float("inf"))
         results = {"test_loss": avg_loss}
 
         # Compute final metric values
