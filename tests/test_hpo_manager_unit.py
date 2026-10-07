@@ -192,6 +192,13 @@ class MockStudyConfig:
     storage: str | None = None
     load_if_exists: bool = True
     metric: str = "val_loss"
+    storage_options: Any = None
+
+    def resolve_storage_url(self, environ=None) -> str | None:
+        """Mirror of ``StudyConfig.resolve_storage_url`` (P2-1)."""
+        if self.storage_options is not None:
+            return self.storage_options.resolve_url(environ)
+        return self.storage
 
 
 @dataclass

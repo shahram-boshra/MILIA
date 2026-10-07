@@ -21,10 +21,15 @@ Author: Milia Team
 Version: 1.1.0
 """
 
+import os
+import re
+from collections.abc import Mapping
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from milia_pipeline.exceptions import HPOConfigurationError
 
 # =============================================================================
 # PARAMETER TYPE IMPORTS (Single Source of Truth)
@@ -299,6 +304,72 @@ class OptimizationDirection(Enum):
     MAXIMIZE = "maximize"
 
 
+# Portable environment-variable name (POSIX.1-2024 Base Definitions §8.1): letters, digits and
+# underscore, not beginning with a digit. Shared with config_bridge by value (parity-tested, P2-1).
+_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+class StorageConfig(BaseModel):
+    """
+    Typed study-storage selection (P2-1, S1; additive to ``StudyConfig.storage``).
+
+    The storage URL is read from the environment variable named by ``url_env`` when the study is
+    created (Twelve-Factor §III): credentials never appear in YAML, and the resolved URL is never
+    stored on the model, so ``model_dump()`` / ``to_dict()`` carry only the variable name.
+
+    ``kind`` is the discriminator for storage backends. Only ``"rdb"`` (any SQLAlchemy URL accepted by
+    ``optuna.storages.RDBStorage``) is available; further kinds are added together with the code that
+    builds them.
+
+    Attributes:
+        kind: Storage backend kind
+        url_env: Name of the environment variable holding the storage URL
+
+    Examples:
+        >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL")
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: Literal["rdb"]
+    url_env: str
+
+    @field_validator("url_env")
+    @classmethod
+    def validate_url_env(cls, v: str) -> str:
+        """Validate ``url_env`` is a portable environment-variable name."""
+        if not _ENV_VAR_NAME.fullmatch(v):
+            raise ValueError(
+                f"url_env must be an environment variable name (letters, digits, '_', not starting "
+                f"with a digit), got '{v}'"
+            )
+        return v
+
+    def resolve_url(self, environ: Mapping[str, str] | None = None) -> str:
+        """Return the storage URL from the environment at call time.
+
+        Args:
+            environ: Environment mapping (defaults to ``os.environ``)
+
+        Raises:
+            HPOConfigurationError: The variable is unset or empty (the message names the variable,
+                never a value)
+        """
+        env = os.environ if environ is None else environ
+        url = env.get(self.url_env)
+        if not url:
+            raise HPOConfigurationError(
+                f"Storage URL environment variable '{self.url_env}' is not set or empty",
+                config_key="models.hpo.study.storage_options.url_env",
+                details=f"Export {self.url_env} with the storage URL before starting HPO",
+            )
+        return url
+
+    def to_dict(self) -> dict[str, Any]:
+        """Backward compatible dict conversion."""
+        return self.model_dump()
+
+
 class StudyConfig(BaseModel, frozen=True):
     """
     Optuna study configuration for single-objective optimization.
@@ -313,6 +384,8 @@ class StudyConfig(BaseModel, frozen=True):
         metric: Metric name to optimize (must match Trainer output keys)
         study_name: Name for the study (used for persistence and identification)
         storage: Storage URL (None for in-memory, "sqlite:///file.db" for persistence)
+        storage_options: Typed storage selection (URL from an environment variable); mutually
+            exclusive with ``storage`` (P2-1)
         load_if_exists: Whether to resume existing study with same name
 
     Examples:
@@ -331,6 +404,7 @@ class StudyConfig(BaseModel, frozen=True):
     metric: str = "val_loss"
     study_name: str = "milia_hpo"
     storage: str | None = None
+    storage_options: StorageConfig | None = None
     load_if_exists: bool = True
 
     @field_validator("metric")
@@ -340,6 +414,32 @@ class StudyConfig(BaseModel, frozen=True):
         if not v:
             raise ValueError("metric cannot be empty")
         return v
+
+    @model_validator(mode="after")
+    def validate_single_storage_source(self) -> "StudyConfig":
+        """Reject ``storage`` and ``storage_options`` together: one source for the storage URL."""
+        if self.storage is not None and self.storage_options is not None:
+            raise ValueError(
+                "Set either study.storage (URL) or study.storage_options (URL from an environment "
+                "variable), not both"
+            )
+        return self
+
+    @property
+    def has_persistent_storage(self) -> bool:
+        """Whether a persistent storage is configured (``storage`` or ``storage_options``)."""
+        return self.storage is not None or self.storage_options is not None
+
+    def resolve_storage_url(self, environ: Mapping[str, str] | None = None) -> str | None:
+        """Return the storage URL for this run: ``storage``, the URL resolved from
+        ``storage_options`` at call time, or ``None`` (in-memory).
+
+        Raises:
+            HPOConfigurationError: ``storage_options`` names an unset or empty variable
+        """
+        if self.storage_options is not None:
+            return self.storage_options.resolve_url(environ)
+        return self.storage
 
     @field_validator("study_name")
     @classmethod
@@ -676,6 +776,7 @@ __all__ = [
     "SamplerType",
     "SamplerConfig",
     "OptimizationDirection",
+    "StorageConfig",
     "StudyConfig",
     "MultiObjectiveStudyConfig",
     "HPOConfig",

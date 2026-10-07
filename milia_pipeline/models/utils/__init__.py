@@ -65,6 +65,7 @@ from .config_bridge import (
     HPOSamplerConfigBridge,
     HPOSamplerType,
     HPOSearchSpaceParamBridge,
+    HPOStorageConfigBridge,
     HPOStudyConfigBridge,
     LoggingConfig,
     LossConfig,
@@ -192,6 +193,7 @@ __all__ = [
     "HPOSearchSpaceParamBridge",
     "HPOPrunerConfigBridge",
     "HPOSamplerConfigBridge",
+    "HPOStorageConfigBridge",
     "HPOStudyConfigBridge",
     # Configuration accessor functions
     "get_models_config",

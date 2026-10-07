@@ -21,12 +21,13 @@ Version: 1.1.0
 
 import importlib.util
 import logging
+import re
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Import config loader
 try:
@@ -246,6 +247,9 @@ def _parse_hpo_enum(enum_cls: type[Enum], value: Any, key: str, excluded: Any = 
 # ``test_{sampler,backend}_acceptance_matches_hpo_config`` pin behavioural parity.
 _UNSUPPORTED_HPO_SAMPLERS: frozenset[HPOSamplerType] = frozenset({HPOSamplerType.MOTPE})
 _SUPPORTED_HPO_BACKENDS: tuple[str, ...] = ("optuna",)
+# Portable environment-variable name (POSIX.1-2024 §8.1), same rule as ``hpo_config.StorageConfig``
+# (P2-1); ``test_storage_options_acceptance_matches_hpo_config`` pins behavioural parity.
+_HPO_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 # =============================================================================
@@ -965,6 +969,35 @@ class HPOSamplerConfigBridge(BaseModel):
     constant_liar: bool = False
 
 
+class HPOStorageConfigBridge(BaseModel):
+    """
+    Bridge class for HPO study storage selection (P2-1).
+
+    Mirrors ``hpo_config.StorageConfig`` acceptance (kept local: this module never imports the HPO
+    package). The URL itself is resolved only by the execution path (``StudyConfig.resolve_storage_url``).
+
+    Attributes:
+        kind: Storage backend kind ("rdb")
+        url_env: Name of the environment variable holding the storage URL
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: Literal["rdb"]
+    url_env: str
+
+    @field_validator("url_env")
+    @classmethod
+    def validate_url_env(cls, v: str) -> str:
+        """Validate ``url_env`` is a portable environment-variable name."""
+        if not _HPO_ENV_VAR_NAME.fullmatch(v):
+            raise ValueError(
+                f"url_env must be an environment variable name (letters, digits, '_', not starting "
+                f"with a digit), got '{v}'"
+            )
+        return v
+
+
 class HPOStudyConfigBridge(BaseModel):
     """
     Bridge class for HPO study configuration.
@@ -976,6 +1009,7 @@ class HPOStudyConfigBridge(BaseModel):
         metric: Metric name to optimize (must match Trainer output)
         study_name: Name for the study (for persistence)
         storage: Storage URL (None for in-memory, "sqlite:///file.db" for persistence)
+        storage_options: Storage URL from an environment variable; exclusive with ``storage`` (P2-1)
         load_if_exists: Whether to resume existing study
     """
 
@@ -983,7 +1017,18 @@ class HPOStudyConfigBridge(BaseModel):
     metric: str = "val_loss"
     study_name: str = "milia_hpo"
     storage: str | None = None
+    storage_options: HPOStorageConfigBridge | None = None
     load_if_exists: bool = True
+
+    @model_validator(mode="after")
+    def validate_single_storage_source(self) -> "HPOStudyConfigBridge":
+        """Reject ``storage`` and ``storage_options`` together (same rule as ``StudyConfig``)."""
+        if self.storage is not None and self.storage_options is not None:
+            raise ValueError(
+                "Set either study.storage (URL) or study.storage_options (URL from an environment "
+                "variable), not both"
+            )
+        return self
 
 
 class HPOConfigBridge(BaseModel):
@@ -1478,6 +1523,7 @@ class ModelConfig(BaseModel):
             metric=study_dict.get("metric", "val_loss"),
             study_name=study_dict.get("study_name", "milia_hpo"),
             storage=study_dict.get("storage"),
+            storage_options=study_dict.get("storage_options"),
             load_if_exists=study_dict.get("load_if_exists", True),
         )
 
@@ -1735,6 +1781,7 @@ __all__ = [
     "HPOSearchSpaceParamBridge",
     "HPOPrunerConfigBridge",
     "HPOSamplerConfigBridge",
+    "HPOStorageConfigBridge",
     "HPOStudyConfigBridge",
     # Accessor functions
     "get_models_config",

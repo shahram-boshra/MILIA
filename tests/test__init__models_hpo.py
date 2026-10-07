@@ -212,6 +212,7 @@ class TestSmokeConfigClassExports:
         "SearchSpaceParamConfig",
         "PrunerConfig",
         "SamplerConfig",
+        "StorageConfig",
         "StudyConfig",
         "MultiObjectiveStudyConfig",
     ]
@@ -838,6 +839,7 @@ class TestContractConfigDataclassTypes:
         "SearchSpaceParamConfig",
         "PrunerConfig",
         "SamplerConfig",
+        "StorageConfig",
         "StudyConfig",
         "MultiObjectiveStudyConfig",
     ]

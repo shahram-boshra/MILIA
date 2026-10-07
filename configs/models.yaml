@@ -902,6 +902,9 @@ models:
                                       # "sqlite:///hpo_results.db" for persistence (and --resume-study)
                                       # SQLite: one process only — parallel/multi-node HPO needs an
                                       # RDB server (e.g. PostgreSQL), not SQLite
+      # storage_options:              # Alternative to `storage` (never both): URL read from an
+      #   kind: "rdb"                 # environment variable when HPO starts, so credentials stay out
+      #   url_env: "MILIA_HPO_STORAGE_URL"   # of YAML; unset/empty variable → configuration error
       load_if_exists: true            # Resume existing study
 
     # =========================================================================

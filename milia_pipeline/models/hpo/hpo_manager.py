@@ -1139,7 +1139,8 @@ class HPOManager:
             callbacks=callbacks,
             config_dict=config_dict,
             study_name=self.config.study.study_name,
-            storage=self.config.study.storage,
+            # P2-1: URL from study.storage, or read now from storage_options.url_env (never stored)
+            storage=self.config.study.resolve_storage_url(),
             load_if_exists=self.config.study.load_if_exists,
             n_trials=self.config.n_trials,
         )

@@ -2345,8 +2345,10 @@ class TestHPOTraining(unittest.TestCase):
         self, mock_save, mock_manager_cls, mock_hpo_config
     ):
         """P1-2c: --resume-study continues that study (its storage, n_trials more trials)."""
+        from milia_pipeline.models.hpo.hpo_config import StudyConfig
+
         mock_hpo_config.from_dict.return_value = Mock(
-            n_trials=5, study=Mock(storage="sqlite:///hpo.db")
+            n_trials=5, study=StudyConfig(storage="sqlite:///hpo.db")
         )
         mock_manager = Mock()
         mock_manager.resume_study.return_value = {"learning_rate": 0.01}
@@ -2423,7 +2425,9 @@ class TestHPOTraining(unittest.TestCase):
         self, mock_manager_cls, mock_hpo_config
     ):
         """P1-2c: --resume-study without persistent storage fails fast, before any optimization."""
-        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=Mock(storage=None))
+        from milia_pipeline.models.hpo.hpo_config import StudyConfig
+
+        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=StudyConfig(storage=None))
         mock_manager = Mock()
         mock_manager_cls.return_value = mock_manager
         self.mock_args.resume_study = "prior_study"
@@ -2431,6 +2435,53 @@ class TestHPOTraining(unittest.TestCase):
         result = _run_hpo_training(
             self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
         )
+
+        self.assertEqual(result, 1)
+        mock_manager.optimize.assert_not_called()
+        mock_manager.resume_study.assert_not_called()
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
+    @patch("main._save_hpo_results")
+    def test_run_hpo_training_resume_study_uses_url_from_storage_options(
+        self, mock_save, mock_manager_cls, mock_hpo_config
+    ):
+        """P2-1: --resume-study resolves the URL from storage_options.url_env at run time."""
+        from milia_pipeline.models.hpo.hpo_config import StorageConfig, StudyConfig
+
+        study = StudyConfig(storage_options=StorageConfig(kind="rdb", url_env="MILIA_TEST_HPO_URL"))
+        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=study)
+        mock_manager = Mock()
+        mock_manager.resume_study.return_value = {"learning_rate": 0.01}
+        mock_manager.get_best_value.return_value = 0.1
+        mock_manager_cls.return_value = mock_manager
+        self.mock_args.resume_study = "prior_study"
+
+        with patch.dict(os.environ, {"MILIA_TEST_HPO_URL": "sqlite:///from_env.db"}):
+            result = _run_hpo_training(
+                self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
+            )
+
+        self.assertEqual(result, 0)
+        call = mock_manager.resume_study.call_args
+        self.assertEqual(call.args[:2], ("prior_study", "sqlite:///from_env.db"))
+
+    @patch("main.HPOConfig")
+    @patch("main.HPOManager")
+    def test_run_hpo_training_unset_storage_env_fails_fast(self, mock_manager_cls, mock_hpo_config):
+        """P2-1: an unset url_env fails before dataset/model preparation and any optimization."""
+        from milia_pipeline.models.hpo.hpo_config import StorageConfig, StudyConfig
+
+        study = StudyConfig(storage_options=StorageConfig(kind="rdb", url_env="MILIA_TEST_HPO_URL"))
+        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=study)
+        mock_manager = Mock()
+        mock_manager_cls.return_value = mock_manager
+
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MILIA_TEST_HPO_URL", None)
+            result = _run_hpo_training(
+                self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
+            )
 
         self.assertEqual(result, 1)
         mock_manager.optimize.assert_not_called()

@@ -4273,14 +4273,17 @@ def _run_hpo_training(
 
         # 5. Resume study if requested (P1-2c): continue the named study from persistent storage.
         #    Validated before dataset/model preparation so a misconfiguration fails fast.
+        #    P2-1: a storage URL taken from storage_options.url_env is resolved here too, so an unset
+        #    variable fails before dataset/model preparation (HPOConfigurationError, an HPOError).
+        storage_url = hpo_config.study.resolve_storage_url()
         resume_study_name = getattr(args, "resume_study", None)
         if resume_study_name:
-            if hpo_config.study.storage is None:
+            if storage_url is None:
                 raise HPOError(
                     f"--resume-study '{resume_study_name}' requires persistent storage",
                     details=(
-                        "Set models.hpo.study.storage (e.g. sqlite:///optuna.db) to the storage "
-                        "that holds the study"
+                        "Set models.hpo.study.storage (e.g. sqlite:///optuna.db) or "
+                        "models.hpo.study.storage_options to the storage that holds the study"
                     ),
                 )
             logger.info(f"Resuming study: {resume_study_name}")
@@ -4365,7 +4368,7 @@ def _run_hpo_training(
             )
             best_params = manager.resume_study(
                 resume_study_name,
-                hpo_config.study.storage,
+                storage_url,
                 additional_trials=hpo_config.n_trials,
                 model_name=model_name,
                 dataset=dataset,

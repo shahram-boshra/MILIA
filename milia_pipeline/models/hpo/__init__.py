@@ -222,6 +222,7 @@ from .hpo_config import (
     SamplerType,
     # Nested configurations
     SearchSpaceParamConfig,
+    StorageConfig,
     StudyConfig,
 )
 
@@ -322,6 +323,7 @@ __all__ = [
     "SearchSpaceParamConfig",
     "PrunerConfig",
     "SamplerConfig",
+    "StorageConfig",
     "StudyConfig",
     "MultiObjectiveStudyConfig",
     # =========================================================================
@@ -478,6 +480,7 @@ def get_hpo_module_info() -> dict[str, Any]:
                 "SearchSpaceParamConfig",
                 "PrunerConfig",
                 "SamplerConfig",
+                "StorageConfig",
                 "StudyConfig",
                 "MultiObjectiveStudyConfig",
             ],

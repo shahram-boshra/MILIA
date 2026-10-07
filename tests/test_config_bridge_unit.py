@@ -1792,6 +1792,50 @@ class TestModelConfig:
         assert bridge_ok == gate_ok, f"backend '{backend}': bridge={bridge_ok}, HPOConfig={gate_ok}"
 
     @pytest.mark.parametrize(
+        "study",
+        [
+            {"storage_options": {"kind": "rdb", "url_env": "MILIA_HPO_STORAGE_URL"}},
+            {"storage_options": {"kind": "rdb", "url_env": "_lower_case_1"}},
+            {"storage_options": {"kind": "rdb", "url_env": "1STARTS_WITH_DIGIT"}},
+            {"storage_options": {"kind": "rdb", "url_env": "HAS-DASH"}},
+            {"storage_options": {"kind": "rdb", "url_env": ""}},
+            {"storage_options": {"kind": "rdb"}},
+            {"storage_options": {"kind": "journal_file", "url_env": "X"}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "engine_kwargs": {}}},
+            {"storage": "sqlite:///a.db", "storage_options": {"kind": "rdb", "url_env": "X"}},
+            {"storage": "sqlite:///a.db"},
+            {},
+        ],
+    )
+    def test_storage_options_acceptance_matches_hpo_config(self, study):
+        """P2-1: the bridge accepts a study storage selection iff the execution gate (HPOConfig) does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, "study": study},
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict({"study": study}))
+        assert bridge_ok == gate_ok, f"study {study}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+
+    def test_storage_options_parsed_into_bridge(self):
+        """P2-1: models.hpo.study.storage_options reaches the bridge view (variable name only)."""
+        config_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {
+                "enabled": False,
+                "study": {"storage_options": {"kind": "rdb", "url_env": "MILIA_HPO_STORAGE_URL"}},
+            },
+        }
+        study = ModelConfig.from_dict(config_dict).hpo.study
+        assert study.storage is None
+        assert study.storage_options.kind == "rdb"
+        assert study.storage_options.url_env == "MILIA_HPO_STORAGE_URL"
+
+    @pytest.mark.parametrize(
         ("hpo_section", "attribute_path", "expected"),
         [
             ({"sampler": {"type": "qmc"}}, ("sampler", "type"), "qmc"),
