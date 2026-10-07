@@ -88,7 +88,7 @@ class OptunaBackend:
         self,
         study_name: str,
         direction: str,
-        storage: str | None = None,
+        storage: "str | optuna.storages.BaseStorage | None" = None,
         load_if_exists: bool = True,
         sampler: Any | None = None,
         pruner: Any | None = None,
@@ -102,7 +102,8 @@ class OptunaBackend:
         Args:
             study_name: Name for the study
             direction: "minimize" or "maximize"
-            storage: Storage URL (e.g., "sqlite:///optuna.db")
+            storage: Storage URL (e.g., "sqlite:///optuna.db"), an ``optuna.storages.BaseStorage``
+                built by ``storage_factory.build_storage`` (P2-2a), or None for in-memory
             load_if_exists: Whether to resume existing study
             sampler: Optuna sampler instance
             pruner: Optuna pruner instance
@@ -162,7 +163,7 @@ class OptunaBackend:
     @staticmethod
     def _load_existing_study(
         study_name: str,
-        storage: str | None,
+        storage: "str | optuna.storages.BaseStorage | None",
         sampler: Any | None,
         pruner: Any | None,
     ) -> "optuna.Study":

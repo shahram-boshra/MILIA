@@ -324,6 +324,7 @@ try:
         HPOConfig,
         HPOManager,
     )
+    from milia_pipeline.models.hpo.backends import build_storage
 
     HPO_AVAILABLE = True
     HPO_IMPORT_ERROR = None
@@ -4275,10 +4276,11 @@ def _run_hpo_training(
         #    Validated before dataset/model preparation so a misconfiguration fails fast.
         #    P2-1: a storage URL taken from storage_options.url_env is resolved here too, so an unset
         #    variable fails before dataset/model preparation (HPOConfigurationError, an HPOError).
-        storage_url = hpo_config.study.resolve_storage_url()
+        hpo_config.study.resolve_storage_url()
         resume_study_name = getattr(args, "resume_study", None)
+        resume_storage = None
         if resume_study_name:
-            if storage_url is None:
+            if not hpo_config.study.has_persistent_storage:
                 raise HPOError(
                     f"--resume-study '{resume_study_name}' requires persistent storage",
                     details=(
@@ -4286,6 +4288,8 @@ def _run_hpo_training(
                         "models.hpo.study.storage_options to the storage that holds the study"
                     ),
                 )
+            # P2-2a: the storage (URL string, RDB or journal file) is built once, before data prep
+            resume_storage = build_storage(hpo_config.study)
             logger.info(f"Resuming study: {resume_study_name}")
 
         # For custom/ensemble modes, use the mode name
@@ -4368,7 +4372,7 @@ def _run_hpo_training(
             )
             best_params = manager.resume_study(
                 resume_study_name,
-                storage_url,
+                resume_storage,
                 additional_trials=hpo_config.n_trials,
                 model_name=model_name,
                 dataset=dataset,

@@ -38,7 +38,7 @@ class TestStorageConfig:
         with pytest.raises(ValidationError, match="url_env must be an environment variable name"):
             StorageConfig(kind="rdb", url_env=name)
 
-    @pytest.mark.parametrize("kind", ["journal_file", "inmemory", "grpc_proxy", "RDB"])
+    @pytest.mark.parametrize("kind", ["inmemory", "grpc_proxy", "RDB", "journal"])
     def test_rejects_kinds_without_an_implementation(self, kind):
         with pytest.raises(ValidationError):
             StorageConfig(kind=kind, url_env=ENV)
@@ -46,7 +46,7 @@ class TestStorageConfig:
     def test_rejects_unknown_fields(self):
         """Fields of later paces are not silently accepted (F46)."""
         with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
-            StorageConfig(kind="rdb", url_env=ENV, engine_kwargs={"pool_size": 5})
+            StorageConfig(kind="rdb", url_env=ENV, heartbeat_interval=60)
 
     def test_requires_kind_and_url_env(self):
         with pytest.raises(ValidationError):
@@ -75,6 +75,52 @@ class TestStorageConfig:
             _storage_options().resolve_url(environ)
         assert ENV in str(exc_info.value)
         assert exc_info.value.config_key == "models.hpo.study.storage_options.url_env"
+
+
+@pytest.mark.contract
+class TestStorageKindFields:
+    """P2-2a: each kind requires its own fields and rejects the fields of other kinds."""
+
+    def test_journal_file_accepted(self):
+        config = StorageConfig(kind="journal_file", journal_path="hpo_journal.log")
+        assert config.journal_path == "hpo_journal.log"
+        assert config.url_env is None
+
+    def test_rdb_accepts_engine_kwargs(self):
+        kwargs = {"pool_pre_ping": True, "connect_args": {"timeout": 30}}
+        assert StorageConfig(kind="rdb", url_env=ENV, engine_kwargs=kwargs).engine_kwargs == kwargs
+
+    @pytest.mark.parametrize(
+        ("fields", "message"),
+        [
+            ({"kind": "rdb"}, "requires: url_env"),
+            ({"kind": "journal_file"}, "requires: journal_path"),
+            (
+                {"kind": "rdb", "url_env": ENV, "journal_path": "j.log"},
+                "does not accept: journal_path",
+            ),
+            (
+                {"kind": "journal_file", "journal_path": "j.log", "url_env": ENV},
+                "does not accept: url_env",
+            ),
+            (
+                {"kind": "journal_file", "journal_path": "j.log", "engine_kwargs": {}},
+                "does not accept: engine_kwargs",
+            ),
+            ({"kind": "journal_file", "journal_path": "  "}, "journal_path cannot be empty"),
+        ],
+    )
+    def test_field_rules_per_kind(self, fields, message):
+        with pytest.raises(ValidationError, match=message):
+            StorageConfig(**fields)
+
+    def test_journal_file_has_no_url(self):
+        options = StorageConfig(kind="journal_file", journal_path="j.log")
+        with pytest.raises(HPOConfigurationError, match="has no storage URL"):
+            options.resolve_url({})
+        study = StudyConfig(storage_options=options)
+        assert study.has_persistent_storage is True
+        assert study.resolve_storage_url({}) is None
 
 
 @pytest.mark.contract
@@ -131,20 +177,36 @@ class TestStudyConfigStorageOptions:
 
 @pytest.mark.contract
 class TestManagerUsesResolvedUrl:
-    """``HPOManager.optimize`` passes the URL resolved at call time to the optimization run."""
+    """``HPOManager.optimize`` passes the storage built at call time to the optimization run."""
 
-    def test_optimize_passes_url_from_environment(self):
+    def test_optimize_passes_built_storage(self):
+        """P2-2a: the storage comes from ``build_storage(config.study)`` (URL read from the env there)."""
         from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
         config = HPOConfig(enabled=True, study=StudyConfig(storage_options=_storage_options()))
         with patch("milia_pipeline.models.hpo.hpo_manager.get_backend"):
             manager = HPOManager(config)
+        built = object()
         with (
             patch.object(HPOManager, "_run_optimization", return_value={}) as run,
-            patch.dict(os.environ, {ENV: "sqlite:///from_env.db"}),
+            patch(
+                "milia_pipeline.models.hpo.hpo_manager.build_storage", return_value=built
+            ) as build,
         ):
             manager.optimize(model_name="GCN", dataset=[])
-        assert run.call_args.kwargs["storage"] == "sqlite:///from_env.db"
+        build.assert_called_once_with(config.study)
+        assert run.call_args.kwargs["storage"] is built
+
+    def test_optimize_legacy_storage_url_unchanged(self):
+        """The ``storage`` URL string still reaches the run unchanged (expand phase)."""
+        from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+        config = HPOConfig(enabled=True, study=StudyConfig(storage="sqlite:///hpo.db"))
+        with patch("milia_pipeline.models.hpo.hpo_manager.get_backend"):
+            manager = HPOManager(config)
+        with patch.object(HPOManager, "_run_optimization", return_value={}) as run:
+            manager.optimize(model_name="GCN", dataset=[])
+        assert run.call_args.kwargs["storage"] == "sqlite:///hpo.db"
 
     def test_optimize_fails_fast_when_variable_unset(self):
         from milia_pipeline.models.hpo.hpo_manager import HPOManager

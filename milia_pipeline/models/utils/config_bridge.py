@@ -250,6 +250,12 @@ _SUPPORTED_HPO_BACKENDS: tuple[str, ...] = ("optuna",)
 # Portable environment-variable name (POSIX.1-2024 §8.1), same rule as ``hpo_config.StorageConfig``
 # (P2-1); ``test_storage_options_acceptance_matches_hpo_config`` pins behavioural parity.
 _HPO_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# Storage kind → (required fields, additionally accepted fields), same rule as hpo_config (P2-2a).
+_HPO_STORAGE_KIND_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
+    "rdb": (frozenset({"url_env"}), frozenset({"engine_kwargs"})),
+    "journal_file": (frozenset({"journal_path"}), frozenset()),
+}
+_HPO_STORAGE_FIELDS: frozenset[str] = frozenset({"url_env", "journal_path", "engine_kwargs"})
 
 
 # =============================================================================
@@ -977,25 +983,55 @@ class HPOStorageConfigBridge(BaseModel):
     package). The URL itself is resolved only by the execution path (``StudyConfig.resolve_storage_url``).
 
     Attributes:
-        kind: Storage backend kind ("rdb")
-        url_env: Name of the environment variable holding the storage URL
+        kind: Storage backend kind ("rdb", "journal_file")
+        url_env: Name of the environment variable holding the storage URL (rdb)
+        journal_path: Journal log file path (journal_file, P2-2a)
+        engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (rdb, P2-2a)
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: Literal["rdb"]
-    url_env: str
+    kind: Literal["rdb", "journal_file"]
+    url_env: str | None = None
+    journal_path: str | None = None
+    engine_kwargs: dict[str, Any] | None = None
 
     @field_validator("url_env")
     @classmethod
-    def validate_url_env(cls, v: str) -> str:
+    def validate_url_env(cls, v: str | None) -> str | None:
         """Validate ``url_env`` is a portable environment-variable name."""
-        if not _HPO_ENV_VAR_NAME.fullmatch(v):
+        if v is not None and not _HPO_ENV_VAR_NAME.fullmatch(v):
             raise ValueError(
                 f"url_env must be an environment variable name (letters, digits, '_', not starting "
                 f"with a digit), got '{v}'"
             )
         return v
+
+    @field_validator("journal_path")
+    @classmethod
+    def validate_journal_path(cls, v: str | None) -> str | None:
+        """Validate ``journal_path`` is a non-blank path."""
+        if v is not None and not v.strip():
+            raise ValueError("journal_path cannot be empty")
+        return v
+
+    @model_validator(mode="after")
+    def validate_fields_for_kind(self) -> "HPOStorageConfigBridge":
+        """Same per-kind field rule as ``StorageConfig`` (required / accepted fields per kind)."""
+        required, optional = _HPO_STORAGE_KIND_FIELDS[self.kind]
+        missing = [name for name in sorted(required) if getattr(self, name) is None]
+        if missing:
+            raise ValueError(f"storage_options kind '{self.kind}' requires: {', '.join(missing)}")
+        foreign = [
+            name
+            for name in sorted(_HPO_STORAGE_FIELDS - required - optional)
+            if getattr(self, name) is not None
+        ]
+        if foreign:
+            raise ValueError(
+                f"storage_options kind '{self.kind}' does not accept: {', '.join(foreign)}"
+            )
+        return self
 
 
 class HPOStudyConfigBridge(BaseModel):

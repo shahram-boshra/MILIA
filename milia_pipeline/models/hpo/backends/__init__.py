@@ -33,12 +33,14 @@ from .base import (
     get_backend,
 )
 from .optuna_backend import OptunaBackend
+from .storage_factory import build_storage
 
 __all__ = [
     # Protocol
     "HPOBackendProtocol",
-    # Factory function
+    # Factory functions
     "get_backend",
+    "build_storage",
     # Backend implementations
     "OptunaBackend",
     # Availability flags

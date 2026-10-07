@@ -40,6 +40,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from optuna.storages import BaseStorage
+
 # Import existing modules with graceful fallbacks
 try:
     from milia_pipeline.models.training.trainer import Trainer
@@ -121,7 +123,7 @@ from milia_pipeline.exceptions import (
     redact_url,
 )
 
-from .backends import HPOBackendProtocol, get_backend
+from .backends import HPOBackendProtocol, build_storage, get_backend
 from .callbacks import create_hpo_callback
 from .hpo_config import (
     HPOConfig,
@@ -1139,8 +1141,9 @@ class HPOManager:
             callbacks=callbacks,
             config_dict=config_dict,
             study_name=self.config.study.study_name,
-            # P2-1: URL from study.storage, or read now from storage_options.url_env (never stored)
-            storage=self.config.study.resolve_storage_url(),
+            # P2-1/P2-2a: study.storage URL unchanged, or the storage built now from storage_options
+            # (rdb URL read from url_env, never stored; journal file)
+            storage=build_storage(self.config.study),
             load_if_exists=self.config.study.load_if_exists,
             n_trials=self.config.n_trials,
         )
@@ -1155,7 +1158,7 @@ class HPOManager:
         callbacks: list | None,
         config_dict: dict[str, Any] | None,
         study_name: str,
-        storage: str | None,
+        storage: str | BaseStorage | None,
         load_if_exists: bool,
         n_trials: int,
         must_exist: bool = False,
@@ -2417,7 +2420,7 @@ class HPOManager:
     def resume_study(
         self,
         study_name: str,
-        storage: str,
+        storage: str | BaseStorage,
         additional_trials: int = 0,
         *,
         model_name: str | None = None,
@@ -2435,7 +2438,8 @@ class HPOManager:
 
         Args:
             study_name: Name of existing study
-            storage: Storage URL (e.g., "sqlite:///optuna.db")
+            storage: Storage URL (e.g., "sqlite:///optuna.db") or an Optuna storage built by
+                ``backends.build_storage`` (P2-2a)
             additional_trials: Number of additional trials to run (0 = just load)
             model_name: Model to optimize; required when ``additional_trials > 0``
             dataset: Dataset for the objective; required when ``additional_trials > 0``

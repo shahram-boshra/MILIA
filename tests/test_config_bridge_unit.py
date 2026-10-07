@@ -1802,6 +1802,21 @@ class TestModelConfig:
             {"storage_options": {"kind": "rdb"}},
             {"storage_options": {"kind": "journal_file", "url_env": "X"}},
             {"storage_options": {"kind": "rdb", "url_env": "X", "engine_kwargs": {}}},
+            # P2-2a: journal_file kind and per-kind field rules
+            {"storage_options": {"kind": "journal_file", "journal_path": "hpo_journal.log"}},
+            {"storage_options": {"kind": "journal_file"}},
+            {"storage_options": {"kind": "journal_file", "journal_path": " "}},
+            {"storage_options": {"kind": "journal_file", "journal_path": "j.log", "url_env": "X"}},
+            {
+                "storage_options": {
+                    "kind": "journal_file",
+                    "journal_path": "j.log",
+                    "engine_kwargs": {},
+                }
+            },
+            {"storage_options": {"kind": "rdb", "url_env": "X", "journal_path": "j.log"}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "engine_kwargs": {"pool_size": 5}}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "heartbeat_interval": 60}},
             {"storage": "sqlite:///a.db", "storage_options": {"kind": "rdb", "url_env": "X"}},
             {"storage": "sqlite:///a.db"},
             {},

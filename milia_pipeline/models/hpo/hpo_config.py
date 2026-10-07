@@ -308,6 +308,18 @@ class OptimizationDirection(Enum):
 # underscore, not beginning with a digit. Shared with config_bridge by value (parity-tested, P2-1).
 _ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
+# Fields each storage kind requires / additionally accepts (P2-2a). Every other optional field must be
+# unset for that kind. Mirrored by value in config_bridge (behavioural parity test).
+_STORAGE_KIND_FIELDS: dict[str, frozenset[str]] = {
+    "rdb": frozenset({"url_env"}),
+    "journal_file": frozenset({"journal_path"}),
+}
+_STORAGE_KIND_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
+    "rdb": frozenset({"engine_kwargs"}),
+    "journal_file": frozenset(),
+}
+_STORAGE_KIND_ALL_FIELDS: frozenset[str] = frozenset({"url_env", "journal_path", "engine_kwargs"})
+
 
 class StorageConfig(BaseModel):
     """
@@ -317,44 +329,87 @@ class StorageConfig(BaseModel):
     created (Twelve-Factor §III): credentials never appear in YAML, and the resolved URL is never
     stored on the model, so ``model_dump()`` / ``to_dict()`` carry only the variable name.
 
-    ``kind`` is the discriminator for storage backends. Only ``"rdb"`` (any SQLAlchemy URL accepted by
-    ``optuna.storages.RDBStorage``) is available; further kinds are added together with the code that
-    builds them.
+    ``kind`` selects the storage backend; each kind accepts only its own fields (anything else is
+    rejected, never silently ignored — F46). Further kinds and fields are added together with the code
+    that consumes them.
+
+    - ``"rdb"`` — ``optuna.storages.RDBStorage`` (any SQLAlchemy URL): requires ``url_env``; optional
+      ``engine_kwargs`` forwarded to ``sqlalchemy.create_engine`` (P2-2a).
+    - ``"journal_file"`` — ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))``: safe
+      for several processes on **one host** (file locks); not for NFS / multi-node, where Optuna
+      recommends ``"rdb"`` (P2-2a). Relative paths resolve against the working directory.
 
     Attributes:
         kind: Storage backend kind
-        url_env: Name of the environment variable holding the storage URL
+        url_env: Name of the environment variable holding the storage URL (``rdb``)
+        journal_path: Journal log file path (``journal_file``)
+        engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (``rdb``)
 
     Examples:
         >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL")
+        >>> StorageConfig(kind="journal_file", journal_path="hpo_journal.log")
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: Literal["rdb"]
-    url_env: str
+    kind: Literal["rdb", "journal_file"]
+    url_env: str | None = None
+    journal_path: str | None = None
+    engine_kwargs: dict[str, Any] | None = None
 
     @field_validator("url_env")
     @classmethod
-    def validate_url_env(cls, v: str) -> str:
+    def validate_url_env(cls, v: str | None) -> str | None:
         """Validate ``url_env`` is a portable environment-variable name."""
-        if not _ENV_VAR_NAME.fullmatch(v):
+        if v is not None and not _ENV_VAR_NAME.fullmatch(v):
             raise ValueError(
                 f"url_env must be an environment variable name (letters, digits, '_', not starting "
                 f"with a digit), got '{v}'"
             )
         return v
 
+    @field_validator("journal_path")
+    @classmethod
+    def validate_journal_path(cls, v: str | None) -> str | None:
+        """Validate ``journal_path`` is a non-blank path."""
+        if v is not None and not v.strip():
+            raise ValueError("journal_path cannot be empty")
+        return v
+
+    @model_validator(mode="after")
+    def validate_fields_for_kind(self) -> "StorageConfig":
+        """Require each kind's fields and reject fields of other kinds (no silently ignored settings)."""
+        required = _STORAGE_KIND_FIELDS[self.kind]
+        missing = [name for name in sorted(required) if getattr(self, name) is None]
+        if missing:
+            raise ValueError(f"storage_options kind '{self.kind}' requires: {', '.join(missing)}")
+        allowed = required | _STORAGE_KIND_OPTIONAL_FIELDS[self.kind]
+        foreign = [
+            name
+            for name in sorted(_STORAGE_KIND_ALL_FIELDS - allowed)
+            if getattr(self, name) is not None
+        ]
+        if foreign:
+            raise ValueError(
+                f"storage_options kind '{self.kind}' does not accept: {', '.join(foreign)}"
+            )
+        return self
+
     def resolve_url(self, environ: Mapping[str, str] | None = None) -> str:
-        """Return the storage URL from the environment at call time.
+        """Return the storage URL from the environment at call time (``rdb`` only).
 
         Args:
             environ: Environment mapping (defaults to ``os.environ``)
 
         Raises:
-            HPOConfigurationError: The variable is unset or empty (the message names the variable,
-                never a value)
+            HPOConfigurationError: The kind has no URL, or the variable is unset or empty (the message
+                names the variable, never a value)
         """
+        if self.url_env is None:
+            raise HPOConfigurationError(
+                f"storage_options kind '{self.kind}' has no storage URL",
+                config_key="models.hpo.study.storage_options.kind",
+            )
         env = os.environ if environ is None else environ
         url = env.get(self.url_env)
         if not url:
@@ -431,13 +486,17 @@ class StudyConfig(BaseModel, frozen=True):
         return self.storage is not None or self.storage_options is not None
 
     def resolve_storage_url(self, environ: Mapping[str, str] | None = None) -> str | None:
-        """Return the storage URL for this run: ``storage``, the URL resolved from
-        ``storage_options`` at call time, or ``None`` (in-memory).
+        """Return the storage URL for this run, if the storage is URL-based: ``storage``, or the URL
+        resolved from ``storage_options.url_env`` at call time. ``None`` for in-memory storage and for
+        storages without a URL (``journal_file``); use ``has_persistent_storage`` to test persistence
+        and ``backends.storage_factory.build_storage`` to obtain the storage itself.
 
         Raises:
             HPOConfigurationError: ``storage_options`` names an unset or empty variable
         """
         if self.storage_options is not None:
+            if self.storage_options.url_env is None:
+                return None
             return self.storage_options.resolve_url(environ)
         return self.storage
 

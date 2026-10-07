@@ -41,7 +41,7 @@ class HPOBackendProtocol(Protocol):
         self,
         study_name: str,
         direction: str,
-        storage: str | None = None,
+        storage: "str | Any | None" = None,
         load_if_exists: bool = True,
         sampler: Any | None = None,
         pruner: Any | None = None,
@@ -55,7 +55,7 @@ class HPOBackendProtocol(Protocol):
         Args:
             study_name: Name for the study
             direction: "minimize" or "maximize"
-            storage: Storage URL (None for in-memory)
+            storage: Storage URL, a backend storage object (P2-2a), or None for in-memory
             load_if_exists: Whether to resume existing study
             sampler: Sampler instance
             pruner: Pruner instance

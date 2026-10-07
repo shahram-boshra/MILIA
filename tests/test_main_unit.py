@@ -2443,28 +2443,39 @@ class TestHPOTraining(unittest.TestCase):
     @patch("main.HPOConfig")
     @patch("main.HPOManager")
     @patch("main._save_hpo_results")
-    def test_run_hpo_training_resume_study_uses_url_from_storage_options(
+    def test_run_hpo_training_resume_study_uses_storage_options(
         self, mock_save, mock_manager_cls, mock_hpo_config
     ):
-        """P2-1: --resume-study resolves the URL from storage_options.url_env at run time."""
+        """P2-1/P2-2a: --resume-study passes the storage built from storage_options (rdb, journal)."""
         from milia_pipeline.models.hpo.hpo_config import StorageConfig, StudyConfig
 
-        study = StudyConfig(storage_options=StorageConfig(kind="rdb", url_env="MILIA_TEST_HPO_URL"))
-        mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=study)
-        mock_manager = Mock()
-        mock_manager.resume_study.return_value = {"learning_rate": 0.01}
-        mock_manager.get_best_value.return_value = 0.1
-        mock_manager_cls.return_value = mock_manager
-        self.mock_args.resume_study = "prior_study"
+        for options in (
+            StorageConfig(kind="rdb", url_env="MILIA_TEST_HPO_URL"),
+            StorageConfig(kind="journal_file", journal_path="hpo_journal.log"),
+        ):
+            with self.subTest(kind=options.kind):
+                study = StudyConfig(storage_options=options)
+                mock_hpo_config.from_dict.return_value = Mock(n_trials=5, study=study)
+                mock_manager = Mock()
+                mock_manager.resume_study.return_value = {"learning_rate": 0.01}
+                mock_manager.get_best_value.return_value = 0.1
+                mock_manager_cls.return_value = mock_manager
+                self.mock_args.resume_study = "prior_study"
+                built = object()
 
-        with patch.dict(os.environ, {"MILIA_TEST_HPO_URL": "sqlite:///from_env.db"}):
-            result = _run_hpo_training(
-                self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
-            )
+                with (
+                    patch.dict(os.environ, {"MILIA_TEST_HPO_URL": "sqlite:///from_env.db"}),
+                    patch("main.build_storage", return_value=built) as build,
+                ):
+                    result = _run_hpo_training(
+                        self.mock_args, self.mock_logger, self.mock_dataset, self.mock_config
+                    )
 
-        self.assertEqual(result, 0)
-        call = mock_manager.resume_study.call_args
-        self.assertEqual(call.args[:2], ("prior_study", "sqlite:///from_env.db"))
+                self.assertEqual(result, 0)
+                build.assert_called_once_with(study)
+                call = mock_manager.resume_study.call_args
+                self.assertEqual(call.args[0], "prior_study")
+                self.assertIs(call.args[1], built)
 
     @patch("main.HPOConfig")
     @patch("main.HPOManager")
