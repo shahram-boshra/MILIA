@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-10-07
+
+Acceleration and GPU image release: the `models.acceleration` configuration now drives every training path.
+**Behaviour notes:** acceleration remains disabled by default, and disabled runs train exactly as before.
+Validation and test now raise on a failed batch instead of skipping it — an epoch whose batches all failed
+previously returned `val_loss = inf`, which HPO recorded as a completed trial (it is now a failed one).
+
+### Added
+
+- Config-driven acceleration for `train`, HPO trials, cross-validation folds and the final HPO model: with
+  `models.acceleration.enabled: true`, mixed precision (`bf16`/`fp16`; a `GradScaler` only for fp16 on CUDA),
+  `torch.compile`, gradient checkpointing and data-loader workers apply automatically. Validation and test stay
+  in fp32 so HPO objectives remain comparable across trials.
+- `computation.compile_dynamic` (default `true`, PyG's guidance for mini-batches of varying graph size);
+  `compile_mode` accepts `max-autotune-no-cudagraphs`.
+- `computation.dataloader` (`num_workers`, `pin_memory`, `persistent_workers`, `prefetch_factor`) applies to all
+  training loaders when acceleration is enabled; `pin_memory` takes effect only for CUDA targets.
+- CUDA 12.4 container images: `ghcr.io/shahram-boshra/milia:1.16.0-cu124` (also `:1.16-cu124`, `:cu124`), built
+  and smoke-tested alongside the CPU image; see the README "GPU usage" section.
+- `Trainer(acceleration=…)` and `create_training_pipeline(acceleration=…, loader_options=…)` for the Python API.
+
+### Changed
+
+- With acceleration enabled, settings the runtime cannot execute are rejected before training, with every
+  problem listed: `fp8`, `deepspeed`, `horovod` without the package, `distributed.enabled` (the CLI and HPO
+  paths run one process), invalid topology, and data-loader values torch rejects. Disabled sections load as
+  before. `distributed.strategy` accepts `dp`.
+- Checkpoints from compiled models are saved with standard parameter names, so they load into uncompiled models.
+- Faster training loops: graph pooling receives the batch's graph count, and epoch losses are accumulated on the
+  device (one host read per epoch; values are unchanged).
+- Test image: includes the C/C++ toolchain, so the test suite exercises `torch.compile` as the runtime image runs it.
+
+### Fixed
+
+- The trainer no longer masks errors raised inside a model's forward pass: it tries another calling convention
+  only when the arguments do not fit, and reports every attempt with the original error as the cause.
+- `fp8` previously ran silently in fp32, and bf16 runs created an unnecessary `GradScaler`.
+
 ## [1.15.1] - 2026-09-30
 
 HPO correctness patch. **Behaviour note:** HPO configuration values that were previously rewritten
@@ -463,7 +501,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...v1.16.0
 [1.15.1]: https://github.com/shahram-boshra/MILIA/compare/v1.15.0...v1.15.1
 [1.15.0]: https://github.com/shahram-boshra/MILIA/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/shahram-boshra/MILIA/compare/v1.14.0...v1.14.1

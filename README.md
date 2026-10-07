@@ -26,7 +26,7 @@ Run the entire machine learning pipeline — dataset curation, molecular graph t
 Access **every PyTorch Geometric model** (SchNet, DimeNet, GIN, GAT, and all others) simply by naming them in configuration — no model-level code. Define custom architectures from 10 built-in templates, compose multi-model ensembles with parallel, sequential, or hierarchical strategies — all through YAML configuration, no code required. For research beyond built-in capabilities, bring your own models through the model plugin system.
 
 ### Hardware Agnostic
-Train on any device — CPU, CUDA GPU, Apple MPS, or TPU — with automatic device detection or explicit selection through configuration. Scale from single-device to distributed training with 4 strategies (DataParallel, DistributedDataParallel, FSDP, Horovod). Includes memory optimization (AMP, gradient checkpointing) and computation optimization.
+Train on any device — CPU, CUDA GPU, Apple MPS, or TPU — with automatic device detection or explicit selection through configuration. One `models.acceleration` section turns on mixed precision (bf16/fp16 AMP), `torch.compile` with dynamic shapes, gradient checkpointing, and multi-process data loading for every training and HPO run (see [Acceleration](#acceleration)). Distributed strategies (DataParallel, DistributedDataParallel, FSDP) are available through the Python API; the CLI and HPO paths train single-process.
 
 ### Molecular Descriptors
 Select from 3,000+ molecular descriptors across 6 categories — a ~492-descriptor RDKit baseline (Constitutional, Topological, Electronic, Geometric, Drug-likeness, Fragments) plus the first-party `addcore_3d` plugin adding **1,019 ADD-CORE RDKit 3D descriptors** (WHIM, GETAWAY, RDF, 3D-MoRSE, Autocorr3D, USR, USRCAT, MQN, and oxidation-number aggregates) the `constitutional_property` plugin adding **20 constitutional-ext + property/physicochemical descriptors** (McGowan/vdW-ABC volume, polarizability, CarbonTypes, framework/complexity, and Lipinski/Ghose/Veber/Egan rule filters), the `topological_connectivity` plugin adding **107 topological/connectivity indices** (Wiener, Zagreb, ABC, eccentric-connectivity, Gálvez topological charge, molecular-distance-edge, Schultz, and the Kier-Hall Chi family), and the `walk_path_information` plugin adding **86 walk/path + information-content descriptors** (molecular walk/self-returning-walk counts, path counts, detour index, neighborhood information-content indices, and vertex-adjacency information), the `matrix_spectral` plugin adding **177 eigenvalue/matrix-spectral descriptors** (adjacency/distance/detour/Barysz matrix spectra, Burden BCUT eigenvalues, and Randić molecular ID), and the `autocorrelation_2d` plugin adding **606 2D topological autocorrelation descriptors** (Moreau-Broto ATS/AATS/ATSC/AATSC, Moran MATS, and Geary GATS over 11-12 atomic-property weightings × lags 0-8), the `estate_atomtype` plugin adding **316 Kier-Hall E-State atom-type descriptors** (count/sum/max/min of E-State values over 79 atom types), and the `cats2d` plugin adding **150 CATS2D topological pharmacophore-pair descriptors** (15 potential-pharmacophore-point pairs × 10 topological-distance bins), and the `eta` plugin adding **45 Extended Topochemical Atom (ETA) indices** (Roy & Ghosh core-count/shape/VEM/composite/epsilon/psi descriptors), and the `cpsa_geometric_3d` plugin adding **50 charged-partial-surface-area, gravitational and geometrical 3D descriptors** (CPSA/GRAV*/Geom* on the ETKDG conformer), and the `eht_electronic` plugin adding **25 extended-Hückel conceptual-DFT reactivity descriptors** (HOMO/LUMO/gap, electronegativity/hardness/electrophilicity, Fukui — EHT-level) — entirely through YAML configuration. MILIA handles the full computation pipeline: multi-format molecular conversion via RDKit, atom-level feature extraction (degree, hybridization, chirality, Mulliken charges), bond-level properties (type, conjugation, stereo, length), automatic conformer generation for 3D descriptors (deterministic ETKDG seed), a compute-once-per-molecule block-cache for vector descriptors, and result caching. Extend with custom descriptors through the plugin system for advanced research needs. Descriptors are rolled out in versioned paces (see `CHANGELOG.md`).
@@ -206,6 +206,25 @@ dataset = miliaDataset(
 )
 ```
 
+### Acceleration
+
+Disabled by default. Enable it in `configs/models.yaml`; it then applies to `train`, HPO trials, cross-validation folds and the final HPO model:
+
+```yaml
+models:
+  acceleration:
+    enabled: true
+    device: {type: auto}               # auto | cpu | cuda | mps
+    memory:
+      mixed_precision: bf16            # no | bf16 | fp16 (fp16 uses a GradScaler on CUDA)
+    computation:
+      compile_model: true              # torch.compile (Inductor; needs a C/C++ compiler — included in the images)
+      compile_dynamic: true            # shape-generic kernels for varying graph sizes
+      dataloader: {num_workers: 4, pin_memory: true}   # pinning applies only to CUDA targets
+```
+
+Validation and test always run in fp32, so HPO objectives stay comparable across trials. Settings the training paths cannot apply (`distributed.enabled`, `deepspeed`, `fp8`, …) are rejected before training starts, with a message naming each one.
+
 ## Trying MILIA — Reproducible Walkthrough
 
 This section walks a reviewer through the shortest path from a fresh clone to a trained model and a prediction. Every command below has been validated end-to-end. Paths are relative throughout, so the walkthrough works identically on any machine — Linux, macOS, WSL, or inside the Docker container.
@@ -311,7 +330,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 | `handlers/` | 15+ files | 11 dataset handler types (DFT, DMC, Wavefunction, QM9, ANI-1x, ANI-1ccx, rMD17, ANI-2x, XXMD, QDPi, QM40) with transform integration and lazy loading |
 | `preprocessing/` | 8+ files | Modular wavefunction preprocessing (MOLDEN, FCHK), data refinement, and VQM24 support |
 | `descriptors/` | 6+ files | 3,000+ molecular descriptors across 6 categories (~492 RDKit baseline + 1,019 via the `addcore_3d` plugin + 20 via the `constitutional_property` plugin + 107 via the `topological_connectivity` plugin + 86 via the `walk_path_information` plugin + 177 via the `matrix_spectral` plugin + 606 via the `autocorrelation_2d` plugin + 316 via the `estate_atomtype` plugin + 150 via the `cats2d` plugin + 45 via the `eta` plugin + 50 via the `cpsa_geometric_3d` plugin + 25 via the `eht_electronic` plugin; + 310 via the opt-in `cdk_substructure` plugin) with thread-safe singleton registry, caching, conformer generation, block-cache for vector blocks, and plugin support |
-| `models/` | 25+ files | Full ML lifecycle: registry with dynamic PyG introspection, factory, trainer with callbacks, post-training inference, architecture builder (10 templates), model composer, acceleration (CPU/GPU/MPS/TPU + DP/DDP/FSDP), deployment (edge/cloud/federated), monitoring, and model plugins |
+| `models/` | 25+ files | Full ML lifecycle: registry with dynamic PyG introspection, factory, trainer with callbacks, post-training inference, architecture builder (10 templates), model composer, acceleration (CPU/GPU/MPS/TPU; AMP, `torch.compile`, loader workers from config; DP/DDP/FSDP via the Python API), deployment (edge/cloud/federated), monitoring, and model plugins |
 | `models/hpo/` | 12 files | Hyperparameter optimization: Optuna backend, 5 search algorithms, 5 pruners, neural architecture search, transfer learning with warm-starting, and study analysis |
 | `cli_manager` | 1 file, ~3.8K lines | 12 argument groups, 12+ processing modes, interactive mode, and post-training prediction arguments |
 | `exceptions` | 1 file | Comprehensive exception hierarchy with registry-based dataset-specific errors |

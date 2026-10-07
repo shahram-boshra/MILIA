@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.15.1"  # HPO correctness patch (Phase 1): pruned state, credential redaction, resume, CLI precedence, config fail-fast, importance, CV pruning
+__version__ = "1.16.0"  # Phase A: config-driven acceleration (AMP, torch.compile, loader workers), GPU image (cu124), sync-free training loops, fail-fast evaluation
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
