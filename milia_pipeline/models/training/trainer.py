@@ -700,8 +700,11 @@ class Trainer:
                         metric.update(out, metric_target)
 
             except Exception as e:
-                logger.warning(f"Error in validation batch: {e}")
-                continue
+                # PA-5 (F44): fail like the training loop. Skipping batches biases the epoch mean
+                # and an all-failed epoch returned val_loss=inf — a fabricated COMPLETE value for
+                # HPO instead of a FAIL (PEP 20: errors should never pass silently).
+                logger.error(f"Error in validation batch: {e}")
+                raise TrainingError(f"Validation batch failed: {e}") from e
 
         avg_loss = loss_sum.mean(empty=float("inf"))
         results = {"val_loss": avg_loss}
@@ -787,8 +790,9 @@ class Trainer:
                         metric.update(out, metric_target)
 
             except Exception as e:
-                logger.warning(f"Error in test batch: {e}")
-                continue
+                # PA-5 (F44): fail like the training loop (no biased / fabricated test metrics).
+                logger.error(f"Error in test batch: {e}")
+                raise TrainingError(f"Test batch failed: {e}") from e
 
         avg_loss = loss_sum.mean(empty=float("inf"))
         results = {"test_loss": avg_loss}
@@ -982,6 +986,29 @@ class Trainer:
         num_graphs = getattr(batch, "num_graphs", None)
         return {"num_graphs": num_graphs} if isinstance(num_graphs, int) else {}
 
+    @staticmethod
+    def _call_forward_strategies(strategies: list[tuple[str, Any]], context: str) -> torch.Tensor:
+        """Run forward calling conventions in order; fall back ONLY when a call does not fit (PA-5).
+
+        A ``TypeError`` is what Python raises when arguments do not match a callable's signature —
+        the case these conventions exist for (variadic wrappers whose signature cannot be
+        introspected). Any other exception was raised by a model that *accepted* the call (shape
+        or compile errors, OOM, ...) and propagates immediately with its own traceback instead of
+        being masked by later attempts. If every convention raises ``TypeError``, one
+        ``TrainingError`` lists each attempt and chains the first (preferred) one (PEP 3134).
+        """
+        attempts: list[tuple[str, TypeError]] = []
+        for name, call in strategies:
+            try:
+                return call()
+            except TypeError as e:
+                logger.debug(f"Forward convention '{name}' did not fit: {e}")
+                attempts.append((name, e))
+        tried = "; ".join(f"({i}) {name}: {err}" for i, (name, err) in enumerate(attempts, 1))
+        raise TrainingError(
+            f"Forward pass failed ({context}): no calling convention matched. Tried: {tried}"
+        ) from attempts[0][1]
+
     def _forward_with_dynamic_signature(self, batch: Data | Batch) -> torch.Tensor | None:
         """
         Execute forward pass using dynamically introspected signature.
@@ -1109,7 +1136,9 @@ class Trainer:
                 logger.debug("[DIAGNOSTIC] edge_attr NOT in kwargs (correct for ensembles)")
 
             return self.model(**kwargs)
-        except Exception as e:
+        except TypeError as e:
+            # PA-5: only a calling-convention mismatch hands over to the standard strategies;
+            # errors raised inside a model that accepted the call propagate unmasked.
             # =====================================================================
             # FIX 28: Dynamic Forward Fallback Logging
             # =====================================================================
@@ -1281,53 +1310,29 @@ class Trainer:
             if hasattr(batch, "pos") and batch.pos is not None:
                 extra_kwargs["pos"] = batch.pos
 
-        # Strategy 1: Positional edge_attr
-        try:
-            if has_batch:
-                return self.model(
-                    batch.x, batch.edge_index, batch.edge_attr, batch=batch.batch, **extra_kwargs
-                )
-            else:
-                return self.model(batch.x, batch.edge_index, batch.edge_attr, **extra_kwargs)
-        except Exception as e1:
-            logger.debug(f"Forward with positional edge_attr failed: {e1}")
-
-        # Strategy 2: Keyword edge_attr
-        try:
-            if has_batch:
-                return self.model(
-                    batch.x,
-                    batch.edge_index,
-                    edge_attr=batch.edge_attr,
-                    batch=batch.batch,
-                    **extra_kwargs,
-                )
-            else:
-                return self.model(
-                    batch.x, batch.edge_index, edge_attr=batch.edge_attr, **extra_kwargs
-                )
-        except Exception as e2:
-            logger.debug(f"Forward with keyword edge_attr failed: {e2}")
-
-        # Strategy 3: Fallback without edge_attr (misconfiguration recovery)
-        try:
-            if has_batch:
-                return self.model(batch.x, batch.edge_index, batch=batch.batch, **extra_kwargs)
-            else:
-                return self.model(batch.x, batch.edge_index, **extra_kwargs)
-        except Exception as e3:
-            logger.debug(f"Forward without edge_attr fallback failed: {e3}")
-
-        # Strategy 4: Final fallback - batch object
-        try:
-            return self.model(batch)
-        except Exception as e4:
-            raise TrainingError(
-                f"Forward pass failed (model configured for edge features). "
-                f"Tried: (1) positional edge_attr, (2) keyword edge_attr, "
-                f"(3) no edge_attr, (4) batch object. "
-                f"Final error: {e4}"
-            ) from e4
+        # Calling conventions in preference order; the runner falls back only on a signature
+        # mismatch (TypeError) and surfaces any other error unmasked (PA-5 / F44).
+        batch_kw = {"batch": batch.batch} if has_batch else {}
+        strategies: list[tuple[str, Any]] = [
+            (
+                "positional edge_attr",
+                lambda: self.model(
+                    batch.x, batch.edge_index, batch.edge_attr, **batch_kw, **extra_kwargs
+                ),
+            ),
+            (
+                "keyword edge_attr",
+                lambda: self.model(
+                    batch.x, batch.edge_index, edge_attr=batch.edge_attr, **batch_kw, **extra_kwargs
+                ),
+            ),
+            (  # misconfiguration recovery
+                "no edge_attr",
+                lambda: self.model(batch.x, batch.edge_index, **batch_kw, **extra_kwargs),
+            ),
+            ("batch object", lambda: self.model(batch)),
+        ]
+        return self._call_forward_strategies(strategies, "model configured for edge features")
 
     def _forward_without_edge_features(
         self,
@@ -1381,42 +1386,26 @@ class Trainer:
             if hasattr(batch, "pos") and batch.pos is not None:
                 extra_kwargs["pos"] = batch.pos
 
-        # Strategy 1: Basic signature without edge_attr
-        try:
-            if has_batch:
-                return self.model(batch.x, batch.edge_index, batch=batch.batch, **extra_kwargs)
-            else:
-                return self.model(batch.x, batch.edge_index, **extra_kwargs)
-        except Exception as e1:
-            logger.debug(f"Basic forward without edge_attr failed: {e1}")
-
-        # Strategy 2: Try with edge_attr as fallback (model might need it despite metadata)
-        if has_edge_attr:
-            try:
-                if has_batch:
-                    return self.model(
-                        batch.x,
-                        batch.edge_index,
-                        batch.edge_attr,
-                        batch=batch.batch,
-                        **extra_kwargs,
-                    )
-                else:
-                    return self.model(batch.x, batch.edge_index, batch.edge_attr, **extra_kwargs)
-            except Exception as e2:
-                logger.debug(f"Forward with edge_attr fallback failed: {e2}")
-
-        # Strategy 3: Final fallback - batch object
-        try:
-            return self.model(batch)
-        except Exception as e3:
-            raise TrainingError(
-                f"Forward pass failed (model not using edge features). "
-                f"Tried: (1) basic signature, "
-                f"{'(2) with edge_attr fallback, ' if has_edge_attr else ''}"
-                f"({'3' if has_edge_attr else '2'}) batch object. "
-                f"Final error: {e3}"
-            ) from e3
+        # Calling conventions in preference order; the runner falls back only on a signature
+        # mismatch (TypeError) and surfaces any other error unmasked (PA-5 / F44).
+        batch_kw = {"batch": batch.batch} if has_batch else {}
+        strategies: list[tuple[str, Any]] = [
+            (
+                "basic signature",
+                lambda: self.model(batch.x, batch.edge_index, **batch_kw, **extra_kwargs),
+            )
+        ]
+        if has_edge_attr:  # model might need edge_attr despite metadata
+            strategies.append(
+                (
+                    "with edge_attr",
+                    lambda: self.model(
+                        batch.x, batch.edge_index, batch.edge_attr, **batch_kw, **extra_kwargs
+                    ),
+                )
+            )
+        strategies.append(("batch object", lambda: self.model(batch)))
+        return self._call_forward_strategies(strategies, "model not using edge features")
 
     def _is_edge_level_task(self) -> bool:
         """

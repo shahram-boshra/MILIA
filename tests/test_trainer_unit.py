@@ -1083,10 +1083,11 @@ class TestValidation:
         metrics = trainer._validate_epoch()
         assert "val_loss" in metrics
 
-    def test_validate_epoch_handles_errors_gracefully(
+    def test_validate_epoch_batch_error_fails_fast(
         self, mock_model, mock_train_loader, mock_val_loader, mock_optimizer, mock_loss_fn
     ):
-        """Test that validation handles batch errors gracefully."""
+        """PA-5 (F44): a failed validation batch raises (chained), as in the training loop —
+        skipping it would bias val_loss and hide the defect."""
         # Create loader that raises error on one batch
         error_batch = Mock()
         error_batch.to = Mock(side_effect=RuntimeError("Batch error"))
@@ -1111,14 +1112,14 @@ class TestValidation:
             loss_fn=mock_loss_fn,
         )
 
-        # Should not raise error, but continue with good batches
-        metrics = trainer._validate_epoch()
-        assert "val_loss" in metrics
+        with pytest.raises(TrainingError, match="Validation batch failed") as exc_info:
+            trainer._validate_epoch()
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
 
     def test_validate_epoch_all_batches_fail(
         self, mock_model, mock_train_loader, mock_optimizer, mock_loss_fn
     ):
-        """Test validation when all batches fail."""
+        """PA-5 (F44): all batches failing raises — no fabricated val_loss=inf for HPO."""
         error_batch = Mock()
         error_batch.to = Mock(side_effect=RuntimeError("Batch error"))
 
@@ -1134,8 +1135,8 @@ class TestValidation:
             loss_fn=mock_loss_fn,
         )
 
-        metrics = trainer._validate_epoch()
-        assert metrics["val_loss"] == float("inf")
+        with pytest.raises(TrainingError, match="Validation batch failed"):
+            trainer._validate_epoch()
 
 
 # =============================================================================
@@ -1178,10 +1179,10 @@ class TestTestEvaluation:
         metrics = trainer.test()
         assert metrics == {}
 
-    def test_test_handles_errors_gracefully(
+    def test_test_batch_error_fails_fast(
         self, mock_model, mock_train_loader, mock_optimizer, mock_loss_fn
     ):
-        """Test that test evaluation handles errors gracefully."""
+        """PA-5 (F44): a failed test batch raises (chained) — no biased test metrics."""
         error_batch = Mock()
         error_batch.to = Mock(side_effect=RuntimeError("Batch error"))
 
@@ -1205,8 +1206,9 @@ class TestTestEvaluation:
             loss_fn=mock_loss_fn,
         )
 
-        metrics = trainer.test()
-        assert "test_loss" in metrics
+        with pytest.raises(TrainingError, match="Test batch failed") as exc_info:
+            trainer.test()
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
 
 
 # =============================================================================
