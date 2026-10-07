@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The README DOI badge and `CITATION.cff` named an earlier manual Zenodo deposit (v1.1.0) as the concept DOI;
+  they now use `10.5281/zenodo.21854751`, the concept that every GitHub release is published under. The v1.16.0
+  version DOI is `10.5281/zenodo.23212466`.
+
 ## [1.16.0] - 2026-10-07
 
 Acceleration and GPU image release: the `models.acceleration` configuration now drives every training path.

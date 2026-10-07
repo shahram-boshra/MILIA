@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://docs.astral.sh/ruff/)
 [![Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/shahram-boshra/MILIA/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/shahram-boshra/MILIA)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20151553.svg)](https://doi.org/10.5281/zenodo.20151553)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21854751.svg)](https://doi.org/10.5281/zenodo.21854751)
 
 ---
 
@@ -426,7 +426,7 @@ Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 If you use MILIA in your research, please cite it. See [CITATION.cff](CITATION.cff) for the preferred citation format.
 
-Archived releases are citable via Zenodo. Cite the **concept DOI** [10.5281/zenodo.20151553](https://doi.org/10.5281/zenodo.20151553) to always reference the latest release, or a **version DOI** (e.g. [10.5281/zenodo.22291882](https://doi.org/10.5281/zenodo.22291882) for v1.4.0) to pin a specific one.
+Archived releases are citable via Zenodo. Cite the **concept DOI** [10.5281/zenodo.21854751](https://doi.org/10.5281/zenodo.21854751) to always reference the latest release, or a **version DOI** (e.g. [10.5281/zenodo.23212466](https://doi.org/10.5281/zenodo.23212466) for v1.16.0) to pin a specific one. An earlier manual deposit of v1.1.0 has its own record, [10.5281/zenodo.20151553](https://doi.org/10.5281/zenodo.20151553), which releases do not update.
 
 ## License
 

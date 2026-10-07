@@ -31,14 +31,19 @@ license: "MIT"
 # Zenodo DOIs (GitHub–Zenodo integration). The concept DOI always resolves to the
 # latest release and is the canonical citation; the version DOI pins the release named
 # in its description (backfilled after Zenodo mints the DOI for each new release).
-doi: "10.5281/zenodo.20151553"
+# Verify with DataCite: a version DOI's `IsVersionOf` must equal the concept DOI below
+# (https://api.datacite.org/dois/<version-doi>).
+doi: "10.5281/zenodo.21854751"
 identifiers:
   - type: doi
-    value: "10.5281/zenodo.20151553"
+    value: "10.5281/zenodo.21854751"
     description: "Concept DOI — always resolves to the latest MILIA release"
   - type: doi
-    value: "10.5281/zenodo.23050676"
-    description: "Version DOI — MILIA v1.15.1"
+    value: "10.5281/zenodo.23212466"
+    description: "Version DOI — MILIA v1.16.0"
+  - type: doi
+    value: "10.5281/zenodo.20151553"
+    description: "Earlier manual Zenodo deposit (MILIA v1.1.0); not updated by releases"
 
 repository-code: "https://github.com/shahram-boshra/MILIA"
 url: "https://github.com/shahram-boshra/MILIA"
