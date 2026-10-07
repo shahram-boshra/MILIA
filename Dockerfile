@@ -75,7 +75,10 @@ FROM base AS test-base
 # Debian stable (now Trixie → Java 21; openjdk-17 was dropped), so pinning a JRE version breaks on
 # base bumps. CDK SubFPC values are integer SMARTS counts, independent of the JRE version.
 # Without Java these tests importorskip (skip).
-RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless && \
+# F43 (PA-4): the test image mirrors the runtime's C/C++ toolchain (libgomp1 gcc g++ libc6-dev, PA-0b) so
+# the suite can exercise torch.compile's Inductor backend exactly as the published image runs it.
+RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless \
+    libgomp1 gcc g++ libc6-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # ---- Stage 3b: test-deps — full test environment (runtime + dev + cdk) from the lock ----
