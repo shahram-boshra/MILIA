@@ -1316,6 +1316,11 @@ class HPOManager:
 
         load_acceleration_config(models_config)
 
+        # PA-2: loader options are deterministic from the config — computed once per study.
+        from milia_pipeline.models.training.loaders import loader_options_from_config, make_loader
+
+        loader_options = loader_options_from_config(models_config)
+
         def objective(trial) -> float:
             """Objective function for single trial."""
             trial_number = trial.number
@@ -1486,9 +1491,6 @@ class HPOManager:
                             details="Cannot split data without DataSplitter class",
                         )
 
-                    # Import DataLoader
-                    from torch_geometric.loader import DataLoader as PyGDataLoader
-
                     # Get batch_size from training_params or trainer_kwargs or default
                     batch_size = training_params.get(
                         "batch_size", trainer_kwargs.get("batch_size", 32)
@@ -1531,12 +1533,18 @@ class HPOManager:
                             num_classes_override=num_classes_override,  # CRITICAL: Pass num_classes
                         )
 
-                    # Create DataLoaders with prepared data
-                    train_loader = PyGDataLoader(
-                        train_data_prepared, batch_size=batch_size, shuffle=True
+                    # Create DataLoaders with prepared data (PA-2: shared factory)
+                    train_loader = make_loader(
+                        train_data_prepared,
+                        batch_size=batch_size,
+                        shuffle=True,
+                        options=loader_options,
                     )
-                    val_loader = PyGDataLoader(
-                        val_data_prepared, batch_size=batch_size, shuffle=False
+                    val_loader = make_loader(
+                        val_data_prepared,
+                        batch_size=batch_size,
+                        shuffle=False,
+                        options=loader_options,
                     )
 
                     # PA-1e: a fresh manager per trial (None when disabled → unchanged)
@@ -2194,9 +2202,6 @@ class HPOManager:
         logger.info("FINAL MODEL TRAINING WITH BEST HYPERPARAMETERS")
         logger.info("=" * 60)
 
-        # Import required modules
-        from torch_geometric.loader import DataLoader as PyGDataLoader
-
         # =================================================================
         # 1. SPLIT DATA
         # =================================================================
@@ -2260,10 +2265,18 @@ class HPOManager:
         # 4. CREATE DATALOADERS
         # =================================================================
         batch_size = training_config.get("batch_size", 32)
-        train_loader = PyGDataLoader(train_data, batch_size=batch_size, shuffle=True)
-        val_loader = PyGDataLoader(val_data, batch_size=batch_size, shuffle=False)
+        # PA-2: shared factory (current defaults unless acceleration configures the loaders)
+        from milia_pipeline.models.training.loaders import loader_options_from_config, make_loader
+
+        loader_options = loader_options_from_config(config_dict)
+        train_loader = make_loader(
+            train_data, batch_size=batch_size, shuffle=True, options=loader_options
+        )
+        val_loader = make_loader(
+            val_data, batch_size=batch_size, shuffle=False, options=loader_options
+        )
         test_loader = (
-            PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
+            make_loader(test_data, batch_size=batch_size, shuffle=False, options=loader_options)
             if len(test_data) > 0
             else None
         )
@@ -2819,15 +2832,19 @@ def _run_cross_validation(
             num_classes_override=num_classes_override,  # Pass num_classes for classification
         )
 
-        # Import DataLoader
-        from torch_geometric.loader import DataLoader as PyGDataLoader
-
         # Get batch_size from trainer_kwargs or default
         batch_size = trainer_kwargs.get("batch_size", 32)
 
-        # Create DataLoaders from fold subsets
-        train_loader = PyGDataLoader(train_subset, batch_size=batch_size, shuffle=True)
-        val_loader = PyGDataLoader(val_subset, batch_size=batch_size, shuffle=False)
+        # Create DataLoaders from fold subsets (PA-2: shared factory)
+        from milia_pipeline.models.training.loaders import loader_options_from_config, make_loader
+
+        loader_options = loader_options_from_config(models_config)
+        train_loader = make_loader(
+            train_subset, batch_size=batch_size, shuffle=True, options=loader_options
+        )
+        val_loader = make_loader(
+            val_subset, batch_size=batch_size, shuffle=False, options=loader_options
+        )
         # -------
 
         # PA-1e: a fresh manager per fold (each fold is its own training run; None = unchanged)

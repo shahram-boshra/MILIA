@@ -714,6 +714,23 @@ class AccelerationConfig(BaseModel):
             problems.append(
                 f"memory.mixed_precision '{precision}': {_UNSUPPORTED_PRECISIONS[precision]}"
             )
+        # PA-2: torch DataLoader contract (torch/utils/data/dataloader.py). prefetch_factor with
+        # num_workers == 0 is not an error here: the shipped default is 2 and the loader factory
+        # passes it only when workers are used.
+        loader = self.computation.dataloader
+        if loader.num_workers < 0:
+            problems.append(
+                f"computation.dataloader.num_workers must be >= 0 (got {loader.num_workers})"
+            )
+        elif loader.persistent_workers and loader.num_workers == 0:
+            problems.append(
+                "computation.dataloader.persistent_workers needs num_workers > 0 "
+                "(torch DataLoader raises otherwise)"
+            )
+        if loader.prefetch_factor < 0:
+            problems.append(
+                f"computation.dataloader.prefetch_factor must be >= 0 (got {loader.prefetch_factor})"
+            )
         if self.distributed.enabled:
             problems.extend(_distributed_problems(self.distributed))
         if problems:

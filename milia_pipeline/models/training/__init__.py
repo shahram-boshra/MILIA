@@ -100,6 +100,8 @@ if TYPE_CHECKING:
     # Type-only (models.acceleration imports the training package): no runtime cycle.
     from milia_pipeline.models.acceleration import AccelerationManager
 
+    from .loaders import LoaderOptions
+
 logger = logging.getLogger(__name__)
 
 
@@ -397,6 +399,7 @@ def create_training_pipeline(
     tensorboard_log_dir: str | None = None,
     device: str | None = None,
     acceleration: "AccelerationManager | None" = None,
+    loader_options: "LoaderOptions | None" = None,
 ) -> tuple["Trainer", dict[str, Any]]:
     """
     Create a complete training pipeline with sensible defaults.
@@ -428,6 +431,9 @@ def create_training_pipeline(
         acceleration: Optional AccelerationManager (PA-1e), e.g. from
             ``build_acceleration(models_config)``; the model is optimized before the optimizer
             is built and the manager is passed to the Trainer. None leaves training unchanged.
+        loader_options: Optional LoaderOptions (PA-2), e.g. from
+            ``loader_options_from_config(models_config)``. None keeps the current loaders
+            (single-process, unpinned).
 
     Returns:
         Tuple of (trainer, info_dict) where info_dict contains component details
@@ -446,7 +452,6 @@ def create_training_pipeline(
     from pathlib import Path
 
     import torch
-    from torch_geometric.loader import DataLoader
 
     # Set defaults
     if optimizer_params is None:
@@ -494,10 +499,18 @@ def create_training_pipeline(
     info["val_size"] = len(val_subset)
     info["test_size"] = len(test_subset)
 
-    # Create dataloaders
-    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False)
+    # Create dataloaders (PA-2: shared factory; None → current defaults)
+    from .loaders import make_loader
+
+    train_loader = make_loader(
+        train_subset, batch_size=batch_size, shuffle=True, options=loader_options
+    )
+    val_loader = make_loader(
+        val_subset, batch_size=batch_size, shuffle=False, options=loader_options
+    )
+    test_loader = make_loader(
+        test_subset, batch_size=batch_size, shuffle=False, options=loader_options
+    )
 
     # Setup callbacks
     callbacks = []

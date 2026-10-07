@@ -3676,12 +3676,20 @@ def _run_standard_training(
             logger.error(f"Data incompatible with task type '{task_type}': {e}")
             return 1
 
-        # 3. Create data loaders
-        from torch_geometric.loader import DataLoader
+        # 3. Create data loaders (PA-2: shared factory; current defaults unless acceleration
+        # enables models.acceleration.computation.dataloader)
+        from milia_pipeline.models.training.loaders import loader_options_from_config, make_loader
 
-        train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-        test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+        loader_options = loader_options_from_config(models_config)
+        train_loader = make_loader(
+            train_data, batch_size=batch_size, shuffle=True, options=loader_options
+        )
+        val_loader = make_loader(
+            val_data, batch_size=batch_size, shuffle=False, options=loader_options
+        )
+        test_loader = make_loader(
+            test_data, batch_size=batch_size, shuffle=False, options=loader_options
+        )
 
         # 4. Create model via factory
         factory = get_factory()
