@@ -1817,6 +1817,30 @@ class TestModelConfig:
             {"storage_options": {"kind": "rdb", "url_env": "X", "journal_path": "j.log"}},
             {"storage_options": {"kind": "rdb", "url_env": "X", "engine_kwargs": {"pool_size": 5}}},
             {"storage_options": {"kind": "rdb", "url_env": "X", "heartbeat_interval": 60}},
+            # P2-2b: heartbeat coherence and strict typing
+            {
+                "storage_options": {
+                    "kind": "rdb",
+                    "url_env": "X",
+                    "heartbeat_interval": 60,
+                    "grace_period": 180,
+                    "max_retry": 2,
+                }
+            },
+            {"storage_options": {"kind": "rdb", "url_env": "X", "grace_period": 180}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "max_retry": 2}},
+            {
+                "storage_options": {
+                    "kind": "rdb",
+                    "url_env": "X",
+                    "heartbeat_interval": 60,
+                    "grace_period": 60,
+                }
+            },
+            {"storage_options": {"kind": "rdb", "url_env": "X", "heartbeat_interval": True}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "heartbeat_interval": "60"}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "heartbeat_interval": 0}},
+            {"storage_options": {"kind": "journal_file", "journal_path": "j", "max_retry": 1}},
             {"storage": "sqlite:///a.db", "storage_options": {"kind": "rdb", "url_env": "X"}},
             {"storage": "sqlite:///a.db"},
             {},

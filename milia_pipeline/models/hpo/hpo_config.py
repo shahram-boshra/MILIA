@@ -315,10 +315,14 @@ _STORAGE_KIND_FIELDS: dict[str, frozenset[str]] = {
     "journal_file": frozenset({"journal_path"}),
 }
 _STORAGE_KIND_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
-    "rdb": frozenset({"engine_kwargs"}),
+    # Heartbeat (P2-2b): optuna 4.9.0 implements it in RDBStorage only (JournalStorage is not a
+    # BaseHeartbeat), so the fields belong to "rdb".
+    "rdb": frozenset({"engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}),
     "journal_file": frozenset(),
 }
-_STORAGE_KIND_ALL_FIELDS: frozenset[str] = frozenset({"url_env", "journal_path", "engine_kwargs"})
+_STORAGE_KIND_ALL_FIELDS: frozenset[str] = frozenset(
+    {"url_env", "journal_path", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
+)
 
 
 class StorageConfig(BaseModel):
@@ -334,7 +338,12 @@ class StorageConfig(BaseModel):
     that consumes them.
 
     - ``"rdb"`` — ``optuna.storages.RDBStorage`` (any SQLAlchemy URL): requires ``url_env``; optional
-      ``engine_kwargs`` forwarded to ``sqlalchemy.create_engine`` (P2-2a).
+      ``engine_kwargs`` forwarded to ``sqlalchemy.create_engine`` (P2-2a); optional heartbeat (P2-2b):
+      ``heartbeat_interval`` seconds between heartbeats of a running trial; a trial without a heartbeat
+      for ``grace_period`` seconds (default ``2 * heartbeat_interval``; must exceed the interval, or
+      healthy trials are failed between two heartbeats) is marked ``FAIL`` by the next worker that asks
+      for a trial; ``max_retry`` re-queues such a trial at most that many times (absent = no retry).
+      Heartbeat applies to ``Study.optimize`` (MILIA's path) and is experimental in Optuna 4.9.0.
     - ``"journal_file"`` — ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))``: safe
       for several processes on **one host** (file locks); not for NFS / multi-node, where Optuna
       recommends ``"rdb"`` (P2-2a). Relative paths resolve against the working directory.
@@ -344,9 +353,13 @@ class StorageConfig(BaseModel):
         url_env: Name of the environment variable holding the storage URL (``rdb``)
         journal_path: Journal log file path (``journal_file``)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (``rdb``)
+        heartbeat_interval: Seconds between trial heartbeats (``rdb``)
+        grace_period: Seconds without heartbeat before a running trial is failed (``rdb``)
+        max_retry: Maximum re-runs of a heartbeat-stale trial (``rdb``)
 
     Examples:
         >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL")
+        >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL", heartbeat_interval=60, max_retry=2)
         >>> StorageConfig(kind="journal_file", journal_path="hpo_journal.log")
     """
 
@@ -356,6 +369,10 @@ class StorageConfig(BaseModel):
     url_env: str | None = None
     journal_path: str | None = None
     engine_kwargs: dict[str, Any] | None = None
+    # strict: YAML `true` / "60" must not silently become 1 / 60 seconds
+    heartbeat_interval: int | None = Field(default=None, strict=True, ge=1)
+    grace_period: int | None = Field(default=None, strict=True, ge=1)
+    max_retry: int | None = Field(default=None, strict=True, ge=1)
 
     @field_validator("url_env")
     @classmethod
@@ -392,6 +409,22 @@ class StorageConfig(BaseModel):
         if foreign:
             raise ValueError(
                 f"storage_options kind '{self.kind}' does not accept: {', '.join(foreign)}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_heartbeat(self) -> "StorageConfig":
+        """Heartbeat settings are coherent (P2-2b): ``grace_period`` / ``max_retry`` need a heartbeat,
+        and the grace period must exceed the interval (verified R56: grace <= interval fails healthy
+        running trials of other workers)."""
+        if self.heartbeat_interval is None:
+            orphans = [n for n in ("grace_period", "max_retry") if getattr(self, n) is not None]
+            if orphans:
+                raise ValueError(f"{', '.join(orphans)} require(s) heartbeat_interval")
+        elif self.grace_period is not None and self.grace_period <= self.heartbeat_interval:
+            raise ValueError(
+                f"grace_period ({self.grace_period}) must be greater than heartbeat_interval "
+                f"({self.heartbeat_interval}); omit it for Optuna's default of 2 * heartbeat_interval"
             )
         return self
 

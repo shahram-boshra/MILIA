@@ -252,10 +252,15 @@ _SUPPORTED_HPO_BACKENDS: tuple[str, ...] = ("optuna",)
 _HPO_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Storage kind → (required fields, additionally accepted fields), same rule as hpo_config (P2-2a).
 _HPO_STORAGE_KIND_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
-    "rdb": (frozenset({"url_env"}), frozenset({"engine_kwargs"})),
+    "rdb": (
+        frozenset({"url_env"}),
+        frozenset({"engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}),  # P2-2b
+    ),
     "journal_file": (frozenset({"journal_path"}), frozenset()),
 }
-_HPO_STORAGE_FIELDS: frozenset[str] = frozenset({"url_env", "journal_path", "engine_kwargs"})
+_HPO_STORAGE_FIELDS: frozenset[str] = frozenset(
+    {"url_env", "journal_path", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
+)
 
 
 # =============================================================================
@@ -987,6 +992,9 @@ class HPOStorageConfigBridge(BaseModel):
         url_env: Name of the environment variable holding the storage URL (rdb)
         journal_path: Journal log file path (journal_file, P2-2a)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (rdb, P2-2a)
+        heartbeat_interval: Seconds between trial heartbeats (rdb, P2-2b)
+        grace_period: Seconds without heartbeat before a running trial is failed (rdb, P2-2b)
+        max_retry: Maximum re-runs of a heartbeat-stale trial (rdb, P2-2b)
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -995,6 +1003,9 @@ class HPOStorageConfigBridge(BaseModel):
     url_env: str | None = None
     journal_path: str | None = None
     engine_kwargs: dict[str, Any] | None = None
+    heartbeat_interval: int | None = Field(default=None, strict=True, ge=1)
+    grace_period: int | None = Field(default=None, strict=True, ge=1)
+    max_retry: int | None = Field(default=None, strict=True, ge=1)
 
     @field_validator("url_env")
     @classmethod
@@ -1030,6 +1041,20 @@ class HPOStorageConfigBridge(BaseModel):
         if foreign:
             raise ValueError(
                 f"storage_options kind '{self.kind}' does not accept: {', '.join(foreign)}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_heartbeat(self) -> "HPOStorageConfigBridge":
+        """Same heartbeat coherence rule as ``StorageConfig`` (P2-2b)."""
+        if self.heartbeat_interval is None:
+            orphans = [n for n in ("grace_period", "max_retry") if getattr(self, n) is not None]
+            if orphans:
+                raise ValueError(f"{', '.join(orphans)} require(s) heartbeat_interval")
+        elif self.grace_period is not None and self.grace_period <= self.heartbeat_interval:
+            raise ValueError(
+                f"grace_period ({self.grace_period}) must be greater than heartbeat_interval "
+                f"({self.heartbeat_interval}); omit it for Optuna's default of 2 * heartbeat_interval"
             )
         return self
 

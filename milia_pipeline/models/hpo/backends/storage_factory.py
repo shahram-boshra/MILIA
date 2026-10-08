@@ -8,7 +8,9 @@ Single construction point for the storage a study runs on, built from ``StudyCon
 - ``storage`` (URL string) is returned unchanged — Optuna builds ``RDBStorage`` from it exactly as
   before (``optuna.storages.get_storage``); this legacy path is untouched (Parallel Change, expand).
 - ``storage_options`` ``kind="rdb"`` → ``optuna.storages.RDBStorage(url, engine_kwargs=...)`` with the
-  URL read from ``url_env`` now (never stored on the config).
+  URL read from ``url_env`` now (never stored on the config); with ``heartbeat_interval`` also
+  ``grace_period`` and, for ``max_retry``, ``RetryHeartbeatStaleTrialCallback`` (P2-2b): trials left
+  ``RUNNING`` by a killed worker are failed and, if configured, re-queued a bounded number of times.
 - ``storage_options`` ``kind="journal_file"`` →
   ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))`` — several processes on one host;
   Optuna recommends RDB for multi-node because file locks may fail over NFS.
@@ -19,8 +21,11 @@ Credentials never reach logs or exception messages: URLs are rendered with ``red
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import logging
+import warnings
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 from milia_pipeline.exceptions import BackendError, HPOConfigurationError, redact_url
@@ -56,7 +61,15 @@ def build_storage(study: StudyConfig) -> str | BaseStorage | None:
 
     if options.kind == "rdb":
         url = options.resolve_url()
-        return _build_rdb_storage(url, options.engine_kwargs)
+        storage = _build_rdb_storage(url, options.engine_kwargs, _heartbeat_kwargs(options))
+        if options.heartbeat_interval is not None:
+            grace = options.grace_period or 2 * options.heartbeat_interval
+            retry = options.max_retry if options.max_retry is not None else "no retry"
+            logger.info(
+                "Trial heartbeat enabled (experimental in optuna 4.9.0): "
+                f"interval={options.heartbeat_interval}s, grace={grace}s, max_retry={retry}"
+            )
+        return storage
     if options.kind == "journal_file":
         return _build_journal_file_storage(options.journal_path)
     raise HPOConfigurationError(
@@ -78,13 +91,50 @@ def _optuna_storages() -> Any:
     return storages
 
 
-def _build_rdb_storage(url: str, engine_kwargs: dict[str, Any] | None) -> BaseStorage:
+def _heartbeat_kwargs(options: Any) -> dict[str, Any]:
+    """``RDBStorage`` heartbeat arguments from ``storage_options`` (P2-2b); empty when disabled.
+
+    ``heartbeat_stale_trial_callback`` is the optuna 4.9.0 name (``failed_trial_callback`` is deprecated
+    in 4.9.0, removal 6.0.0). ``RetryHeartbeatStaleTrialCallback(max_retry=None)`` retries without limit,
+    so the callback is attached only for an explicit, validated ``max_retry >= 1``.
+    """
+    if options.heartbeat_interval is None:
+        return {}
+    kwargs: dict[str, Any] = {
+        "heartbeat_interval": options.heartbeat_interval,
+        "grace_period": options.grace_period,
+    }
+    if options.max_retry is not None:
+        storages = _optuna_storages()
+        with _experimental_api():
+            kwargs["heartbeat_stale_trial_callback"] = storages.RetryHeartbeatStaleTrialCallback(
+                max_retry=options.max_retry
+            )
+    return kwargs
+
+
+@contextlib.contextmanager
+def _experimental_api() -> Iterator[None]:
+    """Scope-suppress Optuna's ``ExperimentalWarning`` at a deliberate opt-in instantiation (same
+    pattern as ``OptunaBackend.create_pruner`` / ``create_sampler``); the INFO log line records the
+    experimental status instead."""
+    from optuna.exceptions import ExperimentalWarning
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ExperimentalWarning)
+        yield
+
+
+def _build_rdb_storage(
+    url: str, engine_kwargs: dict[str, Any] | None, heartbeat: dict[str, Any]
+) -> BaseStorage:
     storages = _optuna_storages()
     safe_url = redact_url(url)
     # Deep copy: SQLAlchemy may mutate the dict it receives; the frozen config must stay unchanged.
     kwargs = copy.deepcopy(engine_kwargs) if engine_kwargs is not None else None
     try:
-        storage = storages.RDBStorage(url, engine_kwargs=kwargs)
+        with _experimental_api():
+            storage = storages.RDBStorage(url, engine_kwargs=kwargs, **heartbeat)
     except TypeError as e:
         # sqlalchemy.create_engine: "Invalid argument(s) ... sent to create_engine()"
         raise HPOConfigurationError(

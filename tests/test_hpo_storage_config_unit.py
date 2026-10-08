@@ -46,7 +46,7 @@ class TestStorageConfig:
     def test_rejects_unknown_fields(self):
         """Fields of later paces are not silently accepted (F46)."""
         with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
-            StorageConfig(kind="rdb", url_env=ENV, heartbeat_interval=60)
+            StorageConfig(kind="rdb", url_env=ENV, gc_after_trial=True)
 
     def test_requires_kind_and_url_env(self):
         with pytest.raises(ValidationError):
@@ -121,6 +121,47 @@ class TestStorageKindFields:
         study = StudyConfig(storage_options=options)
         assert study.has_persistent_storage is True
         assert study.resolve_storage_url({}) is None
+
+
+@pytest.mark.contract
+class TestHeartbeatFields:
+    """P2-2b: heartbeat settings (rdb only), coherent and strictly typed."""
+
+    def test_full_heartbeat_accepted(self):
+        config = StorageConfig(
+            kind="rdb", url_env=ENV, heartbeat_interval=60, grace_period=180, max_retry=2
+        )
+        assert (config.heartbeat_interval, config.grace_period, config.max_retry) == (60, 180, 2)
+
+    def test_interval_alone_accepted(self):
+        config = StorageConfig(kind="rdb", url_env=ENV, heartbeat_interval=60)
+        assert config.grace_period is None
+        assert config.max_retry is None
+
+    @pytest.mark.parametrize("field", ["heartbeat_interval", "grace_period", "max_retry"])
+    @pytest.mark.parametrize("value", [True, "60", 60.0, 0, -1])
+    def test_rejects_non_positive_or_non_int(self, field, value):
+        """Strict ints: YAML `true` / "60" never become seconds; zero/negative rejected."""
+        fields = {"heartbeat_interval": 60, field: value}
+        with pytest.raises(ValidationError):
+            StorageConfig(kind="rdb", url_env=ENV, **fields)
+
+    @pytest.mark.parametrize("field", ["grace_period", "max_retry"])
+    def test_requires_heartbeat_interval(self, field):
+        with pytest.raises(ValidationError, match="require\\(s\\) heartbeat_interval"):
+            StorageConfig(kind="rdb", url_env=ENV, **{field: 120})
+
+    @pytest.mark.parametrize("grace", [30, 60])
+    def test_grace_period_must_exceed_interval(self, grace):
+        """grace <= interval fails healthy running trials of other workers (R56)."""
+        with pytest.raises(ValidationError, match="must be greater than heartbeat_interval"):
+            StorageConfig(kind="rdb", url_env=ENV, heartbeat_interval=60, grace_period=grace)
+
+    @pytest.mark.parametrize("field", ["heartbeat_interval", "grace_period", "max_retry"])
+    def test_journal_file_rejects_heartbeat(self, field):
+        """optuna 4.9.0 JournalStorage implements no heartbeat."""
+        with pytest.raises(ValidationError, match="does not accept"):
+            StorageConfig(kind="journal_file", journal_path="j.log", **{field: 60})
 
 
 @pytest.mark.contract

@@ -907,6 +907,9 @@ models:
       #   url_env: "MILIA_HPO_STORAGE_URL"   # of YAML; unset/empty variable → configuration error
       #   engine_kwargs:              # optional (rdb only): passed to sqlalchemy.create_engine
       #     pool_pre_ping: true
+      #   heartbeat_interval: 60      # optional (rdb only): a trial whose worker died is marked FAIL
+      #   grace_period: 180           #   after grace_period s without heartbeat (> interval; default 2x)
+      #   max_retry: 2                #   and re-queued at most max_retry times (absent = no retry)
       # storage_options:              # Several processes on ONE host (file locks; not NFS/multi-node,
       #   kind: "journal_file"        # use rdb there): Optuna JournalStorage on a local log file
       #   journal_path: "hpo_journal.log"
