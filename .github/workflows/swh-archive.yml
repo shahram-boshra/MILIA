@@ -45,6 +45,10 @@ jobs:
   archive:
     name: Save Code Now
     runs-on: ubuntu-24.04
+    # F47 (R70): max 1.0 min (8 runs), but the step's own design bound is higher: 30 polls x (30 s sleep +
+    # up to 60 s curl) + one 60-s POST = 46 min. The limit sits above it, so a slow SWH API still ends in
+    # the designed warning/notice instead of a red release.
+    timeout-minutes: 50
     permissions:
       contents: read
 

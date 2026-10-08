@@ -50,6 +50,7 @@ jobs:
   # release tags (v*) and manual dispatch (PA-0c cadence).
   plan:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5  # F47 (R70): max 0.1 min (21 runs)
     permissions: {}
     outputs:
       accel: ${{ steps.variants.outputs.accel }}
@@ -66,6 +67,8 @@ jobs:
   build-and-push:
     needs: plan
     runs-on: ubuntu-24.04
+    # F47 (R70): cpu max 3.6 min (39 runs), cu124 max 7.8 min (5 runs); one value covers both variants.
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -174,6 +177,7 @@ jobs:
     # PA-0a: a build-only run (non-publishing ref) has no registry image to pull.
     if: needs.build-and-push.outputs.publish == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 15  # F47 (R70): cpu max 1.8 min (20 runs), cu124 max 2.9 min (2 runs)
     permissions:
       contents: read
       packages: read
@@ -246,6 +250,9 @@ jobs:
       needs.build-and-push.outputs.publish == 'true' &&
       contains(needs.plan.outputs.accel, 'cu124')
     runs-on: ${{ vars.GPU_RUNNER_LABEL }}
+    # F47 (R70): never run yet (dormant). Bound from its own steps: one cu124 pull (hosted max 2.3 min)
+    # plus one short container run, at the same limit as the build job.
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: read

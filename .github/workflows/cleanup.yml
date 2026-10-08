@@ -54,6 +54,7 @@ jobs:
   cleanup:
     name: Delete old workflow runs
     runs-on: ubuntu-24.04
+    timeout-minutes: 15  # F47 (R70): max 1.1 min (7 runs)
     steps:
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@0cf693bc9909e5e867ee8f27b813224ba862939c  # v2

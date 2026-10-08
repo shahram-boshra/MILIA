@@ -37,6 +37,9 @@ jobs:
   lint:
     name: Lint (Ruff)
     runs-on: ubuntu-24.04
+    # F47: every job carries a limit (GitHub default 360 min; ghalint policy 012). Values come from the
+    # last 40 successful runs (R70): this job max 0.3 min; the lock-check retry's fast-fail budget ~5 min.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
 
@@ -71,6 +74,8 @@ jobs:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     needs: lint
+    # F47 (R70): max 1.3 min (40 runs); 30 min leaves room for one full 20-min sync attempt.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -119,6 +124,8 @@ jobs:
   test-cdk:
     name: Test CDK plugin (Python 3.12 + Java)
     runs-on: ubuntu-24.04
+    # F47 (R70): p50 1.6 min; the 21.3-min max was the removed apt step (19.9 min, R67).
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
       - name: Set up uv + Python 3.12
@@ -127,8 +134,16 @@ jobs:
           version: "0.12.0"  # = Dockerfile UV_VERSION (PA-0i)
           python-version: "3.12"
           enable-cache: true
-      - name: Install a headless JRE
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-jre-headless
+      # F47: Java 21 (= the openjdk-21 that `default-jre-headless` gave on noble, so the verified
+      # runtime is unchanged; the CDK-pywrapper jar holds a Java-19 class file). The runner image
+      # preinstalls Temurin 21 in the hosted toolcache, so setup-java resolves it locally (no
+      # download, no apt — the unbounded apt step took ~20 min on a slow mirror, R67) and sets
+      # JAVA_HOME, which jpype's JVM finder reads first.
+      - name: Set up Java 21 (Temurin, preinstalled)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6  # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
       - name: Sync deps (+ descriptors-cdk extra)
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
         with:
@@ -136,6 +151,7 @@ jobs:
           max_attempts: 3
           command: uv sync --locked --extra cpu --extra dev --extra descriptors-cdk
       - name: Run cdk_substructure tests (fail — not skip — if the engine is broken)
+        timeout-minutes: 10  # F47 (R70): max 1.2 min in 40 runs; a JVM hang fails here, not at the job limit
         run: |
           uv run --no-sync python -c "import CDK_pywrapper, jpype; print('CDK engine deps present')"
           # Assert the JVM/CDK actually boots, so a broken engine FAILS the job instead of the
