@@ -124,6 +124,12 @@ descriptors-cdk = [
     "CDK-pywrapper>=1.0 ; python_version >= '3.11'",  # provides the complete CDK jar in its wheel
     "jpype1>=1.5 ; python_version >= '3.11'",  # the plugin loads that jar via jpype directly (CDK-pywrapper itself does NOT depend on jpype)
 ]
+# Opt-in: PostgreSQL driver for an HPO study shared by several workers (P2-4b, blueprint S4):
+# psycopg 3, SQLAlchemy URL `postgresql+psycopg://`. Lower bound = the tested release (PyPA: no exact
+# pins in project metadata); uv.lock pins the exact version. The binary wheel bundles libpq/OpenSSL,
+# which system updates do not patch; for production servers psycopg recommends a local `psycopg[c]`
+# build against the system libpq. Install: `uv sync --extra cpu --extra hpo-postgres`.
+hpo-postgres = ["psycopg[binary]>=3.3.6"]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu118 | cu121 | cu124).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
 # CPU is the validated cutover target (matches the current cpuonly image + CPU-only dev/CI hardware);

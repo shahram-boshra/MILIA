@@ -13,7 +13,9 @@ Checks:
   (d) ``--compile`` (runtime stage only, where the C/C++ toolchain is installed): ``torch.compile`` with
       the default Inductor backend builds and runs a CPU kernel. Inductor generates C++ and raises
       ``InvalidCxxCompiler`` when no working compiler exists, so this proves the published image can
-      run compiled models (PA-0b).
+      run compiled models (PA-0b);
+  (e) the ``hpo-postgres`` extra is installed: SQLAlchemy's ``postgresql+psycopg`` dialect loads its
+      driver (psycopg 3 with its libpq), so the image can join an HPO study on PostgreSQL (P2-4b).
 """
 
 import argparse
@@ -61,6 +63,17 @@ def check_compile() -> None:
     print("OK torch.compile (Inductor, CPU)")
 
 
+def check_postgres_driver() -> None:
+    from sqlalchemy.engine import make_url
+
+    dialect = make_url("postgresql+psycopg://").get_dialect()
+    driver = dialect.import_dbapi()
+    print(
+        f"OK PostgreSQL driver: {dialect.name}+{dialect.driver} -> psycopg {driver.__version__} "
+        f"({driver.pq.__impl__}, libpq {driver.pq.version()})"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -85,6 +98,7 @@ def main() -> None:
             f"torch_scatter.scatter_add ABI check failed: got {result}, expected [2.0, 2.0]"
         )
     print("OK torch", torch.__version__, "| torch_scatter", torch_scatter.__version__)
+    check_postgres_driver()
     if args.accel is not None:
         check_accelerator(args.accel)
     if args.compile:
