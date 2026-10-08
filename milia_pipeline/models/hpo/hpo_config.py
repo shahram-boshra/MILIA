@@ -677,7 +677,11 @@ class HPOConfig(BaseModel, frozen=True):
     Attributes:
         enabled: MASTER SWITCH - enables HPO when True
         backend: HPO backend ("optuna" or "ray_tune")
-        n_trials: Number of trials to run
+        n_trials: Number of trials to run (per process: each worker runs up to this many)
+        n_trials_total: Study-wide budget of finished (COMPLETE + PRUNED) trials across all workers
+            and runs (P2-3a); None = no global budget. A process stops after its trial that reaches
+            the budget; trials already running in other processes/threads still finish, so the
+            final count is between n_trials_total and n_trials_total + (concurrent trials - 1) (R60)
         timeout: Maximum time in seconds (None for no limit)
         n_jobs: Number of parallel jobs (1 for sequential)
         search_space: Hyperparameter search space configuration
@@ -704,6 +708,7 @@ class HPOConfig(BaseModel, frozen=True):
     enabled: bool = False
     backend: str = "optuna"
     n_trials: int = 100
+    n_trials_total: int | None = Field(default=None, strict=True, ge=1)
     timeout: int | None = None
     n_jobs: int = 1
     search_space: dict[str, dict[str, SearchSpaceParamConfig]] = Field(default_factory=dict)
@@ -844,6 +849,7 @@ class HPOConfig(BaseModel, frozen=True):
             enabled=config_dict.get("enabled", False),
             backend=config_dict.get("backend", "optuna"),
             n_trials=config_dict.get("n_trials", 100),
+            n_trials_total=config_dict.get("n_trials_total"),
             timeout=config_dict.get("timeout"),
             n_jobs=config_dict.get("n_jobs", 1),
             search_space=search_space,

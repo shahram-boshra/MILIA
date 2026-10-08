@@ -258,9 +258,11 @@ class MockHPOConfig:
         pruner: MockPrunerConfig | None = None,
         sampler: MockSamplerConfig | None = None,
         study: MockStudyConfig | None = None,
+        n_trials_total: int | None = None,
     ):
         self.enabled = enabled
         self.n_trials = n_trials
+        self.n_trials_total = n_trials_total  # P2-3a
         self.timeout = timeout
         self.n_jobs = n_jobs
         self.backend = backend

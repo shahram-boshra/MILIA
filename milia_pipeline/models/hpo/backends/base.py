@@ -77,6 +77,8 @@ class HPOBackendProtocol(Protocol):
         n_jobs: int = 1,
         catch: tuple = (),
         callbacks: list[Callable] | None = None,
+        *,
+        n_trials_total: int | None = None,
     ) -> None:
         """
         Run optimization on the study.
@@ -84,11 +86,12 @@ class HPOBackendProtocol(Protocol):
         Args:
             study: Study object from create_study()
             objective_fn: Function that takes trial and returns metric
-            n_trials: Number of trials to run
+            n_trials: Number of trials to run (this process)
             timeout: Maximum time in seconds
             n_jobs: Number of parallel jobs
             catch: Exceptions to catch and mark as failed trials
             callbacks: Optuna-style callbacks
+            n_trials_total: Study-wide budget of finished trials across all workers (P2-3a)
         """
         ...
 

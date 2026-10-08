@@ -1859,6 +1859,23 @@ class TestModelConfig:
         gate_ok = self._accepts(lambda: HPOConfig.from_dict({"study": study}))
         assert bridge_ok == gate_ok, f"study {study}: bridge={bridge_ok}, HPOConfig={gate_ok}"
 
+    @pytest.mark.parametrize("value", [None, 1, 100, 0, -1, True, "10", 1.5])
+    def test_n_trials_total_acceptance_matches_hpo_config(self, value):
+        """P2-3a: the bridge accepts a global trial budget iff the execution gate (HPOConfig) does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        hpo = {"enabled": False, "n_trials_total": value}
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": hpo,
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict(hpo))
+        assert bridge_ok == gate_ok, (
+            f"n_trials_total={value!r}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+        )
+
     def test_storage_options_parsed_into_bridge(self):
         """P2-1: models.hpo.study.storage_options reaches the bridge view (variable name only)."""
         config_dict = {

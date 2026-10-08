@@ -1255,6 +1255,7 @@ class HPOManager:
             timeout=self.config.timeout,
             n_jobs=self.config.n_jobs,
             catch=(Exception,),
+            n_trials_total=self.config.n_trials_total,  # P2-3a: study-wide budget (None = off)
         )
 
         elapsed = time.time() - start_time

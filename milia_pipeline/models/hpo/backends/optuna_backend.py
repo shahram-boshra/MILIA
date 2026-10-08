@@ -52,6 +52,11 @@ logger = logging.getLogger(__name__)
 # ``Study.set_user_attr`` API rather than the experimental ``Study.set_metric_names``.
 _METRIC_USER_ATTR = "milia.metric"
 
+# Trial states counted against the global budget (P2-3a): every finished, useful trial. PRUNED counts
+# (P1-0 records prunes as PRUNED, not FAIL), otherwise heavy pruning would never exhaust the budget;
+# FAIL does not (a failed or heartbeat-stale trial is re-run or replaced).
+_BUDGET_STATES = (TrialState.COMPLETE, TrialState.PRUNED) if OPTUNA_AVAILABLE else ()
+
 
 class OptunaBackend:
     """
@@ -242,6 +247,8 @@ class OptunaBackend:
         n_jobs: int = 1,
         catch: tuple = (Exception,),
         callbacks: list[Callable] | None = None,
+        *,
+        n_trials_total: int | None = None,
     ) -> None:
         """
         Run optimization on the study.
@@ -249,12 +256,30 @@ class OptunaBackend:
         Args:
             study: Optuna Study object
             objective_fn: Objective function taking trial, returning metric
-            n_trials: Number of trials to run
+            n_trials: Number of trials to run (this process)
             timeout: Maximum time in seconds
             n_jobs: Number of parallel jobs
             catch: Exceptions to catch and mark as failed
             callbacks: Optuna callbacks
+            n_trials_total: Study-wide budget of finished (COMPLETE + PRUNED) trials across all
+                workers and runs (P2-3a): ``optuna.study.MaxTrialsCallback`` stops this process after
+                the trial that reaches it; if the study already holds that many, no trial is started.
+                Trials running concurrently elsewhere still finish (overshoot <= concurrency - 1, R60).
         """
+        callbacks = list(callbacks or [])
+        if n_trials_total is not None:
+            finished = len(study.get_trials(deepcopy=False, states=_BUDGET_STATES))
+            if finished >= n_trials_total:
+                logger.info(
+                    f"Global trial budget reached before start: {finished} finished trials >= "
+                    f"n_trials_total={n_trials_total}; no new trial started"
+                )
+                return
+            callbacks.append(optuna.study.MaxTrialsCallback(n_trials_total, states=_BUDGET_STATES))
+            logger.info(
+                f"Global trial budget: n_trials_total={n_trials_total} (finished so far: {finished})"
+            )
+
         logger.info(f"Starting optimization: {n_trials} trials, {n_jobs} jobs, timeout={timeout}s")
 
         try:
@@ -264,7 +289,7 @@ class OptunaBackend:
                 timeout=timeout,
                 n_jobs=n_jobs,
                 catch=catch,
-                callbacks=callbacks or [],
+                callbacks=callbacks,
                 show_progress_bar=True,
             )
 

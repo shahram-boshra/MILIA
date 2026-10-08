@@ -797,7 +797,10 @@ models:
     # BACKEND CONFIGURATION
     # =========================================================================
     backend: "optuna"                 # "optuna" (primary) or "ray_tune" (future)
-    n_trials: 3                        # LOW RESOURCE - 3 trials only
+    n_trials: 3                        # LOW RESOURCE - 3 trials only (per process/worker)
+    # n_trials_total: 100              # Optional: study-wide budget of finished (complete + pruned)
+                                       # trials across ALL workers; trials already running when it is
+                                       # reached still finish (up to concurrency - 1 extra)
     timeout: 120                       # LOW RESOURCE - 120s max
     n_jobs: 1                          # Parallel trials (1 = sequential)
 
