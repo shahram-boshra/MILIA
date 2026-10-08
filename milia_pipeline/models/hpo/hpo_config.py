@@ -234,24 +234,30 @@ class SamplerConfig(BaseModel, frozen=True):
         n_startup_trials: Random trials before Bayesian optimization begins
         seed: Random seed for reproducibility
         multivariate: Whether to use multivariate TPE (considers parameter correlations)
-        constant_liar: For parallel optimization - impute running trial values
+        constant_liar: TPE treats trials still running in other workers as observed (with a
+            penalized value) so parallel workers avoid sampling near each other. Default ``True``
+            (P2-3c, F7): Optuna recommends it for distributed optimization and made it its own
+            default in 5.0. A single process has no other running trials, so its results are
+            unchanged (R7, R64); the cost is a storage read per sample (~7 ms/trial on SQLite, R64).
+            A ``RUNNING`` trial left by a killed worker is also avoided — enable the RDB heartbeat
+            (``storage_options.heartbeat_interval``) to turn such trials into ``FAIL``.
 
     Examples:
-        >>> # TPE with defaults
+        >>> # TPE with defaults (constant liar on)
         >>> SamplerConfig(type=SamplerType.TPE)
 
         >>> # Random sampling with seed
         >>> SamplerConfig(type=SamplerType.RANDOM, seed=42)
 
-        >>> # TPE for parallel optimization
-        >>> SamplerConfig(type=SamplerType.TPE, constant_liar=True)
+        >>> # TPE without constant liar
+        >>> SamplerConfig(type=SamplerType.TPE, constant_liar=False)
     """
 
     type: SamplerType = SamplerType.TPE
     n_startup_trials: int = 10
     seed: int | None = None
     multivariate: bool = True
-    constant_liar: bool = False
+    constant_liar: bool = True
 
     @field_validator("type")
     @classmethod

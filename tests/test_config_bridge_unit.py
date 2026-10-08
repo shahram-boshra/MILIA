@@ -1349,7 +1349,7 @@ class TestHPOSamplerConfigBridge:
         assert config.n_startup_trials == 10
         assert config.seed is None
         assert config.multivariate is True
-        assert config.constant_liar is False
+        assert config.constant_liar is True  # P2-3c (F7), same default as SamplerConfig
 
     def test_custom_values(self):
         """Test custom sampler configuration."""

@@ -970,14 +970,15 @@ class HPOSamplerConfigBridge(BaseModel):
         n_startup_trials: Random trials before Bayesian optimization
         seed: Random seed for reproducibility
         multivariate: Whether to use multivariate TPE
-        constant_liar: For parallel optimization
+        constant_liar: Penalize trials running in other workers (default True, same as
+            ``hpo_config.SamplerConfig``, P2-3c)
     """
 
     type: HPOSamplerType = HPOSamplerType.TPE
     n_startup_trials: int = 10
     seed: int | None = None
     multivariate: bool = True
-    constant_liar: bool = False
+    constant_liar: bool = True
 
 
 class HPOStorageConfigBridge(BaseModel):
@@ -1573,7 +1574,7 @@ class ModelConfig(BaseModel):
             n_startup_trials=sampler_dict.get("n_startup_trials", 10),
             seed=sampler_dict.get("seed"),
             multivariate=sampler_dict.get("multivariate", True),
-            constant_liar=sampler_dict.get("constant_liar", False),
+            constant_liar=sampler_dict.get("constant_liar", True),
         )
 
         # Parse study config

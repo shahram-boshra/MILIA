@@ -890,7 +890,8 @@ models:
       n_startup_trials: 10            # Random trials before Bayesian
       seed: null                      # Random seed (null = random)
       multivariate: true              # Use multivariate TPE
-      constant_liar: false            # For parallel optimization
+      constant_liar: true             # Parallel workers avoid each other's running trials;
+                                      # no effect on single-process results (default since P2-3c)
 
     # =========================================================================
     # STUDY CONFIGURATION

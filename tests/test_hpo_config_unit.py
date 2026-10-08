@@ -675,7 +675,7 @@ class TestSamplerConfigValidCreation:
         assert valid_sampler_config.n_startup_trials == 10
         assert valid_sampler_config.seed is None
         assert valid_sampler_config.multivariate is True
-        assert valid_sampler_config.constant_liar is False
+        assert valid_sampler_config.constant_liar is True  # P2-3c (F7)
 
     def test_custom_tpe_sampler(self):
         """Test custom TPE sampler config."""
