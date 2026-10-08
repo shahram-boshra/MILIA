@@ -13,7 +13,12 @@ import optuna
 import pytest
 
 from milia_pipeline.exceptions import HPOConfigurationError
-from milia_pipeline.models.hpo.hpo_config import HPOConfig, SamplerConfig
+from milia_pipeline.models.hpo.hpo_config import (
+    HPOConfig,
+    SamplerConfig,
+    StorageConfig,
+    StudyConfig,
+)
 from milia_pipeline.models.hpo.seeding import derive_worker_seed, validate_worker_index
 
 # SeedSequence([w, 42]).generate_state(1, uint32)[0] — identical on numpy 1.26.4 (pinned) and 2.5.3 (R62)
@@ -97,13 +102,17 @@ def test_two_workers_on_one_study(tmp_path, seeds, unique):
     assert len(set(params)) == unique
 
 
-def _sampler_seed_passed(worker_index):
+def _sampler_seed_passed(worker_index, tmp_path):
     from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
     backend = MagicMock()
     backend.get_best_params.return_value = {"lr": 0.01}
     backend.get_best_value.return_value = 0.1  # formatted with :.6f by the manager
-    config = HPOConfig(enabled=True, sampler=SamplerConfig(seed=42))
+    # A worker needs a storage that can be shared (P2-3e): journal file in the test's directory
+    study = StudyConfig(
+        storage_options=StorageConfig(kind="journal_file", journal_path=str(tmp_path / "j.log"))
+    )
+    config = HPOConfig(enabled=True, sampler=SamplerConfig(seed=42), study=study)
     with patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=backend):
         manager = HPOManager(config, worker_index=worker_index)
     with (
@@ -117,11 +126,11 @@ def _sampler_seed_passed(worker_index):
 
 @pytest.mark.contract
 class TestManagerSeed:
-    def test_single_process_uses_configured_seed(self):
-        assert _sampler_seed_passed(None) == 42
+    def test_single_process_uses_configured_seed(self, tmp_path):
+        assert _sampler_seed_passed(None, tmp_path) == 42
 
-    def test_worker_uses_derived_seed(self):
-        assert _sampler_seed_passed(2) == GOLDEN_SEED_42[2]
+    def test_worker_uses_derived_seed(self, tmp_path):
+        assert _sampler_seed_passed(2, tmp_path) == GOLDEN_SEED_42[2]
 
     def test_invalid_worker_index_rejected(self):
         from milia_pipeline.models.hpo.hpo_manager import HPOManager

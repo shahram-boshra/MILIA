@@ -2327,6 +2327,8 @@ class TestHPOTraining(unittest.TestCase):
         # argparse always defines --resume-study (default None, cli_manager.py); a bare Mock would
         # otherwise return a truthy Mock attribute (P1-2c)
         self.mock_args.resume_study = None
+        # likewise --hpo-worker (default None = not a worker; P2-3e)
+        self.mock_args.hpo_worker = None
 
         self.mock_dataset = Mock()
         self.mock_dataset.__len__ = Mock(return_value=100)

@@ -15,7 +15,7 @@ import pytest
 from pydantic import ValidationError
 
 from milia_pipeline.models.hpo.backends.optuna_backend import OptunaBackend
-from milia_pipeline.models.hpo.hpo_config import HPOConfig
+from milia_pipeline.models.hpo.hpo_config import HPOConfig, StorageConfig, StudyConfig
 
 TQDM_BAR = "%|"  # tqdm bar marker, e.g. " 40%|████      | 2/5"
 
@@ -53,13 +53,17 @@ class TestBackend:
         assert optimize.call_args.kwargs["show_progress_bar"] is True
 
 
-def _bar_passed(show_progress_bar, worker_index):
+def _bar_passed(show_progress_bar, worker_index, tmp_path):
     from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
     backend = MagicMock()
     backend.get_best_params.return_value = {"lr": 0.01}
     backend.get_best_value.return_value = 0.1  # formatted with :.6f by the manager
-    config = HPOConfig(enabled=True, show_progress_bar=show_progress_bar)
+    # A worker needs a storage that can be shared (P2-3e): journal file in the test's directory
+    study = StudyConfig(
+        storage_options=StorageConfig(kind="journal_file", journal_path=str(tmp_path / "j.log"))
+    )
+    config = HPOConfig(enabled=True, show_progress_bar=show_progress_bar, study=study)
     with patch("milia_pipeline.models.hpo.hpo_manager.get_backend", return_value=backend):
         manager = HPOManager(config, worker_index=worker_index)
     with (
@@ -81,5 +85,5 @@ def _bar_passed(show_progress_bar, worker_index):
         (True, 2, True),  # explicit on wins, even in a worker
     ],
 )
-def test_manager_resolves_flag(configured, worker_index, expected):
-    assert _bar_passed(configured, worker_index) is expected
+def test_manager_resolves_flag(configured, worker_index, expected, tmp_path):
+    assert _bar_passed(configured, worker_index, tmp_path) is expected

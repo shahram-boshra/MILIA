@@ -1412,6 +1412,30 @@ class CLIManager:
             "--resume-study", type=str, default=None, help="Resume existing HPO study by name"
         )
 
+        # Shared-study workers (P2-3e, blueprint S3 / F23): one process per GPU on one study. The
+        # launcher sets CUDA_VISIBLE_DEVICES for each worker process (Optuna FAQ); MILIA never changes it.
+        shared_study_group = training.add_mutually_exclusive_group()
+        shared_study_group.add_argument(
+            "--hpo-init",
+            action="store_true",
+            default=False,
+            help=(
+                "Create the HPO study (models.hpo.study) in its shared storage, record its direction "
+                "and metric, run no trial and exit; workers then join it with --hpo-worker"
+            ),
+        )
+        shared_study_group.add_argument(
+            "--hpo-worker",
+            type=int,
+            default=None,
+            metavar="INDEX",
+            help=(
+                "Run as worker INDEX (0, 1, ...) of a shared HPO study (with --train --hpo): join the "
+                "existing study (models.hpo.study.study_name, or --resume-study NAME) without "
+                "creating it; the sampler seed is derived from INDEX"
+            ),
+        )
+
         training.add_argument(
             "--sampler",
             type=str,
@@ -2018,6 +2042,33 @@ For more information, see: https://docs.example.com/milia-cli
 
         # Note: test_preprocessor_only and list_preprocessors do NOT require --preprocess-dataset
         # They list ALL available preprocessors, not a specific one
+
+        # P2-3e: shared-study flags (--hpo-init / --hpo-worker are mutually exclusive in argparse)
+        hpo_worker = getattr(args, "hpo_worker", None)
+        if hpo_worker is not None:
+            if hpo_worker < 0:
+                raise CLIValidationError(f"Invalid --hpo-worker: {hpo_worker}. Must be >= 0.")
+            if not getattr(args, "train", False) or getattr(args, "hpo", None) is not True:
+                raise CLIValidationError(
+                    "--hpo-worker runs HPO trials and requires --train --hpo.\n"
+                    f"Example: {self.parser.prog} --train --hpo --hpo-worker 0"
+                )
+        if getattr(args, "hpo_init", False):
+            conflicts = [
+                flag
+                for flag, used in (
+                    ("--train", getattr(args, "train", False)),
+                    ("--predict", getattr(args, "predict", False)),
+                    ("--resume-study", getattr(args, "resume_study", None) is not None),
+                )
+                if used
+            ]
+            if conflicts:
+                raise CLIValidationError(
+                    f"--hpo-init only creates the study and cannot be combined with "
+                    f"{', '.join(conflicts)}.\nRun the workers separately with "
+                    "--train --hpo --hpo-worker INDEX"
+                )
 
         # =====================================================================
         # PHASE 5b: Validate prediction arguments (basic validation only)

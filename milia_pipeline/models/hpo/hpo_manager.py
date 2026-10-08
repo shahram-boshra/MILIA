@@ -130,6 +130,7 @@ from .hpo_config import (
     SearchSpaceParamConfig,
 )
 from .seeding import derive_worker_seed, validate_worker_index
+from .shared_study import validate_shared_study
 
 logger = logging.getLogger(__name__)
 
@@ -988,10 +989,12 @@ class HPOManager:
             worker_index: Index of this process among the workers of one shared study (P2-3b). With
                 a configured sampler seed, each worker samples with its own seed derived from
                 ``(worker_index, seed)``, so workers do not repeat each other's trials. ``None``
-                (default) = single process: the configured seed is used unchanged.
+                (default) = single process: the configured seed is used unchanged. A worker's
+                storage must suit a shared study (P2-3e, ``shared_study.validate_shared_study``).
 
         Raises:
-            HPOConfigurationError: If configuration is invalid
+            HPOConfigurationError: If configuration is invalid, or a worker's storage cannot be
+                shared (in-memory, SQLite, RDB without heartbeat)
         """
         if not config.enabled:
             logger.warning(
@@ -1000,6 +1003,8 @@ class HPOManager:
 
         self.config = config
         self.worker_index = validate_worker_index(worker_index)
+        if self.worker_index is not None:
+            validate_shared_study(config)
         self.backend: HPOBackendProtocol | None = None
         self.study: Any | None = None
         self.best_params: dict[str, Any] | None = None
@@ -1289,6 +1294,36 @@ class HPOManager:
         except HPOError as e:
             logger.error(f"HPO failed: {e}")
             raise
+
+    def init_study(self) -> Any:
+        """Create the shared study once, before its workers start (P2-3e, S3; CLI ``--hpo-init``).
+
+        Creates ``config.study.study_name`` in the configured persistent storage and records its
+        direction and metric, so every worker is checked against them when it joins; runs no trial.
+        An existing compatible study is loaded (re-running the initializer is safe).
+
+        Returns:
+            The created or loaded study
+
+        Raises:
+            HPOError: Backend not initialized (``enabled=False``)
+            HPOConfigurationError: Storage unsuitable for a shared study, or an existing study with a
+                different direction or metric
+        """
+        if self.backend is None:
+            raise HPOError(
+                "Backend not initialized", details="Initialize HPOManager with enabled=True"
+            )
+        validate_shared_study(self.config)
+        study_config = self.config.study
+        self.study = self.backend.create_study(
+            study_name=study_config.study_name,
+            direction=study_config.direction.value,
+            storage=build_storage(study_config),
+            load_if_exists=study_config.load_if_exists,
+            metric=study_config.metric,
+        )
+        return self.study
 
     def _show_progress_bar(self) -> bool:
         """Resolve ``config.show_progress_bar`` (P2-3d): an explicit True/False wins; None (default)

@@ -162,6 +162,7 @@ Examples:
 
 import argparse
 import logging
+import os
 import sys
 import time
 from datetime import datetime
@@ -4194,6 +4195,120 @@ def _cli_override(args: argparse.Namespace, name: str, fallback: Any) -> Any:
     return fallback if value is None else value
 
 
+def _build_hpo_config(
+    args: argparse.Namespace,
+    logger: logging.Logger,
+    config: dict[str, Any],
+) -> tuple["HPOConfig", str, str, str]:
+    """Build the run's HPOConfig from ``models.hpo`` and the CLI overrides (CLI > YAML > default).
+
+    Shared by HPO training and ``--hpo-init`` (P2-3e), so the initializer creates the study with
+    exactly the direction, metric and storage its workers will use.
+
+    Returns:
+        ``(hpo_config, mode, model_name, task_type)``
+
+    Raises:
+        HPOConfigurationError: Invalid HPO configuration
+    """
+    # 1. Get HPO configuration
+    models_config = config.get("models", {})
+    hpo_config_dict = models_config.get("hpo", {})
+
+    # CLI overrides (CLI > YAML > default; P1-3a)
+    n_trials = _cli_override(args, "n_trials", hpo_config_dict.get("n_trials", 100))
+    timeout = _cli_override(args, "hpo_timeout", hpo_config_dict.get("timeout", None))
+    cv_folds = _cli_override(args, "cv_folds", hpo_config_dict.get("cv_folds", 0))
+    backend = _cli_override(args, "hpo_backend", hpo_config_dict.get("backend", "optuna"))
+
+    # CLI overrides for sampler/pruner
+    sampler_type = _cli_override(
+        args, "sampler", hpo_config_dict.get("sampler", {}).get("type", "tpe")
+    )
+    pruner_type = _cli_override(
+        args, "pruner", hpo_config_dict.get("pruner", {}).get("type", "median")
+    )
+
+    logger.info(f"HPO Trials: {n_trials}")
+    logger.info(f"HPO Timeout: {timeout}")
+    logger.info(f"HPO Backend: {backend}")
+    logger.info(f"CV Folds: {cv_folds}")
+    logger.info(f"Sampler: {sampler_type}")
+    logger.info(f"Pruner: {pruner_type}")
+
+    # 2. Get model name and task type FIRST (needed for HPOConfig)
+    selection = models_config.get("selection", {})
+    mode = getattr(args, "mode", None) or selection.get("mode", "single")
+    model_name = getattr(args, "model_name", None) or selection.get("model_name", "GCN")
+    task_type = getattr(args, "task_type", None) or selection.get("task_type", "graph_regression")
+
+    # 3. Build HPOConfig with CLI overrides (including task_type)
+    hpo_config_dict_merged = hpo_config_dict.copy()
+    hpo_config_dict_merged["enabled"] = True
+    hpo_config_dict_merged["n_trials"] = n_trials
+    hpo_config_dict_merged["timeout"] = timeout
+    hpo_config_dict_merged["cv_folds"] = cv_folds
+    hpo_config_dict_merged["backend"] = backend
+    hpo_config_dict_merged["task_type"] = task_type
+
+    # Override sampler/pruner types if specified via CLI
+    if "sampler" not in hpo_config_dict_merged:
+        hpo_config_dict_merged["sampler"] = {}
+    hpo_config_dict_merged["sampler"]["type"] = sampler_type
+
+    if "pruner" not in hpo_config_dict_merged:
+        hpo_config_dict_merged["pruner"] = {}
+    hpo_config_dict_merged["pruner"]["type"] = pruner_type
+
+    hpo_config = HPOConfig.from_dict(hpo_config_dict_merged)
+    return hpo_config, mode, model_name, task_type
+
+
+def handle_hpo_init_mode(
+    args: argparse.Namespace,
+    logger: logging.Logger,
+    config: dict[str, Any],
+) -> int:
+    """Create the shared HPO study and exit (``--hpo-init``, P2-3e, blueprint S3).
+
+    Runs before any dataset is built. Workers then join the study with
+    ``--train --hpo --hpo-worker INDEX`` (one process per GPU, ``CUDA_VISIBLE_DEVICES`` set by the
+    launcher).
+
+    Returns:
+        Exit code (0 = study ready, 1 = failure)
+    """
+    logger.info("=" * 60)
+    logger.info("HPO STUDY INITIALIZATION")
+    logger.info("=" * 60)
+
+    if not HPO_AVAILABLE:
+        logger.error("HPO not available")
+        logger.error(f"Import error: {HPO_IMPORT_ERROR}")
+        return 1
+
+    if not OPTUNA_AVAILABLE:
+        logger.error("Optuna not installed - HPO requires Optuna")
+        return 1
+
+    try:
+        hpo_config, _, _, _ = _build_hpo_config(args, logger, config)
+        study = HPOManager(hpo_config).init_study()
+    except HPOError as e:
+        logger.error(f"HPO error: {e}")
+        return 1
+    except Exception as e:
+        logger.error(f"HPO study initialization failed: {e}", exc_info=True)
+        return 1
+
+    logger.info(
+        f"Study '{hpo_config.study.study_name}' ready ({len(study.trials)} existing trials; "
+        f"direction {hpo_config.study.direction.value}, metric '{hpo_config.study.metric}'). "
+        "Start workers with: --train --hpo --hpo-worker INDEX"
+    )
+    return 0
+
+
 def _run_hpo_training(
     args: argparse.Namespace,
     logger: logging.Logger,
@@ -4216,61 +4331,21 @@ def _run_hpo_training(
         return 1
 
     try:
-        # 1. Get HPO configuration
+        # 1-3. HPOConfig from YAML + CLI overrides (shared with --hpo-init, P2-3e)
         models_config = config.get("models", {})
-        hpo_config_dict = models_config.get("hpo", {})
+        hpo_config, mode, model_name, task_type = _build_hpo_config(args, logger, config)
 
-        # CLI overrides (CLI > YAML > default; P1-3a)
-        n_trials = _cli_override(args, "n_trials", hpo_config_dict.get("n_trials", 100))
-        timeout = _cli_override(args, "hpo_timeout", hpo_config_dict.get("timeout", None))
-        cv_folds = _cli_override(args, "cv_folds", hpo_config_dict.get("cv_folds", 0))
-        backend = _cli_override(args, "hpo_backend", hpo_config_dict.get("backend", "optuna"))
-
-        # CLI overrides for sampler/pruner
-        sampler_type = _cli_override(
-            args, "sampler", hpo_config_dict.get("sampler", {}).get("type", "tpe")
-        )
-        pruner_type = _cli_override(
-            args, "pruner", hpo_config_dict.get("pruner", {}).get("type", "median")
-        )
-
-        logger.info(f"HPO Trials: {n_trials}")
-        logger.info(f"HPO Timeout: {timeout}")
-        logger.info(f"HPO Backend: {backend}")
-        logger.info(f"CV Folds: {cv_folds}")
-        logger.info(f"Sampler: {sampler_type}")
-        logger.info(f"Pruner: {pruner_type}")
-
-        # 2. Get model name and task type FIRST (needed for HPOConfig)
-        selection = models_config.get("selection", {})
-        mode = getattr(args, "mode", None) or selection.get("mode", "single")
-        model_name = getattr(args, "model_name", None) or selection.get("model_name", "GCN")
-        task_type = getattr(args, "task_type", None) or selection.get(
-            "task_type", "graph_regression"
-        )
-
-        # 3. Build HPOConfig with CLI overrides (including task_type)
-        hpo_config_dict_merged = hpo_config_dict.copy()
-        hpo_config_dict_merged["enabled"] = True
-        hpo_config_dict_merged["n_trials"] = n_trials
-        hpo_config_dict_merged["timeout"] = timeout
-        hpo_config_dict_merged["cv_folds"] = cv_folds
-        hpo_config_dict_merged["backend"] = backend
-        hpo_config_dict_merged["task_type"] = task_type
-
-        # Override sampler/pruner types if specified via CLI
-        if "sampler" not in hpo_config_dict_merged:
-            hpo_config_dict_merged["sampler"] = {}
-        hpo_config_dict_merged["sampler"]["type"] = sampler_type
-
-        if "pruner" not in hpo_config_dict_merged:
-            hpo_config_dict_merged["pruner"] = {}
-        hpo_config_dict_merged["pruner"]["type"] = pruner_type
-
-        hpo_config = HPOConfig.from_dict(hpo_config_dict_merged)
-
-        # 4. Create HPO Manager
-        manager = HPOManager(hpo_config)
+        # 4. Create HPO Manager. P2-3e: --hpo-worker INDEX makes this process worker INDEX of a shared
+        #    study (derived sampler seed, no progress bar); its storage is checked for sharing here.
+        worker_index = getattr(args, "hpo_worker", None)
+        manager = HPOManager(hpo_config, worker_index=worker_index)
+        if worker_index is not None:
+            # The launcher pins the GPU per process (Optuna FAQ); MILIA only reports what it sees.
+            logger.info(
+                f"HPO worker {worker_index}: CUDA_VISIBLE_DEVICES="
+                f"{os.environ.get('CUDA_VISIBLE_DEVICES', '<unset>')}, "
+                f"visible CUDA devices: {torch.cuda.device_count()}"
+            )
 
         # 5. Resume study if requested (P1-2c): continue the named study from persistent storage.
         #    Validated before dataset/model preparation so a misconfiguration fails fast.
@@ -4278,6 +4353,10 @@ def _run_hpo_training(
         #    variable fails before dataset/model preparation (HPOConfigurationError, an HPOError).
         hpo_config.study.resolve_storage_url()
         resume_study_name = getattr(args, "resume_study", None)
+        if worker_index is not None and resume_study_name is None:
+            # P2-3e: a worker joins the configured study and never creates it (--hpo-init does), so
+            # it continues on the same resume path: must exist, direction/metric guarded (P1-2b/c).
+            resume_study_name = hpo_config.study.study_name
         resume_storage = None
         if resume_study_name:
             if not hpo_config.study.has_persistent_storage:
@@ -4999,6 +5078,10 @@ def main():
 
         # Print configuration summary
         cli_manager.print_configuration_summary(args)
+
+        # P2-3e: --hpo-init only creates the shared HPO study — no dataset is built
+        if getattr(args, "hpo_init", False):
+            return handle_hpo_init_mode(args, logger, cli_manager.config)
 
         # Determine validation approach
         validate_handlers = HANDLERS_AVAILABLE  # Handlers always used
