@@ -27,7 +27,14 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from milia_pipeline.exceptions import HPOConfigurationError
 
@@ -317,17 +324,33 @@ _ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Fields each storage kind requires / additionally accepts (P2-2a). Every other optional field must be
 # unset for that kind. Mirrored by value in config_bridge (behavioural parity test).
 _STORAGE_KIND_FIELDS: dict[str, frozenset[str]] = {
-    "rdb": frozenset({"url_env"}),
+    "rdb": frozenset(),
     "journal_file": frozenset({"journal_path"}),
+}
+# Exactly one field of each group must be set (P2-4a): the rdb URL comes from an environment variable
+# or from a file (e.g. a Docker / Kubernetes secret), never both.
+_STORAGE_KIND_ONE_OF: dict[str, tuple[str, ...]] = {
+    "rdb": ("url_env", "url_file"),
+    "journal_file": (),
 }
 _STORAGE_KIND_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
     # Heartbeat (P2-2b): optuna 4.9.0 implements it in RDBStorage only (JournalStorage is not a
     # BaseHeartbeat), so the fields belong to "rdb".
-    "rdb": frozenset({"engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}),
+    "rdb": frozenset(
+        {"url_env", "url_file", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
+    ),
     "journal_file": frozenset(),
 }
 _STORAGE_KIND_ALL_FIELDS: frozenset[str] = frozenset(
-    {"url_env", "journal_path", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
+    {
+        "url_env",
+        "url_file",
+        "journal_path",
+        "engine_kwargs",
+        "heartbeat_interval",
+        "grace_period",
+        "max_retry",
+    }
 )
 
 
@@ -335,15 +358,17 @@ class StorageConfig(BaseModel):
     """
     Typed study-storage selection (P2-1, S1; additive to ``StudyConfig.storage``).
 
-    The storage URL is read from the environment variable named by ``url_env`` when the study is
-    created (Twelve-Factor §III): credentials never appear in YAML, and the resolved URL is never
-    stored on the model, so ``model_dump()`` / ``to_dict()`` carry only the variable name.
+    The storage URL is read when the study is created — from the environment variable named by
+    ``url_env`` (Twelve-Factor §III) or from the file named by ``url_file`` (a secret mounted as a file,
+    e.g. Docker ``/run/secrets/<name>``; P2-4a): credentials never appear in YAML, and the resolved URL is
+    never stored on the model, so ``model_dump()`` / ``to_dict()`` carry only the variable name or path.
 
     ``kind`` selects the storage backend; each kind accepts only its own fields (anything else is
     rejected, never silently ignored — F46). Further kinds and fields are added together with the code
     that consumes them.
 
-    - ``"rdb"`` — ``optuna.storages.RDBStorage`` (any SQLAlchemy URL): requires ``url_env``; optional
+    - ``"rdb"`` — ``optuna.storages.RDBStorage`` (any SQLAlchemy URL): requires exactly one of
+      ``url_env`` / ``url_file`` (the file's content, surrounding whitespace removed, is the URL); optional
       ``engine_kwargs`` forwarded to ``sqlalchemy.create_engine`` (P2-2a); optional heartbeat (P2-2b):
       ``heartbeat_interval`` seconds between heartbeats of a running trial; a trial without a heartbeat
       for ``grace_period`` seconds (default ``2 * heartbeat_interval``; must exceed the interval, or
@@ -357,6 +382,7 @@ class StorageConfig(BaseModel):
     Attributes:
         kind: Storage backend kind
         url_env: Name of the environment variable holding the storage URL (``rdb``)
+        url_file: Path of a file holding the storage URL (``rdb``; exclusive with ``url_env``)
         journal_path: Journal log file path (``journal_file``)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (``rdb``)
         heartbeat_interval: Seconds between trial heartbeats (``rdb``)
@@ -365,6 +391,7 @@ class StorageConfig(BaseModel):
 
     Examples:
         >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL")
+        >>> StorageConfig(kind="rdb", url_file="/run/secrets/hpo_storage_url", heartbeat_interval=60)
         >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL", heartbeat_interval=60, max_retry=2)
         >>> StorageConfig(kind="journal_file", journal_path="hpo_journal.log")
     """
@@ -373,6 +400,7 @@ class StorageConfig(BaseModel):
 
     kind: Literal["rdb", "journal_file"]
     url_env: str | None = None
+    url_file: str | None = None
     journal_path: str | None = None
     engine_kwargs: dict[str, Any] | None = None
     # strict: YAML `true` / "60" must not silently become 1 / 60 seconds
@@ -391,12 +419,12 @@ class StorageConfig(BaseModel):
             )
         return v
 
-    @field_validator("journal_path")
+    @field_validator("journal_path", "url_file")
     @classmethod
-    def validate_journal_path(cls, v: str | None) -> str | None:
-        """Validate ``journal_path`` is a non-blank path."""
+    def validate_path(cls, v: str | None, info: ValidationInfo) -> str | None:
+        """Validate ``journal_path`` / ``url_file`` is a non-blank path."""
         if v is not None and not v.strip():
-            raise ValueError("journal_path cannot be empty")
+            raise ValueError(f"{info.field_name} cannot be empty")
         return v
 
     @model_validator(mode="after")
@@ -406,6 +434,11 @@ class StorageConfig(BaseModel):
         missing = [name for name in sorted(required) if getattr(self, name) is None]
         if missing:
             raise ValueError(f"storage_options kind '{self.kind}' requires: {', '.join(missing)}")
+        one_of = _STORAGE_KIND_ONE_OF[self.kind]
+        if one_of and sum(getattr(self, name) is not None for name in one_of) != 1:
+            raise ValueError(
+                f"storage_options kind '{self.kind}' requires exactly one of: {', '.join(one_of)}"
+            )
         allowed = required | _STORAGE_KIND_OPTIONAL_FIELDS[self.kind]
         foreign = [
             name
@@ -435,15 +468,19 @@ class StorageConfig(BaseModel):
         return self
 
     def resolve_url(self, environ: Mapping[str, str] | None = None) -> str:
-        """Return the storage URL from the environment at call time (``rdb`` only).
+        """Return the storage URL at call time (``rdb`` only): the content of ``url_file`` (surrounding
+        whitespace removed, so a trailing newline is harmless) or the value of ``url_env``.
 
         Args:
             environ: Environment mapping (defaults to ``os.environ``)
 
         Raises:
-            HPOConfigurationError: The kind has no URL, or the variable is unset or empty (the message
-                names the variable, never a value)
+            HPOConfigurationError: The kind has no URL; the variable is unset or empty; the file is
+                missing, unreadable, not UTF-8 or empty (messages name the variable or path, never a
+                value)
         """
+        if self.url_file is not None:
+            return self._read_url_file()
         if self.url_env is None:
             raise HPOConfigurationError(
                 f"storage_options kind '{self.kind}' has no storage URL",
@@ -456,6 +493,35 @@ class StorageConfig(BaseModel):
                 f"Storage URL environment variable '{self.url_env}' is not set or empty",
                 config_key="models.hpo.study.storage_options.url_env",
                 details=f"Export {self.url_env} with the storage URL before starting HPO",
+            )
+        return url
+
+    def _read_url_file(self) -> str:
+        """Read the URL from ``url_file``; errors never include file content (it holds a password)."""
+        config_key = "models.hpo.study.storage_options.url_file"
+        details = (
+            "Provide the file (e.g. a Docker secret at /run/secrets/<name>) before starting HPO"
+        )
+        try:
+            with open(self.url_file, encoding="utf-8") as handle:
+                url = handle.read().strip()
+        except OSError as e:
+            raise HPOConfigurationError(
+                f"Storage URL file '{self.url_file}' cannot be read ({e.strerror})",
+                config_key=config_key,
+                details=details,
+            ) from None
+        except UnicodeDecodeError:
+            raise HPOConfigurationError(
+                f"Storage URL file '{self.url_file}' is not UTF-8 text",
+                config_key=config_key,
+                details=details,
+            ) from None
+        if not url:
+            raise HPOConfigurationError(
+                f"Storage URL file '{self.url_file}' is empty",
+                config_key=config_key,
+                details=details,
             )
         return url
 
@@ -526,15 +592,16 @@ class StudyConfig(BaseModel, frozen=True):
 
     def resolve_storage_url(self, environ: Mapping[str, str] | None = None) -> str | None:
         """Return the storage URL for this run, if the storage is URL-based: ``storage``, or the URL
-        resolved from ``storage_options.url_env`` at call time. ``None`` for in-memory storage and for
-        storages without a URL (``journal_file``); use ``has_persistent_storage`` to test persistence
-        and ``backends.storage_factory.build_storage`` to obtain the storage itself.
+        resolved from ``storage_options.url_env`` / ``url_file`` at call time. ``None`` for in-memory
+        storage and for storages without a URL (``journal_file``); use ``has_persistent_storage`` to test
+        persistence and ``backends.storage_factory.build_storage`` to obtain the storage itself.
 
         Raises:
-            HPOConfigurationError: ``storage_options`` names an unset or empty variable
+            HPOConfigurationError: ``storage_options`` names an unset or empty variable, or a missing,
+                unreadable or empty URL file
         """
         if self.storage_options is not None:
-            if self.storage_options.url_env is None:
+            if self.storage_options.kind != "rdb":
                 return None
             return self.storage_options.resolve_url(environ)
         return self.storage

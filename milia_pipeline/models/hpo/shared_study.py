@@ -46,7 +46,8 @@ def validate_shared_study(config: HPOConfig, environ: Mapping[str, str] | None =
 
     Args:
         config: HPO configuration of this process
-        environ: Environment for ``storage_options.url_env`` (defaults to ``os.environ``)
+        environ: Environment for ``storage_options.url_env`` (defaults to ``os.environ``; ``url_file`` is
+            read from disk)
 
     Raises:
         HPOConfigurationError: In-memory storage, a SQLite URL, or an RDB storage without heartbeat.
@@ -82,7 +83,7 @@ def validate_shared_study(config: HPOConfig, environ: Mapping[str, str] | None =
                 "killed worker leaves its trial RUNNING",
                 config_key=f"{_STORAGE_KEY}.heartbeat_interval",
                 details=(
-                    "Use storage_options with kind 'rdb', url_env and heartbeat_interval "
+                    "Use storage_options with kind 'rdb', url_env or url_file, and heartbeat_interval "
                     "(a plain study.storage URL cannot carry a heartbeat)"
                 ),
             )

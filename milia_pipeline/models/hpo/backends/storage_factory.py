@@ -8,7 +8,7 @@ Single construction point for the storage a study runs on, built from ``StudyCon
 - ``storage`` (URL string) is returned unchanged — Optuna builds ``RDBStorage`` from it exactly as
   before (``optuna.storages.get_storage``); this legacy path is untouched (Parallel Change, expand).
 - ``storage_options`` ``kind="rdb"`` → ``optuna.storages.RDBStorage(url, engine_kwargs=...)`` with the
-  URL read from ``url_env`` now (never stored on the config); with ``heartbeat_interval`` also
+  URL read from ``url_env`` or ``url_file`` now (never stored on the config); with ``heartbeat_interval`` also
   ``grace_period`` and, for ``max_retry``, ``RetryHeartbeatStaleTrialCallback`` (P2-2b): trials left
   ``RUNNING`` by a killed worker are failed and, if configured, re-queued a bounded number of times.
 - ``storage_options`` ``kind="journal_file"`` →
@@ -51,7 +51,7 @@ def build_storage(study: StudyConfig) -> str | BaseStorage | None:
         ``study.storage`` unchanged, an ``optuna.storages.BaseStorage``, or ``None``
 
     Raises:
-        HPOConfigurationError: Unset ``url_env`` variable, or ``engine_kwargs`` rejected by
+        HPOConfigurationError: Unset ``url_env`` variable or unreadable ``url_file``, or ``engine_kwargs`` rejected by
             ``sqlalchemy.create_engine``
         BackendError: Optuna unavailable, database driver missing, or the storage cannot be opened
     """

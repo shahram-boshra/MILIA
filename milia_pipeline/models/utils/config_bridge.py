@@ -27,7 +27,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 # Import config loader
 try:
@@ -253,13 +260,35 @@ _HPO_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Storage kind → (required fields, additionally accepted fields), same rule as hpo_config (P2-2a).
 _HPO_STORAGE_KIND_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
     "rdb": (
-        frozenset({"url_env"}),
-        frozenset({"engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}),  # P2-2b
+        frozenset(),
+        frozenset(
+            {
+                "url_env",
+                "url_file",
+                "engine_kwargs",
+                "heartbeat_interval",
+                "grace_period",
+                "max_retry",
+            }
+        ),  # P2-2b heartbeat, P2-4a url_file
     ),
     "journal_file": (frozenset({"journal_path"}), frozenset()),
 }
+# Storage kind → fields of which exactly one must be set (P2-4a), same rule as hpo_config.
+_HPO_STORAGE_KIND_ONE_OF: dict[str, tuple[str, ...]] = {
+    "rdb": ("url_env", "url_file"),
+    "journal_file": (),
+}
 _HPO_STORAGE_FIELDS: frozenset[str] = frozenset(
-    {"url_env", "journal_path", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
+    {
+        "url_env",
+        "url_file",
+        "journal_path",
+        "engine_kwargs",
+        "heartbeat_interval",
+        "grace_period",
+        "max_retry",
+    }
 )
 
 
@@ -991,6 +1020,7 @@ class HPOStorageConfigBridge(BaseModel):
     Attributes:
         kind: Storage backend kind ("rdb", "journal_file")
         url_env: Name of the environment variable holding the storage URL (rdb)
+        url_file: Path of a file holding the storage URL (rdb, exclusive with url_env, P2-4a)
         journal_path: Journal log file path (journal_file, P2-2a)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (rdb, P2-2a)
         heartbeat_interval: Seconds between trial heartbeats (rdb, P2-2b)
@@ -1002,6 +1032,7 @@ class HPOStorageConfigBridge(BaseModel):
 
     kind: Literal["rdb", "journal_file"]
     url_env: str | None = None
+    url_file: str | None = None
     journal_path: str | None = None
     engine_kwargs: dict[str, Any] | None = None
     heartbeat_interval: int | None = Field(default=None, strict=True, ge=1)
@@ -1019,21 +1050,26 @@ class HPOStorageConfigBridge(BaseModel):
             )
         return v
 
-    @field_validator("journal_path")
+    @field_validator("journal_path", "url_file")
     @classmethod
-    def validate_journal_path(cls, v: str | None) -> str | None:
-        """Validate ``journal_path`` is a non-blank path."""
+    def validate_path(cls, v: str | None, info: ValidationInfo) -> str | None:
+        """Validate ``journal_path`` / ``url_file`` is a non-blank path."""
         if v is not None and not v.strip():
-            raise ValueError("journal_path cannot be empty")
+            raise ValueError(f"{info.field_name} cannot be empty")
         return v
 
     @model_validator(mode="after")
     def validate_fields_for_kind(self) -> "HPOStorageConfigBridge":
-        """Same per-kind field rule as ``StorageConfig`` (required / accepted fields per kind)."""
+        """Same per-kind field rule as ``StorageConfig`` (required / one-of / accepted fields)."""
         required, optional = _HPO_STORAGE_KIND_FIELDS[self.kind]
         missing = [name for name in sorted(required) if getattr(self, name) is None]
         if missing:
             raise ValueError(f"storage_options kind '{self.kind}' requires: {', '.join(missing)}")
+        one_of = _HPO_STORAGE_KIND_ONE_OF[self.kind]
+        if one_of and sum(getattr(self, name) is not None for name in one_of) != 1:
+            raise ValueError(
+                f"storage_options kind '{self.kind}' requires exactly one of: {', '.join(one_of)}"
+            )
         foreign = [
             name
             for name in sorted(_HPO_STORAGE_FIELDS - required - optional)
@@ -1071,7 +1107,8 @@ class HPOStudyConfigBridge(BaseModel):
         metric: Metric name to optimize (must match Trainer output)
         study_name: Name for the study (for persistence)
         storage: Storage URL (None for in-memory, "sqlite:///file.db" for persistence)
-        storage_options: Storage URL from an environment variable; exclusive with ``storage`` (P2-1)
+        storage_options: Storage URL from an environment variable or a file; exclusive with
+            ``storage`` (P2-1, P2-4a)
         load_if_exists: Whether to resume existing study
     """
 

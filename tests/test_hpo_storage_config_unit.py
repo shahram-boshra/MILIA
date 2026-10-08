@@ -93,7 +93,7 @@ class TestStorageKindFields:
     @pytest.mark.parametrize(
         ("fields", "message"),
         [
-            ({"kind": "rdb"}, "requires: url_env"),
+            ({"kind": "rdb"}, "requires exactly one of: url_env, url_file"),  # P2-4a
             ({"kind": "journal_file"}, "requires: journal_path"),
             (
                 {"kind": "rdb", "url_env": ENV, "journal_path": "j.log"},

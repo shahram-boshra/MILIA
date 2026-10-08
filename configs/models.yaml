@@ -911,6 +911,8 @@ models:
       # storage_options:              # Alternative to `storage` (never both): URL read from an
       #   kind: "rdb"                 # environment variable when HPO starts, so credentials stay out
       #   url_env: "MILIA_HPO_STORAGE_URL"   # of YAML; unset/empty variable → configuration error
+      #   # url_file: "/run/secrets/hpo_storage_url"  # instead of url_env (exactly one): file holding the
+      #                               # URL, e.g. a Docker/Kubernetes secret; read when HPO starts
       #   engine_kwargs:              # optional (rdb only): passed to sqlalchemy.create_engine
       #     pool_pre_ping: true
       #   heartbeat_interval: 60      # optional (rdb only): a trial whose worker died is marked FAIL
