@@ -688,6 +688,9 @@ class HPOConfig(BaseModel, frozen=True):
             and runs (P2-3a); None = no global budget. A process stops after its trial that reaches
             the budget; trials already running in other processes/threads still finish, so the
             final count is between n_trials_total and n_trials_total + (concurrent trials - 1) (R60)
+        show_progress_bar: Optuna's tqdm progress bar (P2-3d). None (default) = automatic: shown in a
+            single process, hidden in a worker of a shared study (``HPOManager(worker_index=...)``),
+            where N bars would interleave on one terminal; True / False force it on / off
         timeout: Maximum time in seconds (None for no limit)
         n_jobs: Number of parallel jobs (1 for sequential)
         search_space: Hyperparameter search space configuration
@@ -715,6 +718,7 @@ class HPOConfig(BaseModel, frozen=True):
     backend: str = "optuna"
     n_trials: int = 100
     n_trials_total: int | None = Field(default=None, strict=True, ge=1)
+    show_progress_bar: bool | None = Field(default=None, strict=True)
     timeout: int | None = None
     n_jobs: int = 1
     search_space: dict[str, dict[str, SearchSpaceParamConfig]] = Field(default_factory=dict)
@@ -856,6 +860,7 @@ class HPOConfig(BaseModel, frozen=True):
             backend=config_dict.get("backend", "optuna"),
             n_trials=config_dict.get("n_trials", 100),
             n_trials_total=config_dict.get("n_trials_total"),
+            show_progress_bar=config_dict.get("show_progress_bar"),
             timeout=config_dict.get("timeout"),
             n_jobs=config_dict.get("n_jobs", 1),
             search_space=search_space,

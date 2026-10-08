@@ -1268,6 +1268,7 @@ class HPOManager:
             n_jobs=self.config.n_jobs,
             catch=(Exception,),
             n_trials_total=self.config.n_trials_total,  # P2-3a: study-wide budget (None = off)
+            show_progress_bar=self._show_progress_bar(),  # P2-3d
         )
 
         elapsed = time.time() - start_time
@@ -1288,6 +1289,15 @@ class HPOManager:
         except HPOError as e:
             logger.error(f"HPO failed: {e}")
             raise
+
+    def _show_progress_bar(self) -> bool:
+        """Resolve ``config.show_progress_bar`` (P2-3d): an explicit True/False wins; None (default)
+        shows the bar in a single process and hides it in a worker of a shared study, where one bar
+        per process would interleave on the terminal."""
+        configured = self.config.show_progress_bar
+        if configured is not None:
+            return configured
+        return self.worker_index is None
 
     def _create_objective(
         self,

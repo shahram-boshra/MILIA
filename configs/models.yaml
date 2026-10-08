@@ -803,6 +803,8 @@ models:
                                        # reached still finish (up to concurrency - 1 extra)
     timeout: 120                       # LOW RESOURCE - 120s max
     n_jobs: 1                          # Parallel trials (1 = sequential)
+    # show_progress_bar: false         # Optional: null/absent = automatic (shown in a single process,
+                                       # hidden in workers of a shared study); true/false force it
 
     # =========================================================================
     # SEARCH SPACE DEFINITION

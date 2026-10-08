@@ -1876,6 +1876,23 @@ class TestModelConfig:
             f"n_trials_total={value!r}: bridge={bridge_ok}, HPOConfig={gate_ok}"
         )
 
+    @pytest.mark.parametrize("value", [None, True, False, "yes", 1, 0])
+    def test_show_progress_bar_acceptance_matches_hpo_config(self, value):
+        """P2-3d: the bridge accepts a progress-bar setting iff the execution gate (HPOConfig) does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        hpo = {"enabled": False, "show_progress_bar": value}
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": hpo,
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict(hpo))
+        assert bridge_ok == gate_ok, (
+            f"show_progress_bar={value!r}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+        )
+
     def test_storage_options_parsed_into_bridge(self):
         """P2-1: models.hpo.study.storage_options reaches the bridge view (variable name only)."""
         config_dict = {

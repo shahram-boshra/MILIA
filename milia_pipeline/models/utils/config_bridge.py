@@ -1108,6 +1108,7 @@ class HPOConfigBridge(BaseModel):
         backend: HPO backend ("optuna"; "ray_tune" is reserved and rejected)
         n_trials: Number of trials to run (per process)
         n_trials_total: Study-wide budget of finished trials across workers (P2-3a; None = off)
+        show_progress_bar: Optuna progress bar (P2-3d; None = automatic: off in workers)
         timeout: Maximum time in seconds (None for no limit)
         n_jobs: Number of parallel jobs (1 for sequential)
         search_space: Hyperparameter search space configuration
@@ -1122,6 +1123,7 @@ class HPOConfigBridge(BaseModel):
     backend: str = "optuna"
     n_trials: int = 100
     n_trials_total: int | None = Field(default=None, strict=True, ge=1)
+    show_progress_bar: bool | None = Field(default=None, strict=True)
     timeout: int | None = None
     n_jobs: int = 1
     search_space: dict[str, dict[str, HPOSearchSpaceParamBridge]] = Field(default_factory=dict)
@@ -1619,6 +1621,7 @@ class ModelConfig(BaseModel):
             backend=hpo_dict.get("backend", "optuna"),
             n_trials=hpo_dict.get("n_trials", 100),
             n_trials_total=hpo_dict.get("n_trials_total"),
+            show_progress_bar=hpo_dict.get("show_progress_bar"),
             timeout=hpo_dict.get("timeout"),
             n_jobs=hpo_dict.get("n_jobs", 1),
             search_space=search_space,

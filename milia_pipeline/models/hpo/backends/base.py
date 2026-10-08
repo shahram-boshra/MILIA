@@ -79,6 +79,7 @@ class HPOBackendProtocol(Protocol):
         callbacks: list[Callable] | None = None,
         *,
         n_trials_total: int | None = None,
+        show_progress_bar: bool = True,
     ) -> None:
         """
         Run optimization on the study.
@@ -92,6 +93,7 @@ class HPOBackendProtocol(Protocol):
             catch: Exceptions to catch and mark as failed trials
             callbacks: Optuna-style callbacks
             n_trials_total: Study-wide budget of finished trials across all workers (P2-3a)
+            show_progress_bar: Display a progress bar (P2-3d; the manager resolves the config)
         """
         ...
 

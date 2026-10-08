@@ -249,6 +249,7 @@ class OptunaBackend:
         callbacks: list[Callable] | None = None,
         *,
         n_trials_total: int | None = None,
+        show_progress_bar: bool = True,
     ) -> None:
         """
         Run optimization on the study.
@@ -265,6 +266,9 @@ class OptunaBackend:
                 workers and runs (P2-3a): ``optuna.study.MaxTrialsCallback`` stops this process after
                 the trial that reaches it; if the study already holds that many, no trial is started.
                 Trials running concurrently elsewhere still finish (overshoot <= concurrency - 1, R60).
+            show_progress_bar: Optuna's tqdm bar (P2-3d). Default True = the previously hard-coded
+                behaviour for direct callers; ``HPOManager`` passes the resolved config value. While a
+                bar is shown Optuna routes its log records through tqdm.
         """
         callbacks = list(callbacks or [])
         if n_trials_total is not None:
@@ -290,7 +294,7 @@ class OptunaBackend:
                 n_jobs=n_jobs,
                 catch=catch,
                 callbacks=callbacks,
-                show_progress_bar=True,
+                show_progress_bar=show_progress_bar,
             )
 
             # Log summary
