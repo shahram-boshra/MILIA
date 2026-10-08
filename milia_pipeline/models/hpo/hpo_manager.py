@@ -129,6 +129,7 @@ from .hpo_config import (
     HPOConfig,
     SearchSpaceParamConfig,
 )
+from .seeding import derive_worker_seed, validate_worker_index
 
 logger = logging.getLogger(__name__)
 
@@ -978,12 +979,16 @@ class HPOManager:
         >>> best_params = manager.optimize(model_name="GAT", dataset=dataset)
     """
 
-    def __init__(self, config: HPOConfig):
+    def __init__(self, config: HPOConfig, *, worker_index: int | None = None):
         """
         Initialize HPOManager.
 
         Args:
             config: HPOConfig instance with all HPO settings
+            worker_index: Index of this process among the workers of one shared study (P2-3b). With
+                a configured sampler seed, each worker samples with its own seed derived from
+                ``(worker_index, seed)``, so workers do not repeat each other's trials. ``None``
+                (default) = single process: the configured seed is used unchanged.
 
         Raises:
             HPOConfigurationError: If configuration is invalid
@@ -994,6 +999,7 @@ class HPOManager:
             )
 
         self.config = config
+        self.worker_index = validate_worker_index(worker_index)
         self.backend: HPOBackendProtocol | None = None
         self.study: Any | None = None
         self.best_params: dict[str, Any] | None = None
@@ -1214,10 +1220,16 @@ class HPOManager:
             percentile=self.config.pruner.percentile,
         )
 
-        # Create sampler
+        # Create sampler (P2-3b: a worker of a shared study samples with its own derived seed)
+        sampler_seed = derive_worker_seed(self.config.sampler.seed, self.worker_index)
+        if sampler_seed != self.config.sampler.seed:
+            logger.info(
+                f"Worker {self.worker_index}: sampler seed {sampler_seed} derived from configured "
+                f"seed {self.config.sampler.seed} (SeedSequence([worker_index, seed]))"
+            )
         sampler = self.backend.create_sampler(
             sampler_type=self.config.sampler.type.value,
-            seed=self.config.sampler.seed,
+            seed=sampler_seed,
             n_startup_trials=self.config.sampler.n_startup_trials,
             multivariate=self.config.sampler.multivariate,
             constant_liar=self.config.sampler.constant_liar,
