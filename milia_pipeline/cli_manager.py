@@ -1432,7 +1432,18 @@ class CLIManager:
             help=(
                 "Run as worker INDEX (0, 1, ...) of a shared HPO study (with --train --hpo): join the "
                 "existing study (models.hpo.study.study_name, or --resume-study NAME) without "
-                "creating it; the sampler seed is derived from INDEX"
+                "creating it and only run trials (the sampler seed is derived from INDEX); needs the "
+                "dataset already processed. Results and the final model come from --hpo-finalize"
+            ),
+        )
+        shared_study_group.add_argument(
+            "--hpo-finalize",
+            action="store_true",
+            default=False,
+            help=(
+                "After the workers of a shared HPO study finished (with --train --hpo): load the study "
+                "(models.hpo.study.study_name, or --resume-study NAME), write its results and retrain "
+                "the final model with the best trial's parameters, once; runs no trial"
             ),
         )
 
@@ -2043,7 +2054,8 @@ For more information, see: https://docs.example.com/milia-cli
         # Note: test_preprocessor_only and list_preprocessors do NOT require --preprocess-dataset
         # They list ALL available preprocessors, not a specific one
 
-        # P2-3e: shared-study flags (--hpo-init / --hpo-worker are mutually exclusive in argparse)
+        # P2-3e/P2-3f: shared-study flags (--hpo-init / --hpo-worker / --hpo-finalize are mutually
+        # exclusive in argparse)
         hpo_worker = getattr(args, "hpo_worker", None)
         if hpo_worker is not None:
             if hpo_worker < 0:
@@ -2053,6 +2065,19 @@ For more information, see: https://docs.example.com/milia-cli
                     "--hpo-worker runs HPO trials and requires --train --hpo.\n"
                     f"Example: {self.parser.prog} --train --hpo --hpo-worker 0"
                 )
+            if getattr(args, "force_reload", False):
+                # F49: workers run concurrently; reprocessing must happen once, before them
+                raise CLIValidationError(
+                    "--hpo-worker cannot be combined with --force-reload: process the dataset once "
+                    f"first ({self.parser.prog} --process --force-reload), then start the workers"
+                )
+        if getattr(args, "hpo_finalize", False) and (
+            not getattr(args, "train", False) or getattr(args, "hpo", None) is not True
+        ):
+            raise CLIValidationError(
+                "--hpo-finalize retrains the final model and requires --train --hpo.\n"
+                f"Example: {self.parser.prog} --train --hpo --hpo-finalize"
+            )
         if getattr(args, "hpo_init", False):
             conflicts = [
                 flag

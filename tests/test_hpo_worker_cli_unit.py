@@ -10,13 +10,14 @@ belongs to the launcher, so MILIA only reports it.
 """
 
 import argparse
+import contextlib
 import logging
 from unittest.mock import MagicMock, Mock, patch
 
 import optuna
 import pytest
 
-from milia_pipeline.exceptions import HPOConfigurationError
+from milia_pipeline.exceptions import HPOConfigurationError, HPOError
 from milia_pipeline.models.hpo.hpo_config import (
     HPOConfig,
     SamplerConfig,
@@ -189,6 +190,7 @@ class TestCli:
         args = _parse([])
         assert args.hpo_init is False
         assert args.hpo_worker is None
+        assert args.hpo_finalize is False
 
     def test_worker_index_parsed(self):
         args = _parse(["--train", "--hpo", "--hpo-worker", "2"])
@@ -201,10 +203,19 @@ class TestCli:
     def test_init_alone(self):
         assert _parse(["--hpo-init"]).hpo_init is True
 
+    def test_finalize_parsed(self):
+        args = _parse(["--train", "--hpo", "--hpo-finalize", "--resume-study", "s"])
+        assert (args.hpo_finalize, args.resume_study, args.hpo_worker) == (True, "s", None)
+
     @pytest.mark.parametrize(
         "argv",
-        [["--hpo-init", "--hpo-worker", "0"], ["--train", "--hpo", "--hpo-worker", "x"]],
-        ids=["init-and-worker", "non-integer"],
+        [
+            ["--hpo-init", "--hpo-worker", "0"],
+            ["--train", "--hpo", "--hpo-worker", "x"],
+            ["--train", "--hpo", "--hpo-finalize", "--hpo-worker", "0"],  # P2-3f
+            ["--hpo-init", "--hpo-finalize"],  # P2-3f
+        ],
+        ids=["init-and-worker", "non-integer", "finalize-and-worker", "init-and-finalize"],
     )
     def test_argparse_rejects(self, argv):
         with pytest.raises(SystemExit) as excinfo:
@@ -220,8 +231,22 @@ class TestCli:
             (["--train", "--no-hpo", "--hpo-worker", "0"], "requires --train --hpo"),
             (["--hpo-init", "--train"], "--train"),
             (["--hpo-init", "--resume-study", "s"], "--resume-study"),
+            # P2-3f
+            (["--train", "--hpo", "--hpo-worker", "0", "--force-reload"], "--force-reload"),
+            (["--hpo-finalize"], "requires --train --hpo"),
+            (["--train", "--hpo-finalize"], "requires --train --hpo"),
         ],
-        ids=["negative", "no-train", "no-hpo", "no-hpo-explicit", "init-train", "init-resume"],
+        ids=[
+            "negative",
+            "no-train",
+            "no-hpo",
+            "no-hpo-explicit",
+            "init-train",
+            "init-resume",
+            "worker-force-reload",
+            "finalize-no-train",
+            "finalize-no-hpo",
+        ],
     )
     def test_validation_rejects(self, argv, match):
         from milia_pipeline.cli_manager import CLIValidationError
@@ -302,26 +327,33 @@ class TestMainInit:
         create_dataset.assert_not_called()
 
 
-def _worker_run(worker_index, resume_study=None):
-    """Run main._run_hpo_training with a mocked manager; return (manager class mock, manager mock)."""
+def _worker_run(worker_index, resume_study=None, finalize=False, return_saves=False):
+    """Run main._run_hpo_training with a mocked manager; return (manager class mock, manager mock)
+    and, with ``return_saves``, the mocks of the results writer and of the final-model writer."""
     import main
 
     args = Mock()
     args.model_name = "GCN"
     args.resume_study = resume_study
     args.hpo_worker = worker_index
+    args.hpo_finalize = finalize
     manager = MagicMock()
     manager.resume_study.return_value = {"lr": 0.01}
     manager.optimize.return_value = {"lr": 0.01}
     manager.get_best_value.return_value = 0.1
+    manager.train_final_model.return_value = (Mock(), Mock(), {"best_val_loss": 0.2})
     study = StudyConfig(study_name="shared", storage="postgresql://h/db")
     with (
         patch("main.HPOConfig") as hpo_config_cls,
         patch("main.HPOManager", return_value=manager) as manager_cls,
-        patch("main._save_hpo_results"),
+        patch("main._save_hpo_results") as save_results,
+        patch("main._create_callbacks", return_value=[]),
+        patch("main._save_training_results") as save_model,
     ):
         hpo_config_cls.from_dict.return_value = Mock(n_trials=4, study=study)
         assert main._run_hpo_training(args, Mock(), Mock(), {"models": {"hpo": {}}}) == 0
+    if return_saves:
+        return manager_cls, manager, save_results, save_model
     return manager_cls, manager
 
 
@@ -339,7 +371,93 @@ class TestMainWorker:
         assert manager.resume_study.call_args.args[0] == "other"
 
     def test_single_process_unchanged(self):
-        manager_cls, manager = _worker_run(None)
+        manager_cls, manager, save_results, save_model = _worker_run(None, return_saves=True)
         assert manager_cls.call_args.kwargs["worker_index"] is None
         manager.optimize.assert_called_once()
         manager.resume_study.assert_not_called()
+        save_results.assert_called_once()
+        manager.train_final_model.assert_called_once()
+        save_model.assert_called_once()
+
+
+@pytest.mark.contract
+class TestWorkerLifecycle:
+    """P2-3f (F49): workers only run trials; --hpo-finalize writes results and the model once."""
+
+    def test_worker_writes_no_results_and_no_model(self):
+        _, manager, save_results, save_model = _worker_run(1, return_saves=True)
+        manager.resume_study.assert_called_once()
+        save_results.assert_not_called()
+        manager.train_final_model.assert_not_called()
+        save_model.assert_not_called()
+
+    def test_finalize_loads_study_without_trials_and_finalizes_once(self):
+        manager_cls, manager, save_results, save_model = _worker_run(
+            None, finalize=True, return_saves=True
+        )
+        assert manager_cls.call_args.kwargs["worker_index"] is None
+        manager.optimize.assert_not_called()
+        assert manager.resume_study.call_args.args[:2] == ("shared", "postgresql://h/db")
+        assert manager.resume_study.call_args.kwargs["additional_trials"] == 0
+        save_results.assert_called_once()
+        manager.train_final_model.assert_called_once()
+        save_model.assert_called_once()
+
+    def test_finalize_uses_named_study(self):
+        _, manager = _worker_run(None, resume_study="other", finalize=True)
+        assert manager.resume_study.call_args.args[0] == "other"
+        assert manager.resume_study.call_args.kwargs["additional_trials"] == 0
+
+    def test_finalize_requires_completed_trials(self, tmp_path):
+        """Real journal study with no finished trial: finalizing fails instead of retraining."""
+        from milia_pipeline.models.hpo.backends import build_storage
+        from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+        study = StudyConfig(study_name="shared", storage_options=_journal(tmp_path))
+        config = HPOConfig(enabled=True, study=study)
+        HPOManager(config).init_study()
+        with pytest.raises(HPOError, match="No completed trials"):
+            HPOManager(config).resume_study("shared", build_storage(study), additional_trials=0)
+
+    def _main_with_dataset(self, tmp_path, argv, processed):
+        import main
+        from milia_pipeline.cli_manager import CLIManager
+
+        if processed:
+            path = tmp_path / "processed" / main.PROCESSED_DATA_FILENAME
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b"")
+        args = CLIManager().parse_args([*argv, "--root-dir", str(tmp_path)])
+        cli_manager = Mock()
+        cli_manager.handle_plugin_operations.return_value = False
+        cli_manager.handle_research_api_commands.return_value = False
+        cli_manager.handle_descriptor_operations.return_value = False
+        cli_manager.config = {"models": {"hpo": {}}}
+        with (
+            patch("main.parse_cli_args", return_value=(args, cli_manager)),
+            patch("main.setup_logging", return_value=Mock()),
+            patch("main._register_custom_transforms_on_startup"),
+            patch("main._discover_and_register_plugins"),
+            patch("main.validate_configuration", return_value=(Mock(), Mock(), Mock(), {})),
+            patch("main.print_dataset_info"),
+            # Reaching the dataset build is the observable; stop there (main() exits 1 on errors)
+            patch(
+                "main.create_dataset_with_error_handling", side_effect=RuntimeError("stop")
+            ) as cd,
+            pytest.raises(SystemExit) if processed else contextlib.nullcontext(),
+        ):
+            result = main.main()
+        return (None if processed else result), cd
+
+    def test_worker_refuses_unprocessed_dataset(self, tmp_path):
+        result, create_dataset = self._main_with_dataset(
+            tmp_path, ["--train", "--hpo", "--hpo-worker", "0"], processed=False
+        )
+        assert result == 1
+        create_dataset.assert_not_called()
+
+    def test_worker_proceeds_with_processed_dataset(self, tmp_path):
+        _, create_dataset = self._main_with_dataset(
+            tmp_path, ["--train", "--hpo", "--hpo-worker", "0"], processed=True
+        )
+        create_dataset.assert_called_once()

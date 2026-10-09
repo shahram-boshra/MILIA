@@ -151,9 +151,12 @@ milia --train --hpo
 
 # Parallel HPO: several processes on one study. Needs a shared storage in
 # models.hpo.study.storage_options (journal_file on one host, or rdb with heartbeat_interval).
+milia --process                                               # process the dataset once
 milia --hpo-init                                              # create the study once
-CUDA_VISIBLE_DEVICES=0 milia --train --hpo --hpo-worker 0 &   # one worker process per GPU
-CUDA_VISIBLE_DEVICES=1 milia --train --hpo --hpo-worker 1 &
+CUDA_VISIBLE_DEVICES=0 milia --train --hpo --hpo-worker 0 &   # one worker process per GPU;
+CUDA_VISIBLE_DEVICES=1 milia --train --hpo --hpo-worker 1 &   # workers only run trials
+wait
+milia --train --hpo --hpo-finalize                            # results + final model, once
 
 # Run predictions (bundled sample; or supply your own CSV: header smiles,molecule_id)
 milia --predict --model-path ./checkpoints/best.pt \

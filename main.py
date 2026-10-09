@@ -4273,7 +4273,8 @@ def handle_hpo_init_mode(
 
     Runs before any dataset is built. Workers then join the study with
     ``--train --hpo --hpo-worker INDEX`` (one process per GPU, ``CUDA_VISIBLE_DEVICES`` set by the
-    launcher).
+    launcher); when all have finished, ``--train --hpo --hpo-finalize`` writes the results and the final
+    model once (P2-3f). Lifecycle: ``--process`` → ``--hpo-init`` → workers → ``--hpo-finalize``.
 
     Returns:
         Exit code (0 = study ready, 1 = failure)
@@ -4304,7 +4305,8 @@ def handle_hpo_init_mode(
     logger.info(
         f"Study '{hpo_config.study.study_name}' ready ({len(study.trials)} existing trials; "
         f"direction {hpo_config.study.direction.value}, metric '{hpo_config.study.metric}'). "
-        "Start workers with: --train --hpo --hpo-worker INDEX"
+        "Start workers with: --train --hpo --hpo-worker INDEX; when all are done, run once: "
+        "--train --hpo --hpo-finalize"
     )
     return 0
 
@@ -4353,9 +4355,11 @@ def _run_hpo_training(
         #    variable fails before dataset/model preparation (HPOConfigurationError, an HPOError).
         hpo_config.study.resolve_storage_url()
         resume_study_name = getattr(args, "resume_study", None)
-        if worker_index is not None and resume_study_name is None:
+        finalize = bool(getattr(args, "hpo_finalize", False))
+        if (worker_index is not None or finalize) and resume_study_name is None:
             # P2-3e: a worker joins the configured study and never creates it (--hpo-init does), so
             # it continues on the same resume path: must exist, direction/metric guarded (P1-2b/c).
+            # P2-3f: --hpo-finalize loads the same study the same way.
             resume_study_name = hpo_config.study.study_name
         resume_storage = None
         if resume_study_name:
@@ -4445,14 +4449,19 @@ def _run_hpo_training(
 
         # 8. Run optimization (P1-2c: --resume-study continues the named study; resume_study()
         #    requires it to exist and to match the configured direction/metric — P1-2a/P1-2b)
+        #    P2-3f: --hpo-finalize runs no trial (additional_trials=0 = load the study, take its best).
         if resume_study_name:
-            logger.info(
-                f"Continuing study '{resume_study_name}' with {hpo_config.n_trials} trials..."
-            )
+            additional_trials = 0 if finalize else hpo_config.n_trials
+            if finalize:
+                logger.info(f"Finalizing study '{resume_study_name}' (no new trials)...")
+            else:
+                logger.info(
+                    f"Continuing study '{resume_study_name}' with {hpo_config.n_trials} trials..."
+                )
             best_params = manager.resume_study(
                 resume_study_name,
                 resume_storage,
-                additional_trials=hpo_config.n_trials,
+                additional_trials=additional_trials,
                 model_name=model_name,
                 dataset=dataset,
                 base_hyperparameters=base_hyperparameters,
@@ -4482,6 +4491,16 @@ def _run_hpo_training(
         logger.info(f"Completed: {stats.get('n_completed', 'N/A')}")
         logger.info(f"Pruned: {stats.get('n_pruned', 'N/A')}")
         logger.info(f"Failed: {stats.get('n_failed', 'N/A')}")
+
+        # P2-3f (F49): a worker only contributes trials. Results and the final model are produced
+        # once, from the finished study, by --hpo-finalize — not by N workers writing the same files
+        # concurrently, each from the best trial that existed when it happened to finish.
+        if worker_index is not None:
+            logger.info(
+                f"HPO worker {worker_index} finished its trials. When all workers are done, run "
+                "once: --train --hpo --hpo-finalize (writes the results and the final model)"
+            )
+            return 0
 
         # 11. Save HPO results
         _save_hpo_results(manager, best_params, args, logger, config)
@@ -5112,6 +5131,16 @@ def main():
         # Construct processed file path
         processed_data_path = Path(root_dir) / "processed" / PROCESSED_DATA_FILENAME
 
+        # P2-3f (F49): workers of a shared study start together; PyG processes a dataset whose processed
+        # file is missing, with no inter-process lock, so a worker requires it to exist already.
+        if getattr(args, "hpo_worker", None) is not None and not processed_data_path.exists():
+            logger.error(f"HPO worker: processed dataset not found: {processed_data_path}")
+            logger.error(
+                "Process the dataset once before starting workers: milia --process "
+                "(with the same --root-dir and configuration)"
+            )
+            return 1
+
         # Print dataset information
         print_dataset_info(logger, dataset_config, processing_config, args.experimental_setup)
 
@@ -5713,4 +5742,5 @@ def print_final_summary(
 
 
 if __name__ == "__main__":
-    main()
+    # Same exit status as the `milia` console script, which calls sys.exit(main()) (P2-3f)
+    sys.exit(main())
