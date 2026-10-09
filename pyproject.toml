@@ -297,6 +297,7 @@ markers = [
     "perf: Performance benchmarks — wall-clock timing, measured best-of-N (min); the min is the machine lower bound, immune to CI load spikes (timeit docs)",
     "integration: marks integration tests",
     "gpu: marks tests requiring GPU",
+    "postgres: needs a PostgreSQL server named by MILIA_TEST_POSTGRES_URL (CI job test-postgres)",
 ]
 
 # uv — accelerator-aware resolution (see UV_MIGRATION_STRATEGY.md)

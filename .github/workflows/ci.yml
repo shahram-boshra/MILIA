@@ -159,6 +159,65 @@ jobs:
           uv run --no-sync python -c "import importlib.util as u; s=u.spec_from_file_location('c', 'milia_pipeline/plugins/descriptors/cdk_substructure/descriptors.py'); m=u.module_from_spec(s); s.loader.exec_module(m); assert m._init_cdk(), 'CDK engine failed to initialise'; print('CDK engine OK')"
           uv run --no-sync pytest tests/test_descriptor_cdk_substructure_unit.py -q --tb=short -rs
 
+  # P2-5 (blueprint S6): a study shared through a real PostgreSQL server — worker processes within the
+  # global budget, heartbeat recovery of a killed worker, study initialization, URL redaction. The
+  # service container is the GitHub-documented pattern (health check, port mapped to localhost); the
+  # image is the one compose.yaml pins (P2-4c). The concurrency tests run 5 times: one green run of a
+  # race-sensitive test proves little.
+  test-postgres:
+    name: Test PostgreSQL storage (Python 3.12)
+    runs-on: ubuntu-24.04
+    needs: lint
+    # F47 rule for a job without history: bound from its own steps — the sync retry and the 5 test
+    # runs (≈30 s each in the sandbox, R80) fit in the 30-min limit of the other test jobs.
+    timeout-minutes: 30
+    # Least privilege (ghalint 001/013, F48): new jobs add no new finding
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+        env:
+          POSTGRES_USER: milia
+          POSTGRES_DB: milia_hpo
+          # Throwaway credential of an ephemeral CI container reachable only from this job
+          POSTGRES_PASSWORD: milia-ci  # pragma: allowlist secret
+        options: >-
+          --health-cmd "pg_isready --username=milia --dbname=milia_hpo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+        ports:
+          - 5432:5432
+    env:
+      MILIA_TEST_POSTGRES_URL: postgresql+psycopg://milia:milia-ci@localhost:5432/milia_hpo  # pragma: allowlist secret
+      MILIA_REQUIRE_POSTGRES_TESTS: "1"  # a missing URL or driver fails instead of skipping
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+        with:
+          persist-credentials: false
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.12.0"  # = Dockerfile UV_VERSION (PA-0i)
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Sync deps (+ hpo-postgres extra)
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08  # v3.0.2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          command: uv sync --locked --extra cpu --extra dev --extra hpo-postgres
+      - name: Run PostgreSQL integration tests 5 times
+        timeout-minutes: 15
+        run: |
+          for run in 1 2 3 4 5; do
+            echo "::group::run ${run}/5"
+            uv run --no-sync pytest -m postgres tests/test_hpo_postgres_integration.py -q --tb=short -rs
+            echo "::endgroup::"
+          done
+
   # Placeholder for a future FULL test suite (all ~23k tests, not just smoke).
   # With uv the entire scientific stack installs from PyPI, so no conda is needed —
   # enable by uncommenting:
