@@ -80,6 +80,7 @@ class HPOBackendProtocol(Protocol):
         *,
         n_trials_total: int | None = None,
         show_progress_bar: bool = True,
+        gc_after_trial: bool = False,
     ) -> None:
         """
         Run optimization on the study.
@@ -94,6 +95,7 @@ class HPOBackendProtocol(Protocol):
             callbacks: Optuna-style callbacks
             n_trials_total: Study-wide budget of finished trials across all workers (P2-3a)
             show_progress_bar: Display a progress bar (P2-3d; the manager resolves the config)
+            gc_after_trial: Garbage collection after every trial (P2-6)
         """
         ...
 

@@ -250,6 +250,7 @@ class OptunaBackend:
         *,
         n_trials_total: int | None = None,
         show_progress_bar: bool = True,
+        gc_after_trial: bool = False,
     ) -> None:
         """
         Run optimization on the study.
@@ -269,6 +270,8 @@ class OptunaBackend:
             show_progress_bar: Optuna's tqdm bar (P2-3d). Default True = the previously hard-coded
                 behaviour for direct callers; ``HPOManager`` passes the resolved config value. While a
                 bar is shown Optuna routes its log records through tqdm.
+            gc_after_trial: Optuna's ``gc.collect()`` after every trial (P2-6). Default False =
+                Optuna's default and the previous behaviour.
         """
         callbacks = list(callbacks or [])
         if n_trials_total is not None:
@@ -295,6 +298,7 @@ class OptunaBackend:
                 catch=catch,
                 callbacks=callbacks,
                 show_progress_bar=show_progress_bar,
+                gc_after_trial=gc_after_trial,
             )
 
             # Log summary

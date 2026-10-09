@@ -162,7 +162,6 @@ Examples:
 
 import argparse
 import logging
-import os
 import sys
 import time
 from datetime import datetime
@@ -4342,12 +4341,14 @@ def _run_hpo_training(
         worker_index = getattr(args, "hpo_worker", None)
         manager = HPOManager(hpo_config, worker_index=worker_index)
         if worker_index is not None:
-            # The launcher pins the GPU per process (Optuna FAQ); MILIA only reports what it sees.
-            logger.info(
-                f"HPO worker {worker_index}: CUDA_VISIBLE_DEVICES="
-                f"{os.environ.get('CUDA_VISIBLE_DEVICES', '<unset>')}, "
-                f"visible CUDA devices: {torch.cuda.device_count()}"
-            )
+            # The launcher pins the GPU per process (Optuna FAQ) and sets its CPU thread budget
+            # (OMP_NUM_THREADS, P2-6 / F50); MILIA reports what it sees and warns on oversubscription.
+            from milia_pipeline.models.hpo.worker_resources import describe_worker_resources
+
+            resources = describe_worker_resources()
+            logger.info(f"HPO worker {worker_index}: {resources.describe()}")
+            for warning in resources.warnings():
+                logger.warning(f"HPO worker {worker_index}: {warning}")
 
         # 5. Resume study if requested (P1-2c): continue the named study from persistent storage.
         #    Validated before dataset/model preparation so a misconfiguration fails fast.
@@ -5140,6 +5141,19 @@ def main():
                 "(with the same --root-dir and configuration)"
             )
             return 1
+        if getattr(args, "hpo_worker", None) is not None:
+            # P2-6 (F21): the dataset is loaded whole; stop before loading it when it cannot fit
+            from milia_pipeline.models.hpo.worker_resources import check_worker_memory
+
+            try:
+                dataset_bytes, available_bytes = check_worker_memory(processed_data_path)
+            except HPOError as e:
+                logger.error(str(e))
+                return 1
+            logger.info(
+                f"HPO worker: processed dataset {dataset_bytes / 2**30:.2f} GiB, "
+                f"available memory {available_bytes / 2**30:.2f} GiB"
+            )
 
         # Print dataset information
         print_dataset_info(logger, dataset_config, processing_config, args.experimental_setup)

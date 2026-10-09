@@ -153,6 +153,9 @@ docker compose --profile hpo down
 GPU host: `docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d` gives each worker its own GPU
 (`cu124` image). PostgreSQL is reachable only on the project's network (no published port); a database on another
 host should use `sslmode=verify-full` in the URL. More workers: add `hpo-worker-N` services (see `compose.yaml`).
+Each worker uses 1 PyTorch CPU thread by default (`OMP_NUM_THREADS`, as `torchrun` does for several processes); set
+`MILIA_WORKER_THREADS` in `.env` to at most `floor(CPUs / workers)`. A worker logs its threads, CPUs, GPUs and memory,
+and stops before loading a processed dataset larger than the memory available to it.
 
 ### Method 2: uv (Without Docker)
 
@@ -197,8 +200,9 @@ milia --train --hpo
 # models.hpo.study.storage_options (journal_file on one host, or rdb with heartbeat_interval).
 milia --process                                               # process the dataset once
 milia --hpo-init                                              # create the study once
-CUDA_VISIBLE_DEVICES=0 milia --train --hpo --hpo-worker 0 &   # one worker process per GPU;
-CUDA_VISIBLE_DEVICES=1 milia --train --hpo --hpo-worker 1 &   # workers only run trials
+# one GPU per worker; CPU threads per worker at most floor(CPUs / workers); workers only run trials
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 milia --train --hpo --hpo-worker 0 &
+CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 milia --train --hpo --hpo-worker 1 &
 wait
 milia --train --hpo --hpo-finalize                            # results + final model, once
 

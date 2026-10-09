@@ -108,6 +108,16 @@ class TestSecurity:
         (port,) = compose["services"]["optuna-dashboard"]["ports"]
         assert port.startswith("127.0.0.1:")
 
+    def test_workers_get_a_cpu_thread_budget(self, compose):
+        """P2-6 (F50): workers share the host, so each gets OMP_NUM_THREADS (default 1, as torchrun);
+        the steps that run alone keep PyTorch's default."""
+        for name, service in compose["services"].items():
+            environment = service.get("environment") or {}
+            if name.startswith("hpo-worker-"):
+                assert environment["OMP_NUM_THREADS"] == "${MILIA_WORKER_THREADS:-1}", name
+            else:
+                assert "OMP_NUM_THREADS" not in environment, name
+
     def test_dashboard_stops_when_its_secret_is_unreadable(self, compose):
         script = compose["services"]["optuna-dashboard"]["entrypoint"][2]
         assert 'url="$$(cat /run/secrets/dashboard_storage_url)" &&' in script

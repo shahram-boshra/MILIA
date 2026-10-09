@@ -260,11 +260,13 @@ class MockHPOConfig:
         study: MockStudyConfig | None = None,
         n_trials_total: int | None = None,
         show_progress_bar: bool | None = None,
+        gc_after_trial: bool = False,
     ):
         self.enabled = enabled
         self.n_trials = n_trials
         self.n_trials_total = n_trials_total  # P2-3a
         self.show_progress_bar = show_progress_bar  # P2-3d
+        self.gc_after_trial = gc_after_trial  # P2-6
         self.timeout = timeout
         self.n_jobs = n_jobs
         self.backend = backend

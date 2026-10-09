@@ -758,6 +758,9 @@ class HPOConfig(BaseModel, frozen=True):
         show_progress_bar: Optuna's tqdm progress bar (P2-3d). None (default) = automatic: shown in a
             single process, hidden in a worker of a shared study (``HPOManager(worker_index=...)``),
             where N bars would interleave on one terminal; True / False force it on / off
+        gc_after_trial: Run Python's garbage collector after every trial (P2-6; Optuna's
+            ``Study.optimize`` argument, default False): "If you see an increase in memory
+            consumption over several trials, try setting this flag to True"
         timeout: Maximum time in seconds (None for no limit)
         n_jobs: Number of parallel jobs (1 for sequential)
         search_space: Hyperparameter search space configuration
@@ -786,6 +789,7 @@ class HPOConfig(BaseModel, frozen=True):
     n_trials: int = 100
     n_trials_total: int | None = Field(default=None, strict=True, ge=1)
     show_progress_bar: bool | None = Field(default=None, strict=True)
+    gc_after_trial: bool = Field(default=False, strict=True)
     timeout: int | None = None
     n_jobs: int = 1
     search_space: dict[str, dict[str, SearchSpaceParamConfig]] = Field(default_factory=dict)
@@ -928,6 +932,7 @@ class HPOConfig(BaseModel, frozen=True):
             n_trials=config_dict.get("n_trials", 100),
             n_trials_total=config_dict.get("n_trials_total"),
             show_progress_bar=config_dict.get("show_progress_bar"),
+            gc_after_trial=config_dict.get("gc_after_trial", False),
             timeout=config_dict.get("timeout"),
             n_jobs=config_dict.get("n_jobs", 1),
             search_space=search_space,

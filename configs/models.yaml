@@ -805,6 +805,8 @@ models:
     n_jobs: 1                          # Parallel trials (1 = sequential)
     # show_progress_bar: false         # Optional: null/absent = automatic (shown in a single process,
                                        # hidden in workers of a shared study); true/false force it
+    # gc_after_trial: true             # Optional (default false): garbage collection after every trial;
+                                       # Optuna: use it if memory grows over several trials
 
     # =========================================================================
     # SEARCH SPACE DEFINITION

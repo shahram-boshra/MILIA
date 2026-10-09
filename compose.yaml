@@ -9,6 +9,8 @@
 # optuna-dashboard follows the study at http://127.0.0.1:${MILIA_DASHBOARD_PORT:-8080}.
 # GPU hosts: docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d (one GPU per worker).
 # More workers: copy a hpo-worker-N service with the next INDEX and add it to hpo-finalize.depends_on.
+# CPU threads per worker (P2-6): OMP_NUM_THREADS=${MILIA_WORKER_THREADS:-1}, as torchrun gives each of
+# several processes 1 by default; PyTorch bounds M processes on N CPUs to floor(N / M) threads each.
 #
 # Required environment (shell or a `.env` file next to this file; `.env` is git- and docker-ignored):
 #   MILIA_UID, MILIA_GID  host user/group (`id -u`, `id -g`). Every container runs as this user, so it can
@@ -16,7 +18,8 @@
 #   MILIA_DATA_DIR        host directory mounted at /data (the configs' global_paths.working_root_dir: /data)
 #   MILIA_CONFIG_DIR      host configs directory mounted read-only at /app/configs (see README)
 #   MILIA_DB_DIR          host directory for the PostgreSQL data, created by and owned by MILIA_UID
-# Optional: MILIA_IMAGE (default ghcr.io/shahram-boshra/milia:cpu), MILIA_DASHBOARD_PORT (default 8080).
+# Optional: MILIA_IMAGE (default ghcr.io/shahram-boshra/milia:cpu), MILIA_DASHBOARD_PORT (default 8080),
+#   MILIA_WORKER_THREADS (default 1): PyTorch CPU threads of each worker; at most floor(CPUs / workers).
 #
 # Secrets (Docker docs: files under /run/secrets/<name>, not environment variables): ./secrets/ holds
 # postgres_password, hpo_storage_url (postgresql+psycopg://…, read via storage_options.url_file) and
@@ -39,6 +42,13 @@ x-milia: &milia
     - ${MILIA_CONFIG_DIR:?set MILIA_CONFIG_DIR}:/app/configs:ro
   secrets: [hpo_storage_url]
   restart: "no"
+
+# Workers share the host: each gets its own CPU thread budget (the steps before and after run alone and
+# keep PyTorch's default, all CPUs)
+x-milia-worker: &milia-worker
+  <<: *milia
+  environment:
+    OMP_NUM_THREADS: ${MILIA_WORKER_THREADS:-1}
 
 services:
   postgres:
@@ -73,14 +83,14 @@ services:
         condition: service_completed_successfully
 
   hpo-worker-0:
-    <<: *milia
+    <<: *milia-worker
     command: ["--train", "--hpo", "--hpo-worker", "0"]
     depends_on:
       hpo-init:
         condition: service_completed_successfully
 
   hpo-worker-1:
-    <<: *milia
+    <<: *milia-worker
     command: ["--train", "--hpo", "--hpo-worker", "1"]
     depends_on:
       hpo-init:

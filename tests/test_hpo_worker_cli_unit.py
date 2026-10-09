@@ -327,7 +327,9 @@ class TestMainInit:
         create_dataset.assert_not_called()
 
 
-def _worker_run(worker_index, resume_study=None, finalize=False, return_saves=False):
+def _worker_run(
+    worker_index, resume_study=None, finalize=False, return_saves=False, return_logger=False
+):
     """Run main._run_hpo_training with a mocked manager; return (manager class mock, manager mock)
     and, with ``return_saves``, the mocks of the results writer and of the final-model writer."""
     import main
@@ -343,6 +345,7 @@ def _worker_run(worker_index, resume_study=None, finalize=False, return_saves=Fa
     manager.get_best_value.return_value = 0.1
     manager.train_final_model.return_value = (Mock(), Mock(), {"best_val_loss": 0.2})
     study = StudyConfig(study_name="shared", storage="postgresql://h/db")
+    logger = Mock()
     with (
         patch("main.HPOConfig") as hpo_config_cls,
         patch("main.HPOManager", return_value=manager) as manager_cls,
@@ -351,7 +354,9 @@ def _worker_run(worker_index, resume_study=None, finalize=False, return_saves=Fa
         patch("main._save_training_results") as save_model,
     ):
         hpo_config_cls.from_dict.return_value = Mock(n_trials=4, study=study)
-        assert main._run_hpo_training(args, Mock(), Mock(), {"models": {"hpo": {}}}) == 0
+        assert main._run_hpo_training(args, logger, Mock(), {"models": {"hpo": {}}}) == 0
+    if return_logger:
+        return logger
     if return_saves:
         return manager_cls, manager, save_results, save_model
     return manager_cls, manager
@@ -419,21 +424,29 @@ class TestWorkerLifecycle:
         with pytest.raises(HPOError, match="No completed trials"):
             HPOManager(config).resume_study("shared", build_storage(study), additional_trials=0)
 
-    def _main_with_dataset(self, tmp_path, argv, processed):
+    def _main_with_dataset(self, tmp_path, argv, processed, available=None):
         import main
         from milia_pipeline.cli_manager import CLIManager
+        from milia_pipeline.models.hpo import worker_resources
 
         if processed:
             path = tmp_path / "processed" / main.PROCESSED_DATA_FILENAME
             path.parent.mkdir(parents=True)
-            path.write_bytes(b"")
+            path.write_bytes(b"x" * 64)
         args = CLIManager().parse_args([*argv, "--root-dir", str(tmp_path)])
         cli_manager = Mock()
         cli_manager.handle_plugin_operations.return_value = False
         cli_manager.handle_research_api_commands.return_value = False
         cli_manager.handle_descriptor_operations.return_value = False
         cli_manager.config = {"models": {"hpo": {}}}
+        memory = (
+            patch.object(worker_resources, "available_memory_bytes", return_value=available)
+            if available is not None
+            else contextlib.nullcontext()
+        )
+        stops = processed and available is None
         with (
+            memory,
             patch("main.parse_cli_args", return_value=(args, cli_manager)),
             patch("main.setup_logging", return_value=Mock()),
             patch("main._register_custom_transforms_on_startup"),
@@ -444,10 +457,10 @@ class TestWorkerLifecycle:
             patch(
                 "main.create_dataset_with_error_handling", side_effect=RuntimeError("stop")
             ) as cd,
-            pytest.raises(SystemExit) if processed else contextlib.nullcontext(),
+            pytest.raises(SystemExit) if stops else contextlib.nullcontext(),
         ):
             result = main.main()
-        return (None if processed else result), cd
+        return (None if stops else result), cd
 
     def test_worker_refuses_unprocessed_dataset(self, tmp_path):
         result, create_dataset = self._main_with_dataset(
@@ -461,3 +474,34 @@ class TestWorkerLifecycle:
             tmp_path, ["--train", "--hpo", "--hpo-worker", "0"], processed=True
         )
         create_dataset.assert_called_once()
+
+    def test_worker_refuses_dataset_larger_than_available_memory(self, tmp_path):
+        """P2-6 (F21): stop before loading a dataset that cannot fit (64 bytes vs 63 available)."""
+        result, create_dataset = self._main_with_dataset(
+            tmp_path, ["--train", "--hpo", "--hpo-worker", "0"], processed=True, available=63
+        )
+        assert result == 1
+        create_dataset.assert_not_called()
+
+    def test_worker_logs_and_warns_on_its_resources(self):
+        """P2-6 (F50): the worker logs threads/CPUs/GPUs and warns when it would oversubscribe."""
+        from milia_pipeline.models.hpo.worker_resources import WorkerResources
+
+        seen = WorkerResources(
+            usable_cpus=4,
+            torch_threads=4,
+            omp_num_threads=None,
+            cuda_visible_devices=None,
+            cuda_devices=2,
+        )
+        with patch(
+            "milia_pipeline.models.hpo.worker_resources.describe_worker_resources",
+            return_value=seen,
+        ):
+            logger = _worker_run(2, return_logger=True)
+        infos = " ".join(str(c.args[0]) for c in logger.info.call_args_list)
+        warnings = [str(c.args[0]) for c in logger.warning.call_args_list]
+        assert "HPO worker 2: CUDA_VISIBLE_DEVICES=<unset>" in infos
+        assert "PyTorch threads: 4, usable CPUs: 4" in infos
+        assert any("OMP_NUM_THREADS=floor(4 / number of workers)" in w for w in warnings)
+        assert any("2 CUDA devices are visible" in w for w in warnings)

@@ -1274,6 +1274,7 @@ class HPOManager:
             catch=(Exception,),
             n_trials_total=self.config.n_trials_total,  # P2-3a: study-wide budget (None = off)
             show_progress_bar=self._show_progress_bar(),  # P2-3d
+            gc_after_trial=self.config.gc_after_trial,  # P2-6
         )
 
         elapsed = time.time() - start_time
