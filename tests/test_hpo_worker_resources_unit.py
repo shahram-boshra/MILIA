@@ -26,25 +26,39 @@ from milia_pipeline.models.hpo.hpo_config import HPOConfig, StorageConfig, Study
 GIB = 2**30
 
 
-def _resources(cpus=4, threads=1, cuda=0):
+def _resources(cpus=4, threads=1, cuda=0, omp=None, mkl=None):
     return wr.WorkerResources(
         usable_cpus=cpus,
         torch_threads=threads,
-        omp_num_threads=None,
+        omp_num_threads=omp,
         cuda_visible_devices=None,
         cuda_devices=cuda,
+        mkl_num_threads=mkl,
     )
 
 
 @pytest.mark.contract
 class TestWarnings:
     @pytest.mark.parametrize(
-        ("cpus", "threads", "warned"),
-        [(4, 4, True), (4, 8, True), (4, 2, False), (4, 1, False), (1, 1, False)],
+        ("cpus", "threads", "omp", "mkl", "warned"),
+        [
+            (4, 2, None, None, True),  # R83 host: 2 physical cores / 4 CPUs, no budget (F52)
+            (2, 2, None, None, True),
+            (4, 1, None, None, False),  # one thread cannot oversubscribe
+            (4, 1, "1", None, False),  # Compose default
+            (4, 2, "2", None, False),  # floor(4 / 2) set by the launcher
+            (4, 4, "4", None, False),  # one thread per CPU, set deliberately
+            (4, 2, None, "2", False),  # MKL_NUM_THREADS also sets PyTorch's default
+            (4, 8, "8", None, True),  # explicit budget above the usable CPUs
+        ],
     )
-    def test_threads_using_every_cpu(self, cpus, threads, warned):
-        found = _resources(cpus=cpus, threads=threads).warnings()
-        assert any("OMP_NUM_THREADS=floor(" in w for w in found) is warned
+    def test_thread_budget(self, cpus, threads, omp, mkl, warned):
+        found = _resources(cpus=cpus, threads=threads, omp=omp, mkl=mkl).warnings()
+        assert any(f"floor({cpus} / number of workers)" in w for w in found) is warned
+
+    def test_missing_budget_names_the_variable(self):
+        (warning,) = _resources(threads=2).warnings()
+        assert warning.startswith("no CPU thread budget from the launcher (OMP_NUM_THREADS unset)")
 
     @pytest.mark.parametrize(("cuda", "warned"), [(0, False), (1, False), (2, True)])
     def test_more_than_one_gpu_visible(self, cuda, warned):
@@ -54,6 +68,8 @@ class TestWarnings:
     def test_describe_reports_unset_variables(self):
         text = _resources().describe()
         assert "CUDA_VISIBLE_DEVICES=<unset>" in text and "OMP_NUM_THREADS=<unset>" in text
+        assert "MKL_NUM_THREADS" not in text
+        assert ", MKL_NUM_THREADS=3," in _resources(mkl="3").describe()
 
 
 @pytest.mark.contract
@@ -68,6 +84,21 @@ def test_launcher_thread_budget_reaches_pytorch():
         [sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True
     )
     assert out.stdout.split() == ["1", "1"]
+
+
+@pytest.mark.contract
+def test_mkl_budget_is_seen_and_not_warned():
+    """MKL_NUM_THREADS alone also sets PyTorch's thread count (intraop_default_num_threads)."""
+    code = (
+        "from milia_pipeline.models.hpo.worker_resources import describe_worker_resources as d;"
+        "r = d(); print(r.torch_threads, r.mkl_num_threads, len(r.warnings()))"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "OMP_NUM_THREADS"}
+    env["MKL_NUM_THREADS"] = "1"
+    out = subprocess.run(
+        [sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True
+    )
+    assert out.stdout.split() == ["1", "1", "0"]
 
 
 def _cgroup(tmp_path, entry, levels):

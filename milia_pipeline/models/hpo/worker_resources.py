@@ -16,7 +16,10 @@ given and warns about what oversubscribes the host; it stops early only on a cer
   given instantly to processes without the system going into swap") and the headroom of this
   process's cgroup v2 limits (a container memory limit), where usage excludes reclaimable cache
   (``inactive_file``) as ``docker stats`` computes it. cgroup v1 limits are not read.
-- CPU and GPU: warnings only.
+- CPU and GPU: warnings only. Without ``OMP_NUM_THREADS`` / ``MKL_NUM_THREADS`` PyTorch uses one thread per
+  physical core of the host (``intraop_default_num_threads`` → ``TaskThreadPoolBase::defaultNumThreads``:
+  "ThreadPool should be defaulted to number of physical cores"), whatever the number of workers, so a
+  worker without a launcher budget is warned, as torchrun warns when it sets one (P2-6a, F52).
 """
 
 from __future__ import annotations
@@ -43,24 +46,32 @@ class WorkerResources:
     omp_num_threads: str | None
     cuda_visible_devices: str | None
     cuda_devices: int
+    mkl_num_threads: str | None = None
 
     def describe(self) -> str:
+        mkl = f", MKL_NUM_THREADS={self.mkl_num_threads}" if self.mkl_num_threads else ""
         return (
             f"CUDA_VISIBLE_DEVICES={self.cuda_visible_devices or '<unset>'}, "
             f"visible CUDA devices: {self.cuda_devices}, "
-            f"OMP_NUM_THREADS={self.omp_num_threads or '<unset>'}, "
+            f"OMP_NUM_THREADS={self.omp_num_threads or '<unset>'}{mkl}, "
             f"PyTorch threads: {self.torch_threads}, usable CPUs: {self.usable_cpus}"
         )
 
     def warnings(self) -> list[str]:
         """Settings that oversubscribe the host when several workers share it."""
         found = []
-        if self.usable_cpus > 1 and self.torch_threads >= self.usable_cpus:
+        if not (self.omp_num_threads or self.mkl_num_threads) and self.torch_threads > 1:
             found.append(
-                f"PyTorch uses {self.torch_threads} threads on {self.usable_cpus} usable CPUs; with "
-                f"several workers on this host each one competes for every CPU. Give each worker "
+                f"no CPU thread budget from the launcher (OMP_NUM_THREADS unset): PyTorch uses its "
+                f"default of {self.torch_threads} threads, one per physical core of the host, so "
+                f"several workers on this host compete for the same cores. Give each worker "
                 f"OMP_NUM_THREADS=floor({self.usable_cpus} / number of workers) "
                 f"(Compose: MILIA_WORKER_THREADS)"
+            )
+        elif self.torch_threads > self.usable_cpus:
+            found.append(
+                f"PyTorch uses {self.torch_threads} threads on {self.usable_cpus} usable CPUs; "
+                f"lower OMP_NUM_THREADS to at most floor({self.usable_cpus} / number of workers)"
             )
         if self.cuda_devices > 1:
             found.append(
@@ -82,6 +93,7 @@ def describe_worker_resources() -> WorkerResources:
         usable_cpus=usable_cpu_count(),
         torch_threads=torch.get_num_threads(),
         omp_num_threads=os.environ.get("OMP_NUM_THREADS"),
+        mkl_num_threads=os.environ.get("MKL_NUM_THREADS"),
         cuda_visible_devices=os.environ.get("CUDA_VISIBLE_DEVICES"),
         cuda_devices=torch.cuda.device_count(),
     )
