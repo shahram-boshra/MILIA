@@ -110,6 +110,50 @@ Images are `linux/amd64`. **Validation level:** every published `cu124` image is
 
 To build a GPU image locally: `docker build --build-arg ACCEL=cu124 --build-arg NVIDIA_VISIBLE_DEVICES=all -t milia:cu124 .`
 
+#### Parallel HPO with Docker Compose (PostgreSQL)
+
+`compose.yaml` (profile `hpo`) runs one HPO study shared by several worker containers, stored in PostgreSQL 18,
+with [optuna-dashboard](https://github.com/optuna/optuna-dashboard) on `http://127.0.0.1:8080`. One command runs the
+whole lifecycle, each step starting when the previous one succeeded: dataset processing → study creation
+(`--hpo-init`) → two workers (`--hpo-worker 0/1`, trials only) → results and final model, written once
+(`--hpo-finalize`).
+
+```bash
+# 1. Secrets (files, never environment variables; ./secrets/ is git- and docker-ignored)
+(
+  umask 077 && mkdir -p secrets
+  openssl rand -hex 24 > secrets/postgres_password      # hex: safe inside a URL
+  pw="$(cat secrets/postgres_password)"
+  printf 'postgresql+psycopg://milia:%s@postgres:5432/milia_hpo' "$pw"  > secrets/hpo_storage_url  # pragma: allowlist secret
+  printf 'postgresql+psycopg2://milia:%s@postgres:5432/milia_hpo' "$pw" > secrets/dashboard_storage_url  # pragma: allowlist secret
+)
+
+# 2. A configs directory for the containers: a copy of configs/ with
+#      main.yaml    global_paths.working_root_dir: /data
+#      models.yaml  models.hpo.study.storage: null
+#                   models.hpo.study.storage_options: {kind: rdb, url_file: /run/secrets/hpo_storage_url,
+#                                                      heartbeat_interval: 60}
+mkdir -p ~/milia-hpo/data ~/milia-hpo/db && cp -r configs ~/milia-hpo/configs   # then edit the two files
+
+# 3. Run (all containers run as your user, so they can read the 0600 secrets and write the directories)
+cat > .env <<EOF
+MILIA_UID=$(id -u)
+MILIA_GID=$(id -g)
+MILIA_DATA_DIR=$HOME/milia-hpo/data
+MILIA_CONFIG_DIR=$HOME/milia-hpo/configs
+MILIA_DB_DIR=$HOME/milia-hpo/db
+EOF
+docker compose --profile hpo up -d
+docker compose --profile hpo logs -f hpo-finalize    # results + final model under ~/milia-hpo/data
+
+# 4. Stop (the study stays in ~/milia-hpo/db)
+docker compose --profile hpo down
+```
+
+GPU host: `docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d` gives each worker its own GPU
+(`cu124` image). PostgreSQL is reachable only on the project's network (no published port); a database on another
+host should use `sslmode=verify-full` in the URL. More workers: add `hpo-worker-N` services (see `compose.yaml`).
+
 ### Method 2: uv (Without Docker)
 
 ```bash

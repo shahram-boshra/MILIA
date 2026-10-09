@@ -67,6 +67,8 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+# Compose secret files for parallel HPO (compose.yaml, P2-4c)
+secrets/
 
 # ---- Logs & scratch ----
 *.log

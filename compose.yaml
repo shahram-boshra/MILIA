@@ -1,0 +1,124 @@
+# =============================================================================
+# MILIA — parallel HPO on PostgreSQL (Compose profile `hpo`; P2-4c, blueprint S4)
+# =============================================================================
+# One study shared by several worker containers (P2-3e/P2-3f lifecycle), stored in PostgreSQL:
+#   postgres (healthy) → hpo-process → hpo-init → hpo-worker-0, hpo-worker-1 → hpo-finalize
+# Each step starts when the previous one completed successfully (depends_on), so one command runs all:
+#   docker compose --profile hpo up -d
+#   docker compose --profile hpo logs -f hpo-finalize        # results + final model, written once
+# optuna-dashboard follows the study at http://127.0.0.1:${MILIA_DASHBOARD_PORT:-8080}.
+# GPU hosts: docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d (one GPU per worker).
+# More workers: copy a hpo-worker-N service with the next INDEX and add it to hpo-finalize.depends_on.
+#
+# Required environment (shell or a `.env` file next to this file; `.env` is git- and docker-ignored):
+#   MILIA_UID, MILIA_GID  host user/group (`id -u`, `id -g`). Every container runs as this user, so it can
+#                         read the 0600 secret files and write the host directories below.
+#   MILIA_DATA_DIR        host directory mounted at /data (the configs' global_paths.working_root_dir: /data)
+#   MILIA_CONFIG_DIR      host configs directory mounted read-only at /app/configs (see README)
+#   MILIA_DB_DIR          host directory for the PostgreSQL data, created by and owned by MILIA_UID
+# Optional: MILIA_IMAGE (default ghcr.io/shahram-boshra/milia:cpu), MILIA_DASHBOARD_PORT (default 8080).
+#
+# Secrets (Docker docs: files under /run/secrets/<name>, not environment variables): ./secrets/ holds
+# postgres_password, hpo_storage_url (postgresql+psycopg://…, read via storage_options.url_file) and
+# dashboard_storage_url (postgresql+psycopg2://…, the driver bundled in optuna-dashboard). ./secrets/ is
+# git- and docker-ignored. PostgreSQL publishes no port: it is reachable only on this project's network.
+# Images are pinned by digest (tag kept for readability).
+# =============================================================================
+
+name: milia
+
+x-milia-env: &milia-required
+  user: "${MILIA_UID:?set MILIA_UID (id -u)}:${MILIA_GID:?set MILIA_GID (id -g)}"
+  profiles: [hpo]
+
+x-milia: &milia
+  <<: *milia-required
+  image: ${MILIA_IMAGE:-ghcr.io/shahram-boshra/milia:cpu}
+  volumes:
+    - ${MILIA_DATA_DIR:?set MILIA_DATA_DIR}:/data
+    - ${MILIA_CONFIG_DIR:?set MILIA_CONFIG_DIR}:/app/configs:ro
+  secrets: [hpo_storage_url]
+  restart: "no"
+
+services:
+  postgres:
+    <<: *milia-required
+    image: postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+    environment:
+      POSTGRES_USER: milia
+      POSTGRES_DB: milia_hpo
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes:
+      # PostgreSQL 18 images keep PGDATA under /var/lib/postgresql/18/docker
+      - ${MILIA_DB_DIR:?set MILIA_DB_DIR}:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "--username=milia", "--dbname=milia_hpo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  hpo-process:
+    <<: *milia
+    command: ["--process"]
+
+  hpo-init:
+    <<: *milia
+    command: ["--hpo-init"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      hpo-process:
+        condition: service_completed_successfully
+
+  hpo-worker-0:
+    <<: *milia
+    command: ["--train", "--hpo", "--hpo-worker", "0"]
+    depends_on:
+      hpo-init:
+        condition: service_completed_successfully
+
+  hpo-worker-1:
+    <<: *milia
+    command: ["--train", "--hpo", "--hpo-worker", "1"]
+    depends_on:
+      hpo-init:
+        condition: service_completed_successfully
+
+  hpo-finalize:
+    <<: *milia
+    command: ["--train", "--hpo", "--hpo-finalize"]
+    depends_on:
+      hpo-worker-0:
+        condition: service_completed_successfully
+      hpo-worker-1:
+        condition: service_completed_successfully
+
+  optuna-dashboard:
+    <<: *milia-required
+    image: ghcr.io/optuna/optuna-dashboard:v0.21.0@sha256:b64bd33154185814d76aaab52ac175f2d409af79ba5b476a6df1af3b97a3b254
+    # The image's own entrypoint takes the storage URL as an argument; read it from the secret here so
+    # it never appears in the Compose file or the container's environment. `url=$(cat …) &&` stops with
+    # cat's error when the secret is unreadable, instead of starting the dashboard with an empty URL.
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        url="$$(cat /run/secrets/dashboard_storage_url)" &&
+        exec optuna-dashboard --port 8080 --host 0.0.0.0 --server gunicorn "$$url"
+    secrets: [dashboard_storage_url]
+    ports:
+      - "127.0.0.1:${MILIA_DASHBOARD_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  hpo_storage_url:
+    file: ./secrets/hpo_storage_url
+  dashboard_storage_url:
+    file: ./secrets/dashboard_storage_url

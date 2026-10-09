@@ -1,0 +1,44 @@
+# =============================================================================
+# MILIA — GPU override for compose.yaml (P2-4c): one GPU per HPO worker
+# =============================================================================
+#   docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d
+# Needs an NVIDIA driver and the NVIDIA Container Toolkit on the host (README "GPU images").
+# The container runtime exposes only the reserved device to each container (it appears as GPU 0
+# inside), so MILIA never sets CUDA_VISIBLE_DEVICES itself (P2-3e). `device_ids` and `count` are
+# mutually exclusive in Compose; device_ids pins each worker to its own GPU.
+# Default image: the CUDA 12.4 variant; MILIA_IMAGE overrides it as in compose.yaml.
+# =============================================================================
+
+x-gpu-image: &gpu-image
+  image: ${MILIA_IMAGE:-ghcr.io/shahram-boshra/milia:cu124}
+
+services:
+  hpo-worker-0:
+    <<: *gpu-image
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+
+  hpo-worker-1:
+    <<: *gpu-image
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+
+  hpo-finalize:
+    <<: *gpu-image
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]

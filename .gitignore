@@ -157,6 +157,8 @@ activemq-data/
 # Environments
 .env
 .envrc
+# Compose secret files for parallel HPO (compose.yaml, P2-4c) — never committed
+/secrets/
 .venv
 env/
 venv/
