@@ -14,7 +14,8 @@ the process starts, before any dataset or trial work:
 * An RDB storage needs a heartbeat (``storage_options.heartbeat_interval``): without it a killed
   worker leaves its trial ``RUNNING`` forever (F5); a plain ``study.storage`` URL cannot carry one.
 * ``journal_file`` is accepted: the Optuna tutorial recommends ``JournalStorage`` or ``RDBStorage``
-  for several processes on one host (several hosts: P2-7, ``journal_lock``).
+  for several processes on one host; across hosts it recommends RDB, and ``journal_lock`` (P2-7) selects
+  the NFS lock when a journal is shared anyway.
 * ``constant_liar: false`` with TPE is allowed but logged: TPE then ignores the trials still running
   in other workers and may sample similar parameters (F7).
 

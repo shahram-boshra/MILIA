@@ -923,6 +923,8 @@ models:
       # storage_options:              # Several processes on ONE host (file locks; not NFS/multi-node,
       #   kind: "journal_file"        # use rdb there): Optuna JournalStorage on a local log file
       #   journal_path: "hpo_journal.log"
+      #   journal_lock: "open"        # optional: "symlink" (Optuna default, NFSv2+) or "open"
+      #                               # (O_EXCL, NFSv3+) for file systems without symbolic links
       load_if_exists: true            # Resume existing study
 
     # =========================================================================

@@ -339,13 +339,15 @@ _STORAGE_KIND_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
     "rdb": frozenset(
         {"url_env", "url_file", "engine_kwargs", "heartbeat_interval", "grace_period", "max_retry"}
     ),
-    "journal_file": frozenset(),
+    # Lock object of the journal file (P2-7); None = Optuna's default lock
+    "journal_file": frozenset({"journal_lock"}),
 }
 _STORAGE_KIND_ALL_FIELDS: frozenset[str] = frozenset(
     {
         "url_env",
         "url_file",
         "journal_path",
+        "journal_lock",
         "engine_kwargs",
         "heartbeat_interval",
         "grace_period",
@@ -376,14 +378,20 @@ class StorageConfig(BaseModel):
       for a trial; ``max_retry`` re-queues such a trial at most that many times (absent = no retry).
       Heartbeat applies to ``Study.optimize`` (MILIA's path) and is experimental in Optuna 4.9.0.
     - ``"journal_file"`` — ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))``: safe
-      for several processes on **one host** (file locks); not for NFS / multi-node, where Optuna
-      recommends ``"rdb"`` (P2-2a). Relative paths resolve against the working directory.
+      for several processes on **one host** (file locks); for several hosts Optuna recommends ``"rdb"``
+      (P2-2a). Relative paths resolve against the working directory. ``journal_lock`` (P2-7) selects
+      the lock file Optuna creates next to the journal: absent = Optuna's default, the ``symlink``
+      lock (``JournalFileSymlinkLock``, atomic ``symlink(2)``, NFSv2+, the faster one); ``"open"`` =
+      ``JournalFileOpenLock`` (``open(2)`` with ``O_CREAT | O_EXCL``, NFSv3+ on kernel 2.6+), for file
+      systems that do not allow symbolic links.
 
     Attributes:
         kind: Storage backend kind
         url_env: Name of the environment variable holding the storage URL (``rdb``)
         url_file: Path of a file holding the storage URL (``rdb``; exclusive with ``url_env``)
         journal_path: Journal log file path (``journal_file``)
+        journal_lock: Journal lock, ``"symlink"`` or ``"open"`` (``journal_file``; None = Optuna's
+            default, symlink)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (``rdb``)
         heartbeat_interval: Seconds between trial heartbeats (``rdb``)
         grace_period: Seconds without heartbeat before a running trial is failed (``rdb``)
@@ -394,6 +402,7 @@ class StorageConfig(BaseModel):
         >>> StorageConfig(kind="rdb", url_file="/run/secrets/hpo_storage_url", heartbeat_interval=60)
         >>> StorageConfig(kind="rdb", url_env="MILIA_HPO_STORAGE_URL", heartbeat_interval=60, max_retry=2)
         >>> StorageConfig(kind="journal_file", journal_path="hpo_journal.log")
+        >>> StorageConfig(kind="journal_file", journal_path="/nfs/hpo.log", journal_lock="open")
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -402,6 +411,7 @@ class StorageConfig(BaseModel):
     url_env: str | None = None
     url_file: str | None = None
     journal_path: str | None = None
+    journal_lock: Literal["symlink", "open"] | None = None
     engine_kwargs: dict[str, Any] | None = None
     # strict: YAML `true` / "60" must not silently become 1 / 60 seconds
     heartbeat_interval: int | None = Field(default=None, strict=True, ge=1)

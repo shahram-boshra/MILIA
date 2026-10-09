@@ -272,7 +272,7 @@ _HPO_STORAGE_KIND_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
             }
         ),  # P2-2b heartbeat, P2-4a url_file
     ),
-    "journal_file": (frozenset({"journal_path"}), frozenset()),
+    "journal_file": (frozenset({"journal_path"}), frozenset({"journal_lock"})),  # P2-7 lock
 }
 # Storage kind → fields of which exactly one must be set (P2-4a), same rule as hpo_config.
 _HPO_STORAGE_KIND_ONE_OF: dict[str, tuple[str, ...]] = {
@@ -284,6 +284,7 @@ _HPO_STORAGE_FIELDS: frozenset[str] = frozenset(
         "url_env",
         "url_file",
         "journal_path",
+        "journal_lock",
         "engine_kwargs",
         "heartbeat_interval",
         "grace_period",
@@ -1022,6 +1023,7 @@ class HPOStorageConfigBridge(BaseModel):
         url_env: Name of the environment variable holding the storage URL (rdb)
         url_file: Path of a file holding the storage URL (rdb, exclusive with url_env, P2-4a)
         journal_path: Journal log file path (journal_file, P2-2a)
+        journal_lock: Journal lock "symlink" or "open" (journal_file, P2-7; None = Optuna's default)
         engine_kwargs: Keyword arguments for ``sqlalchemy.create_engine`` (rdb, P2-2a)
         heartbeat_interval: Seconds between trial heartbeats (rdb, P2-2b)
         grace_period: Seconds without heartbeat before a running trial is failed (rdb, P2-2b)
@@ -1034,6 +1036,7 @@ class HPOStorageConfigBridge(BaseModel):
     url_env: str | None = None
     url_file: str | None = None
     journal_path: str | None = None
+    journal_lock: Literal["symlink", "open"] | None = None
     engine_kwargs: dict[str, Any] | None = None
     heartbeat_interval: int | None = Field(default=None, strict=True, ge=1)
     grace_period: int | None = Field(default=None, strict=True, ge=1)

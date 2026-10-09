@@ -1849,6 +1849,30 @@ class TestModelConfig:
             {"storage_options": {"kind": "rdb", "url_file": 5}},
             {"storage_options": {"kind": "rdb"}},
             {"storage_options": {"kind": "journal_file", "journal_path": "j", "url_file": "/f"}},
+            # P2-7: journal_lock for journal_file only, "symlink" / "open"
+            {
+                "storage_options": {
+                    "kind": "journal_file",
+                    "journal_path": "j",
+                    "journal_lock": "open",
+                }
+            },
+            {
+                "storage_options": {
+                    "kind": "journal_file",
+                    "journal_path": "j",
+                    "journal_lock": "symlink",
+                }
+            },
+            {
+                "storage_options": {
+                    "kind": "journal_file",
+                    "journal_path": "j",
+                    "journal_lock": "flock",
+                }
+            },
+            {"storage_options": {"kind": "journal_file", "journal_path": "j", "journal_lock": 1}},
+            {"storage_options": {"kind": "rdb", "url_env": "X", "journal_lock": "open"}},
             {"storage": "sqlite:///a.db", "storage_options": {"kind": "rdb", "url_env": "X"}},
             {"storage": "sqlite:///a.db"},
             {},

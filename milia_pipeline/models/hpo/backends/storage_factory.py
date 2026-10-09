@@ -12,8 +12,10 @@ Single construction point for the storage a study runs on, built from ``StudyCon
   ``grace_period`` and, for ``max_retry``, ``RetryHeartbeatStaleTrialCallback`` (P2-2b): trials left
   ``RUNNING`` by a killed worker are failed and, if configured, re-queued a bounded number of times.
 - ``storage_options`` ``kind="journal_file"`` →
-  ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))`` — several processes on one host;
-  Optuna recommends RDB for multi-node because file locks may fail over NFS.
+  ``optuna.storages.JournalStorage(JournalFileBackend(journal_path, lock_obj=...))`` — several processes
+  on one host; Optuna recommends RDB for multi-node because file locks may fail over NFS. ``journal_lock``
+  (P2-7): absent → Optuna's default ``JournalFileSymlinkLock``; ``"symlink"`` / ``"open"`` →
+  ``JournalFileSymlinkLock`` / ``JournalFileOpenLock``, with a warning naming RDB for several hosts.
 - nothing configured → ``None`` (in-memory).
 
 Credentials never reach logs or exception messages: URLs are rendered with ``redact_url`` (P1-1).
@@ -71,7 +73,7 @@ def build_storage(study: StudyConfig) -> str | BaseStorage | None:
             )
         return storage
     if options.kind == "journal_file":
-        return _build_journal_file_storage(options.journal_path)
+        return _build_journal_file_storage(options.journal_path, options.journal_lock)
     raise HPOConfigurationError(
         f"Unsupported storage_options kind '{options.kind}'",
         config_key="models.hpo.study.storage_options.kind",
@@ -160,10 +162,21 @@ def _build_rdb_storage(
     return storage
 
 
-def _build_journal_file_storage(journal_path: str) -> BaseStorage:
+def _build_journal_file_storage(journal_path: str, journal_lock: str | None = None) -> BaseStorage:
     storages = _optuna_storages()
+    journal = storages.journal
+    lock_classes = {"symlink": journal.JournalFileSymlinkLock, "open": journal.JournalFileOpenLock}
+    lock_obj = None if journal_lock is None else lock_classes[journal_lock](journal_path)
+    if journal_lock is not None:
+        # An explicit lock is the NFS setting (F22): Optuna still recommends RDB across hosts
+        logger.warning(
+            f"Journal lock '{journal_lock}' selected for '{journal_path}': Optuna recommends kind "
+            "'rdb' for several hosts, since file locks over NFS may not work correctly"
+        )
     try:
-        storage = storages.JournalStorage(storages.journal.JournalFileBackend(journal_path))
+        storage = storages.JournalStorage(
+            journal.JournalFileBackend(journal_path, lock_obj=lock_obj)
+        )
     except OSError as e:
         raise BackendError(
             f"Failed to open journal storage '{journal_path}': {type(e).__name__}",
@@ -171,5 +184,6 @@ def _build_journal_file_storage(journal_path: str) -> BaseStorage:
             operation="build_storage",
             details=str(e),
         ) from e
-    logger.info(f"Using journal-file study storage '{journal_path}'")
+    lock = journal_lock or "symlink (Optuna default)"
+    logger.info(f"Using journal-file study storage '{journal_path}' (lock: {lock})")
     return storage
