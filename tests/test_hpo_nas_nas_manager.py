@@ -1730,6 +1730,48 @@ class TestNASManagerMergeSearchSpaces:
         # Architecture params from arch_space should override
         assert "hidden_channels" in result.search_space["architecture"]
 
+    @patch("milia_pipeline.models.hpo.nas.nas_manager.HPOManager", MockHPOManager)
+    def test_merge_search_spaces_keeps_every_other_field(self):
+        """F51: every HPOConfig field except enabled/search_space survives the merge unchanged."""
+        from milia_pipeline.models.hpo.hpo_config import (
+            HPOConfig,
+            PrunerConfig,
+            PrunerType,
+            SamplerConfig,
+            StudyConfig,
+        )
+        from milia_pipeline.models.hpo.nas.nas_manager import NASManager
+        from milia_pipeline.models.hpo.nas.search_space import GNNArchitectureSpace
+
+        source = HPOConfig(
+            enabled=False,
+            n_trials=7,
+            n_trials_total=50,
+            show_progress_bar=False,
+            gc_after_trial=True,
+            timeout=600,
+            n_jobs=2,
+            pruner=PrunerConfig(type=PrunerType.HYPERBAND),
+            sampler=SamplerConfig(seed=11),
+            study=StudyConfig(study_name="nas-f51"),
+            cv_folds=3,
+            cv_metric_aggregation="median",
+            task_type="graph_regression",
+        )
+        kept = set(HPOConfig.model_fields) - {"enabled", "search_space", "backend"}
+        # Guard: a field added to HPOConfig later must get a non-default value here
+        defaults = HPOConfig()
+        assert [n for n in kept if getattr(source, n) == getattr(defaults, n)] == []
+
+        arch_space = GNNArchitectureSpace()
+        nas = NASManager(arch_space, hpo_config=source)
+        result = nas._merge_search_spaces(source, nas._convert_arch_space_to_hpo_format(arch_space))
+
+        assert result.enabled is True
+        assert "architecture" in result.search_space
+        assert {n: getattr(result, n) for n in kept} == {n: getattr(source, n) for n in kept}
+        assert source.search_space == {}  # the caller's config is not modified
+
 
 # =============================================================================
 # NASMANAGER PARAMTYPE AND SEARCHSPACEPARAMCONFIG TESTS

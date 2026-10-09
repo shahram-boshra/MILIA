@@ -434,7 +434,10 @@ class NASManager:
             New HPOConfig with merged search spaces
 
         Notes:
-            Architecture parameters take precedence if there are key conflicts.
+            Architecture parameters take precedence if there are key conflicts. Every other field of
+            ``hpo_config`` is kept (F51: rebuilding field by field dropped fields added later, e.g.
+            ``n_trials_total``, ``show_progress_bar``, ``gc_after_trial``, ``task_type``); the new
+            config is validated like any other.
         """
         merged_space: dict[str, dict[str, SearchSpaceParamConfig]] = {}
 
@@ -447,18 +450,9 @@ class NASManager:
             else:
                 merged_space[category] = dict(params)
 
-        return HPOConfig(
-            enabled=True,
-            backend=hpo_config.backend,
-            n_trials=hpo_config.n_trials,
-            timeout=hpo_config.timeout,
-            n_jobs=hpo_config.n_jobs,
-            search_space=merged_space,
-            pruner=hpo_config.pruner,
-            sampler=hpo_config.sampler,
-            study=hpo_config.study,
-            cv_folds=hpo_config.cv_folds,
-            cv_metric_aggregation=hpo_config.cv_metric_aggregation,
+        # dict(model) maps every field to its value (nested configs stay validated instances)
+        return HPOConfig.model_validate(
+            {**dict(hpo_config), "enabled": True, "search_space": merged_space}
         )
 
     def search(
