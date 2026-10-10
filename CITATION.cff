@@ -39,8 +39,8 @@ identifiers:
     value: "10.5281/zenodo.21854751"
     description: "Concept DOI — always resolves to the latest MILIA release"
   - type: doi
-    value: "10.5281/zenodo.23212466"
-    description: "Version DOI — MILIA v1.16.0"
+    value: "10.5281/zenodo.23276219"
+    description: "Version DOI — MILIA v1.17.0"
   - type: doi
     value: "10.5281/zenodo.20151553"
     description: "Earlier manual Zenodo deposit (MILIA v1.1.0); not updated by releases"
