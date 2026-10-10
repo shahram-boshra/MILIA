@@ -904,7 +904,9 @@ models:
 
     study:
       direction: "minimize"           # minimize or maximize
-      metric: "val_loss"              # Metric to optimize
+      metric: "val_loss"              # Metric to optimize: any metric training reports (val_loss,
+                                      # val_mae, …) at the epoch with the lowest val_loss, or
+                                      # training_time; an unknown name fails the trial
       study_name: "milia_hpo"         # Study name for persistence
       storage: null                   # null = in-memory
                                       # "sqlite:///hpo_results.db" for persistence (and --resume-study)

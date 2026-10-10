@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- HPO optimized the validation loss whatever `models.hpo.study.metric` named: a metric other than `val_loss`
+  (for example `val_mae`) silently fell back to the best validation loss. A trial now reports the configured
+  metric at the epoch with the lowest validation loss — the model early stopping keeps — and a metric that
+  training does not produce fails the trial with the list of available metrics. Studies that use `val_loss`
+  get the same values as before.
+
 ## [1.17.0] - 2026-10-10
 
 Parallel HPO release: several processes or containers optimize one Optuna study kept in shared storage

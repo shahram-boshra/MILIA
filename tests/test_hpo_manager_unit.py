@@ -256,6 +256,18 @@ class MockHPOConfig:
         return cls(**config_dict)
 
 
+def _fit_result(**epoch_metrics: float) -> dict[str, Any]:
+    """A ``Trainer.fit()`` result with one epoch (the shape the trainer returns): per-epoch metrics in
+    ``train_metrics``, the kept epoch in ``best_epoch``."""
+    return {
+        "train_metrics": {name: [value] for name, value in epoch_metrics.items()},
+        "test_metrics": {},
+        "training_time": 1.0,
+        "best_epoch": 0,
+        "best_val_loss": epoch_metrics.get("val_loss"),
+    }
+
+
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -337,7 +349,7 @@ def mock_dataset():
 def mock_trainer():
     """Create a mock Trainer class."""
     trainer = MagicMock()
-    trainer.fit.return_value = {"val_loss": 0.05, "best_val_loss": 0.05}
+    trainer.fit.return_value = _fit_result(val_loss=0.05)
     trainer.callbacks = []
     return trainer
 
@@ -2246,7 +2258,7 @@ class TestRunCrossValidation:
         mock_datasplitter.k_fold_split.return_value = [(mock_train, MagicMock())] * len(fold_values)
 
         mock_trainer_instance = MagicMock()
-        mock_trainer_instance.fit.side_effect = [{"val_loss": v} for v in fold_values]
+        mock_trainer_instance.fit.side_effect = [_fit_result(val_loss=v) for v in fold_values]
         mock_trainer_class = MagicMock(return_value=mock_trainer_instance)
 
         mock_factory = MagicMock()
@@ -2320,7 +2332,7 @@ class TestRunCrossValidation:
         ]
 
         mock_trainer_instance = MagicMock()
-        mock_trainer_instance.fit.return_value = {"val_loss": 0.05}
+        mock_trainer_instance.fit.return_value = _fit_result(val_loss=0.05)
         mock_trainer_instance.callbacks = []
         mock_trainer_class = MagicMock(return_value=mock_trainer_instance)
 
@@ -2384,7 +2396,9 @@ class TestRunCrossValidation:
         ]
 
         # Different results for each fold
-        results_iter = iter([{"val_loss": 0.04}, {"val_loss": 0.06}, {"val_loss": 0.05}])
+        results_iter = iter(
+            [_fit_result(val_loss=0.04), _fit_result(val_loss=0.06), _fit_result(val_loss=0.05)]
+        )
         mock_trainer_instance = MagicMock()
         mock_trainer_instance.fit.side_effect = lambda: next(results_iter)
         mock_trainer_instance.callbacks = []
@@ -2482,7 +2496,8 @@ class TestRunCrossValidation:
                     task_type="graph_regression",
                 )
 
-            assert "no valid fold metrics" in str(exc_info.value).lower()
+            # F53: a run without the metric fails the trial; no fallback to best_val_loss
+            assert "is not produced by training" in str(exc_info.value)
 
 
 # =============================================================================
@@ -4853,7 +4868,7 @@ class TestCrossValidationAggregation:
             (mock_train, mock_val),
         ]
 
-        results_iter = iter([{"val_loss": 0.04}, {"val_loss": 0.06}])
+        results_iter = iter([_fit_result(val_loss=0.04), _fit_result(val_loss=0.06)])
         mock_trainer_instance = MagicMock()
         mock_trainer_instance.fit.side_effect = lambda: next(results_iter)
         mock_trainer_instance.callbacks = []
@@ -4907,7 +4922,7 @@ class TestCrossValidationAggregation:
             (mock_train, mock_val),
         ]
 
-        results_iter = iter([{"val_loss": 0.04}, {"val_loss": 0.06}])
+        results_iter = iter([_fit_result(val_loss=0.04), _fit_result(val_loss=0.06)])
         mock_trainer_instance = MagicMock()
         mock_trainer_instance.fit.side_effect = lambda: next(results_iter)
         mock_trainer_instance.callbacks = []
@@ -4947,8 +4962,9 @@ class TestCrossValidationAggregation:
 
             assert result == 0.06  # max of [0.04, 0.06]
 
-    def test_cv_uses_best_val_loss_fallback(self):
-        """Test CV uses 'best_val_loss' when primary metric not found."""
+    def test_cv_missing_metric_raises(self):
+        """F53: a metric the run does not produce raises (the old fallback to best_val_loss optimized
+        the validation loss whatever metric was configured)."""
         import torch.nn as nn
 
         mock_datasplitter = MagicMock()
@@ -4962,7 +4978,7 @@ class TestCrossValidationAggregation:
 
         # Return only 'best_val_loss', not the requested metric
         mock_trainer_instance = MagicMock()
-        mock_trainer_instance.fit.return_value = {"best_val_loss": 0.05}  # No 'custom_metric'
+        mock_trainer_instance.fit.return_value = _fit_result(val_loss=0.05)  # No 'custom_metric'
         mock_trainer_instance.callbacks = []
         mock_trainer_class = MagicMock(return_value=mock_trainer_instance)
 
@@ -4980,26 +4996,25 @@ class TestCrossValidationAggregation:
             patch("milia_pipeline.models.hpo.hpo_manager.Trainer", mock_trainer_class),
             patch("torch_geometric.loader.DataLoader", return_value=mock_dataloader),
         ):
+            from milia_pipeline.exceptions import HPOError
             from milia_pipeline.models.hpo.hpo_manager import _run_cross_validation
 
-            result = _run_cross_validation(
-                model_name="GCN",
-                dataset=MagicMock(),
-                model_params={},
-                optimizer_params={},
-                scheduler_params={},
-                loss_params={},
-                trainer_kwargs={},
-                callbacks=[],
-                n_folds=1,
-                metric="custom_metric",  # Not in results
-                aggregation="mean",
-                factory=mock_factory,
-                task_type="graph_regression",
-            )
-
-            # Should fallback to best_val_loss
-            assert result == 0.05
+            with pytest.raises(HPOError, match="Metric 'custom_metric' is not produced"):
+                _run_cross_validation(
+                    model_name="GCN",
+                    dataset=MagicMock(),
+                    model_params={},
+                    optimizer_params={},
+                    scheduler_params={},
+                    loss_params={},
+                    trainer_kwargs={},
+                    callbacks=[],
+                    n_folds=1,
+                    metric="custom_metric",  # Not in results
+                    aggregation="mean",
+                    factory=mock_factory,
+                    task_type="graph_regression",
+                )
 
 
 class TestTaskTypeWithConfig:

@@ -551,7 +551,9 @@ class StudyConfig(BaseModel, frozen=True):
 
     Attributes:
         direction: Optimization direction (minimize/maximize)
-        metric: Metric name to optimize (must match Trainer output keys)
+        metric: Metric name to optimize: a per-epoch metric of the Trainer (``val_loss``, ``val_mae``,
+            …), taken at the epoch with the lowest validation loss (the epoch early stopping keeps), or
+            ``training_time``; a metric the run does not produce fails the trial
         study_name: Name for the study (used for persistence and identification)
         storage: Storage URL (None for in-memory, "sqlite:///file.db" for persistence)
         storage_options: Typed storage selection (URL from an environment variable); mutually

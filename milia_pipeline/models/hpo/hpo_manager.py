@@ -1651,15 +1651,9 @@ class HPOManager:
                     # Train model
                     results = trainer.fit()
 
-                    # Get metric value
-                    metric_value = results.get(config.study.metric, results.get("best_val_loss"))
+                    # Metric at the epoch the trainer keeps (F53); raises if not produced
+                    metric_value = _run_metric_value(results, config.study.metric)
                     # -------
-                if metric_value is None:
-                    raise TrialFailedError(
-                        f"Metric '{config.study.metric}' not found in results",
-                        trial_number=trial_number,
-                        trial_params=flat_params,
-                    )
 
                 logger.info(
                     f"Trial {trial_number} completed: {config.study.metric}={metric_value:.6f}"
@@ -2681,6 +2675,44 @@ class HPOManager:
 # HELPER FUNCTIONS
 # =============================================================================
 
+# Run-level scalars of ``Trainer.fit()`` that can be objectives (per-epoch metrics live in
+# ``results["train_metrics"]``)
+_RUN_SCALAR_METRICS: tuple[str, ...] = ("training_time",)
+
+
+def _run_metric_value(results: dict[str, Any], metric: str) -> float:
+    """Return the value of ``metric`` for one training run (a ``Trainer.fit()`` result).
+
+    A per-epoch metric (``val_loss``, ``val_mae``, … in ``results["train_metrics"]``) is taken at the
+    epoch the trainer keeps, ``results["best_epoch"]`` — the epoch with the lowest validation loss.
+    Early stopping returns the parameters with the lowest validation error, "rather than the latest
+    parameters" (Goodfellow et al., *Deep Learning*, §7.8), so every metric describes that one model
+    state; for ``val_loss`` the value equals ``best_val_loss``. ``training_time`` is the run's wall time.
+
+    A metric the run did not produce raises: the previous fallback to ``best_val_loss`` optimized the
+    validation loss whatever metric was configured.
+
+    Raises:
+        HPOError: The metric is not produced, or has no value at the kept epoch
+    """
+    history = results.get("train_metrics") or {}
+    if metric in history:
+        values = history[metric]
+        best_epoch = results.get("best_epoch")
+        if best_epoch is None or not 0 <= best_epoch < len(values):
+            raise HPOError(
+                f"Metric '{metric}' has no value at the kept epoch",
+                details=f"best_epoch={best_epoch}, epochs recorded for '{metric}': {len(values)}",
+            )
+        return float(values[best_epoch])
+    if metric in _RUN_SCALAR_METRICS and results.get(metric) is not None:
+        return float(results[metric])
+    available = sorted(history) + [m for m in _RUN_SCALAR_METRICS if results.get(m) is not None]
+    raise HPOError(
+        f"Metric '{metric}' is not produced by training",
+        details=f"Available metrics: {', '.join(available) or 'none'}",
+    )
+
 
 def _flatten_params(params: dict[str, Any]) -> dict[str, Any]:
     """
@@ -2947,22 +2979,20 @@ def _run_cross_validation(
         results = trainer.fit()
         # -------
 
-        # Extract metric value
-        fold_value = results.get(metric, results.get("best_val_loss"))
-        if fold_value is not None:
-            fold_metrics.append(fold_value)
-            logger.debug(f"    Fold {fold_idx + 1} {metric}: {fold_value:.6f}")
+        # Metric at the epoch the trainer keeps (F53); a fold without it fails the trial
+        fold_value = _run_metric_value(results, metric)
+        fold_metrics.append(fold_value)
+        logger.debug(f"    Fold {fold_idx + 1} {metric}: {fold_value:.6f}")
 
-            # P1-7 (F20): fold-level reporting; prune between folds, never mid-fold
-            if trial is not None:
-                trial.report(fold_value, step=fold_idx)
-                if trial.should_prune():
-                    import optuna
+        # P1-7 (F20): fold-level reporting; prune between folds, never mid-fold
+        if trial is not None:
+            trial.report(fold_value, step=fold_idx)
+            if trial.should_prune():
+                import optuna
 
-                    raise optuna.TrialPruned(
-                        f"Trial pruned after CV fold {fold_idx + 1}/{n_folds} "
-                        f"with {metric}={fold_value}"
-                    )
+                raise optuna.TrialPruned(
+                    f"Trial pruned after CV fold {fold_idx + 1}/{n_folds} with {metric}={fold_value}"
+                )
 
     # Aggregate fold metrics
     if not fold_metrics:
