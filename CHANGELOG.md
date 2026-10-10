@@ -7,8 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-10-10
+
+Parallel HPO release: several processes or containers optimize one Optuna study kept in shared storage
+(PostgreSQL, or a journal file on one host). **Behaviour note:** `sampler.constant_liar` now defaults to `true`;
+a single process has no other running trials, so its results are unchanged (set `false` to keep the previous
+setting). Configurations without the new settings otherwise run as before.
+
+### Added
+
+- `models.hpo.study.storage_options`, a typed alternative to `study.storage` (never both):
+  - `kind: rdb` — the database URL is read when HPO starts, from an environment variable (`url_env`) or a file
+    such as a Docker secret (`url_file`); it never appears in YAML, and logs and errors show it with the password
+    hidden. Optional `engine_kwargs` are passed to `sqlalchemy.create_engine`.
+  - Trial heartbeat for `rdb` (`heartbeat_interval`, `grace_period`, `max_retry`): the trial of a killed worker
+    is marked failed and re-run at most `max_retry` times.
+  - `kind: journal_file` — Optuna's journal storage for several processes on one host; `journal_lock`
+    (`symlink`, Optuna's default, or `open`) selects the lock for shared file systems.
+- Shared studies from the CLI: `milia --hpo-init` creates the study once; `milia --train --hpo --hpo-worker INDEX`
+  runs trials only; `milia --train --hpo --hpo-finalize` writes the results and trains the final model once.
+  A worker needs shared storage (in-memory and SQLite are rejected; `rdb` needs a heartbeat) and a dataset
+  processed beforehand (`milia --process`).
+- `n_trials_total`: a study-wide budget of finished trials across all workers.
+- Each worker derives its own sampler seed from `sampler.seed` and its index, so workers do not repeat
+  configurations.
+- `show_progress_bar` (default: shown in a single process, hidden in workers) and `gc_after_trial` (Optuna's
+  garbage collection after every trial).
+- The `hpo-postgres` extra (psycopg 3), installed in every image.
+- Docker Compose profile `hpo` (`compose.yaml`; `compose.gpu.yaml` for one GPU per worker): PostgreSQL 18,
+  dataset processing → study creation → two workers → finalize, optuna-dashboard on localhost, secrets as files.
+  See the README section "Parallel HPO with Docker Compose".
+- Worker resource checks: a worker logs its CPU threads, usable CPUs, visible GPUs and available memory (host
+  and container limit); it warns when no CPU thread budget is set (`OMP_NUM_THREADS`; Compose sets
+  `MILIA_WORKER_THREADS`, default 1) or more than one GPU is visible, and stops before loading a processed
+  dataset larger than the memory available to it.
+
+### Changed
+
+- `sampler.constant_liar` defaults to `true`, Optuna's recommendation for parallel optimization.
+- CI runs the shared-study tests against a real PostgreSQL server (five runs per change), and every CI job has
+  a time limit.
+
 ### Fixed
 
+- `python main.py` now exits with the status `main()` returns; it exited 0 when `main()` returned an error
+  status (the `milia` command was not affected).
+- Neural architecture search kept only some HPO settings when it added its search space; it now keeps all of
+  them.
 - The README DOI badge and `CITATION.cff` named an earlier manual Zenodo deposit (v1.1.0) as the concept DOI;
   they now use `10.5281/zenodo.21854751`, the concept that every GitHub release is published under. The v1.16.0
   version DOI is `10.5281/zenodo.23212466`.
@@ -507,7 +552,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...v1.16.0
 [1.15.1]: https://github.com/shahram-boshra/MILIA/compare/v1.15.0...v1.15.1
 [1.15.0]: https://github.com/shahram-boshra/MILIA/compare/v1.14.1...v1.15.0
