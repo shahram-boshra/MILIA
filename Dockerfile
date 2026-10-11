@@ -36,7 +36,7 @@ FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 # Common parent of the `deps` (→ builder → runtime) and `test-base` (→ test) chains. Nothing here
 # depends on pyproject.toml/uv.lock, so everything derived from it before a `COPY ... uv.lock` stays
 # cached across lock changes (Docker: a changed layer invalidates all later layers) — PA-0h / F36.
-FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS base
+FROM python:3.10-slim@sha256:6ff506466f8b1e981719b468cc0023b8ef000b983cdec0eafe119d01f379e31d AS base
 COPY --from=uv /uv /uvx /usr/local/bin/
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -108,7 +108,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
 # e.g. docker run --rm <test-image> pytest -m smoke -q tests/
 
 # ---- Stage 5: runtime — minimal, non-root, production (DEFAULT build target) ----
-FROM python:3.10-slim@sha256:9d53d8d4c0e882f61913025db53b3aec4ef74336082a9ab47d8a14e9e8329b00 AS runtime
+FROM python:3.10-slim@sha256:6ff506466f8b1e981719b468cc0023b8ef000b983cdec0eafe119d01f379e31d AS runtime
 # libgomp1: OpenMP runtime required by torch / scikit-learn at import.
 # gcc g++ libc6-dev (PA-0b): torch.compile's default Inductor backend generates C++ kernels and compiles
 # them at run time; without a working C++ compiler it raises InvalidCxxCompiler. Inductor also imports
