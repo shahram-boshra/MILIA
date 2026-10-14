@@ -433,3 +433,120 @@ def test_optimize_end_to_end_selects_pareto_trial():
     assert manager.backend.get_best_trial_number(manager.study) == 1
     assert manager.get_best_trial()["number"] == 1
     assert manager.get_best_value() == 0.1
+
+
+def _manager_with_study(study_dict, directions, values):
+    from milia_pipeline.models.hpo.hpo_manager import HPOManager
+
+    manager = HPOManager(
+        _config(study_dict)
+        if "objectives" in study_dict
+        else HPOConfig.from_dict({"enabled": True, "study": study_dict})
+    )
+    manager.study = _study(directions, values)
+    return manager
+
+
+@pytest.mark.contract
+class TestResults:
+    def test_statistics_respect_a_maximized_direction(self):
+        """F54: a maximized study's best value is its highest, not its lowest."""
+        manager = _manager_with_study(
+            {"metric": "val_r2", "direction": "maximize"}, ["maximize"], [[0.2], [0.9], [0.5]]
+        )
+        stats = manager.get_study_statistics()
+        assert (stats["best_value"], stats["worst_value"]) == (0.9, 0.2)
+        assert stats["objectives"] == [
+            {
+                "metric": "val_r2",
+                "direction": "maximize",
+                "best_value": 0.9,
+                "worst_value": 0.2,
+                "mean_value": pytest.approx(1.6 / 3),
+            }
+        ]
+        assert "pareto_front_size" not in stats
+
+    def test_statistics_per_objective_for_multi_objective(self):
+        manager = _manager_with_study(
+            {"objectives": [{"metric": "val_mae"}, {"metric": "val_r2", "direction": "maximize"}]},
+            ["minimize", "maximize"],
+            [[1.0, 5.0], [2.0, 9.0], [3.0, 1.0], [0.5, 0.0], None],
+        )
+        stats = manager.get_study_statistics()
+        assert stats["best_value"] is None and stats["mean_value"] is None
+        assert [(o["metric"], o["best_value"], o["worst_value"]) for o in stats["objectives"]] == [
+            ("val_mae", 0.5, 3.0),
+            ("val_r2", 9.0, 0.0),
+        ]
+        assert stats["best_trial_number"] == 3
+        assert stats["pareto_front_size"] == 3
+        assert stats["n_completed"] == 4 and stats["n_failed"] == 1
+
+    def test_save_results_writes_pareto_front(self, tmp_path):
+        import json
+
+        manager = _manager_with_study(
+            {"objectives": [{"metric": "val_mae"}, {"metric": "val_r2", "direction": "maximize"}]},
+            ["minimize", "maximize"],
+            [[2.0, 9.0], [1.0, 5.0], [3.0, 1.0]],
+        )
+        manager.best_params = manager.backend.get_best_params(manager.study)
+        paths = manager.save_results(tmp_path)
+        front = json.loads(paths["pareto_front_path"].read_text())
+        assert front["selected_trial"] == 1
+        assert front["objectives"] == [
+            {"metric": "val_mae", "direction": "minimize"},
+            {"metric": "val_r2", "direction": "maximize"},
+        ]
+        assert [t["number"] for t in front["trials"]] == [0, 1]
+        assert front["trials"][1] == {
+            "number": 1,
+            "values": {"val_mae": 1.0, "val_r2": 5.0},
+            "params": {"x": 1.0},
+        }
+        assert json.loads(paths["best_params_path"].read_text()) == {"x": 1.0}
+        statistics = json.loads(paths["statistics_path"].read_text())
+        assert statistics["best_trial_number"] == 1
+
+    def test_single_objective_writes_no_pareto_file(self, tmp_path):
+        manager = _manager_with_study({"metric": "val_loss"}, ["minimize"], [[0.3], [0.1]])
+        manager.best_params = manager.backend.get_best_params(manager.study)
+        paths = manager.save_results(tmp_path)
+        assert "pareto_front_path" not in paths
+        assert not (tmp_path / "pareto_front.json").exists()
+
+    def test_backend_pareto_front_sorted_by_number(self):
+        study = _study(["minimize", "minimize"], [[3.0, 1.0], [1.0, 3.0], [2.0, 2.0], [4.0, 4.0]])
+        front = OptunaBackend().get_pareto_front(study)
+        assert [t["number"] for t in front] == [0, 1, 2]
+        assert front[0] == {"number": 0, "values": [3.0, 1.0], "params": {"x": 0.0}}
+
+
+@pytest.mark.contract
+def test_main_reports_the_selected_pareto_trial():
+    """A single-process multi-objective run logs the selected trial, the front size and its values."""
+    import main
+
+    args = MagicMock(model_name="GCN", resume_study=None, hpo_worker=None, hpo_finalize=False)
+    manager = MagicMock()
+    manager.optimize.return_value = {"lr": 0.01}
+    manager.get_study_statistics.return_value = {"best_trial_number": 3, "pareto_front_size": 2}
+    manager.backend.get_best_values.return_value = [0.25, 1234.0]
+    manager.train_final_model.return_value = (MagicMock(), MagicMock(), {})
+    study = StudyConfig(
+        objectives=(ObjectiveConfig(metric="val_mae"), ObjectiveConfig(metric="n_parameters"))
+    )
+    logger = MagicMock()
+    with (
+        patch("main.HPOConfig") as hpo_config_cls,
+        patch("main.HPOManager", return_value=manager),
+        patch("main._save_hpo_results"),
+        patch("main._create_callbacks", return_value=[]),
+        patch("main._save_training_results"),
+    ):
+        hpo_config_cls.from_dict.return_value = MagicMock(n_trials=4, study=study)
+        assert main._run_hpo_training(args, logger, MagicMock(), {"models": {"hpo": {}}}) == 0
+    infos = [str(c.args[0]) for c in logger.info.call_args_list]
+    assert "Selected trial 3 of 2 on the Pareto front: val_mae=0.25, n_parameters=1234" in infos
+    manager.get_best_value.assert_not_called()

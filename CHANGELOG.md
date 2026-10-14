@@ -15,9 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Pareto-optimal trial that is best on the first objective. Multi-objective studies need `pruner.type: none`
   (Optuna cannot prune them) and a sampler other than `cmaes`; both are checked when the configuration is read.
   Shared studies (`--hpo-init`, `--hpo-worker`, `--hpo-finalize`) work with several objectives.
+- Multi-objective results: `pareto_front.json` lists the Pareto-front trials with their objective values and
+  parameters and names the selected trial (whose parameters are in `best_params.json`); `study_statistics.json`
+  reports best, worst and mean per objective, the selected trial and the size of the Pareto front.
 
 ### Fixed
 
+- `study_statistics.json` reported the lowest value as `best_value` (and the highest as `worst_value`) even for
+  studies that maximize; best and worst now follow the study's direction. The chosen parameters were not affected.
 - HPO optimized the validation loss whatever `models.hpo.study.metric` named: a metric other than `val_loss`
   (for example `val_mae`) silently fell back to the best validation loss. A trial now reports the configured
   metric at the epoch with the lowest validation loss — the model early stopping keeps — and a metric that

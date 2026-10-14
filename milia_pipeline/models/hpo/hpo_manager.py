@@ -2177,12 +2177,17 @@ class HPOManager:
             - n_completed: Successfully completed trials
             - n_pruned: Pruned trials
             - n_failed: Failed trials
-            - best_value: Best objective value
-            - worst_value: Worst objective value
-            - mean_value: Mean objective value
+            - best_value: Best objective value in the study's direction (the lowest when minimizing,
+              the highest when maximizing); None for several objectives (no single order)
+            - worst_value: Worst objective value in the study's direction (None for several)
+            - mean_value: Mean objective value (None for several objectives)
+            - objectives: Per objective ``metric``, ``direction``, ``best_value``, ``worst_value``,
+              ``mean_value`` over completed trials (one entry for a single-objective study)
             - mean_duration: Mean trial duration (seconds)
             - total_duration: Total duration (seconds)
             - pruning_rate: Fraction of trials pruned
+            - best_trial_number, pareto_front_size: several objectives only — the selected Pareto
+              trial (best on the first objective) and the number of trials on the Pareto front
 
         Raises:
             HPOError: If no study available
@@ -2196,21 +2201,49 @@ class HPOManager:
         pruned = [t for t in trials if t["state"] == "PRUNED"]
         failed = [t for t in trials if t["state"] == "FAIL"]
 
-        values = [t["value"] for t in completed if t["value"] is not None]
         durations = [t["duration"] for t in completed if t["duration"] is not None]
+        study_config = self.config.study
 
-        return {
+        # One summary per objective, best/worst in that objective's direction (F54: min() was
+        # reported as best even when maximizing)
+        objectives = []
+        for index, (metric, direction) in enumerate(
+            zip(study_config.objective_metrics, study_config.objective_directions, strict=True)
+        ):
+            values = [
+                trial_values[index]
+                for trial_values in (_trial_values(t) for t in completed)
+                if trial_values is not None
+            ]
+            best, worst = (min, max) if direction == "minimize" else (max, min)
+            objectives.append(
+                {
+                    "metric": metric,
+                    "direction": direction,
+                    "best_value": best(values) if values else None,
+                    "worst_value": worst(values) if values else None,
+                    "mean_value": sum(values) / len(values) if values else None,
+                }
+            )
+        single = objectives[0] if len(objectives) == 1 else {}
+
+        statistics = {
             "n_trials": len(trials),
             "n_completed": len(completed),
             "n_pruned": len(pruned),
             "n_failed": len(failed),
-            "best_value": min(values) if values else None,
-            "worst_value": max(values) if values else None,
-            "mean_value": sum(values) / len(values) if values else None,
+            "best_value": single.get("best_value"),
+            "worst_value": single.get("worst_value"),
+            "mean_value": single.get("mean_value"),
+            "objectives": objectives,
             "mean_duration": sum(durations) / len(durations) if durations else None,
             "total_duration": sum(durations) if durations else None,
             "pruning_rate": len(pruned) / len(trials) if trials else 0.0,
         }
+        if study_config.is_multi_objective and completed:
+            statistics["best_trial_number"] = self.backend.get_best_trial_number(self.study)
+            statistics["pareto_front_size"] = len(self.backend.get_pareto_front(self.study))
+        return statistics
 
     def train_final_model(
         self,
@@ -2625,6 +2658,7 @@ class HPOManager:
         best_params_filename: str = "best_params.json",
         statistics_filename: str = "study_statistics.json",
         trials_filename: str = "all_trials.json",
+        pareto_front_filename: str = "pareto_front.json",
     ) -> dict[str, Path]:
         """
         Save HPO results to output directory.
@@ -2706,6 +2740,39 @@ class HPOManager:
                 f"Failed to save trials: {e}", details=f"Target path: {trials_path}"
             ) from e
 
+        # Several objectives: the Pareto front, and which of its trials best_params come from
+        if self.config.study.is_multi_objective:
+            pareto_path = output_path / pareto_front_filename
+            try:
+                metrics = self.config.study.objective_metrics
+                front = {
+                    "objectives": [
+                        {"metric": m, "direction": d}
+                        for m, d in zip(
+                            metrics, self.config.study.objective_directions, strict=True
+                        )
+                    ],
+                    "selected_trial": self.backend.get_best_trial_number(self.study),
+                    "selection": "Pareto-front trial best on the first objective, then the next, "
+                    "then the lowest trial number",
+                    "trials": [
+                        {
+                            "number": trial["number"],
+                            "values": dict(zip(metrics, trial["values"], strict=True)),
+                            "params": trial["params"],
+                        }
+                        for trial in self.backend.get_pareto_front(self.study)
+                    ],
+                }
+                with open(pareto_path, "w") as f:
+                    json.dump(front, f, indent=2)
+                saved_paths["pareto_front_path"] = pareto_path
+                logger.info(f"Pareto front saved: {pareto_path} ({len(front['trials'])} trials)")
+            except Exception as e:
+                raise HPOError(
+                    f"Failed to save Pareto front: {e}", details=f"Target path: {pareto_path}"
+                ) from e
+
         return saved_paths
 
 
@@ -2717,6 +2784,14 @@ class HPOManager:
 # ``results["train_metrics"]``)
 # (``n_parameters`` is added by the HPO objective: the model's parameter count, P3-1)
 _RUN_SCALAR_METRICS: tuple[str, ...] = ("training_time", "n_parameters")
+
+
+def _trial_values(trial: dict[str, Any]) -> list[float] | None:
+    """Objective values of a trial-info dict: ``values`` (one per objective), else ``[value]``."""
+    values = trial.get("values")
+    if values is not None:
+        return list(values)
+    return None if trial.get("value") is None else [trial["value"]]
 
 
 def _count_parameters(model) -> int:

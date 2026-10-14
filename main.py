@@ -4484,10 +4484,22 @@ def _run_hpo_training(
         logger.info("HPO RESULTS")
         logger.info("=" * 60)
         logger.info(f"Best Parameters: {best_params}")
-        logger.info(f"Best Value: {manager.get_best_value()}")
 
         # 10. Get study statistics
         stats = manager.get_study_statistics()
+        if hpo_config.study.is_multi_objective is True:
+            # Several objectives: the Pareto trial best on the first objective (P3-1)
+            values = manager.backend.get_best_values(manager.study)
+            summary = ", ".join(
+                f"{m}={v:.6g}"
+                for m, v in zip(hpo_config.study.objective_metrics, values, strict=True)
+            )
+            logger.info(
+                f"Selected trial {stats.get('best_trial_number')} of "
+                f"{stats.get('pareto_front_size')} on the Pareto front: {summary}"
+            )
+        else:
+            logger.info(f"Best Value: {manager.get_best_value()}")
         logger.info(f"Total Trials: {stats.get('n_trials', 'N/A')}")
         logger.info(f"Completed: {stats.get('n_completed', 'N/A')}")
         logger.info(f"Pruned: {stats.get('n_pruned', 'N/A')}")

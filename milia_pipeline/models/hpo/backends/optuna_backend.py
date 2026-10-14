@@ -367,6 +367,14 @@ class OptunaBackend:
         ``HPOBackendProtocol``, used by ``HPOManager`` for multi-objective studies only)."""
         return list(self._best_trial(study).values)
 
+    def get_pareto_front(self, study: "optuna.Study") -> list[dict[str, Any]]:
+        """Trials on the Pareto front (``study.best_trials``), by trial number: ``number``, ``values``,
+        ``params`` (P3-1; same fields as ``StudyAnalyzer.get_pareto_front``)."""
+        return [
+            {"number": t.number, "values": list(t.values), "params": t.params}
+            for t in sorted(study.best_trials, key=lambda t: t.number)
+        ]
+
     def get_best_trial_number(self, study: "optuna.Study") -> int:
         """Number of the best trial (P3-1)."""
         return self._best_trial(study).number
