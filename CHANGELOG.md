@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-10-14
+
+HPO release: multi-objective studies with Pareto-front results, Optuna's Gaussian-process sampler and Wilcoxon
+pruner, and fixes to the optimized metric and the threshold pruner. **Behaviour note:** a study whose
+`study.metric` is not `val_loss` now optimizes that metric instead of the validation loss, so its values differ
+from those of earlier runs; start a new study rather than resuming one recorded before this release.
+Configurations that use `val_loss` run as before. Setting `pruner.n_brackets` now emits a `FutureWarning`.
+
 ### Added
 
 - Multi-objective HPO: `models.hpo.study.objectives` lists two or more metrics with their directions (for
@@ -595,7 +603,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...v1.16.0
 [1.15.1]: https://github.com/shahram-boshra/MILIA/compare/v1.15.0...v1.15.1
