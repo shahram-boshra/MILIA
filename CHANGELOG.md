@@ -39,6 +39,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   metric at the epoch with the lowest validation loss — the model early stopping keeps — and a metric that
   training does not produce fails the trial with the list of available metrics. Studies that use `val_loss`
   get the same values as before.
+- `pruner.type: threshold` was accepted but HPO failed when the study was created, because there was no way to
+  set the bound Optuna's `ThresholdPruner` requires. `pruner.lower` and `pruner.upper` (finite; one or both,
+  `lower <= upper`) now set it, and `interval_steps` applies to this pruner too; a threshold pruner without a
+  bound is rejected when the configuration is read.
+
+### Deprecated
+
+- `pruner.n_brackets` has never had an effect: Optuna's `HyperbandPruner` derives the number of brackets from
+  `min_resource`, `max_resource` and `reduction_factor`. Setting it now emits a `FutureWarning`; it will be
+  removed in a future release.
 
 ## [1.17.0] - 2026-10-10
 

@@ -21,8 +21,10 @@ Author: Milia Team
 Version: 1.1.0
 """
 
+import math
 import os
 import re
+import warnings
 from collections.abc import Mapping
 from enum import Enum
 from typing import Any, Literal
@@ -108,7 +110,11 @@ class PrunerConfig(BaseModel, frozen=True):
         n_warmup_steps: Epochs before pruning within a trial
         interval_steps: Check pruning every N steps
         percentile: For percentile pruner - bottom percentile to prune (default: 25.0)
-        n_brackets: For Hyperband pruner - number of brackets (default: 4)
+        n_brackets: Deprecated, no effect: Optuna's HyperbandPruner derives the number of brackets
+            from min_resource, max_resource and reduction_factor (setting it warns)
+        lower: For Threshold pruner - prune when an intermediate value is below this
+        upper: For Threshold pruner - prune when an intermediate value is above this (the
+            Threshold pruner needs lower, upper or both, with lower <= upper)
         p_threshold: For Wilcoxon pruner - prune when the one-sided p-value that the trial is
             worse than the best trial is below this (default: 0.1, Optuna's default)
         n_startup_steps: For Wilcoxon pruner - folds before the first test (default: 2)
@@ -118,7 +124,10 @@ class PrunerConfig(BaseModel, frozen=True):
         >>> PrunerConfig(type=PrunerType.MEDIAN)
 
         >>> # Hyperband pruner
-        >>> PrunerConfig(type=PrunerType.HYPERBAND, n_brackets=3)
+        >>> PrunerConfig(type=PrunerType.HYPERBAND)
+
+        >>> # Threshold pruner: stop trials whose validation loss exceeds 10
+        >>> PrunerConfig(type=PrunerType.THRESHOLD, upper=10.0)
 
         >>> # No pruning
         >>> PrunerConfig(type=PrunerType.NONE)
@@ -130,8 +139,18 @@ class PrunerConfig(BaseModel, frozen=True):
     interval_steps: int = 1
     percentile: float = 25.0
     n_brackets: int = 4
+    lower: float | None = None
+    upper: float | None = None
     p_threshold: float = 0.1
     n_startup_steps: int = 2
+
+    @field_validator("lower", "upper")
+    @classmethod
+    def validate_threshold_bound(cls, v: float | None, info: ValidationInfo) -> float | None:
+        """Validate a Threshold bound is finite."""
+        if v is not None and not math.isfinite(v):
+            raise ValueError(f"{info.field_name} must be a finite number, got {v}")
+        return v
 
     @field_validator("p_threshold")
     @classmethod
@@ -204,6 +223,31 @@ class PrunerConfig(BaseModel, frozen=True):
                     )
 
         return data
+
+    @model_validator(mode="after")
+    def validate_threshold_and_deprecations(self) -> "PrunerConfig":
+        """The Threshold pruner needs a bound (Optuna's ``ThresholdPruner`` raises without one) with
+        ``lower <= upper``; ``n_brackets`` is accepted for old configurations but has no effect."""
+        if self.type is PrunerType.THRESHOLD:
+            if self.lower is None and self.upper is None:
+                raise ValueError(
+                    "Pruner 'threshold' needs 'lower', 'upper' or both (prune when an intermediate "
+                    "value falls below lower or rises above upper)"
+                )
+            if self.lower is not None and self.upper is not None and self.lower > self.upper:
+                raise ValueError(
+                    f"Pruner 'threshold' needs lower <= upper (got lower={self.lower}, "
+                    f"upper={self.upper})"
+                )
+        if "n_brackets" in self.model_fields_set:
+            warnings.warn(
+                "pruner.n_brackets has no effect and is deprecated: Optuna's HyperbandPruner derives "
+                "the number of brackets from min_resource, max_resource and reduction_factor; remove "
+                "it from the configuration",
+                FutureWarning,
+                stacklevel=2,
+            )
+        return self
 
     def to_dict(self) -> dict[str, Any]:
         """Backward compatible dict conversion."""

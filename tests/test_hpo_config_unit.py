@@ -505,7 +505,8 @@ class TestPrunerConfigValidCreation:
 
     def test_hyperband_pruner(self):
         """Test hyperband pruner config."""
-        config = PrunerConfig(type=PrunerType.HYPERBAND, n_brackets=5)
+        with pytest.warns(FutureWarning, match="n_brackets has no effect"):
+            config = PrunerConfig(type=PrunerType.HYPERBAND, n_brackets=5)
         assert config.type == PrunerType.HYPERBAND
         assert config.n_brackets == 5
 
@@ -1301,7 +1302,8 @@ class TestHPOConfigFromDict:
     def test_from_dict_hyperband_pruner(self):
         """Test from_dict with hyperband pruner."""
         config_dict = {"pruner": {"type": "hyperband", "n_brackets": 5}}
-        config = HPOConfig.from_dict(config_dict)
+        with pytest.warns(FutureWarning, match="n_brackets has no effect"):
+            config = HPOConfig.from_dict(config_dict)
 
         assert config.pruner.type == PrunerType.HYPERBAND
         assert config.pruner.n_brackets == 5
@@ -1540,7 +1542,8 @@ class TestEdgeCases:
 
     def test_large_n_brackets(self):
         """Test hyperband with large n_brackets."""
-        config = PrunerConfig(type=PrunerType.HYPERBAND, n_brackets=100)
+        with pytest.warns(FutureWarning, match="n_brackets has no effect"):
+            config = PrunerConfig(type=PrunerType.HYPERBAND, n_brackets=100)
         assert config.n_brackets == 100
 
     def test_minimum_valid_n_trials(self):
@@ -1584,7 +1587,7 @@ class TestComplexConfigurations:
             },
         }
 
-        pruner = PrunerConfig(type=PrunerType.HYPERBAND, n_startup_trials=10, n_brackets=4)
+        pruner = PrunerConfig(type=PrunerType.HYPERBAND, n_startup_trials=10)
 
         sampler = SamplerConfig(
             type=SamplerType.TPE, n_startup_trials=20, seed=42, multivariate=True

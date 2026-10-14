@@ -1224,6 +1224,8 @@ class HPOManager:
             n_warmup_steps=self.config.pruner.n_warmup_steps,
             interval_steps=self.config.pruner.interval_steps,
             percentile=self.config.pruner.percentile,
+            lower=self.config.pruner.lower,
+            upper=self.config.pruner.upper,
             p_threshold=self.config.pruner.p_threshold,
             n_startup_steps=self.config.pruner.n_startup_steps,
         )

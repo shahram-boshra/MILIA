@@ -472,6 +472,7 @@ class OptunaBackend:
                 "lower": kwargs.get("lower"),
                 "upper": kwargs.get("upper"),
                 "n_warmup_steps": n_warmup_steps,
+                "interval_steps": kwargs.get("interval_steps", 1),
             }
 
         elif pruner_type == "patient":

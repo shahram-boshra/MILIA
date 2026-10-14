@@ -1812,6 +1812,32 @@ class TestModelConfig:
         gate_ok = self._accepts(lambda: HPOConfig.from_dict(hpo))
         assert bridge_ok == gate_ok, f"{hpo}: bridge={bridge_ok}, HPOConfig={gate_ok}"
 
+    @pytest.mark.parametrize(
+        "pruner",
+        [
+            {"type": "threshold"},
+            {"type": "threshold", "upper": 1.0},
+            {"type": "threshold", "lower": -1.0},
+            {"type": "threshold", "lower": 0.5, "upper": 0.5},
+            {"type": "threshold", "lower": 2.0, "upper": 1.0},
+            {"type": "threshold", "upper": float("inf")},
+            {"type": "threshold", "lower": float("nan")},
+            {"type": "median", "lower": 2.0, "upper": 1.0},
+        ],
+    )
+    def test_threshold_pruner_acceptance_matches_hpo_config(self, pruner):
+        """The bridge accepts a Threshold pruner setting iff the execution gate does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, "pruner": pruner},
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict({"pruner": pruner}))
+        assert bridge_ok == gate_ok, f"{pruner}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+
     def test_wilcoxon_pruner_without_cross_validation_message(self):
         """P3-2b: the bridge names the missing cross-validation, as HPOConfig does."""
         with pytest.raises(ValueError, match="needs cross-validation"):
@@ -2054,7 +2080,7 @@ class TestModelConfig:
         ("hpo_section", "attribute_path", "expected"),
         [
             ({"sampler": {"type": "qmc"}}, ("sampler", "type"), "qmc"),
-            ({"pruner": {"type": "threshold"}}, ("pruner", "type"), "threshold"),
+            ({"pruner": {"type": "threshold", "upper": 1.0}}, ("pruner", "type"), "threshold"),
             (
                 {"search_space": {"model": {"lr": {"type": "uniform", "low": 0.0, "high": 1.0}}}},
                 ("search_space", "model", "lr", "type"),

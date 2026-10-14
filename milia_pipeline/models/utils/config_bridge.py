@@ -982,6 +982,9 @@ class HPOPrunerConfigBridge(BaseModel):
         n_warmup_steps: Epochs before pruning within a trial
         interval_steps: Check pruning every N steps
         percentile: For percentile pruner (default: 25.0)
+        lower: For Threshold pruner, finite (prune below it)
+        upper: For Threshold pruner, finite (prune above it); Threshold needs lower, upper or both,
+            with lower <= upper (same rule as ``hpo_config.PrunerConfig``)
         p_threshold: For Wilcoxon pruner, in (0, 1] (default: 0.1)
         n_startup_steps: For Wilcoxon pruner, folds before the first test (default: 2)
     """
@@ -991,8 +994,26 @@ class HPOPrunerConfigBridge(BaseModel):
     n_warmup_steps: int = 10
     interval_steps: int = 1
     percentile: float = 25.0
+    lower: float | None = Field(default=None, allow_inf_nan=False)
+    upper: float | None = Field(default=None, allow_inf_nan=False)
     p_threshold: float = Field(default=0.1, gt=0.0, le=1.0)
     n_startup_steps: int = Field(default=2, ge=0)
+
+    @model_validator(mode="after")
+    def validate_threshold_bounds(self) -> "HPOPrunerConfigBridge":
+        """Same rule as ``hpo_config.PrunerConfig``: the Threshold pruner needs a bound, lower <= upper."""
+        if self.type is HPOPrunerType.THRESHOLD:
+            if self.lower is None and self.upper is None:
+                raise ValueError(
+                    "Pruner 'threshold' needs 'lower', 'upper' or both (prune when an intermediate "
+                    "value falls below lower or rises above upper)"
+                )
+            if self.lower is not None and self.upper is not None and self.lower > self.upper:
+                raise ValueError(
+                    f"Pruner 'threshold' needs lower <= upper (got lower={self.lower}, "
+                    f"upper={self.upper})"
+                )
+        return self
 
 
 class HPOSamplerConfigBridge(BaseModel):
@@ -1684,6 +1705,8 @@ class ModelConfig(BaseModel):
             n_warmup_steps=pruner_dict.get("n_warmup_steps", 10),
             interval_steps=pruner_dict.get("interval_steps", 1),
             percentile=pruner_dict.get("percentile", 25.0),
+            lower=pruner_dict.get("lower"),
+            upper=pruner_dict.get("upper"),
             p_threshold=pruner_dict.get("p_threshold", 0.1),
             n_startup_steps=pruner_dict.get("n_startup_steps", 2),
         )

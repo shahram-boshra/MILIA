@@ -884,6 +884,8 @@ models:
       n_warmup_steps: 10              # Epochs before pruning within trial
       interval_steps: 1               # Check pruning every N steps
       percentile: 25.0                # For percentile pruner
+      # lower: null                   # threshold: prune when an intermediate value is below lower
+      # upper: null                   # threshold: ... or above upper (set one or both, lower <= upper)
       # wilcoxon: paired test of the trial's CV-fold scores against the best trial's; needs
       # cv_folds >= 2, cv_metric_aggregation "mean" and cv_folds > the fold at which a test can
       # first stop a trial (4 with the defaults). A stopped trial keeps the mean of its folds.

@@ -171,6 +171,8 @@ class MockPrunerConfig:
     n_warmup_steps: int = 10
     interval_steps: int = 1
     percentile: float = 25.0
+    lower: float | None = None
+    upper: float | None = None
     p_threshold: float = 0.1
     n_startup_steps: int = 2
 
@@ -697,7 +699,8 @@ class TestHPOManagerOptimize:
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
             config = MockHPOConfig(
-                enabled=True, pruner=MockPrunerConfig(p_threshold=0.05, n_startup_steps=3)
+                enabled=True,
+                pruner=MockPrunerConfig(p_threshold=0.05, n_startup_steps=3, lower=-1.0, upper=2.0),
             )
             manager = HPOManager(config)
 
@@ -709,6 +712,8 @@ class TestHPOManagerOptimize:
             # P3-2b: the Wilcoxon options reach the backend
             assert call_kwargs["p_threshold"] == 0.05
             assert call_kwargs["n_startup_steps"] == 3
+            # Threshold bounds reach the backend
+            assert (call_kwargs["lower"], call_kwargs["upper"]) == (-1.0, 2.0)
 
     def test_optimize_creates_sampler(self, mock_backend, mock_dataset):
         """Test optimize creates sampler with correct parameters."""

@@ -253,6 +253,8 @@ class MockPrunerConfig:
     interval_steps: int = 1
     percentile: float = 25.0
     n_brackets: int = 4
+    lower: float | None = None
+    upper: float | None = None
     p_threshold: float = 0.1
     n_startup_steps: int = 2
 
