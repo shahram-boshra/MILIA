@@ -199,6 +199,8 @@ class MockPrunerConfig:
     n_warmup_steps: int = 10
     interval_steps: int = 1
     percentile: float = 25.0
+    p_threshold: float = 0.1
+    n_startup_steps: int = 2
 
 
 @dataclass

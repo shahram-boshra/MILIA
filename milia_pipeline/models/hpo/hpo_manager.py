@@ -33,6 +33,7 @@ Version: 1.1.0
 from __future__ import annotations
 
 import logging
+import random
 import time
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
@@ -1223,6 +1224,8 @@ class HPOManager:
             n_warmup_steps=self.config.pruner.n_warmup_steps,
             interval_steps=self.config.pruner.interval_steps,
             percentile=self.config.pruner.percentile,
+            p_threshold=self.config.pruner.p_threshold,
+            n_startup_steps=self.config.pruner.n_startup_steps,
         )
 
         # Create sampler (P2-3b: a worker of a shared study samples with its own derived seed)
@@ -1534,8 +1537,12 @@ class HPOManager:
                     # P1-7 (F20): pruning in CV is fold-level — each fold's score is reported at
                     # step=fold_idx inside _run_cross_validation. The epoch-level hpo_callback is NOT
                     # passed into the folds: one trial shared across folds would reuse epoch steps.
+                    # WilcoxonPruner treats the folds as instances (P3-2b): its warm-up is
+                    # n_startup_steps, checked against cv_folds by HPOConfig.
+                    instance_pruning = config.pruner.type.value == "wilcoxon"
                     if (
                         config.pruner.type.value != "none"
+                        and not instance_pruning
                         and config.pruner.n_warmup_steps >= config.cv_folds
                         and not hasattr(objective, "_cv_warmup_warned")
                     ):
@@ -1564,6 +1571,7 @@ class HPOManager:
                         trial=None if multi_objective else trial,  # fold reporting: one objective
                         models_config=models_config,  # PA-1e: per-fold acceleration
                         metrics=objective_metrics,
+                        instance_pruning=instance_pruning,
                     )
                 # -------
                 else:
@@ -2971,6 +2979,7 @@ def _run_cross_validation(
     trial: Any | None = None,
     models_config: dict[str, Any] | None = None,
     metrics: Sequence[str] | None = None,
+    instance_pruning: bool = False,
 ) -> float | tuple[float, ...]:
     """
     Run k-fold cross-validation for a trial.
@@ -2982,6 +2991,13 @@ def _run_cross_validation(
     decision is taken between folds (``optuna.TrialPruned`` stops the remaining folds). Folds are
     deterministic (``random_seed=42``), so step k compares fold k across trials. Callers must not pass an
     epoch-level pruning callback in ``callbacks``: every fold would reuse the same epoch steps.
+
+    P3-2b: with ``instance_pruning`` (``WilcoxonPruner``) the folds are the pruner's instances, as its
+    Optuna documentation prescribes: they are evaluated in an order shuffled per trial (seeded by the
+    trial number; the step stays the fold index, so fold k is still paired with fold k of the best
+    trial), and a prune decision ends the folds and returns the aggregate of the evaluated ones
+    instead of raising ``optuna.TrialPruned``, so the sampler learns from the trial. The number of
+    evaluated folds is stored as the trial's ``cv_folds_evaluated`` user attribute.
 
     Args:
         model_name: Model name for factory
@@ -3003,13 +3019,15 @@ def _run_cross_validation(
             reports ``metric``
         metrics: Several metrics, each aggregated over the folds (P3-1); then a tuple is returned in
             this order. None = ``metric`` only
+        instance_pruning: Folds are pruner instances (``WilcoxonPruner``, P3-2b; only with ``trial``)
 
     Returns:
         Aggregated metric value across all folds, or one per entry of ``metrics``
 
     Raises:
         HPOError: If no valid fold metrics obtained
-        optuna.TrialPruned: If the pruner stops the trial after a fold (only with ``trial``)
+        optuna.TrialPruned: If the pruner stops the trial after a fold (only with ``trial``, without
+            ``instance_pruning``)
         ImportError: If DataSplitter or Trainer not available
     """
     if DataSplitter is None:
@@ -3035,7 +3053,11 @@ def _run_cross_validation(
     requested_metrics: tuple[str, ...] = tuple(metrics) if metrics is not None else ()
     fold_values: dict[str, list[float]] = {name: [] for name in requested_metrics}
 
-    for fold_idx, (train_subset, val_subset) in enumerate(folds):
+    fold_order = list(enumerate(folds))
+    if instance_pruning and trial is not None:
+        random.Random(trial.number).shuffle(fold_order)
+
+    for fold_idx, (train_subset, val_subset) in fold_order:
         logger.debug(f"  Cross-validation fold {fold_idx + 1}/{n_folds}")
 
         # Apply task-specific data preparation for this fold (including discretization)
@@ -3115,11 +3137,21 @@ def _run_cross_validation(
         if trial is not None:
             trial.report(fold_value, step=fold_idx)
             if trial.should_prune():
+                if instance_pruning:
+                    logger.info(
+                        f"Trial {trial.number} stopped by the Wilcoxon pruner after "
+                        f"{len(fold_metrics)}/{n_folds} CV folds; its value is the {aggregation} "
+                        f"of these folds"
+                    )
+                    break
                 import optuna
 
                 raise optuna.TrialPruned(
                     f"Trial pruned after CV fold {fold_idx + 1}/{n_folds} with {metric}={fold_value}"
                 )
+
+    if instance_pruning and trial is not None:
+        trial.set_user_attr("cv_folds_evaluated", len(fold_metrics))
 
     # Aggregate fold metrics
     if not fold_metrics:

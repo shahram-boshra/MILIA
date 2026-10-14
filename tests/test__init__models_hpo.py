@@ -955,13 +955,13 @@ class TestContractEnumMemberCounts:
     @pytest.mark.contract
     def test_pruner_type_has_expected_members(self, hpo_pkg):
         """
-        ``PrunerType`` has 7 types per project structure:
+        ``PrunerType`` has 8 types per project structure:
         MEDIAN, PERCENTILE, HYPERBAND, SUCCESSIVE_HALVING, THRESHOLD,
-        PATIENT, NONE.
+        PATIENT, WILCOXON, NONE.
         """
         members = list(hpo_pkg.PrunerType)
-        assert len(members) == 7, (
-            f"PrunerType should have 7 members, got {len(members)}: {[m.name for m in members]}"
+        assert len(members) == 8, (
+            f"PrunerType should have 8 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract

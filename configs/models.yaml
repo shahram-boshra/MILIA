@@ -878,11 +878,18 @@ models:
     # Controls early stopping of unpromising trials
 
     pruner:
-      type: "median"                  # median, hyperband, percentile, none
+      type: "median"                  # median, percentile, hyperband, successive_halving,
+                                      # threshold, patient, wilcoxon, none
       n_startup_trials: 5             # Trials before pruning begins
       n_warmup_steps: 10              # Epochs before pruning within trial
       interval_steps: 1               # Check pruning every N steps
       percentile: 25.0                # For percentile pruner
+      # wilcoxon: paired test of the trial's CV-fold scores against the best trial's; needs
+      # cv_folds >= 2, cv_metric_aggregation "mean" and cv_folds > the fold at which a test can
+      # first stop a trial (4 with the defaults). A stopped trial keeps the mean of its folds.
+      # p_threshold: 0.1              # Wilcoxon: prune below this p-value (sequential testing:
+      #                               # Optuna advises a Pocock-corrected value for a nominal rate)
+      # n_startup_steps: 2            # Wilcoxon: folds before the first test
 
     # =========================================================================
     # SAMPLER CONFIGURATION

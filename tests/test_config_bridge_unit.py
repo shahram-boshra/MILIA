@@ -331,7 +331,7 @@ class TestHPOPrunerTypeEnum:
 
     def test_pruner_type_count(self):
         """Test number of pruner types (P1-4: parity with hpo_config.PrunerType)."""
-        assert len(HPOPrunerType) == 7
+        assert len(HPOPrunerType) == 8
 
     def test_pruner_type_from_string(self):
         """Test creating HPOPrunerType from string."""
@@ -1781,6 +1781,41 @@ class TestModelConfig:
         bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
         gate_ok = self._accepts(lambda: HPOConfig.from_dict({"sampler": {"type": sampler}}))
         assert bridge_ok == gate_ok, f"sampler '{sampler}': bridge={bridge_ok}, HPOConfig={gate_ok}"
+
+    @pytest.mark.parametrize(
+        "hpo",
+        [
+            {"pruner": {"type": "wilcoxon"}, "cv_folds": 5},
+            {"pruner": {"type": "wilcoxon"}, "cv_folds": 4},
+            {"pruner": {"type": "wilcoxon"}, "cv_folds": 0},
+            {"pruner": {"type": "wilcoxon"}, "cv_folds": 5, "cv_metric_aggregation": "median"},
+            {"pruner": {"type": "wilcoxon", "p_threshold": 0.2}, "cv_folds": 4},
+            {"pruner": {"type": "wilcoxon", "p_threshold": 0.125}, "cv_folds": 4},
+            {"pruner": {"type": "wilcoxon", "p_threshold": 0.13}, "cv_folds": 4},
+            {"pruner": {"type": "wilcoxon", "p_threshold": 0.0}, "cv_folds": 5},
+            {"pruner": {"type": "wilcoxon", "p_threshold": 1.5}, "cv_folds": 5},
+            {"pruner": {"type": "wilcoxon", "n_startup_steps": 5}, "cv_folds": 5},
+            {"pruner": {"type": "wilcoxon", "n_startup_steps": -1}, "cv_folds": 5},
+            {"pruner": {"type": "median"}, "cv_folds": 0},
+        ],
+    )
+    def test_wilcoxon_pruner_acceptance_matches_hpo_config(self, hpo):
+        """P3-2b: the bridge accepts a Wilcoxon pruner setting iff the execution gate does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, **hpo},
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict(hpo))
+        assert bridge_ok == gate_ok, f"{hpo}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+
+    def test_wilcoxon_pruner_without_cross_validation_message(self):
+        """P3-2b: the bridge names the missing cross-validation, as HPOConfig does."""
+        with pytest.raises(ValueError, match="needs cross-validation"):
+            HPOConfigBridge(pruner=HPOPrunerConfigBridge(type=HPOPrunerType.WILCOXON), cv_folds=1)
 
     @pytest.mark.parametrize("backend", ["optuna", "ray_tune", "bogus"])
     def test_backend_acceptance_matches_hpo_config(self, backend):

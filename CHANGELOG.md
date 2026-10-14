@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sampler.type: gp` — Optuna's Gaussian-process sampler (`GPSampler`), which Optuna recommends for budgets up to
   about 500 trials. It handles float, integer and categorical parameters and one or several objectives, takes
   `seed` and `n_startup_trials`, and accounts for trials still running in other workers.
+- `pruner.type: wilcoxon` — Optuna's `WilcoxonPruner` for cross-validated HPO (`cv_folds`): after each fold a
+  paired Wilcoxon signed-rank test compares the trial's fold scores with the best trial's on the same folds, and a
+  trial that is significantly worse (`p_threshold`, default 0.1) stops early. As Optuna advises for this pruner,
+  folds run in an order shuffled per trial, and a stopped trial completes with the mean of its evaluated folds
+  (user attribute `cv_folds_evaluated`) so the sampler learns from it. It needs `cv_metric_aggregation: mean` and
+  more folds than a test needs to stop a trial (5 or more with the defaults); both are checked when the
+  configuration is read.
 
 ### Fixed
 

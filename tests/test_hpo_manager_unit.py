@@ -150,6 +150,7 @@ class MockPrunerType(Enum):
     MEDIAN = "median"
     PERCENTILE = "percentile"
     HYPERBAND = "hyperband"
+    WILCOXON = "wilcoxon"
     NONE = "none"
 
 
@@ -170,6 +171,8 @@ class MockPrunerConfig:
     n_warmup_steps: int = 10
     interval_steps: int = 1
     percentile: float = 25.0
+    p_threshold: float = 0.1
+    n_startup_steps: int = 2
 
 
 @dataclass
@@ -693,7 +696,9 @@ class TestHPOManagerOptimize:
         ):
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-            config = MockHPOConfig(enabled=True)
+            config = MockHPOConfig(
+                enabled=True, pruner=MockPrunerConfig(p_threshold=0.05, n_startup_steps=3)
+            )
             manager = HPOManager(config)
 
             manager.optimize(model_name="GCN", dataset=mock_dataset)
@@ -701,6 +706,9 @@ class TestHPOManagerOptimize:
             mock_backend.create_pruner.assert_called_once()
             call_kwargs = mock_backend.create_pruner.call_args[1]
             assert "pruner_type" in call_kwargs
+            # P3-2b: the Wilcoxon options reach the backend
+            assert call_kwargs["p_threshold"] == 0.05
+            assert call_kwargs["n_startup_steps"] == 3
 
     def test_optimize_creates_sampler(self, mock_backend, mock_dataset):
         """Test optimize creates sampler with correct parameters."""
@@ -947,12 +955,17 @@ class TestHPOManagerCreateObjective:
             with pytest.raises(TrialFailedError):
                 objective(mock_trial)
 
+    @pytest.mark.parametrize(
+        ("pruner_type", "instance_pruning"),
+        [(MockPrunerType.MEDIAN, False), (MockPrunerType.WILCOXON, True)],
+    )
     def test_objective_cv_branch_reports_per_fold_not_per_epoch(
-        self, mock_backend, mock_dataset, mock_trial
+        self, mock_backend, mock_dataset, mock_trial, pruner_type, instance_pruning
     ):
         """P1-7 (F20): with cv_folds > 0 the objective hands the trial to _run_cross_validation for
         fold-level reporting and does NOT inject the epoch-level pruning callback into the folds
-        (whose epoch steps would collide across folds)."""
+        (whose epoch steps would collide across folds). P3-2b: the Wilcoxon pruner treats the folds
+        as instances."""
         hpo_callback = MagicMock(name="epoch_level_hpo_callback")
         user_callback = MagicMock(name="user_callback")
         cv_spy = MagicMock(return_value=(0.1,))  # one value per objective (P3-1)
@@ -979,7 +992,9 @@ class TestHPOManagerCreateObjective:
         ):
             from milia_pipeline.models.hpo.hpo_manager import HPOManager
 
-            manager = HPOManager(MockHPOConfig(enabled=True, cv_folds=3))
+            manager = HPOManager(
+                MockHPOConfig(enabled=True, cv_folds=3, pruner=MockPrunerConfig(type=pruner_type))
+            )
             manager._model_factory = MagicMock()
             with patch.object(HPOManager, "_build_composite_hyperparameters", return_value={}):
                 objective = manager._create_objective(
@@ -994,6 +1009,7 @@ class TestHPOManagerCreateObjective:
         cv_spy.assert_called_once()
         kwargs = cv_spy.call_args.kwargs
         assert kwargs.get("trial") is mock_trial
+        assert kwargs["instance_pruning"] is instance_pruning
         assert hpo_callback not in kwargs["callbacks"]
         assert user_callback in kwargs["callbacks"]
 

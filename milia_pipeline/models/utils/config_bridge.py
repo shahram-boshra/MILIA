@@ -215,6 +215,7 @@ class HPOPrunerType(Enum):
     SUCCESSIVE_HALVING = "successive_halving"
     THRESHOLD = "threshold"
     PATIENT = "patient"
+    WILCOXON = "wilcoxon"
 
 
 class HPOSamplerType(Enum):
@@ -981,6 +982,8 @@ class HPOPrunerConfigBridge(BaseModel):
         n_warmup_steps: Epochs before pruning within a trial
         interval_steps: Check pruning every N steps
         percentile: For percentile pruner (default: 25.0)
+        p_threshold: For Wilcoxon pruner, in (0, 1] (default: 0.1)
+        n_startup_steps: For Wilcoxon pruner, folds before the first test (default: 2)
     """
 
     type: HPOPrunerType = HPOPrunerType.MEDIAN
@@ -988,6 +991,8 @@ class HPOPrunerConfigBridge(BaseModel):
     n_warmup_steps: int = 10
     interval_steps: int = 1
     percentile: float = 25.0
+    p_threshold: float = Field(default=0.1, gt=0.0, le=1.0)
+    n_startup_steps: int = Field(default=2, ge=0)
 
 
 class HPOSamplerConfigBridge(BaseModel):
@@ -1279,6 +1284,34 @@ class HPOConfigBridge(BaseModel):
             raise ValueError(
                 "Sampler 'cmaes' supports one objective only; use 'tpe', 'gp', 'nsgaii', 'random', "
                 "'qmc' or 'grid' with study.objectives"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_wilcoxon_pruner(self) -> "HPOConfigBridge":
+        """Same rule as ``HPOConfig``: the Wilcoxon pruner needs cross-validation with the fold mean
+        and enough folds for a test to stop a trial before its last fold."""
+        if self.pruner.type is not HPOPrunerType.WILCOXON:
+            return self
+        if self.cv_folds < 2:
+            raise ValueError(
+                f"Pruner 'wilcoxon' compares per-fold scores and needs cross-validation; set "
+                f"cv_folds >= 2 (got {self.cv_folds})"
+            )
+        if self.cv_metric_aggregation != "mean":
+            raise ValueError(
+                f"Pruner 'wilcoxon' needs cv_metric_aggregation 'mean' (got "
+                f"'{self.cv_metric_aggregation}')"
+            )
+        # Exact one-sided signed-rank test: n folds give p >= 0.5**n
+        earliest = max(2, self.pruner.n_startup_steps)
+        while 0.5**earliest >= self.pruner.p_threshold:
+            earliest += 1
+        if earliest >= self.cv_folds:
+            raise ValueError(
+                f"Pruner 'wilcoxon' with p_threshold={self.pruner.p_threshold} and n_startup_steps="
+                f"{self.pruner.n_startup_steps} can stop a trial only after {earliest} folds; set "
+                f"cv_folds > {earliest} (got {self.cv_folds})"
             )
         return self
 
@@ -1651,6 +1684,8 @@ class ModelConfig(BaseModel):
             n_warmup_steps=pruner_dict.get("n_warmup_steps", 10),
             interval_steps=pruner_dict.get("interval_steps", 1),
             percentile=pruner_dict.get("percentile", 25.0),
+            p_threshold=pruner_dict.get("p_threshold", 0.1),
+            n_startup_steps=pruner_dict.get("n_startup_steps", 2),
         )
 
         # Parse sampler config

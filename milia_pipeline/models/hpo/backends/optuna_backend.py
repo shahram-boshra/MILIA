@@ -413,6 +413,8 @@ class OptunaBackend:
             pruner_type: Type of pruner
             n_startup_trials: Trials before pruning begins
             n_warmup_steps: Steps before pruning within trial
+            **kwargs: Type-specific options (e.g. ``percentile``; ``p_threshold`` and
+                ``n_startup_steps`` for ``wilcoxon``)
 
         Returns:
             Optuna pruner instance
@@ -424,6 +426,7 @@ class OptunaBackend:
             "successive_halving": optuna.pruners.SuccessiveHalvingPruner,
             "threshold": optuna.pruners.ThresholdPruner,
             "patient": optuna.pruners.PatientPruner,
+            "wilcoxon": optuna.pruners.WilcoxonPruner,
             "none": optuna.pruners.NopPruner,
         }
 
@@ -481,6 +484,13 @@ class OptunaBackend:
             pruner_kwargs = {
                 "wrapped_pruner": wrapped_pruner,
                 "patience": kwargs.get("patience", 5),
+            }
+
+        elif pruner_type == "wilcoxon":
+            # Steps are instance ids (CV fold indices), not epochs: n_warmup_steps does not apply
+            pruner_kwargs = {
+                "p_threshold": kwargs.get("p_threshold", 0.1),
+                "n_startup_steps": kwargs.get("n_startup_steps", 2),
             }
 
         logger.debug(f"Creating {pruner_type} pruner with kwargs: {pruner_kwargs}")

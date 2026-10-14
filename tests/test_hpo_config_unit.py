@@ -466,6 +466,7 @@ class TestPrunerTypeEnum:
             "SUCCESSIVE_HALVING",
             "THRESHOLD",
             "PATIENT",
+            "WILCOXON",
             "NONE",
         }
         actual_types = {pt.name for pt in PrunerType}
