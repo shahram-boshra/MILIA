@@ -603,8 +603,10 @@ class OptunaBackend:
                 )
 
         elif sampler_type == "gp":
-            # GPSampler: random sampling for the first n_startup_trials, then the GP (Optuna 4.9.0
-            # also conditions on RUNNING trials, so parallel workers do not repeat each other)
+            # GPSampler: random sampling for the first n_startup_trials, then the GP. Optuna 4.9.0
+            # conditions on RUNNING trials whose parameters are already chosen ("constant liar"),
+            # which makes repeats between parallel workers less likely; two workers sampling at the
+            # same moment from the same history can still choose the same point.
             sampler_kwargs["n_startup_trials"] = n_startup_trials
 
         elif sampler_type == "grid":

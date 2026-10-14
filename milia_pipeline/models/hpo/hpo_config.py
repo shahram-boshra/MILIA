@@ -231,7 +231,8 @@ class SamplerType(Enum):
         MOTPE: Multi-objective TPE
         QMCSAMPLER: Quasi-Monte Carlo sampling
         GP: Gaussian-process Bayesian optimization (``GPSampler``; Optuna recommends it for budgets
-            up to about 500 trials; one or several objectives; considers trials still running)
+            up to about 500 trials; one or several objectives; considers running trials whose
+            parameters are chosen)
     """
 
     TPE = "tpe"

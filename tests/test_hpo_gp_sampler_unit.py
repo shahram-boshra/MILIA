@@ -4,8 +4,8 @@ Contract tests for ``sampler.type: gp`` — Optuna's ``GPSampler`` (Gaussian-pro
 optimization).
 
 Optuna recommends it for budgets up to about 500 trials; it handles float, int and categorical
-parameters, one or several objectives, and (optuna 4.9.0) conditions on trials still running in other
-workers. MILIA passes ``seed`` (per-worker seeds are derived as for every sampler) and
+parameters, one or several objectives, and (optuna 4.9.0) conditions on trials running in other
+workers once their parameters are chosen. MILIA passes ``seed`` (per-worker seeds are derived as for every sampler) and
 ``n_startup_trials`` (random trials before the GP is fitted).
 """
 
@@ -118,9 +118,35 @@ def _worker(path: str, index: int) -> None:
 
 
 @pytest.mark.contract
+def test_running_trial_with_chosen_params_is_avoided():
+    """Another worker's RUNNING trial is conditioned on once its parameters are chosen (optuna 4.9.0
+    stores them as trial system attributes; ``LogEI`` gives them the best observed value, a
+    "constant liar"). Control: with the same seed and history the sampler repeats its point, so the
+    different point is due to the running trial."""
+    study = optuna.create_study(sampler=optuna.samplers.RandomSampler(seed=0))
+    study.optimize(_quadratic, n_trials=4)
+
+    def gp_point(trial):
+        sampler = OptunaBackend().create_sampler("gp", seed=11, n_startup_trials=3)
+        return sampler.sample_relative(
+            study, trial, sampler.infer_relative_search_space(study, trial)
+        )
+
+    first = study.ask()
+    first_point = gp_point(first)
+    study.tell(first, state=TrialState.FAIL)  # not COMPLETE/RUNNING: invisible to the sampler
+    running = study.ask()
+    assert gp_point(running) == first_point  # same history, same seed
+    assert gp_point(study.ask()) != first_point  # `running` holds that point
+
+
+@pytest.mark.contract
 def test_two_workers_share_a_gp_study(tmp_path):
-    """Two spawn workers with per-worker seeds on one journal study: every trial completes and no
-    parameter set repeats."""
+    """Two spawn workers with per-worker seeds on one journal study: every trial completes and the GP
+    chooses parameters. Repeated parameter sets are not asserted away: a trial whose parameters are
+    still being chosen is invisible to the other worker, and two workers sampling at the same moment
+    from the same history can choose the same point (the acquisition optimum on a bound,
+    e.g. x = 5.0)."""
     from milia_pipeline.models.hpo.backends.storage_factory import build_storage
 
     path = str(tmp_path / "journal.log")
@@ -138,5 +164,4 @@ def test_two_workers_share_a_gp_study(tmp_path):
     study = optuna.load_study(study_name="gp", storage=storage)
     complete = [t for t in study.trials if t.state == TrialState.COMPLETE]
     assert len(complete) == 12
-    assert len({tuple(sorted(t.params.items())) for t in complete}) == 12
     assert _gp_trials(study)
