@@ -656,7 +656,7 @@ class TestSamplerTypeEnum:
 
     def test_all_sampler_types_defined(self):
         """Test all expected sampler types are defined."""
-        expected_types = {"TPE", "RANDOM", "CMAES", "GRID", "NSGAII", "MOTPE", "QMCSAMPLER"}
+        expected_types = {"TPE", "RANDOM", "CMAES", "GRID", "NSGAII", "MOTPE", "QMCSAMPLER", "GP"}
         actual_types = {st.name for st in SamplerType}
         assert actual_types == expected_types
 

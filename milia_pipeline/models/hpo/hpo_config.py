@@ -191,6 +191,8 @@ class SamplerType(Enum):
         NSGAII: Non-dominated Sorting Genetic Algorithm II (multi-objective)
         MOTPE: Multi-objective TPE
         QMCSAMPLER: Quasi-Monte Carlo sampling
+        GP: Gaussian-process Bayesian optimization (``GPSampler``; Optuna recommends it for budgets
+            up to about 500 trials; one or several objectives; considers trials still running)
     """
 
     TPE = "tpe"
@@ -200,6 +202,7 @@ class SamplerType(Enum):
     NSGAII = "nsgaii"
     MOTPE = "motpe"
     QMCSAMPLER = "qmc"
+    GP = "gp"
 
 
 # Sampler types kept in SamplerType for backward compatibility but not executable on the pinned stack
@@ -960,8 +963,8 @@ class HPOConfig(BaseModel, frozen=True):
             )
         if self.sampler.type is SamplerType.CMAES:
             raise ValueError(
-                "Sampler 'cmaes' supports one objective only; use 'tpe', 'nsgaii', 'random', 'qmc' "
-                "or 'grid' with study.objectives"
+                "Sampler 'cmaes' supports one objective only; use 'tpe', 'gp', 'nsgaii', 'random', "
+                "'qmc' or 'grid' with study.objectives"
             )
         return self
 

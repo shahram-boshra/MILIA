@@ -890,7 +890,8 @@ models:
     # Controls hyperparameter suggestion strategy
 
     sampler:
-      type: "tpe"                     # tpe, random, cmaes, grid
+      type: "tpe"                     # tpe, gp, random, cmaes, grid, nsgaii, qmc
+                                      # gp: Gaussian-process BO, for budgets up to ~500 trials
       n_startup_trials: 10            # Random trials before Bayesian
       seed: null                      # Random seed (null = random)
       multivariate: true              # Use multivariate TPE

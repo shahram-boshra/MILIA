@@ -227,6 +227,7 @@ class HPOSamplerType(Enum):
     NSGAII = "nsgaii"
     MOTPE = "motpe"
     QMCSAMPLER = "qmc"
+    GP = "gp"
 
 
 class HPODirection(Enum):
@@ -1276,8 +1277,8 @@ class HPOConfigBridge(BaseModel):
             )
         if self.sampler.type is HPOSamplerType.CMAES:
             raise ValueError(
-                "Sampler 'cmaes' supports one objective only; use 'tpe', 'nsgaii', 'random', 'qmc' "
-                "or 'grid' with study.objectives"
+                "Sampler 'cmaes' supports one objective only; use 'tpe', 'gp', 'nsgaii', 'random', "
+                "'qmc' or 'grid' with study.objectives"
             )
         return self
 

@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-objective results: `pareto_front.json` lists the Pareto-front trials with their objective values and
   parameters and names the selected trial (whose parameters are in `best_params.json`); `study_statistics.json`
   reports best, worst and mean per objective, the selected trial and the size of the Pareto front.
+- `sampler.type: gp` — Optuna's Gaussian-process sampler (`GPSampler`), which Optuna recommends for budgets up to
+  about 500 trials. It handles float, integer and categorical parameters and one or several objectives, takes
+  `seed` and `n_startup_trials`, and accounts for trials still running in other workers.
 
 ### Fixed
 

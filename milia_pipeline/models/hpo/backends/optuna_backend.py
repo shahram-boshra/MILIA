@@ -517,6 +517,7 @@ class OptunaBackend:
             "nsgaii": "NSGAIISampler",
             "motpe": "MOTPESampler",
             "qmc": "QMCSampler",
+            "gp": "GPSampler",
         }
 
         self._sampler_registry_cache = {
@@ -590,6 +591,11 @@ class OptunaBackend:
                     "`samplers/restart_cmaes`.",
                     requested_restart,
                 )
+
+        elif sampler_type == "gp":
+            # GPSampler: random sampling for the first n_startup_trials, then the GP (Optuna 4.9.0
+            # also conditions on RUNNING trials, so parallel workers do not repeat each other)
+            sampler_kwargs["n_startup_trials"] = n_startup_trials
 
         elif sampler_type == "grid":
             # Grid sampler requires search_space

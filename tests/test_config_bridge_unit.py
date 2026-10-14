@@ -350,7 +350,7 @@ class TestHPOSamplerTypeEnum:
 
     def test_sampler_type_count(self):
         """Test number of sampler types (P1-4: parity with hpo_config.SamplerType)."""
-        assert len(HPOSamplerType) == 7
+        assert len(HPOSamplerType) == 8
 
     def test_sampler_type_from_string(self):
         """Test creating HPOSamplerType from string."""
@@ -1767,7 +1767,7 @@ class TestModelConfig:
         return True
 
     @pytest.mark.parametrize(
-        "sampler", ["tpe", "random", "cmaes", "grid", "nsgaii", "motpe", "qmc", "bogus"]
+        "sampler", ["tpe", "random", "cmaes", "grid", "nsgaii", "motpe", "qmc", "gp", "bogus"]
     )
     def test_sampler_acceptance_matches_hpo_config(self, sampler):
         """P1-6b (F31): the bridge accepts a sampler value iff the execution gate (HPOConfig) does."""

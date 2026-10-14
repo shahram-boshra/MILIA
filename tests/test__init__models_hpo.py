@@ -967,12 +967,12 @@ class TestContractEnumMemberCounts:
     @pytest.mark.contract
     def test_sampler_type_has_expected_members(self, hpo_pkg):
         """
-        ``SamplerType`` has 7 types per project structure:
-        TPE, RANDOM, CMAES, GRID, NSGAII, MOTPE, QMCSAMPLER.
+        ``SamplerType`` has 8 types per project structure:
+        TPE, RANDOM, CMAES, GRID, NSGAII, MOTPE, QMCSAMPLER, GP.
         """
         members = list(hpo_pkg.SamplerType)
-        assert len(members) == 7, (
-            f"SamplerType should have 7 members, got {len(members)}: {[m.name for m in members]}"
+        assert len(members) == 8, (
+            f"SamplerType should have 8 members, got {len(members)}: {[m.name for m in members]}"
         )
 
     @pytest.mark.contract
