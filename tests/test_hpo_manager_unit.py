@@ -194,6 +194,17 @@ class MockStudyConfig:
     metric: str = "val_loss"
     storage_options: Any = None
 
+    # Mirror of StudyConfig's objective accessors (P3-1): one objective
+    is_multi_objective = False
+
+    @property
+    def objective_metrics(self) -> tuple[str, ...]:
+        return (self.metric,)
+
+    @property
+    def objective_directions(self) -> tuple[str, ...]:
+        return (self.direction.value,)
+
     def resolve_storage_url(self, environ=None) -> str | None:
         """Mirror of ``StudyConfig.resolve_storage_url`` (P2-1)."""
         if self.storage_options is not None:
@@ -944,7 +955,7 @@ class TestHPOManagerCreateObjective:
         (whose epoch steps would collide across folds)."""
         hpo_callback = MagicMock(name="epoch_level_hpo_callback")
         user_callback = MagicMock(name="user_callback")
-        cv_spy = MagicMock(return_value=0.1)
+        cv_spy = MagicMock(return_value=(0.1,))  # one value per objective (P3-1)
 
         with (
             patch("milia_pipeline.models.hpo.hpo_manager.HPOConfig", MockHPOConfig),

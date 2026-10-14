@@ -1099,6 +1099,22 @@ class HPOStorageConfigBridge(BaseModel):
         return self
 
 
+class HPOObjectiveConfigBridge(BaseModel):
+    """One objective of a multi-objective study (mirrors ``hpo_config.ObjectiveConfig``)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metric: str
+    direction: HPODirection = HPODirection.MINIMIZE
+
+    @field_validator("metric")
+    @classmethod
+    def validate_metric(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("objective metric cannot be empty")
+        return v
+
+
 class HPOStudyConfigBridge(BaseModel):
     """
     Bridge class for HPO study configuration.
@@ -1113,6 +1129,7 @@ class HPOStudyConfigBridge(BaseModel):
         storage_options: Storage URL from an environment variable or a file; exclusive with
             ``storage`` (P2-1, P2-4a)
         load_if_exists: Whether to resume existing study
+        objectives: Two or more objectives (metric + direction) instead of ``metric`` / ``direction``
     """
 
     direction: HPODirection = HPODirection.MINIMIZE
@@ -1121,6 +1138,23 @@ class HPOStudyConfigBridge(BaseModel):
     storage: str | None = None
     storage_options: HPOStorageConfigBridge | None = None
     load_if_exists: bool = True
+    objectives: tuple[HPOObjectiveConfigBridge, ...] | None = Field(default=None, min_length=2)
+
+    @model_validator(mode="after")
+    def validate_objectives(self) -> "HPOStudyConfigBridge":
+        """Same rule as ``StudyConfig``: ``objectives`` replaces ``metric`` / ``direction``, each metric once."""
+        if self.objectives is None:
+            return self
+        both = sorted({"metric", "direction"} & self.model_fields_set)
+        if both:
+            raise ValueError(
+                f"Set either study.objectives or study.{' / study.'.join(both)}, not both"
+            )
+        metrics = [objective.metric for objective in self.objectives]
+        repeated = sorted({m for m in metrics if metrics.count(m) > 1})
+        if repeated:
+            raise ValueError(f"study.objectives repeats metric(s): {', '.join(repeated)}")
+        return self
 
     @model_validator(mode="after")
     def validate_single_storage_source(self) -> "HPOStudyConfigBridge":
@@ -1229,6 +1263,23 @@ class HPOConfigBridge(BaseModel):
                 f"Invalid cv_metric_aggregation: '{v}'. Must be one of: {valid_values}"
             )
         return v
+
+    @model_validator(mode="after")
+    def validate_multi_objective(self) -> "HPOConfigBridge":
+        """Same rule as ``HPOConfig``: no pruning and no CMA-ES with several objectives."""
+        if self.study.objectives is None:
+            return self
+        if self.pruner.type is not HPOPrunerType.NONE:
+            raise ValueError(
+                f"Multi-objective studies cannot prune (Optuna does not support Trial.report for "
+                f"several objectives); set pruner.type to 'none' (got '{self.pruner.type.value}')"
+            )
+        if self.sampler.type is HPOSamplerType.CMAES:
+            raise ValueError(
+                "Sampler 'cmaes' supports one objective only; use 'tpe', 'nsgaii', 'random', 'qmc' "
+                "or 'grid' with study.objectives"
+            )
+        return self
 
     def validate(self):
         """Backward compatible validate method (validation happens on construction)."""
@@ -1623,16 +1674,36 @@ class ModelConfig(BaseModel):
 
         # Parse study config
         study_dict = hpo_dict.get("study", {})
-        direction_str = study_dict.get("direction", "minimize")
-        direction = _parse_hpo_enum(HPODirection, direction_str, "study.direction")
+        # metric / direction only when given, so a study with `objectives` can tell them apart from
+        # their defaults (same as StudyConfig(**study_dict) on the execution path)
+        single_objective: dict[str, Any] = {}
+        if "direction" in study_dict:
+            single_objective["direction"] = _parse_hpo_enum(
+                HPODirection, study_dict["direction"], "study.direction"
+            )
+        if "metric" in study_dict:
+            single_objective["metric"] = study_dict["metric"]
+        objectives = study_dict.get("objectives")
+        if isinstance(objectives, list):
+            objectives = tuple(
+                {
+                    **objective,
+                    "direction": _parse_hpo_enum(
+                        HPODirection, objective["direction"], f"study.objectives[{index}].direction"
+                    ),
+                }
+                if isinstance(objective, dict) and "direction" in objective
+                else objective
+                for index, objective in enumerate(objectives)
+            )
 
         study = HPOStudyConfigBridge(
-            direction=direction,
-            metric=study_dict.get("metric", "val_loss"),
+            **single_objective,
             study_name=study_dict.get("study_name", "milia_hpo"),
             storage=study_dict.get("storage"),
             storage_options=study_dict.get("storage_options"),
             load_if_exists=study_dict.get("load_if_exists", True),
+            objectives=objectives,
         )
 
         # Parse search space

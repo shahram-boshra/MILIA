@@ -4303,7 +4303,7 @@ def handle_hpo_init_mode(
 
     logger.info(
         f"Study '{hpo_config.study.study_name}' ready ({len(study.trials)} existing trials; "
-        f"direction {hpo_config.study.direction.value}, metric '{hpo_config.study.metric}'). "
+        f"objectives: {hpo_config.study.objectives_label}). "
         "Start workers with: --train --hpo --hpo-worker INDEX; when all are done, run once: "
         "--train --hpo --hpo-finalize"
     )

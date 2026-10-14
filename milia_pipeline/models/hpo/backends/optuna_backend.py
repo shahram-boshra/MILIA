@@ -8,7 +8,7 @@ Primary HPO backend using Optuna's Tree-Parzen Estimators (TPE).
 
 import logging
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 try:
@@ -98,15 +98,18 @@ class OptunaBackend:
         sampler: Any | None = None,
         pruner: Any | None = None,
         *,
-        metric: str | None = None,
+        metric: str | Sequence[str] | None = None,
         must_exist: bool = False,
+        directions: Sequence[str] | None = None,
     ) -> "optuna.Study":
         """
         Create or load an Optuna study.
 
         Args:
             study_name: Name for the study
-            direction: "minimize" or "maximize"
+            direction: "minimize" or "maximize" (single-objective study)
+            directions: One direction per objective (multi-objective study, P3-1); replaces
+                ``direction``. ``metric`` is then the list of objective metrics, in the same order
             storage: Storage URL (e.g., "sqlite:///optuna.db"), an ``optuna.storages.BaseStorage``
                 built by ``storage_factory.build_storage`` (P2-2a), or None for in-memory
             load_if_exists: Whether to resume existing study
@@ -131,7 +134,8 @@ class OptunaBackend:
             try:
                 study = optuna.create_study(
                     study_name=study_name,
-                    direction=direction,
+                    direction=None if directions else direction,
+                    directions=list(directions) if directions else None,
                     storage=storage,
                     load_if_exists=load_if_exists,
                     sampler=sampler,
@@ -155,7 +159,9 @@ class OptunaBackend:
                 ) from e
 
         # Outside the try: a compatibility error must not be re-wrapped as a creation failure.
-        self._check_study_compatibility(study, study_name, direction, metric)
+        self._check_study_compatibility(
+            study, study_name, list(directions) if directions else [direction], metric
+        )
 
         n_existing = len(study.trials)
         if n_existing > 0:
@@ -206,8 +212,8 @@ class OptunaBackend:
     def _check_study_compatibility(
         study: "optuna.Study",
         study_name: str,
-        direction: str,
-        metric: str | None,
+        directions: list[str],
+        metric: str | Sequence[str] | None,
     ) -> None:
         """Reject a loaded study whose direction or recorded metric differs; record the metric (P1-2b).
 
@@ -215,16 +221,19 @@ class OptunaBackend:
         Optuna (a different requested direction is silently ignored, R20), so it is compared here.
         """
         stored_directions = [d.name.lower() for d in study.directions]
-        if stored_directions != [direction]:
+        if stored_directions != directions:
+            requested = directions[0] if len(directions) == 1 else directions
             raise HPOConfigurationError(
                 f"Study '{study_name}' was created with direction {stored_directions}, but "
-                f"direction '{direction}' was requested",
-                config_key="study.direction",
+                f"direction {requested!r} was requested",
+                config_key="study.direction" if len(directions) == 1 else "study.objectives",
                 actual_value=stored_directions,
-                expected_value=direction,
+                expected_value=requested,
             )
         if metric is None:
             return
+        # One metric is stored as a string (as before P3-1); several as a list, in objective order
+        metric = metric if isinstance(metric, str) else list(metric)
         stored_metric = study.user_attrs.get(_METRIC_USER_ATTR)
         if stored_metric is None:
             # New study, or one created before P1-2b: record the metric it is optimized for.
@@ -233,7 +242,7 @@ class OptunaBackend:
             raise HPOConfigurationError(
                 f"Study '{study_name}' optimizes metric '{stored_metric}', but metric "
                 f"'{metric}' was requested",
-                config_key="study.metric",
+                config_key="study.metric" if isinstance(metric, str) else "study.objectives",
                 actual_value=stored_metric,
                 expected_value=metric,
             )
@@ -321,24 +330,46 @@ class OptunaBackend:
                 details=str(e),
             ) from e
 
-    def get_best_params(self, study: "optuna.Study") -> dict[str, Any]:
-        """Get best hyperparameters from study."""
+    @staticmethod
+    def _best_trial(study: "optuna.Study") -> "optuna.trial.FrozenTrial":
+        """The best trial: ``study.best_trial`` for one objective. With several objectives, the trial
+        on the Pareto front (``study.best_trials``, the non-dominated trials) that is best on the first
+        objective, then the second, …, then the lowest trial number (P3-1) — a Pareto-optimal trial,
+        chosen the way Optuna's multi-objective tutorial picks one, by a single objective."""
         try:
-            return study.best_params
-        except ValueError as e:
-            # No completed trials
+            if len(study.directions) == 1:
+                return study.best_trial
+            front = study.best_trials
+        except ValueError as e:  # no completed trial (single objective)
             raise HPOError(
                 "No completed trials in study", study_name=study.study_name, details=str(e)
             ) from e
+        if not front:
+            raise HPOError("No completed trials in study", study_name=study.study_name)
+        signs = [
+            1.0 if d == optuna.study.StudyDirection.MINIMIZE else -1.0 for d in study.directions
+        ]
+        return min(
+            front,
+            key=lambda t: (*(s * v for s, v in zip(signs, t.values, strict=True)), t.number),
+        )
+
+    def get_best_params(self, study: "optuna.Study") -> dict[str, Any]:
+        """Hyperparameters of the best trial (see ``_best_trial``)."""
+        return self._best_trial(study).params
 
     def get_best_value(self, study: "optuna.Study") -> float:
-        """Get best objective value from study."""
-        try:
-            return study.best_value
-        except ValueError as e:
-            raise HPOError(
-                "No completed trials in study", study_name=study.study_name, details=str(e)
-            ) from e
+        """Objective value of the best trial; with several objectives, its first objective's value."""
+        return self._best_trial(study).values[0]
+
+    def get_best_values(self, study: "optuna.Study") -> list[float]:
+        """Objective values of the best trial, one per objective (P3-1; an OptunaBackend extension of
+        ``HPOBackendProtocol``, used by ``HPOManager`` for multi-objective studies only)."""
+        return list(self._best_trial(study).values)
+
+    def get_best_trial_number(self, study: "optuna.Study") -> int:
+        """Number of the best trial (P3-1)."""
+        return self._best_trial(study).number
 
     def get_all_trials(self, study: "optuna.Study") -> list[dict[str, Any]]:
         """Get information about all trials."""
@@ -348,7 +379,9 @@ class OptunaBackend:
             trial_info = {
                 "number": trial.number,
                 "params": trial.params,
-                "value": trial.value,
+                # FrozenTrial.value raises for several objectives; values holds one per objective
+                "value": trial.value if len(study.directions) == 1 else None,
+                "values": trial.values,
                 "state": trial.state.name,
                 "duration": (
                     (trial.datetime_complete - trial.datetime_start).total_seconds()

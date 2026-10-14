@@ -540,9 +540,32 @@ class StorageConfig(BaseModel):
         return self.model_dump()
 
 
+class ObjectiveConfig(BaseModel, frozen=True):
+    """One objective of a multi-objective study: a metric and its direction.
+
+    Attributes:
+        metric: Metric name, read like ``StudyConfig.metric`` (a per-epoch Trainer metric at the epoch
+            with the lowest validation loss, ``training_time``, or ``n_parameters`` — the model's
+            parameter count)
+        direction: Optimization direction of this metric
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    metric: str
+    direction: OptimizationDirection = OptimizationDirection.MINIMIZE
+
+    @field_validator("metric")
+    @classmethod
+    def validate_metric(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("objective metric cannot be empty")
+        return v
+
+
 class StudyConfig(BaseModel, frozen=True):
     """
-    Optuna study configuration for single-objective optimization.
+    Optuna study configuration: one objective (``metric`` / ``direction``) or several (``objectives``).
 
     Pattern: Follows frozen BaseModel pattern from config_containers.py (Pydantic V2)
 
@@ -559,8 +582,19 @@ class StudyConfig(BaseModel, frozen=True):
         storage_options: Typed storage selection (URL from an environment variable); mutually
             exclusive with ``storage`` (P2-1)
         load_if_exists: Whether to resume existing study with same name
+        objectives: Two or more objectives for multi-objective (Pareto) optimization, instead of
+            ``metric`` / ``direction`` (never both). Optuna creates the study with one direction per
+            objective; a trial returns one value per objective. Pruning is not available (Optuna's
+            ``Trial.report`` / ``should_prune`` raise for multi-objective studies), so the pruner must be
+            ``none``; ``cmaes`` is rejected (``CmaEsSampler`` is single-objective).
 
     Examples:
+        >>> # Minimize validation MAE and model size
+        >>> StudyConfig(objectives=(
+        ...     ObjectiveConfig(metric="val_mae", direction=OptimizationDirection.MINIMIZE),
+        ...     ObjectiveConfig(metric="n_parameters", direction=OptimizationDirection.MINIMIZE),
+        ... ))
+
         >>> # Minimize validation loss (default)
         >>> StudyConfig(direction=OptimizationDirection.MINIMIZE, metric="val_loss")
 
@@ -578,6 +612,7 @@ class StudyConfig(BaseModel, frozen=True):
     storage: str | None = None
     storage_options: StorageConfig | None = None
     load_if_exists: bool = True
+    objectives: tuple[ObjectiveConfig, ...] | None = Field(default=None, min_length=2)
 
     @field_validator("metric")
     @classmethod
@@ -596,6 +631,45 @@ class StudyConfig(BaseModel, frozen=True):
                 "variable), not both"
             )
         return self
+
+    @model_validator(mode="after")
+    def validate_objectives(self) -> "StudyConfig":
+        """``objectives`` replaces ``metric`` / ``direction``: setting both is ambiguous, and each metric
+        may appear once."""
+        if self.objectives is None:
+            return self
+        both = sorted({"metric", "direction"} & self.model_fields_set)
+        if both:
+            raise ValueError(
+                f"Set either study.objectives or study.{' / study.'.join(both)}, not both"
+            )
+        metrics = [objective.metric for objective in self.objectives]
+        repeated = sorted({m for m in metrics if metrics.count(m) > 1})
+        if repeated:
+            raise ValueError(f"study.objectives repeats metric(s): {', '.join(repeated)}")
+        return self
+
+    @property
+    def objective_metrics(self) -> tuple[str, ...]:
+        """Metric of every objective, in order (one entry for a single-objective study)."""
+        if self.objectives is None:
+            return (self.metric,)
+        return tuple(objective.metric for objective in self.objectives)
+
+    @property
+    def objective_directions(self) -> tuple[str, ...]:
+        """Direction (``"minimize"`` / ``"maximize"``) of every objective, in order."""
+        if self.objectives is None:
+            return (self.direction.value,)
+        return tuple(objective.direction.value for objective in self.objectives)
+
+    @property
+    def objectives_label(self) -> str:
+        """Human-readable objectives, e.g. ``"val_mae (minimize), n_parameters (minimize)"``."""
+        return ", ".join(
+            f"{m} ({d})"
+            for m, d in zip(self.objective_metrics, self.objective_directions, strict=True)
+        )
 
     @property
     def has_persistent_storage(self) -> bool:
@@ -636,8 +710,8 @@ class StudyConfig(BaseModel, frozen=True):
 
     @property
     def is_multi_objective(self) -> bool:
-        """Check if this is multi-objective optimization."""
-        return False
+        """Whether the study has several objectives (``objectives`` set)."""
+        return self.objectives is not None
 
     def to_dict(self) -> dict[str, Any]:
         """Backward compatible dict conversion."""
@@ -652,6 +726,10 @@ class StudyConfig(BaseModel, frozen=True):
 class MultiObjectiveStudyConfig(BaseModel, frozen=True):
     """
     Configuration for multi-objective optimization.
+
+    Not used by HPOManager: multi-objective studies are configured with ``StudyConfig.objectives``
+    (P3-1), which keeps storage options, heartbeat and the shared-study lifecycle. This class remains
+    exported for compatibility.
 
     Pattern: Follows frozen BaseModel pattern from config_containers.py (Pydantic V2)
 
@@ -869,6 +947,24 @@ class HPOConfig(BaseModel, frozen=True):
             )
         return v
 
+    @model_validator(mode="after")
+    def validate_multi_objective(self) -> "HPOConfig":
+        """A multi-objective study cannot prune, and CMA-ES is single-objective (both raise in Optuna
+        4.9.0 when the study runs: ``Trial.report``/``should_prune`` and ``CmaEsSampler``)."""
+        if not self.study.is_multi_objective:
+            return self
+        if self.pruner.type is not PrunerType.NONE:
+            raise ValueError(
+                f"Multi-objective studies cannot prune (Optuna does not support Trial.report for "
+                f"several objectives); set pruner.type to 'none' (got '{self.pruner.type.value}')"
+            )
+        if self.sampler.type is SamplerType.CMAES:
+            raise ValueError(
+                "Sampler 'cmaes' supports one objective only; use 'tpe', 'nsgaii', 'random', 'qmc' "
+                "or 'grid' with study.objectives"
+            )
+        return self
+
     def to_dict(self) -> dict[str, Any]:
         """Backward compatible dict conversion."""
         return self.model_dump()
@@ -924,6 +1020,21 @@ class HPOConfig(BaseModel, frozen=True):
             study_dict["direction"] = _parse_hpo_enum(
                 OptimizationDirection, study_dict["direction"], "study.direction"
             )
+        if isinstance(study_dict.get("objectives"), list):
+            study_dict = study_dict.copy()
+            study_dict["objectives"] = tuple(
+                {
+                    **objective,
+                    "direction": _parse_hpo_enum(
+                        OptimizationDirection,
+                        objective["direction"],
+                        f"study.objectives[{index}].direction",
+                    ),
+                }
+                if isinstance(objective, dict) and "direction" in objective
+                else objective
+                for index, objective in enumerate(study_dict["objectives"])
+            )
 
         search_space: dict[str, dict[str, SearchSpaceParamConfig]] = {}
         raw_search_space = config_dict.get("search_space", {})
@@ -971,6 +1082,7 @@ __all__ = [
     "OptimizationDirection",
     "StorageConfig",
     "StudyConfig",
+    "ObjectiveConfig",
     "MultiObjectiveStudyConfig",
     "HPOConfig",
 ]

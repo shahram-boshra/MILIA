@@ -7,7 +7,7 @@ Enables swapping between Optuna and Ray Tune without code changes.
 
 import importlib.util
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, Protocol, runtime_checkable
 
 # Check optuna availability without importing it
@@ -46,15 +46,18 @@ class HPOBackendProtocol(Protocol):
         sampler: Any | None = None,
         pruner: Any | None = None,
         *,
-        metric: str | None = None,
+        metric: str | Sequence[str] | None = None,
         must_exist: bool = False,
+        directions: Sequence[str] | None = None,
     ) -> Any:
         """
         Create or load an HPO study.
 
         Args:
             study_name: Name for the study
-            direction: "minimize" or "maximize"
+            direction: "minimize" or "maximize" (single-objective study)
+            directions: One direction per objective for a multi-objective study (P3-1); replaces
+                ``direction``
             storage: Storage URL, a backend storage object (P2-2a), or None for in-memory
             load_if_exists: Whether to resume existing study
             sampler: Sampler instance

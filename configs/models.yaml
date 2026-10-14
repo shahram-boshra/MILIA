@@ -928,6 +928,11 @@ models:
       #   journal_lock: "open"        # optional: "symlink" (Optuna default, NFSv2+) or "open"
       #                               # (O_EXCL, NFSv3+) for file systems without symbolic links
       load_if_exists: true            # Resume existing study
+      # objectives:                   # Optional: several objectives (Pareto) instead of metric/direction
+      #   - {metric: "val_mae", direction: "minimize"}       # (remove metric and direction above)
+      #   - {metric: "n_parameters", direction: "minimize"}  # n_parameters = model parameter count
+      #                               # needs pruner.type "none" (Optuna cannot prune several
+      #                               # objectives) and a sampler other than cmaes
 
     # =========================================================================
     # CROSS-VALIDATION

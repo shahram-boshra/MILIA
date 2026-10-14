@@ -213,6 +213,7 @@ from .hpo_config import (
     # Main configuration
     HPOConfig,
     MultiObjectiveStudyConfig,
+    ObjectiveConfig,
     OptimizationDirection,
     # Enums
     ParamType,
@@ -325,6 +326,7 @@ __all__ = [
     "SamplerConfig",
     "StorageConfig",
     "StudyConfig",
+    "ObjectiveConfig",
     "MultiObjectiveStudyConfig",
     # =========================================================================
     # CONFIGURATION ENUMS (from hpo_config.py)
@@ -482,6 +484,7 @@ def get_hpo_module_info() -> dict[str, Any]:
                 "SamplerConfig",
                 "StorageConfig",
                 "StudyConfig",
+                "ObjectiveConfig",
                 "MultiObjectiveStudyConfig",
             ],
             "convenience_functions": [

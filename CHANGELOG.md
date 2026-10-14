@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Multi-objective HPO: `models.hpo.study.objectives` lists two or more metrics with their directions (for
+  example validation MAE and model size), instead of `metric` / `direction`. Each trial reports one value per
+  objective; `n_parameters` (the model's parameter count) is available as an objective. The best trial is the
+  Pareto-optimal trial that is best on the first objective. Multi-objective studies need `pruner.type: none`
+  (Optuna cannot prune them) and a sampler other than `cmaes`; both are checked when the configuration is read.
+  Shared studies (`--hpo-init`, `--hpo-worker`, `--hpo-finalize`) work with several objectives.
+
 ### Fixed
 
 - HPO optimized the validation loss whatever `models.hpo.study.metric` named: a metric other than `val_loss`

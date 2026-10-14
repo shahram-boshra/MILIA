@@ -1942,6 +1942,64 @@ class TestModelConfig:
             f"gc_after_trial={value!r}: bridge={bridge_ok}, HPOConfig={gate_ok}"
         )
 
+    @pytest.mark.parametrize(
+        "hpo",
+        [
+            {
+                "pruner": {"type": "none"},
+                "study": {"objectives": [{"metric": "a"}, {"metric": "b"}]},
+            },
+            {"study": {"objectives": [{"metric": "a"}, {"metric": "b"}]}},  # default pruner
+            {
+                "pruner": {"type": "none"},
+                "sampler": {"type": "cmaes"},
+                "study": {"objectives": [{"metric": "a"}, {"metric": "b"}]},
+            },
+            {
+                "pruner": {"type": "none"},
+                "study": {
+                    "objectives": [
+                        {"metric": "a", "direction": "maximize"},
+                        {"metric": "b", "direction": "minimize"},
+                    ]
+                },
+            },
+            {"pruner": {"type": "none"}, "study": {"objectives": [{"metric": "a"}]}},
+            {
+                "pruner": {"type": "none"},
+                "study": {"objectives": [{"metric": "a"}, {"metric": "a"}]},
+            },
+            {
+                "pruner": {"type": "none"},
+                "study": {"metric": "a", "objectives": [{"metric": "a"}, {"metric": "b"}]},
+            },
+            {
+                "pruner": {"type": "none"},
+                "study": {
+                    "direction": "minimize",
+                    "objectives": [{"metric": "a"}, {"metric": "b"}],
+                },
+            },
+            {
+                "pruner": {"type": "none"},
+                "study": {"objectives": [{"metric": "a"}, {"metric": "b", "weight": 1}]},
+            },
+            {"study": {"metric": "val_mae", "direction": "maximize"}},
+        ],
+    )
+    def test_objectives_acceptance_matches_hpo_config(self, hpo):
+        """Multi-objective studies: the bridge accepts a configuration iff HPOConfig does."""
+        from milia_pipeline.models.hpo.hpo_config import HPOConfig
+
+        bridge_dict = {
+            "enabled": True,
+            "selection": {"task_type": "graph_regression", "model_name": "GCN"},
+            "hpo": {"enabled": False, **hpo},
+        }
+        bridge_ok = self._accepts(lambda: ModelConfig.from_dict(bridge_dict))
+        gate_ok = self._accepts(lambda: HPOConfig.from_dict({"enabled": False, **hpo}))
+        assert bridge_ok == gate_ok, f"{hpo}: bridge={bridge_ok}, HPOConfig={gate_ok}"
+
     def test_storage_options_parsed_into_bridge(self):
         """P2-1: models.hpo.study.storage_options reaches the bridge view (variable name only)."""
         config_dict = {

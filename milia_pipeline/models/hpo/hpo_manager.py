@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -1201,7 +1201,7 @@ class HPOManager:
                 sample_data = dataset[0] if hasattr(dataset, "__getitem__") else None
                 filter_task_type = infer_task_type(
                     dataset=dataset,
-                    metric=self.config.study.metric,
+                    metric=self.config.study.objective_metrics[0],
                     sample_data=sample_data,
                 )
                 logger.debug(f"Inferred task_type for search space filtering: {filter_task_type}")
@@ -1243,13 +1243,12 @@ class HPOManager:
         # Create study
         self.study = self.backend.create_study(
             study_name=study_name,
-            direction=self.config.study.direction.value,
             storage=storage,
             load_if_exists=load_if_exists,
             sampler=sampler,
             pruner=pruner,
-            metric=self.config.study.metric,
             must_exist=must_exist,
+            **self._objective_study_kwargs(),
         )
 
         # Create objective function
@@ -1282,12 +1281,19 @@ class HPOManager:
         # Get results
         try:
             self.best_params = self.backend.get_best_params(self.study)
-            best_value = self.backend.get_best_value(self.study)
-
-            logger.info(
-                f"HPO completed in {elapsed:.1f}s. "
-                f"Best {self.config.study.metric}: {best_value:.6f}"
+            # Several objectives: the selected Pareto trial's values (OptunaBackend.get_best_values)
+            best_values = (
+                self.backend.get_best_values(self.study)
+                if self.config.study.is_multi_objective
+                else [self.backend.get_best_value(self.study)]
             )
+            best = ", ".join(
+                f"{metric}={value:.6f}"
+                for metric, value in zip(
+                    self.config.study.objective_metrics, best_values, strict=True
+                )
+            )
+            logger.info(f"HPO completed in {elapsed:.1f}s. Best {best}")
             logger.info(f"Best parameters: {self.best_params}")
 
             return self.best_params
@@ -1319,12 +1325,23 @@ class HPOManager:
         study_config = self.config.study
         self.study = self.backend.create_study(
             study_name=study_config.study_name,
-            direction=study_config.direction.value,
             storage=build_storage(study_config),
             load_if_exists=study_config.load_if_exists,
-            metric=study_config.metric,
+            **self._objective_study_kwargs(),
         )
         return self.study
+
+    def _objective_study_kwargs(self) -> dict[str, Any]:
+        """``direction`` / ``directions`` / ``metric`` for ``backend.create_study``: one objective as
+        before, or one direction and metric per objective of ``study.objectives`` (P3-1)."""
+        study = self.config.study
+        if study.is_multi_objective:
+            return {
+                "direction": study.objective_directions[0],
+                "directions": study.objective_directions,
+                "metric": study.objective_metrics,
+            }
+        return {"direction": study.direction.value, "metric": study.metric}
 
     def _show_progress_bar(self) -> bool:
         """Resolve ``config.show_progress_bar`` (P2-3d): an explicit True/False wins; None (default)
@@ -1384,8 +1401,11 @@ class HPOManager:
 
         loader_options = loader_options_from_config(models_config)
 
-        def objective(trial) -> float:
-            """Objective function for single trial."""
+        objective_metrics = config.study.objective_metrics
+        multi_objective = config.study.is_multi_objective
+
+        def objective(trial) -> float | tuple[float, ...]:
+            """Objective function for a single trial: one value, or one per objective (P3-1)."""
             trial_number = trial.number
             logger.info(f"Starting trial {trial_number}")
 
@@ -1432,7 +1452,7 @@ class HPOManager:
                 sample_data = dataset[0] if hasattr(dataset, "__getitem__") else None
                 inferred_task_type = infer_task_type(
                     dataset=dataset,
-                    metric=config.study.metric,
+                    metric=objective_metrics[0],
                     sample_data=sample_data,
                 )
 
@@ -1492,15 +1512,22 @@ class HPOManager:
                 train_data_prepared = None
                 val_data_prepared = None
 
-                # 5. Create HPO callback for pruning
-                hpo_callback = create_hpo_callback(
-                    trial=trial,
-                    monitor=config.study.metric,
-                    report_every=1,
-                    backend=config.backend,
+                # 5. Create HPO callback for pruning (one objective only: Optuna's Trial.report is not
+                #    supported for multi-objective studies, P3-1)
+                hpo_callback = (
+                    None
+                    if multi_objective
+                    else create_hpo_callback(
+                        trial=trial,
+                        monitor=config.study.metric,
+                        report_every=1,
+                        backend=config.backend,
+                    )
                 )
 
-                all_callbacks = [hpo_callback] + additional_callbacks
+                all_callbacks = ([hpo_callback] if hpo_callback is not None else []) + list(
+                    additional_callbacks
+                )
 
                 # 6. Handle cross-validation if configured
                 if config.cv_folds > 0:
@@ -1518,7 +1545,7 @@ class HPOManager:
                             f"(fold steps are 0..{config.cv_folds - 1})"
                         )
                         objective._cv_warmup_warned = True
-                    metric_value = _run_cross_validation(
+                    objective_values = _run_cross_validation(
                         model_name=model_name,
                         dataset=dataset,
                         model_params=model_params,
@@ -1528,14 +1555,15 @@ class HPOManager:
                         trainer_kwargs=trainer_kwargs,
                         callbacks=additional_callbacks,
                         n_folds=config.cv_folds,
-                        metric=config.study.metric,
+                        metric=objective_metrics[0],
                         aggregation=config.cv_metric_aggregation,
                         factory=factory,
                         task_type=task_type,
                         discretize_config=discretize_config,
                         target_selection_config=target_selection_config,  # Pass to CV
-                        trial=trial,
+                        trial=None if multi_objective else trial,  # fold reporting: one objective
                         models_config=models_config,  # PA-1e: per-fold acceleration
+                        metrics=objective_metrics,
                     )
                 # -------
                 else:
@@ -1651,15 +1679,20 @@ class HPOManager:
                     # Train model
                     results = trainer.fit()
 
-                    # Metric at the epoch the trainer keeps (F53); raises if not produced
-                    metric_value = _run_metric_value(results, config.study.metric)
+                    # Metrics at the epoch the trainer keeps (F53); raises if one is not produced
+                    results["n_parameters"] = _count_parameters(model)
+                    objective_values = tuple(
+                        _run_metric_value(results, metric) for metric in objective_metrics
+                    )
                     # -------
 
-                logger.info(
-                    f"Trial {trial_number} completed: {config.study.metric}={metric_value:.6f}"
+                summary = ", ".join(
+                    f"{metric}={value:.6f}"
+                    for metric, value in zip(objective_metrics, objective_values, strict=True)
                 )
+                logger.info(f"Trial {trial_number} completed: {summary}")
 
-                return metric_value
+                return objective_values if multi_objective else objective_values[0]
 
             except Exception as e:
                 # Check if it's a pruning exception (should be re-raised)
@@ -2098,11 +2131,17 @@ class HPOManager:
             raise HPOError("No study available. Run optimize() first.")
 
         all_trials = self.backend.get_all_trials(self.study)
-        best_value = self.get_best_value()
-
-        for trial in all_trials:
-            if trial["value"] == best_value:
-                return trial
+        if self.config.study.is_multi_objective:
+            # P3-1: no single best value — the selected Pareto trial, by number (OptunaBackend)
+            best_number = self.backend.get_best_trial_number(self.study)
+            for trial in all_trials:
+                if trial["number"] == best_number:
+                    return trial
+        else:
+            best_value = self.get_best_value()
+            for trial in all_trials:
+                if trial["value"] == best_value:
+                    return trial
 
         raise HPOError("Could not find best trial in study")
 
@@ -2284,7 +2323,7 @@ class HPOManager:
         else:
             task_type = infer_task_type(
                 dataset=dataset,
-                metric=self.config.study.metric,
+                metric=self.config.study.objective_metrics[0],
                 sample_data=sample_data,
             )
         logger.info(f"Task type: {task_type}")
@@ -2552,11 +2591,10 @@ class HPOManager:
             # Load existing study (must exist: never create one on resume — F29)
             self.study = self.backend.create_study(
                 study_name=study_name,
-                direction=self.config.study.direction.value,
                 storage=storage,
                 load_if_exists=True,
-                metric=self.config.study.metric,
                 must_exist=True,
+                **self._objective_study_kwargs(),
             )
 
             existing_trials = len(self.backend.get_all_trials(self.study))
@@ -2677,7 +2715,13 @@ class HPOManager:
 
 # Run-level scalars of ``Trainer.fit()`` that can be objectives (per-epoch metrics live in
 # ``results["train_metrics"]``)
-_RUN_SCALAR_METRICS: tuple[str, ...] = ("training_time",)
+# (``n_parameters`` is added by the HPO objective: the model's parameter count, P3-1)
+_RUN_SCALAR_METRICS: tuple[str, ...] = ("training_time", "n_parameters")
+
+
+def _count_parameters(model) -> int:
+    """Number of parameters of ``model`` (all of them, trainable or not): the model-size objective."""
+    return sum(parameter.numel() for parameter in model.parameters())
 
 
 def _run_metric_value(results: dict[str, Any], metric: str) -> float:
@@ -2687,7 +2731,8 @@ def _run_metric_value(results: dict[str, Any], metric: str) -> float:
     epoch the trainer keeps, ``results["best_epoch"]`` — the epoch with the lowest validation loss.
     Early stopping returns the parameters with the lowest validation error, "rather than the latest
     parameters" (Goodfellow et al., *Deep Learning*, §7.8), so every metric describes that one model
-    state; for ``val_loss`` the value equals ``best_val_loss``. ``training_time`` is the run's wall time.
+    state; for ``val_loss`` the value equals ``best_val_loss``. ``training_time`` is the run's wall time;
+    ``n_parameters`` the model's parameter count (set by the HPO objective).
 
     A metric the run did not produce raises: the previous fallback to ``best_val_loss`` optimized the
     validation loss whatever metric was configured.
@@ -2850,7 +2895,8 @@ def _run_cross_validation(
     *,
     trial: Any | None = None,
     models_config: dict[str, Any] | None = None,
-) -> float:
+    metrics: Sequence[str] | None = None,
+) -> float | tuple[float, ...]:
     """
     Run k-fold cross-validation for a trial.
 
@@ -2878,18 +2924,19 @@ def _run_cross_validation(
         task_type: Task type string
         discretize_config: Optional config for DiscretizeTargets transform
         target_selection_config: Optional target selection config for node/edge tasks
-        trial: HPO trial for fold-level reporting and pruning (None: plain CV, no reporting)
+        trial: HPO trial for fold-level reporting and pruning (None: plain CV, no reporting); it
+            reports ``metric``
+        metrics: Several metrics, each aggregated over the folds (P3-1); then a tuple is returned in
+            this order. None = ``metric`` only
 
     Returns:
-        Aggregated metric value across all folds
+        Aggregated metric value across all folds, or one per entry of ``metrics``
 
     Raises:
         HPOError: If no valid fold metrics obtained
         optuna.TrialPruned: If the pruner stops the trial after a fold (only with ``trial``)
         ImportError: If DataSplitter or Trainer not available
     """
-    from statistics import mean, median
-
     if DataSplitter is None:
         raise HPOError(
             "DataSplitter not available for cross-validation",
@@ -2910,6 +2957,8 @@ def _run_cross_validation(
     )
 
     fold_metrics = []
+    requested_metrics: tuple[str, ...] = tuple(metrics) if metrics is not None else ()
+    fold_values: dict[str, list[float]] = {name: [] for name in requested_metrics}
 
     for fold_idx, (train_subset, val_subset) in enumerate(folds):
         logger.debug(f"  Cross-validation fold {fold_idx + 1}/{n_folds}")
@@ -2979,9 +3028,12 @@ def _run_cross_validation(
         results = trainer.fit()
         # -------
 
-        # Metric at the epoch the trainer keeps (F53); a fold without it fails the trial
+        # Metrics at the epoch the trainer keeps (F53); a fold without one fails the trial
+        results["n_parameters"] = _count_parameters(model)
         fold_value = _run_metric_value(results, metric)
         fold_metrics.append(fold_value)
+        for name in requested_metrics:
+            fold_values[name].append(_run_metric_value(results, name))
         logger.debug(f"    Fold {fold_idx + 1} {metric}: {fold_value:.6f}")
 
         # P1-7 (F20): fold-level reporting; prune between folds, never mid-fold
@@ -3001,19 +3053,24 @@ def _run_cross_validation(
             details=f"All {n_folds} folds failed to produce the metric",
         )
 
-    if aggregation == "mean":
-        result = mean(fold_metrics)
-    elif aggregation == "median":
-        result = median(fold_metrics)
-    elif aggregation == "min":
-        result = min(fold_metrics)
-    elif aggregation == "max":
-        result = max(fold_metrics)
-    else:
-        result = mean(fold_metrics)
-
+    if metrics is not None:
+        return tuple(_aggregate(fold_values[name], aggregation) for name in metrics)
+    result = _aggregate(fold_metrics, aggregation)
     logger.debug(f"  CV {aggregation} {metric}: {result:.6f}")
     return result
+
+
+def _aggregate(values: list[float], aggregation: str) -> float:
+    """Aggregate fold values: ``mean`` (also any unknown name, as before), ``median``, ``min``, ``max``."""
+    from statistics import mean, median
+
+    if aggregation == "median":
+        return median(values)
+    if aggregation == "min":
+        return min(values)
+    if aggregation == "max":
+        return max(values)
+    return mean(values)
 
 
 # =============================================================================
