@@ -17,6 +17,29 @@
 
 version: 2
 
+# Registries outside Dependabot's default egress allowlist. Update jobs on github.com can reach only
+# allowlisted hosts and the registries declared here and referenced by an update entry; any other
+# host gets 403 "egress not allowlisted" (GitHub Docs — "Dependabot errors": declare the registry
+# "even if the registry allows anonymous access"). The PyG flat indexes on data.pyg.org are read by
+# every `uv lock`, so without them each uv update fails with PathDependenciesNotReachable
+# (--find-links). Anonymous (no credentials): data.pyg.org is public. One entry per pyg-*
+# [[tool.uv.index]] URL in pyproject.toml — keep them identical (change both with the torch pin).
+# Not `replaces-base`: PyPI stays the base index. Dependabot also probes these URLs for each
+# dependency's versions; data.pyg.org answers 404 there (measured 2026-10-27), which yields none.
+registries:
+  pyg-cpu:
+    type: python-index
+    url: https://data.pyg.org/whl/torch-2.4.0+cpu.html
+  pyg-cu118:
+    type: python-index
+    url: https://data.pyg.org/whl/torch-2.4.0+cu118.html
+  pyg-cu121:
+    type: python-index
+    url: https://data.pyg.org/whl/torch-2.4.0+cu121.html
+  pyg-cu124:
+    type: python-index
+    url: https://data.pyg.org/whl/torch-2.4.0+cu124.html
+
 updates:
   # Python dependencies — uv ecosystem (updates BOTH pyproject.toml AND uv.lock in the same PR).
   # MUST be `uv`, not `pip`: the pip ecosystem edits pyproject.toml but leaves uv.lock stale, so
@@ -25,6 +48,11 @@ updates:
   # cooldown avoids opening PRs before uv can resolve a freshly-published version.
   - package-ecosystem: "uv"
     directory: "/"
+    registries:
+      - pyg-cpu
+      - pyg-cu118
+      - pyg-cu121
+      - pyg-cu124
     schedule:
       interval: "weekly"
     cooldown:
