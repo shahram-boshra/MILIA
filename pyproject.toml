@@ -68,7 +68,7 @@ dependencies = [
     "numpy==1.26.4",                # hold NumPy 1.x ABI
     "scipy==1.15.2",
     "pandas==2.3.1",
-    "pyyaml==6.0.2",
+    "pyyaml==6.0.3",
     "rdkit==2025.3.6",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
     "matplotlib==3.10.3",
     "scikit-learn==1.5.2",
