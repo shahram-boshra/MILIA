@@ -77,8 +77,10 @@ updates:
         update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
+    # `include: scope` appends "(deps)" / "(deps-dev)" to the prefix (GitHub Docs — Dependabot
+    # options reference, commit-message), so the prefix is the bare type: "build(deps): bump …".
     commit-message:
-      prefix: "build(deps)"
+      prefix: "build"
       include: "scope"
 
   # Docker base images in /Dockerfile (PA-0b / F33). The Python base is pinned by digest; Dependabot
@@ -96,7 +98,7 @@ updates:
       - "dependencies"
       - "docker"
     commit-message:
-      prefix: "build(deps)"
+      prefix: "build"
       include: "scope"
 
   # GitHub Actions versions
@@ -108,5 +110,5 @@ updates:
       - "dependencies"
       - "github-actions"
     commit-message:
-      prefix: "ci(deps)"
+      prefix: "ci"
       include: "scope"
