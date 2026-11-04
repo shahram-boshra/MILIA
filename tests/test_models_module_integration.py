@@ -45,7 +45,7 @@ from milia_pipeline.models.factory.model_factory import (
 )
 
 # Plugin system components
-from milia_pipeline.models.plugins.model_plugin_system import (
+from milia_pipeline.models.model_plugin_system import (
     get_plugin_loader,
 )
 

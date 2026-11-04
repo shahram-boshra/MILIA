@@ -54,7 +54,7 @@ import yaml
 # CRITICAL: Mock the entire milia_pipeline package hierarchy to prevent
 # __init__.py cascade that causes TypeError: object of type 'Mock' has no len()
 #
-# The problem: When importing milia_pipeline.models.plugins.model_plugin_system,
+# The problem: When importing milia_pipeline.models.model_plugin_system,
 # Python loads parent packages whose __init__.py files import from registry,
 # which uses len(ModelCategory). We must mock the ENTIRE package hierarchy
 # BEFORE any import to prevent this cascade.
@@ -175,8 +175,8 @@ def setup_module(module):
 
     # --- Determine the path to model_plugin_system.py ---
     _module_search_paths = [
-        project_root / "milia_pipeline" / "models" / "plugins" / "model_plugin_system.py",
-        Path("/app/milia/milia_pipeline/models/plugins/model_plugin_system.py"),
+        project_root / "milia_pipeline" / "models" / "model_plugin_system.py",
+        Path("/app/milia/milia_pipeline/models/model_plugin_system.py"),
     ]
 
     _model_plugin_system_path = None

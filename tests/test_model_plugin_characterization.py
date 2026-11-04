@@ -28,7 +28,7 @@ from pydantic import ValidationError
 from milia_pipeline import exceptions
 from milia_pipeline.models.registry import model_registry
 
-LOADER_MODULE = "milia_pipeline.models.plugins.model_plugin_system"
+LOADER_MODULE = "milia_pipeline.models.model_plugin_system"
 
 mps = importlib.import_module(LOADER_MODULE)
 

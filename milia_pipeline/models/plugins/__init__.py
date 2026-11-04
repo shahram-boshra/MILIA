@@ -113,7 +113,7 @@ from pathlib import Path
 from typing import Any
 
 # Import all public components from the plugin system implementation
-from milia_pipeline.models.plugins.model_plugin_system import (
+from milia_pipeline.models.model_plugin_system import (
     ModelDeclaration,
     # Core Classes
     ModelPluginLoader,
