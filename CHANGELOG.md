@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The model plugin loader now lives at `milia_pipeline.models.model_plugin_system`, next to the descriptor
+  and transformation plugin loaders. It provides every name the old `milia_pipeline.models.plugins` package
+  offered, including `discover_and_load_plugins`, `get_plugin_summary`, `safe_load_plugin` and the other
+  convenience functions.
+- The API reference states what MILIA's public API is and how deprecations are handled.
+
+### Deprecated
+
+- `milia_pipeline.models.plugins` and `milia_pipeline.models.plugins.model_plugin_system`: import from
+  `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same
+  objects and emit a `DeprecationWarning`; they will be removed in 2.0.0.
+
 ## [1.18.0] - 2026-10-14
 
 HPO release: multi-objective studies with Pareto-front results, Optuna's Gaussian-process sampler and Wilcoxon

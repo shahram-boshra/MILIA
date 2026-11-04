@@ -375,3 +375,13 @@ def test_current_factory_cannot_build_registered_plugin_model(tmp_path, loader, 
             hyperparameters={"in_channels": 4, "hidden_channels": 8, "out_channels": 1},
             task_type="graph_regression",
         )
+
+
+def test_current_discover_and_load_plugins_without_paths_fails(loader):
+    """Pins current behaviour; changed deliberately later.
+
+    ``discover_and_load_plugins`` documents ``paths=None`` as "from config", but it
+    passes ``None`` to ``ModelPluginLoader.discover_plugins``, which iterates it.
+    """
+    with pytest.raises(TypeError):
+        mps.discover_and_load_plugins(paths=None)
