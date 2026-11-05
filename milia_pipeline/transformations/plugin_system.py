@@ -270,8 +270,8 @@ class PluginMetadata(BaseModel):
     homepage: str | None = None
 
     # Version dependencies
-    milia_version: str = ">=1.2.2,<2.0.0"
-    pyg_version: str = ">=2.6.0,<2.7.0"
+    milia_version: str = ">=1.2.2"
+    pyg_version: str = ">=2.6.0"
     python_version: str = ">=3.8"
     dependencies: list[str] = Field(default_factory=list)
 

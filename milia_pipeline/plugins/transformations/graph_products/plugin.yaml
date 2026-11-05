@@ -9,8 +9,8 @@ version: "1.0.0"                      # the PLUGIN's own semver (independent of 
 author: "MILIA Team"
 plugin_type: "user_experimental"
 description: "Algebraic graph-product transforms (Cartesian, tensor, strong, lexicographic, rooted, corona) plus stochastic-Kronecker generation."
-milia_version: ">=1.2.2,<2.0.0"       # PEP 440 compatibility range (host resolves & checks at runtime)
-pyg_version: ">=2.6.0,<2.7.0"         # matches the pinned 2.6.1
+milia_version: ">=1.2.2"              # PEP 440 minimum version, no upper bound (host checks at runtime)
+pyg_version: ">=2.6.0"                # PEP 440 minimum version, no upper bound
 python_version: ">=3.10"
 license: "MIT"
 dependencies: []                      # networkx already provided by MILIA

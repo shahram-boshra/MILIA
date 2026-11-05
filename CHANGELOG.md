@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same
   objects and emit a `DeprecationWarning`; they will be removed in 2.0.0.
 
+### Fixed
+
+- Plugin version requirements no longer cap future releases. The first-party transformation plugins, the
+  model and transformation plugin templates, and the transformation plugin loader's defaults (used when a
+  plugin omits them) required `milia_version` `<2.0.0` and `pyg_version` `<2.7.0`, so every such plugin would
+  have been rejected by MILIA 2.0.0 or by a newer PyG even when compatible. They now state minimum versions
+  only (`>=1.2.2`, `>=2.6.0`), and a test checks that every first-party manifest and template does the same.
+  A plugin may still declare an upper bound of its own; the loader continues to enforce it.
+
 ## [1.18.0] - 2026-10-14
 
 HPO release: multi-objective studies with Pareto-front results, Optuna's Gaussian-process sampler and Wilcoxon

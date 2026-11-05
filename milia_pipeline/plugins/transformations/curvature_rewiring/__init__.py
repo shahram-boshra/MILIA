@@ -20,8 +20,8 @@ PLUGIN_METADATA = {
     "plugin_type": "user_experimental",
     "description": "Curvature and differential-geometric rewiring (Family B, in-scope subset).",
     "license": "MIT",
-    "milia_version": ">=1.2.2,<2.0.0",
-    "pyg_version": ">=2.6.0,<2.7.0",
+    "milia_version": ">=1.2.2",
+    "pyg_version": ">=2.6.0",
     "python_version": ">=3.10",
 }
 

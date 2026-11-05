@@ -1299,10 +1299,18 @@ class TestPluginMetadataProperties:
         assert "bonus" not in m2.registered_transforms
 
     def test_version_defaults_corrected(self):
-        """Default version specifiers reflect the real supported ranges (Step 4.3)."""
+        """Default version specifiers state the real minimum versions, with no upper bound."""
         metadata = PluginMetadata(plugin_name="defaults", version="1.0.0", author="A")
-        assert metadata.milia_version == ">=1.2.2,<2.0.0"
-        assert metadata.pyg_version == ">=2.6.0,<2.7.0"
+        assert metadata.milia_version == ">=1.2.2"
+        assert metadata.pyg_version == ">=2.6.0"
+
+    def test_version_defaults_accept_future_releases(self):
+        """A plugin relying on the defaults is not rejected by a newer MILIA or PyG."""
+        metadata = PluginMetadata(plugin_name="defaults", version="1.0.0", author="A")
+        check = PluginRegistry._check_version_compatibility
+        assert check(metadata.milia_version, "2.0.0", "milia") is None
+        assert check(metadata.pyg_version, "2.7.0", "PyG") is None
+        assert check(metadata.milia_version, "1.2.1", "milia") is not None
 
 
 # =============================================================================

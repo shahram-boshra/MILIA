@@ -10,7 +10,7 @@ license: "MIT"  # Or your preferred license
 homepage: "https://github.com/yourusername/your-plugin"  # Optional
 
 # Version Requirements
-milia_version: ">=1.2.2,<2.0.0"
+milia_version: ">=1.2.2"
 python_version: ">=3.10"
 min_pyg_version: "2.6.0"  # Optional minimum torch-geometric version
 
