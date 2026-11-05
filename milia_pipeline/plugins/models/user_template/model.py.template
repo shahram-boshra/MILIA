@@ -5,8 +5,9 @@ Copy this to ``model.py`` and implement your model. The ``class_name`` and ``mod
 declared in ``plugin.yaml`` must match the class defined here and this module's filename
 (``model``).
 
-Keep imports absolute (e.g. ``from milia_pipeline...``) so the module loads correctly
-regardless of where the plugin directory lives.
+Import MILIA and third-party packages with absolute imports (e.g. ``from milia_pipeline...``).
+Import other modules of this plugin with relative imports (e.g. ``from .helpers import ...``):
+the loader imports the plugin directory as its own package and does not change ``sys.path``.
 """
 
 from __future__ import annotations

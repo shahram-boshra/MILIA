@@ -13,7 +13,12 @@ Scaffold for adding your own **model** plugin, symmetric with
    - `model.py.template` → `model.py`
 3. Fill in `plugin.yaml` (metadata + `models:` declarations). Ensure each declaration's
    `class_name` matches the class in `model.py` and `module_path` is `model`.
-4. Implement your model class in `model.py` (a `torch.nn.Module`). Use absolute imports.
+4. Implement your model class in `model.py` (a `torch.nn.Module`). Import MILIA and
+   third-party packages with absolute imports; import other modules of your plugin with
+   relative imports (`from .helpers import build_mlp`). The loader imports the plugin
+   directory as its own package and does not add it to `sys.path`, so `import helpers`
+   would not find a sibling module.
+   `plugin_name` must be a valid Python identifier (e.g. `my_models`).
 5. The loader discovers the plugin by scanning for `plugin.yaml` (one level) under each
    configured model plugin path.
 

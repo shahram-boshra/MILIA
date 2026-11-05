@@ -16,6 +16,8 @@ one line here.
 from __future__ import annotations
 
 import importlib
+import logging
+import pickle
 import sys
 import textwrap
 import uuid
@@ -31,6 +33,7 @@ from milia_pipeline.models.registry import model_registry
 LOADER_MODULE = "milia_pipeline.models.model_plugin_system"
 
 mps = importlib.import_module(LOADER_MODULE)
+PLUGIN_NAMESPACE = mps.PLUGIN_MODULE_NAMESPACE
 
 
 # =============================================================================
@@ -122,13 +125,14 @@ def _cause_chain(exc: BaseException) -> list[BaseException]:
 # =============================================================================
 
 
-# The current loader imports plugin modules by bare name, so tests must own that name.
+# The loader imports plugin modules under their plugin's package, not by bare name.
+# Setting the bare name aside guards against a regression to bare-name imports.
 _BARE_PLUGIN_MODULE = "model"
 
 
 @pytest.fixture
 def import_state(tmp_path):
-    """Restore ``sys.path``; drop modules imported from ``tmp_path``; isolate the bare name."""
+    """Restore ``sys.path``; drop modules and plugin packages from ``tmp_path``."""
     saved_path = list(sys.path)
     saved_bare = sys.modules.pop(_BARE_PLUGIN_MODULE, None)
     yield
@@ -136,7 +140,8 @@ def import_state(tmp_path):
     root = str(tmp_path)
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None) or ""
-        if module_file.startswith(root):
+        module_dirs = list(getattr(module, "__path__", None) or [])
+        if module_file.startswith(root) or any(d.startswith(root) for d in module_dirs):
             del sys.modules[name]
     if saved_bare is not None:
         sys.modules[_BARE_PLUGIN_MODULE] = saved_bare
@@ -239,12 +244,8 @@ def test_current_missing_min_pyg_version_fails_registration(tmp_path, loader, re
     assert not registry.has_model(model_name)
 
 
-def test_current_same_module_name_collides_across_plugins(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later.
-
-    Two plugins that both use ``module_path: model`` share one ``sys.modules['model']``
-    entry, so the second plugin resolves to the first plugin's module.
-    """
+def test_same_module_name_resolves_per_plugin(tmp_path, loader, registry):
+    """Two plugins that both use ``module_path: model`` each import their own module."""
     first, second = _unique("charplugin_"), _unique("charplugin_")
     first_model, second_model = _unique("AlphaNet"), _unique("BetaNet")
     _write_plugin(tmp_path, "a", first, [_valid_model_entry(first_model, "AlphaNet")])
@@ -252,23 +253,94 @@ def test_current_same_module_name_collides_across_plugins(tmp_path, loader, regi
     loader.discover_plugins([tmp_path])
 
     assert loader.load_plugin(first) is True
-    with pytest.raises(exceptions.PluginError, match="BetaNet"):
-        loader.load_plugin(second)
+    assert loader.load_plugin(second) is True
 
-    assert registry.has_model(first_model)
-    assert not registry.has_model(second_model)
+    first_class = registry.get_registration(first_model).model_class
+    second_class = registry.get_registration(second_model).model_class
+    assert first_class.__name__ == "AlphaNet"
+    assert second_class.__name__ == "BetaNet"
+    assert first_class.__module__ == f"{PLUGIN_NAMESPACE}.{first}.model"
+    assert second_class.__module__ == f"{PLUGIN_NAMESPACE}.{second}.model"
 
 
-def test_current_load_inserts_plugin_dir_into_sys_path(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later. Loading mutates ``sys.path``."""
+def test_failed_module_execution_leaves_no_module_behind(tmp_path, loader, registry):
+    """A plugin module that raises while executing is not left in ``sys.modules``."""
     plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
     plugin_dir = _write_plugin(
-        tmp_path, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")]
+        tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")]
     )
+    (plugin_dir / "model.py").write_text("raise RuntimeError('broken plugin module')\n")
+    loader.discover_plugins([tmp_path])
+
+    with pytest.raises(exceptions.PluginError, match="broken plugin module"):
+        loader.load_plugin(plugin_name)
+
+    assert f"{PLUGIN_NAMESPACE}.{plugin_name}.model" not in sys.modules
+    assert not registry.has_model(model_name)
+
+
+# torch 2.4 unpickles tensor storages with torch.load(weights_only=False) and warns about it;
+# the warning concerns torch's tensor format, not the plugin class lookup tested here.
+@pytest.mark.filterwarnings(
+    "ignore:You are using `torch.load` with `weights_only=False`:FutureWarning"
+)
+def test_plugin_model_instance_pickles_in_process(tmp_path, loader, registry):
+    """Plugin classes have an importable qualified name, so instances pickle."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")])
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+    model_class = registry.get_registration(model_name).model_class
+    model = model_class(in_channels=4)
+
+    restored = pickle.loads(pickle.dumps(model))
+
+    assert pickle.loads(pickle.dumps(model_class)) is model_class
+    assert type(restored) is model_class
+    assert restored.lin1.in_features == 4
+
+
+def test_plugin_modules_can_import_each_other_relatively(tmp_path, loader, registry):
+    """A plugin's modules import sibling modules with relative imports."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    plugin_dir = _write_plugin(
+        tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")]
+    )
+    (plugin_dir / "helpers.py").write_text("HIDDEN = 5\n")
+    model_file = plugin_dir / "model.py"
+    model_file.write_text("from .helpers import HIDDEN\n" + model_file.read_text())
+    loader.discover_plugins([tmp_path])
+
+    assert loader.load_plugin(plugin_name) is True
+    module = sys.modules[f"{PLUGIN_NAMESPACE}.{plugin_name}.model"]
+    assert module.HIDDEN == 5
+
+
+def test_plugin_name_must_be_a_module_name(tmp_path, loader, registry):
+    """A plugin name that is not a Python identifier cannot name the plugin's package."""
+    plugin_name = _unique("char-plugin-")
+    model_name = _unique("CharNet")
+    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")])
+    loader.discover_plugins([tmp_path])
+
+    with pytest.raises(exceptions.PluginError, match="cannot be used as a Python module name"):
+        loader.load_plugin(plugin_name)
+
+    assert not registry.has_model(model_name)
+
+
+def test_load_leaves_sys_path_unchanged(tmp_path, loader, registry):
+    """Loading a plugin imports its modules without changing ``sys.path``."""
+    plugin_name = _unique("charplugin_")
+    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")])
+    before = list(sys.path)
     loader.discover_plugins([tmp_path])
     loader.load_plugin(plugin_name)
 
-    assert sys.path[0] == str(plugin_dir)
+    assert sys.path == before
 
 
 def test_current_module_path_with_py_suffix_fails(tmp_path, loader, registry):
@@ -307,17 +379,34 @@ def test_current_invalid_plugin_still_discovered_below_strict(tmp_path, loader):
     assert loader.discover_plugins([tmp_path], validation_level="strict") == []
 
 
-def test_current_duplicate_plugin_name_last_wins_silently(tmp_path, loader):
-    """Pins current behaviour; changed deliberately later. A duplicate name overwrites silently."""
+def test_duplicate_plugin_name_is_rejected_and_first_kept(tmp_path, loader, caplog):
+    """A second plugin with an already discovered name is rejected and logged."""
     plugin_name = _unique("charplugin_")
     first_root, second_root = tmp_path / "first", tmp_path / "second"
-    _write_plugin(first_root, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")])
+    first_dir = _write_plugin(
+        first_root, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")]
+    )
     second_dir = _write_plugin(
         second_root, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")]
     )
 
-    assert loader.discover_plugins([first_root, second_root]) == [plugin_name, plugin_name]
-    assert loader._plugins[plugin_name].plugin_path == second_dir
+    with caplog.at_level(logging.ERROR):
+        assert loader.discover_plugins([first_root, second_root]) == [plugin_name]
+
+    assert loader._plugins[plugin_name].plugin_path == first_dir
+    assert f"Duplicate plugin name '{plugin_name}'" in caplog.text
+    assert str(second_dir) in caplog.text
+
+
+def test_rediscovering_the_same_directory_keeps_plugin_state(tmp_path, loader):
+    """Discovering a directory again is not a duplicate and keeps the loaded state."""
+    plugin_name = _unique("charplugin_")
+    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")])
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+
+    assert loader.discover_plugins([tmp_path]) == [plugin_name]
+    assert loader._plugins[plugin_name].loaded is True
 
 
 def test_current_loader_lock_is_not_reentrant(loader):

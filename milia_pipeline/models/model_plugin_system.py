@@ -24,13 +24,16 @@ Version: 1.1.0
 """
 
 import importlib
+import importlib.machinery
 import importlib.util
+import keyword
 import logging
 import re
 import sys
 import threading
 from datetime import datetime
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import torch.nn as nn
@@ -56,6 +59,7 @@ try:
         ModelError,
         PluginDependencyError,
         PluginError,
+        PluginModelError,
         PluginSecurityError,
         PluginValidationError,
     )
@@ -112,8 +116,98 @@ except ImportError:
 
         pass
 
+    class PluginModelError(ModelError, PluginError):
+        """Exception raised for plugin model issues."""
+
+        def __init__(
+            self,
+            message: str,
+            plugin_name: str | None = None,
+            plugin_path: str | None = None,
+            **kwargs,
+        ):
+            PluginError.__init__(self, message, plugin_name=plugin_name)
+            self.plugin_path = plugin_path
+
 
 logger = logging.getLogger(__name__)
+
+# Modules of directory plugins are imported under this package, one subpackage
+# per plugin (``<namespace>.<plugin_name>.<module_path>``), so plugins never
+# share module names and ``sys.path`` is left unchanged.
+PLUGIN_MODULE_NAMESPACE = "milia_pipeline.models._loaded_plugins"
+
+
+def _create_plugin_package(package_name: str, location: Path) -> ModuleType:
+    """
+    Create the package for one plugin directory and register it in ``sys.modules``.
+
+    A directory with ``__init__.py`` becomes a regular package (the file is
+    executed); otherwise it becomes a namespace-style package with no code. Any
+    modules left from an earlier package of the same name are removed first.
+    """
+    for name in [n for n in sys.modules if n == package_name or n.startswith(package_name + ".")]:
+        del sys.modules[name]
+
+    init_file = location / "__init__.py"
+    if init_file.is_file():
+        spec = importlib.util.spec_from_file_location(
+            package_name, init_file, submodule_search_locations=[str(location)]
+        )
+    else:
+        spec = importlib.machinery.ModuleSpec(package_name, None, is_package=True)
+        spec.submodule_search_locations = [str(location)]
+
+    package = importlib.util.module_from_spec(spec)
+    sys.modules[package_name] = package
+    try:
+        if spec.loader is not None:
+            spec.loader.exec_module(package)
+    except BaseException:
+        del sys.modules[package_name]
+        raise
+
+    parent = sys.modules.get(PLUGIN_MODULE_NAMESPACE)
+    if parent is not None:
+        setattr(parent, package_name.rpartition(".")[2], package)
+    return package
+
+
+def _same_plugin_dir(first: Path | None, second: Path | None) -> bool:
+    """Whether two plugin directories are the same directory."""
+    if first is None or second is None:
+        return first is second
+    return Path(first).resolve() == Path(second).resolve()
+
+
+def _import_plugin_module(plugin_name: str, plugin_dir: Path, module_path: str) -> ModuleType:
+    """
+    Import ``module_path`` from a plugin directory under the plugin's own package.
+
+    The module is imported as ``<PLUGIN_MODULE_NAMESPACE>.<plugin_name>.<module_path>``
+    by the standard import system, so dotted module paths, subpackages and
+    relative imports between the plugin's modules work, and a module that fails
+    to execute is not left in ``sys.modules``. ``sys.path`` is not changed.
+
+    Raises:
+        PluginModelError: If ``plugin_name`` cannot be used as a module name
+        ImportError: If the module cannot be found or imported
+    """
+    if not plugin_name.isidentifier() or keyword.iskeyword(plugin_name):
+        raise PluginModelError(
+            f"Plugin name '{plugin_name}' cannot be used as a Python module name",
+            plugin_name=plugin_name,
+            plugin_path=str(plugin_dir),
+        )
+
+    importlib.import_module(PLUGIN_MODULE_NAMESPACE)
+    package_name = f"{PLUGIN_MODULE_NAMESPACE}.{plugin_name}"
+    location = Path(plugin_dir).resolve()
+    package = sys.modules.get(package_name)
+    if package is None or list(getattr(package, "__path__", [])) != [str(location)]:
+        _create_plugin_package(package_name, location)
+
+    return importlib.import_module(f"{package_name}.{module_path}")
 
 
 # =============================================================================
@@ -377,9 +471,25 @@ class ModelPluginLoader:
                             if validation_level == "strict":
                                 continue
 
-                    # Register plugin
+                    # Register plugin. A name is unique across all sources: the first
+                    # plugin found keeps it, and discovering the same directory again
+                    # keeps its current state.
                     with self._lock:
-                        self._plugins[metadata.plugin_name] = metadata
+                        existing = self._plugins.get(metadata.plugin_name)
+                        if existing is None:
+                            self._plugins[metadata.plugin_name] = metadata
+                        elif not _same_plugin_dir(existing.plugin_path, metadata.plugin_path):
+                            raise PluginModelError(
+                                f"Duplicate plugin name '{metadata.plugin_name}': already "
+                                f"discovered at {existing.plugin_path}, ignoring "
+                                f"{metadata.plugin_path}",
+                                plugin_name=metadata.plugin_name,
+                                plugin_path=str(metadata.plugin_path),
+                            )
+                        else:
+                            logger.debug(f"Plugin '{metadata.plugin_name}' already discovered")
+                            discovered.append(metadata.plugin_name)
+                            continue
 
                     discovered.append(metadata.plugin_name)
                     logger.info(
@@ -639,10 +749,6 @@ class ModelPluginLoader:
             try:
                 logger.info(f"Loading plugin '{plugin_name}'...")
 
-                # Add plugin path to sys.path
-                if metadata.plugin_path:
-                    sys.path.insert(0, str(metadata.plugin_path))
-
                 # Register each model
                 if register_models:
                     for decl in metadata.model_declarations:
@@ -671,7 +777,9 @@ class ModelPluginLoader:
 
         Args:
             declaration: Model declaration from plugin
-            plugin_dir: Plugin directory path
+            plugin_dir: Plugin directory path. Its modules are imported under the
+                plugin's own package; without a directory, ``module_path`` is an
+                installed module's absolute name.
 
         Raises:
             PluginError: If model cannot be registered
@@ -681,7 +789,12 @@ class ModelPluginLoader:
 
         try:
             # Import model class
-            module = importlib.import_module(declaration.module_path)
+            if plugin_dir is not None:
+                module = _import_plugin_module(
+                    declaration.plugin_name, plugin_dir, declaration.module_path
+                )
+            else:
+                module = importlib.import_module(declaration.module_path)
             model_class = getattr(module, declaration.class_name)
 
             # Verify it's a proper PyTorch module

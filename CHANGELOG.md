@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   offered, including `discover_and_load_plugins`, `get_plugin_summary`, `safe_load_plugin` and the other
   convenience functions.
 - The API reference states what MILIA's public API is and how deprecations are handled.
+- Model plugin modules are now imported under a package of their own,
+  `milia_pipeline.models._loaded_plugins.<plugin_name>`, and loading a plugin no longer adds its directory to
+  `sys.path`. **Plugin authors:** import other modules of your plugin with relative imports
+  (`from .helpers import build_mlp`); a bare `import helpers` no longer finds a sibling module. A plugin's
+  `plugin_name` must be a valid Python identifier.
 
 ### Deprecated
 
@@ -53,6 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registered models after the discovered PyG models. The category breakdown in `get_module_info()` now comes
   from the model registry, the same source as `total_models`. Results for PyG models are unchanged.
   `ModelRegistry` gains `get_search_space` and `list_discovered_model_names`.
+- Two model plugins whose modules have the same name (for example both `model.py`) can now be loaded
+  together. Before, the second plugin found the first plugin's module and failed to load.
+- A second model plugin with an already discovered `plugin_name` is now rejected with an error naming both
+  directories, and the first plugin is kept. Before, it silently replaced the first. Discovering the same
+  directory again is not a duplicate and keeps the plugin's state, so a loaded plugin stays loaded.
 
 ## [1.18.0] - 2026-10-14
 
