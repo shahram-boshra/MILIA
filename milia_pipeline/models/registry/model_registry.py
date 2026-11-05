@@ -34,6 +34,7 @@ from pydantic import BaseModel, ConfigDict
 from .pyg_introspector import (
     ModelCategory,
     ModelMetadata,  # Alias for DynamicModelMetadata
+    generate_search_space,
     get_introspector,
 )
 
@@ -610,6 +611,43 @@ class ModelRegistry:
 
         # Fallback to dynamic introspection for unregistered models
         return get_introspector().get_model_metadata(name)
+
+    def get_search_space(self, name: str) -> dict[str, dict[str, Any]]:
+        """
+        Get the HPO search space generated from a model's constructor parameters.
+
+        Works for every model the registry knows, whatever its origin. For PyG
+        models the result equals the introspector's, because ``get_metadata``
+        returns the same metadata.
+
+        Args:
+            name: Model name
+
+        Returns:
+            Search space dict compatible with ``SearchSpaceBuilder``, or ``{}``
+            when the model has no metadata
+        """
+        metadata = self.get_metadata(name)
+        if metadata is None:
+            return {}
+        return generate_search_space(metadata.parameters)
+
+    def list_discovered_model_names(self) -> list[str]:
+        """
+        List every model name known to the registry.
+
+        Returns the PyG introspector's discovered names in their original order,
+        followed by registered names that are not among them (plugin models and
+        models added with ``register_model``), sorted.
+
+        Returns:
+            List of model names
+        """
+        discovered = get_introspector().get_all_model_names()
+        known = set(discovered)
+        with self._lock:
+            registered_only = sorted(name for name in self._models if name not in known)
+        return [*discovered, *registered_only]
 
     def list_by_category(self) -> dict[str, list[str]]:
         """

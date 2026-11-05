@@ -25,7 +25,7 @@ This module offers:
 
 Location: milia_pipeline/models/hpo/search_spaces/search_space_builder.py
 Pattern: Follows registry patterns from loss_functions.py, schedulers.py, optimizers.py
-Dependencies: param_types.py, hpo_config.py, exceptions.py, pyg_introspector.py
+Dependencies: param_types.py, hpo_config.py, exceptions.py, registry/model_registry.py
 
 Author: Milia Team
 Version: 1.1.0
@@ -61,18 +61,15 @@ except ImportError:
         pass
 
 
-# Phase 6: Import dynamic introspection for search space generation
+# Dynamic search spaces come from the model registry, which knows every model
+# whatever its origin (PyG discovery, plugins, register_model).
 try:
-    from milia_pipeline.models.registry.pyg_introspector import (
-        PyGModelIntrospector,
-        get_introspector,
-    )
+    from milia_pipeline.models.registry.model_registry import ModelRegistry
 
-    _INTROSPECTOR_AVAILABLE = True
+    _REGISTRY_AVAILABLE = True
 except ImportError:
-    get_introspector = None
-    PyGModelIntrospector = None
-    _INTROSPECTOR_AVAILABLE = False
+    ModelRegistry = None
+    _REGISTRY_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -543,12 +540,13 @@ class SearchSpaceBuilder:
         """
         Get search space for a model architecture - dynamically generated.
 
-        **Phase 6 Migration**: Now uses dynamic PyG introspection to generate
-        search spaces for ANY PyG model, not just the 7 hardcoded ones.
-        Falls back to legacy hardcoded spaces if introspector unavailable.
+        Generates the space from the constructor parameters of any model the
+        model registry knows: PyG models, plugin models and models added with
+        ``register_model``. Falls back to legacy hardcoded spaces if the model
+        is unknown or the registry is unavailable.
 
         Args:
-            model_name: Name of model (GCN, GAT, GraphSAGE, ANY PyG model, etc.)
+            model_name: Name of model (GCN, GAT, GraphSAGE, any registered model, etc.)
             include_optimizer: Include optimizer hyperparameters
             include_scheduler: Include scheduler hyperparameters
 
@@ -569,14 +567,14 @@ class SearchSpaceBuilder:
         # =================================================================
         # PHASE 6: DYNAMIC SEARCH SPACE GENERATION
         # =================================================================
-        if _INTROSPECTOR_AVAILABLE and get_introspector is not None:
+        if _REGISTRY_AVAILABLE and ModelRegistry is not None:
             try:
-                introspector = get_introspector()
+                registry = ModelRegistry.get_instance()
 
-                # Check if model exists in PyG
-                if introspector.has_model(model_name):
+                # Check if the registry knows the model (any origin)
+                if model_name in registry.list_discovered_model_names():
                     # Get dynamically generated search space
-                    dynamic_search_space = introspector.get_search_space(model_name)
+                    dynamic_search_space = registry.get_search_space(model_name)
 
                     # Convert to builder format
                     for category, params in dynamic_search_space.items():
@@ -598,12 +596,12 @@ class SearchSpaceBuilder:
                     return builder.build()
                 else:
                     logger.warning(
-                        f"Model '{model_name}' not found in PyG introspector. "
+                        f"Model '{model_name}' not found in the model registry. "
                         f"Falling back to legacy hardcoded space."
                     )
             except Exception as e:
                 logger.warning(
-                    f"Dynamic introspection failed for '{model_name}': {e}. "
+                    f"Registry search space lookup failed for '{model_name}': {e}. "
                     f"Falling back to legacy hardcoded space."
                 )
 
@@ -630,7 +628,7 @@ class SearchSpaceBuilder:
             builder = cls._build_generic_gnn_space(builder)
             logger.warning(
                 f"No predefined space for '{model_name}', using generic GNN space. "
-                f"Enable pyg_introspector for dynamic search spaces."
+                f"Register the model for a search space generated from its parameters."
             )
 
         if include_optimizer:
@@ -649,7 +647,7 @@ class SearchSpaceBuilder:
         .. deprecated:: 2.0.0
             This hardcoded method is deprecated. Use dynamic introspection via
             `for_model()` which now generates search spaces from PyG model signatures.
-            Kept as fallback when pyg_introspector is unavailable.
+            Kept as fallback when the model registry is unavailable.
         """
         return (
             builder.add_int("hidden_channels", 32, 256, step=32, category="hyperparameters")
@@ -959,10 +957,11 @@ class SearchSpaceBuilder:
     @classmethod
     def list_available_models(cls) -> list[str]:
         """
-        List ALL available PyG models with search space support.
+        List all models with search space support.
 
-        **Phase 6 Migration**: Now returns ALL dynamically discovered PyG models,
-        not just the 7 hardcoded ones. Falls back to legacy list if introspector
+        Returns every model the model registry knows: discovered PyG models in
+        discovery order, then plugin models and models added with
+        ``register_model``. Falls back to the legacy list if the registry is
         unavailable.
 
         Returns:
@@ -972,15 +971,14 @@ class SearchSpaceBuilder:
             >>> models = SearchSpaceBuilder.list_available_models()
             >>> print(f"Available: {len(models)} models")  # Now shows ALL PyG models
         """
-        # Phase 6: Use dynamic introspection
-        if _INTROSPECTOR_AVAILABLE and get_introspector is not None:
+        # Every model the registry knows, whatever its origin
+        if _REGISTRY_AVAILABLE and ModelRegistry is not None:
             try:
-                introspector = get_introspector()
-                models = introspector.get_all_model_names()
-                logger.debug(f"Dynamic discovery: {len(models)} models available")
+                models = ModelRegistry.get_instance().list_discovered_model_names()
+                logger.debug(f"Model registry: {len(models)} models available")
                 return models
             except Exception as e:
-                logger.warning(f"Dynamic model discovery failed: {e}. Using legacy list.")
+                logger.warning(f"Registry model listing failed: {e}. Using legacy list.")
 
         # Legacy fallback
         return [
@@ -1072,14 +1070,14 @@ __all__ = [
 # =============================================================================
 
 # Log module load with dynamic vs legacy status
-if _INTROSPECTOR_AVAILABLE:
+if _REGISTRY_AVAILABLE:
     logger.info(
         "search_space_builder module loaded (v2.0.0) - "
-        "DYNAMIC search space generation enabled via pyg_introspector"
+        "DYNAMIC search space generation enabled via the model registry"
     )
 else:
     logger.info(
         f"search_space_builder module loaded (v2.0.0) - "
         f"LEGACY mode: {len(SearchSpaceBuilder.list_available_models())} predefined model spaces "
-        f"(enable pyg_introspector for dynamic support)"
+        f"(model registry unavailable)"
     )

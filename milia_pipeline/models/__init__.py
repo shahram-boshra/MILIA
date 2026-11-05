@@ -193,6 +193,9 @@ except ImportError as e:
         def list_available_models(self):
             return []
 
+        def get_statistics(self):
+            return {"by_category": {}}
+
     class ModelRegistration:
         pass
 
@@ -761,8 +764,8 @@ try:
     available_models = registry.list_available_models()
     logger.info(f"Model registry: {len(available_models)} models available")
 
-    # Log category breakdown
-    stats = get_category_statistics()
+    # Log category breakdown (same source as the model count above)
+    stats = registry.get_statistics()["by_category"]
     if stats:
         logger.debug(f"Category breakdown: {stats}")
 
@@ -806,7 +809,7 @@ def get_module_info() -> dict:
             "version": __version__,
             "total_models": len(registry.list_available_models()),
             "categories": len(ModelCategory),
-            "category_breakdown": get_category_statistics(),
+            "category_breakdown": registry.get_statistics()["by_category"],
             "available_losses": len(LossRegistry.list_available()),
             "available_optimizers": len(OptimizerRegistry.list_available()),
             "available_schedulers": len(SchedulerRegistry.list_available()),

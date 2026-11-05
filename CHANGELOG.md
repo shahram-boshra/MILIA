@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so models registered by plugins or with `register_model` can be built. Before, it read only the PyG model
   catalogue and failed with an `AttributeError` for any other model. PyG models are unchanged: the registry
   stores the same metadata for them. A registered model without metadata now raises `ModelInstantiationError`.
+- HPO search spaces and model listings now include models registered by plugins or with `register_model`.
+  `SearchSpaceBuilder.for_model` generates a registered model's space from its own constructor parameters
+  instead of falling back to the generic GNN space, and `SearchSpaceBuilder.list_available_models` lists
+  registered models after the discovered PyG models. The category breakdown in `get_module_info()` now comes
+  from the model registry, the same source as `total_models`. Results for PyG models are unchanged.
+  `ModelRegistry` gains `get_search_space` and `list_discovered_model_names`.
 
 ## [1.18.0] - 2026-10-14
 

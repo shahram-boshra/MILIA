@@ -222,15 +222,16 @@ class MockSearchSpaceParamConfig:
 
 
 # =============================================================================
-# MOCK CLASSES FOR INTROSPECTOR
+# MOCK CLASSES FOR THE MODEL REGISTRY
 # =============================================================================
 
 
-class MockPyGModelIntrospector:
+class MockModelRegistry:
     """
-    Mock PyGModelIntrospector for testing dynamic introspection paths.
+    Mock ModelRegistry for testing the dynamic search space paths.
 
-    Simulates the interface of milia_pipeline.models.registry.pyg_introspector.
+    Simulates the search space interface of
+    milia_pipeline.models.registry.model_registry.ModelRegistry.
     """
 
     def __init__(self, available_models: list[str] | None = None):
@@ -248,13 +249,9 @@ class MockPyGModelIntrospector:
             "TransformerConv",
         ]
 
-    def get_all_model_names(self) -> list[str]:
-        """Return all available model names."""
+    def list_discovered_model_names(self) -> list[str]:
+        """Return all known model names."""
         return self.available_models
-
-    def has_model(self, model_name: str) -> bool:
-        """Check if model exists."""
-        return model_name.upper() in [m.upper() for m in self.available_models]
 
     def get_search_space(self, model_name: str) -> dict[str, dict[str, Any]]:
         """Return dynamically generated search space for model."""
@@ -317,9 +314,9 @@ def search_space_builder_module(mock_exceptions, mock_param_types):
             "milia_pipeline.models.hpo.search_spaces.search_space_builder.SearchSpaceParamConfig",
             MockSearchSpaceParamConfig,
         ),
-        # Patch the introspector as unavailable for most tests
+        # Patch the model registry as unavailable for most tests
         patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ),
     ):
@@ -1896,9 +1893,9 @@ class TestSearchSpaceBuilderForModelLegacy:
         """Test for_model with GCN model (lines 647-648)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.for_model("GCN")
@@ -1914,9 +1911,9 @@ class TestSearchSpaceBuilderForModelLegacy:
         """Test for_model is case insensitive (line 645: model_name_upper)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result_upper = SearchSpaceBuilder.for_model("GCN")
@@ -1944,9 +1941,9 @@ class TestSearchSpaceBuilderForModelLegacy:
         """Test for_model with GAT model (lines 649-650)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.for_model("GAT")
@@ -1972,9 +1969,9 @@ class TestSearchSpaceBuilderForModelLegacy:
         """Test for_model with GraphSAGE model (lines 651-652)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.for_model("GraphSAGE")
@@ -2007,9 +2004,9 @@ class TestSearchSpaceBuilderForModelLegacy:
         """Test for_model with GIN model (lines 653-654)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.for_model("GIN")
@@ -3265,12 +3262,12 @@ class TestSearchSpaceBuilderListAvailableModels:
     """Test list_available_models class method (lines 1011-1046)."""
 
     def test_list_available_models_legacy_fallback(self, search_space_builder_module):
-        """Test list_available_models returns models when introspector unavailable."""
+        """Test list_available_models returns models when the registry is unavailable."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.list_available_models()
@@ -3288,9 +3285,9 @@ class TestSearchSpaceBuilderListAvailableModels:
         """Test legacy list has exactly 7 models (lines 1038-1046)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        # Force legacy fallback by patching introspector as unavailable
+        # Force legacy fallback by patching the registry as unavailable
         with patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+            "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
             False,
         ):
             result = SearchSpaceBuilder.list_available_models()
@@ -3301,16 +3298,16 @@ class TestSearchSpaceBuilderListAvailableModels:
         """Test list_available_models with dynamic introspection enabled."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        mock_introspector = MockPyGModelIntrospector()
+        mock_registry = MockModelRegistry()
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.list_available_models()
@@ -3318,35 +3315,32 @@ class TestSearchSpaceBuilderListAvailableModels:
             # Should return dynamic list with more models
             assert "GCN" in result
             assert "GAT" in result
-            # Additional models from mock introspector
+            # Additional models from the mock registry
             assert "PMLP" in result
             assert "EdgeConv" in result
 
-    def test_list_available_models_introspection_failure_falls_back(
+    def test_list_available_models_registry_failure_falls_back(
         self, search_space_builder_module, caplog
     ):
-        """Test list_available_models falls back on introspection failure (lines 1034-1035)."""
+        """Test list_available_models falls back when the registry listing fails."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
         caplog.set_level(logging.WARNING)
 
-        def failing_introspector():
-            raise Exception("Introspection failed")
-
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                failing_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                side_effect=Exception("Registry listing failed"),
             ),
         ):
             result = SearchSpaceBuilder.list_available_models()
 
             # Should fall back to legacy list
             assert len(result) == 7
-            assert "Dynamic model discovery failed" in caplog.text
+            assert "Registry model listing failed" in caplog.text
 
 
 # =============================================================================
@@ -3361,22 +3355,22 @@ class TestSearchSpaceBuilderForModelDynamic:
         """Test for_model with successful dynamic introspection."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        mock_introspector = MockPyGModelIntrospector()
+        mock_registry = MockModelRegistry()
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.for_model("GCN")
 
             assert "hyperparameters" in result
-            # Should have params from mock introspector
+            # Should have params from the mock registry
             assert "hidden_channels" in result["hyperparameters"]
             assert "num_layers" in result["hyperparameters"]
 
@@ -3384,16 +3378,16 @@ class TestSearchSpaceBuilderForModelDynamic:
         """Test for_model dynamic with include_optimizer=True."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        mock_introspector = MockPyGModelIntrospector()
+        mock_registry = MockModelRegistry()
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.for_model("GCN", include_optimizer=True)
@@ -3405,16 +3399,16 @@ class TestSearchSpaceBuilderForModelDynamic:
         """Test for_model dynamic with include_scheduler=True."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        mock_introspector = MockPyGModelIntrospector()
+        mock_registry = MockModelRegistry()
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.for_model("GCN", include_scheduler=True)
@@ -3425,69 +3419,69 @@ class TestSearchSpaceBuilderForModelDynamic:
     def test_for_model_dynamic_model_not_found_falls_back(
         self, search_space_builder_module, caplog
     ):
-        """Test for_model falls back when model not in introspector (lines 631-635)."""
+        """Test for_model falls back when the model is not in the registry."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
         caplog.set_level(logging.WARNING)
 
-        mock_introspector = MockPyGModelIntrospector(available_models=["GAT", "GIN"])
+        mock_registry = MockModelRegistry(available_models=["GAT", "GIN"])
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.for_model("GCN")  # GCN not in mock
 
             # Should fall back to legacy GCN space
             assert "aggregation" in result["hyperparameters"]
-            assert "not found in PyG introspector" in caplog.text
+            assert "not found in the model registry" in caplog.text
 
     def test_for_model_dynamic_exception_falls_back(self, search_space_builder_module, caplog):
         """Test for_model falls back on introspection exception (lines 636-640)."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
         caplog.set_level(logging.WARNING)
 
-        mock_introspector = MagicMock()
-        mock_introspector.has_model.side_effect = Exception("Introspection error")
+        mock_registry = MagicMock()
+        mock_registry.list_discovered_model_names.side_effect = Exception("Registry error")
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
             result = SearchSpaceBuilder.for_model("GCN")
 
             # Should fall back to legacy space
             assert "hyperparameters" in result
-            assert "Dynamic introspection failed" in caplog.text
+            assert "Registry search space lookup failed" in caplog.text
 
     def test_for_model_dynamic_new_model_type(self, search_space_builder_module):
         """Test for_model dynamic with new model type not in legacy list."""
         SearchSpaceBuilder = search_space_builder_module["SearchSpaceBuilder"]
 
-        mock_introspector = MockPyGModelIntrospector()
+        mock_registry = MockModelRegistry()
 
         with (
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder._INTROSPECTOR_AVAILABLE",
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
                 True,
             ),
             patch(
-                "milia_pipeline.models.hpo.search_spaces.search_space_builder.get_introspector",
-                return_value=mock_introspector,
+                "milia_pipeline.models.hpo.search_spaces.search_space_builder.ModelRegistry.get_instance",
+                return_value=mock_registry,
             ),
         ):
-            # PMLP is in mock introspector but not in legacy list
+            # PMLP is in the mock registry but not in legacy list
             result = SearchSpaceBuilder.for_model("PMLP")
 
             assert "hyperparameters" in result
