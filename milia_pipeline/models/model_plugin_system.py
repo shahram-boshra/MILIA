@@ -31,6 +31,7 @@ import logging
 import re
 import sys
 import threading
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from types import ModuleType
@@ -171,6 +172,15 @@ def _create_plugin_package(package_name: str, location: Path) -> ModuleType:
     if parent is not None:
         setattr(parent, package_name.rpartition(".")[2], package)
     return package
+
+
+@dataclass
+class _LoadAttempt:
+    """A plugin load in progress: its owner thread, completion event and outcome."""
+
+    owner: int
+    done: threading.Event = field(default_factory=threading.Event)
+    error: Exception | None = None
 
 
 def _same_plugin_dir(first: Path | None, second: Path | None) -> bool:
@@ -413,7 +423,10 @@ class ModelPluginLoader:
         self._initialized = True
         self._plugins: dict[str, ModelPluginMetadata] = {}
         self._loaded_modules: dict[str, Any] = {}
+        # Guards loader state only; plugin code never runs while it is held.
         self._lock = threading.Lock()
+        # Loads in progress, by plugin name; other callers wait on their event.
+        self._loading: dict[str, _LoadAttempt] = {}
 
         logger.debug("ModelPluginLoader initialized")
 
@@ -733,6 +746,7 @@ class ModelPluginLoader:
         Raises:
             PluginError: If plugin cannot be loaded
         """
+        # 1. Under the lock: check state and claim the load, or join a load in progress.
         with self._lock:
             if plugin_name not in self._plugins:
                 raise PluginError(f"Plugin '{plugin_name}' not discovered")
@@ -746,30 +760,58 @@ class ModelPluginLoader:
             if not metadata.enabled:
                 raise PluginError(f"Plugin '{plugin_name}' is disabled")
 
-            try:
-                logger.info(f"Loading plugin '{plugin_name}'...")
+            attempt = self._loading.get(plugin_name)
+            if attempt is None:
+                attempt = _LoadAttempt(owner=threading.get_ident())
+                self._loading[plugin_name] = attempt
+                declarations = list(metadata.model_declarations)
+                plugin_path = metadata.plugin_path
+                owner = True
+            elif attempt.owner == threading.get_ident():
+                raise PluginError(
+                    f"Plugin '{plugin_name}' is already being loaded by this thread "
+                    f"(the plugin's code loads it again)",
+                    plugin_name=plugin_name,
+                )
+            else:
+                owner = False
 
-                # Register each model
-                if register_models:
-                    for decl in metadata.model_declarations:
-                        self._register_plugin_model(decl, metadata.plugin_path)
+        if not owner:
+            attempt.done.wait()
+            if attempt.error is not None:
+                raise PluginError(
+                    f"Failed to load plugin '{plugin_name}': {attempt.error}",
+                    plugin_name=plugin_name,
+                ) from attempt.error
+            return True
 
-                # Mark as loaded
+        # 2. Without the lock: run plugin code (module import, model registration).
+        error: Exception | None = None
+        try:
+            logger.info(f"Loading plugin '{plugin_name}'...")
+            if register_models:
+                for decl in declarations:
+                    self._register_plugin_model(decl, plugin_path)
+        except Exception as e:
+            error = e
+
+        # 3. Under the lock: commit the result and release waiting callers.
+        with self._lock:
+            if error is None:
                 metadata.loaded = True
                 metadata.load_time = datetime.now()
+            del self._loading[plugin_name]
+        attempt.error = error
+        attempt.done.set()
 
-                logger.info(
-                    f"Successfully loaded plugin '{plugin_name}' "
-                    f"with {len(metadata.model_declarations)} model(s)"
-                )
+        if error is not None:
+            logger.error(f"Failed to load plugin '{plugin_name}': {error}")
+            raise PluginError(
+                f"Failed to load plugin '{plugin_name}': {error}", plugin_name=plugin_name
+            ) from error
 
-                return True
-
-            except Exception as e:
-                logger.error(f"Failed to load plugin '{plugin_name}': {e}")
-                raise PluginError(
-                    f"Failed to load plugin '{plugin_name}': {e}", plugin_name=plugin_name
-                ) from e
+        logger.info(f"Successfully loaded plugin '{plugin_name}' with {len(declarations)} model(s)")
+        return True
 
     def _register_plugin_model(self, declaration: ModelDeclaration, plugin_dir: Path):
         """

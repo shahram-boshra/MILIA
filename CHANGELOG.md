@@ -63,6 +63,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A second model plugin with an already discovered `plugin_name` is now rejected with an error naming both
   directories, and the first plugin is kept. Before, it silently replaced the first. Discovering the same
   directory again is not a duplicate and keeps the plugin's state, so a loaded plugin stays loaded.
+- The model plugin loader no longer holds its lock while plugin code runs, so a plugin module that calls the
+  loader (for example `get_plugin_loader().list_plugins()`) while it is imported no longer deadlocks. Loading
+  the same plugin from several threads imports it once; the other callers wait for that load and get its
+  result, including its error. A plugin whose code loads itself gets a `PluginError` instead of hanging.
 
 ## [1.18.0] - 2026-10-14
 

@@ -20,6 +20,8 @@ import logging
 import pickle
 import sys
 import textwrap
+import threading
+import types
 import uuid
 from pathlib import Path
 
@@ -409,17 +411,153 @@ def test_rediscovering_the_same_directory_keeps_plugin_state(tmp_path, loader):
     assert loader._plugins[plugin_name].loaded is True
 
 
-def test_current_loader_lock_is_not_reentrant(loader):
-    """Pins current behaviour; changed deliberately later.
+def _plugin_with_prelude(tmp_path, prelude: str) -> tuple[str, str]:
+    """Write a plugin whose ``model.py`` runs ``prelude`` before the model class."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    plugin_dir = _write_plugin(
+        tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")]
+    )
+    model_file = plugin_dir / "model.py"
+    model_file.write_text(textwrap.dedent(prelude) + "\n" + model_file.read_text())
+    return plugin_name, model_name
 
-    The lock held while plugin code runs is a plain ``Lock``: the same thread cannot
-    re-acquire it, so a plugin calling the loader API at import time would deadlock.
+
+def _load_in_thread(loader, plugin_name: str, timeout: float = 5.0) -> dict:
+    """Load a plugin in a worker thread; fail the test if it does not finish in time."""
+    outcome: dict = {}
+
+    def target():
+        try:
+            outcome["result"] = loader.load_plugin(plugin_name)
+        except Exception as e:  # reported to the test thread
+            outcome["error"] = e
+
+    worker = threading.Thread(target=target, daemon=True)
+    worker.start()
+    worker.join(timeout)
+    assert not worker.is_alive(), f"load_plugin('{plugin_name}') did not finish in {timeout}s"
+    return outcome
+
+
+def test_plugin_code_runs_with_the_loader_lock_free(tmp_path, loader):
+    """The loader lock guards state only; it is not held while plugin code runs."""
+    plugin_name, _ = _plugin_with_prelude(
+        tmp_path,
+        f"""
+        from {LOADER_MODULE} import get_plugin_loader
+        LOCK_HELD = get_plugin_loader()._lock.locked()
+        """,
+    )
+    loader.discover_plugins([tmp_path])
+
+    assert _load_in_thread(loader, plugin_name) == {"result": True}
+    assert sys.modules[f"{PLUGIN_NAMESPACE}.{plugin_name}.model"].LOCK_HELD is False
+
+
+def test_plugin_calling_the_loader_at_import_does_not_deadlock(tmp_path, loader):
+    """A plugin module may call the loader API while it is being imported."""
+    plugin_name, _ = _plugin_with_prelude(
+        tmp_path,
+        f"""
+        from {LOADER_MODULE} import get_plugin_loader
+        PLUGINS_SEEN = get_plugin_loader().list_plugins()
+        """,
+    )
+    loader.discover_plugins([tmp_path])
+
+    assert _load_in_thread(loader, plugin_name) == {"result": True}
+    module = sys.modules[f"{PLUGIN_NAMESPACE}.{plugin_name}.model"]
+    assert plugin_name in module.PLUGINS_SEEN
+
+
+def test_plugin_loading_itself_at_import_fails_instead_of_deadlocking(tmp_path, loader, registry):
+    """A plugin whose code loads the same plugin gets an error, not a hang."""
+    plugin_name, model_name = _plugin_with_prelude(
+        tmp_path,
+        f"""
+        from {LOADER_MODULE} import get_plugin_loader
+        get_plugin_loader().load_plugin(__name__.split(".")[-2])
+        """,
+    )
+    loader.discover_plugins([tmp_path])
+
+    outcome = _load_in_thread(loader, plugin_name)
+
+    assert isinstance(outcome["error"], exceptions.PluginError)
+    assert "already being loaded by this thread" in str(outcome["error"])
+    assert loader._plugins[plugin_name].loaded is False
+    assert not registry.has_model(model_name)
+
+
+@pytest.fixture
+def import_counter():
+    """A shared counter that plugin modules increment when they are executed."""
+    counter = types.SimpleNamespace(count=0)
+    sys.modules["_milia_test_import_counter"] = counter
+    yield counter
+    del sys.modules["_milia_test_import_counter"]
+
+
+_COUNTING_PRELUDE = """
+import sys
+import time
+sys.modules["_milia_test_import_counter"].count += 1
+time.sleep(0.2)  # keep the load in progress while the other threads arrive
+"""
+
+
+def _load_from_threads(loader, plugin_name: str, threads: int = 8) -> list[dict]:
+    barrier = threading.Barrier(threads)
+    outcomes: list[dict] = [{} for _ in range(threads)]
+
+    def target(index: int):
+        barrier.wait()
+        try:
+            outcomes[index]["result"] = loader.load_plugin(plugin_name)
+        except Exception as e:  # reported to the test thread
+            outcomes[index]["error"] = e
+
+    workers = [threading.Thread(target=target, args=(i,), daemon=True) for i in range(threads)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(10)
+    assert not any(worker.is_alive() for worker in workers), "a load_plugin call did not finish"
+    return outcomes
+
+
+def test_concurrent_loads_import_the_plugin_once(tmp_path, loader, registry, import_counter):
+    """Eight threads loading one plugin import its module once and all succeed."""
+    plugin_name, model_name = _plugin_with_prelude(tmp_path, _COUNTING_PRELUDE)
+    loader.discover_plugins([tmp_path])
+
+    outcomes = _load_from_threads(loader, plugin_name)
+
+    assert outcomes == [{"result": True}] * 8
+    assert import_counter.count == 1
+    assert registry.has_model(model_name)
+    assert loader._plugins[plugin_name].loaded is True
+
+
+def test_concurrent_loads_all_report_a_failed_load(tmp_path, loader, registry, import_counter):
+    """Callers waiting on a load that fails get the failure; the plugin stays unloaded.
+
+    A caller that arrives after a failed attempt has finished starts a new attempt, so
+    the number of imports is not fixed; every caller still reports the failure.
     """
-    assert loader._lock.acquire(timeout=1)
-    try:
-        assert loader._lock.acquire(blocking=False) is False
-    finally:
-        loader._lock.release()
+    plugin_name, model_name = _plugin_with_prelude(
+        tmp_path, _COUNTING_PRELUDE + "raise RuntimeError('broken plugin module')\n"
+    )
+    loader.discover_plugins([tmp_path])
+
+    outcomes = _load_from_threads(loader, plugin_name)
+
+    assert all(isinstance(o.get("error"), exceptions.PluginError) for o in outcomes)
+    assert all("broken plugin module" in str(o["error"]) for o in outcomes)
+    assert 1 <= import_counter.count < 8  # waiting callers did not import it again
+    assert loader._plugins[plugin_name].loaded is False
+    assert not registry.has_model(model_name)
 
 
 def test_current_pep508_dependency_reported_missing(tmp_path, loader):
