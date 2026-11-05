@@ -25,6 +25,7 @@ Version: 1.1.0
 
 import importlib
 import importlib.machinery
+import importlib.metadata
 import importlib.util
 import keyword
 import logging
@@ -39,6 +40,7 @@ from typing import Any
 
 import torch.nn as nn
 import yaml
+from packaging.requirements import InvalidRequirement, Requirement
 from pydantic import BaseModel, Field
 
 # Import model registry and categories
@@ -172,6 +174,33 @@ def _create_plugin_package(package_name: str, location: Path) -> ModuleType:
     if parent is not None:
         setattr(parent, package_name.rpartition(".")[2], package)
     return package
+
+
+def _check_requirement(requirement: str) -> str | None:
+    """
+    Check one PEP 508 requirement against the installed distributions.
+
+    Returns:
+        ``None`` if it is satisfied or its marker excludes this environment;
+        otherwise a message saying it is invalid, missing or unsatisfied.
+    """
+    try:
+        req = Requirement(requirement)
+    except InvalidRequirement as e:
+        reason = str(e).splitlines()[0] if str(e) else type(e).__name__
+        return f"Invalid dependency specifier: {requirement!r} ({reason})"
+
+    if req.marker is not None and not req.marker.evaluate():
+        return None
+
+    try:
+        installed = importlib.metadata.version(req.name)
+    except importlib.metadata.PackageNotFoundError:
+        return f"Missing required dependency: {requirement}"
+
+    if not req.specifier.contains(installed, prereleases=True):
+        return f"Unsatisfied dependency: {requirement} (installed: {req.name} {installed})"
+    return None
 
 
 @dataclass
@@ -661,19 +690,26 @@ class ModelPluginLoader:
         return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
 
     def _validate_dependencies(self, metadata: ModelPluginMetadata) -> dict[str, Any]:
-        """Validate plugin dependencies."""
-        missing = []
-        satisfied = True
+        """
+        Check plugin dependencies against the installed distributions.
+
+        Each entry is a PEP 508 requirement on a distribution name (for example
+        ``"torch>=2.4"`` or ``"scikit-learn"``). It is checked from installed package
+        metadata; nothing is imported. An entry whose environment marker is false
+        is skipped.
+
+        Returns:
+            ``{"satisfied": bool, "missing": [str]}``; ``missing`` lists one message
+            per missing, unsatisfied or invalid entry.
+        """
+        problems = []
 
         for dep in metadata.dependencies:
-            try:
-                # Try to import the dependency
-                importlib.import_module(dep.split("[")[0])  # Handle extras like torch[cuda]
-            except ImportError:
-                missing.append(f"Missing required dependency: {dep}")
-                satisfied = False
+            problem = _check_requirement(dep)
+            if problem:
+                problems.append(problem)
 
-        return {"satisfied": satisfied, "missing": missing}
+        return {"satisfied": not problems, "missing": problems}
 
     def _validate_model_declaration(self, declaration: ModelDeclaration) -> list[str]:
         """Validate a single model declaration."""

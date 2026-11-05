@@ -560,12 +560,8 @@ def test_concurrent_loads_all_report_a_failed_load(tmp_path, loader, registry, i
     assert not registry.has_model(model_name)
 
 
-def test_current_pep508_dependency_reported_missing(tmp_path, loader):
-    """Pins current behaviour; changed deliberately later.
-
-    Dependencies are checked by importing the string, so an installed
-    ``torch>=2.0`` is reported missing.
-    """
+def test_installed_pep508_dependency_is_satisfied(tmp_path, loader):
+    """Dependencies are PEP 508 requirements checked against installed distributions."""
     plugin_name = _unique("charplugin_")
     _write_plugin(
         tmp_path,
@@ -576,9 +572,8 @@ def test_current_pep508_dependency_reported_missing(tmp_path, loader):
     )
     loader.discover_plugins([tmp_path])
 
-    assert (
-        "Missing required dependency: torch>=2.0" in loader._plugins[plugin_name].validation_errors
-    )
+    errors = loader._plugins[plugin_name].validation_errors
+    assert not [e for e in errors if "torch>=2.0" in e]
 
 
 def test_factory_builds_registered_plugin_model(tmp_path, loader, registry):

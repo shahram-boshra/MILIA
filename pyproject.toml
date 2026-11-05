@@ -84,6 +84,9 @@ dependencies = [
     "ray[tune]==2.56.1",
     "psutil==7.2.2",                # implicit direct dep (3 import sites); conda supplied, never declared
     "h5py==3.16.0",                 # implicit direct dep (4 preprocessor import sites)
+    # implicit direct dep (4 import sites: models/model_plugin_system.py, transformations/plugin_system.py,
+    # transformations/graph_transforms.py, models/hpo/backends/optuna_backend.py); was only transitive
+    "packaging==26.2",
     # torch.compile runtime dep (used by models/acceleration/computation_optimization.py): Inductor
     # imports torch.utils.cpp_extension, whose line 10 is `import setuptools` (torch 2.4.0); torch
     # declares setuptools only for Python >= 3.12 and uv/venv environments do not ship it, so on 3.10 /

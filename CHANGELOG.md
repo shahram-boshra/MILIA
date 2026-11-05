@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sys.path`. **Plugin authors:** import other modules of your plugin with relative imports
   (`from .helpers import build_mlp`); a bare `import helpers` no longer finds a sibling module. A plugin's
   `plugin_name` must be a valid Python identifier.
+- Model plugin `dependencies` are now PEP 508 requirements on distribution names, checked against the
+  installed packages' metadata; nothing is imported. An entry whose environment marker does not match is
+  skipped. **Plugin authors:** list distribution names (`scikit-learn`, not `sklearn`).
+- `packaging` is now a declared dependency (`packaging==26.2`, the version already locked). MILIA imports it
+  directly; before, it was installed only as a dependency of other packages.
 
 ### Deprecated
 
@@ -67,6 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   loader (for example `get_plugin_loader().list_plugins()`) while it is imported no longer deadlocks. Loading
   the same plugin from several threads imports it once; the other callers wait for that load and get its
   result, including its error. A plugin whose code loads itself gets a `PluginError` instead of hanging.
+- Model plugin dependencies with a version specifier (for example `torch>=2.0`) are no longer reported as
+  missing when they are installed. The check also reports an installed version that does not satisfy the
+  specifier, and an invalid requirement.
 
 ## [1.18.0] - 2026-10-14
 

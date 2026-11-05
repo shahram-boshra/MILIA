@@ -26,4 +26,6 @@ Scaffold for adding your own **model** plugin, symmetric with
 
 - The default in-tree model plugin path resolves package-relative via
   `milia_pipeline.plugins.get_model_plugins_directory()` (CWD-independent).
-- Keep the plugin self-contained; declare third-party needs under `dependencies`.
+- Keep the plugin self-contained; declare third-party needs under `dependencies` as PEP 508
+  requirements on distribution names (e.g. `"torch>=2.4"`, `"scikit-learn"`, not the import name
+  `sklearn`). They are checked against the installed packages; nothing is imported.
