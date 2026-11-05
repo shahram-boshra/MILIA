@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have been rejected by MILIA 2.0.0 or by a newer PyG even when compatible. They now state minimum versions
   only (`>=1.2.2`, `>=2.6.0`), and a test checks that every first-party manifest and template does the same.
   A plugin may still declare an upper bound of its own; the loader continues to enforce it.
+- The source distribution and the wheel now include the plugin READMEs and the user templates
+  (`milia_pipeline/plugins/*/user_template/`) that plugin authors are told to copy. Before, they existed only
+  in a git checkout, so an installed MILIA had no templates to start a plugin from. A test builds the sdist,
+  then the wheel from that sdist, and checks that every data file in the package is in both.
 
 ## [1.18.0] - 2026-10-14
 

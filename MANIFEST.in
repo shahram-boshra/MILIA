@@ -45,10 +45,19 @@ recursive-include configs *.yaml
 
 # ---- Installable package source and data ------------------------------------
 # milia_pipeline/ *.py files are auto-included via [tool.setuptools.packages.find].
-# *.yaml and *.yml are auto-included via [tool.setuptools.package-data].
-# Listed explicitly for sdist completeness and clarity.
+# Data files inside the package reach the sdist AND the wheel through the lines
+# below: with pyproject.toml, include-package-data defaults to true, so every file
+# MANIFEST.in matches inside a package directory (including directories without
+# __init__.py, such as user_template/) is installed with the package.
+# [tool.setuptools.package-data] (milia_pipeline = *.yaml/*.yml) matches only files
+# directly in milia_pipeline/, of which there are none; it does not reach
+# sub-packages.
+# Source: setuptools "Data Files Support" (include_package_data, package_data).
 recursive-include milia_pipeline *.py
 recursive-include milia_pipeline *.yaml *.yml
+# Plugin documentation and the user templates that plugin authors copy:
+# README.md and *.template files under each plugin kind.
+recursive-include milia_pipeline/plugins *.md *.template
 
 # ---- Exclusions — directories not needed in source distribution -------------
 # tests/: 163 test files + fixtures — excluded from sdist per project policy.
