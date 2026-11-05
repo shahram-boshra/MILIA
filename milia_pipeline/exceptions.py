@@ -2592,7 +2592,10 @@ class ModelError(BaseProjectError):
     def __init__(
         self, message: str, model_name: str | None = None, details: str | None = None, **kwargs
     ):
-        super().__init__(message, details, **kwargs)
+        # Keyword arguments keep this cooperative under multiple inheritance:
+        # in PluginModelError(ModelError, PluginError) the next class is
+        # PluginError, whose second positional parameter is plugin_name.
+        super().__init__(message, details=details, **kwargs)
         self.model_name = model_name
 
 
@@ -2865,18 +2868,21 @@ class DataError(ModelError):
         self.split_ratios = split_ratios
 
 
-class PluginModelError(ModelError):
+class PluginModelError(ModelError, PluginError):
     """
     Exception raised for plugin model issues.
 
     This includes errors loading, validating, or registering plugin models.
+    It is both a model error and a plugin error, so handlers for either
+    category catch it. ``ModelError`` comes first in the method resolution
+    order; its message format is ``PluginError``'s (it names the plugin).
 
     Args:
         message: Description of the plugin model error
         plugin_name: Name of the plugin
         model_name: Name of the model from the plugin
         plugin_path: Path to the plugin
-        **kwargs: Additional context
+        **kwargs: Additional context (for example ``details``)
     """
 
     def __init__(
@@ -2887,8 +2893,7 @@ class PluginModelError(ModelError):
         plugin_path: str | None = None,
         **kwargs,
     ):
-        super().__init__(message, model_name=model_name, **kwargs)
-        self.plugin_name = plugin_name
+        super().__init__(message, model_name=model_name, plugin_name=plugin_name, **kwargs)
         self.plugin_path = plugin_path
 
 

@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`milia_pipeline/plugins/*/user_template/`) that plugin authors are told to copy. Before, they existed only
   in a git checkout, so an installed MILIA had no templates to start a plugin from. A test builds the sdist,
   then the wheel from that sdist, and checks that every data file in the package is in both.
+- `PluginModelError` is now a `PluginError` as well as a `ModelError`, so code that catches plugin errors
+  (`except PluginError`) also catches errors about plugin models. Like other plugin errors, its message names
+  the plugin, e.g. `load failed (Plugin: my_plugin)`. `ModelError` now passes `details` to its base class
+  by keyword, so `details` is kept when a model error is combined with another error type.
 
 ## [1.18.0] - 2026-10-14
 
