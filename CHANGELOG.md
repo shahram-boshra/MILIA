@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `milia_pipeline.models.registry.build_metadata_for_class(model_name, model_class, import_path)` builds model
+  metadata from an already imported class, using the same introspection as PyG model discovery. It works for
+  any model class, including plugin models. Metadata for PyG models is unchanged.
+
 ### Changed
 
 - The model plugin loader now lives at `milia_pipeline.models.model_plugin_system`, next to the descriptor

@@ -203,6 +203,8 @@ from .pyg_introspector import (
     # Dataclasses (DynamicModelMetadata aliased as ModelMetadata)
     ModelMetadata,
     PyGModelIntrospector,
+    # Metadata for an already imported model class (any origin)
+    build_metadata_for_class,
     # Core API Functions (backward-compatible drop-in replacements)
     get_all_model_names,
     get_category_statistics,
@@ -299,6 +301,7 @@ __all__ = [
     # -------------------------------------------------------------------------
     # Metadata Functions
     "get_model_metadata",  # Get ModelMetadata for a specific model
+    "build_metadata_for_class",  # Build ModelMetadata for an imported model class
     "get_all_model_names",  # Get list of all registered model names
     "search_models",  # Search models by keyword
     # Category-Based Access

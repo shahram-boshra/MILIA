@@ -822,66 +822,93 @@ def generate_model_metadata(model_name: str, import_path: str) -> DynamicModelMe
         module = importlib.import_module(module_path)
         model_class = getattr(module, class_name)
 
-        # Introspect __init__ signature
-        parameters = introspect_model_signature(model_class)
-
-        # =====================================================================
-        # NEW: Introspect forward() signature for model-data compatibility
-        # =====================================================================
-        forward_parameters = introspect_forward_signature(model_class)
-        required_data_attrs = get_required_data_attributes(model_class)
-
-        # =====================================================================
-        # NEW: Check if model accepts **kwargs for Conv layer parameters
-        # =====================================================================
-        # This is critical for allowing parameters like add_self_loops to pass
-        # through to underlying Conv layers in PyG BasicGNN models.
-        # =====================================================================
-        accepts_kwargs_flag = model_accepts_kwargs(model_class)
-        if accepts_kwargs_flag:
-            logger.debug(f"{model_name} accepts **kwargs - conv layer params can pass through")
-
-        # Extract description from docstring
-        description = (model_class.__doc__ or "").split("\n")[0].strip()
-
-        # Infer capabilities from parameters
-        requires_edge_features = any(
-            "edge" in p.lower() and any(x in p.lower() for x in ["dim", "channels", "features"])
-            for p in parameters
-        )
-        requires_edge_weights = "edge_weight" in parameters
-
-        # Infer category from import path (returns ModelCategory enum)
-        category = _infer_category_enum(import_path, model_name)
-
-        # Convert ParameterInfo dict to hyperparameters dict format (BACKWARD COMPATIBLE)
-        hyperparameters = _parameters_to_hyperparameters_dict(parameters)
-
-        # Infer supported tasks based on model characteristics
-        supported_tasks = _infer_supported_tasks(model_name, import_path, parameters)
-
-        # Infer tags from model name and characteristics
-        tags = _infer_tags(model_name, import_path, parameters)
-
-        return DynamicModelMetadata(
-            name=model_name,
-            category=category,
-            import_path=import_path,
-            description=description,
-            supported_tasks=supported_tasks,
-            hyperparameters=hyperparameters,
-            requires_edge_features=requires_edge_features,
-            requires_edge_weights=requires_edge_weights,
-            tags=tags,
-            parameters=parameters,  # Keep detailed __init__ info for advanced use
-            forward_parameters=forward_parameters,  # NEW: forward() params
-            required_data_attributes=required_data_attrs,  # NEW: Required data attrs
-            accepts_kwargs=accepts_kwargs_flag,  # NEW: Whether model accepts **kwargs
-        )
+        return build_metadata_for_class(model_name, model_class, import_path)
 
     except Exception as e:
         logger.warning(f"Could not generate metadata for {model_name}: {e}")
         return None
+
+
+def build_metadata_for_class(
+    model_name: str, model_class: type, import_path: str
+) -> DynamicModelMetadata:
+    """
+    Build complete metadata for an already imported model class.
+
+    Introspects the class's ``__init__`` and ``forward`` signatures and infers
+    category, tasks, tags and capabilities, exactly as ``generate_model_metadata``
+    does after importing the class. Works for any ``torch.nn.Module`` subclass,
+    whatever its origin (PyG, a plugin, ``register_model``).
+
+    Args:
+        model_name: Name of the model (e.g., 'GCN')
+        model_class: The model class
+        import_path: Full import path of the class (used for category, task and
+            tag inference and stored in the metadata)
+
+    Returns:
+        DynamicModelMetadata
+
+    Raises:
+        Exception: Whatever introspection or validation raises; the caller decides
+            how to report it.
+    """
+    # Introspect __init__ signature
+    parameters = introspect_model_signature(model_class)
+
+    # =====================================================================
+    # NEW: Introspect forward() signature for model-data compatibility
+    # =====================================================================
+    forward_parameters = introspect_forward_signature(model_class)
+    required_data_attrs = get_required_data_attributes(model_class)
+
+    # =====================================================================
+    # NEW: Check if model accepts **kwargs for Conv layer parameters
+    # =====================================================================
+    # This is critical for allowing parameters like add_self_loops to pass
+    # through to underlying Conv layers in PyG BasicGNN models.
+    # =====================================================================
+    accepts_kwargs_flag = model_accepts_kwargs(model_class)
+    if accepts_kwargs_flag:
+        logger.debug(f"{model_name} accepts **kwargs - conv layer params can pass through")
+
+    # Extract description from docstring
+    description = (model_class.__doc__ or "").split("\n")[0].strip()
+
+    # Infer capabilities from parameters
+    requires_edge_features = any(
+        "edge" in p.lower() and any(x in p.lower() for x in ["dim", "channels", "features"])
+        for p in parameters
+    )
+    requires_edge_weights = "edge_weight" in parameters
+
+    # Infer category from import path (returns ModelCategory enum)
+    category = _infer_category_enum(import_path, model_name)
+
+    # Convert ParameterInfo dict to hyperparameters dict format (BACKWARD COMPATIBLE)
+    hyperparameters = _parameters_to_hyperparameters_dict(parameters)
+
+    # Infer supported tasks based on model characteristics
+    supported_tasks = _infer_supported_tasks(model_name, import_path, parameters)
+
+    # Infer tags from model name and characteristics
+    tags = _infer_tags(model_name, import_path, parameters)
+
+    return DynamicModelMetadata(
+        name=model_name,
+        category=category,
+        import_path=import_path,
+        description=description,
+        supported_tasks=supported_tasks,
+        hyperparameters=hyperparameters,
+        requires_edge_features=requires_edge_features,
+        requires_edge_weights=requires_edge_weights,
+        tags=tags,
+        parameters=parameters,  # Keep detailed __init__ info for advanced use
+        forward_parameters=forward_parameters,  # NEW: forward() params
+        required_data_attributes=required_data_attrs,  # NEW: Required data attrs
+        accepts_kwargs=accepts_kwargs_flag,  # NEW: Whether model accepts **kwargs
+    )
 
 
 def _infer_intelligent_default(param_name: str, param_type: str) -> Any | None:
