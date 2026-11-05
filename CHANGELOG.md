@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`except PluginError`) also catches errors about plugin models. Like other plugin errors, its message names
   the plugin, e.g. `load failed (Plugin: my_plugin)`. `ModelError` now passes `details` to its base class
   by keyword, so `details` is kept when a model error is combined with another error type.
+- `ModelFactory` now reads model metadata from the model registry, which holds it for every registered model,
+  so models registered by plugins or with `register_model` can be built. Before, it read only the PyG model
+  catalogue and failed with an `AttributeError` for any other model. PyG models are unchanged: the registry
+  stores the same metadata for them. A registered model without metadata now raises `ModelInstantiationError`.
 
 ## [1.18.0] - 2026-10-14
 

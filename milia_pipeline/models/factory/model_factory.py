@@ -26,7 +26,6 @@ from ..registry.model_registry import ModelRegistry
 from ..registry.pyg_introspector import (
     ModelMetadata,  # Alias for DynamicModelMetadata
     get_model_conv_kwargs,  # NEW (Fix 19): Model-specific conv kwargs filtering
-    get_model_metadata,
     validate_params_against_signature,
 )
 
@@ -1329,13 +1328,16 @@ class ModelFactory:
                 available_models=available[:10],  # Show first 10
             )
 
-        # Get model metadata
+        # Get model metadata from the registry, which holds it for every origin
+        # (PyG discovery, plugins, register_model).
         try:
-            metadata = get_model_metadata(name)
+            metadata = self.registry.get_metadata(name)
         except Exception as e:
             raise ModelInstantiationError(
                 f"Failed to get metadata for model '{name}': {e}", model_name=name
             ) from e
+        if metadata is None:
+            raise ModelInstantiationError(f"No metadata found for model '{name}'", model_name=name)
 
         # Validate task compatibility
         if task_type not in metadata.supported_tasks:

@@ -354,12 +354,11 @@ def test_current_pep508_dependency_reported_missing(tmp_path, loader):
     )
 
 
-def test_current_factory_cannot_build_registered_plugin_model(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later.
+def test_factory_builds_registered_plugin_model(tmp_path, loader, registry):
+    """``ModelFactory`` reads metadata from the registry, so a registered plugin model builds and runs."""
+    import torch
+    from torch_geometric.data import Batch, Data
 
-    ``ModelFactory`` reads metadata from the PyG introspector, which knows only PyG
-    models, so a correctly registered plugin model cannot be built.
-    """
     from milia_pipeline.models.factory.model_factory import ModelFactory
 
     plugin_name = _unique("charplugin_")
@@ -369,12 +368,45 @@ def test_current_factory_cannot_build_registered_plugin_model(tmp_path, loader, 
     loader.load_plugin(plugin_name)
     assert registry.has_model(model_name)
 
-    with pytest.raises(AttributeError, match="supported_tasks"):
-        ModelFactory().create_model(
-            name=model_name,
-            hyperparameters={"in_channels": 4, "hidden_channels": 8, "out_channels": 1},
-            task_type="graph_regression",
-        )
+    model = ModelFactory().create_model(
+        name=model_name,
+        hyperparameters={"in_channels": 4, "hidden_channels": 16, "out_channels": 1},
+        task_type="graph_regression",
+    )
+
+    assert model.model.lin1.out_features == 16  # a declared hyperparameter reaches the class
+    edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
+    batch = Batch.from_data_list(
+        [Data(x=torch.randn(3, 4), edge_index=edge_index) for _ in range(2)]
+    )
+    out = model(batch.x, batch.edge_index, batch=batch.batch)
+    assert out.shape == (2, 1)
+
+
+def test_current_factory_drops_undeclared_plugin_model_channels(tmp_path, loader, registry):
+    """Pins current behaviour; changed deliberately later.
+
+    The loader's metadata has no constructor parameters, so the factory passes only the
+    manifest's declared hyperparameters; ``in_channels`` and ``out_channels`` fall back to
+    the class defaults.
+    """
+    from milia_pipeline.models.factory.model_factory import ModelFactory
+
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")])
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+
+    model = ModelFactory().create_model(
+        name=model_name,
+        hyperparameters={"in_channels": 6, "hidden_channels": 8, "out_channels": 3},
+        task_type="graph_regression",
+    )
+
+    assert registry.get_metadata(model_name).parameters == {}
+    assert model.model.lin1.in_features == 4  # class default, not 6
+    assert model.model.out_channels == 1  # class default, not 3
 
 
 def test_current_discover_and_load_plugins_without_paths_fails(loader):

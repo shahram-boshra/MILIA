@@ -236,33 +236,6 @@ def fresh_registry():
 
 
 @pytest.fixture
-def patched_get_model_metadata(fresh_registry):
-    """
-    Patch get_model_metadata in the factory module to use registry.get_metadata.
-
-    This is necessary because model_factory.py imports get_model_metadata from
-    pyg_introspector, which only knows about dynamically discovered PyG models.
-    Custom models registered via fresh_registry are not visible to the introspector.
-
-    The registry.get_metadata() method correctly checks registered models first,
-    then falls back to introspection - this is the behavior we need in tests.
-
-    This follows the standard Python mocking pattern: patch where it's USED
-    (in model_factory), not where it's DEFINED (in pyg_introspector).
-    """
-
-    def registry_aware_get_model_metadata(name):
-        """Delegate to registry.get_metadata which checks registered models first."""
-        return fresh_registry.get_metadata(name)
-
-    with patch(
-        "milia_pipeline.models.factory.model_factory.get_model_metadata",
-        side_effect=registry_aware_get_model_metadata,
-    ):
-        yield
-
-
-@pytest.fixture
 def mock_config():
     """Create mock configuration for models module."""
     return {
@@ -323,7 +296,6 @@ class TestRegistryFactoryIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test complete model creation workflow using registry and factory."""
         # Register model
@@ -394,7 +366,6 @@ class TestFactoryConfigIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test that factory can use configuration for default values."""
         mock_load_config.return_value = mock_config
@@ -559,7 +530,6 @@ class TestPyGIntegrationFactoryWorkflow:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test validating PyG data before model creation."""
         # Validate data first
@@ -585,7 +555,6 @@ class TestPyGIntegrationFactoryWorkflow:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test automatic channel inference during model creation."""
         # Infer features from data
@@ -647,7 +616,6 @@ class TestCompleteModelCreationPipeline:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test complete workflow from registration to model creation."""
         # Step 1: Validate data
@@ -688,9 +656,7 @@ class TestCompleteModelCreationPipeline:
             assert output is not None
             assert output.shape[0] > 0
 
-    def test_multi_model_creation_pipeline(
-        self, fresh_registry, mock_gnn_model, patched_get_model_metadata
-    ):
+    def test_multi_model_creation_pipeline(self, fresh_registry, mock_gnn_model):
         """Test creating multiple different models in sequence."""
         models_to_test = []
 
@@ -749,7 +715,6 @@ class TestTrainingSetupWorkflow:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_dataset,
-        patched_get_model_metadata,
     ):
         """Test complete workflow for setting up training."""
         mock_load_config.return_value = mock_config
@@ -804,7 +769,6 @@ class TestTrainingSetupWorkflow:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test model creation with device placement."""
         # Register model
@@ -885,7 +849,6 @@ class TestThreadSafetyIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test concurrent model creation from multiple threads."""
         import threading
@@ -936,7 +899,7 @@ class TestPerformanceIntegration:
     """Test performance characteristics of integrated components."""
 
     def test_batch_model_creation_performance(
-        self, fresh_registry, mock_gnn_model, mock_model_metadata, patched_get_model_metadata
+        self, fresh_registry, mock_gnn_model, mock_model_metadata
     ):
         """Test performance of creating multiple models."""
         import time
@@ -993,7 +956,6 @@ class TestRealWorldScenarios:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_dataset,
-        patched_get_model_metadata,
     ):
         """Test setting up a complete research experiment."""
         mock_load_config.return_value = mock_config
@@ -1051,7 +1013,6 @@ class TestRegistryFactoryAdvancedIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test creating multiple model instances with different hyperparameters."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1096,7 +1057,6 @@ class TestRegistryFactoryAdvancedIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test factory applies defaults for missing hyperparameters."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1277,7 +1237,6 @@ class TestModelCreationEdgeCases:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test model creation with zero dropout."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1298,7 +1257,6 @@ class TestModelCreationEdgeCases:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test model creation with maximum dropout."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1319,7 +1277,6 @@ class TestModelCreationEdgeCases:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test model creation with single layer."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1340,7 +1297,6 @@ class TestModelCreationEdgeCases:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test model creation with many layers."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1485,7 +1441,6 @@ class TestDevicePlacementIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test creating model on CPU device."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1524,7 +1479,6 @@ class TestModelInferenceIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_data,
-        patched_get_model_metadata,
     ):
         """Test inference on single graph."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)
@@ -1553,7 +1507,6 @@ class TestModelInferenceIntegration:
         mock_gnn_model,
         mock_model_metadata,
         sample_pyg_dataset,
-        patched_get_model_metadata,
     ):
         """Test inference on batched graphs."""
         fresh_registry.register_model("MockGNN", mock_gnn_model, mock_model_metadata)

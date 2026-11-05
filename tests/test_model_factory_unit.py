@@ -676,9 +676,8 @@ class TestModelFactoryCreateModel:
         assert "not found" in error_msg or "modelnotfound" in error_msg
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_unsupported_task_type_raises_error(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test unsupported task type raises ModelValidationError."""
         mock_registration = MagicMock()
@@ -691,7 +690,7 @@ class TestModelFactoryCreateModel:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -704,9 +703,8 @@ class TestModelFactoryCreateModel:
         assert "does not support task" in str(exc_info.value).lower()
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_successful_model_creation(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test successful model creation."""
         mock_registration = MagicMock()
@@ -719,7 +717,7 @@ class TestModelFactoryCreateModel:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -733,10 +731,7 @@ class TestModelFactoryCreateModel:
         assert isinstance(model, torch.nn.Module)
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
-    def test_model_moved_to_device(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
-    ):
+    def test_model_moved_to_device(self, mock_registry_class, mock_torch_module, sample_metadata):
         """Test model is moved to specified device."""
         mock_registration = MagicMock()
         mock_registration.model_class = mock_torch_module
@@ -748,7 +743,7 @@ class TestModelFactoryCreateModel:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -770,10 +765,7 @@ class TestModelFactoryCreateModel:
             assert params[0].device.type == "cpu"
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
-    def test_model_instantiation_failure_raises_error(
-        self, mock_get_metadata, mock_registry_class, sample_metadata
-    ):
+    def test_model_instantiation_failure_raises_error(self, mock_registry_class, sample_metadata):
         """Test model instantiation failure raises ModelInstantiationError."""
 
         # Create a mock model class that raises an error
@@ -791,7 +783,7 @@ class TestModelFactoryCreateModel:
         mock_registry.get_model.return_value = FailingModel
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -815,9 +807,8 @@ class TestModelFactoryHyperparameterProcessing:
     """Test ModelFactory hyperparameter processing."""
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_in_channels_inferred_from_sample_data(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test in_channels is inferred from sample data."""
         mock_registration = MagicMock()
@@ -830,7 +821,7 @@ class TestModelFactoryHyperparameterProcessing:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -850,9 +841,8 @@ class TestModelFactoryHyperparameterProcessing:
         assert model.in_channels == 24
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_out_channels_inferred_for_regression(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test out_channels is inferred as 1 for regression tasks."""
         mock_registration = MagicMock()
@@ -865,7 +855,7 @@ class TestModelFactoryHyperparameterProcessing:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -879,9 +869,8 @@ class TestModelFactoryHyperparameterProcessing:
         assert model.out_channels == 1
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_out_channels_inferred_for_classification(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test out_channels is correctly used for classification.
 
@@ -900,7 +889,7 @@ class TestModelFactoryHyperparameterProcessing:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -927,9 +916,8 @@ class TestModelFactoryHyperparameterProcessing:
         assert model.out_channels == 3  # 3 unique classes
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_out_channels_inferred_for_multi_label_classification(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test out_channels inferred from multi-label classification data."""
         mock_registration = MagicMock()
@@ -942,7 +930,7 @@ class TestModelFactoryHyperparameterProcessing:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -964,10 +952,7 @@ class TestModelFactoryHyperparameterProcessing:
         assert model.out_channels == 5
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
-    def test_default_values_applied(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
-    ):
+    def test_default_values_applied(self, mock_registry_class, mock_torch_module, sample_metadata):
         """Test default values from schema are applied."""
         mock_registration = MagicMock()
         mock_registration.model_class = mock_torch_module
@@ -979,7 +964,7 @@ class TestModelFactoryHyperparameterProcessing:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1015,9 +1000,8 @@ class TestModelFactoryParameterFiltering:
     """
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_non_schema_parameters_filtered_out(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test that parameters not in model schema are filtered out."""
         mock_registration = MagicMock()
@@ -1030,7 +1014,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1061,9 +1045,8 @@ class TestModelFactoryParameterFiltering:
         assert not hasattr(model, "extra_param")
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_schema_parameters_preserved(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test that parameters in model schema are preserved."""
         mock_registration = MagicMock()
@@ -1076,7 +1059,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1103,9 +1086,8 @@ class TestModelFactoryParameterFiltering:
         assert model.act == "elu"
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_common_training_params_filtered(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test common training parameters are filtered (HPO scenario)."""
         mock_registration = MagicMock()
@@ -1118,7 +1100,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1157,9 +1139,8 @@ class TestModelFactoryParameterFiltering:
         assert model.dropout == 0.5
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_original_hyperparameters_not_modified(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test that original hyperparameters dict is not modified by filtering."""
         mock_registration = MagicMock()
@@ -1172,7 +1153,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1196,10 +1177,7 @@ class TestModelFactoryParameterFiltering:
         assert hyperparameters == original_values
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
-    def test_filtering_with_minimal_schema(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module
-    ):
+    def test_filtering_with_minimal_schema(self, mock_registry_class, mock_torch_module):
         """Test filtering behavior when model has minimal hyperparameters schema."""
         # Create metadata with minimal schema that matches what inference will produce
         minimal_schema_metadata = ModelMetadata(
@@ -1236,7 +1214,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = MinimalModel
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = minimal_schema_metadata
+        mock_registry.get_metadata.return_value = minimal_schema_metadata
 
         factory = ModelFactory()
 
@@ -1264,9 +1242,8 @@ class TestModelFactoryParameterFiltering:
             assert model.out_channels == 1  # Inferred for regression
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_filtering_preserves_defaults_application(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test that filtering doesn't interfere with default value application."""
         mock_registration = MagicMock()
@@ -1279,7 +1256,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1303,9 +1280,8 @@ class TestModelFactoryParameterFiltering:
         assert model.act == "relu"  # default from schema
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_filtering_preserves_channel_inference(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test that filtering doesn't interfere with channel inference."""
         mock_registration = MagicMock()
@@ -1318,7 +1294,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1349,10 +1325,8 @@ class TestModelFactoryParameterFiltering:
 
     @patch("milia_pipeline.models.factory.model_factory.logger")
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_filtering_logs_filtered_params(
         self,
-        mock_get_metadata,
         mock_registry_class,
         mock_logger,
         mock_torch_module,
@@ -1369,7 +1343,7 @@ class TestModelFactoryParameterFiltering:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1399,9 +1373,8 @@ class TestModelFactoryParameterFilteringEdgeCases:
     """Edge case tests for parameter filtering."""
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_filtering_with_none_values(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test filtering handles None values correctly."""
         mock_registration = MagicMock()
@@ -1414,7 +1387,7 @@ class TestModelFactoryParameterFilteringEdgeCases:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1433,8 +1406,7 @@ class TestModelFactoryParameterFilteringEdgeCases:
         assert model is not None
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
-    def test_filtering_with_only_non_schema_params(self, mock_get_metadata, mock_registry_class):
+    def test_filtering_with_only_non_schema_params(self, mock_registry_class):
         """Test behavior when only non-schema params provided (should use defaults/inference)."""
         # Create metadata where ALL params have defaults (so filtering non-schema params works)
         all_defaults_metadata = ModelMetadata(
@@ -1486,7 +1458,7 @@ class TestModelFactoryParameterFilteringEdgeCases:
         mock_registry.get_model.return_value = DefaultsModel
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = all_defaults_metadata
+        mock_registry.get_metadata.return_value = all_defaults_metadata
 
         factory = ModelFactory()
 
@@ -1882,9 +1854,8 @@ class TestEdgeCasesAndErrorHandling:
         pass  # This is tested implicitly in create_model tests
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_sample_data_without_x_attribute(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test handling of sample data without x attribute."""
         mock_registration = MagicMock()
@@ -1897,7 +1868,7 @@ class TestEdgeCasesAndErrorHandling:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1915,9 +1886,8 @@ class TestEdgeCasesAndErrorHandling:
         assert model is not None
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_classification_without_y_attribute(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test classification task without y attribute in sample data."""
         mock_registration = MagicMock()
@@ -1930,7 +1900,7 @@ class TestEdgeCasesAndErrorHandling:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -1964,9 +1934,8 @@ class TestIntegration:
     """Integration tests for complete workflows."""
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_complete_model_creation_workflow(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test complete model creation workflow from start to finish."""
         mock_registration = MagicMock()
@@ -1979,7 +1948,7 @@ class TestIntegration:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -2010,9 +1979,8 @@ class TestIntegration:
         assert next(model.parameters()).device.type == "cpu"
 
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     def test_workflow_with_all_parameters_explicit(
-        self, mock_get_metadata, mock_registry_class, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_torch_module, sample_metadata
     ):
         """Test workflow with all parameters explicitly provided."""
         mock_registration = MagicMock()
@@ -2025,7 +1993,7 @@ class TestIntegration:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         factory = ModelFactory()
 
@@ -2269,10 +2237,9 @@ class TestModelFactoryEnsembleModel:
 
     @patch("milia_pipeline.models.factory.model_factory._BUILDERS_AVAILABLE", True)
     @patch("milia_pipeline.models.factory.model_factory.parse_ensemble")
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
     def test_ensemble_successful_creation(
-        self, mock_registry_class, mock_get_metadata, mock_parse, mock_torch_module, sample_metadata
+        self, mock_registry_class, mock_parse, mock_torch_module, sample_metadata
     ):
         """Test successful ensemble creation."""
         # Setup registry for individual models
@@ -2286,7 +2253,7 @@ class TestModelFactoryEnsembleModel:
         mock_registry.get_model.return_value = mock_torch_module
         mock_registry_class.return_value = mock_registry
 
-        mock_get_metadata.return_value = sample_metadata
+        mock_registry.get_metadata.return_value = sample_metadata
 
         # Mock composer
         mock_composer = MagicMock()
@@ -2548,11 +2515,8 @@ class TestRegressionScenarios:
 class TestCreateModelWithInfo:
     """Test create_model_with_info method and edge feature detection."""
 
-    @patch("milia_pipeline.models.factory.model_factory.get_model_metadata")
     @patch("milia_pipeline.models.factory.model_factory.ModelRegistry")
-    def test_create_model_with_info_returns_tuple(
-        self, mock_registry_class, mock_get_metadata, mock_torch_module
-    ):
+    def test_create_model_with_info_returns_tuple(self, mock_registry_class, mock_torch_module):
         """Test create_model_with_info returns (model, model_info) tuple."""
         mock_registry = MagicMock()
         mock_registry.has_model.return_value = True
@@ -2560,14 +2524,14 @@ class TestCreateModelWithInfo:
         mock_registry._models = {}
         mock_registry_class.return_value = mock_registry
 
-        # Mock get_model_metadata to return valid metadata
+        # Registry metadata for the model
         mock_metadata = MagicMock()
         mock_metadata.supported_tasks = ["graph_regression"]
         mock_metadata.hyperparameters = {
             "in_channels": {"type": "integer", "required": True},
             "out_channels": {"type": "integer", "required": True},
         }
-        mock_get_metadata.return_value = mock_metadata
+        mock_registry.get_metadata.return_value = mock_metadata
 
         factory = ModelFactory()
 
