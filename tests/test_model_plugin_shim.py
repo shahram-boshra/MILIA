@@ -34,6 +34,8 @@ NEW_MODULE = "milia_pipeline.models.model_plugin_system"
 new = importlib.import_module(NEW_MODULE)
 
 _METADATA_NAMES = {"__version__", "__author__"}
+# Added after the move; the deprecated package keeps the legacy names only.
+_NEW_ONLY_NAMES = {"ensure_model_plugins_discovered"}
 
 
 @pytest.fixture
@@ -82,11 +84,11 @@ def test_old_package_exposes_every_legacy_name_as_the_same_object(fresh_old_pack
     old = _import_old_package()
 
     assert len(old.__all__) == 23
-    assert set(old.__all__) - _METADATA_NAMES == set(new.__all__)
-    assert len(new.__all__) == 21
+    assert set(old.__all__) - _METADATA_NAMES == set(new.__all__) - _NEW_ONLY_NAMES
+    assert len(new.__all__) == 21 + len(_NEW_ONLY_NAMES)
     for name in old.__all__:
         assert hasattr(old, name), name
-    for name in new.__all__:
+    for name in set(new.__all__) - _NEW_ONLY_NAMES:
         assert getattr(old, name) is getattr(new, name), name
 
 

@@ -136,6 +136,13 @@ from .shared_study import validate_shared_study
 logger = logging.getLogger(__name__)
 
 
+def _ensure_model_plugins_discovered() -> None:
+    """Register the configured model plugins' models (once per process; never raises)."""
+    from milia_pipeline.models.model_plugin_system import ensure_model_plugins_discovered
+
+    ensure_model_plugins_discovered()
+
+
 # =============================================================================
 # TASK-SPECIFIC DATA PREPARATION (Mirrors main.py implementation)
 # =============================================================================
@@ -1916,6 +1923,7 @@ class HPOManager:
             return {}
 
         try:
+            _ensure_model_plugins_discovered()
             registry = ModelRegistry.get_instance()
             if not registry.has_model(submodel_name):
                 logger.debug(
@@ -1999,7 +2007,8 @@ class HPOManager:
             )
             return deepcopy(search_space)
 
-        # Get registry instance
+        # Get registry instance, with the configured model plugins' models registered
+        _ensure_model_plugins_discovered()
         registry = ModelRegistry.get_instance()
 
         # Check if model exists in registry

@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after the plugin directories, checked and registered the same way, while
   `models.plugins.discover_entry_points` is `true` (the default). A failing entry point is logged and does
   not stop the others. `ModelPluginLoader.discover_entry_point_plugins()` discovers them on their own.
+- `milia_pipeline.models.model_plugin_system.ensure_model_plugins_discovered(config_path=None)` discovers
+  and loads the configured model plugins once per process and returns the names of the plugins loaded. It
+  never raises: errors are logged. `ModelFactory()` and HPO search-space filtering call it, so plugin
+  models can be built without any call of your own; importing `milia_pipeline.models` does not run it.
 
 ### Changed
 
@@ -147,6 +151,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the code scan, and `strict` also rejects a plugin with warnings (a missing version, no models, or a
   code-scan finding). A model without `supported_tasks` is no longer reported, since its tasks are
   inferred.
+- Model plugins are now used: the `models.plugins` settings (`enabled`, `auto_discover`, `auto_validate`,
+  `validation_level`, sources) take effect when the first `ModelFactory` is created, and the plugins' models
+  are registered before any model is built. Before, nothing in MILIA called the plugin loader, so these
+  settings had no effect.
+- `discover_and_load_plugins()` without `paths` now uses the configured sources, as documented. Before, it
+  raised `TypeError`.
 
 ## [1.18.0] - 2026-10-14
 

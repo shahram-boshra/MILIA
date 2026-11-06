@@ -512,8 +512,7 @@ class PluginModel(nn.Module):
         custom_models = fresh_registry.get_custom_models()
 
         assert "PluginModel" in custom_models
-        if plugin_models:  # May be empty dict if no plugins
-            assert any("PluginModel" in models for models in plugin_models.values())
+        assert plugin_models["test_plugin"] == ["PluginModel"]
 
 
 # =============================================================================

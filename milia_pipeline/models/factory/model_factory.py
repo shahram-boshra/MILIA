@@ -1209,6 +1209,11 @@ class ModelFactory:
         """Initialize factory with validator and registry."""
         self.validator = ModelValidator()
         self.registry = ModelRegistry()
+        # Register the configured model plugins' models before any model is built
+        # (once per process; never raises).
+        from milia_pipeline.models.model_plugin_system import ensure_model_plugins_discovered
+
+        ensure_model_plugins_discovered()
         logger.debug("ModelFactory initialized")
 
     def create_model(

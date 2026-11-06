@@ -21,6 +21,11 @@ models/
 
 ## Discovery
 
+Plugins are discovered and loaded automatically, once per process, when the first
+`ModelFactory` is created (and before HPO filters a search space), while
+`models.plugins.enabled` and `auto_discover` are `true`. Their models are then available by
+name like any other model. `ensure_model_plugins_discovered()` does the same explicitly.
+
 The model plugin loader scans this directory for `*/plugin.yaml` (one level). It is found
 package-relative via `milia_pipeline.plugins.get_model_plugins_directory()` (independent of the
 working directory) and scanned while `models.plugins.include_builtin` is `true` (the default).

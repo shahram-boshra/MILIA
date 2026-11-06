@@ -1440,6 +1440,20 @@ def _configured_sources(config_path: Path | None = None) -> tuple[list[Path], bo
     """
     The model plugin sources the configuration selects.
 
+    Args:
+        config_path: The configuration directory or file (default: ``./configs``).
+
+    Returns:
+        ``(directories, discover_entry_points)``; see ``_configured_plugins``.
+    """
+    config, paths = _configured_plugins(config_path)
+    return paths, config.discover_entry_points
+
+
+def _configured_plugins(config_path: Path | None = None):
+    """
+    The model plugins configuration and the directories it selects.
+
     The directories are the built-in container (unless ``include_builtin`` is
     false) and the user ``plugin_paths``, resolved against the configuration root.
 
@@ -1447,10 +1461,9 @@ def _configured_sources(config_path: Path | None = None) -> tuple[list[Path], bo
         config_path: The configuration directory or file (default: ``./configs``).
 
     Returns:
-        ``(directories, discover_entry_points)``: existing, resolved directories,
-        and whether to discover entry-point plugins. If the configuration cannot be
-        loaded, the defaults apply (the built-in container and entry points), with
-        a warning.
+        ``(PluginsConfig, directories)``: existing, resolved directories. If the
+        configuration cannot be loaded, the ``PluginsConfig`` defaults apply (the
+        built-in container and entry points), with a warning.
     """
     from milia_pipeline.config.config_loader import get_config_root
     from milia_pipeline.models._model_plugin_paths import (
@@ -1467,12 +1480,104 @@ def _configured_sources(config_path: Path | None = None) -> tuple[list[Path], bo
             f"Could not load plugin paths from config: {e}; using the built-in container "
             f"and installed entry points"
         )
-        return [builtin_model_plugins_directory()], PluginsConfig().discover_entry_points
+        return PluginsConfig(), [builtin_model_plugins_directory()]
 
     paths = resolve_model_plugin_paths(
         config.plugin_paths, config_root=config_root, include_builtin=config.include_builtin
     )
-    return paths, config.discover_entry_points
+    return config, paths
+
+
+# Process-wide automatic discovery: the first caller runs it, concurrent callers
+# wait for it, later callers get its result. The lock guards only this state.
+_auto_discovery_lock = threading.Lock()
+_auto_discovery: _LoadAttempt | None = None
+_auto_discovered: list[str] = []
+
+
+def ensure_model_plugins_discovered(config_path: Path | None = None) -> list[str]:
+    """
+    Discover and load the configured model plugins, once per process.
+
+    Called when models are built (``ModelFactory()``, HPO search-space filtering),
+    not at import time. Gated by ``models.plugins.enabled`` and ``auto_discover``;
+    sources, ``auto_validate`` and ``validation_level`` come from the same
+    configuration. The first call does the work; concurrent calls wait for it and
+    later calls return its result, whatever ``config_path`` they pass. A call made
+    by plugin code during that discovery returns ``[]`` (not reentrant).
+
+    Never raises: a discovery error is logged and gives ``[]``, and a plugin that
+    fails to load is logged and left out, so building models still works.
+
+    Args:
+        config_path: The configuration directory or file (default: ``./configs``).
+
+    Returns:
+        The names of the plugins loaded (their models are registered).
+    """
+    global _auto_discovery, _auto_discovered
+
+    with _auto_discovery_lock:
+        attempt = _auto_discovery
+        if attempt is None:
+            attempt = _auto_discovery = _LoadAttempt(owner=threading.get_ident())
+            owner = True
+        else:
+            owner = False
+
+    if not owner:
+        if attempt.owner == threading.get_ident() and not attempt.done.is_set():
+            logger.warning("Model plugin discovery was requested again while it runs; skipped")
+            return []
+        attempt.done.wait()
+        return list(_auto_discovered)
+
+    loaded: list[str] = []
+    try:
+        loaded = _discover_and_load_configured(config_path)
+    except Exception as e:
+        attempt.error = e
+        logger.error(f"Automatic model plugin discovery failed: {e}")
+    finally:
+        with _auto_discovery_lock:
+            _auto_discovered = loaded
+        attempt.done.set()
+    return list(loaded)
+
+
+def _discover_and_load_configured(config_path: Path | None) -> list[str]:
+    """Discover the configured plugins and load each enabled one; return those loaded."""
+    config, paths = _configured_plugins(config_path)
+    if not (config.enabled and config.auto_discover):
+        logger.debug("Automatic model plugin discovery is disabled by the configuration")
+        return []
+
+    loader = get_plugin_loader()
+    names = loader.discover_plugins(paths, config.auto_validate, config.validation_level)
+    if config.discover_entry_points:
+        names += loader.discover_entry_point_plugins(config.auto_validate, config.validation_level)
+
+    enabled = set(loader.list_plugins(enabled_only=True))
+    loaded = []
+    for name in dict.fromkeys(names):
+        if name not in enabled:
+            continue
+        try:
+            loader.load_plugin(name)
+        except Exception as e:
+            logger.error(f"Model plugin '{name}' not loaded: {e}")
+            continue
+        loaded.append(name)
+    logger.info(f"Automatic model plugin discovery: {len(loaded)} plugin(s) loaded")
+    return loaded
+
+
+def _reset_model_plugin_discovery() -> None:
+    """Forget automatic discovery, so the next ``ensure_model_plugins_discovered`` runs it (tests)."""
+    global _auto_discovery, _auto_discovered
+    with _auto_discovery_lock:
+        _auto_discovery = None
+        _auto_discovered = []
 
 
 def load_plugin(plugin_name: str, register_models: bool = True) -> bool:
@@ -1594,8 +1699,8 @@ def discover_and_load_plugins(
     """
     loader = get_plugin_loader()
 
-    # Discover plugins
-    plugin_names = loader.discover_plugins(
+    # Discover plugins (paths=None: the configured sources, as discover_plugins)
+    plugin_names = discover_plugins(
         paths=paths, auto_validate=auto_validate, validation_level=validation_level
     )
 
@@ -1825,4 +1930,6 @@ __all__ = [
     "get_plugin_summary",
     "safe_load_plugin",
     "safe_discover_plugins",
+    # Automatic discovery when models are built
+    "ensure_model_plugins_discovered",
 ]

@@ -962,14 +962,20 @@ def test_strict_turns_warnings_into_errors(tmp_path, loader):
     assert names["strict"] not in loader._plugins
 
 
-def test_current_discover_and_load_plugins_without_paths_fails(loader):
-    """Pins current behaviour; changed deliberately later.
+def test_discover_and_load_plugins_without_paths_uses_the_configured_sources(
+    tmp_path, loader, registry, monkeypatch
+):
+    """``paths=None`` means the configured sources, as for ``discover_plugins``."""
+    plugin_name, model_name = _unique("charplugin_"), _unique("CharNet")
+    _write_plugin(
+        tmp_path / "configured", "p", plugin_name, [_valid_model_entry(model_name, "CharNet")]
+    )
+    monkeypatch.setattr(
+        mps, "_configured_sources", lambda config_path=None: ([tmp_path / "configured"], False)
+    )
 
-    ``discover_and_load_plugins`` documents ``paths=None`` as "from config", but it
-    passes ``None`` to ``ModelPluginLoader.discover_plugins``, which iterates it.
-    """
-    with pytest.raises(TypeError):
-        mps.discover_and_load_plugins(paths=None)
+    assert mps.discover_and_load_plugins(paths=None) == {plugin_name: True}
+    assert registry.has_model(model_name)
 
 
 def test_v2_manifest_fields_reach_the_plugin_metadata(tmp_path, loader, milia_extras):
