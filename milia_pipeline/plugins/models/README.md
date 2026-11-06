@@ -30,6 +30,33 @@ Your own directories, including ones outside the package tree, go in
 exists only relative to the working directory still works, with a deprecation warning, until
 MILIA 2.0.0. A path that is not an existing directory is logged and skipped.
 
+## Distributing a model plugin as a package
+
+An installed distribution can provide a model plugin through the `milia.models` entry-point
+group. The entry point names a package that holds `plugin.yaml`, and its name must equal the
+manifest's `plugin_name`:
+
+```toml
+# pyproject.toml of the distribution
+[project.entry-points."milia.models"]
+my_plugin = "my_dist.milia_plugin"
+```
+
+```yaml
+# my_dist/milia_plugin/plugin.yaml
+schema_version: 2
+plugin_name: my_plugin
+# ... the other fields as in user_template/plugin.yaml.template
+models:
+  - name: MyNet
+    class: "my_dist.milia_plugin.model:MyNet"   # absolute import path
+```
+
+Include `plugin.yaml` in the distribution as package data. Entry-point plugins are discovered
+with the directories (directories first, so a directory plugin keeps a name both use) while
+`models.plugins.discover_entry_points` is `true` (the default); discovery imports the package,
+so install only plugins you trust. A failing entry point is logged and does not stop the others.
+
 ## Adding a model plugin
 
 Copy `user_template/` to a new `<your_category>/` directory, rename the `.template` files,

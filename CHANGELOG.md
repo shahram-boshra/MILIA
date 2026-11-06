@@ -16,8 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration directory itself, or the directory of a single configuration file (default `./configs`),
   as an absolute path.
 - `models.plugins.include_builtin` (default `true`) scans the built-in model plugin container
-  `milia_pipeline/plugins/models`, and `models.plugins.discover_entry_points` (default `true`) is reserved
-  for discovering plugins from installed distributions.
+  `milia_pipeline/plugins/models`.
+- Model plugins can be distributed as packages: an installed distribution declares an entry point in the
+  `milia.models` group naming a package that holds `plugin.yaml` (the entry-point name must equal the
+  manifest's `plugin_name`; `class` references are absolute import paths). These plugins are discovered
+  after the plugin directories, checked and registered the same way, while
+  `models.plugins.discover_entry_points` is `true` (the default). A failing entry point is logged and does
+  not stop the others. `ModelPluginLoader.discover_entry_point_plugins()` discovers them on their own.
 
 ### Changed
 

@@ -27,6 +27,7 @@ Version: 1.1.0
 import importlib
 import importlib.machinery
 import importlib.metadata
+import importlib.resources
 import importlib.util
 import keyword
 import logging
@@ -80,6 +81,11 @@ logger = logging.getLogger(__name__)
 # per plugin (``<namespace>.<plugin_name>.<module_path>``), so plugins never
 # share module names and ``sys.path`` is left unchanged.
 PLUGIN_MODULE_NAMESPACE = "milia_pipeline.models._loaded_plugins"
+
+# Entry-point group through which installed distributions provide model plugins.
+# Each entry point names a package holding ``plugin.yaml``; its name is the
+# ``plugin_name``.
+ENTRY_POINT_GROUP = "milia.models"
 
 
 def _create_plugin_package(package_name: str, location: Path) -> ModuleType:
@@ -340,6 +346,20 @@ def _same_plugin_dir(first: Path | None, second: Path | None) -> bool:
     return Path(first).resolve() == Path(second).resolve()
 
 
+def _plugin_source(metadata) -> str:
+    """Where a plugin was discovered: its entry point, or its directory."""
+    if metadata.entry_point is not None:
+        return f"entry point '{metadata.entry_point}'"
+    return str(metadata.plugin_path)
+
+
+def _same_plugin_source(first, second) -> bool:
+    """Whether two discoveries of a plugin name come from the same source."""
+    return first.entry_point == second.entry_point and _same_plugin_dir(
+        first.plugin_path, second.plugin_path
+    )
+
+
 def _import_plugin_module(plugin_name: str, plugin_dir: Path, module_path: str) -> ModuleType:
     """
     Import ``module_path`` from a plugin directory under the plugin's own package.
@@ -468,6 +488,9 @@ class ModelPluginMetadata(BaseModel):
         repository: Optional repository URL
         documentation: Optional documentation URL
         plugin_path: Path to plugin directory
+        entry_point: For a plugin from an installed distribution, its entry point
+            (``"<name> = <package>"``); its ``class`` references are absolute
+            import paths. ``None`` for a directory plugin.
         loaded: Whether plugin is loaded
         enabled: Whether plugin is enabled
         load_time: When plugin was loaded
@@ -493,6 +516,7 @@ class ModelPluginMetadata(BaseModel):
     repository: str | None = None
     documentation: str | None = None
     plugin_path: Path | None = None
+    entry_point: str | None = None
     requires_extra: str | None = None
     schema_version: int | None = None  # manifest schema version; None if not read from a manifest
     legacy_manifest: bool = False  # the manifest used the deprecated legacy format
@@ -630,66 +654,9 @@ class ModelPluginLoader:
                 try:
                     logger.debug(f"Discovering plugin from: {plugin_yaml}")
 
-                    # Load plugin metadata
                     metadata = self._load_plugin_metadata(plugin_yaml)
-
-                    # Compatibility gates, at every level and before validation: a
-                    # plugin for another MILIA, Python or PyG version, or whose
-                    # install extra is missing, is skipped with the reason.
-                    gate_failures = self._version_gate_failures(metadata)
-                    if gate_failures:
-                        logger.warning(
-                            f"Plugin '{metadata.plugin_name}' not registered: "
-                            f"{'; '.join(gate_failures)}"
-                        )
-                        continue
-
-                    if metadata.requires_extra:
-                        extra_problems = _extra_problems(metadata.requires_extra)
-                        if extra_problems:
-                            logger.info(
-                                f"Skipping plugin '{metadata.plugin_name}': optional extra "
-                                f"'{metadata.requires_extra}' not installed "
-                                f"({'; '.join(extra_problems)})"
-                            )
-                            continue
-
-                    # A plugin whose validation reports errors is never registered.
-                    if auto_validate:
-                        validation_result = self._validate_plugin(metadata, level=validation_level)
-
-                        if not validation_result["valid"]:
-                            logger.warning(
-                                f"Plugin '{metadata.plugin_name}' not registered: failed "
-                                f"validation: {validation_result['errors']}"
-                            )
-                            continue
-
-                    # Register plugin. A name is unique across all sources: the first
-                    # plugin found keeps it, and discovering the same directory again
-                    # keeps its current state.
-                    with self._lock:
-                        existing = self._plugins.get(metadata.plugin_name)
-                        if existing is None:
-                            self._plugins[metadata.plugin_name] = metadata
-                        elif not _same_plugin_dir(existing.plugin_path, metadata.plugin_path):
-                            raise PluginModelError(
-                                f"Duplicate plugin name '{metadata.plugin_name}': already "
-                                f"discovered at {existing.plugin_path}, ignoring "
-                                f"{metadata.plugin_path}",
-                                plugin_name=metadata.plugin_name,
-                                plugin_path=str(metadata.plugin_path),
-                            )
-                        else:
-                            logger.debug(f"Plugin '{metadata.plugin_name}' already discovered")
-                            discovered.append(metadata.plugin_name)
-                            continue
-
-                    discovered.append(metadata.plugin_name)
-                    logger.info(
-                        f"Discovered plugin '{metadata.plugin_name}' "
-                        f"with {len(metadata.model_declarations)} model(s)"
-                    )
+                    if self._admit_plugin(metadata, auto_validate, validation_level):
+                        discovered.append(metadata.plugin_name)
 
                 except Exception as e:
                     logger.error(f"Failed to discover plugin from {plugin_yaml}: {e}")
@@ -698,6 +665,167 @@ class ModelPluginLoader:
 
         logger.info(f"Plugin discovery complete: {len(discovered)} plugins found")
         return discovered
+
+    def discover_entry_point_plugins(
+        self, auto_validate: bool = True, validation_level: str = "standard"
+    ) -> list[str]:
+        """
+        Discover plugins provided by installed distributions.
+
+        Each entry point in the ``milia.models`` group names a package holding
+        ``plugin.yaml`` (for example ``my_plugin = "my_dist.milia_plugin"``); the
+        entry-point name must equal the manifest's ``plugin_name``, and the
+        manifest's ``class`` references are absolute import paths. Loading the
+        entry point imports that package. The plugin is then checked and
+        registered like a directory plugin.
+
+        A failing entry point is logged and skipped, so the others are still
+        discovered (re-raised at ``strict``, as for directory plugins).
+
+        Args:
+            auto_validate: Whether to validate plugins automatically
+            validation_level: Validation strictness (permissive, standard, strict)
+
+        Returns:
+            List of discovered plugin names
+        """
+        discovered = []
+        for entry_point in importlib.metadata.entry_points(group=ENTRY_POINT_GROUP):
+            try:
+                metadata = self._load_entry_point_metadata(entry_point)
+                if self._admit_plugin(metadata, auto_validate, validation_level):
+                    discovered.append(metadata.plugin_name)
+            except Exception as e:
+                logger.error(
+                    f"Failed to discover plugin from entry point "
+                    f"'{entry_point.name} = {entry_point.value}': {e}"
+                )
+                if validation_level == "strict":
+                    raise
+
+        logger.info(f"Entry-point plugin discovery complete: {len(discovered)} plugins found")
+        return discovered
+
+    def _load_entry_point_metadata(
+        self, entry_point: importlib.metadata.EntryPoint
+    ) -> ModelPluginMetadata:
+        """
+        Load plugin metadata from the package an entry point names.
+
+        Raises:
+            PluginModelError: If the entry point does not name a package holding
+                ``plugin.yaml``, the manifest is empty or not valid YAML, or its
+                ``plugin_name`` is not the entry-point name
+            PluginValidationError: If the manifest is not valid
+        """
+        reference = f"{entry_point.name} = {entry_point.value}"
+        if entry_point.attr:
+            raise PluginModelError(
+                f"Entry point '{reference}' must name a package, not an object in it",
+                plugin_name=entry_point.name,
+            )
+
+        package = entry_point.load()
+        if not hasattr(package, "__path__"):
+            raise PluginModelError(
+                f"Entry point '{reference}' must name a package holding plugin.yaml; "
+                f"'{entry_point.module}' is not a package",
+                plugin_name=entry_point.name,
+            )
+
+        manifest_file = importlib.resources.files(package) / "plugin.yaml"
+        if not manifest_file.is_file():
+            raise PluginModelError(
+                f"Entry point '{reference}': package '{entry_point.module}' has no plugin.yaml",
+                plugin_name=entry_point.name,
+            )
+
+        source = f"{entry_point.module}/plugin.yaml"
+        try:
+            data = yaml.safe_load(manifest_file.read_text(encoding="utf-8"))
+        except yaml.YAMLError as e:
+            raise PluginModelError(
+                f"Invalid YAML in {source}: {e}", plugin_name=entry_point.name
+            ) from e
+
+        # The package directory, when the distribution is installed on disk.
+        plugin_path = manifest_file.parent if isinstance(manifest_file, Path) else None
+        metadata = self._metadata_from_manifest(
+            data, source, plugin_path=plugin_path, entry_point=reference
+        )
+        if metadata.plugin_name != entry_point.name:
+            raise PluginModelError(
+                f"Entry point '{reference}': name '{entry_point.name}' does not match the "
+                f"manifest's plugin_name '{metadata.plugin_name}'",
+                plugin_name=entry_point.name,
+            )
+        return metadata
+
+    def _admit_plugin(
+        self, metadata: ModelPluginMetadata, auto_validate: bool, validation_level: str
+    ) -> bool:
+        """
+        Check a discovered plugin and register it.
+
+        Returns:
+            ``True`` if the plugin is registered (or was already discovered from the
+            same source); ``False`` if it was skipped, with the reason logged.
+
+        Raises:
+            PluginModelError: If another plugin already has this name
+        """
+        # Compatibility gates, at every level and before validation: a plugin for
+        # another MILIA, Python or PyG version, or whose install extra is missing,
+        # is skipped with the reason.
+        gate_failures = self._version_gate_failures(metadata)
+        if gate_failures:
+            logger.warning(
+                f"Plugin '{metadata.plugin_name}' not registered: {'; '.join(gate_failures)}"
+            )
+            return False
+
+        if metadata.requires_extra:
+            extra_problems = _extra_problems(metadata.requires_extra)
+            if extra_problems:
+                logger.info(
+                    f"Skipping plugin '{metadata.plugin_name}': optional extra "
+                    f"'{metadata.requires_extra}' not installed ({'; '.join(extra_problems)})"
+                )
+                return False
+
+        # A plugin whose validation reports errors is never registered.
+        if auto_validate:
+            validation_result = self._validate_plugin(metadata, level=validation_level)
+            if not validation_result["valid"]:
+                logger.warning(
+                    f"Plugin '{metadata.plugin_name}' not registered: failed "
+                    f"validation: {validation_result['errors']}"
+                )
+                return False
+
+        # Register plugin. A name is unique across all sources: the first plugin
+        # found keeps it, and discovering the same source again keeps its state.
+        with self._lock:
+            existing = self._plugins.get(metadata.plugin_name)
+            if existing is None:
+                self._plugins[metadata.plugin_name] = metadata
+            elif not _same_plugin_source(existing, metadata):
+                raise PluginModelError(
+                    f"Duplicate plugin name '{metadata.plugin_name}': already "
+                    f"discovered at {_plugin_source(existing)}, ignoring "
+                    f"{_plugin_source(metadata)}",
+                    plugin_name=metadata.plugin_name,
+                    plugin_path=str(metadata.plugin_path),
+                )
+            else:
+                logger.debug(f"Plugin '{metadata.plugin_name}' already discovered")
+                return True
+
+        logger.info(
+            f"Discovered plugin '{metadata.plugin_name}' "
+            f"with {len(metadata.model_declarations)} model(s)"
+        )
+        return True
 
     def _load_plugin_metadata(self, plugin_yaml: Path) -> ModelPluginMetadata:
         """
@@ -725,12 +853,32 @@ class ModelPluginLoader:
                 f"Invalid YAML in {plugin_yaml}: {e}", plugin_path=str(plugin_yaml)
             ) from e
 
-        if not data:
-            raise PluginModelError(
-                f"Empty plugin.yaml: {plugin_yaml}", plugin_path=str(plugin_yaml)
-            )
+        return self._metadata_from_manifest(data, plugin_yaml, plugin_path=plugin_yaml.parent)
 
-        manifest = parse_manifest(data, plugin_yaml)
+    def _metadata_from_manifest(
+        self,
+        data: Any,
+        source: Path | str,
+        plugin_path: Path | None,
+        entry_point: str | None = None,
+    ) -> ModelPluginMetadata:
+        """
+        Build plugin metadata from a loaded manifest.
+
+        Args:
+            data: The manifest as loaded from YAML
+            source: The manifest file, for messages and warnings
+            plugin_path: The plugin directory, if the plugin has one on disk
+            entry_point: The entry point, for a plugin from an installed distribution
+
+        Raises:
+            PluginValidationError: If the manifest is not valid
+            PluginModelError: If the manifest is empty
+        """
+        if not data:
+            raise PluginModelError(f"Empty plugin.yaml: {source}", plugin_path=str(source))
+
+        manifest = parse_manifest(data, source)
         if not manifest.models:
             logger.warning(f"Plugin '{manifest.plugin_name}' declares no models")
 
@@ -769,7 +917,8 @@ class ModelPluginLoader:
             model_declarations=model_declarations,
             dependencies=list(manifest.dependencies),
             homepage=manifest.homepage,
-            plugin_path=plugin_yaml.parent,
+            plugin_path=plugin_path,
+            entry_point=entry_point,
             requires_extra=manifest.requires_extra,
             schema_version=manifest.schema_version,
             legacy_manifest="schema_version" not in data,
@@ -965,7 +1114,8 @@ class ModelPluginLoader:
                 attempt = _LoadAttempt(owner=threading.get_ident())
                 self._loading[plugin_name] = attempt
                 declarations = list(metadata.model_declarations)
-                plugin_path = metadata.plugin_path
+                # An entry-point plugin's modules are imported by their absolute names.
+                plugin_path = None if metadata.entry_point is not None else metadata.plugin_path
                 pyg_requirement = metadata.pyg_version
                 owner = True
             elif attempt.owner == threading.get_ident():
@@ -1252,7 +1402,11 @@ def discover_plugins(
     Discover model plugins from paths.
 
     Args:
-        paths: List of paths to search (default: from config)
+        paths: List of paths to search. Default: the configured sources, that is
+            the directories from ``models.plugins`` and, when
+            ``discover_entry_points`` is true, the ``milia.models`` entry points of
+            installed distributions (directories first, so a directory plugin keeps
+            its name against an entry-point plugin). Given paths are searched alone.
         auto_validate: Whether to validate automatically
         validation_level: Validation strictness
 
@@ -1267,45 +1421,58 @@ def discover_plugins(
     """
     loader = get_plugin_loader()
 
-    if paths is None:
-        paths = _configured_plugin_paths()
+    if paths is not None:
+        return loader.discover_plugins(paths, auto_validate, validation_level)
 
-    return loader.discover_plugins(paths, auto_validate, validation_level)
+    paths, entry_points = _configured_sources()
+    discovered = loader.discover_plugins(paths, auto_validate, validation_level)
+    if entry_points:
+        discovered += loader.discover_entry_point_plugins(auto_validate, validation_level)
+    return discovered
 
 
 def _configured_plugin_paths(config_path: Path | None = None) -> list[Path]:
-    """
-    The model plugin directories the configuration selects.
+    """The model plugin directories the configuration selects (see ``_configured_sources``)."""
+    return _configured_sources(config_path)[0]
 
-    The built-in container (unless ``include_builtin`` is false) and the user
-    ``plugin_paths``, resolved against the configuration root.
+
+def _configured_sources(config_path: Path | None = None) -> tuple[list[Path], bool]:
+    """
+    The model plugin sources the configuration selects.
+
+    The directories are the built-in container (unless ``include_builtin`` is
+    false) and the user ``plugin_paths``, resolved against the configuration root.
 
     Args:
         config_path: The configuration directory or file (default: ``./configs``).
 
     Returns:
-        Existing, resolved directories. If the configuration cannot be loaded, only
-        the built-in container, with a warning.
+        ``(directories, discover_entry_points)``: existing, resolved directories,
+        and whether to discover entry-point plugins. If the configuration cannot be
+        loaded, the defaults apply (the built-in container and entry points), with
+        a warning.
     """
     from milia_pipeline.config.config_loader import get_config_root
     from milia_pipeline.models._model_plugin_paths import (
         builtin_model_plugins_directory,
         resolve_model_plugin_paths,
     )
-    from milia_pipeline.models.utils.config_bridge import get_plugins_config
+    from milia_pipeline.models.utils.config_bridge import PluginsConfig, get_plugins_config
 
     try:
         config = get_plugins_config(config_path)
         config_root = get_config_root(config_path)
     except Exception as e:
         logger.warning(
-            f"Could not load plugin paths from config: {e}; using the built-in container"
+            f"Could not load plugin paths from config: {e}; using the built-in container "
+            f"and installed entry points"
         )
-        return [builtin_model_plugins_directory()]
+        return [builtin_model_plugins_directory()], PluginsConfig().discover_entry_points
 
-    return resolve_model_plugin_paths(
+    paths = resolve_model_plugin_paths(
         config.plugin_paths, config_root=config_root, include_builtin=config.include_builtin
     )
+    return paths, config.discover_entry_points
 
 
 def load_plugin(plugin_name: str, register_models: bool = True) -> bool:
