@@ -801,6 +801,167 @@ def test_composability_is_recorded_and_never_blocks_registration(
         assert f"registered; {warning}" in caplog.text
 
 
+_LEVELS = ("permissive", "standard", "strict")
+
+
+@pytest.mark.parametrize("label", ["milia", "python", "torch_geometric"])
+def test_failed_version_gate_skips_the_plugin(tmp_path, loader, caplog, label):
+    """A ``requirements`` entry the installed version fails skips the plugin, at every level."""
+    plugin_name = _unique("charplugin_")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        extra={"requirements": {label: ">=99"}},
+    )
+
+    for level in _LEVELS:
+        for auto_validate in (True, False):
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                found = loader.discover_plugins(
+                    [tmp_path], auto_validate=auto_validate, validation_level=level
+                )
+            assert found == [] and plugin_name not in loader._plugins
+            assert f"'{plugin_name}' not registered: requires {label} >=99 (installed: " in (
+                caplog.text
+            )
+
+
+def test_version_gates_accept_an_installed_prerelease(tmp_path, loader, monkeypatch):
+    """An installed MILIA release candidate satisfies ``>=1.0`` (gates pass ``prereleases=True``).
+
+    Explicit, because the ``prereleases=None`` default changed in ``packaging`` 26.0.
+    """
+    import milia_pipeline
+
+    monkeypatch.setattr(milia_pipeline, "__version__", "1.19.0rc1")
+    plugin_name = _unique("charplugin_")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        extra={"requirements": {"milia": ">=1.0", "python": ">=3.10", "torch_geometric": ">=2.5"}},
+    )
+    assert loader.discover_plugins([tmp_path]) == [plugin_name]
+
+
+@pytest.fixture
+def milia_extras(tmp_path_factory, monkeypatch):
+    """A stand-in MILIA distribution with two extras, read through ``importlib.metadata``.
+
+    ``descriptors-cdk`` needs ``packaging`` (installed; declared in non-normalised
+    form); ``chem`` needs a distribution that is not installed. A base requirement
+    on a missing distribution must not count towards either extra.
+    """
+    site = tmp_path_factory.mktemp("site")
+    dist_info = site / "fake_milia-1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.4\n"
+        "Name: fake-milia\n"
+        "Version: 1.0\n"
+        'Requires-Dist: not-installed-base-dist; python_version >= "3"\n'
+        "Provides-Extra: Descriptors_CDK\n"
+        'Requires-Dist: packaging; extra == "descriptors_cdk"\n'
+        "Provides-Extra: chem\n"
+        'Requires-Dist: not-installed-chem-dist>=1; extra == "chem"\n'
+    )
+    monkeypatch.syspath_prepend(str(site))
+    monkeypatch.setattr(mps, "MILIA_DISTRIBUTION", "fake-milia")
+
+
+def test_installed_requires_extra_registers_the_plugin(tmp_path, loader, milia_extras):
+    """An installed extra passes; names compare in PEP 685 form; base requirements do not count."""
+    plugin_name = _unique("charplugin_")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        extra={"requires_extra": "descriptors-cdk"},
+    )
+    assert loader.discover_plugins([tmp_path]) == [plugin_name]
+
+
+@pytest.mark.parametrize(
+    ("extra_name", "distribution", "reason"),
+    [
+        ("chem", "fake-milia", "Missing required dependency: not-installed-chem-dist>=1"),
+        ("nope", "fake-milia", "fake-milia has no extra 'nope'"),
+        ("chem", "not-installed-milia", "cannot check extra 'chem': not-installed-milia is not"),
+    ],
+    ids=["extra-not-installed", "unknown-extra", "milia-not-a-distribution"],
+)
+def test_missing_requires_extra_skips_the_plugin(
+    tmp_path, loader, milia_extras, monkeypatch, caplog, extra_name, distribution, reason
+):
+    """A ``requires_extra`` that is not installed skips the plugin with the reason, at every level."""
+    monkeypatch.setattr(mps, "MILIA_DISTRIBUTION", distribution)
+    plugin_name = _unique("charplugin_")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        extra={"requires_extra": extra_name},
+    )
+
+    for level in _LEVELS:
+        caplog.clear()
+        with caplog.at_level(logging.INFO):
+            assert loader.discover_plugins([tmp_path], validation_level=level) == []
+        assert plugin_name not in loader._plugins
+        assert (
+            f"Skipping plugin '{plugin_name}': optional extra '{extra_name}' not installed"
+            in caplog.text
+        )
+        assert reason in caplog.text
+
+
+def test_plugin_with_validation_errors_is_never_registered(tmp_path, loader, caplog):
+    """An unsatisfied dependency is a validation error: the plugin is not registered at any level."""
+    plugin_name = _unique("charplugin_")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        extra={"dependencies": ["not-installed-dependency-dist"]},
+    )
+
+    for level in _LEVELS:
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            assert loader.discover_plugins([tmp_path], validation_level=level) == []
+        assert plugin_name not in loader._plugins
+        assert f"'{plugin_name}' not registered: failed validation: " in caplog.text
+        assert "Missing required dependency: not-installed-dependency-dist" in caplog.text
+
+
+def test_strict_turns_warnings_into_errors(tmp_path, loader):
+    """A code-scan finding is a warning: registered at ``standard``, rejected at ``strict``."""
+    names = {}
+    for level in ("standard", "strict"):
+        names[level] = _unique("charplugin_")
+        plugin_dir = _write_plugin(
+            tmp_path / level,
+            "p",
+            names[level],
+            [_valid_model_entry(_unique("CharNet"), "CharNet")],
+        )
+        with open(plugin_dir / "model.py", "a") as f:
+            f.write("\nVALUE = eval('1')\n")
+
+    assert loader.discover_plugins([tmp_path / "standard"]) == [names["standard"]]
+    assert any("eval" in w for w in loader._plugins[names["standard"]].validation_errors)
+
+    assert loader.discover_plugins([tmp_path / "strict"], validation_level="strict") == []
+    assert names["strict"] not in loader._plugins
+
+
 def test_current_discover_and_load_plugins_without_paths_fails(loader):
     """Pins current behaviour; changed deliberately later.
 
@@ -811,7 +972,7 @@ def test_current_discover_and_load_plugins_without_paths_fails(loader):
         mps.discover_and_load_plugins(paths=None)
 
 
-def test_v2_manifest_fields_reach_the_plugin_metadata(tmp_path, loader):
+def test_v2_manifest_fields_reach_the_plugin_metadata(tmp_path, loader, milia_extras):
     """Every schema version 2 field the loader keeps is read from the manifest."""
     plugin_name = _unique("charplugin_")
     entry = _valid_model_entry(_unique("CharNet"), "CharNet")

@@ -35,3 +35,8 @@ Scaffold for adding your own **model** plugin, symmetric with
 - Keep the plugin self-contained; declare third-party needs under `dependencies` as PEP 508
   requirements on distribution names (e.g. `"torch>=2.4"`, `"scikit-learn"`, not the import name
   `sklearn`). They are checked against the installed packages; nothing is imported.
+- A plugin is registered only if it is compatible and valid. When the installed MILIA, Python
+  or PyG version does not satisfy `requirements`, or the MILIA extra named by `requires_extra`
+  is not installed, the plugin is skipped and the log gives the reason. A plugin whose
+  validation reports errors (for example a missing dependency) is not registered at any
+  `validation_level`; `strict` also rejects warnings (for example a missing version).

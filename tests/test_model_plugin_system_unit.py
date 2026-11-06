@@ -144,7 +144,7 @@ def sample_plugin_yaml():
         "author": "Test Author",
         "description": "Test plugin for unit testing",
         "plugin_type": "user_experimental",
-        "milia_version": ">=4.0.0",
+        "milia_version": ">=1.0.0",
         "pyg_version": ">=2.0.0",
         "python_version": ">=3.8",
         "license": "MIT",
@@ -703,7 +703,7 @@ class TestModelPluginLoaderDiscovery:
                 "author": "Test",
                 "description": "Test",
                 "plugin_type": "user",
-                "milia_version": ">=4.0.0",
+                "milia_version": ">=1.0.0",
                 "pyg_version": ">=2.0.0",
                 "python_version": ">=3.8",
                 "license": "MIT",
@@ -721,7 +721,7 @@ class TestModelPluginLoaderDiscovery:
         assert "plugin_1" in result
 
     def test_discover_plugins_validation_failure_permissive(self, temp_plugin_dir):
-        """Test plugin discovery with validation failure in permissive mode."""
+        """A plugin whose validation reports errors is not registered, even in permissive mode."""
         plugin_dir = temp_plugin_dir / "bad_plugin"
         plugin_dir.mkdir()
 
@@ -731,7 +731,7 @@ class TestModelPluginLoaderDiscovery:
             "author": "Test",
             "description": "Test",
             "plugin_type": "user",
-            "milia_version": ">=4.0.0",
+            "milia_version": ">=1.0.0",
             "pyg_version": ">=2.0.0",
             "python_version": ">=3.8",
             "license": "MIT",
@@ -745,7 +745,8 @@ class TestModelPluginLoaderDiscovery:
         loader = ModelPluginLoader()
         result = loader.discover_plugins([temp_plugin_dir], validation_level="permissive")
 
-        assert "bad_plugin" in result
+        assert "bad_plugin" not in result
+        assert "bad_plugin" not in loader._plugins
 
     def test_discover_plugins_validation_failure_strict(self, temp_plugin_dir):
         """Test plugin discovery with validation failure in strict mode."""
@@ -758,7 +759,7 @@ class TestModelPluginLoaderDiscovery:
             "author": "Test",
             "description": "Test",
             "plugin_type": "user",
-            "milia_version": ">=4.0.0",
+            "milia_version": ">=1.0.0",
             "pyg_version": ">=2.0.0",
             "python_version": ">=3.8",
             "license": "MIT",
@@ -1014,14 +1015,13 @@ class TestModelPluginLoaderValidation:
         assert any("missing class_name" in e for e in errors)
 
     def test_validate_model_declaration_no_tasks(self, sample_model_declaration):
-        """Test model declaration validation with no supported tasks."""
+        """A declaration without tasks is valid: they are inferred at registration."""
         sample_model_declaration.supported_tasks = []
 
         loader = ModelPluginLoader()
         errors = loader._validate_model_declaration(sample_model_declaration)
 
-        assert len(errors) > 0
-        assert any("no supported tasks" in e for e in errors)
+        assert errors == []
 
     def test_validate_model_declaration_invalid_hyperparameters(self, sample_model_declaration):
         """Test model declaration validation with invalid hyperparameters."""
@@ -1666,7 +1666,7 @@ class TestThreadSafety:
                 "author": "Test",
                 "description": "Test",
                 "plugin_type": "user",
-                "milia_version": ">=4.0.0",
+                "milia_version": ">=1.0.0",
                 "pyg_version": ">=2.0.0",
                 "python_version": ">=3.8",
                 "license": "MIT",
@@ -1859,18 +1859,29 @@ class TestEdgeCases:
 
     def test_validation_strict_vs_standard(self, sample_plugin_metadata, sample_model_declaration):
         """Test strict mode puts warnings into errors, standard mode doesn't."""
-        sample_model_declaration.supported_tasks = []
-        sample_plugin_metadata.model_declarations = [sample_model_declaration]
+        sample_plugin_metadata.version = ""
 
         loader = ModelPluginLoader()
 
         result_standard = loader._validate_plugin(sample_plugin_metadata, level="standard")
         assert result_standard["valid"] is True
-        assert any("no supported tasks" in w for w in result_standard["warnings"])
+        assert "Missing version" in result_standard["warnings"]
 
         result_strict = loader._validate_plugin(sample_plugin_metadata, level="strict")
         assert result_strict["valid"] is False
-        assert any("no supported tasks" in e for e in result_strict["errors"])
+        assert "Missing version" in result_strict["errors"]
+        assert result_strict["warnings"] == []
+
+    def test_errors_do_not_depend_on_the_level(self, sample_plugin_metadata):
+        """An unsatisfied dependency is an error at every level."""
+        sample_plugin_metadata.dependencies = ["nonexistent_package"]
+
+        loader = ModelPluginLoader()
+
+        for level in ("permissive", "standard", "strict"):
+            result = loader._validate_plugin(sample_plugin_metadata, level=level)
+            assert result["valid"] is False
+            assert result["errors"] == ["Missing required dependency: nonexistent_package"]
 
     def test_plugin_path_none(self, sample_plugin_metadata):
         """Test security check when plugin_path is None."""

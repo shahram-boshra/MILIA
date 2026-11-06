@@ -110,6 +110,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `(x, edge_index, ...)` or `(z, pos, ...)`) or chained (its constructor lacks `in_channels` and
   `out_channels`/`hidden_channels`). The result is recorded as `composable`/`chainable` on the model
   declaration.
+- A model plugin's version requirements (`requirements.milia`, `.python`, `.torch_geometric`) are now
+  checked when plugins are discovered. A plugin that the installed MILIA, Python or PyG version does not
+  satisfy is not registered, and a warning gives the reason, for example
+  `requires milia >=2.0 (installed: 1.19.0)`. Before, the requirements were stored and never compared.
+  A pre-release counts as its version (`1.19.0rc1` satisfies `>=1.0`).
+- A model plugin's `requires_extra` is now honoured: when that MILIA extra (for example
+  `descriptors-cdk`) is not installed, the plugin is skipped with an info message, as descriptor plugins
+  already are. The extra's requirements are read from MILIA's installed metadata; nothing is imported.
+- A model plugin whose validation reports errors is no longer registered, at any `validation_level`.
+  Before, it was skipped only at `strict` and registered anyway at `standard` (the default) and
+  `permissive`. Errors are the same at every level: a missing, unsatisfied or invalid dependency, or an
+  incomplete model declaration. `validation_level` now decides only what else counts: `permissive` skips
+  the code scan, and `strict` also rejects a plugin with warnings (a missing version, no models, or a
+  code-scan finding). A model without `supported_tasks` is no longer reported, since its tasks are
+  inferred.
 
 ## [1.18.0] - 2026-10-14
 

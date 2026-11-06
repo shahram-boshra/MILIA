@@ -9,7 +9,8 @@ description: "Brief description of your model plugin"
 license: "MIT"  # Or your preferred license
 homepage: "https://github.com/yourusername/your-plugin"  # Optional
 
-# Version requirements (PEP 440 specifiers; each is optional)
+# Version requirements (PEP 440 specifiers; each is optional). A plugin the installed
+# versions do not satisfy is skipped at discovery, with the reason logged.
 requirements:
   milia: ">=1.19.0"
   python: ">=3.10"

@@ -42,8 +42,9 @@ from typing import Any
 import torch.nn as nn
 import yaml
 from packaging.requirements import InvalidRequirement, Requirement
-from packaging.specifiers import SpecifierSet
-from packaging.version import Version
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.utils import canonicalize_name
+from packaging.version import InvalidVersion, Version
 from pydantic import BaseModel, Field
 
 # Import model registry and categories
@@ -116,9 +117,14 @@ def _create_plugin_package(package_name: str, location: Path) -> ModuleType:
     return package
 
 
-def _check_requirement(requirement: str) -> str | None:
+def _check_requirement(requirement: str, environment: dict[str, str] | None = None) -> str | None:
     """
     Check one PEP 508 requirement against the installed distributions.
+
+    Args:
+        requirement: The PEP 508 requirement string.
+        environment: Marker variables overriding the current environment (for
+            example ``{"extra": "descriptors-cdk"}``).
 
     Returns:
         ``None`` if it is satisfied or its marker excludes this environment;
@@ -130,7 +136,7 @@ def _check_requirement(requirement: str) -> str | None:
         reason = str(e).splitlines()[0] if str(e) else type(e).__name__
         return f"Invalid dependency specifier: {requirement!r} ({reason})"
 
-    if req.marker is not None and not req.marker.evaluate():
+    if req.marker is not None and not req.marker.evaluate(environment):
         return None
 
     try:
@@ -141,6 +147,87 @@ def _check_requirement(requirement: str) -> str | None:
     if not req.specifier.contains(installed, prereleases=True):
         return f"Unsatisfied dependency: {requirement} (installed: {req.name} {installed})"
     return None
+
+
+# The distribution whose optional extras a plugin's ``requires_extra`` names.
+MILIA_DISTRIBUTION = "milia-py"
+
+
+def _installed_versions() -> dict[str, str | None]:
+    """
+    The versions the ``requirements`` gates are checked against (``None`` = not installed).
+
+    MILIA's is its ``__version__`` (the single source of the package version);
+    Python's is ``major.minor.micro``, as pip checks ``Requires-Python``;
+    PyG's is read from its installed distribution metadata, without importing it.
+    """
+    import milia_pipeline
+
+    try:
+        pyg = importlib.metadata.version("torch_geometric")
+    except importlib.metadata.PackageNotFoundError:
+        pyg = None
+    return {
+        "milia": getattr(milia_pipeline, "__version__", None),
+        "python": ".".join(str(part) for part in sys.version_info[:3]),
+        "torch_geometric": pyg,
+    }
+
+
+def _version_gate(label: str, specifier: str, installed: str | None) -> str | None:
+    """
+    Check one ``requirements`` entry (a PEP 440 specifier) against an installed version.
+
+    Returns:
+        ``None`` if it is satisfied or empty (no constraint); otherwise the reason.
+    """
+    if not specifier:
+        return None
+    if installed is None:
+        return f"requires {label} {specifier}, which is not installed"
+    try:
+        satisfied = SpecifierSet(specifier).contains(Version(installed), prereleases=True)
+    except (InvalidSpecifier, InvalidVersion) as e:
+        return f"cannot check {label} {specifier!r} against {installed} ({e})"
+    if not satisfied:
+        return f"requires {label} {specifier} (installed: {installed})"
+    return None
+
+
+def _extra_problems(extra: str) -> list[str]:
+    """
+    Check that MILIA's optional extra ``extra`` is installed.
+
+    The extra's requirements are read from MILIA's distribution metadata: the
+    entries whose marker holds for ``extra == <extra>`` but not without it. Each
+    is checked like a ``dependencies`` entry (nothing is imported). Extra names
+    compare in PEP 685 normalised form.
+
+    Returns:
+        One message per problem; empty if the extra is satisfied.
+    """
+    try:
+        distribution = importlib.metadata.distribution(MILIA_DISTRIBUTION)
+    except importlib.metadata.PackageNotFoundError:
+        return [f"cannot check extra '{extra}': {MILIA_DISTRIBUTION} is not installed"]
+
+    declared = distribution.metadata.get_all("Provides-Extra") or []
+    provided = {canonicalize_name(name) for name in declared}
+    if canonicalize_name(extra) not in provided:
+        return [f"{MILIA_DISTRIBUTION} has no extra '{extra}'"]
+
+    problems = []
+    for requirement in distribution.requires or []:
+        try:
+            marker = Requirement(requirement).marker
+        except InvalidRequirement:
+            continue  # not ours to report: the installer accepted MILIA's metadata
+        if marker is None or marker.evaluate({"extra": ""}):
+            continue  # a base requirement, not part of the extra
+        problem = _check_requirement(requirement, {"extra": extra})
+        if problem:
+            problems.append(problem)
+    return problems
 
 
 _FORWARD_CONVENTIONS = (("x", "edge_index"), ("z", "pos"))
@@ -512,10 +599,15 @@ class ModelPluginLoader:
         Searches for plugin.yaml files in subdirectories and loads
         the metadata. Optionally validates plugins before registration.
 
+        A plugin is not registered (and is logged with the reason) when its
+        ``requirements`` exclude the installed MILIA, Python or PyG version, when
+        its ``requires_extra`` is not installed, or when validation reports errors.
+
         Args:
             paths: List of paths to search for plugins
             auto_validate: Whether to validate plugins automatically
-            validation_level: Validation strictness (permissive, standard, strict)
+            validation_level: Validation strictness (permissive, standard, strict);
+                see ``_validate_plugin``
 
         Returns:
             List of discovered plugin names
@@ -541,17 +633,37 @@ class ModelPluginLoader:
                     # Load plugin metadata
                     metadata = self._load_plugin_metadata(plugin_yaml)
 
-                    # Validate if requested
+                    # Compatibility gates, at every level and before validation: a
+                    # plugin for another MILIA, Python or PyG version, or whose
+                    # install extra is missing, is skipped with the reason.
+                    gate_failures = self._version_gate_failures(metadata)
+                    if gate_failures:
+                        logger.warning(
+                            f"Plugin '{metadata.plugin_name}' not registered: "
+                            f"{'; '.join(gate_failures)}"
+                        )
+                        continue
+
+                    if metadata.requires_extra:
+                        extra_problems = _extra_problems(metadata.requires_extra)
+                        if extra_problems:
+                            logger.info(
+                                f"Skipping plugin '{metadata.plugin_name}': optional extra "
+                                f"'{metadata.requires_extra}' not installed "
+                                f"({'; '.join(extra_problems)})"
+                            )
+                            continue
+
+                    # A plugin whose validation reports errors is never registered.
                     if auto_validate:
                         validation_result = self._validate_plugin(metadata, level=validation_level)
 
                         if not validation_result["valid"]:
                             logger.warning(
-                                f"Plugin '{metadata.plugin_name}' failed validation: "
-                                f"{validation_result['errors']}"
+                                f"Plugin '{metadata.plugin_name}' not registered: failed "
+                                f"validation: {validation_result['errors']}"
                             )
-                            if validation_level == "strict":
-                                continue
+                            continue
 
                     # Register plugin. A name is unique across all sources: the first
                     # plugin found keeps it, and discovering the same directory again
@@ -673,12 +785,19 @@ class ModelPluginLoader:
         """
         Validate plugin metadata and requirements.
 
+        Errors are the same at every level: a missing ``plugin_name``, an invalid,
+        missing or unsatisfied dependency, and an incomplete model declaration. A
+        plugin with errors is never registered. Warnings: a missing version, no
+        models, and code-scan findings. The level only decides what else counts:
+        ``permissive`` skips the code scan, and ``strict`` turns every warning into
+        an error.
+
         Args:
             metadata: Plugin metadata to validate
             level: Validation level (permissive, standard, strict)
 
         Returns:
-            Dictionary with validation results
+            ``{"valid": bool, "errors": [str], "warnings": [str]}``
         """
         errors = []
         warnings = []
@@ -695,34 +814,47 @@ class ModelPluginLoader:
 
         # Validate dependencies
         dep_result = self._validate_dependencies(metadata)
-        if not dep_result["satisfied"]:
-            if level == "strict":
-                errors.extend(dep_result["missing"])
-            else:
-                warnings.extend(dep_result["missing"])
+        errors.extend(dep_result["missing"])
 
         # Validate model declarations
         for decl in metadata.model_declarations:
-            decl_errors = self._validate_model_declaration(decl)
-            if decl_errors:
-                if level == "strict":
-                    errors.extend(decl_errors)
-                else:
-                    warnings.extend(decl_errors)
+            errors.extend(self._validate_model_declaration(decl))
 
         # Security checks
         if level in ["standard", "strict"]:
-            security_result = self._security_check(metadata)
-            if security_result["issues"]:
-                if level == "strict":
-                    errors.extend(security_result["issues"])
-                else:
-                    warnings.extend(security_result["issues"])
+            warnings.extend(self._security_check(metadata)["issues"])
+
+        if level == "strict":
+            errors.extend(warnings)
+            warnings = []
 
         # Store validation errors in metadata
         metadata.validation_errors = errors + warnings
 
         return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
+
+    def _version_gate_failures(self, metadata: ModelPluginMetadata) -> list[str]:
+        """
+        Check the plugin's ``requirements`` against the installed versions.
+
+        Each is a PEP 440 specifier, checked with
+        ``SpecifierSet(spec).contains(Version(v), prereleases=True)``; ``""`` is no
+        constraint.
+
+        Returns:
+            One reason per failed gate; empty if the plugin is compatible.
+        """
+        installed = _installed_versions()
+        gates = (
+            ("milia", metadata.milia_version),
+            ("python", metadata.python_version),
+            ("torch_geometric", metadata.pyg_version),
+        )
+        return [
+            reason
+            for label, specifier in gates
+            if (reason := _version_gate(label, specifier, installed[label])) is not None
+        ]
 
     def _validate_dependencies(self, metadata: ModelPluginMetadata) -> dict[str, Any]:
         """
@@ -758,9 +890,6 @@ class ModelPluginLoader:
 
         if not declaration.module_path:
             errors.append(f"Model '{declaration.name}' missing module_path")
-
-        if not declaration.supported_tasks:
-            errors.append(f"Model '{declaration.name}' declares no supported tasks")
 
         # Validate hyperparameter schema
         for param_name, param_schema in declaration.hyperparameters.items():
