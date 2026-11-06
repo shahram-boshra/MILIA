@@ -149,6 +149,17 @@ def test_v2_rejects_unknown_keys(path):
         (("dependencies",), ["bad spec !!"], "dependencies"),
         (("requires_extra",), "Descriptors_CDK", "requires_extra"),
         (("plugin_type",), "user_experimental", "plugin_type"),
+        (("models", 0, "hyperparameters"), {"hidden_channels": 32}, "models.0.hyperparameters"),
+        (
+            ("models", 0, "hyperparameters"),
+            {"hidden_channels": {"default": 32, "step": 2}},
+            "models.0.hyperparameters",
+        ),
+        (
+            ("models", 0, "hyperparameters"),
+            {"hidden_channels": {"type": "int"}},
+            "models.0.hyperparameters",
+        ),
     ],
 )
 def test_v2_rejects_invalid_values_with_the_field_location(path, value, location):
@@ -264,6 +275,23 @@ def test_legacy_key_is_mapped_and_warns_against_the_manifest_file(legacy, check)
 
     assert check(manifest)
     assert record and all(w.filename == SOURCE for w in record)
+
+
+def test_legacy_hyperparameter_forms_load_with_a_warning():
+    """A legacy bare value becomes ``{default: value}``; an unknown type is kept, with a warning."""
+    legacy = _legacy_manifest(
+        models=[_model(hyperparameters={"hidden": 64, "depth": {"type": "int"}})]
+    )
+
+    with pytest.warns(DeprecationWarning) as record:
+        manifest = parse_manifest(legacy, SOURCE)
+
+    assert manifest.models[0].hyperparameters == {
+        "hidden": {"default": 64},
+        "depth": {"type": "int"},
+    }
+    messages = " ".join(str(w.message) for w in record)
+    assert "bare value is read as {default: 64}" in messages and "unknown type 'int'" in messages
 
 
 def test_legacy_manifest_without_class_keys_is_rejected():

@@ -435,6 +435,8 @@ class TestModelDeclaration:
             "min_pyg_version",
             "reference_paper",
             "reference_url",
+            "composable",
+            "chainable",
         }
         assert set(result.keys()) == expected_fields
         assert result["name"] == "TestModel"

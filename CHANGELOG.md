@@ -94,6 +94,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Model plugin dependencies with a version specifier (for example `torch>=2.0`) are no longer reported as
   missing when they are installed. The check also reports an installed version that does not satisfy the
   specifier, and an invalid requirement.
+- Plugin models are registered with complete metadata, built from the model class the same way as for PyG
+  models (constructor and `forward` parameters, generated hyperparameter schema), with the manifest's
+  declarations on top. Before, the metadata had no constructor parameters, so the factory dropped
+  `in_channels`, `out_channels` and every other argument the manifest did not declare, and plugin models
+  could not be chained in `sequential` or `hierarchical` ensembles. Omitted `supported_tasks` and
+  `description` are now inferred from the class; `reference` and the plugin's `torch_geometric` lower bound
+  reach the model metadata.
+- Manifest hyperparameter overrides are validated: each is a mapping of the factory's schema keys (`type`,
+  `required`, `default`, `min`, `max`, `options`, `description`) with a known `type`, and must name a
+  constructor parameter. Legacy manifests keep loading their bare values (read as `default`) and unknown
+  types, with a deprecation warning.
+- When a plugin model is registered, MILIA checks the conventions ensembles rely on and logs a warning,
+  without blocking registration, if the model cannot be composed (its `forward` does not take
+  `(x, edge_index, ...)` or `(z, pos, ...)`) or chained (its constructor lacks `in_channels` and
+  `out_channels`/`hidden_channels`). The result is recorded as `composable`/`chainable` on the model
+  declaration.
 
 ## [1.18.0] - 2026-10-14
 

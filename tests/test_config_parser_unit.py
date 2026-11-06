@@ -17,6 +17,7 @@ Tests configuration parsing functionality including:
 This is a PRODUCTION-READY test suite with comprehensive coverage.
 """
 
+import importlib
 import sys
 from pathlib import Path
 
@@ -177,10 +178,15 @@ def teardown_module(module):
                 # Remove mock module
                 del sys.modules[module_name]
 
-    # Restore config_parser if it was reloaded during setup_module
+    # Restore config_parser if it was reloaded during setup_module. importlib.reload
+    # re-executes the module in place (its dictionary is kept), so the saved object is
+    # the reloaded one and still holds the mocks: reload it again now that the real
+    # modules are back, so every function other modules imported from it (for example
+    # model_factory's parse_ensemble) sees the real ModelComposer again.
     config_parser_key = "milia_pipeline.models.builders.config_parser"
     if config_parser_key in _original_modules:
         sys.modules[config_parser_key] = _original_modules[config_parser_key]
+        importlib.reload(sys.modules[config_parser_key])
 
 
 # =============================================================================

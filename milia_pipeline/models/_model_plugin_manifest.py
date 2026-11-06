@@ -53,6 +53,13 @@ KNOWN_TASKS = frozenset(
     }
 )
 
+# Hyperparameter schema keys and types the model factory validates against
+# (``factory/model_factory.py``, ``ModelValidator.validate_hyperparameters``).
+HYPERPARAMETER_KEYS = frozenset(
+    {"type", "required", "default", "min", "max", "options", "description"}
+)
+HYPERPARAMETER_TYPES = frozenset({"integer", "float", "string", "boolean", "array", "module"})
+
 PLUGIN_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # Normalised extra name (PEP 685).
@@ -129,9 +136,10 @@ class ModelEntry(BaseModel):
     requires_edge_features: bool = False
     requires_edge_weights: bool = False
     supports_heterogeneous: bool = False
-    # Overrides of the introspected schema, in the registry's metadata format: a
-    # parameter name maps to a default value or to a schema mapping.
-    hyperparameters: dict[str, Any] = Field(default_factory=dict)
+    # Overrides of the introspected schema: parameter name -> factory schema mapping
+    # (HYPERPARAMETER_KEYS). Each must name a constructor parameter (checked when the
+    # model is registered). Legacy manifests may give a bare default value.
+    hyperparameters: dict[str, dict[str, Any]] = Field(default_factory=dict)
     reference: ModelReference = Field(default_factory=ModelReference)
 
     @field_validator("name")
@@ -159,6 +167,39 @@ class ModelEntry(BaseModel):
         if value not in allowed:
             raise ValueError(f"unknown category {value!r}; expected one of {allowed}")
         return value
+
+    @field_validator("hyperparameters", mode="before")
+    @classmethod
+    def _valid_hyperparameters(cls, value: Any, info: ValidationInfo) -> Any:
+        if not isinstance(value, dict):
+            return value  # the field's type check reports it
+        result = {}
+        for name, override in value.items():
+            if not isinstance(override, dict):
+                if not _is_legacy(info):
+                    raise ValueError(
+                        f"{name!r}: must be a mapping of {sorted(HYPERPARAMETER_KEYS)}, "
+                        f"e.g. {{default: {override!r}}}"
+                    )
+                _deprecated(
+                    f"hyperparameter {name!r}: a bare value is read as {{default: {override!r}}}.",
+                    info,
+                )
+                override = {"default": override}
+            problems = []
+            unknown = sorted(set(override) - HYPERPARAMETER_KEYS)
+            if unknown:
+                problems.append(f"unknown key(s) {unknown}; allowed: {sorted(HYPERPARAMETER_KEYS)}")
+            if "type" in override and override["type"] not in HYPERPARAMETER_TYPES:
+                problems.append(
+                    f"unknown type {override['type']!r}; allowed: {sorted(HYPERPARAMETER_TYPES)}"
+                )
+            if problems and not _is_legacy(info):
+                raise ValueError(f"{name!r}: " + "; ".join(problems))
+            for problem in problems:  # legacy: loaded as before (the factory does not check them)
+                _deprecated(f"hyperparameter {name!r}: {problem}.", info)
+            result[name] = dict(override)
+        return result
 
     @field_validator("supported_tasks")
     @classmethod

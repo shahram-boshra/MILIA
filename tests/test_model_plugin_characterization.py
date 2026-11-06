@@ -613,13 +613,8 @@ def test_factory_builds_registered_plugin_model(tmp_path, loader, registry):
     assert out.shape == (2, 1)
 
 
-def test_current_factory_drops_undeclared_plugin_model_channels(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later.
-
-    The loader's metadata has no constructor parameters, so the factory passes only the
-    manifest's declared hyperparameters; ``in_channels`` and ``out_channels`` fall back to
-    the class defaults.
-    """
+def test_factory_passes_plugin_model_channels(tmp_path, loader, registry):
+    """Plugin metadata has the constructor parameters, so every channel reaches the class."""
     from milia_pipeline.models.factory.model_factory import ModelFactory
 
     plugin_name = _unique("charplugin_")
@@ -634,9 +629,176 @@ def test_current_factory_drops_undeclared_plugin_model_channels(tmp_path, loader
         task_type="graph_regression",
     )
 
-    assert registry.get_metadata(model_name).parameters == {}
-    assert model.model.lin1.in_features == 4  # class default, not 6
-    assert model.model.out_channels == 1  # class default, not 3
+    assert set(registry.get_metadata(model_name).parameters) == {
+        "in_channels",
+        "hidden_channels",
+        "out_channels",
+    }
+    assert model.model.lin1.in_features == 6
+    assert model.model.out_channels == 3
+
+
+def test_plugin_models_chain_in_a_sequential_ensemble(tmp_path, loader):
+    """Two plugin models chain dimensions in a sequential ensemble and run forward."""
+    import torch
+    from torch_geometric.data import Batch, Data
+
+    from milia_pipeline.models.factory.model_factory import ModelFactory
+
+    plugin_name = _unique("charplugin_")
+    first, second = _unique("FirstNet"), _unique("SecondNet")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(first, "FirstNet"), _valid_model_entry(second, "SecondNet")],
+    )
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+    config = {
+        "strategy": "sequential",
+        "models": [
+            {
+                "name": first,
+                "hyperparameters": {"in_channels": 4, "hidden_channels": 8, "out_channels": 6},
+            },
+            {"name": second, "hyperparameters": {"hidden_channels": 8, "out_channels": 1}},
+        ],
+    }
+
+    model = ModelFactory().create_model(
+        name="ensemble", hyperparameters={"ensemble_config": config}, task_type="graph_regression"
+    )
+
+    edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]])
+    batch = Batch.from_data_list(
+        [Data(x=torch.randn(3, 4), edge_index=edge_index) for _ in range(2)]
+    )
+    out = model(batch.x, batch.edge_index, batch=batch.batch)
+    assert out.shape == (2, 1)
+
+
+def test_omitted_tasks_are_inferred_and_declared_tasks_win(tmp_path, loader, registry):
+    """Without ``supported_tasks`` the tasks are inferred from the class."""
+    plugin_name = _unique("charplugin_")
+    inferred, declared = _unique("InferNet"), _unique("DeclNet")
+    entry = _valid_model_entry(inferred, "InferNet")
+    del entry["supported_tasks"]
+    _write_plugin(tmp_path, "p", plugin_name, [entry, _valid_model_entry(declared, "DeclNet")])
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+
+    tasks = registry.get_metadata(inferred).supported_tasks
+    assert "graph_regression" in tasks and len(tasks) > 1
+    assert registry.get_metadata(declared).supported_tasks == ["graph_regression"]
+
+
+def test_manifest_fields_override_the_introspected_metadata(tmp_path, loader, registry):
+    """Manifest declarations are merged on top of the introspected metadata."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    entry = _valid_model_entry(model_name, "CharNet")
+    entry["hyperparameters"] = {"hidden_channels": {"min": 4, "max": 64}}
+    entry["reference"] = {"paper": "Doe 2026", "url": "https://example.org/paper"}
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [entry],
+        extra={"requirements": {"torch_geometric": ">=2.5"}},
+    )
+    loader.discover_plugins([tmp_path])
+    loader.load_plugin(plugin_name)
+
+    metadata = registry.get_metadata(model_name)
+    assert metadata.hyperparameters["hidden_channels"] == {
+        "type": "integer",
+        "required": False,
+        "default": 8,
+        "min": 4,
+        "max": 64,
+    }
+    assert metadata.hyperparameters["in_channels"]["default"] == 4  # introspected, not declared
+    assert metadata.description == "characterization model"
+    assert (metadata.paper_title, metadata.paper_url) == ("Doe 2026", "https://example.org/paper")
+    assert metadata.min_pyg_version == "2.5"
+
+
+def test_override_of_an_unknown_parameter_is_rejected(tmp_path, loader, registry):
+    """A hyperparameter override must name a constructor parameter."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    entry = _valid_model_entry(model_name, "CharNet")
+    entry["hyperparameters"] = {"hiden_channels": {"default": 16}}
+    _write_plugin(tmp_path, "p", plugin_name, [entry])
+    loader.discover_plugins([tmp_path])
+
+    with pytest.raises(exceptions.PluginError) as caught:
+        loader.load_plugin(plugin_name)
+
+    assert isinstance(caught.value.__cause__, exceptions.PluginModelError)
+    assert "['hiden_channels']" in str(caught.value)
+    assert not registry.has_model(model_name)
+
+
+_NOT_CHAINABLE_SOURCE = """
+from torch import nn
+
+
+class {class_name}(nn.Module):
+    def __init__(self, width: int = 4):
+        super().__init__()
+        self.lin = nn.Linear(width, 1)
+
+    def forward(self, x, edge_index, batch=None):
+        return self.lin(x)
+"""
+
+_NOT_COMPOSABLE_SOURCE = """
+from torch import nn
+
+
+class {class_name}(nn.Module):
+    def __init__(self, in_channels: int = 4, out_channels: int = 1):
+        super().__init__()
+        self.lin = nn.Linear(in_channels, out_channels)
+
+    def forward(self, data):
+        return self.lin(data.x)
+"""
+
+
+@pytest.mark.parametrize(
+    ("source", "composable", "chainable", "warning"),
+    [
+        (None, True, True, None),
+        (_NOT_CHAINABLE_SOURCE, True, False, "not chainable"),
+        (_NOT_COMPOSABLE_SOURCE, False, False, "not composable"),
+    ],
+    ids=["follows-conventions", "constructor-not-chainable", "forward-not-composable"],
+)
+def test_composability_is_recorded_and_never_blocks_registration(
+    tmp_path, loader, registry, caplog, source, composable, chainable, warning
+):
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    entry = _valid_model_entry(model_name, "CharNet")
+    entry["hyperparameters"] = {}
+    plugin_dir = _write_plugin(tmp_path, "p", plugin_name, [entry])
+    if source is not None:
+        (plugin_dir / "model.py").write_text(source.format(class_name="CharNet"))
+    loader.discover_plugins([tmp_path])
+
+    with caplog.at_level(logging.WARNING):
+        assert loader.load_plugin(plugin_name) is True
+
+    declaration = loader._plugins[plugin_name].model_declarations[0]
+    assert (declaration.composable, declaration.chainable) == (composable, chainable)
+    assert registry.has_model(model_name)
+    if warning is None:
+        assert "not chainable" not in caplog.text and "not composable" not in caplog.text
+    else:
+        assert f"registered; {warning}" in caplog.text
 
 
 def test_current_discover_and_load_plugins_without_paths_fails(loader):

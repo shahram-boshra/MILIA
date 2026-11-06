@@ -42,12 +42,18 @@ from typing import Any
 import torch.nn as nn
 import yaml
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 from pydantic import BaseModel, Field
 
 # Import model registry and categories
 try:
     from milia_pipeline.models.registry.model_registry import ModelRegistry, registry
-    from milia_pipeline.models.registry.pyg_introspector import ModelCategory, ModelMetadata
+    from milia_pipeline.models.registry.pyg_introspector import (
+        ModelCategory,
+        ModelMetadata,
+        build_metadata_for_class,
+    )
 
     MODELS_AVAILABLE = True
 except ImportError:
@@ -56,6 +62,7 @@ except ImportError:
     registry = None
     ModelMetadata = None
     ModelCategory = None
+    build_metadata_for_class = None
 
 from milia_pipeline.exceptions import (
     PluginDependencyError,
@@ -134,6 +141,100 @@ def _check_requirement(requirement: str) -> str | None:
     if not req.specifier.contains(installed, prereleases=True):
         return f"Unsatisfied dependency: {requirement} (installed: {req.name} {installed})"
     return None
+
+
+_FORWARD_CONVENTIONS = (("x", "edge_index"), ("z", "pos"))
+_CHAINED_OUTPUT_PARAMETERS = ("out_channels", "hidden_channels")
+
+
+def _min_version(specifier: str) -> str | None:
+    """The highest version a ``>=``, ``~=`` or ``==`` clause of ``specifier`` requires."""
+    if not specifier:
+        return None
+    bounds = [
+        Version(clause.version)
+        for clause in SpecifierSet(specifier)
+        if clause.operator in (">=", "~=", "==") and "*" not in clause.version
+    ]
+    return str(max(bounds)) if bounds else None
+
+
+def _plugin_model_metadata(
+    declaration: "ModelDeclaration", model_class: type, import_path: str, pyg_requirement: str
+):
+    """
+    Build a plugin model's metadata: introspected from the class, then the manifest on top.
+
+    The class gives ``parameters``, ``forward_parameters``, the generated
+    ``hyperparameters`` schema and inferred defaults, exactly as for PyG models.
+    The manifest's declarations override them; ``supported_tasks`` and
+    ``description`` are inferred when the manifest leaves them out. The merge is
+    validated as a whole (``model_validate``; ``model_copy(update=...)`` would
+    skip validation).
+
+    Raises:
+        PluginModelError: If a hyperparameter override names a parameter the
+            constructor does not have
+    """
+    base = build_metadata_for_class(declaration.name, model_class, import_path)
+
+    unknown = sorted(
+        name
+        for name in declaration.hyperparameters
+        if name not in base.parameters and not base.accepts_kwargs
+    )
+    if unknown:
+        raise PluginModelError(
+            f"Hyperparameter override(s) {unknown} for model '{declaration.name}' are not "
+            f"parameters of {model_class.__name__}.__init__ "
+            f"(parameters: {sorted(base.parameters)})",
+            plugin_name=declaration.plugin_name,
+            model_name=declaration.name,
+        )
+    hyperparameters = dict(base.hyperparameters)
+    for name, override in declaration.hyperparameters.items():
+        hyperparameters[name] = {**hyperparameters.get(name, {}), **override}
+
+    overrides: dict[str, Any] = {
+        "category": declaration.category,
+        "hyperparameters": hyperparameters,
+        "requires_edge_index": declaration.requires_edge_index,
+        "requires_edge_features": declaration.requires_edge_features,
+        "requires_edge_weights": declaration.requires_edge_weights,
+        "supports_heterogeneous": declaration.supports_heterogeneous,
+    }
+    if declaration.supported_tasks:
+        overrides["supported_tasks"] = declaration.supported_tasks
+    if declaration.description:
+        overrides["description"] = declaration.description
+    if declaration.reference_paper:
+        overrides["paper_title"] = declaration.reference_paper
+    if declaration.reference_url:
+        overrides["paper_url"] = declaration.reference_url
+    min_pyg = declaration.min_pyg_version or _min_version(pyg_requirement)
+    if min_pyg:
+        overrides["min_pyg_version"] = min_pyg
+
+    return ModelMetadata.model_validate({**dict(base), **overrides})
+
+
+def _composability(metadata) -> tuple[bool, bool]:
+    """
+    Whether a model follows the composer's conventions (blueprint contract).
+
+    Returns:
+        ``(composable, chainable)``: ``composable`` when the required ``forward``
+        parameters are ``(x, edge_index)`` or ``(z, pos)`` (optional ones may
+        follow); ``chainable`` when it is composable and the constructor accepts
+        ``in_channels`` and ``out_channels`` or ``hidden_channels`` (or ``**kwargs``).
+    """
+    required = tuple(name for name, info in metadata.forward_parameters.items() if info.required)
+    composable = required in _FORWARD_CONVENTIONS
+    parameters = metadata.parameters
+    constructor_chains = metadata.accepts_kwargs or (
+        "in_channels" in parameters and any(p in parameters for p in _CHAINED_OUTPUT_PARAMETERS)
+    )
+    return composable, composable and constructor_chains
 
 
 @dataclass
@@ -234,6 +335,9 @@ class ModelDeclaration(BaseModel):
     min_pyg_version: str | None = None
     reference_paper: str | None = None
     reference_url: str | None = None
+    # Set when the model is registered (composability contract); None before
+    composable: bool | None = None  # forward() follows a composer convention
+    chainable: bool | None = None  # constructor chains dimensions (sequential/hierarchical)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -733,6 +837,7 @@ class ModelPluginLoader:
                 self._loading[plugin_name] = attempt
                 declarations = list(metadata.model_declarations)
                 plugin_path = metadata.plugin_path
+                pyg_requirement = metadata.pyg_version
                 owner = True
             elif attempt.owner == threading.get_ident():
                 raise PluginError(
@@ -758,7 +863,7 @@ class ModelPluginLoader:
             logger.info(f"Loading plugin '{plugin_name}'...")
             if register_models:
                 for decl in declarations:
-                    self._register_plugin_model(decl, plugin_path)
+                    self._register_plugin_model(decl, plugin_path, pyg_requirement)
         except Exception as e:
             error = e
 
@@ -780,7 +885,9 @@ class ModelPluginLoader:
         logger.info(f"Successfully loaded plugin '{plugin_name}' with {len(declarations)} model(s)")
         return True
 
-    def _register_plugin_model(self, declaration: ModelDeclaration, plugin_dir: Path):
+    def _register_plugin_model(
+        self, declaration: ModelDeclaration, plugin_dir: Path, pyg_requirement: str = ""
+    ):
         """
         Register a model from plugin with ModelRegistry.
 
@@ -789,6 +896,8 @@ class ModelPluginLoader:
             plugin_dir: Plugin directory path. Its modules are imported under the
                 plugin's own package; without a directory, ``module_path`` is an
                 installed module's absolute name.
+            pyg_requirement: The plugin's ``torch_geometric`` requirement; its lower
+                bound becomes the model's ``min_pyg_version``.
 
         Raises:
             PluginError: If model cannot be registered
@@ -812,34 +921,30 @@ class ModelPluginLoader:
                     f"Model class '{declaration.class_name}' must inherit from nn.Module"
                 )
 
-            # Create ModelMetadata
-            if ModelMetadata is None:
+            if ModelMetadata is None or build_metadata_for_class is None:
                 raise PluginError("ModelMetadata not available")
 
-            # A declaration without min_pyg_version keeps the metadata default;
-            # the plugin's torch_geometric requirement is the version gate.
-            optional = {}
-            if declaration.min_pyg_version is not None:
-                optional["min_pyg_version"] = declaration.min_pyg_version
-
-            metadata = ModelMetadata(
-                **optional,
-                name=declaration.name,
-                category=declaration.category,
-                import_path=f"{declaration.module_path}.{declaration.class_name}",
-                description=declaration.description,
-                supported_tasks=declaration.supported_tasks,
-                hyperparameters=declaration.hyperparameters,
-                requires_edge_index=declaration.requires_edge_index,
-                requires_edge_features=declaration.requires_edge_features,
-                requires_edge_weights=declaration.requires_edge_weights,
-                supports_batch=declaration.supports_batch,
-                supports_heterogeneous=declaration.supports_heterogeneous,
-                reference_paper=declaration.reference_paper,
-                reference_url=declaration.reference_url,
-                is_plugin=True,
-                plugin_name=declaration.plugin_name,
+            # Complete metadata from the class (as for PyG models), then the manifest's
+            # declarations on top, validated as a whole.
+            metadata = _plugin_model_metadata(
+                declaration,
+                model_class,
+                f"{model_class.__module__}.{model_class.__qualname__}",
+                pyg_requirement,
             )
+            declaration.composable, declaration.chainable = _composability(metadata)
+            if not declaration.composable:
+                logger.warning(
+                    f"Plugin model '{declaration.name}': forward() does not follow "
+                    "(x, edge_index[, edge_attr][, batch]) or (z, pos[, batch]); "
+                    "registered; not composable in ensembles"
+                )
+            elif not declaration.chainable:
+                logger.warning(
+                    f"Plugin model '{declaration.name}': constructor lacks in_channels and "
+                    "out_channels/hidden_channels; registered; not chainable in sequential "
+                    "or hierarchical ensembles"
+                )
 
             # Register with registry
             registry.register_model(
