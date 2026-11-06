@@ -2,7 +2,8 @@
 Model Plugin System for Milia Pipeline
 
 Provides a secure, extensible plugin system for custom models:
-- Plugin discovery from YAML metadata (plugin.yaml)
+- Plugin discovery from YAML metadata (plugin.yaml), validated by the versioned
+  manifest schema (``_model_plugin_manifest.parse_manifest``)
 - Model registration into ModelRegistry
 - Comprehensive validation (dependencies, security, functional)
 - Version management and compatibility checking
@@ -63,6 +64,7 @@ from milia_pipeline.exceptions import (
     PluginSecurityError,
     PluginValidationError,
 )
+from milia_pipeline.models._model_plugin_manifest import parse_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +203,9 @@ class ModelDeclaration(BaseModel):
         name: Model name (unique identifier)
         class_name: Python class name
         module_path: Import path to module containing the class
-        category: Model category (e.g., 'gnn', 'custom')
+        category: Model category, a ``ModelCategory`` value (e.g., 'basic_gnn', 'general')
         description: Brief description of the model
-        supported_tasks: List of supported task types
+        supported_tasks: List of supported task types (empty: not declared in the manifest)
         hyperparameters: Dict of hyperparameter schemas
         plugin_name: Name of the plugin providing this model
         requires_edge_index: Whether model requires edge_index
@@ -300,6 +302,9 @@ class ModelPluginMetadata(BaseModel):
     repository: str | None = None
     documentation: str | None = None
     plugin_path: Path | None = None
+    requires_extra: str | None = None
+    schema_version: int | None = None  # manifest schema version; None if not read from a manifest
+    legacy_manifest: bool = False  # the manifest used the deprecated legacy format
 
     # Internal tracking
     loaded: bool = False
@@ -488,76 +493,71 @@ class ModelPluginLoader:
         Returns:
             ModelPluginMetadata instance
 
+        The manifest is validated by ``parse_manifest`` (schema version 2, or the
+        deprecated legacy format converted to it).
+
         Raises:
-            PluginError: If metadata cannot be loaded
+            PluginValidationError: If the manifest is not valid (field-located
+                ``validation_errors``)
+            PluginModelError: If the file is empty or not valid YAML
         """
         try:
             with open(plugin_yaml) as f:
                 data = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise PluginModelError(
+                f"Invalid YAML in {plugin_yaml}: {e}", plugin_path=str(plugin_yaml)
+            ) from e
 
-            if not data:
-                raise PluginError(f"Empty plugin.yaml: {plugin_yaml}")
-
-            # Extract basic metadata
-            plugin_name = data.get("plugin_name")
-            if not plugin_name:
-                raise PluginError(f"Missing plugin_name in {plugin_yaml}")
-
-            # Parse model declarations
-            models_data = data.get("models", [])
-            if not models_data:
-                logger.warning(f"Plugin '{plugin_name}' declares no models")
-
-            model_declarations = []
-            for model_data in models_data:
-                decl = ModelDeclaration(
-                    name=model_data["name"],
-                    class_name=model_data["class_name"],
-                    module_path=model_data["module_path"],
-                    category=model_data.get("category", "custom"),
-                    description=model_data.get("description", ""),
-                    supported_tasks=model_data.get("supported_tasks", []),
-                    hyperparameters=model_data.get("hyperparameters", {}),
-                    plugin_name=plugin_name,
-                    requires_edge_index=model_data.get("requires_edge_index", True),
-                    requires_edge_features=model_data.get("requires_edge_features", False),
-                    requires_edge_weights=model_data.get("requires_edge_weights", False),
-                    supports_batch=model_data.get("supports_batch", True),
-                    supports_heterogeneous=model_data.get("supports_heterogeneous", False),
-                    min_pyg_version=model_data.get("min_pyg_version"),
-                    reference_paper=model_data.get("reference_paper"),
-                    reference_url=model_data.get("reference_url"),
-                )
-                model_declarations.append(decl)
-
-            # Create metadata
-            metadata = ModelPluginMetadata(
-                plugin_name=plugin_name,
-                version=data.get("version", "0.0.0"),
-                author=data.get("author", "Unknown"),
-                description=data.get("description", ""),
-                plugin_type=data.get("plugin_type", "user_experimental"),
-                milia_version=data.get("milia_version", ">=4.0.0"),
-                pyg_version=data.get("pyg_version", ">=2.0.0"),
-                python_version=data.get("python_version", ">=3.8"),
-                license=data.get("license", "Unknown"),
-                model_declarations=model_declarations,
-                dependencies=data.get("dependencies", []),
-                optional_dependencies=data.get("optional_dependencies", []),
-                homepage=data.get("homepage"),
-                repository=data.get("repository"),
-                documentation=data.get("documentation"),
-                plugin_path=plugin_yaml.parent,
+        if not data:
+            raise PluginModelError(
+                f"Empty plugin.yaml: {plugin_yaml}", plugin_path=str(plugin_yaml)
             )
 
-            return metadata
+        manifest = parse_manifest(data, plugin_yaml)
+        if not manifest.models:
+            logger.warning(f"Plugin '{manifest.plugin_name}' declares no models")
 
-        except yaml.YAMLError as e:
-            raise PluginError(f"Invalid YAML in {plugin_yaml}: {e}") from e
-        except KeyError as e:
-            raise PluginError(f"Missing required field in {plugin_yaml}: {e}") from e
-        except Exception as e:
-            raise PluginError(f"Failed to load plugin metadata from {plugin_yaml}: {e}") from e
+        model_declarations = [
+            ModelDeclaration(
+                name=entry.name,
+                class_name=entry.class_name,
+                module_path=entry.module,
+                category=entry.category,
+                description=entry.description,
+                supported_tasks=list(entry.supported_tasks or []),  # empty: inferred later
+                hyperparameters=dict(entry.hyperparameters),
+                plugin_name=manifest.plugin_name,
+                requires_edge_index=entry.requires_edge_index,
+                requires_edge_features=entry.requires_edge_features,
+                requires_edge_weights=entry.requires_edge_weights,
+                supports_heterogeneous=entry.supports_heterogeneous,
+                reference_paper=entry.reference.paper,
+                reference_url=entry.reference.url,
+            )
+            for entry in manifest.models
+        ]
+
+        requirements = manifest.requirements
+        return ModelPluginMetadata(
+            plugin_name=manifest.plugin_name,
+            version=manifest.version,
+            author=manifest.author,
+            description=manifest.description,
+            plugin_type=manifest.plugin_type,
+            # "" = no constraint (an empty specifier set matches every version)
+            milia_version=requirements.milia or "",
+            pyg_version=requirements.torch_geometric or "",
+            python_version=requirements.python or "",
+            license=manifest.license,
+            model_declarations=model_declarations,
+            dependencies=list(manifest.dependencies),
+            homepage=manifest.homepage,
+            plugin_path=plugin_yaml.parent,
+            requires_extra=manifest.requires_extra,
+            schema_version=manifest.schema_version,
+            legacy_manifest="schema_version" not in data,
+        )
 
     # =========================================================================
     # PLUGIN VALIDATION
@@ -816,7 +816,14 @@ class ModelPluginLoader:
             if ModelMetadata is None:
                 raise PluginError("ModelMetadata not available")
 
+            # A declaration without min_pyg_version keeps the metadata default;
+            # the plugin's torch_geometric requirement is the version gate.
+            optional = {}
+            if declaration.min_pyg_version is not None:
+                optional["min_pyg_version"] = declaration.min_pyg_version
+
             metadata = ModelMetadata(
+                **optional,
                 name=declaration.name,
                 category=declaration.category,
                 import_path=f"{declaration.module_path}.{declaration.class_name}",
@@ -828,7 +835,6 @@ class ModelPluginLoader:
                 requires_edge_weights=declaration.requires_edge_weights,
                 supports_batch=declaration.supports_batch,
                 supports_heterogeneous=declaration.supports_heterogeneous,
-                min_pyg_version=declaration.min_pyg_version,
                 reference_paper=declaration.reference_paper,
                 reference_url=declaration.reference_url,
                 is_plugin=True,
@@ -849,19 +855,25 @@ class ModelPluginLoader:
             )
 
         except ImportError as e:
-            raise PluginError(
+            raise PluginModelError(
                 f"Failed to import model '{declaration.name}': {e}",
                 plugin_name=declaration.plugin_name,
+                model_name=declaration.name,
+                plugin_path=None if plugin_dir is None else str(plugin_dir),
             ) from e
         except AttributeError as e:
-            raise PluginError(
+            raise PluginModelError(
                 f"Model class '{declaration.class_name}' not found in module: {e}",
                 plugin_name=declaration.plugin_name,
+                model_name=declaration.name,
+                plugin_path=None if plugin_dir is None else str(plugin_dir),
             ) from e
         except Exception as e:
-            raise PluginError(
+            raise PluginModelError(
                 f"Failed to register model '{declaration.name}': {e}",
                 plugin_name=declaration.plugin_name,
+                model_name=declaration.name,
+                plugin_path=None if plugin_dir is None else str(plugin_dir),
             ) from e
 
     def load_all_plugins(self, register_models: bool = True) -> dict[str, bool]:

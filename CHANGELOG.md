@@ -30,8 +30,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   skipped. **Plugin authors:** list distribution names (`scikit-learn`, not `sklearn`).
 - `packaging` is now a declared dependency (`packaging==26.2`, the version already locked). MILIA imports it
   directly; before, it was installed only as a dependency of other packages.
+- Model plugin manifests (`plugin.yaml`) now have a versioned schema. A manifest with `schema_version: 2` is
+  validated strictly: unknown keys are rejected, and every error names its field (for example
+  `models.0.category: unknown category 'gnn'`). The user template and README describe the schema. A manifest
+  that is not valid is rejected when plugins are discovered; before, many mistakes surfaced only when the
+  plugin was loaded, or not at all. **Plugin authors:** `plugin_name` must match `^[a-z][a-z0-9_]*$`,
+  `version` must be a Semantic Versioning version, and model `category` and `supported_tasks` must use the
+  names MILIA's model registry accepts.
+- Defaults for fields a legacy manifest omits changed: `author`, `license` and the version requirements are
+  empty instead of `Unknown` and `>=4.0.0`/`>=2.0.0`/`>=3.8`, `plugin_type` is `user` instead of
+  `user_experimental`, and a model's `category` is `general` instead of `custom` (which the registry
+  rejected).
+- Errors registering a plugin model are raised as `PluginModelError` (a `PluginError` and a `ModelError`)
+  naming the plugin and the model.
 
 ### Deprecated
+
+- The legacy model plugin manifest format (no `schema_version`): it is read and converted, with a
+  `DeprecationWarning` and a log warning for each legacy key, attributed to the manifest file. Legacy keys:
+  `class_name` + `module_path` (use `class: "<module>:<Class>"`), `milia_version`, `pyg_version`,
+  `min_pyg_version`, `python_version` (use `requirements`), `reference_paper`, `reference_url` (use
+  `reference`); keys outside the schema are ignored. Support will be removed in 2.0.0.
 
 - `milia_pipeline.models.plugins` and `milia_pipeline.models.plugins.model_plugin_system`: import from
   `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same

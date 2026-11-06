@@ -23,11 +23,11 @@ import textwrap
 import threading
 import types
 import uuid
+import warnings
 from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import ValidationError
 
 from milia_pipeline import exceptions
 from milia_pipeline.models.registry import model_registry
@@ -63,7 +63,21 @@ class {class_name}(nn.Module):
 
 
 def _valid_model_entry(model_name: str, class_name: str, module_path: str = "model") -> dict:
-    """A legacy-format model entry that the current loader registers successfully."""
+    """A schema version 2 model entry that the loader registers successfully."""
+    return {
+        "name": model_name,
+        "class": f"{module_path}:{class_name}",
+        "category": "basic_gnn",
+        "description": "characterization model",
+        "supported_tasks": ["graph_regression"],
+        "hyperparameters": {
+            "hidden_channels": {"type": "integer", "default": 8, "min": 1},
+        },
+    }
+
+
+def _legacy_model_entry(model_name: str, class_name: str, module_path: str = "model") -> dict:
+    """The same model entry in the deprecated legacy manifest format."""
     return {
         "name": model_name,
         "class_name": class_name,
@@ -71,11 +85,12 @@ def _valid_model_entry(model_name: str, class_name: str, module_path: str = "mod
         "category": "basic_gnn",
         "description": "characterization model",
         "supported_tasks": ["graph_regression"],
-        "hyperparameters": {
-            "hidden_channels": {"type": "integer", "default": 8, "min": 1},
-        },
         "min_pyg_version": "2.6.0",
     }
+
+
+def _class_name(entry: dict) -> str:
+    return entry["class_name"] if "class_name" in entry else entry["class"].partition(":")[2]
 
 
 def _write_plugin(
@@ -90,7 +105,9 @@ def _write_plugin(
     """Create ``root/dir_name/{plugin.yaml, model.py}`` and return the plugin directory."""
     plugin_dir = root / dir_name
     plugin_dir.mkdir(parents=True)
+    legacy = any("class_name" in m for m in models)
     manifest = {
+        **({} if legacy else {"schema_version": 2}),
         "plugin_name": plugin_name,
         "version": "1.0.0",
         "author": "tests",
@@ -103,7 +120,7 @@ def _write_plugin(
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
     source = "".join(
         textwrap.dedent(_MODEL_SOURCE).format(class_name=name)
-        for name in (class_names or [m["class_name"] for m in models])
+        for name in (class_names or [_class_name(m) for m in models])
     )
     (plugin_dir / module_file).write_text(source)
     return plugin_dir
@@ -111,15 +128,6 @@ def _write_plugin(
 
 def _unique(prefix: str) -> str:
     return f"{prefix}{uuid.uuid4().hex[:8]}"
-
-
-def _cause_chain(exc: BaseException) -> list[BaseException]:
-    chain = []
-    current: BaseException | None = exc
-    while current is not None:
-        chain.append(current)
-        current = current.__cause__
-    return chain
 
 
 # =============================================================================
@@ -212,8 +220,8 @@ def test_plugin_provenance_lives_in_registry_not_metadata(tmp_path, loader, regi
 # =============================================================================
 
 
-def test_current_default_category_fails_registration(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later. Default category 'custom' is invalid."""
+def test_omitted_category_is_general_and_registers(tmp_path, loader, registry):
+    """A model entry without ``category`` gets ``general`` and registers."""
     plugin_name = _unique("charplugin_")
     model_name = _unique("CharNet")
     entry = _valid_model_entry(model_name, "CharNet")
@@ -221,29 +229,22 @@ def test_current_default_category_fails_registration(tmp_path, loader, registry)
     _write_plugin(tmp_path, "p", plugin_name, [entry])
     loader.discover_plugins([tmp_path])
 
-    with pytest.raises(exceptions.PluginError) as caught:
-        loader.load_plugin(plugin_name)
-
-    errors = [e for e in _cause_chain(caught.value) if isinstance(e, ValidationError)]
-    assert errors and {err["loc"] for err in errors[0].errors()} == {("category",)}
-    assert not registry.has_model(model_name)
+    assert loader.load_plugin(plugin_name) is True
+    assert registry.get_metadata(model_name).category.value == "general"
 
 
-def test_current_missing_min_pyg_version_fails_registration(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later. ``min_pyg_version=None`` is rejected."""
+def test_legacy_entry_without_min_pyg_version_registers(tmp_path, loader, registry):
+    """A legacy model entry without ``min_pyg_version`` registers with the metadata default."""
     plugin_name = _unique("charplugin_")
     model_name = _unique("CharNet")
-    entry = _valid_model_entry(model_name, "CharNet")
+    entry = _legacy_model_entry(model_name, "CharNet")
     del entry["min_pyg_version"]
     _write_plugin(tmp_path, "p", plugin_name, [entry])
-    loader.discover_plugins([tmp_path])
+    with pytest.warns(DeprecationWarning, match="legacy key"):
+        loader.discover_plugins([tmp_path])
 
-    with pytest.raises(exceptions.PluginError) as caught:
-        loader.load_plugin(plugin_name)
-
-    errors = [e for e in _cause_chain(caught.value) if isinstance(e, ValidationError)]
-    assert errors and {err["loc"] for err in errors[0].errors()} == {("min_pyg_version",)}
-    assert not registry.has_model(model_name)
+    assert loader.load_plugin(plugin_name) is True
+    assert registry.has_model(model_name)
 
 
 def test_same_module_name_resolves_per_plugin(tmp_path, loader, registry):
@@ -321,16 +322,23 @@ def test_plugin_modules_can_import_each_other_relatively(tmp_path, loader, regis
     assert module.HIDDEN == 5
 
 
-def test_plugin_name_must_be_a_module_name(tmp_path, loader, registry):
-    """A plugin name that is not a Python identifier cannot name the plugin's package."""
+def test_plugin_name_must_be_a_module_name(tmp_path, loader, registry, caplog):
+    """A plugin name that cannot name the plugin's package is rejected.
+
+    The manifest rejects it at discovery; the loader's import step checks it too.
+    """
     plugin_name = _unique("char-plugin-")
     model_name = _unique("CharNet")
-    _write_plugin(tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")])
-    loader.discover_plugins([tmp_path])
+    plugin_dir = _write_plugin(
+        tmp_path, "p", plugin_name, [_valid_model_entry(model_name, "CharNet")]
+    )
+
+    with caplog.at_level(logging.ERROR):
+        assert loader.discover_plugins([tmp_path]) == []
+    assert "plugin_name: must match" in caplog.text
 
     with pytest.raises(exceptions.PluginError, match="cannot be used as a Python module name"):
-        loader.load_plugin(plugin_name)
-
+        mps._import_plugin_module(plugin_name, plugin_dir, "model")
     assert not registry.has_model(model_name)
 
 
@@ -345,40 +353,40 @@ def test_load_leaves_sys_path_unchanged(tmp_path, loader, registry):
     assert sys.path == before
 
 
-def test_current_module_path_with_py_suffix_fails(tmp_path, loader, registry):
-    """Pins current behaviour; changed deliberately later. ``module_path: model.py`` cannot import."""
+def test_legacy_module_path_with_py_suffix_loads(tmp_path, loader, registry):
+    """A legacy ``module_path: model.py`` is read as the module ``model``."""
     plugin_name = _unique("charplugin_")
     model_name = _unique("CharNet")
-    entry = _valid_model_entry(model_name, "CharNet", module_path="model.py")
+    entry = _legacy_model_entry(model_name, "CharNet", module_path="model.py")
     _write_plugin(tmp_path, "p", plugin_name, [entry])
-    loader.discover_plugins([tmp_path])
+    with pytest.warns(DeprecationWarning, match="legacy key") as record:
+        loader.discover_plugins([tmp_path])
 
-    with pytest.raises(exceptions.PluginError) as caught:
-        loader.load_plugin(plugin_name)
-
-    assert any(isinstance(e, ModuleNotFoundError) for e in _cause_chain(caught.value))
-    assert not registry.has_model(model_name)
+    assert loader.load_plugin(plugin_name) is True
+    assert registry.has_model(model_name)
+    assert all(w.filename.endswith("plugin.yaml") for w in record)
 
 
-def test_current_invalid_plugin_still_discovered_below_strict(tmp_path, loader):
-    """Pins current behaviour; changed deliberately later.
+def test_manifest_field_error_rejects_the_plugin_at_every_level(tmp_path, loader, caplog):
+    """A manifest field error (here an empty task list) rejects the plugin at discovery.
 
-    A declaration error (no supported tasks) is only a warning at ``standard``,
-    so the plugin is still discovered; ``strict`` skips it.
+    The error names the field. ``strict`` re-raises it; lower levels log it.
     """
     plugin_name = _unique("charplugin_")
     entry = _valid_model_entry(_unique("CharNet"), "CharNet")
     entry["supported_tasks"] = []
     _write_plugin(tmp_path, "p", plugin_name, [entry])
 
-    assert loader.discover_plugins([tmp_path], validation_level="standard") == [plugin_name]
-    assert any(
-        "declares no supported tasks" in msg
-        for msg in loader._plugins[plugin_name].validation_errors
-    )
+    for level in ("permissive", "standard"):
+        loader._plugins.clear()
+        with caplog.at_level(logging.ERROR):
+            assert loader.discover_plugins([tmp_path], validation_level=level) == []
+        assert "models.0.supported_tasks: must list at least one task" in caplog.text
 
     loader._plugins.clear()
-    assert loader.discover_plugins([tmp_path], validation_level="strict") == []
+    with pytest.raises(exceptions.PluginValidationError) as caught:
+        loader.discover_plugins([tmp_path], validation_level="strict")
+    assert caught.value.validation_errors[0].startswith("models.0.supported_tasks: ")
 
 
 def test_duplicate_plugin_name_is_rejected_and_first_kept(tmp_path, loader, caplog):
@@ -639,3 +647,66 @@ def test_current_discover_and_load_plugins_without_paths_fails(loader):
     """
     with pytest.raises(TypeError):
         mps.discover_and_load_plugins(paths=None)
+
+
+def test_v2_manifest_fields_reach_the_plugin_metadata(tmp_path, loader):
+    """Every schema version 2 field the loader keeps is read from the manifest."""
+    plugin_name = _unique("charplugin_")
+    entry = _valid_model_entry(_unique("CharNet"), "CharNet")
+    entry["reference"] = {"paper": "Doe 2026", "url": "https://example.org/paper"}
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [entry],
+        extra={
+            "plugin_type": "first_party",
+            "homepage": "https://example.org",
+            "requirements": {"milia": ">=1.0", "python": ">=3.10", "torch_geometric": ">=2.5"},
+            "requires_extra": "descriptors-cdk",
+        },
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        assert loader.discover_plugins([tmp_path]) == [plugin_name]
+
+    metadata = loader._plugins[plugin_name]
+    declaration = metadata.model_declarations[0]
+    assert (metadata.schema_version, metadata.legacy_manifest) == (2, False)
+    assert (metadata.milia_version, metadata.python_version, metadata.pyg_version) == (
+        ">=1.0",
+        ">=3.10",
+        ">=2.5",
+    )
+    assert (metadata.plugin_type, metadata.homepage, metadata.requires_extra) == (
+        "first_party",
+        "https://example.org",
+        "descriptors-cdk",
+    )
+    assert (declaration.module_path, declaration.class_name) == ("model", "CharNet")
+    assert (declaration.reference_paper, declaration.reference_url) == (
+        "Doe 2026",
+        "https://example.org/paper",
+    )
+
+
+def test_registration_failure_is_a_plugin_model_error(tmp_path, loader, registry):
+    """A model that cannot be registered raises ``PluginModelError`` naming the model."""
+    plugin_name = _unique("charplugin_")
+    model_name = _unique("CharNet")
+    _write_plugin(
+        tmp_path,
+        "p",
+        plugin_name,
+        [_valid_model_entry(model_name, "CharNet")],
+        class_names=["Other"],
+    )
+    loader.discover_plugins([tmp_path])
+
+    with pytest.raises(exceptions.PluginError) as caught:
+        loader.load_plugin(plugin_name)
+
+    cause = caught.value.__cause__
+    assert isinstance(cause, exceptions.PluginModelError)
+    assert (cause.plugin_name, cause.model_name) == (plugin_name, model_name)
+    assert not registry.has_model(model_name)

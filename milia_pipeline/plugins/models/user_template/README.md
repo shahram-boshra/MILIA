@@ -11,8 +11,14 @@ Scaffold for adding your own **model** plugin, symmetric with
 2. Rename the template files:
    - `plugin.yaml.template` → `plugin.yaml`
    - `model.py.template` → `model.py`
-3. Fill in `plugin.yaml` (metadata + `models:` declarations). Ensure each declaration's
-   `class_name` matches the class in `model.py` and `module_path` is `model`.
+3. Fill in `plugin.yaml` (manifest schema version 2: metadata, `requirements` and the
+   `models:` declarations). Each declaration's `class` is `"<module>:<Class>"`, e.g.
+   `"model:MyModel"` for the class `MyModel` in `model.py`. Unknown keys are rejected, and
+   each error names its field. `category` must be a category of MILIA's model registry;
+   omit `supported_tasks` to infer them from the class. A manifest without
+   `schema_version` is the deprecated legacy format (`class_name` + `module_path`,
+   `milia_version`, …): it still loads, with a deprecation warning per legacy key, until
+   MILIA 2.0.0.
 4. Implement your model class in `model.py` (a `torch.nn.Module`). Import MILIA and
    third-party packages with absolute imports; import other modules of your plugin with
    relative imports (`from .helpers import build_mlp`). The loader imports the plugin

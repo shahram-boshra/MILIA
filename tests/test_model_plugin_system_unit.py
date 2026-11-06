@@ -839,8 +839,10 @@ class TestModelPluginLoaderMetadata:
 
         loader = ModelPluginLoader()
 
-        with pytest.raises(PluginError, match="Missing plugin_name"):
+        with pytest.raises(PluginValidationError) as caught:
             loader._load_plugin_metadata(plugin_yaml_path)
+
+        assert "plugin_name: Field required" in caught.value.validation_errors
 
     def test_load_plugin_metadata_no_models(self, temp_plugin_dir, caplog):
         """Test loading metadata with no models declared."""
@@ -879,13 +881,21 @@ class TestModelPluginLoaderMetadata:
             yaml.dump(plugin_yaml, f)
 
         loader = ModelPluginLoader()
-        metadata = loader._load_plugin_metadata(plugin_yaml_path)
+        with pytest.warns(DeprecationWarning, match="'version' is missing"):
+            metadata = loader._load_plugin_metadata(plugin_yaml_path)
 
         assert metadata.version == "0.0.0"
-        assert metadata.author == "Unknown"
+        assert metadata.author == ""
         assert metadata.description == ""
-        assert metadata.plugin_type == "user_experimental"
-        assert metadata.license == "Unknown"
+        assert metadata.plugin_type == "user"
+        assert metadata.license == ""
+        assert (metadata.milia_version, metadata.pyg_version, metadata.python_version) == (
+            "",
+            "",
+            "",
+        )
+        assert metadata.legacy_manifest is True
+        assert metadata.schema_version == 2
 
 
 # =============================================================================
@@ -1725,8 +1735,8 @@ class TestThreadSafety:
 class TestEdgeCases:
     """Test suite for edge cases and error handling."""
 
-    def test_plugin_with_special_characters_in_name(self, temp_plugin_dir):
-        """Test plugin with special characters in name."""
+    def test_plugin_with_special_characters_in_name(self, temp_plugin_dir, caplog):
+        """A plugin name with dashes cannot name the plugin's package and is rejected."""
         plugin_dir = temp_plugin_dir / "plugin-with-dashes"
         plugin_dir.mkdir()
 
@@ -1745,7 +1755,8 @@ class TestEdgeCases:
         loader = ModelPluginLoader()
         result = loader.discover_plugins([temp_plugin_dir])
 
-        assert "plugin-with-dashes" in result
+        assert "plugin-with-dashes" not in result
+        assert "plugin_name: must match" in caplog.text
 
     def test_plugin_with_empty_description(self, temp_plugin_dir):
         """Test plugin with empty description."""

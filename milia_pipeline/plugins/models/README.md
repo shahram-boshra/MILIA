@@ -11,7 +11,7 @@ class.
 models/
 ├── README.md
 ├── <category>/                 # a first-party or user model plugin
-│   ├── plugin.yaml             # manifest (declares model class_name + module_path)
+│   ├── plugin.yaml             # manifest, schema version 2 (declares each model's class)
 │   └── model.py                # the model implementation
 └── user_template/              # copy this to start a new model plugin
     ├── plugin.yaml.template
