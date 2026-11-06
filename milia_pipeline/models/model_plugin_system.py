@@ -1268,17 +1268,44 @@ def discover_plugins(
     loader = get_plugin_loader()
 
     if paths is None:
-        # Try to get paths from config
-        try:
-            from milia_pipeline.models.utils.config_bridge import get_plugins_config
-
-            config = get_plugins_config()
-            paths = [Path(p) for p in config.plugin_paths]
-        except Exception as e:
-            logger.warning(f"Could not load plugin paths from config: {e}")
-            paths = [Path("./plugins/models")]
+        paths = _configured_plugin_paths()
 
     return loader.discover_plugins(paths, auto_validate, validation_level)
+
+
+def _configured_plugin_paths(config_path: Path | None = None) -> list[Path]:
+    """
+    The model plugin directories the configuration selects.
+
+    The built-in container (unless ``include_builtin`` is false) and the user
+    ``plugin_paths``, resolved against the configuration root.
+
+    Args:
+        config_path: The configuration directory or file (default: ``./configs``).
+
+    Returns:
+        Existing, resolved directories. If the configuration cannot be loaded, only
+        the built-in container, with a warning.
+    """
+    from milia_pipeline.config.config_loader import get_config_root
+    from milia_pipeline.models._model_plugin_paths import (
+        builtin_model_plugins_directory,
+        resolve_model_plugin_paths,
+    )
+    from milia_pipeline.models.utils.config_bridge import get_plugins_config
+
+    try:
+        config = get_plugins_config(config_path)
+        config_root = get_config_root(config_path)
+    except Exception as e:
+        logger.warning(
+            f"Could not load plugin paths from config: {e}; using the built-in container"
+        )
+        return [builtin_model_plugins_directory()]
+
+    return resolve_model_plugin_paths(
+        config.plugin_paths, config_root=config_root, include_builtin=config.include_builtin
+    )
 
 
 def load_plugin(plugin_name: str, register_models: bool = True) -> bool:

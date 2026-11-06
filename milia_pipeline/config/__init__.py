@@ -561,6 +561,7 @@ from .config_loader import (
     create_example_config,
     get_config_hash,
     get_config_load_time,
+    get_config_root,
     get_config_statistics,
     get_config_stats,
     get_global_config_state,
@@ -783,6 +784,7 @@ __all__ = [
     # Configuration Loading
     # -------------------------------------------------------------------------
     "load_config",
+    "get_config_root",
     "get_config_stats",
     "clear_config_cache",
     "get_global_config_state",

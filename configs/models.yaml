@@ -1107,8 +1107,13 @@ models:
 
   plugins:
     enabled: true
-    plugin_paths:
-      - milia_pipeline/plugins/models
+    include_builtin: true                # scan the built-in container milia_pipeline/plugins/models
+    discover_entry_points: true          # also discover plugins from installed distributions
+    # Your plugin directories: absolute, ~/..., or relative to this configs/ directory.
+    plugin_paths: []
+    #   - /opt/milia/model_plugins
+    #   - ~/milia_model_plugins
+    #   - ../my_model_plugins          # the directory next to configs/
     auto_discover: true
     auto_validate: true
     validation_level: "standard"         # permissive, standard, strict

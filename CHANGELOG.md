@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `milia_pipeline.models.registry.build_metadata_for_class(model_name, model_class, import_path)` builds model
   metadata from an already imported class, using the same introspection as PyG model discovery. It works for
   any model class, including plugin models. Metadata for PyG models is unchanged.
+- `milia_pipeline.config.get_config_root(config_path=None)` returns the configuration root: the
+  configuration directory itself, or the directory of a single configuration file (default `./configs`),
+  as an absolute path.
+- `models.plugins.include_builtin` (default `true`) scans the built-in model plugin container
+  `milia_pipeline/plugins/models`, and `models.plugins.discover_entry_points` (default `true`) is reserved
+  for discovering plugins from installed distributions.
 
 ### Changed
 
@@ -43,6 +49,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejected).
 - Errors registering a plugin model are raised as `PluginModelError` (a `PluginError` and a `ModelError`)
   naming the plugin and the model.
+- `models.plugins.plugin_paths` now lists only your own model plugin directories; its default and the
+  shipped value are `[]`, because the built-in container comes from `include_builtin`. The directories
+  scanned with the shipped configuration are unchanged. A relative path now resolves against the
+  configuration root instead of the working directory, `~` is expanded, each directory is scanned once,
+  and a path that is not an existing directory is logged instead of being dropped silently. If you list
+  directories of your own, the built-in container is now scanned as well; set `include_builtin: false` to
+  leave it out.
 
 ### Deprecated
 
@@ -55,6 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `milia_pipeline.models.plugins` and `milia_pipeline.models.plugins.model_plugin_system`: import from
   `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same
   objects and emit a `DeprecationWarning`; they will be removed in 2.0.0.
+
+- A relative `models.plugins.plugin_paths` entry that exists only relative to the working directory: it is
+  still used, with a `DeprecationWarning` attributed to the configuration root and a log warning. Use a
+  path relative to the configuration root, or an absolute path; the fallback will be removed in 2.0.0.
 
 ### Fixed
 

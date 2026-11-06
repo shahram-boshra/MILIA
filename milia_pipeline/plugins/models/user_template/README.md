@@ -6,8 +6,9 @@ Scaffold for adding your own **model** plugin, symmetric with
 ## Steps
 
 1. Copy this `user_template/` directory to a new one named for your plugin, e.g.
-   `milia_pipeline/plugins/models/my_model/` (or any directory you register via the
-   `plugins.plugin_paths` config key — it need not live inside the package tree).
+   `milia_pipeline/plugins/models/my_model/`, or a new directory inside one you list in
+   `models.plugins.plugin_paths` (absolute, `~/...`, or relative to `configs/`; it need not
+   live inside the package tree).
 2. Rename the template files:
    - `plugin.yaml.template` → `plugin.yaml`
    - `model.py.template` → `model.py`

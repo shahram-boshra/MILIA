@@ -21,11 +21,14 @@ models/
 
 ## Discovery
 
-The model plugin loader scans this directory for `*/plugin.yaml` (one level). The default
-search path is resolved package-relative via
-`milia_pipeline.plugins.get_model_plugins_directory()` (CWD-independent). Additional
-locations — including user-owned directories outside the package tree — can be registered
-through the `plugins.plugin_paths` configuration key.
+The model plugin loader scans this directory for `*/plugin.yaml` (one level). It is found
+package-relative via `milia_pipeline.plugins.get_model_plugins_directory()` (independent of the
+working directory) and scanned while `models.plugins.include_builtin` is `true` (the default).
+Your own directories, including ones outside the package tree, go in
+`models.plugins.plugin_paths`: absolute, `~/...`, or relative to the configuration root (the
+`configs/` directory, or the directory of a single configuration file). A relative path that
+exists only relative to the working directory still works, with a deprecation warning, until
+MILIA 2.0.0. A path that is not an existing directory is logged and skipped.
 
 ## Adding a model plugin
 

@@ -672,6 +672,28 @@ def _get_default_config_path():
     )
 
 
+def get_config_root(config_path=None) -> Path:
+    """
+    Get the configuration root: the directory that relative paths in the configuration resolve against.
+
+    Args:
+        config_path: The configuration passed to ``load_config``: a directory (split-file
+            layout) is its own root, and a file's root is its parent directory. ``None``
+            uses the default configuration directory (``./configs``).
+
+    Returns:
+        The root as an absolute, resolved path.
+
+    Raises:
+        ConfigurationError: If ``config_path`` is ``None`` and ``./configs`` does not exist.
+    """
+    if config_path is None:
+        config_path = _get_default_config_path()
+    path = Path(config_path).expanduser()
+    root = path if path.is_dir() else path.parent
+    return root.resolve()
+
+
 def load_config(
     config_path=None,
     enable_enhancement=True,

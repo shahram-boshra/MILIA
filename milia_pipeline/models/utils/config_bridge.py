@@ -919,22 +919,21 @@ class DeploymentConfig(BaseModel):
         pass
 
 
-def _default_model_plugin_paths() -> list[str]:
-    """Package-relative default for model plugin discovery (CWD-independent).
-
-    Lazily imports the plugins-package helper to avoid import-time coupling; mirrors the
-    descriptor kind's package-relative resolution and fixes the prior CWD-relative default.
-    """
-    from milia_pipeline.plugins import get_model_plugins_directory
-
-    return [str(get_model_plugins_directory())]
-
-
 class PluginsConfig(BaseModel):
-    """Plugins configuration."""
+    """
+    Model plugins configuration.
+
+    Attributes:
+        plugin_paths: User plugin directories: absolute, ``~/...``, or relative to the
+            configuration root (see ``milia_pipeline.models._model_plugin_paths``).
+        include_builtin: Also scan the built-in container ``milia_pipeline/plugins/models``.
+        discover_entry_points: Also discover plugins from installed distributions.
+    """
 
     enabled: bool = True
-    plugin_paths: list[str] = Field(default_factory=_default_model_plugin_paths)
+    plugin_paths: list[str] = Field(default_factory=list)
+    include_builtin: bool = True
+    discover_entry_points: bool = True
     auto_discover: bool = True
     auto_validate: bool = True
     validation_level: str = "standard"
@@ -1539,7 +1538,9 @@ class ModelConfig(BaseModel):
         plugins_dict = get_config("plugins", {})
         plugins = PluginsConfig(
             enabled=plugins_dict.get("enabled", True),
-            plugin_paths=plugins_dict.get("plugin_paths", _default_model_plugin_paths()),
+            plugin_paths=plugins_dict.get("plugin_paths", []),
+            include_builtin=plugins_dict.get("include_builtin", True),
+            discover_entry_points=plugins_dict.get("discover_entry_points", True),
             auto_discover=plugins_dict.get("auto_discover", True),
             auto_validate=plugins_dict.get("auto_validate", True),
             validation_level=plugins_dict.get("validation_level", "standard"),
