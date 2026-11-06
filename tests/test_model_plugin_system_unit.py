@@ -15,9 +15,8 @@ Comprehensive test coverage for the Model Plugin System including:
 - Pydantic V2 specific behaviors (model_dump, model_config, Field default_factory)
 
 Production-Ready Updates (v2.0.0):
-- Fixed module loading: Uses direct file-based import via importlib.util to bypass
-  package __init__.py cascade that causes TypeError with Mock objects
-- Comprehensive package hierarchy mocking to prevent import side effects
+- Imports the real loader module and the real milia_pipeline.exceptions classes;
+  no package or exception module is replaced by a mock
 - Added tests for ModelDeclaration.to_dict() Pydantic V2 wrapper
 - Added tests for dependency validation with extras syntax (torch[cuda])
 - Added tests for all security check patterns (subprocess, os.system, __import__)
@@ -40,6 +39,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
+import importlib
 import shutil
 import tempfile
 import threading
@@ -49,90 +49,6 @@ from unittest.mock import Mock, patch
 import pytest
 import torch.nn as nn
 import yaml
-
-# ==============================================================================
-# CRITICAL: Mock the entire milia_pipeline package hierarchy to prevent
-# __init__.py cascade that causes TypeError: object of type 'Mock' has no len()
-#
-# The problem: When importing milia_pipeline.models.model_plugin_system,
-# Python loads parent packages whose __init__.py files import from registry,
-# which uses len(ModelCategory). We must mock the ENTIRE package hierarchy
-# BEFORE any import to prevent this cascade.
-#
-# The model_plugin_system.py has try/except ImportError blocks (lines 44-56, 58-67)
-# that provide fallback behavior when imports fail. By mocking the parent packages,
-# those imports will fail gracefully and use the fallback classes.
-#
-# These mocks are cleaned up in teardown_module() to prevent mock pollution.
-# ==============================================================================
-
-
-# Create a MockModelCategory that behaves like an Enum (supports len() and iteration)
-# This is needed in case any code path still reaches ModelCategory
-class _MockModelCategory:
-    """Mock ModelCategory enum that supports len() and iteration."""
-
-    GNN = "gnn"
-    CUSTOM = "custom"
-    BASELINE = "baseline"
-
-    def __class_getitem__(cls, item):
-        return cls
-
-    @classmethod
-    def __iter__(cls):
-        return iter([cls.GNN, cls.CUSTOM, cls.BASELINE])
-
-    @classmethod
-    def __len__(cls):
-        return 3
-
-
-# Mock the parent packages to prevent __init__.py loading cascade
-# Order matters: mock parent packages BEFORE child modules
-_mock_milia_pipeline = Mock()
-_mock_milia_pipeline_models = Mock()
-_mock_milia_pipeline_models_registry = Mock()
-_mock_milia_pipeline_models_plugins = Mock()
-_mock_milia_pipeline_models_utils = Mock()
-
-# Set up nested module structure
-_mock_milia_pipeline.models = _mock_milia_pipeline_models
-_mock_milia_pipeline_models.registry = _mock_milia_pipeline_models_registry
-_mock_milia_pipeline_models.plugins = _mock_milia_pipeline_models_plugins
-_mock_milia_pipeline_models.utils = _mock_milia_pipeline_models_utils
-
-# Create specific module mocks
-_mock_model_registry = Mock()
-_mock_pyg_introspector = Mock()
-_mock_config_bridge = Mock()
-
-# Set up the objects that model_plugin_system.py imports
-_mock_model_registry.ModelRegistry = Mock()
-_mock_model_registry.registry = Mock()
-_mock_pyg_introspector.ModelMetadata = Mock()
-_mock_pyg_introspector.ModelCategory = _MockModelCategory
-
-_mock_modules = {
-    # Parent packages (to prevent __init__.py cascade)
-    "milia_pipeline": _mock_milia_pipeline,
-    "milia_pipeline.models": _mock_milia_pipeline_models,
-    "milia_pipeline.models.registry": _mock_milia_pipeline_models_registry,
-    "milia_pipeline.models.plugins": _mock_milia_pipeline_models_plugins,
-    "milia_pipeline.models.utils": _mock_milia_pipeline_models_utils,
-    # Specific modules that model_plugin_system.py imports (lines 45-48)
-    "milia_pipeline.models.registry.model_registry": _mock_model_registry,
-    "milia_pipeline.models.registry.pyg_introspector": _mock_pyg_introspector,
-    "milia_pipeline.models.utils.config_bridge": _mock_config_bridge,
-    # Mock exceptions module to trigger fallback classes in model_plugin_system.py
-    "milia_pipeline.exceptions": Mock(spec=[]),
-}
-
-# Store original modules for cleanup (populated by setup_module)
-_original_modules = {}
-
-# Now load model_plugin_system directly from file to bypass package __init__.py
-import importlib.util
 
 # ---------------------------------------------------------------------------
 # Module-level placeholders for classes loaded in setup_module().
@@ -155,48 +71,14 @@ PluginDependencyError = None
 
 
 def setup_module(module):
-    """
-    Inject mocked modules into sys.modules and load the module-under-test.
-
-    Runs ONCE before any test — does NOT run during pytest collection,
-    preventing sys.modules pollution from breaking other test files.
-    """
+    """Import the real module under test and publish its names to this module."""
     global model_plugin_system
     global ModelPluginLoader, ModelPluginMetadata, ModelDeclaration
     global get_plugin_loader, discover_plugins, load_plugin
     global list_plugins, get_plugin_info, validate_plugin
     global PluginError, PluginValidationError, PluginSecurityError, PluginDependencyError
 
-    # --- Inject all mocks into sys.modules ---
-    for mod_name in _mock_modules:
-        if mod_name in sys.modules:
-            _original_modules[mod_name] = sys.modules[mod_name]
-        sys.modules[mod_name] = _mock_modules[mod_name]
-
-    # --- Determine the path to model_plugin_system.py ---
-    _module_search_paths = [
-        project_root / "milia_pipeline" / "models" / "model_plugin_system.py",
-        Path("/app/milia/milia_pipeline/models/model_plugin_system.py"),
-    ]
-
-    _model_plugin_system_path = None
-    for _search_path in _module_search_paths:
-        if _search_path.exists():
-            _model_plugin_system_path = _search_path
-            break
-
-    if _model_plugin_system_path is None:
-        raise ImportError(
-            f"Could not find model_plugin_system.py. "
-            f"Searched: {_module_search_paths}. "
-            f"Project root: {project_root}"
-        )
-
-    # --- Load the module directly from file ---
-    _spec = importlib.util.spec_from_file_location("model_plugin_system", _model_plugin_system_path)
-    model_plugin_system = importlib.util.module_from_spec(_spec)
-    sys.modules["model_plugin_system"] = model_plugin_system
-    _spec.loader.exec_module(model_plugin_system)
+    model_plugin_system = importlib.import_module("milia_pipeline.models.model_plugin_system")
 
     # --- Extract classes and functions into module-level names ---
     ModelPluginLoader = model_plugin_system.ModelPluginLoader
@@ -228,26 +110,6 @@ def setup_module(module):
     module.PluginValidationError = PluginValidationError
     module.PluginSecurityError = PluginSecurityError
     module.PluginDependencyError = PluginDependencyError
-
-
-def teardown_module(module):
-    """
-    Cleanup function to remove mocked modules from sys.modules.
-    This prevents mock pollution from affecting other test files.
-    """
-    # Clean up mock modules
-    for module_name in list(_mock_modules.keys()):
-        if module_name in sys.modules:
-            if module_name in _original_modules:
-                # Restore original module
-                sys.modules[module_name] = _original_modules[module_name]
-            else:
-                # Remove mock module
-                del sys.modules[module_name]
-
-    # Clean up the directly loaded module
-    if "model_plugin_system" in sys.modules:
-        del sys.modules["model_plugin_system"]
 
 
 # =============================================================================
@@ -291,9 +153,9 @@ def sample_plugin_yaml():
                 "name": "TestModel",
                 "class_name": "TestModelClass",
                 "module_path": "test_module",
-                "category": "gnn",
+                "category": "basic_gnn",
                 "description": "A test model",
-                "supported_tasks": ["regression", "classification"],
+                "supported_tasks": ["graph_regression", "graph_classification"],
                 "hyperparameters": {
                     "hidden_dim": {"type": "int", "default": 128},
                     "num_layers": {"type": "int", "default": 3},
@@ -323,9 +185,9 @@ def sample_model_declaration():
         name="TestModel",
         class_name="TestModelClass",
         module_path="test_module",
-        category="gnn",
+        category="basic_gnn",
         description="A test model",
-        supported_tasks=["regression", "classification"],
+        supported_tasks=["graph_regression", "graph_classification"],
         hyperparameters={
             "hidden_dim": {"type": "int", "default": 128},
             "num_layers": {"type": "int", "default": 3},
@@ -392,6 +254,19 @@ def mock_model_class():
 
 class TestPluginExceptions:
     """Test suite for plugin exception classes."""
+
+    def test_loader_uses_the_package_exception_classes(self):
+        """The loader raises milia_pipeline.exceptions classes, not local copies."""
+        import milia_pipeline.exceptions as exceptions
+
+        for name in (
+            "PluginError",
+            "PluginValidationError",
+            "PluginSecurityError",
+            "PluginDependencyError",
+            "PluginModelError",
+        ):
+            assert getattr(model_plugin_system, name) is getattr(exceptions, name), name
 
     def test_plugin_error_basic(self):
         """Test PluginError basic functionality."""
@@ -474,9 +349,12 @@ class TestModelDeclaration:
         assert sample_model_declaration.name == "TestModel"
         assert sample_model_declaration.class_name == "TestModelClass"
         assert sample_model_declaration.module_path == "test_module"
-        assert sample_model_declaration.category == "gnn"
+        assert sample_model_declaration.category == "basic_gnn"
         assert sample_model_declaration.description == "A test model"
-        assert sample_model_declaration.supported_tasks == ["regression", "classification"]
+        assert sample_model_declaration.supported_tasks == [
+            "graph_regression",
+            "graph_classification",
+        ]
         assert sample_model_declaration.hyperparameters == {
             "hidden_dim": {"type": "int", "default": 128},
             "num_layers": {"type": "int", "default": 3},
@@ -489,7 +367,7 @@ class TestModelDeclaration:
             name="Model",
             class_name="ModelClass",
             module_path="module",
-            category="gnn",
+            category="basic_gnn",
             description="Desc",
             supported_tasks=["task"],
             hyperparameters={},
@@ -511,7 +389,7 @@ class TestModelDeclaration:
             name="Model",
             class_name="ModelClass",
             module_path="module",
-            category="gnn",
+            category="basic_gnn",
             description="Desc",
             supported_tasks=["task"],
             hyperparameters={},
@@ -637,7 +515,7 @@ class TestModelPluginMetadata:
             name="Model2",
             class_name="Model2Class",
             module_path="module2",
-            category="gnn",
+            category="basic_gnn",
             description="Second model",
             supported_tasks=["task"],
             hyperparameters={},

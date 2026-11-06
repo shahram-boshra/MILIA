@@ -56,82 +56,13 @@ except ImportError:
     ModelMetadata = None
     ModelCategory = None
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import (
-        ModelError,
-        PluginDependencyError,
-        PluginError,
-        PluginModelError,
-        PluginSecurityError,
-        PluginValidationError,
-    )
-except ImportError:
-    # Fallback exception classes
-    class PluginError(Exception):
-        """Base exception for plugin-related errors."""
-
-        def __init__(self, message: str, plugin_name: str | None = None, **kwargs):
-            super().__init__(message)
-            self.plugin_name = plugin_name
-
-    class PluginValidationError(PluginError):
-        """Exception raised when plugin validation fails."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            validation_errors: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.validation_errors = validation_errors or []
-
-    class PluginSecurityError(PluginError):
-        """Exception raised for plugin security concerns."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            security_issues: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.security_issues = security_issues or []
-
-    class PluginDependencyError(PluginError):
-        """Exception raised for plugin dependency issues."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            missing_dependencies: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.missing_dependencies = missing_dependencies or []
-
-    class ModelError(Exception):
-        """Exception raised for model-related errors."""
-
-        pass
-
-    class PluginModelError(ModelError, PluginError):
-        """Exception raised for plugin model issues."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            plugin_path: str | None = None,
-            **kwargs,
-        ):
-            PluginError.__init__(self, message, plugin_name=plugin_name)
-            self.plugin_path = plugin_path
-
+from milia_pipeline.exceptions import (
+    PluginDependencyError,
+    PluginError,
+    PluginModelError,
+    PluginSecurityError,
+    PluginValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
