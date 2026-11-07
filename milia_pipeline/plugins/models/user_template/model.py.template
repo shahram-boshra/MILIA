@@ -1,9 +1,8 @@
 """
 Model plugin implementation template.
 
-Copy this to ``model.py`` and implement your model. The ``class_name`` and ``module_path``
-declared in ``plugin.yaml`` must match the class defined here and this module's filename
-(``model``).
+Copy this to ``model.py`` and implement your model. The ``class`` declared in
+``plugin.yaml`` (``"model:YourModelClass"``) names this module and the class defined here.
 
 Import MILIA and third-party packages with absolute imports (e.g. ``from milia_pipeline...``).
 Import other modules of this plugin with relative imports (e.g. ``from .helpers import ...``):
@@ -19,17 +18,30 @@ from torch import nn
 class YourModelClass(nn.Module):
     """Replace with your model.
 
-    Implement the interface expected by the MILIA model plugin loader (see the model
-    plugin system documentation). At minimum a standard ``torch.nn.Module`` with
-    ``__init__`` and ``forward`` is expected; wire any graph inputs (``x``,
-    ``edge_index``, ``edge_attr``, ``batch``) as your architecture requires.
+    Follow MILIA's model conventions so the factory can build the model, pool it for
+    graph-level tasks and chain it in ensembles:
+
+    - constructor parameters ``in_channels``, ``hidden_channels`` and ``out_channels``;
+    - set ``self.in_channels`` and ``self.out_channels``;
+    - ``forward(x, edge_index, batch=None)`` (``edge_attr`` may follow ``edge_index``;
+      3D models use ``forward(z, pos, batch=None)``), returning one row per node
+      ``[num_nodes, out_channels]``: the factory pools the rows per graph for
+      graph-level tasks.
     """
 
-    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int):
+    def __init__(self, in_channels: int, hidden_channels: int = 64, out_channels: int = 1):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.lin_in = nn.Linear(in_channels, hidden_channels)
         self.lin_out = nn.Linear(hidden_channels, out_channels)
 
-    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor,
+        batch: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        # Replace with your architecture; this placeholder ignores the graph structure.
         h = self.lin_in(x).relu()
         return self.lin_out(h)

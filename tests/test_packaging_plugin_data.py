@@ -124,3 +124,13 @@ def test_wheel_built_from_sdist_contains_every_package_data_file(distributions):
     package_data, _, wheel_files = distributions
 
     assert sorted(package_data - wheel_files) == []
+
+
+def test_wheel_contains_the_example_model_plugin(distributions):
+    """The first-party example plugin ships whole: manifest and module, in both artefacts."""
+    _, sdist_files, wheel_files = distributions
+
+    prefix = f"{PACKAGE_DIR.name}/plugins/models/example_models"
+    for name in ("plugin.yaml", "model.py"):
+        assert f"{prefix}/{name}" in sdist_files
+        assert f"{prefix}/{name}" in wheel_files

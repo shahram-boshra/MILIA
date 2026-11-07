@@ -13,6 +13,7 @@ models/
 ├── <category>/                 # a first-party or user model plugin
 │   ├── plugin.yaml             # manifest, schema version 2 (declares each model's class)
 │   └── model.py                # the model implementation
+├── example_models/             # first-party example: ExampleRegressor
 └── user_template/              # copy this to start a new model plugin
     ├── plugin.yaml.template
     ├── model.py.template

@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and loads the configured model plugins once per process and returns the names of the plugins loaded. It
   never raises: errors are logged. `ModelFactory()` and HPO search-space filtering call it, so plugin
   models can be built without any call of your own; importing `milia_pipeline.models` does not run it.
+- A first-party example model plugin, `example_models`, ships in the built-in container: `ExampleRegressor`,
+  a small message-passing regressor (PyTorch and PyG's `MessagePassing` only). It is discovered with the
+  shipped configuration and can be built with `ModelFactory().create_model("ExampleRegressor", ...)`, on its
+  own or as a member of parallel, sequential and hierarchical ensembles.
 
 ### Changed
 
@@ -58,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejected).
 - Errors registering a plugin model are raised as `PluginModelError` (a `PluginError` and a `ModelError`)
   naming the plugin and the model.
+- The model plugin template (`plugins/models/user_template/`) follows the model conventions: the
+  constructor takes `in_channels`, `hidden_channels` and `out_channels`, sets `self.in_channels` and
+  `self.out_channels`, and `forward(x, edge_index, batch=None)` returns one row per node. Its README
+  documents the conventions and the warnings for a model that is not composable or not chainable.
 - `models.plugins.plugin_paths` now lists only your own model plugin directories; its default and the
   shipped value are `[]`, because the built-in container comes from `include_builtin`. The directories
   scanned with the shipped configuration are unchanged. A relative path now resolves against the

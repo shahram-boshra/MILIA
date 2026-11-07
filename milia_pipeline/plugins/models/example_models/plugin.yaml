@@ -1,0 +1,29 @@
+# plugins/models/example_models/plugin.yaml
+# A first-party model plugin shipped with MILIA; a working example of the v2 manifest.
+
+schema_version: 2
+plugin_name: "example_models"
+version: "1.0.0"
+author: "Asadollah (Shahram) Boshra"
+description: "Example model plugin: a small message-passing regressor"
+license: "MIT"
+plugin_type: "first_party"
+homepage: "https://github.com/shahram-boshra/MILIA"
+
+# Shipped inside MILIA, so it always matches the installed MILIA: no `milia` bound.
+requirements:
+  python: ">=3.10"
+  torch_geometric: ">=2.6"
+
+dependencies: []
+
+models:
+  - name: "ExampleRegressor"
+    class: "model:ExampleRegressor"
+    category: "basic_gnn"
+    description: "Mean-neighbour message passing with a linear read-out (example plugin)"
+    supported_tasks: ["graph_regression", "node_regression"]
+    hyperparameters:
+      hidden_channels: {type: integer, default: 32, min: 1, description: "Hidden size"}
+      num_layers: {type: integer, default: 2, min: 1, description: "Message-passing layers"}
+      dropout: {type: float, default: 0.0, min: 0.0, max: 1.0, description: "Dropout"}
