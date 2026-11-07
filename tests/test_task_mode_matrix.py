@@ -31,7 +31,9 @@ STRATEGIES = ("sequential", "parallel", "hierarchical")
 NUM_GRAPHS, NUM_NODES, NUM_FEATURES, NUM_CLASSES = 3, 6, 4, 3
 
 # Known gaps, each a strict xfail until its fix lands (findings in the plugin strategy).
-CUSTOM_NOT_TASK_ADAPTIVE = "F30: custom architectures get no task head (readout, decoder, width)"
+CUSTOM_NOT_TASK_ADAPTIVE = (
+    "F30: custom architectures get no task head; the custom mode is deprecated (D10, removal 2.0.0)"
+)
 
 
 def _graphs(task_type: str) -> list[Data]:
@@ -138,6 +140,13 @@ def _cells():
             yield task_type, f"mixed/{strategy}", None
 
 
+def _marks(mode: str, gap: str | None) -> list:
+    marks = [pytest.mark.xfail(strict=True, reason=gap)] if gap else []
+    if mode == "custom":  # deprecated mode: its FutureWarning is expected here
+        marks.append(pytest.mark.filterwarnings("ignore:Custom architectures:FutureWarning"))
+    return marks
+
+
 @pytest.fixture(scope="module")
 def plugins():
     """The shipped example plugin, discovered fresh; restored afterwards."""
@@ -146,23 +155,27 @@ def plugins():
     mps._reset_model_plugin_discovery()
     registry = model_registry.registry
     before = set(registry.list_available_models())
+    saved_plugin_modules = {
+        name: module
+        for name, module in sys.modules.items()
+        if name.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}.")
+    }
     mps.ensure_model_plugins_discovered()
     yield
     for name in set(registry.list_available_models()) - before:
         registry.unregister_model(name)
-    for name in list(sys.modules):
-        if name.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}."):
-            del sys.modules[name]
+    # Restore the plugin modules as they were: models registered before this
+    # fixture still import from them.
+    for name in [n for n in sys.modules if n.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}.")]:
+        del sys.modules[name]
+    sys.modules.update(saved_plugin_modules)
     mps._reset_model_plugin_discovery()
     mps.ModelPluginLoader._instance, mps._plugin_loader = saved
 
 
 @pytest.mark.parametrize(
     ("task_type", "mode"),
-    [
-        pytest.param(task, mode, marks=[pytest.mark.xfail(strict=True, reason=gap)] if gap else [])
-        for task, mode, gap in _cells()
-    ],
+    [pytest.param(task, mode, marks=_marks(mode, gap)) for task, mode, gap in _cells()],
 )
 def test_mode_and_task(plugins, task_type, mode):
     torch.manual_seed(0)

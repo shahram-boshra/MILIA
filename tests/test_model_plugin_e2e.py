@@ -30,14 +30,21 @@ def fresh(tmp_path):
     mps._reset_model_plugin_discovery()
     registry = model_registry.registry
     before = set(registry.list_available_models())
+    saved_plugin_modules = {
+        name: module
+        for name, module in sys.modules.items()
+        if name.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}.")
+    }
     try:
         yield
     finally:
         for name in set(registry.list_available_models()) - before:
             registry.unregister_model(name)
-        for name in list(sys.modules):
-            if name.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}."):
-                del sys.modules[name]
+        # Restore the plugin modules as they were: models registered before this
+        # fixture still import from them.
+        for name in [n for n in sys.modules if n.startswith(f"{mps.PLUGIN_MODULE_NAMESPACE}.")]:
+            del sys.modules[name]
+        sys.modules.update(saved_plugin_modules)
         mps._reset_model_plugin_discovery()
         mps.ModelPluginLoader._instance = saved_instance
         mps._plugin_loader = saved_module_loader

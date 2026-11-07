@@ -20,6 +20,11 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 
+from .._deprecations import (
+    BUILDER_TYPE_DEPRECATION,
+    CUSTOM_ARCHITECTURE_DEPRECATION,
+    warn_deprecated,
+)
 from ..registry.model_registry import ModelRegistry
 
 # Dynamic introspection replaces static model_categories (Phase 4 Migration)
@@ -1297,9 +1302,10 @@ class ModelFactory:
         logger.info(f"Creating model: {name} for task: {task_type}")
 
         # =====================================================================
-        # PHASE 7: HANDLE CUSTOM ARCHITECTURES
+        # PHASE 7: HANDLE CUSTOM ARCHITECTURES (deprecated; removed in 2.0.0)
         # =====================================================================
         if name.lower() == "custom":
+            warn_deprecated(CUSTOM_ARCHITECTURE_DEPRECATION)
             if not _BUILDERS_AVAILABLE:
                 raise ModelInstantiationError(
                     "Custom architectures not available. "
@@ -2258,6 +2264,8 @@ class ModelFactory:
             )
 
         config = hyperparameters["architecture_config"]
+        if isinstance(config, dict) and "builder_type" in config:
+            warn_deprecated(BUILDER_TYPE_DEPRECATION, stacklevel=3)
 
         # Infer channels from sample data if not in config
         if isinstance(config, dict):

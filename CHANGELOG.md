@@ -87,6 +87,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same
   objects and emit a `DeprecationWarning`; they will be removed in 2.0.0.
 
+- The `custom` model-selection mode: `models.selection.mode: custom`, `models.custom_architecture`, and the
+  CLI `--mode custom`, `--custom-architecture` and `--architecture-config`. Model selection has two modes,
+  `single` and `ensemble`; write a new architecture as a model plugin (start from
+  `plugins/models/user_template`) and use it by name in either mode, alone or with PyG and other plugin
+  models. Custom architectures still work, with a `FutureWarning` and a log warning, until their removal
+  in 2.0.0.
+- `builder_type` (`models.custom_architecture.builder_type`, CLI `--builder-type`): it never had an effect.
+  Using it now gives a `FutureWarning`; it will be removed in 2.0.0. Combine models with an ensemble's
+  strategy instead. The shipped `configs/models.yaml` no longer sets it, and `--builder-type` has no
+  default.
 - A relative `models.plugins.plugin_paths` entry that exists only relative to the working directory: it is
   still used, with a `DeprecationWarning` attributed to the configuration root and a log warning. Use a
   path relative to the configuration root, or an absolute path; the fallback will be removed in 2.0.0.

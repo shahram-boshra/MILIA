@@ -1801,9 +1801,9 @@ class TestTrainingSystemArguments(unittest.TestCase):
             self.assertEqual(args.builder_type, builder_type)
 
     def test_parse_builder_type_default(self):
-        """Test --builder-type default is 'sequential'"""
+        """--builder-type is deprecated and has no default: an unset flag is not warned about."""
         args = self._parse_only([])
-        self.assertEqual(args.builder_type, "sequential")
+        self.assertIsNone(args.builder_type)
 
     def test_parse_builder_type_invalid_rejected(self):
         """Test that invalid --builder-type values are rejected"""

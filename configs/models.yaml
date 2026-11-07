@@ -16,7 +16,8 @@ models:
   selection:
     # Mode determines how model is created
 
-    mode: "ensemble"                         # "single", "custom", "ensemble"
+    mode: "ensemble"                         # "single" or "ensemble" ("custom" is deprecated,
+                                             # removed in 2.0.0: write a model plugin instead)
 
     task_type: "graph_regression"         # node_regression, node_classification,
                                           # graph_regression, graph_classification,
@@ -24,7 +25,6 @@ models:
 
 
     model_name: "ensemble"                   # ARGA + ARGVA ensemble - Adversarial autoencoder ensemble
-                                             # Use "custom" when mode="custom"
                                              # Use "ensemble" when mode="ensemble"
 
     # ─────────────────────────────────────────────────────────
@@ -161,7 +161,9 @@ models:
       #     indices: null                    # Use all columns
 
   # ───────────────────────────────────────────────────────────
-  # CUSTOM ARCHITECTURE (NEW - For mode="custom")
+  # CUSTOM ARCHITECTURE (DEPRECATED - for mode="custom"; removed in MILIA 2.0.0)
+  # Migration: write the architecture as a model plugin (milia_pipeline/plugins/models/
+  # user_template) and use it by name with mode "single" or "ensemble".
   # Define your own architecture with ANY NUMBER of layers in ANY ORDER
   # Choose from 120+ registered layer types (GCN, GAT, SAGE, etc.)
   # ───────────────────────────────────────────────────────────
@@ -170,8 +172,6 @@ models:
     enabled: true                       # Set to true when mode="custom"
     name: "MyCustomArchitecture"         # Optional name for the architecture
 
-    # Builder configuration
-    builder_type: "sequential"           # "sequential", "parallel", "hierarchical"
     in_channels: null                    # null = auto-detect from data
     out_channels: null                   # null = infer from task_type
 

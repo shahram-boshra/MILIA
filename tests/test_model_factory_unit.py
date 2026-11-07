@@ -2023,6 +2023,8 @@ class TestIntegration:
 # =============================================================================
 
 
+# The custom mode is deprecated (removal in 2.0.0); these tests cover it until then.
+@pytest.mark.filterwarnings("ignore:Custom architectures:FutureWarning")
 class TestModelFactoryCustomArchitecture:
     """Test ModelFactory custom architecture creation (Phase 7)."""
 

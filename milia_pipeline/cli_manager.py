@@ -143,6 +143,7 @@ from milia_pipeline.config.config_accessors import (
 
 # Configuration system
 from milia_pipeline.config.config_loader import load_config
+from milia_pipeline.models._deprecations import BUILDER_TYPE_DEPRECATION, warn_deprecated
 
 # Validation system
 try:
@@ -1237,7 +1238,9 @@ class CLIManager:
             type=str,
             default=None,
             choices=["single", "custom", "ensemble"],
-            help="Model selection mode: single (registry model), custom (ArchitectureBuilder), ensemble (ModelComposer). Overrides configs/ models.selection.mode",
+            help="Model selection mode: single (a registered PyG or plugin model) or ensemble "
+            "(registered models combined by ModelComposer). 'custom' (ArchitectureBuilder) is "
+            "deprecated and removed in 2.0.0. Overrides configs/ models.selection.mode",
         )
 
         training.add_argument(
@@ -1305,22 +1308,24 @@ class CLIManager:
             "--custom-architecture",
             action="store_true",
             default=False,
-            help="Enable custom architecture mode (alternative to --mode custom)",
+            help="Enable custom architecture mode (alternative to --mode custom; deprecated, "
+            "removed in 2.0.0)",
         )
 
         training.add_argument(
             "--architecture-config",
             type=str,
             default=None,
-            help="Path to YAML/JSON file with custom architecture definition",
+            help="Path to YAML/JSON file with custom architecture definition (deprecated, "
+            "removed in 2.0.0)",
         )
 
         training.add_argument(
             "--builder-type",
             type=str,
-            default="sequential",
+            default=None,
             choices=["sequential", "parallel", "hierarchical"],
-            help="Architecture builder type for custom mode",
+            help="Deprecated: has no effect; removed in 2.0.0. Use an ensemble strategy",
         )
 
         # =================================================================
@@ -3409,6 +3414,11 @@ results = runner.run_experiment(
         # Check if training mode is requested
         if not getattr(args, "train", False) and not getattr(args, "evaluate_only", False):
             return False
+
+        # --builder-type never had an effect (custom mode is deprecated as a whole;
+        # the model factory warns about it when a custom model is built)
+        if getattr(args, "builder_type", None) is not None:
+            warn_deprecated(BUILDER_TYPE_DEPRECATION)
 
         # Determine effective mode from flags
         if getattr(args, "custom_architecture", False):
