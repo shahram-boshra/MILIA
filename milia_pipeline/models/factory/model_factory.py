@@ -508,6 +508,27 @@ class GraphLevelModelWrapper(torch.nn.Module):
 # =============================================================================
 
 
+def _edge_regression_target_width(sample_data: Data | None) -> int | None:
+    """
+    The number of edge regression targets in ``sample_data``: one output per target.
+
+    Mirrors the trainer's target selection (``Trainer._get_target``: ``edge_value``,
+    else ``edge_y``, which ``prepare_data_for_task`` creates, possibly from a subset of
+    ``edge_attr`` columns). Data with neither falls back to ``edge_attr``.
+
+    Returns:
+        The last dimension of the target (``1`` for a 1-D target), or ``None`` if
+        ``sample_data`` has no edge target.
+    """
+    if sample_data is None:
+        return None
+    for attribute in ("edge_value", "edge_y", "edge_attr"):
+        target = getattr(sample_data, attribute, None)
+        if isinstance(target, torch.Tensor):
+            return int(target.size(-1)) if target.dim() >= 2 else 1
+    return None
+
+
 class EdgeLevelModelWrapper(torch.nn.Module):
     """
     Wrapper for models to handle edge-level tasks (link_prediction, edge_regression, edge_classification).
@@ -1493,17 +1514,12 @@ class ModelFactory:
 
             # For edge_regression, use MLP decoder with multi-dimensional output
             if task_type.lower() == "edge_regression":
-                # Get edge_out_channels from hyperparameters or infer from sample_data
+                # Get edge_out_channels from hyperparameters or from the edge target
                 edge_out_channels = processed_params.get("edge_out_channels")
-                if (
-                    edge_out_channels is None
-                    and sample_data is not None
-                    and hasattr(sample_data, "edge_attr")
-                    and sample_data.edge_attr is not None
-                ):
-                    edge_out_channels = sample_data.edge_attr.shape[-1]
+                if edge_out_channels is None:
+                    edge_out_channels = _edge_regression_target_width(sample_data)
                     logger.info(
-                        f"Inferred edge_out_channels={edge_out_channels} from sample_data.edge_attr"
+                        f"Inferred edge_out_channels={edge_out_channels} from the edge target"
                     )
 
                 # Use MLP decoder for multi-dimensional edge regression
@@ -1516,11 +1532,10 @@ class ModelFactory:
             # For edge_classification, use MLP decoder with num_classes output channels
             elif task_type.lower() == "edge_classification":
                 # Get num_classes from hyperparameters (set by main.py after DiscretizeTargets)
+                # (create_model_with_info injects num_classes_override as out_channels)
                 edge_out_channels = processed_params.get("out_channels") or processed_params.get(
                     "num_classes"
                 )
-                if edge_out_channels is None and num_classes_override is not None:
-                    edge_out_channels = num_classes_override
                 if edge_out_channels is None:
                     # Default to 10 classes if not specified (DiscretizeTargets default)
                     edge_out_channels = 10
@@ -2693,13 +2708,8 @@ class ModelFactory:
                 )
 
             elif task_type.lower() == "edge_regression":
-                # Infer from sample_data
-                if (
-                    sample_data is not None
-                    and hasattr(sample_data, "edge_attr")
-                    and sample_data.edge_attr is not None
-                ):
-                    edge_out_channels = sample_data.edge_attr.shape[-1]
+                # One output per column of the edge target
+                edge_out_channels = _edge_regression_target_width(sample_data)
                 if edge_out_channels is not None and edge_out_channels > 1:
                     decoder_method = "hadamard_mlp"
                 logger.info(f"Wrapping ensemble for edge_regression with {decoder_method} decoder")

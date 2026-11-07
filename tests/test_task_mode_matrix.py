@@ -32,7 +32,6 @@ NUM_GRAPHS, NUM_NODES, NUM_FEATURES, NUM_CLASSES = 3, 6, 4, 3
 
 # Known gaps, each a strict xfail until its fix lands (findings in the plugin strategy).
 CUSTOM_NOT_TASK_ADAPTIVE = "F30: custom architectures get no task head (readout, decoder, width)"
-EDGE_TARGET_WIDTH = "F32: edge_regression decoder width follows edge_attr, not the edge target"
 PLUGIN_TASKS = "F34: the example plugin declares regression tasks only"
 PLUGIN_DECLARED_TASKS = {"node_regression", "graph_regression"}
 
@@ -131,11 +130,10 @@ def _create(mode: str, task_type: str, sample: Data) -> torch.nn.Module:
 
 def _cells():
     for task_type in TASKS:
-        yield task_type, "single", None if task_type != "edge_regression" else EDGE_TARGET_WIDTH
+        yield task_type, "single", None
         yield task_type, "custom", CUSTOM_NOT_TASK_ADAPTIVE
         for strategy in STRATEGIES:
-            gap = EDGE_TARGET_WIDTH if task_type == "edge_regression" else None
-            yield task_type, f"ensemble/{strategy}", gap
+            yield task_type, f"ensemble/{strategy}", None
         for strategy in STRATEGIES:
             gap = None if task_type in PLUGIN_DECLARED_TASKS else PLUGIN_TASKS
             yield task_type, f"mixed/{strategy}", gap

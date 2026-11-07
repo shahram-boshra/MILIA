@@ -170,6 +170,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `edge_index` and failed with an index error. Now only the last level pools; the other levels pass node
   outputs on to the next level's message passing. `ParallelEnsemble` gains `readout` (default `true`) for
   this.
+- `edge_regression` models output one column per edge target. The output width was taken from `edge_attr`,
+  so with 3 edge features and 1 selected target the model predicted 3 values; it now follows the target the
+  trainer uses (`edge_value`, else `edge_y`), for single models and ensembles. Data without either still
+  uses `edge_attr`.
+- `ModelFactory.create_model(..., "edge_classification")` without `out_channels` or `num_classes` raised
+  `UnboundLocalError`; it now uses the documented default of 10 classes, with a warning.
 
 ## [1.18.0] - 2026-10-14
 
