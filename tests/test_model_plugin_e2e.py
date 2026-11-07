@@ -132,6 +132,7 @@ def test_copied_template_registers_its_model(fresh, tmp_path, monkeypatch):
     ("strategy", "task_type", "plugin_level"),
     [
         ("hierarchical", "node_regression", 1),
+        ("hierarchical", "graph_regression", 1),
         ("sequential", "graph_regression", 0),
         ("parallel", "graph_regression", 0),
     ],

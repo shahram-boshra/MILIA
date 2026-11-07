@@ -165,6 +165,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   settings had no effect.
 - `discover_and_load_plugins()` without `paths` now uses the configured sources, as documented. Before, it
   raised `TypeError`.
+- Hierarchical ensembles work on graph-level tasks (`graph_regression`, `graph_classification`). Every
+  level used to pool its output per graph, so the next level received one row per graph with the node
+  `edge_index` and failed with an index error. Now only the last level pools; the other levels pass node
+  outputs on to the next level's message passing. `ParallelEnsemble` gains `readout` (default `true`) for
+  this.
 
 ## [1.18.0] - 2026-10-14
 

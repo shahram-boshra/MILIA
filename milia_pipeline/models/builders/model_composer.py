@@ -750,6 +750,7 @@ class ParallelEnsemble(nn.Module):
         fusion: str,
         task_type: str,
         name: str = "ParallelEnsemble",
+        readout: bool = True,
     ):
         """
         Initialize parallel ensemble.
@@ -760,11 +761,16 @@ class ParallelEnsemble(nn.Module):
             fusion: Fusion method ('mean', 'weighted', 'attention', 'voting')
             task_type: Task type
             name: Ensemble name
+            readout: Whether this ensemble produces the task output. For a graph-level
+                task, ``True`` pools node outputs per graph; ``False`` keeps one row per
+                node, for an ensemble whose output feeds further message passing (an
+                intermediate level of a ``HierarchicalComposition``).
         """
         super().__init__()
         self.name = name
         self.fusion = fusion
         self.task_type = task_type
+        self.readout = readout
 
         # Store models as ModuleList for proper parameter registration
         self.models = nn.ModuleList(models)
@@ -1260,8 +1266,9 @@ class ParallelEnsemble(nn.Module):
                 f"batch={batch.shape if batch is not None else None}"
             )
 
-        # Determine if graph-level output is needed
-        is_graph_task = self._is_graph_level_task()
+        # Determine if graph-level output is needed: pool per graph only when this
+        # ensemble produces the task output (readout)
+        is_graph_task = self.readout and self._is_graph_level_task()
 
         # Extract pooling method from kwargs (don't pass to _call_model_with_signature)
         pooling_method = kwargs.pop("pooling_method", "mean")
@@ -2046,7 +2053,9 @@ class HierarchicalComposition(nn.Module):
         # Sort levels
         self.levels = sorted(levels_dict.keys())
 
-        # Create parallel ensemble for each level
+        # Create parallel ensemble for each level. Only the last level reads out
+        # (pools per graph for a graph-level task): every other level's output is
+        # the node input of the next level's message passing.
         self.level_ensembles = nn.ModuleList()
 
         for level in self.levels:
@@ -2065,6 +2074,7 @@ class HierarchicalComposition(nn.Module):
                 fusion=fusion,
                 task_type=task_type,
                 name=f"{name}_Level{level}",
+                readout=level == self.levels[-1],
             )
 
             self.level_ensembles.append(ensemble)
