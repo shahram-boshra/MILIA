@@ -1,7 +1,7 @@
 """Every model mode with every task type: build, run, check the output shape, backpropagate.
 
-Modes: a single PyG model, a custom architecture, and ensembles with each strategy (PyG
-members, and PyG + plugin members). Each cell is created the way ``main.py`` creates it,
+Modes: a single PyG model, a single plugin model, a custom architecture, and ensembles
+with each strategy (PyG members, and PyG + plugin members). Each cell is created the way ``main.py`` creates it,
 including ``num_classes`` for classification. A cell that does not work yet is a strict
 ``xfail`` naming its finding, so fixing it turns the cell red until the mark is removed.
 """
@@ -32,8 +32,6 @@ NUM_GRAPHS, NUM_NODES, NUM_FEATURES, NUM_CLASSES = 3, 6, 4, 3
 
 # Known gaps, each a strict xfail until its fix lands (findings in the plugin strategy).
 CUSTOM_NOT_TASK_ADAPTIVE = "F30: custom architectures get no task head (readout, decoder, width)"
-PLUGIN_TASKS = "F34: the example plugin declares regression tasks only"
-PLUGIN_DECLARED_TASKS = {"node_regression", "graph_regression"}
 
 
 def _graphs(task_type: str) -> list[Data]:
@@ -103,9 +101,10 @@ def _create(mode: str, task_type: str, sample: Data) -> torch.nn.Module:
     """Create the model as ``main.py`` does for ``mode``."""
     num_classes = NUM_CLASSES if "classification" in task_type else None
     factory = ModelFactory()
-    if mode == "single":
+    if mode in ("single", "single/plugin"):
+        name = "GCN" if mode == "single" else "ExampleGNN"
         model, _ = factory.create_model_with_info(
-            "GCN", {"hidden_channels": 16}, task_type, sample, num_classes_override=num_classes
+            name, {"hidden_channels": 16}, task_type, sample, num_classes_override=num_classes
         )
         return model
     if mode == "custom":
@@ -120,7 +119,7 @@ def _create(mode: str, task_type: str, sample: Data) -> torch.nn.Module:
         return factory.create_model("custom", hyperparameters, task_type, sample_data=sample)
 
     kind, strategy = mode.split("/")
-    members = ["GCN", "GraphSAGE"] if kind == "ensemble" else ["GCN", "ExampleRegressor"]
+    members = ["GCN", "GraphSAGE"] if kind == "ensemble" else ["GCN", "ExampleGNN"]
     hyperparameters = {"ensemble_config": _ensemble_config(strategy, members)}
     if num_classes is not None:
         key = "num_classes" if task_type == "edge_classification" else "out_channels"
@@ -131,12 +130,12 @@ def _create(mode: str, task_type: str, sample: Data) -> torch.nn.Module:
 def _cells():
     for task_type in TASKS:
         yield task_type, "single", None
+        yield task_type, "single/plugin", None
         yield task_type, "custom", CUSTOM_NOT_TASK_ADAPTIVE
         for strategy in STRATEGIES:
             yield task_type, f"ensemble/{strategy}", None
         for strategy in STRATEGIES:
-            gap = None if task_type in PLUGIN_DECLARED_TASKS else PLUGIN_TASKS
-            yield task_type, f"mixed/{strategy}", gap
+            yield task_type, f"mixed/{strategy}", None
 
 
 @pytest.fixture(scope="module")

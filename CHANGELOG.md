@@ -27,10 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and loads the configured model plugins once per process and returns the names of the plugins loaded. It
   never raises: errors are logged. `ModelFactory()` and HPO search-space filtering call it, so plugin
   models can be built without any call of your own; importing `milia_pipeline.models` does not run it.
-- A first-party example model plugin, `example_models`, ships in the built-in container: `ExampleRegressor`,
-  a small message-passing regressor (PyTorch and PyG's `MessagePassing` only). It is discovered with the
-  shipped configuration and can be built with `ModelFactory().create_model("ExampleRegressor", ...)`, on its
-  own or as a member of parallel, sequential and hierarchical ensembles.
+- A first-party example model plugin, `example_models`, ships in the built-in container: `ExampleGNN`, a
+  small message-passing GNN (PyTorch and PyG's `MessagePassing` only) for every task type: node, graph and
+  edge regression and classification, and link prediction. It is discovered with the shipped
+  configuration and can be built with `ModelFactory().create_model("ExampleGNN", ...)`, on its own or as a
+  member of parallel, sequential and hierarchical ensembles with PyG models.
 
 ### Changed
 
@@ -176,6 +177,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   uses `edge_attr`.
 - `ModelFactory.create_model(..., "edge_classification")` without `out_channels` or `num_classes` raised
   `UnboundLocalError`; it now uses the documented default of 10 classes, with a warning.
+- A model is treated as a 3D molecular model (requiring `z` and `pos`) only when its `forward` takes `z` and
+  `pos`. Before, a name containing `schnet`, `egnn`, `mace` and similar also counted, so a model such as
+  `ExampleGNN` was rejected for ordinary graphs; the signature check already covered every 3D model in the
+  registry (and `GNNFF`, which the name list missed).
+- For edge-level tasks (`link_prediction`, `edge_regression`, `edge_classification`) every model outputs node
+  embeddings of width `hidden_channels` for the edge decoder. A model whose `out_channels` has its own
+  default (for example a plugin model with `out_channels=1`) used to output that width instead, which broke
+  sequential and hierarchical ensembles. With `num_classes_override` for `edge_classification`,
+  `create_model_with_info` now passes the class count to the edge decoder (`num_classes`) instead of
+  narrowing the model's embeddings to the class count.
 
 ## [1.18.0] - 2026-10-14
 

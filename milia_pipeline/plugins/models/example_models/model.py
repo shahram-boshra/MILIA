@@ -1,14 +1,17 @@
 """
-Example model plugin: a small message-passing regressor.
+Example model plugin: a small message-passing GNN.
 
-``ExampleRegressor`` follows the model plugin conventions, so MILIA can build it,
-chain it in ensembles and pool it for graph-level tasks:
+``ExampleGNN`` follows the model plugin conventions, so MILIA can build it for every
+task type (node, graph, edge and link prediction, regression and classification) and
+combine it with PyG models in ensembles:
 
 - constructor parameters ``in_channels``, ``hidden_channels`` and ``out_channels``;
 - ``self.in_channels`` and ``self.out_channels`` set from them;
 - ``forward(x, edge_index, batch=None)`` returning one row per node
-  (``[num_nodes, out_channels]``). For graph-level tasks the model factory pools
-  the rows per graph, as for PyG's own models.
+  (``[num_nodes, out_channels]``). The model factory turns the rows into the task's
+  output, as for PyG's own models: it pools them per graph for graph-level tasks and
+  decodes node pairs for edge-level tasks and link prediction; ``out_channels`` is the
+  number of targets or classes.
 
 It uses only PyTorch and PyTorch Geometric's ``MessagePassing`` base class (no
 compiled extensions), and is deterministic under ``torch.manual_seed``.
@@ -33,7 +36,7 @@ class MeanNeighbourConv(MessagePassing):
         return self.lin_self(x) + self.propagate(edge_index, x=self.lin_neigh(x))
 
 
-class ExampleRegressor(nn.Module):
+class ExampleGNN(nn.Module):
     """Stacked mean-neighbour convolutions with ReLU, then a linear read-out.
 
     Args:

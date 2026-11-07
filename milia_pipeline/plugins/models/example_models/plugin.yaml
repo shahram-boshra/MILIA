@@ -5,7 +5,7 @@ schema_version: 2
 plugin_name: "example_models"
 version: "1.0.0"
 author: "Asadollah (Shahram) Boshra"
-description: "Example model plugin: a small message-passing regressor"
+description: "Example model plugin: a small message-passing GNN for every task type"
 license: "MIT"
 plugin_type: "first_party"
 homepage: "https://github.com/shahram-boshra/MILIA"
@@ -18,11 +18,19 @@ requirements:
 dependencies: []
 
 models:
-  - name: "ExampleRegressor"
-    class: "model:ExampleRegressor"
+  - name: "ExampleGNN"
+    class: "model:ExampleGNN"
     category: "basic_gnn"
     description: "Mean-neighbour message passing with a linear read-out (example plugin)"
-    supported_tasks: ["graph_regression", "node_regression"]
+    # Node embeddings, so the factory serves every task type (pooling, edge decoding).
+    supported_tasks:
+      - node_regression
+      - node_classification
+      - graph_regression
+      - graph_classification
+      - link_prediction
+      - edge_regression
+      - edge_classification
     hyperparameters:
       hidden_channels: {type: integer, default: 32, min: 1, description: "Hidden size"}
       num_layers: {type: integer, default: 2, min: 1, description: "Message-passing layers"}

@@ -89,10 +89,10 @@ def test_example_plugin_builds_runs_and_trains(example_models):
     batch = Batch.from_data_list(graphs)
 
     model = ModelFactory().create_model(
-        "ExampleRegressor", {"hidden_channels": 16}, "graph_regression", sample_data=graphs[0]
+        "ExampleGNN", {"hidden_channels": 16}, "graph_regression", sample_data=graphs[0]
     )
 
-    (regressor,) = _members(model, "ExampleRegressor")
+    (regressor,) = _members(model, "ExampleGNN")
     assert (regressor.in_channels, regressor.hidden_channels) == (4, 16)
     out = model(batch.x, batch.edge_index, batch=batch.batch)
     assert out.shape == (3, 1)
@@ -105,7 +105,7 @@ def test_example_plugin_is_deterministic_under_a_seed(example_models):
     for _ in range(2):
         torch.manual_seed(123)
         model = ModelFactory().create_model(
-            "ExampleRegressor", {}, "graph_regression", sample_data=graphs[0]
+            "ExampleGNN", {}, "graph_regression", sample_data=graphs[0]
         )
         outputs.append(model(graphs[0].x, graphs[0].edge_index))
     assert torch.equal(outputs[0], outputs[1])
@@ -156,7 +156,7 @@ def test_mixed_pyg_and_plugin_ensemble(example_models, strategy, task_type, plug
                 "hyperparameters": {"hidden_channels": 16, "out_channels": 8, "num_layers": 2},
             },
             {
-                "name": "ExampleRegressor",
+                "name": "ExampleGNN",
                 "level": plugin_level,
                 "hyperparameters": {"hidden_channels": 16, "out_channels": 8},
             },
@@ -168,10 +168,41 @@ def test_mixed_pyg_and_plugin_ensemble(example_models, strategy, task_type, plug
     )
 
     (gcn,) = _members(model, "GCN")
-    (regressor,) = _members(model, "ExampleRegressor")
+    (regressor,) = _members(model, "ExampleGNN")
     # Hierarchical and sequential: the plugin member's input is the GCN output (chained).
     assert regressor.in_channels == (gcn.out_channels if strategy != "parallel" else 4)
     out = model(batch.x, batch.edge_index, batch=batch.batch)
     expected_rows = batch.num_nodes if task_type == "node_regression" else batch.num_graphs
     assert out.shape[0] == expected_rows
     _one_step_lowers_the_loss(model, batch, torch.randn(out.shape))
+
+
+@pytest.mark.parametrize("task_type", ["link_prediction", "edge_regression", "edge_classification"])
+def test_plugin_model_outputs_embeddings_for_edge_tasks(example_models, task_type):
+    """For the edge decoder the plugin model outputs hidden_channels-wide node embeddings.
+
+    Its own out_channels default (1) must not become the embedding width; the class count
+    for edge classification goes to the decoder.
+    """
+    graphs = _graphs()
+    num_classes = 3 if task_type == "edge_classification" else None
+    model, _ = ModelFactory().create_model_with_info(
+        "ExampleGNN",
+        {"hidden_channels": 16},
+        task_type,
+        graphs[0],
+        num_classes_override=num_classes,
+    )
+
+    (gnn,) = _members(model, "ExampleGNN")
+    assert gnn.out_channels == 16
+    if num_classes is not None:
+        out = model(graphs[0].x, graphs[0].edge_index)
+        assert out.shape == (graphs[0].edge_index.size(1), num_classes)
+
+
+def test_a_name_is_not_a_3d_signature(example_models):
+    """``ExampleGNN`` contains "egnn" but takes (x, edge_index): it is not a 3D molecular model."""
+    graphs = _graphs()
+    model = ModelFactory().create_model("ExampleGNN", {}, "graph_regression", graphs[0])
+    assert model(graphs[0].x, graphs[0].edge_index).shape == (1, 1)

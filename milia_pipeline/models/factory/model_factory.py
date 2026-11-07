@@ -1531,9 +1531,11 @@ class ModelFactory:
 
             # For edge_classification, use MLP decoder with num_classes output channels
             elif task_type.lower() == "edge_classification":
-                # Get num_classes from hyperparameters (set by main.py after DiscretizeTargets)
-                # (create_model_with_info injects num_classes_override as out_channels)
-                edge_out_channels = processed_params.get("out_channels") or processed_params.get(
+                # The class count is the caller's out_channels or num_classes (set by
+                # main.py after DiscretizeTargets; create_model_with_info injects
+                # num_classes_override as out_channels). processed_params' out_channels
+                # is the embedding width the model was built with.
+                edge_out_channels = hyperparameters.get("out_channels") or hyperparameters.get(
                     "num_classes"
                 )
                 if edge_out_channels is None:
@@ -1659,11 +1661,14 @@ class ModelFactory:
         is_classification = "classification" in task_type.lower()
 
         if num_classes_override is not None and is_classification:
-            # Create a copy to avoid modifying the original
+            # Create a copy to avoid modifying the original. For edge
+            # classification the classes belong to the edge decoder (num_classes);
+            # the model itself outputs node embeddings.
             hyperparameters = dict(hyperparameters)
-            hyperparameters["out_channels"] = num_classes_override
+            key = "num_classes" if task_type.lower() == "edge_classification" else "out_channels"
+            hyperparameters[key] = num_classes_override
             logger.info(
-                f"Classification: Injecting out_channels={num_classes_override} "
+                f"Classification: Injecting {key}={num_classes_override} "
                 f"from num_classes_override into hyperparameters"
             )
 
@@ -3014,12 +3019,17 @@ class ModelFactory:
         )
 
         if "out_channels" in schema_params and "out_channels" not in processed:
-            # For edge-level tasks, models output embeddings - don't infer out_channels
-            # Let the model use hidden_channels as output dimension
+            # For edge-level tasks, models output node embeddings for the edge
+            # decoder: their width is hidden_channels, not the number of targets.
+            # Set it explicitly, so a model whose out_channels has its own default
+            # (a plugin model) outputs embeddings too, as PyG's BasicGNN does with
+            # out_channels=None.
             if is_edge_level_task:
+                if processed.get("hidden_channels") is not None:
+                    processed["out_channels"] = processed["hidden_channels"]
                 logger.debug(
-                    f"Skipping out_channels inference for edge-level task '{task_type}': "
-                    f"Model will output embeddings (hidden_channels), not class logits."
+                    f"Edge-level task '{task_type}': the model outputs embeddings "
+                    f"(out_channels=hidden_channels), not class logits."
                 )
             elif infer_out_channels is not None and sample_data is not None:
                 out_channels = infer_out_channels(
@@ -3148,33 +3158,16 @@ class ModelFactory:
         # - z: Atomic numbers with shape [num_atoms]
         # - pos: Coordinates with shape [num_atoms, 3]
         #
-        # DYNAMIC: Detects 3D molecular models by name pattern and forward signature
+        # DYNAMIC: Detects 3D molecular models by their forward signature
         # PRODUCTION-READY: Validates data attributes before model instantiation
         # FUTURE-PROOF: Works with any new 3D model following PyG conventions
         # =====================================================================
 
-        # Pattern-based detection of 3D molecular models
-        # These models use (z, pos, batch) forward signature
+        # A 3D molecular model's forward takes (z, pos[, batch]). The signature decides,
+        # not the name: a name substring ("egnn" in "ExampleGNN") is not a signature.
         model_name_lower = metadata.name.lower()
-        is_3d_molecular_model = any(
-            pattern in model_name_lower
-            for pattern in [
-                "schnet",
-                "dimenet",
-                "painn",
-                "egnn",
-                "visnet",
-                "comenet",
-                "spherenet",
-                "gemnet",
-                "equiformer",
-                "mace",
-                "nequip",
-            ]
-        )
-
-        # Also check forward signature via metadata (more robust for unknown models)
-        if not is_3d_molecular_model and hasattr(metadata, "forward_parameters"):
+        is_3d_molecular_model = False
+        if hasattr(metadata, "forward_parameters"):
             forward_params = metadata.forward_parameters
             # 3D models typically have 'z' and 'pos' as required forward parameters
             has_z_param = "z" in forward_params
