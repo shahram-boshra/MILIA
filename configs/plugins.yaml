@@ -54,8 +54,8 @@ plugins:
     # - official_molecular_transforms
     # - quantum_chemistry_extensions
 
-  # Disabled plugins: Plugins that should never be loaded
-  # Use this to prevent loading of problematic or deprecated plugins
+  # Disabled plugins: Plugins that should never be loaded (by plugin_name)
+  # Discovery skips them before importing any of their code
   disabled_plugins: []
     # - deprecated_transform_v1
     # - experimental_buggy_plugin

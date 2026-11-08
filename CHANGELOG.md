@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- A transformation plugin listed in `plugins.disabled_plugins` is no longer imported. Before, discovery
+  imported the plugin's modules and registered its transforms, so its code ran and its transforms could be
+  used; the list only kept the plugin out of the enabled set. Disabled plugins are now blocked before
+  discovery: their code is never imported, and no transform of theirs is registered.
+  `PluginRegistry.set_blocked(name)` and `PluginRegistry.is_blocked(name)` provide this to code that calls
+  the registry directly; blocking a plugin that is already registered unregisters its transforms.
+
 ## [1.19.0] - 2026-11-08
 
 Model plugin release: model plugins become a working plugin kind, beside descriptors and transformations.

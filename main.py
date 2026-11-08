@@ -980,6 +980,11 @@ def _discover_and_register_plugins(logger=None):
         if disabled_plugins_list:
             logger.debug(f"Disabled plugins list: {disabled_plugins_list}")
 
+        # Block disabled plugins before any discovery (here or later, e.g. the CLI's),
+        # so their code is never imported.
+        for plugin_name in disabled_plugins_list:
+            PluginRegistry.set_blocked(plugin_name)
+
         # ====================================================================
         # STEP 4: Discover Plugins
         # ====================================================================
@@ -1075,7 +1080,7 @@ def _discover_and_register_plugins(logger=None):
             plugins_to_enable = discovered_plugins
 
         # ====================================================================
-        # STEP 6: Apply Enabled/Disabled Lists
+        # STEP 6: Apply the Enabled List (disabled plugins were blocked in STEP 4)
         # ====================================================================
 
         # Filter based on enabled_plugins list (if specified)
@@ -1083,12 +1088,6 @@ def _discover_and_register_plugins(logger=None):
             logger.debug("Filtering by enabled_plugins list...")
             plugins_to_enable = [p for p in plugins_to_enable if p in enabled_plugins_list]
             logger.debug(f"Plugins after enabled filter: {plugins_to_enable}")
-
-        # Remove disabled plugins
-        if disabled_plugins_list:
-            logger.debug("Removing disabled plugins...")
-            plugins_to_enable = [p for p in plugins_to_enable if p not in disabled_plugins_list]
-            logger.debug(f"Plugins after disabled filter: {plugins_to_enable}")
 
         if not plugins_to_enable:
             logger.warning("No plugins remain after filtering")

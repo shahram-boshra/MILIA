@@ -416,7 +416,35 @@ class PluginRegistry:
             self._plugin_paths: list[Path] = []
             self._enabled_plugins: set[str] = set()
             self._disabled_plugins: set[str] = set()
+            # Names discovery never imports or registers (``set_blocked``).
+            self._blocked_plugins: set[str] = set()
             self._initialized = True
+
+    @classmethod
+    def set_blocked(cls, plugin_name: str) -> None:
+        """
+        Block a plugin by name: discovery never imports or registers it.
+
+        A plugin already registered under that name is disabled (its transforms are
+        unregistered) and removed from the registry. Blocking acts before any plugin
+        code runs, unlike ``disable_plugin``, which applies to a plugin that is
+        already registered.
+
+        Args:
+            plugin_name: The ``plugin_name`` of a plugin manifest.
+        """
+        instance = cls()
+        instance._blocked_plugins.add(plugin_name)
+        if plugin_name in instance._plugins:
+            cls.disable_plugin(plugin_name)
+            del instance._plugins[plugin_name]
+            instance._disabled_plugins.discard(plugin_name)
+        logger.info(f"Blocked plugin: {plugin_name}")
+
+    @classmethod
+    def is_blocked(cls, plugin_name: str) -> bool:
+        """Return whether ``plugin_name`` is blocked (see ``set_blocked``)."""
+        return plugin_name in cls()._blocked_plugins
 
     @classmethod
     def add_plugin_path(cls, path: Path) -> None:
@@ -482,6 +510,15 @@ class PluginRegistry:
                     plugin_meta = instance._load_plugin_metadata_from_yaml(plugin_yaml)
 
                     if not plugin_meta:
+                        continue
+
+                    # A blocked plugin's code is never imported (reading its manifest
+                    # runs no plugin code).
+                    if plugin_meta.plugin_name in instance._blocked_plugins:
+                        logger.info(
+                            f"Skipping blocked plugin '{plugin_meta.plugin_name}' "
+                            f"({plugin_yaml.parent}): its code is not imported"
+                        )
                         continue
 
                     # Register plugin
