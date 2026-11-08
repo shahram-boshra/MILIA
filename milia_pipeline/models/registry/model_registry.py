@@ -359,11 +359,22 @@ class ModelRegistry:
                 registered_at=datetime.now().isoformat(),
             )
 
+            # A re-registration (force=True) replaces the previous one entirely: its
+            # category and plugin entries must not outlive it.
+            if name in self._models:
+                self._remove_index_entries(name)
+
             self._models[name] = registration
             self._by_category[metadata.category].add(name)
 
             if plugin_name:
                 self._plugin_models[name] = plugin_name
+
+    def _remove_index_entries(self, name: str) -> None:
+        """Remove ``name`` from the category and plugin indexes of its current registration."""
+        registration = self._models[name]
+        self._by_category[registration.metadata.category].discard(name)
+        self._plugin_models.pop(name, None)
 
     def register_model(
         self,
@@ -445,17 +456,8 @@ class ModelRegistry:
                 logger.warning(f"Model '{name}' not found in registry")
                 return False
 
-            registration = self._models[name]
-
-            # Remove from main dict
+            self._remove_index_entries(name)
             del self._models[name]
-
-            # Remove from category
-            self._by_category[registration.metadata.category].discard(name)
-
-            # Remove from plugin models
-            if name in self._plugin_models:
-                del self._plugin_models[name]
 
             logger.info(f"Unregistered model: {name}")
             return True

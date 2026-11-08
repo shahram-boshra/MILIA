@@ -646,6 +646,36 @@ class TestModelRegistration:
         )
         assert result is True
 
+    def test_force_reregistration_moves_the_model_to_its_new_category(
+        self, fresh_registry, mock_torch_module, sample_metadata
+    ):
+        """Before: the model stayed in its old category too and was counted twice."""
+        other = next(c for c in ModelCategory if c != sample_metadata.category)
+        fresh_registry.register_model("Moved", mock_torch_module, sample_metadata)
+
+        fresh_registry.register_model(
+            "Moved",
+            mock_torch_module,
+            sample_metadata.model_copy(update={"category": other}),
+            force=True,
+        )
+
+        assert fresh_registry.list_by_category() == {other.value: ["Moved"]}
+        assert fresh_registry.get_statistics()["by_category"] == {other.value: 1}
+
+    def test_force_reregistration_without_a_plugin_drops_its_provenance(
+        self, fresh_registry, mock_torch_module, sample_metadata
+    ):
+        """Before: the old plugin name stayed in the plugin index."""
+        fresh_registry.register_model(
+            "Provenance", mock_torch_module, sample_metadata, plugin_name="old_plugin"
+        )
+
+        fresh_registry.register_model("Provenance", mock_torch_module, sample_metadata, force=True)
+
+        assert fresh_registry.list_plugin_models() == {}
+        assert fresh_registry.get_statistics()["plugins"] == 0
+
     def test_register_non_module_raises_error(self, fresh_registry, sample_metadata):
         """Test registering non-Module class raises ModelError."""
 

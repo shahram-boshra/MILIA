@@ -59,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a list.
 - A transformation plugin path is appended to `sys.path` instead of being inserted first, so a directory
   in it can no longer shadow an installed package or a standard-library module of the same name.
+- Re-registering a model with `ModelRegistry.register_model(..., force=True)` replaces the previous
+  registration entirely. Before, the model stayed in its previous category as well, so `list_by_category`
+  and the registry statistics counted it twice, and a plugin name from the previous registration survived
+  a re-registration without one.
 
 ## [1.19.0] - 2026-11-08
 
