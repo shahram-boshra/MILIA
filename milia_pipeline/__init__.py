@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.18.0"  # Phase 3: multi-objective HPO (Pareto front), configured objective metric, GP sampler, Wilcoxon and threshold pruners
+__version__ = "1.19.0"  # Model plugin kind: entry points, manifest schema v2, automatic discovery, example plugin
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"

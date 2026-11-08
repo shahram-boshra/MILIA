@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-11-08
+
+Model plugin release: model plugins become a working plugin kind, beside descriptors and transformations.
+Plugins are discovered from plugin directories and from installed distributions (the `milia.models` entry-point
+group), checked against a versioned manifest schema and their version requirements, and registered with
+complete metadata. Their models are used by name, alone or in ensembles with PyG models, for every task type;
+a first-party example plugin ships with MILIA. **Behaviour notes:** with the shipped configuration, the first
+`ModelFactory` now discovers and registers model plugins (set `models.plugins.enabled: false` to turn this
+off); a plugin whose validation reports errors is no longer registered at any `validation_level`; the `custom`
+model-selection mode now emits a `FutureWarning`, ahead of its removal in 2.0.0.
+
 ### Added
 
 - `milia_pipeline.models.registry.build_metadata_for_class(model_name, model_class, import_path)` builds model
@@ -82,11 +93,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `class_name` + `module_path` (use `class: "<module>:<Class>"`), `milia_version`, `pyg_version`,
   `min_pyg_version`, `python_version` (use `requirements`), `reference_paper`, `reference_url` (use
   `reference`); keys outside the schema are ignored. Support will be removed in 2.0.0.
-
 - `milia_pipeline.models.plugins` and `milia_pipeline.models.plugins.model_plugin_system`: import from
   `milia_pipeline.models.model_plugin_system` instead. The old paths keep working as aliases of the same
   objects and emit a `DeprecationWarning`; they will be removed in 2.0.0.
-
 - The `custom` model-selection mode: `models.selection.mode: custom`, `models.custom_architecture`, and the
   CLI `--mode custom`, `--custom-architecture` and `--architecture-config`. Model selection has two modes,
   `single` and `ensemble`; write a new architecture as a model plugin (start from
@@ -800,7 +809,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.18.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.19.0...HEAD
+[1.19.0]: https://github.com/shahram-boshra/MILIA/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/shahram-boshra/MILIA/compare/v1.15.1...v1.16.0
