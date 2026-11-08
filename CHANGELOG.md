@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PluginRegistry.set_trusted` (`DeprecationWarning`) and `--trust-plugin` (`FutureWarning`): plugin trust
   has no effect, since plugin code is not vetted. Both still record the flag; removal in 2.0.0.
   `--trust-plugin` no longer logs that trusted plugins bypass security checks.
+- Importing modules through a transformation plugin path on `sys.path`. The loader imports plugin modules
+  from their files and does not need the entry; from 2.0.0 it is no longer added, and a plugin imports its
+  own modules relatively.
 
 ### Fixed
 
@@ -49,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   count in `overall_score`; scored sections include their `weight`. A transform that cannot be
   benchmarked is shown as not benchmarked instead of 0 ms. `SECURITY_NOT_CHECKED` and
   `CODE_QUALITY_NOT_CHECKED` give the reasons reported.
+- `milia_pipeline.transformations.discover_and_register_plugins` treated each path string as a list of
+  paths, so `["/tmp"]` added the filesystem root `/` as a plugin path and to `sys.path`, then failed. Each
+  path is now added once and the plugin paths are searched once; a path that cannot be added counts in
+  `failed_count`. It and `PluginRegistry.discover_plugins` raise `TypeError` for a single path instead of
+  a list.
+- A transformation plugin path is appended to `sys.path` instead of being inserted first, so a directory
+  in it can no longer shadow an installed package or a standard-library module of the same name.
 
 ## [1.19.0] - 2026-11-08
 

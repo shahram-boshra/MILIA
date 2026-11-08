@@ -472,29 +472,47 @@ def discover_and_register_plugins(plugin_paths: list[str]) -> dict[str, Any]:
     """
     Discover and register plugins from specified paths.
 
+    Each path is added to the plugin registry; one that cannot be added (for
+    example, not a directory) is logged and counted in ``failed_count``. The
+    registry's paths are then searched once.
+
     Args:
         plugin_paths: List of paths to search for plugins
 
     Returns:
-        Discovery results dictionary
+        Discovery results dictionary: ``registered_count``, ``failed_count``
+        (paths that could not be added) and ``plugins`` (names discovered)
+
+    Raises:
+        TypeError: If ``plugin_paths`` is a single path rather than a list.
 
     Example:
         >>> results = discover_and_register_plugins(['/path/to/plugins'])
         >>> print(f"Registered {results['registered_count']} plugins")
     """
+    import os  # local: keeps the package namespace to its public API
+    from pathlib import Path
+
     if not PLUGIN_SYSTEM_AVAILABLE:
         raise ImportError("plugin_system module not available")
+
+    if isinstance(plugin_paths, (str, os.PathLike)):
+        raise TypeError(
+            f"plugin_paths must be a list of paths, not a single path: {plugin_paths!r}"
+        )
 
     results = {"registered_count": 0, "failed_count": 0, "plugins": []}
 
     for path in plugin_paths:
         try:
-            discovered = PluginRegistry.discover_plugins(path)
-            results["plugins"].extend(discovered)
-            results["registered_count"] += len(discovered)
+            PluginRegistry.add_plugin_path(Path(path))
         except Exception as e:
-            logger.error(f"Failed to discover plugins from {path}: {e}")
+            logger.error(f"Failed to add plugin path {path}: {e}")
             results["failed_count"] += 1
+
+    discovered = PluginRegistry.discover_plugins()
+    results["plugins"].extend(discovered)
+    results["registered_count"] = len(discovered)
 
     return results
 

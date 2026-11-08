@@ -30,6 +30,8 @@ project_root = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(project_root))
 
 import hashlib
+import importlib.machinery
+import importlib.util
 import threading
 import time
 from unittest.mock import Mock, mock_open, patch
@@ -1917,7 +1919,63 @@ class TestPluginRegistryAddPluginPath:
         _original_paths_count = len(registry._plugin_paths)
         PluginRegistry.add_plugin_path(tmp_path)
         assert tmp_path.resolve() in registry._plugin_paths
-        assert str(tmp_path.resolve()) in sys.path
+        # Appended after the installed packages (before: inserted first).
+        assert sys.path[-1] == str(tmp_path.resolve())
+
+    def test_add_plugin_path_never_shadows_an_installed_module(
+        self, reset_plugin_registry, tmp_path
+    ):
+        """A plugin-path entry named like an installed package does not replace it.
+
+        ``PathFinder`` searches ``sys.path`` in order (``find_spec`` would return the
+        already-imported module from ``sys.modules`` instead).
+        """
+        (tmp_path / "yaml").mkdir()
+        (tmp_path / "yaml" / "__init__.py").write_text("SHADOW = True\n")
+        installed = importlib.machinery.PathFinder.find_spec("yaml").origin
+
+        PluginRegistry.add_plugin_path(tmp_path)
+
+        assert importlib.machinery.PathFinder.find_spec("yaml").origin == installed
+
+    def test_add_plugin_path_does_not_duplicate_a_sys_path_entry(
+        self, reset_plugin_registry, tmp_path
+    ):
+        sys.path.append(str(tmp_path.resolve()))
+        PluginRegistry.add_plugin_path(tmp_path)
+        assert sys.path.count(str(tmp_path.resolve())) == 1
+
+    @pytest.mark.parametrize("single", ["/tmp", Path("/tmp")])
+    def test_discover_plugins_rejects_a_single_path(self, reset_plugin_registry, single):
+        """A single path is an error, not a sequence of characters to add."""
+        with pytest.raises(TypeError, match="list of paths"):
+            PluginRegistry.discover_plugins(single)
+        assert PluginRegistry.get_plugin_paths() == []
+
+    def test_discover_and_register_plugins_adds_each_path_once(
+        self, reset_plugin_registry, tmp_path
+    ):
+        """Each path string is one path: the filesystem root is never added.
+
+        Before, each string was passed to ``discover_plugins`` as if it were a list, so
+        ``"/tmp"`` added ``/`` to the plugin paths and to ``sys.path``, then failed.
+        """
+        from milia_pipeline.transformations import discover_and_register_plugins
+
+        sys_path_before = list(sys.path)
+        missing = tmp_path / "missing"
+
+        results = discover_and_register_plugins([str(tmp_path), str(missing)])
+
+        assert PluginRegistry.get_plugin_paths() == [tmp_path.resolve()]
+        assert results == {"registered_count": 0, "failed_count": 1, "plugins": []}
+        assert [p for p in sys.path if p not in sys_path_before] == [str(tmp_path.resolve())]
+
+    def test_discover_and_register_plugins_rejects_a_single_path(self, reset_plugin_registry):
+        from milia_pipeline.transformations import discover_and_register_plugins
+
+        with pytest.raises(TypeError, match="list of paths"):
+            discover_and_register_plugins("/tmp")
 
     def test_add_plugin_path_duplicate_ignored(self, reset_plugin_registry, tmp_path):
         """Test that adding the same path twice doesn't duplicate"""

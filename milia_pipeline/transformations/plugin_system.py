@@ -23,6 +23,7 @@ import importlib
 import importlib.util
 import inspect
 import logging
+import os
 import re
 import sys
 import threading
@@ -476,8 +477,18 @@ class PluginRegistry:
         """
         Add a directory to search for plugins.
 
+        Plugin modules are loaded from their files, so the loader does not need the
+        directory on ``sys.path``. It is still appended there, after the installed
+        packages, so that an installed module always wins over a plugin-path entry
+        of the same name; importing modules through it is deprecated and the entry
+        will no longer be added in 2.0.0 (a plugin imports its own modules
+        relatively).
+
         Args:
             path: Directory path containing plugins
+
+        Raises:
+            PluginError: If ``path`` is not a directory.
         """
         instance = cls()
         path = Path(path).resolve()
@@ -487,8 +498,8 @@ class PluginRegistry:
 
         if path not in instance._plugin_paths:
             instance._plugin_paths.append(path)
-            # Add to Python path for imports
-            sys.path.insert(0, str(path))
+            if str(path) not in sys.path:
+                sys.path.append(str(path))
             logger.info(f"Added plugin path: {path}")
 
     @classmethod
@@ -505,13 +516,22 @@ class PluginRegistry:
         4. Validate if requested
 
         Args:
-            paths: List of paths to search. If None, uses registered paths.
+            paths: List of paths to add before searching. Every registered path is
+                searched, including ones added earlier.
             auto_validate: If True, validate plugins during discovery.
 
         Returns:
             List of discovered plugin names
+
+        Raises:
+            TypeError: If ``paths`` is a single path rather than a list of paths.
         """
         instance = cls()
+
+        if isinstance(paths, (str, os.PathLike)):
+            raise TypeError(
+                f"paths must be a list of paths, not a single path: {paths!r}; pass [path] instead"
+            )
 
         if paths:
             for path in paths:
