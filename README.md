@@ -398,7 +398,7 @@ MILIA is organized into 11 core modules and a split configuration system:
 |-----------|---------|
 | `configs/` | Split YAML configuration with per-dataset files (11 datasets) and deep-merge architecture |
 | `plugins/` | Plugin kind-containers — `transformations/`, `descriptors/`, `models/` — each holding its plugin categories, a `user_template/` scaffold, and YAML manifests (discovered via config-driven `plugin_paths`) |
-| `tests/` | 163 test files spanning all core modules (the `smoke` subset is 1,965 tests) |
+| `tests/` | 229 test files spanning all core modules (the `smoke` subset is 1,971 tests) |
 
 ## Datasets
 
@@ -473,7 +473,7 @@ pytest -m integration        # Integration tests only
 pytest -m gpu                # GPU-specific tests only
 ```
 
-The test suite spans 163 test files across all core modules; the `smoke` subset is 1,965 tests. Run `pytest --collect-only -q | tail -1` for the exact collected count in your checkout.
+The test suite spans 229 test files across all core modules; the `smoke` subset is 1,971 tests. Run `pytest --collect-only -q | tail -1` for the exact collected count in your checkout.
 
 ## Contributing
 

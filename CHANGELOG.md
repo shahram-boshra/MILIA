@@ -174,7 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   findings (`eval(`, `exec(`, `__import__(`, `os.system(`, `import subprocess`) are now logged at INFO as
   hints at `standard` and `strict` and never block registration; before, `strict` rejected a plugin for
   them. The `os.system` pattern, which matched no valid Python, now matches calls. The README no longer
-  claims "security controls" for plugins.
+  claims "security controls" for plugins, and `SECURITY.md` states the trust model: what an installed
+  plugin's code does is out of scope; MILIA loading plugin code that was not configured is in scope.
 - Model plugins are now used: the `models.plugins` settings (`enabled`, `auto_discover`, `auto_validate`,
   `validation_level`, sources) take effect when the first `ModelFactory` is created, and the plugins' models
   are registered before any model is built. Before, nothing in MILIA called the plugin loader, so these

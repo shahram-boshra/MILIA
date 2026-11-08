@@ -67,7 +67,7 @@ We ask that you:
 
 The following are examples of issues we consider security vulnerabilities in MILIA:
 
-- **Plugin system abuse**: Malicious or untrusted plugins that bypass the plugin validation and security checks in the plugin architecture.
+- **Plugin loading beyond what is configured**: MILIA importing plugin code from a location or distribution you did not configure or install, or while plugin discovery is disabled.
 - **YAML configuration injection**: Crafted YAML inputs that exploit the configuration loading or schema validation system to execute unintended operations.
 - **Dependency chain issues**: Vulnerabilities in MILIA's direct dependencies (PyTorch, PyTorch Geometric, RDKit, etc.) that are exploitable through MILIA's interfaces.
 - **Path traversal**: File path manipulation through configuration parameters, CLI arguments, or dataset handler paths that allows reading or writing outside intended directories.
@@ -79,12 +79,13 @@ The following are **not** in scope for this security policy:
 - Bugs that do not have a security impact (please report these as [regular issues](https://github.com/shahram-boshra/MILIA/issues) per the [Contributing Guide](CONTRIBUTING.md)).
 - Vulnerabilities in upstream dependencies that are not exploitable through MILIA's interfaces (please report these to the respective upstream projects).
 - Issues requiring physical access to the machine running MILIA.
+- What a plugin you installed or placed on a plugin path does when it runs. Plugins are trusted code: loading one runs it with the privileges of the MILIA process, and plugin validation (manifests, versions, dependencies) does not vet plugin code.
 
 ## Security-Related Configuration
 
 MILIA users should be aware of the following security considerations:
 
-- **Plugin trust**: Only enable plugins from trusted sources. MILIA's plugin system includes validation checks, but plugins execute arbitrary Python code by design.
+- **Plugin trust**: Only enable plugins from trusted sources. MILIA validates plugin manifests, versions and dependencies, but plugins execute arbitrary Python code by design and their code is not vetted or sandboxed. Model plugins: see [`milia_pipeline/plugins/models/README.md`](milia_pipeline/plugins/models/README.md#trust-model).
 - **Configuration validation**: Always run with configuration schema validation enabled (the default) to catch malformed or unexpected inputs early.
 - **File paths**: Review all file paths in YAML configuration files, especially when processing data from untrusted sources.
 
