@@ -38,6 +38,8 @@ import pytest
 
 # Import the module under test
 from milia_pipeline.transformations.plugin_system import (
+    CODE_QUALITY_NOT_CHECKED,
+    SECURITY_NOT_CHECKED,
     PluginDependencyError,
     # Exceptions
     PluginError,
@@ -1532,38 +1534,24 @@ class TestPluginRegistryValidationInternal:
         assert result["passed"] is True
         assert "t_b" in result["missing"]
 
-    def test_check_security_trusted_plugin(self):
-        """Test _check_security relaxes checks for trusted plugins"""
-        metadata = PluginMetadata(
-            plugin_name="trusted_one", version="1.0.0", author="A", trusted=True
-        )
-        result = PluginRegistry._check_security(metadata)
-        assert result["passed"] is True
-        assert len(result["issues"]) == 0
-        assert any("trusted" in w.lower() for w in result["warnings"])
+    @pytest.mark.parametrize(
+        ("trusted", "checksum"),
+        [(True, None), (False, None), (False, "abc123def456")],  # pragma: allowlist secret
+    )
+    def test_check_security_reports_not_checked(self, trusted, checksum):
+        """_check_security reports a skipped check, never a pass: plugin code is not vetted.
 
-    def test_check_security_no_checksum_warning(self):
-        """Test _check_security warns about missing checksum"""
+        Before, it always passed (a placeholder), relaxed nothing real for trusted plugins and
+        "verified" only that MILIA's own digest existed. Neither flag changes the result now.
+        """
         metadata = PluginMetadata(
-            plugin_name="no_checksum", version="1.0.0", author="A", checksum=None, trusted=False
+            plugin_name="sec_test", version="1.0.0", author="A", trusted=trusted, checksum=checksum
         )
         result = PluginRegistry._check_security(metadata)
-        assert result["passed"] is True  # no issues, just warnings
-        assert any("checksum" in w.lower() for w in result["warnings"])
-
-    def test_check_security_with_checksum_no_warnings_about_it(self):
-        """Test _check_security does not warn about checksum when present"""
-        metadata = PluginMetadata(
-            plugin_name="has_checksum",
-            version="1.0.0",
-            author="A",
-            checksum="abc123def456",  # pragma: allowlist secret
-            trusted=False,
-        )
-        result = PluginRegistry._check_security(metadata)
-        assert result["passed"] is True
-        checksum_warnings = [w for w in result["warnings"] if "checksum" in w.lower()]
-        assert len(checksum_warnings) == 0
+        assert result["skipped"] is True
+        assert result["passed"] is None
+        assert result["reason"] == SECURITY_NOT_CHECKED
+        assert result["issues"] == [] and result["warnings"] == []
 
     def test_check_dependencies_no_extra_deps(self):
         """Test _check_dependencies passes when no extra deps specified"""
@@ -2060,13 +2048,57 @@ class TestPluginValidatorDetailed:
         assert len(result["missing"]) == 2
         assert result["score"] == 0.6  # 1.0 - (2 * 0.2)
 
-    def test_check_code_quality_placeholder(self):
-        """Test _check_code_quality returns placeholder result"""
+    def test_check_code_quality_reports_not_checked(self):
+        """_check_code_quality carries no score (before: a fixed 0.95 that measured nothing)."""
         metadata = PluginMetadata(plugin_name="cq_test", version="1.0.0", author="A")
         result = PluginValidator._check_code_quality(metadata)
-        assert result["passed"] is True
-        assert result["score"] == 0.95
-        assert "details" in result
+        assert result == {"checked": False, "reason": CODE_QUALITY_NOT_CHECKED}
+
+    def test_calculate_score_leaves_out_unscored_sections(self):
+        sections = {
+            "documentation": {"score": 0.6},
+            "functional": {"score": 1.0},
+            "code_quality": {"checked": False, "reason": CODE_QUALITY_NOT_CHECKED},
+            "security": {"checked": False, "reason": SECURITY_NOT_CHECKED},
+        }
+        expected = (0.6 * 0.20 + 1.0 * 0.35) / (0.20 + 0.35)
+        assert PluginValidator._calculate_score(sections) == pytest.approx(expected)
+
+    def test_validate_plugin_skips_security_in_the_result(self, reset_plugin_registry):
+        """The skipped security test counts neither as passed nor as failed."""
+        registry = PluginRegistry()
+        registry._plugins["skip_test"] = PluginMetadata(
+            plugin_name="skip_test", version="1.0.0", author="A"
+        )
+        results = PluginRegistry.validate_plugin("skip_test")
+        assert results["tests"]["security"]["skipped"] is True
+        assert results["summary"]["tests_skipped"] == 1
+        run = [t for t in results["tests"].values() if not t.get("skipped")]
+        assert results["summary"]["tests_passed"] + results["summary"]["tests_failed"] == len(run)
+        assert results["passed"] is all(t["passed"] for t in run)
+
+    def test_validate_plugin_comprehensive_runs_unmocked(self, reset_plugin_registry):
+        """The comprehensive report is built from the registry's metadata object.
+
+        Before, it read ``get_plugin_info`` (a dict) and failed with ``AttributeError`` for
+        every plugin.
+        """
+        registry = PluginRegistry()
+        registry._plugins["cv_test"] = PluginMetadata(
+            plugin_name="cv_test", version="1.0.0", author="A", description="d"
+        )
+        report = PluginValidator.validate_plugin_comprehensive(
+            "cv_test", run_performance_tests=False
+        )
+        assert report["not_checked"] == ["code_quality", "security"]
+        for name in report["not_checked"]:
+            assert "score" not in report["sections"][name]
+        scored = {n: s for n, s in report["sections"].items() if n not in report["not_checked"]}
+        assert set(scored) == {"documentation", "functional"}
+        assert all(s["weight"] == PluginValidator.SECTION_WEIGHTS[n] for n, s in scored.items())
+        assert report["overall_score"] == pytest.approx(
+            PluginValidator._calculate_score(report["sections"])
+        )
 
     def test_generate_recommendation_all_tiers(self):
         """Test _generate_recommendation for all score tiers"""

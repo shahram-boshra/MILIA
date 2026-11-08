@@ -9,11 +9,11 @@
 # The plugin system allows loading custom graph transformations from external packages.
 # This enables extending Milia's capabilities without modifying core code.
 #
-# See docs/PLUGIN_SYSTEM_GUIDE.md for detailed documentation on:
-#   - Creating custom plugins
-#   - Plugin validation requirements
-#   - Security considerations
-#   - Distribution best practices
+# Plugins are trusted code: discovering a plugin imports it, which runs its code. MILIA does
+# not vet or sandbox plugin code; list a plugin you do not want to run in disabled_plugins.
+#
+# See milia_pipeline/plugins/transformations/README.md (layout, discovery, trust model) and
+# its user_template/README.md (creating a plugin).
 
 plugins:
   # Enable or disable the entire plugin system

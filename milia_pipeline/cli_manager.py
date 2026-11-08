@@ -3682,6 +3682,11 @@ results = runner.run_experiment(
 
             print("Test Results:")
             for test_name, test_result in results["tests"].items():
+                if test_result.get("skipped"):
+                    print(f"  ○ SKIP {test_name}")
+                    print(f"      {test_result.get('reason', '')}")
+                    continue
+
                 passed = test_result.get("passed", False)
                 status = "✓ PASS" if passed else "✗ FAIL"
                 print(f"  {status} {test_name}")
@@ -3702,7 +3707,7 @@ results = runner.run_experiment(
 
             if results["passed"]:
                 print("\n✓ Plugin validation successful!")
-                print("  Plugin can be safely enabled.")
+                print("  Its code was not vetted for security: plugins are trusted code.")
             else:
                 print("\n✗ Plugin validation failed!")
                 print("  Review errors above before enabling.")
@@ -3739,36 +3744,34 @@ results = runner.run_experiment(
 
             print("Section Scores:")
             for section_name, section_data in report["sections"].items():
+                title = section_name.replace("_", " ").title()
+                if section_data.get("checked") is False:
+                    print(f"  ○ {title}: {section_data['reason']}")
+                    continue
                 score = section_data["score"]
                 weight = section_data["weight"]
                 status = "✓" if score >= 0.7 else "○" if score >= 0.5 else "✗"
-                print(
-                    f"  {status} {section_name.replace('_', ' ').title()}: "
-                    f"{score:.2f} (weight: {weight:.0%})"
-                )
+                print(f"  {status} {title}: {score:.2f} (weight: {weight:.0%})")
 
             # Show performance benchmarks if available
             if args.run_performance_tests and "performance" in report["sections"]:
                 print("\nPerformance Benchmarks:")
                 benchmarks = report["sections"]["performance"].get("benchmarks", {})
                 for transform, metrics in benchmarks.items():
-                    small_ms = metrics.get("small_molecule_ms", 0)
-                    large_ms = metrics.get("large_molecule_ms", 0)
                     print(f"  {transform}:")
-                    print(f"    Small molecules: {small_ms:.2f}ms")
-                    print(f"    Large molecules: {large_ms:.2f}ms")
+                    if not isinstance(metrics, dict) or "error" in metrics:
+                        reason = metrics["error"] if isinstance(metrics, dict) else metrics
+                        print(f"    Not benchmarked: {reason}")
+                        continue
+                    print(f"    Small molecules: {metrics['small_molecule_ms']:.2f}ms")
+                    print(f"    Large molecules: {metrics['large_molecule_ms']:.2f}ms")
 
-            # Show issues if any
-            if report["issues"]:
-                print("\nIssues Found:")
-                for issue in report["issues"][:5]:  # Show first 5
-                    print(f"  ⚠️  {issue}")
-
-            # Show recommendations
-            if report["recommendations"]:
-                print("\nRecommendations:")
-                for rec in report["recommendations"][:3]:  # Show first 3
-                    print(f"  💡 {rec}")
+            # Documentation gaps are the report's concrete, actionable findings
+            missing = report["sections"].get("documentation", {}).get("missing", [])
+            if missing:
+                print("\nMissing documentation:")
+                for item in missing:
+                    print(f"  ⚠️  {item}")
 
             print(f"\n{'-' * 70}")
             print(f"Final Recommendation: {report['recommendation']}")

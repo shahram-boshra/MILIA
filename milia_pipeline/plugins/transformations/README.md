@@ -29,6 +29,17 @@ in-tree search path resolves package-relative via
 `configs/plugins.yaml` (`plugins.plugin_paths`). Additional locations — including user-owned
 directories outside the package tree — can be appended to `plugins.plugin_paths`.
 
+A plugin named in `plugins.disabled_plugins` is skipped before any of its code is imported, and none of
+its transforms is registered.
+
+## Trust model
+
+Discovering a plugin imports its modules, which runs their code with the privileges of the MILIA
+process. Plugins are therefore trusted code: put on a plugin path only code you would run as your own.
+MILIA neither sandboxes nor vets plugin code. Plugin validation (`--validate-plugin`,
+`--validate-plugin-comprehensive`) checks dependencies, versions and behaviour; it reports security and
+code quality as not checked.
+
 ## Adding a transform plugin
 
 Copy `user_template/` to a new `<your_category>/`, rename the `.template` files, and implement your

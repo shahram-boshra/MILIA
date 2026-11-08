@@ -2,11 +2,20 @@
 """
 Plugin System for milia Pipeline
 
-Provides a secure, extensible plugin system for custom transforms:
+Provides an extensible plugin system for custom transforms:
 - Plugin discovery from multiple sources (YAML, __plugin__.py, standalone)
-- Comprehensive validation (dependencies, security, functional, performance)
+- Validation of dependencies, versions and behaviour (instantiation, parameters,
+  sample data), and optional performance benchmarks
 - Version management and compatibility checking
-- Thread-safe registry with enable/disable functionality
+- Thread-safe registry with enable/disable and block functionality
+
+Trust model: discovering a plugin imports its modules, which runs their code with
+the privileges of the MILIA process. Plugins are therefore trusted code: put on a
+plugin path only code you would run as your own. Nothing here sandboxes or vets
+plugin code; the security and code-quality checks report "not checked" rather than
+a result (``SECURITY_NOT_CHECKED``, ``CODE_QUALITY_NOT_CHECKED``). Block a plugin
+by name (``PluginRegistry.set_blocked``, ``plugins.disabled_plugins``) to keep its
+code from running.
 """
 
 import hashlib
@@ -169,6 +178,16 @@ except ImportError:
 # Logging (02_Relevant_Files)
 # Note: logging_config.py doesn't have get_logger(), using standard logging
 logger = logging.getLogger("milia_Main.PluginSystem")
+
+# Reasons reported for checks MILIA does not perform (see the module docstring).
+SECURITY_NOT_CHECKED = (
+    "Not checked: plugin code is not vetted or sandboxed. Plugins are trusted code; "
+    "block a plugin you do not trust (plugins.disabled_plugins)."
+)
+CODE_QUALITY_NOT_CHECKED = (
+    "Not checked: MILIA does not lint or type-check plugin code; run those tools in the "
+    "plugin's own CI."
+)
 
 
 class TransformDeclaration(BaseModel):
@@ -1297,18 +1316,21 @@ class PluginRegistry:
         logger.info(f"Testing data compatibility for {plugin_name}...")
         results["tests"]["compatibility"] = instance._test_data_compatibility(metadata)
 
+        run_tests = [t for t in results["tests"].values() if not t.get("skipped")]
+
         # Add summary
         results["summary"] = {
             "declared_transforms": metadata.declared_count,
             "registered_transforms": metadata.registered_count,
             "missing_implementations": metadata.missing_implementations,
             "undeclared_implementations": metadata.undeclared_implementations,
-            "tests_passed": sum(1 for t in results["tests"].values() if t.get("passed")),
-            "tests_failed": sum(1 for t in results["tests"].values() if not t.get("passed")),
+            "tests_passed": sum(1 for t in run_tests if t.get("passed")),
+            "tests_failed": sum(1 for t in run_tests if not t.get("passed")),
+            "tests_skipped": len(results["tests"]) - len(run_tests),
         }
 
-        # Overall result
-        results["passed"] = all(test.get("passed", False) for test in results["tests"].values())
+        # Overall result: a skipped test is neither a pass nor a failure
+        results["passed"] = all(test.get("passed", False) for test in run_tests)
 
         # Update metadata
         object.__setattr__(metadata, "is_validated", results["passed"])
@@ -1421,32 +1443,25 @@ class PluginRegistry:
     @staticmethod
     def _check_security(metadata: PluginMetadata) -> dict:
         """
-        Run security checks on plugin.
+        Report the security check as not run: plugin code is not vetted.
 
-        Checks:
-        - Checksum verification
-        - No dangerous imports (os, subprocess, etc. unless trusted)
-        - No eval/exec usage
+        By the time a plugin is validated, discovery has already imported its code,
+        and no scan of a plugin's source can make untrusted code safe. The digest in
+        ``metadata.checksum`` is computed by MILIA from the files it found, so it
+        verifies nothing; integrity of installed code belongs to the installer (for
+        example pip's hash-checking mode). The result is therefore ``skipped``:
+        neither a pass nor a failure.
 
         Returns:
-            {'passed': bool, 'issues': list, 'warnings': list}
+            ``{'passed': None, 'skipped': True, 'reason': str, 'issues': [], 'warnings': []}``
         """
-        issues = []
-        warnings = []
-
-        # If plugin is marked as trusted, skip some checks
-        if metadata.trusted:
-            warnings.append("Plugin is marked as trusted - security checks relaxed")
-            return {"passed": True, "issues": [], "warnings": warnings}
-
-        # Checksum verification
-        if not metadata.checksum:
-            warnings.append("No checksum provided")
-
-        # Dangerous imports check (placeholder - would scan actual code)
-        # This would require AST parsing of actual plugin code
-
-        return {"passed": len(issues) == 0, "issues": issues, "warnings": warnings}
+        return {
+            "passed": None,
+            "skipped": True,
+            "reason": SECURITY_NOT_CHECKED,
+            "issues": [],
+            "warnings": [],
+        }
 
     @staticmethod
     def _validate_consistency(metadata: PluginMetadata) -> dict[str, Any]:
@@ -1862,8 +1877,9 @@ class PluginRegistry:
         the live ``PluginMetadata`` held in the registry, so the change persists
         (unlike ``get_plugin_info``, which returns a detached ``to_dict()`` copy).
 
-        Trusted plugins bypass security checks, so this fails closed: an unknown
-        plugin raises rather than being silently created or trusted.
+        The flag is recorded in the plugin's metadata; no check depends on it, since
+        plugin code is not vetted (see ``_check_security``). An unknown plugin raises
+        rather than being silently created or trusted.
 
         Args:
             plugin_name: Name of a registered plugin.
@@ -1929,13 +1945,21 @@ class PluginValidator:
     """
     Comprehensive validation for plugin transforms.
 
-    Ensures plugins meet quality standards for:
-    - Code correctness
-    - Documentation
-    - Test coverage (if tests provided)
-    - Performance
-    - Security
+    Scores what it measures: documentation metadata, functional tests (the
+    registry's validation) and, optionally, performance. Code quality and security
+    are reported as not checked (``checked: False`` with a ``reason``) and carry no
+    score, so they never raise or lower ``overall_score``.
     """
+
+    # Weight of each scored section in ``overall_score`` (normalised over the
+    # sections that are present and scored).
+    SECTION_WEIGHTS = {
+        "code_quality": 0.15,
+        "documentation": 0.20,
+        "functional": 0.35,
+        "performance": 0.15,
+        "security": 0.15,
+    }
 
     @staticmethod
     def validate_plugin_comprehensive(
@@ -1950,16 +1974,21 @@ class PluginValidator:
             run_performance_tests: Whether to run performance benchmarks
 
         Returns:
-            Detailed validation report with scores and recommendations
+            Report: ``sections`` (each scored section with ``score`` and ``weight``;
+            each unmeasured one with ``checked: False`` and ``reason``),
+            ``not_checked`` (names of unmeasured sections), ``overall_score`` over the
+            scored sections, and ``recommendation``.
         """
-        metadata = PluginRegistry.get_plugin_info(plugin_name)
-        if not metadata:
+        # The registry's own metadata object (``get_plugin_info`` returns a dict copy).
+        metadata = PluginRegistry()._plugins.get(plugin_name)
+        if metadata is None:
             raise PluginError(f"Plugin '{plugin_name}' not found")
 
         report = {
             "plugin": plugin_name,
             "timestamp": datetime.now().isoformat(),
             "sections": {},
+            "not_checked": [],
             "overall_score": 0.0,
             "recommendation": "",
         }
@@ -1987,6 +2016,12 @@ class PluginValidator:
         logger.info(f"Running security analysis for {plugin_name}...")
         report["sections"]["security"] = PluginValidator._analyze_security(metadata)
 
+        for section_name, section in report["sections"].items():
+            if section.get("checked") is False:
+                report["not_checked"].append(section_name)
+            else:
+                section["weight"] = PluginValidator.SECTION_WEIGHTS[section_name]
+
         # Calculate overall score
         report["overall_score"] = PluginValidator._calculate_score(report["sections"])
 
@@ -2003,27 +2038,12 @@ class PluginValidator:
     @staticmethod
     def _check_code_quality(metadata: PluginMetadata) -> dict:
         """
-        Check code quality metrics.
-
-        Would check:
-        - PEP 8 compliance (using flake8/pylint)
-        - Type hints coverage
-        - Docstring coverage
-        - Code complexity
+        Report code quality as not measured (no score).
 
         Returns:
-            {'passed': bool, 'score': float, 'details': dict}
+            ``{'checked': False, 'reason': str}``
         """
-        # Placeholder implementation
-        return {
-            "passed": True,
-            "score": 0.95,
-            "details": {
-                "pep8_compliance": "Not checked (placeholder)",
-                "type_hints": "Not checked (placeholder)",
-                "docstrings": "Not checked (placeholder)",
-            },
-        }
+        return {"checked": False, "reason": CODE_QUALITY_NOT_CHECKED}
 
     @staticmethod
     def _check_documentation(metadata: PluginMetadata) -> dict:
@@ -2170,45 +2190,22 @@ class PluginValidator:
     @staticmethod
     def _analyze_security(metadata: PluginMetadata) -> dict:
         """
-        Security analysis of plugin.
+        Report security as not checked (no score): plugin code is not vetted.
 
         Returns:
-            {'passed': bool, 'score': float, 'issues': list}
+            ``{'checked': False, 'reason': str}``
         """
-        security_result = PluginRegistry._check_security(metadata)
-
-        score = 1.0
-        if security_result["issues"]:
-            score -= len(security_result["issues"]) * 0.3
-        if security_result["warnings"]:
-            score -= len(security_result["warnings"]) * 0.1
-
-        score = max(0.0, score)
-
-        return {
-            "passed": security_result["passed"],
-            "score": score,
-            "issues": security_result["issues"],
-            "warnings": security_result["warnings"],
-        }
+        return {"checked": False, "reason": PluginRegistry._check_security(metadata)["reason"]}
 
     @staticmethod
     def _calculate_score(sections: dict) -> float:
-        """Calculate weighted overall score from section scores."""
-        weights = {
-            "code_quality": 0.15,
-            "documentation": 0.20,
-            "functional": 0.35,
-            "performance": 0.15,
-            "security": 0.15,
-        }
-
+        """Weighted mean of the scored sections; a section without a score is left out."""
         total_score = 0.0
         total_weight = 0.0
 
-        for section_name, weight in weights.items():
-            if section_name in sections:
-                section_score = sections[section_name].get("score", 0.0)
+        for section_name, weight in PluginValidator.SECTION_WEIGHTS.items():
+            section_score = sections.get(section_name, {}).get("score")
+            if isinstance(section_score, (int, float)):
                 total_score += section_score * weight
                 total_weight += weight
 
@@ -2240,4 +2237,6 @@ __all__ = [
     "PluginValidationError",
     "PluginSecurityError",
     "PluginDependencyError",
+    "SECURITY_NOT_CHECKED",
+    "CODE_QUALITY_NOT_CHECKED",
 ]

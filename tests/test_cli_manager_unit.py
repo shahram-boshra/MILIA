@@ -226,7 +226,13 @@ class MockPluginRegistry:
             "timestamp": "2025-10-24T12:00:00",
             "tests": {
                 "dependencies": {"passed": True},
-                "security": {"passed": True},
+                "security": {
+                    "passed": None,
+                    "skipped": True,
+                    "reason": "Not checked: plugin code is not vetted",
+                    "issues": [],
+                    "warnings": [],
+                },
                 "instantiation": {"passed": True},
             },
         }
@@ -271,20 +277,35 @@ class MockPluginValidator:
 
     @staticmethod
     def validate_plugin_comprehensive(name, run_performance_tests=False):
-        """Mock comprehensive validation"""
+        """Mock comprehensive validation (the report shape PluginValidator returns)"""
+        sections = {
+            "code_quality": {"checked": False, "reason": "Not checked: code quality"},
+            "documentation": {
+                "passed": False,
+                "score": 0.8,
+                "missing": ["Homepage/repository URL"],
+                "weight": 0.2,
+            },
+            "functional": {"passed": True, "score": 1.0, "test_results": {}, "weight": 0.35},
+            "security": {"checked": False, "reason": "Not checked: plugin code is not vetted"},
+        }
+        if run_performance_tests:
+            sections["performance"] = {
+                "passed": True,
+                "score": 1.0,
+                "weight": 0.15,
+                "benchmarks": {
+                    "FastTransform": {"small_molecule_ms": 0.5, "large_molecule_ms": 1.5},
+                    "NeedsArgs": {"error": "missing 1 required positional argument"},
+                },
+            }
         return {
+            "plugin": name,
             "overall_score": 0.85,
             "recommendation": "APPROVED",
             "timestamp": "2025-10-24T12:00:00",
-            "sections": {
-                "dependencies": {"score": 1.0, "weight": 0.2},
-                "security": {"score": 0.9, "weight": 0.3},
-                "compatibility": {"score": 0.8, "weight": 0.2},
-                "documentation": {"score": 0.7, "weight": 0.15},
-                "performance": {"score": 0.85, "weight": 0.15, "benchmarks": {}},
-            },
-            "issues": [],
-            "recommendations": [],
+            "sections": sections,
+            "not_checked": ["code_quality", "security"],
         }
 
 
@@ -1199,6 +1220,11 @@ class TestPluginOperations(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("VALIDATING PLUGIN", output)
         self.assertIn("PASSED", output)
+        # A skipped check is shown as skipped with its reason, never as a pass.
+        self.assertIn("○ SKIP security", output)
+        self.assertNotIn("✓ PASS security", output)
+        self.assertIn("not vetted", output)
+        self.assertNotIn("safely enabled", output)
 
     @patch("milia_pipeline.cli_manager.PluginRegistry", MockPluginRegistry)
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)
@@ -1558,6 +1584,11 @@ class TestComprehensiveValidationPluginOperations(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("COMPREHENSIVE VALIDATION", output)
         self.assertIn("Overall Score", output)
+        # Unmeasured sections are shown with their reason and no score.
+        self.assertIn("○ Security: Not checked", output)
+        self.assertIn("○ Code Quality: Not checked", output)
+        self.assertIn("Documentation: 0.80 (weight: 20%)", output)
+        self.assertIn("Homepage/repository URL", output)
 
     @patch("milia_pipeline.cli_manager.PluginValidator", MockPluginValidator)
     @patch("milia_pipeline.cli_manager.PluginRegistry", MockPluginRegistry)
@@ -1573,6 +1604,9 @@ class TestComprehensiveValidationPluginOperations(unittest.TestCase):
 
         output = mock_stdout.getvalue()
         self.assertIn("COMPREHENSIVE VALIDATION", output)
+        self.assertIn("Small molecules: 0.50ms", output)
+        # A transform that could not be benchmarked is reported, not shown as 0 ms.
+        self.assertIn("Not benchmarked: missing 1 required positional argument", output)
 
 
 # ==============================================================================

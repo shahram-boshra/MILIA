@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   discovery: their code is never imported, and no transform of theirs is registered.
   `PluginRegistry.set_blocked(name)` and `PluginRegistry.is_blocked(name)` provide this to code that calls
   the registry directly; blocking a plugin that is already registered unregisters its transforms.
+- Transformation plugin validation no longer reports security checks it does not perform. The security
+  test always passed (its code scan was a placeholder, and its checksum check only tested that a digest
+  MILIA computed itself was present); it is now reported as skipped, with the reason, and counts neither
+  as a pass nor as a failure. `--validate-plugin` shows it as `SKIP` and no longer says that a validated
+  plugin "can be safely enabled". The plugin trust model (plugins are trusted code; discovering one runs
+  it) is stated in the loader, `configs/plugins.yaml` and the transformation plugin README.
+
+### Fixed
+
+- `PluginValidator.validate_plugin_comprehensive` (and `--validate-plugin-comprehensive`) works: it read
+  the plugin's metadata as a dictionary copy and failed with `AttributeError` for every plugin, and the
+  CLI then read report keys that did not exist. Its report scores only what it measures: code quality
+  (before, a fixed 0.95) and security carry no score, are listed in the new `not_checked`, and do not
+  count in `overall_score`; scored sections include their `weight`. A transform that cannot be
+  benchmarked is shown as not benchmarked instead of 0 ms. `SECURITY_NOT_CHECKED` and
+  `CODE_QUALITY_NOT_CHECKED` give the reasons reported.
 
 ## [1.19.0] - 2026-11-08
 
