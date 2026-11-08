@@ -1107,7 +1107,7 @@ class TestPluginDiscovery(unittest.TestCase):
         """Test successful plugin discovery"""
         logger = Mock()
         mock_load_config.return_value = {
-            "plugins": {"enabled": True, "paths": ["/tmp/plugins"], "auto_discover": True}
+            "plugins": {"enabled": True, "plugin_paths": ["/tmp/plugins"], "auto_discover": True}
         }
         mock_registry.discover_plugins.return_value = ["plugin1", "plugin2"]
         mock_registry.get_plugin_info.return_value = {"validated": True}
@@ -1146,7 +1146,7 @@ class TestPluginDiscovery(unittest.TestCase):
     def test_plugin_discovery_no_paths(self, mock_load_config):
         """Test plugin discovery with no paths configured"""
         logger = Mock()
-        mock_load_config.return_value = {"plugins": {"enabled": True, "paths": []}}
+        mock_load_config.return_value = {"plugins": {"enabled": True, "plugin_paths": []}}
 
         # Should log warning and return early
         _discover_and_register_plugins(logger)
@@ -1160,7 +1160,7 @@ class TestPluginDiscovery(unittest.TestCase):
         """Test plugin discovery with discovery errors"""
         logger = Mock()
         mock_load_config.return_value = {
-            "plugins": {"enabled": True, "paths": ["/tmp/plugins"], "auto_discover": True}
+            "plugins": {"enabled": True, "plugin_paths": ["/tmp/plugins"], "auto_discover": True}
         }
         mock_registry.discover_plugins.side_effect = PluginDiscoveryError("Discovery failed")
 

@@ -587,6 +587,8 @@ from .config_loader import (
 # Schema Validation & Migration
 # =============================================================================
 from .config_schemas import (
+    DEPRECATED_PLUGIN_CONFIG_KEYS,
+    PLUGIN_CONFIG_REMOVAL_VERSION,
     # Migration Class
     ConfigMigration,
     DescriptorCategoryConfigSchema,
@@ -615,6 +617,7 @@ from .config_schemas import (
     create_migrator,
     # Factory Functions
     create_validator,
+    deprecated_plugin_config_keys,
     get_enhanced_transformation_config,
     get_experiment_config_summary,
     get_plugin_config_summary,
@@ -984,6 +987,9 @@ __all__ = [
     "TransformationSchema",
     "PluginValidationLevel",
     "PluginConfigSchema",
+    "DEPRECATED_PLUGIN_CONFIG_KEYS",
+    "PLUGIN_CONFIG_REMOVAL_VERSION",
+    "deprecated_plugin_config_keys",
     "DescriptorConfigSchema",
     "WavefunctionProcessingConfigSchema",
     "WavefunctionUncertaintyConfigSchema",

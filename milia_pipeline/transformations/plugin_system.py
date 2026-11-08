@@ -26,6 +26,7 @@ import logging
 import re
 import sys
 import threading
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -187,6 +188,11 @@ SECURITY_NOT_CHECKED = (
 CODE_QUALITY_NOT_CHECKED = (
     "Not checked: MILIA does not lint or type-check plugin code; run those tools in the "
     "plugin's own CI."
+)
+TRUST_DEPRECATION = (
+    "Plugin trust has no effect: plugin code is not vetted, so no check is relaxed. "
+    "PluginRegistry.set_trusted and --trust-plugin are deprecated and will be removed "
+    "in 2.0.0."
 )
 
 
@@ -1871,19 +1877,30 @@ class PluginRegistry:
     @classmethod
     def set_trusted(cls, plugin_name: str, trusted: bool = True) -> None:
         """
-        Mark a registered plugin as trusted (or revoke trust).
+        Mark a registered plugin as trusted (or revoke trust). Deprecated.
 
-        Additive mutator mirroring ``enable_plugin``/``disable_plugin``: it mutates
-        the live ``PluginMetadata`` held in the registry, so the change persists
-        (unlike ``get_plugin_info``, which returns a detached ``to_dict()`` copy).
-
-        The flag is recorded in the plugin's metadata; no check depends on it, since
-        plugin code is not vetted (see ``_check_security``). An unknown plugin raises
-        rather than being silently created or trusted.
+        The flag is recorded in the plugin's metadata, but no check depends on it:
+        plugin code is not vetted (see ``_check_security``). Emits a
+        ``DeprecationWarning`` (``TRUST_DEPRECATION``); removal in 2.0.0.
 
         Args:
             plugin_name: Name of a registered plugin.
             trusted: Trust flag to set (default True).
+
+        Raises:
+            PluginError: If the plugin is not registered.
+        """
+        warnings.warn(TRUST_DEPRECATION, DeprecationWarning, stacklevel=2)
+        cls._record_trusted(plugin_name, trusted)
+
+    @classmethod
+    def _record_trusted(cls, plugin_name: str, trusted: bool = True) -> None:
+        """
+        Record the trust flag on the live ``PluginMetadata`` (no warning).
+
+        It mutates the metadata held in the registry, so the change persists (unlike
+        ``get_plugin_info``, which returns a detached ``to_dict()`` copy). An unknown
+        plugin raises rather than being silently created or trusted.
 
         Raises:
             PluginError: If the plugin is not registered.
@@ -2239,4 +2256,5 @@ __all__ = [
     "PluginDependencyError",
     "SECURITY_NOT_CHECKED",
     "CODE_QUALITY_NOT_CHECKED",
+    "TRUST_DEPRECATION",
 ]

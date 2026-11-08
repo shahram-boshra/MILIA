@@ -32,27 +32,9 @@ plugins:
   # Automatically discover plugins in plugin_paths during startup
   auto_discover: true
 
-  # Automatically validate plugins when they are discovered
-  # Recommended to keep enabled for security and stability
+  # Automatically validate plugins when they are discovered (dependencies,
+  # versions, behaviour on sample data); plugin code itself is not vetted
   auto_validate: true
-
-  # Plugin Validation Level
-  # Controls how strictly plugins are validated
-  # Options: "strict", "standard", "permissive", "disabled"
-  #
-  # - strict: Full validation including security scanning (production)
-  # - standard: Basic validation, skip expensive checks (recommended)
-  # - permissive: Minimal validation, trust plugins (development only)
-  # - disabled: No validation (not recommended)
-  validation_level: "standard"
-
-  # Plugin Whitelisting and Blacklisting
-
-  # Trusted plugins: Pre-approved plugins that skip some validation steps
-  # Use this to speed up loading of known-good plugins
-  trusted_plugins: []
-    # - official_molecular_transforms
-    # - quantum_chemistry_extensions
 
   # Disabled plugins: Plugins that should never be loaded (by plugin_name)
   # Discovery skips them before importing any of their code
@@ -60,39 +42,9 @@ plugins:
     # - deprecated_transform_v1
     # - experimental_buggy_plugin
 
-  # Security Settings
-
-  # Allow experimental plugins (not fully validated/tested)
-  allow_experimental: true
-
-  # Allow plugins to override built-in transforms
-  # Set to false in production for security
-  allow_override_builtin: false
-
-  # Enforce plugin checksums for integrity verification
-  enforce_checksums: false
-
-  # Enable security scanning of plugin code
-  security_scanning: false
-
-  # Error Handling
-
-  # Fail immediately if plugin loading/validation fails
-  # If false, log warning and continue without the plugin
-  fail_on_plugin_error: false
-
-  # Maximum time (seconds) for plugin initialization
-  # Prevents hanging on slow/buggy plugins
-  initialization_timeout: 30
-
-  # Logging
-
-  # Log level for plugin operations
-  # Options: "DEBUG", "INFO", "WARNING", "ERROR"
-  log_level: "INFO"
-
-  # Log plugin discovery details
-  log_discovery: true
-
-  # Log plugin validation details
-  log_validation: true
+  # Deprecated keys (no effect; each warns when set, removal in 2.0.0):
+  #   validation_level, trusted_plugins, allow_experimental, allow_override_builtin,
+  #   enforce_checksums, security_scanning, max_plugins, require_metadata,
+  #   fail_on_plugin_error, initialization_timeout, log_level, log_discovery,
+  #   log_validation, require_validation, trust_mode, enabled_plugins;
+  #   paths (use plugin_paths).

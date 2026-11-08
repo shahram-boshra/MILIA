@@ -22,6 +22,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plugin "can be safely enabled". The plugin trust model (plugins are trusted code; discovering one runs
   it) is stated in the loader, `configs/plugins.yaml` and the transformation plugin README.
 
+### Deprecated
+
+- Transformation plugin settings that have no effect: `plugins.validation_level`, `trusted_plugins`,
+  `allow_experimental`, `allow_override_builtin`, `enforce_checksums`, `security_scanning`, `max_plugins`,
+  `require_metadata`, `fail_on_plugin_error`, `initialization_timeout`, `log_level`, `log_discovery`,
+  `log_validation`, and the undocumented `require_validation`, `trust_mode` and `enabled_plugins`. No code
+  acted on them (`enabled_plugins` only filtered the enabled set, which nothing consults). Setting one now
+  emits a `FutureWarning`, also logged, saying what to use instead; the undocumented alias `plugins.paths`
+  warns the same way and keeps working (use `plugin_paths`). All will be removed in 2.0.0. The shipped
+  `configs/plugins.yaml` no longer sets them, and the plugin schema validator reports them instead of
+  recommending `security_scanning` and `enforce_checksums` in strict mode; `get_plugin_config_summary`,
+  `create_default_plugin_config` and `create_example_plugin_config` no longer include them.
+  `DEPRECATED_PLUGIN_CONFIG_KEYS` and `deprecated_plugin_config_keys()` (in `milia_pipeline.config`) list
+  them.
+- `PluginRegistry.set_trusted` (`DeprecationWarning`) and `--trust-plugin` (`FutureWarning`): plugin trust
+  has no effect, since plugin code is not vetted. Both still record the flag; removal in 2.0.0.
+  `--trust-plugin` no longer logs that trusted plugins bypass security checks.
+
 ### Fixed
 
 - `PluginValidator.validate_plugin_comprehensive` (and `--validate-plugin-comprehensive`) works: it read

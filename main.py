@@ -164,6 +164,7 @@ import argparse
 import logging
 import sys
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -921,6 +922,14 @@ def _discover_and_register_plugins(logger=None):
         # Get plugins section
         plugins_config = config.get("plugins", {})
 
+        # Deprecated keys warn whether or not plugins are enabled: they have no
+        # effect either way (FutureWarning: aimed at the person running MILIA).
+        from milia_pipeline.config.config_schemas import deprecated_plugin_config_keys
+
+        for message in deprecated_plugin_config_keys(plugins_config):
+            warnings.warn(message, FutureWarning, stacklevel=2)
+            logger.warning(message)
+
         # Check if plugins enabled in config.yaml
         plugins_enabled = plugins_config.get("enabled", False)
 
@@ -940,7 +949,7 @@ def _discover_and_register_plugins(logger=None):
 
         if not plugin_paths_config:
             logger.warning("No plugin paths configured in config.yaml")
-            logger.info("Add plugin paths under 'plugins.paths' to discover plugins")
+            logger.info("Add plugin paths under 'plugins.plugin_paths' to discover plugins")
             logger.info("=" * 60)
             return
 

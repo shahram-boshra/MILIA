@@ -392,10 +392,63 @@ class TransformationSchema(BaseModel):
         return self
 
 
+PLUGIN_CONFIG_REMOVAL_VERSION = "2.0.0"
+
+# Keys of the top-level ``plugins:`` section (transformation plugins) that no code
+# acts on, plus ``paths``, an undocumented alias. Setting one warns; each will be
+# removed in ``PLUGIN_CONFIG_REMOVAL_VERSION``.
+DEPRECATED_PLUGIN_CONFIG_KEYS: dict[str, str] = {
+    "validation_level": "it has no effect; plugin validation is controlled by auto_validate",
+    "trusted_plugins": "it has no effect; plugin code is not vetted, so no check is relaxed",
+    "allow_experimental": "it has no effect",
+    "allow_override_builtin": "it has no effect",
+    "enforce_checksums": (
+        "it has no effect; verify installed code with your installer "
+        "(for example pip's hash-checking mode)"
+    ),
+    "security_scanning": "it has no effect; plugin code is not scanned or vetted",
+    "max_plugins": "it has no effect",
+    "require_metadata": "it has no effect; every plugin needs a plugin.yaml manifest",
+    "fail_on_plugin_error": "it has no effect",
+    "initialization_timeout": "it has no effect",
+    "log_level": "it has no effect; set the level with --log-level",
+    "log_discovery": "it has no effect",
+    "log_validation": "it has no effect",
+    "require_validation": "it has no effect; plugin validation is controlled by auto_validate",
+    "trust_mode": "it has no effect",
+    "enabled_plugins": (
+        "it does not limit which plugins run; list the plugins to keep from loading "
+        "in disabled_plugins"
+    ),
+    "paths": "use plugin_paths",
+}
+
+
+def deprecated_plugin_config_keys(plugin_config: Any) -> list[str]:
+    """
+    Describe each deprecated key set in a ``plugins:`` section.
+
+    Args:
+        plugin_config: The ``plugins:`` mapping (anything else yields no messages).
+
+    Returns:
+        One message per key of ``DEPRECATED_PLUGIN_CONFIG_KEYS`` present in
+        ``plugin_config``, in that mapping's order.
+    """
+    if not isinstance(plugin_config, dict):
+        return []
+    return [
+        f"plugins.{key} is deprecated and will be removed in "
+        f"{PLUGIN_CONFIG_REMOVAL_VERSION}: {reason}"
+        for key, reason in DEPRECATED_PLUGIN_CONFIG_KEYS.items()
+        if key in plugin_config
+    ]
+
+
 class PluginValidationLevel(Enum):
     """Plugin validation strictness levels"""
 
-    STRICT = "strict"  # Full validation including security
+    STRICT = "strict"  # Full validation
     STANDARD = "standard"  # Basic validation, skip expensive checks
     PERMISSIVE = "permissive"  # Minimal validation, trust plugins
     DISABLED = "disabled"  # No plugin validation
@@ -405,6 +458,9 @@ class PluginConfigSchema(BaseModel):
     """Schema definition for plugin configuration
 
     Pattern: Pydantic V2 BaseModel (mutable) with field_validator for validation
+
+    The fields named in ``DEPRECATED_PLUGIN_CONFIG_KEYS`` are still accepted but have
+    no effect; they will be removed in ``PLUGIN_CONFIG_REMOVAL_VERSION``.
     """
 
     enabled: bool = False
@@ -1430,7 +1486,7 @@ class YAMLSchemaValidator:
 
 
 class PluginSchemaValidator:
-    """Validator for plugin configurations with security and compatibility checks"""
+    """Validator for plugin configurations (structure, types, deprecated keys)"""
 
     def __init__(self):
         self.validation_calls = []
@@ -1555,24 +1611,8 @@ class PluginSchemaValidator:
                         f"All {list_key} must be strings, found {len(invalid_names)} invalid entries"
                     )
 
-        # Check for security concerns based on validation level
-        if validation_level == PluginValidationLevel.STRICT:
-            # Strict mode requires security features
-            if not plugin_config.get("security_scanning", True):
-                result["warnings"].append(
-                    "Security scanning disabled in STRICT mode - this is not recommended"
-                )
-
-            if not plugin_config.get("enforce_checksums", True):
-                result["warnings"].append(
-                    "Checksum enforcement disabled in STRICT mode - this is not recommended"
-                )
-
-        # Check for potential issues
-        if plugin_config.get("allow_experimental", False):
-            result["warnings"].append(
-                "Experimental plugins allowed - use with caution in production"
-            )
+        # Deprecated keys (no effect): report each one set
+        result["warnings"].extend(deprecated_plugin_config_keys(plugin_config))
 
         # Validate plugin system availability
         if not self.plugin_system_available:
@@ -2786,14 +2826,7 @@ def create_default_plugin_config() -> dict[str, Any]:
         "plugin_paths": [],
         "auto_discover": True,
         "auto_validate": True,
-        "validation_level": "standard",
-        "trusted_plugins": [],
         "disabled_plugins": [],
-        "allow_experimental": False,
-        "max_plugins": 50,
-        "require_metadata": True,
-        "enforce_checksums": True,
-        "security_scanning": True,
     }
 
 
@@ -2809,14 +2842,7 @@ def create_example_plugin_config() -> dict[str, Any]:
         "plugin_paths": ["./plugins", "/opt/milia/plugins"],
         "auto_discover": True,
         "auto_validate": True,
-        "validation_level": "standard",
-        "trusted_plugins": ["official_molecular_transforms", "verified_quantum_features"],
         "disabled_plugins": ["deprecated_transform_v1"],
-        "allow_experimental": False,
-        "max_plugins": 50,
-        "require_metadata": True,
-        "enforce_checksums": True,
-        "security_scanning": True,
     }
 
 
@@ -3188,14 +3214,10 @@ def get_plugin_config_summary(plugin_config: dict[str, Any]) -> str:
     lines = [
         "Plugin Configuration Summary:",
         "  Status: ENABLED",
-        f"  Validation Level: {plugin_config.get('validation_level', 'standard').upper()}",
         f"  Plugin Paths: {len(plugin_config.get('plugin_paths', []))}",
-        f"  Trusted Plugins: {len(plugin_config.get('trusted_plugins', []))}",
         f"  Disabled Plugins: {len(plugin_config.get('disabled_plugins', []))}",
         f"  Auto-discover: {plugin_config.get('auto_discover', True)}",
         f"  Auto-validate: {plugin_config.get('auto_validate', True)}",
-        f"  Security Scanning: {plugin_config.get('security_scanning', True)}",
-        f"  Enforce Checksums: {plugin_config.get('enforce_checksums', True)}",
     ]
 
     return "\n".join(lines)

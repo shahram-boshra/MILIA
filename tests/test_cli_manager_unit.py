@@ -262,8 +262,8 @@ class MockPluginRegistry:
         return name in cls._enabled
 
     @classmethod
-    def set_trusted(cls, name, trusted=True):
-        """Mock set_trusted mirroring the real mutator (KeyError on unknown)."""
+    def _record_trusted(cls, name, trusted=True):
+        """Mock _record_trusted mirroring the real mutator (KeyError on unknown)."""
         if name not in ["test_plugin_1", "test_plugin_2"]:
             raise KeyError(f"Plugin {name} not found")
         if trusted:
@@ -1271,10 +1271,11 @@ class TestPluginOperations(unittest.TestCase):
     @patch("milia_pipeline.cli_manager.PluginRegistry", MockPluginRegistry)
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)
     def test_trust_plugin_operation_success(self):
-        """Test trust plugin operation persists trust via PluginRegistry.set_trusted."""
+        """The deprecated trust operation warns (no effect) and still records the flag."""
         MockPluginRegistry._trusted.discard("test_plugin_1")
 
-        self.cli._trust_plugin_operation("test_plugin_1")
+        with self.assertWarnsRegex(FutureWarning, "Plugin trust has no effect"):
+            self.cli._trust_plugin_operation("test_plugin_1")
 
         # The op must actually mark the plugin trusted (regression guard: it
         # previously mutated a detached get_plugin_info() copy and persisted nothing).
@@ -1284,7 +1285,7 @@ class TestPluginOperations(unittest.TestCase):
     @patch("milia_pipeline.cli_manager.PLUGIN_SYSTEM_AVAILABLE", True)
     def test_trust_plugin_operation_not_found(self):
         """Test trust plugin operation with non-existent plugin"""
-        with self.assertRaises(CLIValidationError):
+        with self.assertWarns(FutureWarning), self.assertRaises(CLIValidationError):
             self.cli._trust_plugin_operation("nonexistent")
 
 

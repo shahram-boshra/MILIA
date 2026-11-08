@@ -687,15 +687,17 @@ class TestPluginRegistryEnableDisable:
         registry._plugins["test_plugin"] = metadata
         assert registry._plugins["test_plugin"].trusted is False
 
-        PluginRegistry.set_trusted("test_plugin")
+        with pytest.deprecated_call(match="Plugin trust has no effect"):
+            PluginRegistry.set_trusted("test_plugin")
         assert registry._plugins["test_plugin"].trusted is True
 
-        PluginRegistry.set_trusted("test_plugin", trusted=False)
+        with pytest.deprecated_call():
+            PluginRegistry.set_trusted("test_plugin", trusted=False)
         assert registry._plugins["test_plugin"].trusted is False
 
     def test_set_trusted_nonexistent_plugin_error(self, reset_plugin_registry):
         """set_trusted fails closed: an unknown plugin raises rather than being trusted."""
-        with pytest.raises(PluginError, match="not found"):
+        with pytest.deprecated_call(), pytest.raises(PluginError, match="not found"):
             PluginRegistry.set_trusted("nonexistent")
 
     def test_is_enabled_true(self, reset_plugin_registry, sample_plugin_metadata):

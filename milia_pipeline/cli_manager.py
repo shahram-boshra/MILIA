@@ -132,6 +132,7 @@ import argparse
 import importlib.util
 import logging
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -173,6 +174,7 @@ try:
         PluginValidationError,
     )
     from milia_pipeline.transformations.plugin_system import (
+        TRUST_DEPRECATION,
         PluginMetadata,
         PluginRegistry,
         PluginValidator,
@@ -183,6 +185,7 @@ except ImportError:
     PLUGIN_SYSTEM_AVAILABLE = False
     PluginRegistry = None
     PluginValidator = None
+    TRUST_DEPRECATION = None
     PluginMetadata = None
     # Set exception classes to None as well for completeness
     PluginError = None
@@ -799,7 +802,7 @@ class CLIManager:
             action="append",
             default=None,
             metavar="NAME",
-            help="Mark plugin as trusted (relaxed security checks)",
+            help="Deprecated, no effect (removal in 2.0.0): plugin code is not vetted",
         )
 
         # Plugin filtering options
@@ -1666,7 +1669,6 @@ Examples:
   %(prog)s --enable-plugin my_custom_plugin
   %(prog)s --disable-plugin old_plugin
   %(prog)s --plugin-info my_custom_plugin
-  %(prog)s --trust-plugin verified_plugin
   %(prog)s --plugin-path ./plugins --process --experimental-setup custom_setup
 
   # Research API
@@ -3808,13 +3810,13 @@ results = runner.run_experiment(
             raise CLIValidationError(f"Disable failed: {e}") from e
 
     def _trust_plugin_operation(self, plugin_name: str) -> None:
-        """Execute trust plugin operation."""
+        """Execute trust plugin operation (deprecated: the flag has no effect)."""
+        # FutureWarning: --trust-plugin is used by the person running MILIA (PEP 565).
+        warnings.warn(TRUST_DEPRECATION, FutureWarning, stacklevel=2)
+        self.logger.warning(TRUST_DEPRECATION)
         try:
-            PluginRegistry.set_trusted(plugin_name)
-            self.logger.info(f"🔒 Marked plugin as trusted: {plugin_name}")
-            self.logger.warning(
-                "Trusted plugins bypass security checks. Only trust plugins from verified sources."
-            )
+            PluginRegistry._record_trusted(plugin_name)
+            self.logger.info(f"Marked plugin as trusted: {plugin_name}")
         except KeyError:
             raise CLIValidationError(f"Plugin '{plugin_name}' not found") from None
         except Exception as e:
