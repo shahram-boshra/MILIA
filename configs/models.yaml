@@ -1117,3 +1117,5 @@ models:
     auto_discover: true
     auto_validate: true
     validation_level: "standard"         # permissive, standard, strict
+    # Plugins are trusted code: loading one runs it. Validation checks manifests,
+    # versions and dependencies; its code scan only logs hints and never blocks.

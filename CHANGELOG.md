@@ -166,10 +166,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A model plugin whose validation reports errors is no longer registered, at any `validation_level`.
   Before, it was skipped only at `strict` and registered anyway at `standard` (the default) and
   `permissive`. Errors are the same at every level: a missing, unsatisfied or invalid dependency, or an
-  incomplete model declaration. `validation_level` now decides only what else counts: `permissive` skips
-  the code scan, and `strict` also rejects a plugin with warnings (a missing version, no models, or a
-  code-scan finding). A model without `supported_tasks` is no longer reported, since its tasks are
-  inferred.
+  incomplete model declaration. `validation_level` now decides only what else counts: `strict` also
+  rejects a plugin with warnings (a missing version or no models). A model without `supported_tasks` is
+  no longer reported, since its tasks are inferred.
+- The model plugin code scan is no longer presented as a security check. Loading a plugin runs its code, so
+  plugins are trusted code, and a list of code patterns cannot make an untrusted plugin safe. The scan's
+  findings (`eval(`, `exec(`, `__import__(`, `os.system(`, `import subprocess`) are now logged at INFO as
+  hints at `standard` and `strict` and never block registration; before, `strict` rejected a plugin for
+  them. The `os.system` pattern, which matched no valid Python, now matches calls. The README no longer
+  claims "security controls" for plugins.
 - Model plugins are now used: the `models.plugins` settings (`enabled`, `auto_discover`, `auto_validate`,
   `validation_level`, sources) take effect when the first `ModelFactory` is created, and the plugins' models
   are registered before any model is built. Before, nothing in MILIA called the plugin loader, so these

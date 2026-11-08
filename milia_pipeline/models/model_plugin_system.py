@@ -1,11 +1,18 @@
 """
 Model Plugin System for Milia Pipeline
 
-Provides a secure, extensible plugin system for custom models:
+Provides an extensible plugin system for custom models:
 - Plugin discovery from YAML metadata (plugin.yaml), validated by the versioned
   manifest schema (``_model_plugin_manifest.parse_manifest``)
 - Model registration into ModelRegistry
-- Comprehensive validation (dependencies, security, functional)
+- Validation of manifests, versions and dependencies
+
+Trust model: loading a plugin imports its modules, which runs their code with
+the privileges of the MILIA process. Plugins are therefore trusted code: a
+directory plugin is code you chose to put on a plugin path, and an entry-point
+plugin is an installed distribution. Nothing here sandboxes or vets plugin code;
+the code scan in ``ModelPluginLoader._security_check`` is a lint hint, not a
+security control.
 - Version management and compatibility checking
 - Thread-safe registry with enable/disable functionality
 
@@ -573,14 +580,15 @@ class ModelPluginLoader:
 
     Features:
     - Auto-discovery from plugin.yaml files
-    - Comprehensive validation (security, dependencies, functionality)
+    - Validation of manifests, versions and dependencies (plugins are trusted
+      code: see the module docstring)
     - Thread-safe plugin management
     - Integration with ModelRegistry
     - Enable/disable functionality
 
     Usage:
         >>> loader = ModelPluginLoader()
-        >>> plugins = loader.discover_plugins([Path("./plugins/models")])
+        >>> plugins = loader.discover_plugins([Path("/path/to/my_model_plugins")])
         >>> print(f"Discovered {len(plugins)} plugins")
     """
 
@@ -638,7 +646,7 @@ class ModelPluginLoader:
 
         Example:
             >>> loader = ModelPluginLoader()
-            >>> plugin_paths = [Path("./plugins/models")]
+            >>> plugin_paths = [Path("/path/to/my_model_plugins")]
             >>> discovered = loader.discover_plugins(plugin_paths)
             >>> print(f"Found {len(discovered)} plugins")
         """
@@ -936,10 +944,12 @@ class ModelPluginLoader:
 
         Errors are the same at every level: a missing ``plugin_name``, an invalid,
         missing or unsatisfied dependency, and an incomplete model declaration. A
-        plugin with errors is never registered. Warnings: a missing version, no
-        models, and code-scan findings. The level only decides what else counts:
-        ``permissive`` skips the code scan, and ``strict`` turns every warning into
-        an error.
+        plugin with errors is never registered. Warnings: a missing version and no
+        models; ``strict`` turns every warning into an error.
+
+        The code scan (``_security_check``) is neither: its findings are lint hints,
+        logged at INFO at ``standard`` and ``strict`` (``permissive`` skips the
+        scan), and never affect registration.
 
         Args:
             metadata: Plugin metadata to validate
@@ -969,9 +979,10 @@ class ModelPluginLoader:
         for decl in metadata.model_declarations:
             errors.extend(self._validate_model_declaration(decl))
 
-        # Security checks
+        # Lint hints: reported, never blocking (plugins are trusted code)
         if level in ["standard", "strict"]:
-            warnings.extend(self._security_check(metadata)["issues"])
+            for hint in self._security_check(metadata)["issues"]:
+                logger.info(f"Plugin '{metadata.plugin_name}' lint hint: {hint}")
 
         if level == "strict":
             errors.extend(warnings)
@@ -1051,13 +1062,23 @@ class ModelPluginLoader:
         return errors
 
     def _security_check(self, metadata: ModelPluginMetadata) -> dict[str, Any]:
-        """Perform security checks on plugin."""
+        """
+        Scan a directory plugin's Python files for dynamic-execution patterns.
+
+        This is a lint hint for the plugin's reviewer, not a security control.
+        Importing a plugin runs its code, and a pattern list cannot decide what code
+        does (an incomplete list of disallowed inputs, CWE-184): obfuscated code
+        passes and harmless code may match. Plugins are trusted code; see the module
+        docstring. A plugin without a ``plugin_path`` on disk is not scanned.
+
+        Returns:
+            ``{"issues": [str]}``, one hint per file and pattern.
+        """
         issues = []
 
-        # Check for suspicious imports
         if metadata.plugin_path:
             suspicious_patterns = [
-                r"import\s+os\.system",
+                r"\bos\.system\(",
                 r"import\s+subprocess",
                 r"eval\(",
                 r"exec\(",
@@ -1414,9 +1435,9 @@ def discover_plugins(
         List of discovered plugin names
 
     Example:
-        >>> from milia_pipeline.models import discover_plugins
+        >>> from milia_pipeline.models.model_plugin_system import discover_plugins
         >>> from pathlib import Path
-        >>> plugins = discover_plugins([Path("./plugins/models")])
+        >>> plugins = discover_plugins([Path("/path/to/my_model_plugins")])
         >>> print(f"Discovered {len(plugins)} plugins")
     """
     loader = get_plugin_loader()
@@ -1692,7 +1713,7 @@ def discover_and_load_plugins(
         >>> from milia_pipeline.models.model_plugin_system import discover_and_load_plugins
         >>> from pathlib import Path
         >>> results = discover_and_load_plugins(
-        ...     paths=[Path("./plugins/models")],
+        ...     paths=[Path("/path/to/my_model_plugins")],
         ...     validation_level="strict"
         ... )
         >>> print(f"Loaded {sum(results.values())} of {len(results)} plugins")
@@ -1883,7 +1904,7 @@ def safe_discover_plugins(
     Example:
         >>> from milia_pipeline.models.model_plugin_system import safe_discover_plugins
         >>> from pathlib import Path
-        >>> plugins, errors = safe_discover_plugins([Path("./plugins")])
+        >>> plugins, errors = safe_discover_plugins([Path("/path/to/my_model_plugins")])
         >>> if errors:
         ...     print(f"Encountered {len(errors)} errors during discovery")
     """

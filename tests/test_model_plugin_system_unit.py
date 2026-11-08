@@ -1096,6 +1096,21 @@ class TestModelPluginLoaderValidation:
         assert len(result["issues"]) > 0
         assert any("subprocess" in issue for issue in result["issues"])
 
+    def test_security_check_suspicious_os_system(self, sample_plugin_metadata, temp_plugin_dir):
+        """The scan hints at an os.system call."""
+        plugin_dir = temp_plugin_dir / "suspicious_os_system"
+        plugin_dir.mkdir()
+
+        with open(plugin_dir / "model.py", "w") as f:
+            f.write("import os\nos.system('ls')\n")
+
+        sample_plugin_metadata.plugin_path = plugin_dir
+
+        loader = ModelPluginLoader()
+        result = loader._security_check(sample_plugin_metadata)
+
+        assert any("os" in issue and "system" in issue for issue in result["issues"])
+
     def test_security_check_suspicious_dunder_import(self, sample_plugin_metadata, temp_plugin_dir):
         """Test security check detects __import__()."""
         plugin_dir = temp_plugin_dir / "suspicious_import"

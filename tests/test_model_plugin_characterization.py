@@ -941,25 +941,38 @@ def test_plugin_with_validation_errors_is_never_registered(tmp_path, loader, cap
         assert "Missing required dependency: not-installed-dependency-dist" in caplog.text
 
 
-def test_strict_turns_warnings_into_errors(tmp_path, loader):
-    """A code-scan finding is a warning: registered at ``standard``, rejected at ``strict``."""
-    names = {}
-    for level in ("standard", "strict"):
-        names[level] = _unique("charplugin_")
-        plugin_dir = _write_plugin(
-            tmp_path / level,
-            "p",
-            names[level],
-            [_valid_model_entry(_unique("CharNet"), "CharNet")],
-        )
-        with open(plugin_dir / "model.py", "a") as f:
-            f.write("\nVALUE = eval('1')\n")
+def _write_plugin_with_eval(root: Path) -> str:
+    plugin_name = _unique("charplugin_")
+    plugin_dir = _write_plugin(
+        root, "p", plugin_name, [_valid_model_entry(_unique("CharNet"), "CharNet")]
+    )
+    with open(plugin_dir / "model.py", "a") as f:
+        f.write("\nVALUE = eval('1')\n")
+    return plugin_name
 
-    assert loader.discover_plugins([tmp_path / "standard"]) == [names["standard"]]
-    assert any("eval" in w for w in loader._plugins[names["standard"]].validation_errors)
 
-    assert loader.discover_plugins([tmp_path / "strict"], validation_level="strict") == []
-    assert names["strict"] not in loader._plugins
+def test_code_scan_never_blocks_registration(tmp_path, loader):
+    """A code-scan finding is a lint hint: registered at every level, not a validation result."""
+    for level in _LEVELS:
+        plugin_name = _write_plugin_with_eval(tmp_path / level)
+
+        assert loader.discover_plugins([tmp_path / level], validation_level=level) == [plugin_name]
+        assert loader._plugins[plugin_name].validation_errors == []
+
+
+def test_code_scan_hint_is_logged_at_info(tmp_path, loader, caplog):
+    """The hint is an INFO record naming the plugin; nothing about it is logged as a warning."""
+    plugin_name = _write_plugin_with_eval(tmp_path)
+
+    with caplog.at_level(logging.INFO, logger=mps.logger.name):
+        assert loader.discover_plugins([tmp_path]) == [plugin_name]
+
+    hints = [r for r in caplog.records if f"Plugin '{plugin_name}' lint hint:" in r.getMessage()]
+    assert [r.levelno for r in hints] == [logging.INFO]
+    assert "eval" in hints[0].getMessage()
+    assert not [
+        r for r in caplog.records if r.levelno >= logging.WARNING and "eval" in r.getMessage()
+    ]
 
 
 def test_discover_and_load_plugins_without_paths_uses_the_configured_sources(
