@@ -2634,17 +2634,42 @@ if __name__ == "__main__":
 # ==========================================
 
 
+# Names served by ``__getattr__``; any other missing attribute raises AttributeError.
+_LAZY_CONSTANTS = frozenset(
+    {
+        "ATOMIC_ENERGIES_HARTREE",
+        "HEAVY_ATOM_SYMBOLS_TO_Z",
+        "HAR2EV",
+        "BOHR_TO_ANGSTROM",
+        "RAW_NPZ_FILENAME_CACHED",
+        "RAW_DATA_DOWNLOAD_URL_CACHED",
+        "DATASET_ROOT_DIR_CACHED",
+        "PROCESSED_DATA_FILENAME",
+        "_dataset_constants",
+    }
+)
+
+
 def __getattr__(name: str):
     """
     Lazy-load constants on first access to avoid circular imports.
 
-    This module-level __getattr__ is called when an attribute is not found,
-    allowing us to defer config loading until constants are actually needed.
+    This module-level __getattr__ (PEP 562) is called when an attribute is not
+    found, allowing us to defer config loading until constants are actually
+    needed. Only the names in ``_LAZY_CONSTANTS`` load the configuration; any
+    other name raises ``AttributeError`` at once, as PEP 562 requires. Before,
+    every missing name loaded the configuration and returned ``None``: the import
+    system's ``hasattr(module, "__path__")`` probe, made for
+    ``from .config_constants import ...``, loaded ``./configs`` on import of
+    ``milia_pipeline`` and failed outside a project directory.
 
     This prevents the circular import:
     config_constants (module load) -> load_config() -> config_handler ->
     config_constants (partial) -> ImportError
     """
+    if name not in _LAZY_CONSTANTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
     global _TEMP_CONFIG
 
     # Lazy initialize config on first constant access

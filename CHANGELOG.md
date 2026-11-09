@@ -68,6 +68,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a change in those could have removed them. Each is pinned to the version already locked (networkx
   per Python range, as locked), so installed versions do not change. A test now fails when first-party
   code imports a package unconditionally that is not declared.
+- `import milia_pipeline` works outside a project directory. It failed with `ConfigurationError:
+  Configuration directory not found: ./configs/` unless the working directory held `configs/`: the
+  module-level `__getattr__` of `milia_pipeline.config.config_constants` loaded the configuration for any
+  missing attribute and returned `None` for unknown ones, so the import system's `__path__` probe loaded
+  `./configs`. It now loads the configuration only for its lazily computed constants and raises
+  `AttributeError` for any other name (PEP 562), so `hasattr(config_constants, name)` is `False` for a
+  name it does not define. `milia_pipeline.config`, `.handlers`, `.transformations` and `.models` now
+  import from any directory; `milia_pipeline.datasets` and `.molecules` still read configuration
+  constants when imported.
 
 ## [1.19.0] - 2026-11-08
 
