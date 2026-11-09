@@ -63,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registration entirely. Before, the model stayed in its previous category as well, so `list_by_category`
   and the registry statistics counted it twice, and a plugin name from the previous registration survived
   a re-registration without one.
+- Packages that MILIA imports unconditionally are declared dependencies: `pydantic`, `typing-extensions`,
+  `requests`, `tqdm`, `sqlalchemy` and `networkx` were installed only as dependencies of other packages,
+  so a change in those could have removed them. Each is pinned to the version already locked (networkx
+  per Python range, as locked), so installed versions do not change. A test now fails when first-party
+  code imports a package unconditionally that is not declared.
 
 ## [1.19.0] - 2026-11-08
 

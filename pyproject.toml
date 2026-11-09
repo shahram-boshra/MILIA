@@ -73,6 +73,21 @@ dependencies = [
     "matplotlib==3.10.3",
     "scikit-learn==1.5.2",
     "pydantic-settings==2.10.1",
+    # Implicit direct deps, imported unguarded by first-party code but only transitive until now; each is
+    # declared at the version already locked.
+    # pydantic: 39 modules (config schemas, transforms, plugin manifests, model builders).
+    "pydantic==2.13.4",
+    # typing_extensions: 5 modules (`Self`, config schemas and HPO).
+    "typing-extensions==4.16.0",
+    # requests, tqdm: datasets/milia_dataset.py.
+    "requests==2.34.2",
+    "tqdm==4.70.0",
+    # sqlalchemy: models/hpo/shared_study.py (storage URLs).
+    "sqlalchemy==2.0.51",
+    # networkx: 4 shipped transformation plugins. The lock holds one version per Python range (3.6.1
+    # requires Python >= 3.11; 3.4.2 serves 3.10); the pins follow it.
+    "networkx==3.4.2 ; python_version < '3.11'",
+    "networkx==3.6.1 ; python_version >= '3.11'",
     "torchmetrics==1.9.0",
     "hydra-core==1.3.2",
     "optuna==4.9.0",
