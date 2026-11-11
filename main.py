@@ -184,8 +184,8 @@ from milia_pipeline.config.config_accessors import (
     get_property_availability,
 )
 from milia_pipeline.config.config_constants import (
-    ATOMIC_ENERGIES_HARTREE,
-    PROCESSED_DATA_FILENAME,
+    get_atomic_energies_hartree,
+    get_processed_data_filename,
 )
 from milia_pipeline.config.config_containers import (
     DatasetConfig,
@@ -2122,7 +2122,7 @@ def _validate_atomization_configuration(
         logger.info(f"Atomization energy calculation: {atomization_base} -> {atomization_key}")
 
         # Validate atomic energies are available
-        if not ATOMIC_ENERGIES_HARTREE:
+        if not get_atomic_energies_hartree():
             raise HandlerConfigurationError(
                 message="Atomic energies required for atomization energy calculation but not found",
                 handler_type=dataset_config.dataset_type,
@@ -5150,7 +5150,7 @@ def main():
         logger.info(f"Using root directory: {root_dir}")
 
         # Construct processed file path
-        processed_data_path = Path(root_dir) / "processed" / PROCESSED_DATA_FILENAME
+        processed_data_path = Path(root_dir) / "processed" / get_processed_data_filename()
 
         # P2-3f (F49): workers of a shared study start together; PyG processes a dataset whose processed
         # file is missing, with no inter-process lock, so a worker requires it to exist already.

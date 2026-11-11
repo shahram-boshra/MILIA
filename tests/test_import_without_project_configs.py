@@ -3,7 +3,9 @@
 An installed package must import from any working directory. Before, ``import milia_pipeline``
 failed with ``ConfigurationError: Configuration directory not found: ./configs/`` unless the
 working directory held ``configs/``: the module ``__getattr__`` of ``config_constants`` loaded the
-configuration for every missing attribute, including the import system's ``__path__`` probe.
+configuration for every missing attribute, including the import system's ``__path__`` probe, and
+modules imported its lazy constants by name (``from config_constants import HAR2EV``), which PEP 562
+resolves through ``__getattr__`` at import. They call the accessors (``get_har2ev()``) at use instead.
 """
 
 from __future__ import annotations
@@ -19,12 +21,13 @@ from milia_pipeline.config import config_constants
 
 REPO = Path(__file__).resolve().parents[1]
 
-# Modules that still read configuration constants at import (they import the lazily loaded
-# constants by name): converted in a follow-up change.
-IMPORTS_CONSTANTS_BY_NAME = (
-    "S8b: modules importing the lazy configuration constants by name "
-    "load the configuration at import"
-)
+# Lazy constant name -> its call-time accessor.
+ACCESSORS = {
+    "ATOMIC_ENERGIES_HARTREE": config_constants.get_atomic_energies_hartree,
+    "HEAVY_ATOM_SYMBOLS_TO_Z": config_constants.get_heavy_atom_symbols_to_z,
+    "HAR2EV": config_constants.get_har2ev,
+    "PROCESSED_DATA_FILENAME": config_constants.get_processed_data_filename,
+}
 
 
 @pytest.mark.parametrize(
@@ -35,14 +38,9 @@ IMPORTS_CONSTANTS_BY_NAME = (
         "milia_pipeline.handlers",
         "milia_pipeline.transformations",
         "milia_pipeline.models",
-        pytest.param(
-            "milia_pipeline.datasets",
-            marks=pytest.mark.xfail(strict=True, reason=IMPORTS_CONSTANTS_BY_NAME),
-        ),
-        pytest.param(
-            "milia_pipeline.molecules",
-            marks=pytest.mark.xfail(strict=True, reason=IMPORTS_CONSTANTS_BY_NAME),
-        ),
+        "milia_pipeline.datasets",
+        "milia_pipeline.molecules",
+        "main",
     ],
 )
 def test_imports_from_a_directory_without_configs(module, tmp_path):
@@ -73,3 +71,9 @@ def test_unknown_attributes_raise_without_loading_the_configuration(monkeypatch)
         with pytest.raises(AttributeError, match=name):
             getattr(config_constants, name)
         assert not hasattr(config_constants, name)
+
+
+@pytest.mark.parametrize("name", sorted(ACCESSORS))
+def test_lazy_constant_and_its_accessor_return_the_same_object(name):
+    """The attribute and the accessor share one cache entry: both paths give one value."""
+    assert getattr(config_constants, name) is ACCESSORS[name]()

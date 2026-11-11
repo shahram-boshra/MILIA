@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
+from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -1229,7 +1229,7 @@ class DFTDatasetHandler(DatasetHandler):
             # Check atomization energy configuration
             if (
                 self.processing_config.calculate_atomization_energy_from
-                and not ATOMIC_ENERGIES_HARTREE
+                and not get_atomic_energies_hartree()
             ):
                 raise HandlerConfigurationError(
                     message="DFT atomization energy calculation requested but atomic energies not available",
@@ -1362,7 +1362,9 @@ class DFTDatasetHandler(DatasetHandler):
                 return None
 
             # Calculate atomization energy using internal logic
-            if HAR2EV is None or not ATOMIC_ENERGIES_HARTREE:
+            har2ev = get_har2ev()
+            atomic_energies_hartree = get_atomic_energies_hartree()
+            if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"DFT molecule {molecule_index}: Missing atomic energies for atomization calculation"
                 )
@@ -1371,7 +1373,7 @@ class DFTDatasetHandler(DatasetHandler):
             # ✓ Sum atomic energies (already in Hartree from constants)
             sum_atomic_energies_hartree = 0.0
             for atomic_num in pyg_data.z.tolist():
-                atomic_energy = ATOMIC_ENERGIES_HARTREE.get(atomic_num)
+                atomic_energy = atomic_energies_hartree.get(atomic_num)
                 if atomic_energy is None:
                     self.logger.warning(
                         f"DFT molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
@@ -1383,7 +1385,7 @@ class DFTDatasetHandler(DatasetHandler):
             atomization_energy_hartree = base_energy_hartree - sum_atomic_energies_hartree
 
             # ✓ CORRECT - Convert to eV only at the end
-            atomization_energy_eV = atomization_energy_hartree * HAR2EV
+            atomization_energy_eV = atomization_energy_hartree * har2ev
 
             self.logger.debug(
                 f"DFT molecule {molecule_index} atomization energy: {atomization_energy_eV:.4f} eV"

@@ -1394,7 +1394,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
         self.assertIsNone(result)
 
-    @patch("milia_pipeline.handlers.implementations.rmd17.HAR2EV", None)
+    @patch("milia_pipeline.handlers.implementations.rmd17.get_har2ev", Mock(return_value=None))
     def test_missing_har2ev_returns_none(self):
         """When HAR2EV constant is None, returns None."""
         pc = _make_processing_config(calculate_atomization_energy_from="energies")

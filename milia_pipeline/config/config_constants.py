@@ -1177,6 +1177,78 @@ def get_bohr_to_angstrom() -> float:
     return _CONSTANTS_CACHE[cache_key]
 
 
+def _loaded_config() -> dict[str, Any]:
+    """Return the configuration, loading it on first use (shared by the lazy constants)."""
+    global _TEMP_CONFIG
+    if _TEMP_CONFIG is None:
+        from milia_pipeline.config.config_loader import load_config
+
+        _TEMP_CONFIG = load_config()
+    return _TEMP_CONFIG
+
+
+# Call-time accessors of the configuration-derived constants. A module that imports one of the
+# lazy attributes by name (``from config_constants import HAR2EV``) loads the configuration when
+# it is imported (PEP 562 resolves the name through ``__getattr__`` at import), so importing it
+# needs ``./configs``. Importing an accessor loads nothing; the call does. Each accessor and its
+# lazy attribute share one ``_CONSTANTS_CACHE`` entry, so both return the same object.
+
+
+def get_atomic_energies_hartree() -> dict[int, float]:
+    """Per-element reference energies in Hartree (``atomic_energies_hartree``); ``ATOMIC_ENERGIES_HARTREE``."""
+    key = "ATOMIC_ENERGIES_HARTREE"
+    if key not in _CONSTANTS_CACHE:
+        _CONSTANTS_CACHE[key] = _get_config_value(_loaded_config(), "atomic_energies_hartree", dict)
+    return _CONSTANTS_CACHE[key]
+
+
+def get_heavy_atom_symbols_to_z() -> dict[str, int]:
+    """Element symbol to atomic number (``heavy_atom_symbols_to_z``); ``HEAVY_ATOM_SYMBOLS_TO_Z``."""
+    key = "HEAVY_ATOM_SYMBOLS_TO_Z"
+    if key not in _CONSTANTS_CACHE:
+        _CONSTANTS_CACHE[key] = _get_config_value(_loaded_config(), "heavy_atom_symbols_to_z", dict)
+    return _CONSTANTS_CACHE[key]
+
+
+def get_har2ev() -> float:
+    """Hartree-to-eV conversion factor (``global_constants.har2ev``); ``HAR2EV``."""
+    key = "HAR2EV"
+    if key not in _CONSTANTS_CACHE:
+        global_constants = _get_config_value(_loaded_config(), "global_constants", dict)
+        _CONSTANTS_CACHE[key] = _get_config_value(
+            global_constants, "har2ev", (int, float), parent_key="global_constants"
+        )
+    return _CONSTANTS_CACHE[key]
+
+
+def get_processed_data_filename() -> str:
+    """Processed dataset file name (raw file stem + ``.pt``, else ``data.pt``); ``PROCESSED_DATA_FILENAME``."""
+    key = "PROCESSED_DATA_FILENAME"
+    if key not in _CONSTANTS_CACHE:
+        _loaded_config()
+        raw_filename = get_dataset_constants()[0]
+
+        if raw_filename:
+            _CONSTANTS_CACHE[key] = Path(raw_filename).stem + ".pt"
+            # Also update RAW_NPZ_FILENAME_CACHED for consistency
+            _CONSTANTS_CACHE["RAW_NPZ_FILENAME_CACHED"] = raw_filename
+        else:
+            # Retry fetching config - it may not have been loaded on first attempt
+            from milia_pipeline.config.config_loader import load_config
+
+            load_config()
+            dataset_config = _get_dataset_config_local()
+            raw_filename = _get_config_value(dataset_config, "raw_npz_filename", str)
+            if raw_filename:
+                _CONSTANTS_CACHE[key] = Path(raw_filename).stem + ".pt"
+            else:
+                logger.warning(
+                    "The raw NPZ filename is not specified in config.yaml. Falling back to default 'data.pt'."
+                )
+                _CONSTANTS_CACHE[key] = "data.pt"
+    return _CONSTANTS_CACHE[key]
+
+
 def _get_handler_specific_constants(
     handler_type: str, dataset_config: dict[str, Any]
 ) -> dict[str, Any]:
@@ -2649,6 +2721,14 @@ _LAZY_CONSTANTS = frozenset(
     }
 )
 
+# Lazy constants with a call-time accessor; ``__getattr__`` delegates to it.
+_LAZY_CONSTANT_ACCESSORS = {
+    "ATOMIC_ENERGIES_HARTREE": get_atomic_energies_hartree,
+    "HEAVY_ATOM_SYMBOLS_TO_Z": get_heavy_atom_symbols_to_z,
+    "HAR2EV": get_har2ev,
+    "PROCESSED_DATA_FILENAME": get_processed_data_filename,
+}
+
 
 def __getattr__(name: str):
     """
@@ -2670,38 +2750,15 @@ def __getattr__(name: str):
     if name not in _LAZY_CONSTANTS:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    global _TEMP_CONFIG
+    accessor = _LAZY_CONSTANT_ACCESSORS.get(name)
+    if accessor is not None:
+        return accessor()
 
     # Lazy initialize config on first constant access
-    if _TEMP_CONFIG is None:
-        from milia_pipeline.config.config_loader import load_config
-
-        _TEMP_CONFIG = load_config()
+    _loaded_config()
 
     # Load and cache the requested constant
-    if name == "ATOMIC_ENERGIES_HARTREE":
-        if name not in _CONSTANTS_CACHE:
-            _CONSTANTS_CACHE[name] = _get_config_value(
-                _TEMP_CONFIG, "atomic_energies_hartree", dict
-            )
-        return _CONSTANTS_CACHE[name]
-
-    elif name == "HEAVY_ATOM_SYMBOLS_TO_Z":
-        if name not in _CONSTANTS_CACHE:
-            _CONSTANTS_CACHE[name] = _get_config_value(
-                _TEMP_CONFIG, "heavy_atom_symbols_to_z", dict
-            )
-        return _CONSTANTS_CACHE[name]
-
-    elif name == "HAR2EV":
-        if name not in _CONSTANTS_CACHE:
-            global_constants = _get_config_value(_TEMP_CONFIG, "global_constants", dict)
-            _CONSTANTS_CACHE[name] = _get_config_value(
-                global_constants, "har2ev", (int, float), parent_key="global_constants"
-            )
-        return _CONSTANTS_CACHE[name]
-
-    elif name == "BOHR_TO_ANGSTROM":
+    if name == "BOHR_TO_ANGSTROM":
         if name not in _CONSTANTS_CACHE:
             global_constants = _get_config_value(_TEMP_CONFIG, "global_constants", dict)
             _CONSTANTS_CACHE[name] = _get_config_value(
@@ -2726,33 +2783,6 @@ def __getattr__(name: str):
             constants = get_dataset_constants()
             _CONSTANTS_CACHE[name] = constants[2]
         return _CONSTANTS_CACHE[name]
-    # ---
-    elif name == "PROCESSED_DATA_FILENAME":
-        if name not in _CONSTANTS_CACHE:
-            # Always fetch fresh to ensure config is loaded
-            constants = get_dataset_constants()
-            raw_filename = constants[0]
-
-            if raw_filename:
-                _CONSTANTS_CACHE[name] = Path(raw_filename).stem + ".pt"
-                # Also update RAW_NPZ_FILENAME_CACHED for consistency
-                _CONSTANTS_CACHE["RAW_NPZ_FILENAME_CACHED"] = raw_filename
-            else:
-                # Retry fetching config - it may not have been loaded on first attempt
-                from milia_pipeline.config.config_loader import load_config
-
-                load_config()
-                dataset_config = _get_dataset_config_local()
-                raw_filename = _get_config_value(dataset_config, "raw_npz_filename", str)
-                if raw_filename:
-                    _CONSTANTS_CACHE[name] = Path(raw_filename).stem + ".pt"
-                else:
-                    logger.warning(
-                        "The raw NPZ filename is not specified in config.yaml. Falling back to default 'data.pt'."
-                    )
-                    _CONSTANTS_CACHE[name] = "data.pt"
-        return _CONSTANTS_CACHE[name]
-        # ---
 
     elif name == "_dataset_constants":
         if name not in _CONSTANTS_CACHE:

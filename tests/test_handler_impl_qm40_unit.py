@@ -659,7 +659,7 @@ class TestAtomizationEnergy(unittest.TestCase):
         result = handler.enrich_pyg_data(data, props, 0, "t")
         self.assertEqual(result.dataset_type, "QM40")
 
-    @patch("milia_pipeline.handlers.implementations.qm40.HAR2EV", None)
+    @patch("milia_pipeline.handlers.implementations.qm40.get_har2ev", Mock(return_value=None))
     def test_missing_har2ev_no_atomization(self):
         handler = _make_handler()
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))

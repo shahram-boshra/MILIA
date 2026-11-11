@@ -1291,7 +1291,10 @@ class TestValidateConfiguration(unittest.TestCase):
         handler = _make_handler()
         handler.validate_configuration()
 
-    @patch("milia_pipeline.handlers.implementations.dft.ATOMIC_ENERGIES_HARTREE", {})
+    @patch(
+        "milia_pipeline.handlers.implementations.dft.get_atomic_energies_hartree",
+        Mock(return_value={}),
+    )
     def test_atomization_energy_without_atomic_energies_raises(self):
         """Atomization energy configured without atomic energies raises."""
         pc = _make_processing_config(

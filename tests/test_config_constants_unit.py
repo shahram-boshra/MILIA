@@ -35,6 +35,34 @@ from milia_pipeline.exceptions import (
 # ==========================================
 
 
+@pytest.fixture(autouse=True)
+def _restore_config_constants_state():
+    """Restore the module's loaded configuration, constant cache and lazy attributes after each test.
+
+    Tests here load mock configurations through the lazy constants and set them as module
+    attributes. Modules that read the constants at use (``get_har2ev()``) would otherwise see a
+    previous test's values.
+    """
+    temp_config = config_constants._TEMP_CONFIG
+    cache = config_constants._CONSTANTS_CACHE
+    cached = dict(cache)
+    shadowed = {
+        name: config_constants.__dict__[name]
+        for name in config_constants._LAZY_CONSTANTS
+        if name in config_constants.__dict__
+    }
+    yield
+    config_constants._TEMP_CONFIG = temp_config
+    config_constants._CONSTANTS_CACHE = cache
+    cache.clear()
+    cache.update(cached)
+    for name in config_constants._LAZY_CONSTANTS:
+        if name in shadowed:
+            setattr(config_constants, name, shadowed[name])
+        else:
+            config_constants.__dict__.pop(name, None)
+
+
 @pytest.fixture
 def mock_config():
     """Sample configuration dictionary."""

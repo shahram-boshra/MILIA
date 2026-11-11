@@ -3801,12 +3801,14 @@ class TestPathAndFileHandling(BaseTestCase):
         print("✅ config_path parameter accepted")
 
     def test_processed_data_filename_constant(self):
-        """Test PROCESSED_DATA_FILENAME is used."""
-        import milia_pipeline.datasets.milia_dataset as module
-
-        source = Path(module.__file__).read_text()
-        self.assertIn("PROCESSED_DATA_FILENAME", source)
-        print("✅ PROCESSED_DATA_FILENAME used")
+        """processed_file_names is the configured processed file name, read when accessed."""
+        with patch(
+            "milia_pipeline.datasets.milia_dataset.get_processed_data_filename",
+            Mock(return_value="configured.pt"),
+        ):
+            self.assertEqual(
+                miliaDataset.processed_file_names.fget(Mock(spec=miliaDataset)), "configured.pt"
+            )
 
     def test_raw_data_filename_attribute(self):
         """Test raw_data_filename attribute is set."""

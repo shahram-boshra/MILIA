@@ -30,7 +30,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
+from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -756,7 +756,9 @@ class ANI1ccxDatasetHandler(DatasetHandler):
                 return None
 
             # Calculate atomization energy
-            if HAR2EV is None or not ATOMIC_ENERGIES_HARTREE:
+            har2ev = get_har2ev()
+            atomic_energies_hartree = get_atomic_energies_hartree()
+            if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"ANI-1ccx molecule {molecule_index}: Missing atomic energies for atomization calculation"
                 )
@@ -765,7 +767,7 @@ class ANI1ccxDatasetHandler(DatasetHandler):
             # Sum atomic energies (in Hartree)
             sum_atomic_energies_hartree = 0.0
             for atomic_num in pyg_data.z.tolist():
-                atomic_energy = ATOMIC_ENERGIES_HARTREE.get(atomic_num)
+                atomic_energy = atomic_energies_hartree.get(atomic_num)
                 if atomic_energy is None:
                     self.logger.warning(
                         f"ANI-1ccx molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
@@ -775,7 +777,7 @@ class ANI1ccxDatasetHandler(DatasetHandler):
 
             # Calculate atomization energy in Hartree, then convert to eV
             atomization_energy_hartree = base_energy_hartree - sum_atomic_energies_hartree
-            atomization_energy_eV = atomization_energy_hartree * HAR2EV
+            atomization_energy_eV = atomization_energy_hartree * har2ev
 
             self.logger.debug(
                 f"ANI-1ccx molecule {molecule_index} atomization energy: {atomization_energy_eV:.4f} eV (from {base_energy_key})"

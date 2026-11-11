@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plugin "can be safely enabled". The plugin trust model (plugins are trusted code; discovering one runs
   it) is stated in the loader, `configs/plugins.yaml` and the transformation plugin README.
 
+### Added
+
+- `get_atomic_energies_hartree()`, `get_heavy_atom_symbols_to_z()`, `get_har2ev()` and
+  `get_processed_data_filename()` in `milia_pipeline.config` (and `config.config_constants`): call-time
+  accessors of `ATOMIC_ENERGIES_HARTREE`, `HEAVY_ATOM_SYMBOLS_TO_Z`, `HAR2EV` and
+  `PROCESSED_DATA_FILENAME`, returning the same objects. Importing an accessor loads no configuration;
+  importing one of those constants by name does.
+
 ### Deprecated
 
 - Transformation plugin settings that have no effect: `plugins.validation_level`, `trusted_plugins`,
@@ -74,9 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing attribute and returned `None` for unknown ones, so the import system's `__path__` probe loaded
   `./configs`. It now loads the configuration only for its lazily computed constants and raises
   `AttributeError` for any other name (PEP 562), so `hasattr(config_constants, name)` is `False` for a
-  name it does not define. `milia_pipeline.config`, `.handlers`, `.transformations` and `.models` now
-  import from any directory; `milia_pipeline.datasets` and `.molecules` still read configuration
-  constants when imported.
+  name it does not define. Modules that imported the lazily computed constants by name
+  (`from milia_pipeline.config.config_constants import HAR2EV`), which also loads the configuration at
+  import, read them when used through the new accessors. Every subpackage and `main.py` now import from
+  any directory; the configuration is loaded when a constant is first used.
 
 ## [1.19.0] - 2026-11-08
 

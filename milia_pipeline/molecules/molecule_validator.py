@@ -45,7 +45,7 @@ from milia_pipeline.config.config_accessors import (
     get_uncertainty_config,
     is_uncertainty_enabled,
 )
-from milia_pipeline.config.config_constants import HEAVY_ATOM_SYMBOLS_TO_Z
+from milia_pipeline.config.config_constants import get_heavy_atom_symbols_to_z
 from milia_pipeline.config.config_containers import (
     DatasetConfig,
     create_dataset_config_from_global,
@@ -571,7 +571,7 @@ def convert_symbols_to_atomic_numbers(
     unknown_symbols = set()
 
     # Create complete symbol mapping
-    symbol_to_z = dict(HEAVY_ATOM_SYMBOLS_TO_Z)
+    symbol_to_z = dict(get_heavy_atom_symbols_to_z())
     symbol_to_z["H"] = 1
 
     for symbol in symbols:

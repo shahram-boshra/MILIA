@@ -437,6 +437,7 @@ from .config_constants import (
     ensure_complete_compatibility,
     ensure_handler_constant_compatibility,
     get_all_cache_info,
+    get_atomic_energies_hartree,  # call-time accessor of ATOMIC_ENERGIES_HARTREE
     get_bohr_to_angstrom,  # Bohr-to-Angstrom CODATA conversion factor (accessor for testability)
     get_cached_handler_config,
     get_compatible_transforms_for_handler,
@@ -461,10 +462,13 @@ from .config_constants import (
     get_handler_required_properties,  # Required properties from registry
     get_handler_required_properties_legacy,  # Deprecated: use get_handler_required_properties()
     get_handler_transform_compatibility,
+    get_har2ev,  # call-time accessor of HAR2EV
+    get_heavy_atom_symbols_to_z,  # call-time accessor of HEAVY_ATOM_SYMBOLS_TO_Z
     get_incompatible_transforms_for_handler,
     get_legacy_compatible_constants,
     # Migration Constants
     get_migration_compatibility_constants,
+    get_processed_data_filename,  # call-time accessor of PROCESSED_DATA_FILENAME
     # -------------------------------------------------------------------------
     # Phase 3: Dynamic Registry Wrapper Functions (NEW)
     # -------------------------------------------------------------------------
@@ -1046,6 +1050,10 @@ __all__ = [
     # Handler Utilities
     "get_handler_constants",
     "get_bohr_to_angstrom",
+    "get_atomic_energies_hartree",
+    "get_har2ev",
+    "get_heavy_atom_symbols_to_z",
+    "get_processed_data_filename",
     "get_handler_identifier_keys",
     "validate_handler_configuration",
     "get_handler_compatibility_info",

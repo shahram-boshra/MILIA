@@ -63,10 +63,10 @@ from milia_pipeline.config.config_accessors import (
     get_transformation_config,
 )
 from milia_pipeline.config.config_constants import (
-    ATOMIC_ENERGIES_HARTREE,
-    HAR2EV,
-    HEAVY_ATOM_SYMBOLS_TO_Z,
-    PROCESSED_DATA_FILENAME,
+    get_atomic_energies_hartree,
+    get_har2ev,
+    get_heavy_atom_symbols_to_z,
+    get_processed_data_filename,
 )
 from milia_pipeline.config.config_containers import (
     DatasetConfig,
@@ -4810,7 +4810,7 @@ class miliaDataset(InMemoryDataset):
         This property is required by `torch_geometric.data.InMemoryDataset`.
         The main processed data file is `data.pt`.
         """
-        return PROCESSED_DATA_FILENAME
+        return get_processed_data_filename()
 
     def download(self):
         """
@@ -6878,7 +6878,7 @@ class miliaDataset(InMemoryDataset):
                 processed_path = Path(self.processed_paths[0])
 
                 self.logger.critical(
-                    f"{error_msg}. '{PROCESSED_DATA_FILENAME}' will not be created. Check logs for details on skipped molecules."
+                    f"{error_msg}. '{get_processed_data_filename()}' will not be created. Check logs for details on skipped molecules."
                 )
 
                 # Remove any existing incomplete file
@@ -7392,9 +7392,9 @@ class miliaDataset(InMemoryDataset):
             converter = MoleculeDataConverter(
                 logger=self.logger,
                 structural_features_config=self.structural_features_config,
-                atomic_energies_hartree=ATOMIC_ENERGIES_HARTREE,
-                har2ev=HAR2EV,
-                heavy_atom_symbols_to_z=HEAVY_ATOM_SYMBOLS_TO_Z,
+                atomic_energies_hartree=get_atomic_energies_hartree(),
+                har2ev=get_har2ev(),
+                heavy_atom_symbols_to_z=get_heavy_atom_symbols_to_z(),
                 dataset_config=dataset_config,
                 filter_config=self._filter_config,
                 dataset_handler=self._dataset_handler,

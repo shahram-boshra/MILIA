@@ -102,7 +102,7 @@ from typing import Any
 
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import HEAVY_ATOM_SYMBOLS_TO_Z
+from milia_pipeline.config.config_constants import get_heavy_atom_symbols_to_z
 from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig
 from milia_pipeline.exceptions import (
     AtomFilterError,
@@ -1019,6 +1019,7 @@ def apply_heavy_atom_filters(
 
         # Convert symbols to atomic numbers
         target_heavy_zs_for_filter: set[int] = set()
+        heavy_atom_symbols_to_z = get_heavy_atom_symbols_to_z()
         for symbol in filter_symbols:
             try:
                 normalized_symbol: str | None = None
@@ -1034,7 +1035,7 @@ def apply_heavy_atom_filters(
                         details=f"Symbol length validation failed: expected 1-2 characters, got {len(symbol)}",
                     )
 
-                atomic_num: int | None = HEAVY_ATOM_SYMBOLS_TO_Z.get(normalized_symbol)
+                atomic_num: int | None = heavy_atom_symbols_to_z.get(normalized_symbol)
                 if atomic_num:
                     target_heavy_zs_for_filter.add(atomic_num)
                 else:
@@ -1276,10 +1277,11 @@ def validate_filter_configuration(
                 )
 
             # Validate all atom symbols are recognized
+            heavy_atom_symbols_to_z = get_heavy_atom_symbols_to_z()
             for symbol in atoms:
                 if isinstance(symbol, str) and len(symbol) in [1, 2]:
                     normalized = symbol[0].upper() + (symbol[1].lower() if len(symbol) == 2 else "")
-                    if normalized not in HEAVY_ATOM_SYMBOLS_TO_Z:
+                    if normalized not in heavy_atom_symbols_to_z:
                         raise ConfigurationError(
                             message=f"Unknown atom symbol in filter configuration: '{symbol}'",
                             config_key="filter_config.heavy_atom_filter.atoms",
@@ -2346,11 +2348,12 @@ class MoleculeFilter:
                 if mode and target_symbols:
                     # Convert symbols to atomic numbers for comparison
                     target_z = set()
+                    heavy_atom_symbols_to_z = get_heavy_atom_symbols_to_z()
                     for symbol in target_symbols:
                         normalized = symbol[0].upper() + (
                             symbol[1].lower() if len(symbol) == 2 else ""
                         )
-                        z = HEAVY_ATOM_SYMBOLS_TO_Z.get(normalized)
+                        z = heavy_atom_symbols_to_z.get(normalized)
                         if z:
                             target_z.add(z)
 

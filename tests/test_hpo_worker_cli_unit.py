@@ -430,7 +430,7 @@ class TestWorkerLifecycle:
         from milia_pipeline.models.hpo import worker_resources
 
         if processed:
-            path = tmp_path / "processed" / main.PROCESSED_DATA_FILENAME
+            path = tmp_path / "processed" / main.get_processed_data_filename()
             path.parent.mkdir(parents=True)
             path.write_bytes(b"x" * 64)
         args = CLIManager().parse_args([*argv, "--root-dir", str(tmp_path)])

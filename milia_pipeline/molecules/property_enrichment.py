@@ -44,7 +44,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
+from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
 from milia_pipeline.config.config_containers import DatasetConfig, ProcessingConfig
 from milia_pipeline.config.data_refining import (
     log_vibration_refinement_status,
@@ -1567,12 +1567,14 @@ def calculate_atomization_energy(
     handler_context = _get_handler_context()
 
     try:
-        if HAR2EV is None:
+        har2ev = get_har2ev()
+        atomic_energies_hartree = get_atomic_energies_hartree()
+        if har2ev is None:
             raise ConfigurationError(
                 message="HAR2EV (Hartree to eV conversion factor) not defined in config",
                 config_key="HAR2EV",
             )
-        if not ATOMIC_ENERGIES_HARTREE:
+        if not atomic_energies_hartree:
             raise ConfigurationError(
                 message="ATOMIC_ENERGIES_HARTREE is empty or not defined in config",
                 config_key="ATOMIC_ENERGIES_HARTREE",
@@ -1591,7 +1593,7 @@ def calculate_atomization_energy(
 
         sum_atomic_energies_hartree = 0.0
         for atomic_num in atomic_numbers_tensor.tolist():
-            atomic_energy = ATOMIC_ENERGIES_HARTREE.get(atomic_num)
+            atomic_energy = atomic_energies_hartree.get(atomic_num)
             if atomic_energy is None:
                 raise PropertyEnrichmentError(
                     molecule_index=molecule_index,
@@ -1603,8 +1605,8 @@ def calculate_atomization_energy(
             sum_atomic_energies_hartree += atomic_energy
 
         # Convert to eV and calculate atomization energy
-        molecular_total_energy_eV = molecular_total_energy_hartree * HAR2EV
-        sum_atomic_energies_eV = sum_atomic_energies_hartree * HAR2EV
+        molecular_total_energy_eV = molecular_total_energy_hartree * har2ev
+        sum_atomic_energies_eV = sum_atomic_energies_hartree * har2ev
         atomization_energy_eV = molecular_total_energy_eV - sum_atomic_energies_eV
         return atomization_energy_eV
 
