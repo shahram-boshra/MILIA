@@ -40,6 +40,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
+from milia_pipeline.config.config_constants import get_dataset_atomic_energies_hartree, get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -57,23 +58,6 @@ from milia_pipeline.handlers.base_handler import DatasetHandler
 from milia_pipeline.handlers.handler_registry import register_handler
 
 logger = logging.getLogger(__name__)
-
-
-# Atomic energy references in Hartree for atomization energy calculation
-# Reference: Standard isolated atom energies at M06/def2-TZVP level
-# These values are approximate and may need refinement for exact M06 functional match
-try:
-    from milia_pipeline.constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
-except ImportError:
-    # Fallback values if constants module not available
-    ATOMIC_ENERGIES_HARTREE = {
-        1: -0.500273,  # H
-        6: -37.846772,  # C
-        7: -54.583861,  # N
-        8: -75.064579,  # O
-        16: -398.100442,  # S
-    }
-    HAR2EV = 27.211386245988
 
 
 @register_handler
@@ -658,7 +642,9 @@ class XXMDDatasetHandler(DatasetHandler):
         """
         Internal xxMD-specific atomization energy calculation.
 
-        Uses energy (M06 DFT, converted to Hartree) as base for atomization energy calculation.
+        Uses energy (M06 DFT, converted to Hartree) as base for atomization energy calculation,
+        minus the xxMD atomic reference energies (``xxmd_config.atomic_energies_hartree``, same
+        level of theory: UKS M06/6-31G).
         """
         try:
             if not self.processing_config.calculate_atomization_energy_from:
@@ -691,7 +677,9 @@ class XXMDDatasetHandler(DatasetHandler):
                 return None
 
             # Calculate atomization energy
-            if HAR2EV is None or not ATOMIC_ENERGIES_HARTREE:
+            har2ev = get_har2ev()
+            atomic_energies_hartree = get_dataset_atomic_energies_hartree(self.get_dataset_type())
+            if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"xxMD molecule {molecule_index}: Missing atomic energies for atomization calculation"
                 )
@@ -700,7 +688,7 @@ class XXMDDatasetHandler(DatasetHandler):
             # Sum atomic energies (in Hartree)
             sum_atomic_energies_hartree = 0.0
             for atomic_num in pyg_data.z.tolist():
-                atomic_energy = ATOMIC_ENERGIES_HARTREE.get(atomic_num)
+                atomic_energy = atomic_energies_hartree.get(atomic_num)
                 if atomic_energy is None:
                     self.logger.warning(
                         f"xxMD molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
@@ -710,7 +698,7 @@ class XXMDDatasetHandler(DatasetHandler):
 
             # Calculate atomization energy in Hartree, then convert to eV
             atomization_energy_hartree = base_energy_hartree - sum_atomic_energies_hartree
-            atomization_energy_eV = atomization_energy_hartree * HAR2EV
+            atomization_energy_eV = atomization_energy_hartree * har2ev
 
             self.logger.debug(
                 f"xxMD molecule {molecule_index} atomization energy: {atomization_energy_eV:.4f} eV"

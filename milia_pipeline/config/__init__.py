@@ -443,6 +443,7 @@ from .config_constants import (
     get_compatible_transforms_for_handler,
     # Debug & Diagnostics
     get_complete_constants_debug_info,
+    get_dataset_atomic_energies_hartree,  # a dataset's atomic references, else the global ones
     get_default_handler_type,  # Default handler type ('DFT')
     get_handler_cache_info,
     get_handler_compatibility_info,
@@ -1051,6 +1052,7 @@ __all__ = [
     "get_handler_constants",
     "get_bohr_to_angstrom",
     "get_atomic_energies_hartree",
+    "get_dataset_atomic_energies_hartree",
     "get_har2ev",
     "get_heavy_atom_symbols_to_z",
     "get_processed_data_filename",

@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accessors of `ATOMIC_ENERGIES_HARTREE`, `HEAVY_ATOM_SYMBOLS_TO_Z`, `HAR2EV` and
   `PROCESSED_DATA_FILENAME`, returning the same objects. Importing an accessor loads no configuration;
   importing one of those constants by name does.
+- `get_dataset_atomic_energies_hartree(dataset_type)` in `milia_pipeline.config`: a dataset's atomic
+  reference energies (`<dataset>_config.atomic_energies_hartree`, at its own level of theory), else the
+  global `atomic_energies_hartree`. A malformed mapping raises `ConfigurationError`.
 
 ### Deprecated
 
@@ -86,6 +89,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`from milia_pipeline.config.config_constants import HAR2EV`), which also loads the configuration at
   import, read them when used through the new accessors. Every subpackage and `main.py` now import from
   any directory; the configuration is loaded when a constant is first used.
+- xxMD atomization energies (`energy_ATOM`) subtract isolated-atom energies at the xxMD-DFT level of
+  theory (unrestricted M06/6-31G, as the dataset's energies; computed with Psi4 1.11 and recorded in
+  `configs/datasets/xxmd.yaml` as `xxmd_config.atomic_energies_hartree`). The handler imported its
+  references from a module that does not exist and always used built-in values equal to the QM9
+  B3LYP/6-31G(2df,p) atom references, so every xxMD atomization energy mixed two levels of theory.
+  Reprocess xxMD datasets processed earlier: the processed file is not rebuilt automatically.
 
 ## [1.19.0] - 2026-11-08
 

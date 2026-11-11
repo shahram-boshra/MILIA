@@ -70,6 +70,11 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.config.config_constants import (
+    get_atomic_energies_hartree,
+    get_dataset_atomic_energies_hartree,
+    get_har2ev,
+)
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerValidationError,
@@ -77,19 +82,9 @@ from milia_pipeline.exceptions import (
 )
 from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
 
-# Import constants from the same location xxmd.py uses (milia_pipeline.constants)
-# with same fallback pattern as the module under test
-try:
-    from milia_pipeline.constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
-except ImportError:
-    ATOMIC_ENERGIES_HARTREE = {
-        1: -0.500273,  # H
-        6: -37.846772,  # C
-        7: -54.583861,  # N
-        8: -75.064579,  # O
-        16: -398.100442,  # S
-    }
-    HAR2EV = 27.211386245988
+# The references xxmd.py subtracts: xxMD's own (UKS M06/6-31G, configs/datasets/xxmd.yaml).
+ATOMIC_ENERGIES_HARTREE = get_dataset_atomic_energies_hartree("XXMD")
+HAR2EV = get_har2ev()
 
 
 # ============================================================================
@@ -1335,7 +1330,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
         self.assertIsNone(result)
 
-    @patch("milia_pipeline.handlers.implementations.xxmd.HAR2EV", None)
+    @patch("milia_pipeline.handlers.implementations.xxmd.get_har2ev", Mock(return_value=None))
     def test_missing_har2ev_returns_none(self):
         """When HAR2EV constant is None, returns None."""
         pc = _make_processing_config(calculate_atomization_energy_from="energy")
@@ -1344,6 +1339,17 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
         result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
         self.assertIsNone(result)
+
+    def test_subtracts_xxmd_level_of_theory_references(self):
+        """The atoms' energies subtracted are xxMD's M06/6-31G references, not the global ones."""
+        self.assertNotEqual(ATOMIC_ENERGIES_HARTREE[1], get_atomic_energies_hartree()[1])
+        pc = _make_processing_config(calculate_atomization_energy_from="energy")
+        handler = _make_handler(processing_config=pc)
+        data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
+        props = _make_raw_properties(energy=-76.0)
+        expected_eV = (-76.0 - (-75.0254051528 + 2 * -0.4979196097)) * HAR2EV
+        result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
+        self.assertAlmostEqual(result, expected_eV, places=6)
 
 
 # ============================================================================

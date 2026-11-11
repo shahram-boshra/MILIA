@@ -1202,6 +1202,42 @@ def get_atomic_energies_hartree() -> dict[int, float]:
     return _CONSTANTS_CACHE[key]
 
 
+def get_dataset_atomic_energies_hartree(dataset_type: str) -> dict[int, float]:
+    """Isolated-atom reference energies (Hartree) for a dataset's atomization energies.
+
+    An atomization energy subtracts the atoms' energies from the molecular energy, so both must come
+    from the same level of theory. A dataset section (``<dataset_type>_config``) may set
+    ``atomic_energies_hartree`` computed at its own level of theory; that mapping is returned.
+    Otherwise the global ``atomic_energies_hartree`` (``get_atomic_energies_hartree()``) is.
+
+    Raises:
+        ConfigurationError: If the dataset's mapping is empty or not atomic number -> energy.
+    """
+    from milia_pipeline.config.config_loader import load_config
+
+    section_key = f"{dataset_type.lower()}_config"
+    section = load_config().get(section_key) or {}
+    energies = section.get("atomic_energies_hartree")
+    if energies is None:
+        return get_atomic_energies_hartree()
+    if (
+        not isinstance(energies, dict)
+        or not energies
+        or not all(
+            isinstance(z, int)
+            and not isinstance(z, bool)
+            and isinstance(e, (int, float))
+            and not isinstance(e, bool)
+            for z, e in energies.items()
+        )
+    ):
+        raise ConfigurationError(
+            f"'{section_key}.atomic_energies_hartree' must map atomic numbers (int) to energies "
+            f"in Hartree (float); got {energies!r}"
+        )
+    return energies
+
+
 def get_heavy_atom_symbols_to_z() -> dict[str, int]:
     """Element symbol to atomic number (``heavy_atom_symbols_to_z``); ``HEAVY_ATOM_SYMBOLS_TO_Z``."""
     key = "HEAVY_ATOM_SYMBOLS_TO_Z"
