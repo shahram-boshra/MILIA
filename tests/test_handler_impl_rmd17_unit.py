@@ -63,6 +63,7 @@ from pathlib import Path
 from unittest.mock import Mock, PropertyMock, patch
 
 import numpy as np
+import pytest
 import torch
 from torch_geometric.data import Data
 
@@ -71,16 +72,40 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.config.config_constants import (
-    ATOMIC_ENERGIES_HARTREE,
-    HAR2EV,
-)
+from milia_pipeline.config.config_constants import HAR2EV
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerValidationError,
     PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.rmd17 import RMD17DatasetHandler
+
+# Atomic references the tests give the handler (its dataset section may declare none): arbitrary
+# level-agnostic values, used only to check the atomization arithmetic.
+ATOMIC_ENERGIES_HARTREE = {
+    1: -0.5012728848846926,  # H
+    6: -37.83859584856468,  # C
+    7: -54.5760607136932450,  # N
+    8: -75.0474818911551438,  # O
+    9: -99.7031524437270917,  # F
+    14: -289.3578409507016431,  # Si
+    15: -341.2510291850040858,  # P
+    16: -398.1021030909759020,  # S
+    17: -460.13960793480203,  # Cl
+    35: -2574.01253635198464,  # Br
+}
+
+
+@pytest.fixture(autouse=True)
+def _atomic_references():
+    """Give the handler ATOMIC_ENERGIES_HARTREE as its atomic references."""
+    with patch.object(
+        RMD17DatasetHandler,
+        "_atomization_reference_energies",
+        Mock(return_value=ATOMIC_ENERGIES_HARTREE),
+    ):
+        yield
+
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for RMD17DatasetHandler
@@ -1313,7 +1338,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         base_energy = -0.5  # Hartree
         props = _make_raw_properties(energies=base_energy, num_atoms=1, atoms=np.array([1]))
 
-        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_energy_h is not None and HAR2EV is not None:
             expected_eV = (base_energy - atomic_energy_h) * HAR2EV
             result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
@@ -1334,8 +1359,8 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         base_energy = -76.3  # Hartree
         props = _make_raw_properties(energies=base_energy)
 
-        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8, None)
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8)
+        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_O is not None and atomic_H is not None and HAR2EV is not None:
             sum_atomic = atomic_O + 2 * atomic_H
             expected_eV = (base_energy - sum_atomic) * HAR2EV

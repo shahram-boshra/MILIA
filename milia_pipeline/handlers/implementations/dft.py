@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
+from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -1226,18 +1226,6 @@ class DFTDatasetHandler(DatasetHandler):
         try:
             super().validate_configuration()
 
-            # Check atomization energy configuration
-            if (
-                self.processing_config.calculate_atomization_energy_from
-                and not get_atomic_energies_hartree()
-            ):
-                raise HandlerConfigurationError(
-                    message="DFT atomization energy calculation requested but atomic energies not available",
-                    handler_type="DFT",
-                    config_validation_errors=["Missing atomic energies reference data"],
-                    details="ATOMIC_ENERGIES_HARTREE constant not available",
-                )
-
             # Check vibrational refinement configuration
             if (
                 "freqs" in self.processing_config.variable_len_graph_properties
@@ -1363,7 +1351,9 @@ class DFTDatasetHandler(DatasetHandler):
 
             # Calculate atomization energy using internal logic
             har2ev = get_har2ev()
-            atomic_energies_hartree = get_atomic_energies_hartree()
+            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
+            if atomic_energies_hartree is None:
+                return None
             if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"DFT molecule {molecule_index}: Missing atomic energies for atomization calculation"

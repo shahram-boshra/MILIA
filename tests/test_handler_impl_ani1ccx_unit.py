@@ -41,6 +41,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
+import pytest
 import torch
 from torch_geometric.data import Data
 
@@ -56,6 +57,33 @@ from milia_pipeline.exceptions import (
     PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.ani1ccx import ANI1ccxDatasetHandler
+
+# Atomic references the tests give the handler (its dataset section may declare none): arbitrary
+# level-agnostic values, used only to check the atomization arithmetic.
+ATOMIC_ENERGIES_HARTREE = {
+    1: -0.5012728848846926,  # H
+    6: -37.83859584856468,  # C
+    7: -54.5760607136932450,  # N
+    8: -75.0474818911551438,  # O
+    9: -99.7031524437270917,  # F
+    14: -289.3578409507016431,  # Si
+    15: -341.2510291850040858,  # P
+    16: -398.1021030909759020,  # S
+    17: -460.13960793480203,  # Cl
+    35: -2574.01253635198464,  # Br
+}
+
+
+@pytest.fixture(autouse=True)
+def _atomic_references():
+    """Give the handler ATOMIC_ENERGIES_HARTREE as its atomic references."""
+    with patch.object(
+        ANI1ccxDatasetHandler,
+        "_atomization_reference_energies",
+        Mock(return_value=ATOMIC_ENERGIES_HARTREE),
+    ):
+        yield
+
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for ANI1ccxDatasetHandler
@@ -993,7 +1021,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=27.2114))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={6: -37.846, 1: -0.500}),
     )
     def test_calculates_atomization_energy(self):
@@ -1008,7 +1036,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=27.2114))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={6: -37.846, 1: -0.500}),
     )
     def test_handles_numpy_scalar_energy(self):
@@ -1039,7 +1067,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=None))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={}),
     )
     def test_returns_none_when_har2ev_is_none(self):
@@ -1053,7 +1081,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=27.2114))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={6: -37.846}),
     )
     def test_returns_none_when_element_missing_from_lookup(self):
@@ -1077,7 +1105,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=27.2114))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={6: -37.846, 1: -0.500}),
     )
     def test_returns_float(self):
@@ -1474,7 +1502,7 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
 
     @patch("milia_pipeline.handlers.implementations.ani1ccx.get_har2ev", Mock(return_value=27.2114))
     @patch(
-        "milia_pipeline.handlers.implementations.ani1ccx.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.ani1ccx.ANI1ccxDatasetHandler._atomization_reference_energies",
         Mock(return_value={6: -37.846, 1: -0.500}),
     )
     def test_full_enrichment_with_atomization_energy(self):

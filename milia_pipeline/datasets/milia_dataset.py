@@ -35,6 +35,7 @@ PHASE 6: Registry Integration for Dynamic Dataset Processing
 - Zero modifications required to add new dataset types with appropriate features
 """
 
+import json
 import logging
 import os
 import shutil
@@ -63,7 +64,6 @@ from milia_pipeline.config.config_accessors import (
     get_transformation_config,
 )
 from milia_pipeline.config.config_constants import (
-    get_atomic_energies_hartree,
     get_har2ev,
     get_heavy_atom_symbols_to_z,
     get_processed_data_filename,
@@ -3670,6 +3670,24 @@ class miliaDataset(InMemoryDataset):
                 f"Enhanced molecule processing tracking failed for molecule {molecule_index}: {e}"
             )
 
+    @staticmethod
+    def atomic_references_provenance_path(processed_path: str | Path) -> Path:
+        """Sidecar recording the atomic references behind a processed file's atomization energy."""
+        processed_path = Path(processed_path)
+        return processed_path.with_name(f"{processed_path.stem}.atomic_references.json")
+
+    def _write_atomic_references_provenance(self, processed_path: Path) -> None:
+        """Save where the atomization energy's atomic references come from (or why it is absent)."""
+        handler = getattr(self, "_dataset_handler", None)
+        if handler is None or not hasattr(handler, "atomic_references_provenance"):
+            return
+        sidecar = self.atomic_references_provenance_path(processed_path)
+        sidecar.write_text(
+            json.dumps(handler.atomic_references_provenance(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        self.logger.info(f"Atomic reference provenance saved to {sidecar}")
+
     def _extract_handler_metadata_enhanced(
         self, metadata: dict[str, Any], pyg_data: Data, raw_properties_dict: dict[str, Any]
     ) -> dict[str, Any]:
@@ -6835,6 +6853,7 @@ class miliaDataset(InMemoryDataset):
                                 file_path=str(processed_path),
                                 operation="file_validation",
                             )
+                        self._write_atomic_references_provenance(processed_path)
 
                     except PermissionError as e:
                         raise DataProcessingError(
@@ -7392,7 +7411,6 @@ class miliaDataset(InMemoryDataset):
             converter = MoleculeDataConverter(
                 logger=self.logger,
                 structural_features_config=self.structural_features_config,
-                atomic_energies_hartree=get_atomic_energies_hartree(),
                 har2ev=get_har2ev(),
                 heavy_atom_symbols_to_z=get_heavy_atom_symbols_to_z(),
                 dataset_config=dataset_config,

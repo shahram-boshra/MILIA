@@ -274,6 +274,11 @@ from milia_pipeline import __version__ as _CANONICAL_VERSION
 # =============================================================================
 # Core Configuration Loading
 # =============================================================================
+from .atomic_references import (
+    ATOMIC_REFERENCE_SOURCES,
+    AtomicReferences,
+    get_dataset_atomic_references,
+)
 from .config_accessors import (
     # Registry Status Flags
     _REGISTRY_AVAILABLE as _ACCESSORS_REGISTRY_AVAILABLE,  # Renamed to avoid conflict
@@ -437,13 +442,11 @@ from .config_constants import (
     ensure_complete_compatibility,
     ensure_handler_constant_compatibility,
     get_all_cache_info,
-    get_atomic_energies_hartree,  # call-time accessor of ATOMIC_ENERGIES_HARTREE
     get_bohr_to_angstrom,  # Bohr-to-Angstrom CODATA conversion factor (accessor for testability)
     get_cached_handler_config,
     get_compatible_transforms_for_handler,
     # Debug & Diagnostics
     get_complete_constants_debug_info,
-    get_dataset_atomic_energies_hartree,  # a dataset's atomic references, else the global ones
     get_default_handler_type,  # Default handler type ('DFT')
     get_handler_cache_info,
     get_handler_compatibility_info,
@@ -1051,8 +1054,9 @@ __all__ = [
     # Handler Utilities
     "get_handler_constants",
     "get_bohr_to_angstrom",
-    "get_atomic_energies_hartree",
-    "get_dataset_atomic_energies_hartree",
+    "ATOMIC_REFERENCE_SOURCES",
+    "AtomicReferences",
+    "get_dataset_atomic_references",
     "get_har2ev",
     "get_heavy_atom_symbols_to_z",
     "get_processed_data_filename",

@@ -29,6 +29,24 @@ qm9_config:
   # NOTE: Figshare uses API-style URLs that don't contain the filename
   raw_data_download_url: https://figshare.com/ndownloader/files/3195389
 
+  # Isolated-atom reference energies for the atomization energy, published by the QM9 authors at
+  # the dataset's level of theory: "spin-unrestricted calculations for all atoms with
+  # spin-multiplicities 2,3,4,3,2 for the atoms H, C, N, O, F" (Ramakrishnan et al. 2014),
+  # deposited as atomref.txt (figshare file 3195395). One table per energy property; values
+  # verbatim (Hartree). See docs/atomic_reference_energies.md.
+  atomic_references:
+    source: author-published
+    level_of_theory: B3LYP/6-31G(2df,p), spin-unrestricted atoms (multiplicities H 2, C 3, N 4, O 3, F 2)
+    program: Gaussian 09
+    citation: >-
+      R. Ramakrishnan, P. O. Dral, M. Rupp, O. A. von Lilienfeld, Sci. Data 1, 140022 (2014),
+      doi:10.1038/sdata.2014.22; atomref.txt, https://figshare.com/ndownloader/files/3195395
+    energies_hartree:
+      U0: {1: -0.500273, 6: -37.846772, 7: -54.583861, 8: -75.064579, 9: -99.718730}
+      U: {1: -0.498857, 6: -37.845355, 7: -54.582445, 8: -75.063163, 9: -99.717314}
+      H: {1: -0.497912, 6: -37.844411, 7: -54.581501, 8: -75.062219, 9: -99.716370}
+      G: {1: -0.510927, 6: -37.861317, 7: -54.598897, 8: -75.079532, 9: -99.733544}
+
   # QM9 processing configuration
   processing_config:
     # Preprocessing parameters (for automatic tar.bz2 → npz conversion)

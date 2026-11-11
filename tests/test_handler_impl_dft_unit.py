@@ -35,6 +35,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
+import pytest
 import torch
 from torch_geometric.data import Data
 
@@ -45,10 +46,7 @@ if str(project_root) not in sys.path:
 
 import contextlib
 
-from milia_pipeline.config.config_constants import (
-    ATOMIC_ENERGIES_HARTREE,
-    HAR2EV,
-)
+from milia_pipeline.config.config_constants import HAR2EV
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerConfigurationError,
@@ -56,6 +54,33 @@ from milia_pipeline.exceptions import (
     PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.dft import DFTDatasetHandler
+
+# Atomic references the tests give the handler (its dataset section may declare none): arbitrary
+# level-agnostic values, used only to check the atomization arithmetic.
+ATOMIC_ENERGIES_HARTREE = {
+    1: -0.5012728848846926,  # H
+    6: -37.83859584856468,  # C
+    7: -54.5760607136932450,  # N
+    8: -75.0474818911551438,  # O
+    9: -99.7031524437270917,  # F
+    14: -289.3578409507016431,  # Si
+    15: -341.2510291850040858,  # P
+    16: -398.1021030909759020,  # S
+    17: -460.13960793480203,  # Cl
+    35: -2574.01253635198464,  # Br
+}
+
+
+@pytest.fixture(autouse=True)
+def _atomic_references():
+    """Give the handler ATOMIC_ENERGIES_HARTREE as its atomic references."""
+    with patch.object(
+        DFTDatasetHandler,
+        "_atomization_reference_energies",
+        Mock(return_value=ATOMIC_ENERGIES_HARTREE),
+    ):
+        yield
+
 
 # ============================================================================
 # HELPERS: Build realistic config mocks for DFTDatasetHandler
@@ -942,7 +967,7 @@ class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
         base_energy = -0.5  # Hartree
         props = _make_raw_properties(Etot=base_energy)
 
-        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1, None)
+        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1)
         if atomic_energy_h is not None and HAR2EV is not None:
             expected_eV = (base_energy - atomic_energy_h) * HAR2EV
             result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
@@ -1292,17 +1317,19 @@ class TestValidateConfiguration(unittest.TestCase):
         handler.validate_configuration()
 
     @patch(
-        "milia_pipeline.handlers.implementations.dft.get_atomic_energies_hartree",
+        "milia_pipeline.handlers.implementations.dft.DFTDatasetHandler._atomization_reference_energies",
         Mock(return_value={}),
     )
-    def test_atomization_energy_without_atomic_energies_raises(self):
-        """Atomization energy configured without atomic energies raises."""
+    def test_atomization_energy_without_atomic_references_is_valid(self):
+        """Without atomic references the configuration is valid; the energy is just not computed."""
         pc = _make_processing_config(
             calculate_atomization_energy_from="U0",
             variable_len_graph_properties=[],
         )
         handler = _make_handler(processing_config=pc)
-        with self.assertRaises(HandlerConfigurationError):
+        with patch.object(
+            DFTDatasetHandler, "_atomization_reference_energies", Mock(return_value=None)
+        ):
             handler.validate_configuration()
 
     def test_negative_vibration_tolerance_raises(self):

@@ -28,20 +28,27 @@ xxmd_config:
   # DOI: 10.1038/s41597-024-03019-3
   raw_data_download_url: https://zenodo.org/api/records/10393859/files/xxMD-main.zip/content
 
-  # Isolated-atom reference energies (Hartree) at the xxMD-DFT level of theory, used for the
-  # atomization energy (molecular energy minus the sum of its atoms' energies; both must come from
-  # the same level of theory). xxMD-DFT: spin-polarized (unrestricted) KS-DFT, M06 functional,
-  # 6-31G basis, Psi4 (Pengmei et al., Sci. Data 11, 222 (2024), SI section G.3); the paper gives no
-  # atomic references. Computed with Psi4 1.11 (conda-forge): reference UKS, M06/6-31G, default
-  # grid (75 radial x 302 spherical points), ground-state multiplicities H 2, C 3, N 4, O 3, S 3;
-  # lowest energy over the SAD, CORE and GWH guesses (spread <= 2.2e-7 Eh); <S^2> deviation <= 0.0042.
-  # Overrides the global atomic_energies_hartree (main.yaml) for xxMD.
-  atomic_energies_hartree:
-    1: -0.4979196097     # H
-    6: -37.8125682417    # C
-    7: -54.5569858687    # N
-    8: -75.0254051528    # O
-    16: -398.0661265642  # S
+  # Isolated-atom reference energies for the atomization energy. xxMD-DFT (spin-polarized KS-DFT,
+  # M06/6-31G, Psi4; Pengmei et al. 2024, SI section G.3) publishes none, so MILIA computed them at
+  # the same level in the same program: reference UKS, M06/6-31G, Psi4 defaults (density-fitted SCF,
+  # grid 75 radial x 302 spherical points), ground-state multiplicities H 2, C 3, N 4, O 3, S 3; lowest energy over
+  # the SAD, CORE and GWH guesses (spread <= 2.2e-7 Eh); <S^2> deviation <= 0.0042. The paper names
+  # no Psi4 version. Script, environment lock, results and raw outputs: docs/atomic_references/xxmd/;
+  # method: docs/atomic_reference_energies.md. Values: results.json rounded to 1e-10 Eh.
+  atomic_references:
+    source: milia-computed
+    level_of_theory: UKS M06/6-31G, isolated atoms at ground-state multiplicity (H 2, C 3, N 4, O 3, S 3)
+    program: Psi4 1.11 (conda-forge), defaults (density-fitted SCF, DFT grid 75 x 302)
+    citation: >-
+      Computed by MILIA at the xxMD-DFT level of theory (Z. Pengmei, J. Liu, Y. Shu, Sci. Data 11,
+      222 (2024), doi:10.1038/s41597-024-03019-3); docs/atomic_references/xxmd/
+    energies_hartree:
+      energy:
+        1: -0.4979196097     # H
+        6: -37.8125682417    # C
+        7: -54.5569858687    # N
+        8: -75.0254051530    # O
+        16: -398.0661265660  # S
 
   # xxMD processing configuration
   processing_config:

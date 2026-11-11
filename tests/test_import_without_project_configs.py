@@ -23,7 +23,6 @@ REPO = Path(__file__).resolve().parents[1]
 
 # Lazy constant name -> its call-time accessor.
 ACCESSORS = {
-    "ATOMIC_ENERGIES_HARTREE": config_constants.get_atomic_energies_hartree,
     "HEAVY_ATOM_SYMBOLS_TO_Z": config_constants.get_heavy_atom_symbols_to_z,
     "HAR2EV": config_constants.get_har2ev,
     "PROCESSED_DATA_FILENAME": config_constants.get_processed_data_filename,

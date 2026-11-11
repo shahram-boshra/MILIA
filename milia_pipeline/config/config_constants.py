@@ -1194,48 +1194,28 @@ def _loaded_config() -> dict[str, Any]:
 # lazy attribute share one ``_CONSTANTS_CACHE`` entry, so both return the same object.
 
 
-def get_atomic_energies_hartree() -> dict[int, float]:
-    """Per-element reference energies in Hartree (``atomic_energies_hartree``); ``ATOMIC_ENERGIES_HARTREE``."""
+#: Removal version of the global ``atomic_energies_hartree`` and ``ATOMIC_ENERGIES_HARTREE``.
+GLOBAL_ATOMIC_ENERGIES_REMOVAL_VERSION = "2.0.0"
+
+GLOBAL_ATOMIC_ENERGIES_DEPRECATION = (
+    "The global 'atomic_energies_hartree' (ATOMIC_ENERGIES_HARTREE) is deprecated and is removed in "
+    f"MILIA {GLOBAL_ATOMIC_ENERGIES_REMOVAL_VERSION}: it records no level of theory or source, and "
+    "MILIA no longer uses it. Atomization energies use each dataset's "
+    "'<dataset>_config.atomic_references' (milia_pipeline.config.get_dataset_atomic_references)."
+)
+
+
+def _global_atomic_energies_hartree() -> dict[int, float]:
+    """The deprecated global ``atomic_energies_hartree``; ``ATOMIC_ENERGIES_HARTREE`` warns and reads it."""
     key = "ATOMIC_ENERGIES_HARTREE"
     if key not in _CONSTANTS_CACHE:
         _CONSTANTS_CACHE[key] = _get_config_value(_loaded_config(), "atomic_energies_hartree", dict)
     return _CONSTANTS_CACHE[key]
 
 
-def get_dataset_atomic_energies_hartree(dataset_type: str) -> dict[int, float]:
-    """Isolated-atom reference energies (Hartree) for a dataset's atomization energies.
-
-    An atomization energy subtracts the atoms' energies from the molecular energy, so both must come
-    from the same level of theory. A dataset section (``<dataset_type>_config``) may set
-    ``atomic_energies_hartree`` computed at its own level of theory; that mapping is returned.
-    Otherwise the global ``atomic_energies_hartree`` (``get_atomic_energies_hartree()``) is.
-
-    Raises:
-        ConfigurationError: If the dataset's mapping is empty or not atomic number -> energy.
-    """
-    from milia_pipeline.config.config_loader import load_config
-
-    section_key = f"{dataset_type.lower()}_config"
-    section = load_config().get(section_key) or {}
-    energies = section.get("atomic_energies_hartree")
-    if energies is None:
-        return get_atomic_energies_hartree()
-    if (
-        not isinstance(energies, dict)
-        or not energies
-        or not all(
-            isinstance(z, int)
-            and not isinstance(z, bool)
-            and isinstance(e, (int, float))
-            and not isinstance(e, bool)
-            for z, e in energies.items()
-        )
-    ):
-        raise ConfigurationError(
-            f"'{section_key}.atomic_energies_hartree' must map atomic numbers (int) to energies "
-            f"in Hartree (float); got {energies!r}"
-        )
-    return energies
+def _deprecated_global_atomic_energies_hartree() -> dict[int, float]:
+    warnings.warn(GLOBAL_ATOMIC_ENERGIES_DEPRECATION, DeprecationWarning, stacklevel=3)
+    return _global_atomic_energies_hartree()
 
 
 def get_heavy_atom_symbols_to_z() -> dict[str, int]:
@@ -1336,7 +1316,8 @@ def _get_dft_handler_constants(dataset_config: dict[str, Any]) -> dict[str, Any]
         "supports_vibrations": True,
         "supports_atomization_energy": True,
         "energy_conversion_factor": config_constants.HAR2EV,
-        "atomic_energies": config_constants.ATOMIC_ENERGIES_HARTREE,
+        # Deprecated global table (removed in 2.0.0); MILIA's atomization uses atomic_references.
+        "atomic_energies": config_constants._global_atomic_energies_hartree(),
         "heavy_atom_mapping": config_constants.HEAVY_ATOM_SYMBOLS_TO_Z,
         "default_frequency_threshold": 50.0,
         "imaginary_frequency_tolerance": -50.0,
@@ -2208,7 +2189,7 @@ def validate_handler_environment() -> dict[str, bool]:
         # Check required constants (these are lazy-loaded, access through module)
         try:
             validation_results["atomic_energies_available"] = bool(
-                const_module.ATOMIC_ENERGIES_HARTREE
+                const_module._global_atomic_energies_hartree()
             )
         except Exception:
             validation_results["atomic_energies_available"] = False
@@ -2389,7 +2370,9 @@ def get_legacy_compatible_constants(handler_type: str | None = None) -> dict[str
 
     # Force lazy loading of all required constants by accessing them
     # This triggers __getattr__ and populates _CONSTANTS_CACHE
-    atomic_energies = const_module.ATOMIC_ENERGIES_HARTREE
+    atomic_energies = (
+        const_module._global_atomic_energies_hartree()
+    )  # deprecated, see GLOBAL_ATOMIC_ENERGIES_DEPRECATION
     heavy_atoms = const_module.HEAVY_ATOM_SYMBOLS_TO_Z
     har2ev = const_module.HAR2EV
     raw_filename = const_module.RAW_NPZ_FILENAME_CACHED
@@ -2434,7 +2417,7 @@ def ensure_handler_constant_compatibility() -> bool:
     try:
         # Check that legacy constants are still available
         legacy_checks = [
-            bool(const_module.ATOMIC_ENERGIES_HARTREE),
+            bool(const_module._global_atomic_energies_hartree()),
             bool(const_module.HEAVY_ATOM_SYMBOLS_TO_Z),
             bool(const_module.HAR2EV),
             bool(const_module.RAW_NPZ_FILENAME_CACHED),
@@ -2497,7 +2480,7 @@ def get_complete_constants_debug_info() -> dict[str, Any]:
             "compatibility_matrix": HANDLER_TRANSFORM_COMPATIBILITY,
         },
         "constants_status": {
-            "atomic_energies_count": len(const_module.ATOMIC_ENERGIES_HARTREE),
+            "atomic_energies_count": len(const_module._global_atomic_energies_hartree()),
             "heavy_atoms_count": len(const_module.HEAVY_ATOM_SYMBOLS_TO_Z),
             "conversion_factor": const_module.HAR2EV,
             "processed_filename": const_module.PROCESSED_DATA_FILENAME,
@@ -2648,7 +2631,7 @@ if __name__ == "__main__":
 
     # Test basic constants (access through module for lazy-loaded)
     print("\nBasic Constants:")
-    print(f"  Atomic energies available: {len(const_module.ATOMIC_ENERGIES_HARTREE)}")
+    print(f"  Atomic energies available: {len(const_module._global_atomic_energies_hartree())}")
     print(f"  Heavy atoms mapping: {len(const_module.HEAVY_ATOM_SYMBOLS_TO_Z)}")
     print(f"  Conversion factor (HAR2EV): {const_module.HAR2EV}")
     print(f"  Dataset filename: {const_module.PROCESSED_DATA_FILENAME}")
@@ -2759,7 +2742,7 @@ _LAZY_CONSTANTS = frozenset(
 
 # Lazy constants with a call-time accessor; ``__getattr__`` delegates to it.
 _LAZY_CONSTANT_ACCESSORS = {
-    "ATOMIC_ENERGIES_HARTREE": get_atomic_energies_hartree,
+    "ATOMIC_ENERGIES_HARTREE": _deprecated_global_atomic_energies_hartree,
     "HEAVY_ATOM_SYMBOLS_TO_Z": get_heavy_atom_symbols_to_z,
     "HAR2EV": get_har2ev,
     "PROCESSED_DATA_FILENAME": get_processed_data_filename,

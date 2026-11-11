@@ -1,0 +1,7 @@
+# Human-readable spec; the exact solved environment (with MD5 hashes) is conda-linux-64.lock.
+name: milia-atomic-references-xxmd
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - psi4=1.11

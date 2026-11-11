@@ -40,7 +40,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_dataset_atomic_energies_hartree, get_har2ev
+from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -643,8 +643,8 @@ class XXMDDatasetHandler(DatasetHandler):
         Internal xxMD-specific atomization energy calculation.
 
         Uses energy (M06 DFT, converted to Hartree) as base for atomization energy calculation,
-        minus the xxMD atomic reference energies (``xxmd_config.atomic_energies_hartree``, same
-        level of theory: UKS M06/6-31G).
+        minus the xxMD atomic reference energies (``xxmd_config.atomic_references``, same level of
+        theory: UKS M06/6-31G); not computed without them.
         """
         try:
             if not self.processing_config.calculate_atomization_energy_from:
@@ -678,7 +678,9 @@ class XXMDDatasetHandler(DatasetHandler):
 
             # Calculate atomization energy
             har2ev = get_har2ev()
-            atomic_energies_hartree = get_dataset_atomic_energies_hartree(self.get_dataset_type())
+            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
+            if atomic_energies_hartree is None:
+                return None
             if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"xxMD molecule {molecule_index}: Missing atomic energies for atomization calculation"

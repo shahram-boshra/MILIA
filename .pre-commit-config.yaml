@@ -27,8 +27,11 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # Raw program outputs (atomic reference provenance) are kept verbatim.
       - id: trailing-whitespace
+        exclude: ^docs/atomic_references/[^/]+/outputs/
       - id: end-of-file-fixer
+        exclude: ^docs/atomic_references/[^/]+/outputs/
       - id: check-yaml
       - id: check-toml
       - id: check-added-large-files

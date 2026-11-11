@@ -12,6 +12,7 @@ lifecycle from raw molecular data to production inference.
 :caption: User Guide
 
 getting-started
+atomic_reference_energies
 ```
 
 ```{toctree}

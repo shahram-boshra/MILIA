@@ -1,0 +1,73 @@
+{
+  "psi4_version": "1.11",
+  "method": "m06",
+  "options": {
+    "basis": "6-31g",
+    "reference": "uks",
+    "e_convergence": 1e-10,
+    "d_convergence": 1e-08,
+    "maxiter": 300
+  },
+  "atoms": {
+    "H": {
+      "Z": 1,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -0.49791960967784954,
+        "core": -0.4979196096778499,
+        "gwh": -0.49791960967784965
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -0.4979196096778499,
+      "guess_spread_hartree": 3.3306690738754696e-16
+    },
+    "C": {
+      "Z": 6,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -37.81256807291298,
+        "core": -37.812568241656365,
+        "gwh": -37.81256802517738
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -37.812568241656365,
+      "guess_spread_hartree": 2.1647898762466866e-07
+    },
+    "N": {
+      "Z": 7,
+      "multiplicity": 4,
+      "energies_hartree": {
+        "sad": -54.55698586867,
+        "core": -54.55698586866998,
+        "gwh": -54.55698586867
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -54.55698586867,
+      "guess_spread_hartree": 1.4210854715202004e-14
+    },
+    "O": {
+      "Z": 8,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -75.02540515298602,
+        "core": -75.0254051528275,
+        "gwh": -75.02540515282747
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -75.02540515298602,
+      "guess_spread_hartree": 1.5855050605750876e-10
+    },
+    "S": {
+      "Z": 16,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -398.0661265659659,
+        "core": -398.0661265624012,
+        "gwh": -398.06612654874544
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -398.0661265659659,
+      "guess_spread_hartree": 1.7220429526787484e-08
+    }
+  }
+}

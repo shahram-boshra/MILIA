@@ -51,7 +51,6 @@ from milia_pipeline.config.config_accessors import (
     should_pass_mulliken_charges_to_structural_features,
 )
 from milia_pipeline.config.config_constants import (
-    get_atomic_energies_hartree,
     get_handler_required_properties,
     get_har2ev,
     get_heavy_atom_symbols_to_z,
@@ -479,7 +478,7 @@ class MoleculeDataConverter:
         self.structural_features_config = (
             structural_features_config or get_dataset_appropriate_structural_features()
         )
-        self.atomic_energies_hartree = atomic_energies_hartree or get_atomic_energies_hartree()
+        self.atomic_energies_hartree = atomic_energies_hartree
         self.har2ev = har2ev or get_har2ev()
         self.heavy_atom_symbols_to_z = heavy_atom_symbols_to_z or get_heavy_atom_symbols_to_z()
 

@@ -24,6 +24,7 @@ Phase 6 Registry Integration:
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from functools import wraps
 from typing import Any
 
@@ -32,6 +33,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.transforms import Compose
 
+from milia_pipeline.config.atomic_references import get_dataset_atomic_references
 from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig, ProcessingConfig
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
@@ -898,6 +900,58 @@ class DatasetHandler(ABC):
                 handler_type=self.__class__.__name__,
                 details=f"Unexpected error during handler setup: {type(e).__name__}: {str(e)}",
             ) from e
+
+    # ========================================================================
+    # Atomic reference energies (atomization energy)
+    # ========================================================================
+
+    def _atomization_reference_energies(self, energy_key: str) -> Mapping[int, float] | None:
+        """Isolated-atom energies (Hartree) for ``energy_key`` at this dataset's level of theory.
+
+        ``None`` means the atomization energy is not computed: the dataset declares no
+        ``<dataset>_config.atomic_references`` for ``energy_key``. Logged once per handler and key.
+        """
+        cache = self.__dict__.setdefault("_atomic_reference_tables", {})
+        if energy_key not in cache:
+            references = get_dataset_atomic_references(self.get_dataset_type())
+            table = references.for_property(energy_key) if references is not None else None
+            cache[energy_key] = table
+            if table is None:
+                self.logger.warning(
+                    f"{self.get_dataset_type()}: atomization energy from '{energy_key}' is not "
+                    f"computed: {self._missing_atomic_references_reason(energy_key, references)}"
+                )
+        return cache[energy_key]
+
+    def _missing_atomic_references_reason(self, energy_key: str, references: Any) -> str:
+        section = f"{self.get_dataset_type().lower()}_config.atomic_references"
+        if references is None:
+            return (
+                f"no '{section}' (no published or MILIA-computed isolated-atom energies at this "
+                "dataset's level of theory; see docs/atomic_reference_energies.md)"
+            )
+        return f"'{section}' has references for {sorted(references.energies_hartree)}, not '{energy_key}'"
+
+    def atomic_references_provenance(self) -> dict[str, Any]:
+        """Record of the atomic references behind the atomization energy, saved with processed data."""
+        energy_key = getattr(self.processing_config, "calculate_atomization_energy_from", None)
+        attribute = getattr(self.processing_config, "atomization_energy_key_name", None)
+        if not energy_key or not attribute:
+            return {"atomization_energy": "not configured", "dataset_type": self.get_dataset_type()}
+        references = get_dataset_atomic_references(self.get_dataset_type())
+        if references is None or references.for_property(energy_key) is None:
+            return {
+                "atomization_energy": "not computed",
+                "dataset_type": self.get_dataset_type(),
+                "energy_property": energy_key,
+                "reason": self._missing_atomic_references_reason(energy_key, references),
+            }
+        return {
+            "atomization_energy": "computed",
+            "attribute": attribute,
+            "energy_property": energy_key,
+            **references.provenance(energy_key),
+        }
 
     # ========================================================================
     # Abstract Methods - Must be implemented by concrete handlers

@@ -24,16 +24,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `get_atomic_energies_hartree()`, `get_heavy_atom_symbols_to_z()`, `get_har2ev()` and
-  `get_processed_data_filename()` in `milia_pipeline.config` (and `config.config_constants`): call-time
-  accessors of `ATOMIC_ENERGIES_HARTREE`, `HEAVY_ATOM_SYMBOLS_TO_Z`, `HAR2EV` and
-  `PROCESSED_DATA_FILENAME`, returning the same objects. Importing an accessor loads no configuration;
-  importing one of those constants by name does.
-- `get_dataset_atomic_energies_hartree(dataset_type)` in `milia_pipeline.config`: a dataset's atomic
-  reference energies (`<dataset>_config.atomic_energies_hartree`, at its own level of theory), else the
-  global `atomic_energies_hartree`. A malformed mapping raises `ConfigurationError`.
+- `get_heavy_atom_symbols_to_z()`, `get_har2ev()` and `get_processed_data_filename()` in
+  `milia_pipeline.config` (and `config.config_constants`): call-time accessors of
+  `HEAVY_ATOM_SYMBOLS_TO_Z`, `HAR2EV` and `PROCESSED_DATA_FILENAME`, returning the same objects. Importing
+  an accessor loads no configuration; importing one of those constants by name does.
+- Per-dataset atomic reference energies with provenance: `<dataset>_config.atomic_references` (`source`:
+  `author-published`, `milia-computed` or `user-supplied`; `level_of_theory`, `program`, `citation`; one
+  table of isolated-atom energies per energy property). Read with
+  `milia_pipeline.config.get_dataset_atomic_references(dataset_type)` (`AtomicReferences`); a malformed
+  declaration raises `ConfigurationError`. Processing saves `<processed stem>.atomic_references.json` next
+  to the processed file: the references used, or why the atomization energy was not computed. Policy and
+  per-dataset status: `docs/atomic_reference_energies.md`.
+- QM9 declares its authors' published atom references (`atomref.txt`: U0, U, H and G for H, C, N, O, F;
+  B3LYP/6-31G(2df,p), Gaussian 09). xxMD-DFT, which publishes none, declares references MILIA computed at
+  its level of theory (UKS M06/6-31G, Psi4 1.11), with the script, locked environment and raw outputs in
+  `docs/atomic_references/xxmd/`.
+
+### Changed
+
+- **Atomization energies are computed only from atomic references at the dataset's level of theory.**
+  They subtracted one global table (`atomic_energies_hartree` in `configs/main.yaml`) for every dataset,
+  with no recorded level of theory or source and matching none of them. QM9 (`U0_ATOM`, and U/H/G when
+  selected) now uses its published references, so its values change; xxMD uses its computed ones. QM40,
+  ANI-1x, ANI-1ccx, ANI-2x, rMD17 and DFT declare none yet, so their atomization energy is not computed
+  (a warning says why); total energies and forces are unchanged. `MoleculeConverter` no longer fills
+  `atomic_energies_hartree` from the global table. Reprocess datasets processed earlier: processed files
+  are not rebuilt automatically.
 
 ### Deprecated
+
+- The global `atomic_energies_hartree` (`configs/main.yaml`) and `config_constants.ATOMIC_ENERGIES_HARTREE`:
+  MILIA no longer uses them; reading the constant emits a `DeprecationWarning`. Removed in 2.0.0.
+  `property_enrichment.calculate_atomization_energy` takes `atomic_energies_hartree=`; without it, it
+  falls back to the global table with a `DeprecationWarning` (required in 2.0.0).
 
 - Transformation plugin settings that have no effect: `plugins.validation_level`, `trusted_plugins`,
   `allow_experimental`, `allow_override_builtin`, `enforce_checksums`, `security_scanning`, `max_plugins`,
@@ -89,12 +112,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`from milia_pipeline.config.config_constants import HAR2EV`), which also loads the configuration at
   import, read them when used through the new accessors. Every subpackage and `main.py` now import from
   any directory; the configuration is loaded when a constant is first used.
-- xxMD atomization energies (`energy_ATOM`) subtract isolated-atom energies at the xxMD-DFT level of
-  theory (unrestricted M06/6-31G, as the dataset's energies; computed with Psi4 1.11 and recorded in
-  `configs/datasets/xxmd.yaml` as `xxmd_config.atomic_energies_hartree`). The handler imported its
+- xxMD atomization energies (`energy_ATOM`) mixed two levels of theory: the handler imported its
   references from a module that does not exist and always used built-in values equal to the QM9
-  B3LYP/6-31G(2df,p) atom references, so every xxMD atomization energy mixed two levels of theory.
-  Reprocess xxMD datasets processed earlier: the processed file is not rebuilt automatically.
+  B3LYP/6-31G(2df,p) atom references, while xxMD-DFT energies are unrestricted M06/6-31G. It now uses
+  references at the xxMD-DFT level (see Added).
+- The DFT handler no longer rejects a configuration that requests an atomization energy when no atomic
+  references are available; the energy is not computed and a warning says why.
 
 ## [1.19.0] - 2026-11-08
 

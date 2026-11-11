@@ -38,7 +38,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
+from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -661,7 +661,9 @@ class ANI2xDatasetHandler(DatasetHandler):
 
             # Calculate atomization energy
             har2ev = get_har2ev()
-            atomic_energies_hartree = get_atomic_energies_hartree()
+            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
+            if atomic_energies_hartree is None:
+                return None
             if har2ev is None or not atomic_energies_hartree:
                 self.logger.warning(
                     f"ANI-2x molecule {molecule_index}: Missing atomic energies for atomization calculation"

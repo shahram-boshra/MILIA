@@ -37,6 +37,8 @@ PHASE 6: Registry Integration for Dynamic Dataset Feature Queries
 
 import inspect
 import logging
+import warnings
+from collections.abc import Mapping
 from functools import wraps
 from typing import Any
 
@@ -44,7 +46,11 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_atomic_energies_hartree, get_har2ev
+from milia_pipeline.config.config_constants import (
+    GLOBAL_ATOMIC_ENERGIES_DEPRECATION,
+    _global_atomic_energies_hartree,
+    get_har2ev,
+)
 from milia_pipeline.config.config_containers import DatasetConfig, ProcessingConfig
 from milia_pipeline.config.data_refining import (
     log_vibration_refinement_status,
@@ -1538,9 +1544,16 @@ def calculate_atomization_energy(
     logger: logging.Logger,
     dataset_config: DatasetConfig | None = None,
     identifier: str = "N/A",
+    *,
+    atomic_energies_hartree: Mapping[int, float] | None = None,
 ) -> float:
     """
     Calculates the atomization energy of a molecule in electronvolts (eV).
+
+    ``atomic_energies_hartree`` are isolated-atom energies at the level of theory of
+    ``molecular_total_energy_hartree`` (e.g. ``get_dataset_atomic_references(...).for_property(key)``).
+    Omitting it uses the deprecated global ``atomic_energies_hartree`` (DeprecationWarning; required
+    from MILIA 2.0.0).
 
     ORGANIC DYNAMIC FIX: Standardized interface with automatic parameter resolution.
 
@@ -1568,7 +1581,10 @@ def calculate_atomization_energy(
 
     try:
         har2ev = get_har2ev()
-        atomic_energies_hartree = get_atomic_energies_hartree()
+        if atomic_energies_hartree is None:
+            # stacklevel 3: the caller of the @resolve_parameters wrapper.
+            warnings.warn(GLOBAL_ATOMIC_ENERGIES_DEPRECATION, DeprecationWarning, stacklevel=3)
+            atomic_energies_hartree = _global_atomic_energies_hartree()
         if har2ev is None:
             raise ConfigurationError(
                 message="HAR2EV (Hartree to eV conversion factor) not defined in config",

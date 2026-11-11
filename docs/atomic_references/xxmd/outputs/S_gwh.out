@@ -1,0 +1,343 @@
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  7, 6, 4
+    Auxiliary basis highest AM E, G, H:  7, 7, 6
+    Onebody   basis highest AM E, G, H:  -, -, -
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on vm
+*** at Wed Nov 11 17:02:28 2026
+
+   => Loading Basis Set <=
+
+    Name: 6-31G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry S          line   272 file /tmp/claude-0/-home-claude/172ae38e-210d-58ea-8063-3802045fdaac/scratchpad/mm/psi4env/share/psi4/basis/6-31g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,   1907 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Geometry (in Angstrom), charge = 0, multiplicity = 3:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         S            0.000000000000     0.000000000000     0.000000000000    31.972071174400
+
+  Running in c1 symmetry.
+
+  Rotational constants: A = ************  B = ************  C = ************ [cm^-1]
+  Rotational constants: A = ************  B = ************  C = ************ [MHz]
+  Nuclear repulsion =    0.000000000000000
+
+  Charge       = 0
+  Multiplicity = 3
+  Electrons    = 16
+  Nalpha       = 9
+  Nbeta        = 7
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is GWH.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: 6-31G
+    Blend: 6-31G
+    Number of shells: 7
+    Number of basis functions: 13
+    Number of Cartesian functions: 13
+    Spherical Harmonics?: false
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: M06 <= 
+
+    M06 Meta-GGA XC Functional  (10.1007/s00214-007-0310-x)
+    Y. Zhao and D. G. Truhlar,  Theor. Chem. Acc., 120, 215, 2008
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =           TRUE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000   XC_HYB_MGGA_X_M06
+
+   => Exact (HF) Exchange <=
+
+    0.2700               HF 
+
+   => Correlation Functionals <=
+
+    1.0000    XC_MGGA_C_M06
+
+   => LibXC Density Thresholds  <==
+
+    XC_MGGA_C_M06:  1.00E-12 
+    XC_HYB_MGGA_X_M06:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          20234
+    Total Blocks           =            209
+    Max Points             =            252
+    Max Functions          =             13
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (6-31G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1 entry S          line   593 file /tmp/claude-0/-home-claude/172ae38e-210d-58ea-8063-3802045fdaac/scratchpad/mm/psi4env/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.000 GiB; user supplied 1.379 GiB. 
+  SCF_SUBTYPE=INCORE selected. In-core MEM_DF algorithm will be used.
+  Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                   Yes
+    wK tasked:                   No
+    OpenMP threads:               1
+    Memory [MiB]:              1412
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (6-31G AUX)
+    Blend: CC-PVDZ-JKFIT
+    Number of shells: 36
+    Number of basis functions: 130
+    Number of Cartesian functions: 130
+    Spherical Harmonics?: false
+    Max angular momentum: 3
+
+  Cached 100.0% of DFT collocation blocks in 0.018 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 1.6645263755E-01.
+  Reciprocal condition number of the overlap matrix is 8.2815600452E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Generalized Wolfsberg-Helmholtz applied to core Hamiltonian.
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A         13      13       9       7       7       2
+   -------------------------------------------------------
+    Total      13      13       9       7       7       2
+   -------------------------------------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter   1:  -397.17488748008088   -3.97175e+02   1.83299e-01 ADIIS
+   @DF-UKS iter   2:  -398.02626582373256   -8.51378e-01   1.90456e-02 ADIIS/DIIS
+   @DF-UKS iter   3:  -398.05956260987102   -3.32968e-02   7.31952e-03 ADIIS/DIIS
+   @DF-UKS iter   4:  -398.06607710908770   -6.51450e-03   5.75748e-04 ADIIS/DIIS
+   @DF-UKS iter   5:  -398.06612642068944   -4.93116e-05   2.20011e-05 DIIS
+   @DF-UKS iter   6:  -398.06612654477573   -1.24086e-07   2.06356e-06 DIIS
+   @DF-UKS iter   7:  -398.06612654592823   -1.15250e-09   2.52904e-07 DIIS
+   @DF-UKS iter   8:  -398.06612654594625   -1.80194e-11   3.14510e-08 DIIS
+   @DF-UKS iter   9:  -398.06612654594915   -2.89901e-12   3.08174e-08 DIIS
+   @DF-UKS iter  10:  -398.06612654595205   -2.89901e-12   3.08190e-08 DIIS
+   @DF-UKS iter  11:  -398.06612654585507    9.69749e-11   3.07526e-08 DIIS
+   @DF-UKS iter  12:  -398.06612653053230    1.53228e-08   2.12622e-06 DIIS
+   @DF-UKS iter  13:  -398.06612653102883   -4.96527e-10   1.86142e-06 DIIS
+   @DF-UKS iter  14:  -398.06612653159601   -5.67184e-10   1.60759e-06 DIIS
+   @DF-UKS iter  15:  -398.06612653416784   -2.57182e-09   8.64097e-07 DIIS
+   @DF-UKS iter  16:  -398.06612652935343    4.81441e-09   2.95460e-06 DIIS
+   @DF-UKS iter  17:  -398.06612652996051   -6.07088e-10   2.52206e-06 DIIS
+   @DF-UKS iter  18:  -398.06612653243656   -2.47604e-09   1.78139e-07 DIIS
+   @DF-UKS iter  19:  -398.06612653352198   -1.08543e-09   2.61337e-06 DIIS
+   @DF-UKS iter  20:  -398.06612653244093    1.08105e-09   4.16733e-06 DIIS
+   @DF-UKS iter  21:  -398.06612653190223    5.38705e-10   4.22458e-06 DIIS
+   @DF-UKS iter  22:  -398.06612653145567    4.46562e-10   1.63748e-06 DIIS
+   @DF-UKS iter  23:  -398.06612653159198   -1.36311e-10   1.17245e-06 DIIS
+   @DF-UKS iter  24:  -398.06612653148267    1.09310e-10   1.32206e-06 DIIS
+   @DF-UKS iter  25:  -398.06612653140888    7.37828e-11   1.37459e-06 DIIS
+   @DF-UKS iter  26:  -398.06612653168355   -2.74667e-10   4.25815e-08 DIIS
+   @DF-UKS iter  27:  -398.06612653168236    1.19371e-12   2.77148e-08 DIIS
+   @DF-UKS iter  28:  -398.06612653252591   -8.43556e-10   1.50434e-07 DIIS
+   @DF-UKS iter  29:  -398.06612653177257    7.53346e-10   6.71305e-08 DIIS
+   @DF-UKS iter  30:  -398.06612653161056    1.62004e-10   1.29653e-08 DIIS
+   @DF-UKS iter  31:  -398.06612653373253   -2.12196e-09   1.05613e-07 DIIS
+   @DF-UKS iter  32:  -398.06612653452436   -7.91829e-10   1.92588e-07 DIIS
+   @DF-UKS iter  33:  -398.06612653619544   -1.67108e-09   5.34515e-07 DIIS
+   @DF-UKS iter  34:  -398.06612653289670    3.29874e-09   4.41389e-08 DIIS
+   @DF-UKS iter  35:  -398.06612653750369   -4.60699e-09   1.19590e-06 DIIS
+   @DF-UKS iter  36:  -398.06612653727029    2.33399e-10   1.07937e-06 DIIS
+   @DF-UKS iter  37:  -398.06612653548763    1.78267e-09   5.88356e-06 DIIS
+   @DF-UKS iter  38:  -398.06612652187300    1.36146e-08   9.79837e-06 DIIS
+   @DF-UKS iter  39:  -398.06612653507511   -1.32021e-08   6.09308e-06 DIIS
+   @DF-UKS iter  40:  -398.06612653898810   -3.91299e-09   1.84125e-06 DIIS
+   @DF-UKS iter  41:  -398.06612653382308    5.16502e-09   6.61601e-06 DIIS
+   @DF-UKS iter  42:  -398.06612653695055   -3.12747e-09   6.80150e-07 DIIS
+   @DF-UKS iter  43:  -398.06612654015868   -3.20813e-09   3.10609e-06 DIIS
+   @DF-UKS iter  44:  -398.06612654252422   -2.36554e-09   4.26142e-06 DIIS
+   @DF-UKS iter  45:  -398.06612654795970   -5.43548e-09   6.62122e-07 DIIS
+   @DF-UKS iter  46:  -398.06612654578373    2.17597e-09   3.38862e-06 DIIS
+   @DF-UKS iter  47:  -398.06612654422497    1.55876e-09   4.20835e-06 DIIS
+   @DF-UKS iter  48:  -398.06612654444109   -2.16119e-10   4.08298e-06 DIIS
+   @DF-UKS iter  49:  -398.06612654393786    5.03235e-10   4.33595e-06 DIIS
+   @DF-UKS iter  50:  -398.06612654671238   -2.77453e-09   2.82222e-06 DIIS
+   @DF-UKS iter  51:  -398.06612654731873   -6.06349e-10   2.35675e-06 DIIS
+   @DF-UKS iter  52:  -398.06612654061911    6.69962e-09   5.59548e-06 DIIS
+   @DF-UKS iter  53:  -398.06612654862681   -8.00770e-09   3.38236e-07 DIIS
+   @DF-UKS iter  54:  -398.06612654863335   -6.53699e-12   6.14817e-07 DIIS
+   @DF-UKS iter  55:  -398.06612654864989   -1.65414e-11   5.65426e-07 DIIS
+   @DF-UKS iter  56:  -398.06612654864654    3.35376e-12   1.69623e-08 DIIS
+   @DF-UKS iter  57:  -398.06612654863920    7.33280e-12   2.37484e-08 DIIS
+   @DF-UKS iter  58:  -398.06612654867189   -3.26850e-11   1.76683e-08 DIIS
+   @DF-UKS iter  59:  -398.06612654873550   -6.36078e-11   8.37418e-08 DIIS
+   @DF-UKS iter  60:  -398.06612654874408   -8.58336e-12   5.09934e-08 DIIS
+   @DF-UKS iter  61:  -398.06612654874544   -1.36424e-12   8.19542e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    8.9999999935 ; deviation = -6.492e-09
+      Nbeta    =    6.9999999935 ; deviation = -6.490e-09
+      Ntotal   =   15.9999999870 ; deviation = -1.298e-08 
+
+   @Spin Contamination Metric:   2.370868667E-03
+   @S^2 Expected:                2.000000000E+00
+   @S^2 Observed:                2.002370869E+00
+   @S   Expected:                1.000000000E+00
+   @S   Observed:                1.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -89.081463     2A     -8.100007     3A     -6.022125  
+       4A     -6.022125     5A     -6.003320     6A     -0.733406  
+       7A     -0.333136     8A     -0.333136     9A     -0.296974  
+
+    Alpha Virtual:                                                        
+
+      10A      0.268974    11A      0.340043    12A      0.340043  
+      13A      0.361682  
+
+    Beta Occupied:                                                        
+
+       1A    -89.072969     2A     -8.088715     3A     -6.002745  
+       4A     -6.002745     5A     -5.994251     6A     -0.636538  
+       7A     -0.256430  
+
+    Beta Virtual:                                                         
+
+       8A     -0.160402     9A     -0.160402    10A      0.291559  
+      11A      0.375879    12A      0.397526    13A      0.397529  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     7 ]
+    SOCC [     2 ]
+    NA   [     9 ]
+    NB   [     7 ]
+
+  @DF-UKS Final Energy:  -398.06612654874544
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              0.0000000000000000
+    One-Electron Energy =                -549.5892379274953328
+    Two-Electron Energy =                 170.3915669725670057
+    DFT Exchange-Correlation Energy =     -18.8684555938171705
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                       -398.0661265487454443
+
+  UHF NO Occupations:
+  HONO-2 :    7  A 1.9991674
+  HONO-1 :    8  A 1.0000000
+  HONO-0 :    9  A 1.0000000
+  LUNO+0 :   10  A 0.0008326
+  LUNO+1 :   11  A 0.0003533
+  LUNO+2 :   12  A 0.0000000
+  LUNO+3 :   13  A 0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :          0.0000000            0.0000000            0.0000000
+ Magnitude           :                                                    0.0000000
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on vm at Wed Nov 11 17:02:31 2026
+Module time:
+	user time   =       2.48 seconds =       0.04 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          3 seconds =       0.05 minutes
+Total time:
+	user time   =      11.25 seconds =       0.19 minutes
+	system time =       0.22 seconds =       0.00 minutes
+	total time  =         16 seconds =       0.27 minutes

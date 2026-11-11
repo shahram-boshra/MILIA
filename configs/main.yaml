@@ -26,6 +26,9 @@ global_constants:
 # ─────────────────────────────
 # Atomic Energies (in Hartrees)
 # ─────────────────────────────
+# DEPRECATED, removed in MILIA 2.0.0: these values record no level of theory or source, and MILIA
+# no longer uses them. Atomization energies use each dataset's '<dataset>_config.atomic_references'
+# (configs/datasets/*.yaml; docs/atomic_reference_energies.md). Reading ATOMIC_ENERGIES_HARTREE warns.
 atomic_energies_hartree:
   # Atomic energies in Hartree for common heavy atoms (and Hydrogen)
   1: -0.5012728848846926      # H

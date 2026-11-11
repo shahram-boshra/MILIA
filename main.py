@@ -178,15 +178,13 @@ from milia_pipeline.cli_manager import (
     CLIValidationError,
     parse_cli_args,
 )
+from milia_pipeline.config.atomic_references import get_dataset_atomic_references
 from milia_pipeline.config.config_accessors import (
     get_dataset_constants,
     get_dataset_type,
     get_property_availability,
 )
-from milia_pipeline.config.config_constants import (
-    get_atomic_energies_hartree,
-    get_processed_data_filename,
-)
+from milia_pipeline.config.config_constants import get_processed_data_filename
 from milia_pipeline.config.config_containers import (
     DatasetConfig,
     FilterConfig,
@@ -2121,13 +2119,19 @@ def _validate_atomization_configuration(
     if atomization_base and atomization_key:
         logger.info(f"Atomization energy calculation: {atomization_base} -> {atomization_key}")
 
-        # Validate atomic energies are available
-        if not get_atomic_energies_hartree():
-            raise HandlerConfigurationError(
-                message="Atomic energies required for atomization energy calculation but not found",
-                handler_type=dataset_config.dataset_type,
-                config_validation_errors=["Missing atomic_energies_hartree"],
-                invalid_config_keys=["atomic_energies_hartree"],
+        # Atomic references at the dataset's level of theory (validated here; a malformed
+        # declaration raises ConfigurationError). Without them the handler does not compute it.
+        references = get_dataset_atomic_references(dataset_config.dataset_type)
+        if references is None or references.for_property(atomization_base) is None:
+            logger.warning(
+                f"Atomization energy ({atomization_key}) is not computed: "
+                f"{dataset_config.dataset_type} declares no atomic references for "
+                f"'{atomization_base}' (see docs/atomic_reference_energies.md)"
+            )
+        else:
+            logger.info(
+                f"Atomic references: {references.source}, {references.level_of_theory} "
+                f"({references.program}); {references.citation}"
             )
 
         # DYNAMIC VALIDATION: Validate atomization_base against the dataset's
