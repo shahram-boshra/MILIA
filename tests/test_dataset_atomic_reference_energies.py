@@ -24,6 +24,7 @@ from milia_pipeline.config import config_constants, get_dataset_atomic_reference
 from milia_pipeline.config.config_loader import load_config
 from milia_pipeline.datasets.milia_dataset import miliaDataset
 from milia_pipeline.exceptions import ConfigurationError
+from milia_pipeline.handlers.implementations.qdpi import QDPiDatasetHandler
 from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
 from milia_pipeline.molecules.property_enrichment import calculate_atomization_energy
 
@@ -278,3 +279,43 @@ def test_parse_outputs_rejects_an_abnormal_termination(tmp_path):
     result = _parse(tmp_path, "gaussian", {"C.log": log})
     assert result.returncode != 0
     assert "terminated normally" in result.stderr
+
+
+def _committed_results(dataset):
+    path = REPO / "docs/atomic_references" / dataset / "results.json"
+    atoms = json.loads(path.read_text(encoding="utf-8"))["atoms"].values()
+    return {atom["Z"]: round(atom["selected_energy_hartree"], 10) for atom in atoms}
+
+
+def test_qdpi_references_match_the_committed_psi4_results():
+    references = get_dataset_atomic_references("QDPi")
+    assert references.source == "milia-computed"
+    assert "Psi4 1.7" in references.program
+    computed = _committed_results("qdpi")
+    assert sorted(computed) == [1, 3, 6, 7, 8, 9, 11, 15, 16, 17, 19, 35, 53]
+    assert dict(references.for_property("energy")) == computed
+
+
+def _qdpi_handler():
+    handler = QDPiDatasetHandler.__new__(QDPiDatasetHandler)
+    handler.logger = Mock(spec=logging.Logger)
+    handler.processing_config = Mock(
+        calculate_atomization_energy_from="energy", atomization_energy_key_name="energy_ATOM"
+    )
+    return handler
+
+
+def test_qdpi_neutral_molecule_atomization_uses_its_references():
+    references = get_dataset_atomic_references("QDPi").for_property("energy")
+    data = Mock(z=torch.tensor([8, 1, 1]))
+    raw = {"energy": -76.4, "molecular_charge": 0}
+    energy = _qdpi_handler()._calculate_atomization_energy_internal(raw, data, 0, "water")
+    expected = (-76.4 - (references[8] + 2 * references[1])) * config_constants.get_har2ev()
+    assert energy == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("charge", [1, -1, 2])
+def test_qdpi_charged_molecule_has_no_atomization_energy(charge):
+    data = Mock(z=torch.tensor([8, 1, 1, 1]))
+    raw = {"energy": -76.7, "molecular_charge": charge}
+    assert _qdpi_handler()._calculate_atomization_energy_internal(raw, data, 0, "ion") is None

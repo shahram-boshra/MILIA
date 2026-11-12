@@ -72,6 +72,8 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from milia_pipeline.config import get_dataset_atomic_references
+from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerValidationError,
@@ -83,27 +85,10 @@ from milia_pipeline.handlers.implementations.qdpi import (
     QDPiDatasetHandler,
 )
 
-# Import constants from the same location qdpi.py uses (milia_pipeline.config.config_constants)
-# with fallback pattern for environments where config module may not be fully available
-try:
-    from milia_pipeline.config.config_constants import ATOMIC_ENERGIES_HARTREE, HAR2EV
-except ImportError:
-    ATOMIC_ENERGIES_HARTREE = {
-        1: -0.500273,  # H
-        3: -7.478060,  # Li
-        6: -37.846772,  # C
-        7: -54.583861,  # N
-        8: -75.064579,  # O
-        9: -99.733509,  # F
-        11: -162.254553,  # Na
-        15: -341.258600,  # P
-        16: -398.100442,  # S
-        17: -460.148990,  # Cl
-        19: -599.764957,  # K
-        35: -2573.437350,  # Br
-        53: -6918.076370,  # I
-    }
-    HAR2EV = 27.211386245988
+# The atomic references qdpi.py subtracts: QDπ's own (wB97M-D3(BJ)/def2-TZVPPD, Psi4 1.7,
+# configs/datasets/qdpi.yaml qdpi_config.atomic_references).
+ATOMIC_ENERGIES_HARTREE = get_dataset_atomic_references("QDPi").for_property("energy")
+HAR2EV = get_har2ev()
 
 
 # ============================================================================
@@ -1352,12 +1337,9 @@ class TestAtomizationEnergy(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
         props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
-        if atomic_H is not None and HAR2EV is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "test")
-            if hasattr(result, "atomization_energy"):
-                expected_eV = (-0.5 - atomic_H) * HAR2EV
-                self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
+        result = handler.enrich_pyg_data(data, props, 0, "test")
+        expected_eV = (-0.5 - ATOMIC_ENERGIES_HARTREE[1]) * HAR2EV
+        self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
 
     def test_atomization_water_like(self):
         """Atomization energy for water-like molecule (O + 2H)."""
@@ -1368,13 +1350,24 @@ class TestAtomizationEnergy(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
         props = _make_raw_properties(energy=-76.3)
-        atomic_O = ATOMIC_ENERGIES_HARTREE.get(8)
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
-        if atomic_O is not None and atomic_H is not None and HAR2EV is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "test")
-            if hasattr(result, "atomization_energy"):
-                expected_eV = (-76.3 - (atomic_O + 2 * atomic_H)) * HAR2EV
-                self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
+        result = handler.enrich_pyg_data(data, props, 0, "test")
+        expected_eV = (
+            -76.3 - (ATOMIC_ENERGIES_HARTREE[8] + 2 * ATOMIC_ENERGIES_HARTREE[1])
+        ) * HAR2EV
+        self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
+
+    def test_charged_molecule_has_no_atomization_energy(self):
+        """A charged molecule's dissociation products include an ion: not computed."""
+        pc = _make_processing_config(
+            calculate_atomization_energy_from="energy",
+            atomization_energy_key_name="atomization_energy",
+        )
+        handler = _make_handler(processing_config=pc)
+        data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
+        props = _make_raw_properties(energy=-76.3)
+        props["molecular_charge"] = 1
+        result = handler.enrich_pyg_data(data, props, 0, "test")
+        self.assertFalse(hasattr(result, "atomization_energy"))
 
     def test_missing_atomic_energy_no_crash(self):
         """Missing atomic energy for element doesn't crash enrichment."""

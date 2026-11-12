@@ -1,0 +1,310 @@
+
+Scratch directory: /tmp/
+
+*** tstart() called on vm
+*** at Thu Nov 12 09:19:17 2026
+
+   => Loading Basis Set <=
+
+    Name: DEF2-TZVPPD
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1 entry K          line   705 file /tmp/claude-0/-home-claude/172ae38e-210d-58ea-8063-3802045fdaac/scratchpad/mm/psi4_17/share/psi4/basis/def2-tzvppd.gbs 
+
+   => WB97M-D3BJ: Empirical Dispersion <=
+
+    Grimme's -D3 (BJ-damping) Dispersion Correction
+    Grimme S.; Ehrlich S.; Goerigk L. (2011), J. Comput. Chem., 32: 1456
+    Parametrisation from:    A. Najib, L. Goerigk, J. Comput. Theory Chem.,14, 5725, 2018
+
+        s6 =       1.000000
+        s8 =       0.390800
+        a1 =       0.566000
+        a2 =       3.128000
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,   1907 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Geometry (in Angstrom), charge = 0, multiplicity = 2:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         K            0.000000000000     0.000000000000     0.000000000000    38.963706486400
+
+  Running in c1 symmetry.
+
+  Rotational constants: A = ************  B = ************  C = ************ [cm^-1]
+  Rotational constants: A = ************  B = ************  C = ************ [MHz]
+  Nuclear repulsion =    0.000000000000000
+
+  Charge       = 0
+  Multiplicity = 2
+  Electrons    = 19
+  Nalpha       = 10
+  Nbeta        = 9
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is CORE.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: DEF2-TZVPPD
+    Blend: DEF2-TZVPPD
+    Number of shells: 14
+    Number of basis functions: 36
+    Number of Cartesian functions: 39
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 5.2.3
+    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: WB97M-D3BJ <= 
+
+    wB97M-V with D3(BJ) instead of VV10 dispersion 
+
+    A. Najib, L. Goerigk, J. Comput. Theory Chem.,14, 5725, 2018
+    N. Mardirossian, M. Head-Gordon, J. Chem. Phys. 144, 214110, 2016
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =           TRUE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange-Correlation Functionals <=
+
+    1.0000   wB97M-V exchange-correlation functional
+
+   => Exact (HF) Exchange <=
+
+    0.8500            HF,LR [omega = 0.3000]
+    0.1500               HF 
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_MGGA_XC_WB97M_V:  1.00E-13 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          21442
+    Total Blocks           =            256
+    Max Points             =            253
+    Max Functions          =             36
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (DEF2-TZVPPD AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1 entry K          line  1152 file /tmp/claude-0/-home-claude/172ae38e-210d-58ea-8063-3802045fdaac/scratchpad/mm/psi4_17/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.005 GiB; user supplied 1.349 GiB. Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                   Yes
+    wK tasked:                  Yes
+    Omega:                3.000E-01
+    OpenMP threads:               1
+    Memory [MiB]:              1381
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (DEF2-TZVPPD AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 44
+    Number of basis functions: 160
+    Number of Cartesian functions: 203
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.048 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 5.6187985400E-02.
+  Reciprocal condition number of the overlap matrix is 2.1374522927E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Core (One-Electron) Hamiltonian.
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A         36      36      10       9       9       1
+   -------------------------------------------------------
+    Total      36      36      10       9       9       1
+   -------------------------------------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter   1:  -595.08997864046069   -5.95090e+02   5.77278e-02 ADIIS/DIIS
+   @DF-UKS iter   2:  -592.34921574828491    2.74076e+00   8.46697e-02 ADIIS/DIIS
+   @DF-UKS iter   3:  -599.95235505444327   -7.60314e+00   3.20237e-03 ADIIS/DIIS
+   @DF-UKS iter   4:  -599.95950690338475   -7.15185e-03   6.38258e-04 ADIIS/DIIS
+   @DF-UKS iter   5:  -599.96018792645930   -6.81023e-04   2.04718e-04 ADIIS/DIIS
+   @DF-UKS iter   6:  -599.96030618374277   -1.18257e-04   3.15290e-05 DIIS
+   @DF-UKS iter   7:  -599.96030750689340   -1.32315e-06   5.78153e-06 DIIS
+   @DF-UKS iter   8:  -599.96030769275535   -1.85862e-07   7.95792e-07 DIIS
+   @DF-UKS iter   9:  -599.96030769610115   -3.34580e-09   2.88193e-07 DIIS
+   @DF-UKS iter  10:  -599.96030769683193   -7.30779e-10   3.51052e-08 DIIS
+   @DF-UKS iter  11:  -599.96030769684035   -8.41283e-12   3.11827e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    9.9999999183 ; deviation = -8.168e-08
+      Nbeta    =    8.9999999183 ; deviation = -8.166e-08
+      Ntotal   =   18.9999998367 ; deviation = -1.633e-07 
+
+   @Spin Contamination Metric:   2.870551553E-05
+   @S^2 Expected:                7.500000000E-01
+   @S^2 Observed:                7.500287055E-01
+   @S   Expected:                5.000000000E-01
+   @S   Observed:                5.000000000E-01
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A   -130.176975     2A    -13.415460     3A    -10.693174  
+       4A    -10.693174     5A    -10.693174     6A     -1.514503  
+       7A     -0.861679     8A     -0.861679     9A     -0.861679  
+      10A     -0.151791  
+
+    Alpha Virtual:                                                        
+
+      11A      0.003464    12A      0.003464    13A      0.003464  
+      14A      0.038472    15A      0.078881    16A      0.078881  
+      17A      0.078881    18A      0.103384    19A      0.103384  
+      20A      0.103384    21A      0.103384    22A      0.103384  
+      23A      0.314078    24A      0.314078    25A      0.314078  
+      26A      0.314078    27A      0.314078    28A      0.730237  
+      29A      0.730237    30A      0.730237    31A      0.996636  
+      32A      1.210192    33A      1.210192    34A      1.210192  
+      35A      1.210192    36A      1.210192  
+
+    Beta Occupied:                                                        
+
+       1A   -130.176412     2A    -13.414702     3A    -10.692668  
+       4A    -10.692668     5A    -10.692668     6A     -1.511837  
+       7A     -0.859411     8A     -0.859411     9A     -0.859411  
+
+    Beta Virtual:                                                         
+
+      10A      0.031894    11A      0.031894    12A      0.031894  
+      13A      0.033389    14A      0.070963    15A      0.142326  
+      16A      0.142326    17A      0.142326    18A      0.174725  
+      19A      0.174725    20A      0.174725    21A      0.174725  
+      22A      0.174725    23A      0.359107    24A      0.359107  
+      25A      0.359107    26A      0.359107    27A      0.359107  
+      28A      0.754879    29A      0.754879    30A      0.754879  
+      31A      1.021339    32A      1.222530    33A      1.222530  
+      34A      1.222530    35A      1.222530    36A      1.222530  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     9 ]
+    SOCC [     1 ]
+    NA   [    10 ]
+    NB   [     9 ]
+
+  @DF-UKS Final Energy:  -599.96030769684035
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              0.0000000000000000
+    One-Electron Energy =                -823.9087380022297111
+    Two-Electron Energy =                 249.9562789851037223
+    DFT Exchange-Correlation Energy =     -26.0078486797143249
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                       -599.9603076968403457
+
+  UHF NO Occupations:
+  HONO-2 :    8  A 1.9999955
+  HONO-1 :    9  A 1.9999955
+  HONO-0 :   10  A 1.0000000
+  LUNO+0 :   11  A 0.0000045
+  LUNO+1 :   12  A 0.0000045
+  LUNO+2 :   13  A 0.0000045
+  LUNO+3 :   14  A 0.0000008
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.0000000            0.0000000           -0.0000000
+ Magnitude           :                                                    0.0000000
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on vm at Thu Nov 12 09:19:18 2026
+Module time:
+	user time   =       0.76 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =      34.84 seconds =       0.58 minutes
+	system time =       0.48 seconds =       0.01 minutes
+	total time  =         38 seconds =       0.63 minutes

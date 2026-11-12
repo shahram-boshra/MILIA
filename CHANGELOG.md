@@ -38,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - QM9 declares its authors' published atom references (`atomref.txt`: U0, U, H and G for H, C, N, O, F;
   B3LYP/6-31G(2df,p), Gaussian 09). xxMD-DFT, which publishes none, declares references MILIA computed at
   its level of theory (UKS M06/6-31G, Psi4 1.11), with the script, locked environment and raw outputs in
-  `docs/atomic_references/xxmd/`.
+  `docs/atomic_references/xxmd/`. QDπ, which publishes none either, declares references computed for its
+  13 elements in its own program (ωB97M-D3(BJ)/def2-TZVPPD, Psi4 1.7), in `docs/atomic_references/qdpi/`.
 
 ### Changed
 
@@ -120,6 +121,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   references from a module that does not exist and always used built-in values equal to the QM9
   B3LYP/6-31G(2df,p) atom references, while xxMD-DFT energies are unrestricted M06/6-31G. It now uses
   references at the xxMD-DFT level (see Added).
+- QDπ requested an atomization energy (`energy_ATOM`) that its handler never computed. It is now computed
+  for neutral molecules from QDπ's references; charged molecules get none, since their dissociation products
+  would include an ion.
 - The DFT handler no longer rejects a configuration that requests an atomization energy when no atomic
   references are available; the energy is not computed and a warning says why.
 

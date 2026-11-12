@@ -1,0 +1,169 @@
+{
+  "psi4_version": "1.7",
+  "method": "wb97m-d3bj",
+  "options": {
+    "basis": "def2-tzvppd",
+    "reference": "uks",
+    "e_convergence": 1e-10,
+    "d_convergence": 1e-08,
+    "maxiter": 300
+  },
+  "atoms": {
+    "H": {
+      "Z": 1,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -0.49876051005751065,
+        "core": -0.49876051005751065,
+        "gwh": -0.4987605100575107
+      },
+      "selected_guess": "gwh",
+      "selected_energy_hartree": -0.4987605100575107,
+      "guess_spread_hartree": 5.551115123125783e-17
+    },
+    "Li": {
+      "Z": 3,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -7.485421743527712,
+        "core": -7.414235532072629,
+        "gwh": -7.485421743527693
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -7.485421743527712,
+      "guess_spread_hartree": 0.07118621145508275
+    },
+    "C": {
+      "Z": 6,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -37.87264504540629,
+        "core": -37.872645071948114,
+        "gwh": -37.87264506682814
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -37.872645071948114,
+      "guess_spread_hartree": 2.654182651440351e-08
+    },
+    "N": {
+      "Z": 7,
+      "multiplicity": 4,
+      "energies_hartree": {
+        "sad": -54.623275134116454,
+        "core": -54.62327513411643,
+        "gwh": -54.623275134116426
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -54.623275134116454,
+      "guess_spread_hartree": 2.842170943040401e-14
+    },
+    "O": {
+      "Z": 8,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -75.11317840448439,
+        "core": -75.11317842209421,
+        "gwh": -75.1131785257096
+      },
+      "selected_guess": "gwh",
+      "selected_energy_hartree": -75.1131785257096,
+      "guess_spread_hartree": 1.2122521297897038e-07
+    },
+    "F": {
+      "Z": 9,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -99.7861162812491,
+        "core": -99.78611625009906,
+        "gwh": -99.78611606464628
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -99.7861162812491,
+      "guess_spread_hartree": 2.1660281390722957e-07
+    },
+    "Na": {
+      "Z": 11,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -162.30553817978446,
+        "core": -162.3055381797846,
+        "gwh": -162.30553817978455
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -162.3055381797846,
+      "guess_spread_hartree": 1.4210854715202004e-13
+    },
+    "P": {
+      "Z": 15,
+      "multiplicity": 4,
+      "energies_hartree": {
+        "sad": -341.30591970096566,
+        "core": -341.3059197009655,
+        "gwh": -341.30591970096543
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -341.30591970096566,
+      "guess_spread_hartree": 2.2737367544323206e-13
+    },
+    "S": {
+      "Z": 16,
+      "multiplicity": 3,
+      "energies_hartree": {
+        "sad": -398.1599636692838,
+        "core": -398.1599636695901,
+        "gwh": -398.1599636648075
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -398.1599636695901,
+      "guess_spread_hartree": 4.782634732691804e-09
+    },
+    "Cl": {
+      "Z": 17,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -460.198876234019,
+        "core": -460.1988762354224,
+        "gwh": -460.1988762304761
+      },
+      "selected_guess": "core",
+      "selected_energy_hartree": -460.1988762354224,
+      "guess_spread_hartree": 4.94628693559207e-09
+    },
+    "K": {
+      "Z": 19,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -599.9603076968405,
+        "core": -599.9603076968403,
+        "gwh": -599.9603076968406
+      },
+      "selected_guess": "gwh",
+      "selected_energy_hartree": -599.9603076968406,
+      "guess_spread_hartree": 2.2737367544323206e-13
+    },
+    "Br": {
+      "Z": 35,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -2574.116724072932,
+        "core": -2574.116724071716,
+        "gwh": -2574.1167240751993
+      },
+      "selected_guess": "gwh",
+      "selected_energy_hartree": -2574.1167240751993,
+      "guess_spread_hartree": 3.483364707790315e-09
+    },
+    "I": {
+      "Z": 53,
+      "multiplicity": 2,
+      "energies_hartree": {
+        "sad": -297.7622891484111,
+        "core": -297.7622891425168,
+        "gwh": -297.76228914132116
+      },
+      "selected_guess": "sad",
+      "selected_energy_hartree": -297.7622891484111,
+      "guess_spread_hartree": 7.089965947670862e-09
+    }
+  }
+}

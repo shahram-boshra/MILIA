@@ -41,7 +41,9 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
+from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
+    is_value_valid_and_not_nan,
     validate_molecular_structure,
 )
 from milia_pipeline.exceptions import (
@@ -561,6 +563,27 @@ class QDPiDatasetHandler(DatasetHandler):
             if subset is not None:
                 pyg_data.subset = subset
 
+            # Add atomization energy if configured (neutral molecules only)
+            if (
+                self.processing_config.calculate_atomization_energy_from
+                and self.processing_config.atomization_energy_key_name
+            ):
+                atomization_energy = self._calculate_atomization_energy_internal(
+                    raw_properties_dict, pyg_data, molecule_index, identifier
+                )
+                if atomization_energy is not None:
+                    setattr(
+                        pyg_data,
+                        self.processing_config.atomization_energy_key_name,
+                        self._ensure_tensor(
+                            [atomization_energy],
+                            torch.float32,
+                            "atomization_energy",
+                            molecule_index,
+                            identifier,
+                        ),
+                    )
+
             return pyg_data
 
         except (PropertyEnrichmentError, DatasetSpecificHandlerError):
@@ -574,6 +597,72 @@ class QDPiDatasetHandler(DatasetHandler):
                 molecule_index=molecule_index,
                 details=f"Identifier: {identifier}, Error: {type(e).__name__}: {str(e)}",
             ) from e
+
+    def _calculate_atomization_energy_internal(
+        self,
+        raw_properties_dict: dict[str, Any],
+        pyg_data: Data,
+        molecule_index: int,
+        identifier: str,
+    ) -> float | None:
+        """Atomization energy (eV) of a neutral QDπ molecule, or ``None``.
+
+        The total energy (ωB97M-D3(BJ)/def2-TZVPPD, Hartree after preprocessing) minus the neutral
+        isolated-atom energies at the same level (``qdpi_config.atomic_references``). An atomization
+        energy dissociates a neutral molecule into neutral ground-state atoms; for a charged molecule
+        the products would include an ion, so it is not computed (``None``, no attribute).
+        """
+        try:
+            base_energy_key = self.processing_config.calculate_atomization_energy_from
+            if not base_energy_key:
+                return None
+            charge = raw_properties_dict.get(
+                "molecular_charge", raw_properties_dict.get("charge", 0)
+            )
+            if charge is not None and int(charge) != 0:
+                self.logger.debug(
+                    f"QDπ molecule {molecule_index}: charge {int(charge)}, atomization energy not "
+                    "defined against neutral atoms; not computed"
+                )
+                return None
+
+            base_energy_raw = raw_properties_dict.get(base_energy_key)
+            if not is_value_valid_and_not_nan(base_energy_raw):
+                self.logger.warning(
+                    f"QDπ molecule {molecule_index} missing {base_energy_key} for atomization energy"
+                )
+                return None
+            if not hasattr(pyg_data, "z") or pyg_data.z is None:
+                self.logger.warning(
+                    f"QDπ molecule {molecule_index} missing atomic numbers for atomization energy"
+                )
+                return None
+            base_energy_hartree = float(
+                np.asarray(base_energy_raw, dtype=np.float64).reshape(-1)[0]
+            )
+
+            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
+            if atomic_energies_hartree is None:
+                return None
+            har2ev = get_har2ev()
+
+            sum_atomic_energies_hartree = 0.0
+            for atomic_num in pyg_data.z.tolist():
+                atomic_energy = atomic_energies_hartree.get(atomic_num)
+                if atomic_energy is None:
+                    self.logger.warning(
+                        f"QDπ molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
+                    )
+                    return None
+                sum_atomic_energies_hartree += atomic_energy
+
+            return (base_energy_hartree - sum_atomic_energies_hartree) * har2ev
+
+        except Exception as e:
+            self.logger.error(
+                f"Error calculating QDπ atomization energy for molecule {molecule_index}: {e}"
+            )
+            return None
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]

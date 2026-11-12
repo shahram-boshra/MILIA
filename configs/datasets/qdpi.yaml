@@ -38,6 +38,39 @@ qdpi_config:
   # DOI: 10.1038/s41597-025-04972-3
   raw_data_download_url: https://zenodo.org/api/records/14970869/files/QDpiDataset-main.tar.gz/content
 
+  # Isolated-atom reference energies for the atomization energy of NEUTRAL molecules (charged ones get
+  # none: their dissociation products include an ion). QDπ (wB97M-D3(BJ)/def2-TZVPPD, "as implemented
+  # in the PSI4 v1.7 software"; no other settings stated) publishes none, so MILIA computed them at the
+  # same level in the same program: Psi4 1.7, reference UKS, Psi4 1.7 defaults (density-fitted SCF,
+  # grid 75 radial x 302 spherical points; def2 ECP for I, 28 core electrons); neutral atoms at
+  # ground-state multiplicity (H, Li, F, Na, Cl, K, Br, I 2; C, O, S 3; N, P 4); lowest energy over the
+  # SAD, CORE and GWH guesses (Li: CORE converged to the excited 2P state, +0.071 Eh; others within
+  # 2.2e-7 Eh); <S^2> deviation <= 0.0045; D3(BJ) of a single atom is zero. Script, environment lock,
+  # results and raw outputs: docs/atomic_references/qdpi/; method: docs/atomic_reference_energies.md.
+  # Values: results.json rounded to 1e-10 Eh.
+  atomic_references:
+    source: milia-computed
+    level_of_theory: UKS wB97M-D3(BJ)/def2-TZVPPD, neutral isolated atoms at ground-state multiplicity
+    program: Psi4 1.7 (psi4 channel), defaults (density-fitted SCF, DFT grid 75 x 302)
+    citation: >-
+      Computed by MILIA at the QDpi level of theory (J. Zeng, T. J. Giese, A. W. Götz, D. M. York,
+      Sci. Data 12, 693 (2025), doi:10.1038/s41597-025-04972-3); docs/atomic_references/qdpi/
+    energies_hartree:
+      energy:
+        1: -0.4987605101  # H
+        3: -7.4854217435  # Li
+        6: -37.8726450719  # C
+        7: -54.6232751341  # N
+        8: -75.1131785257  # O
+        9: -99.7861162812  # F
+        11: -162.3055381798  # Na
+        15: -341.3059197010  # P
+        16: -398.1599636696  # S
+        17: -460.1988762354  # Cl
+        19: -599.9603076968  # K
+        35: -2574.1167240752  # Br
+        53: -297.7622891484  # I
+
   # QDπ processing configuration
   processing_config:
     # Preprocessing parameters (for automatic tar.gz → npz conversion)

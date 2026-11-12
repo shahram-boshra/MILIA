@@ -1,0 +1,12 @@
+# Human-readable spec; the exact solved environment (with MD5 hashes) is conda-linux-64.lock.
+# Psi4 1.7 is published on the psi4 channel; its intel-openmp dependency comes from the anaconda
+# channel. pydantic 1.10 and setuptools < 70 are needed by the qcelemental/qcengine of that release.
+name: milia-atomic-references-qdpi
+channels:
+  - psi4
+  - anaconda
+dependencies:
+  - python=3.10
+  - psi4=1.7
+  - pydantic=1.10
+  - setuptools<70
