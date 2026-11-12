@@ -1,0 +1,9 @@
+%chk=C.chk
+#P UwB97X/6-31G* Int=FineGrid SCF=Tight Stable=Opt
+
+ANI-1x atomic reference (Gaussian 09): isolated C atom, multiplicity 3
+
+0 3
+C 0.0 0.0 0.0
+
+

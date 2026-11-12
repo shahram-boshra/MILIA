@@ -1,0 +1,8 @@
+# rMD17 atomic reference (ORCA 4.0.1): isolated H atom, multiplicity 2, initial guess PModel
+! UKS PBE def2-SVP def2/J RI VeryTightSCF Grid7 NoFinalGrid
+%scf
+  Guess PModel
+end
+* xyz 0 2
+H 0.0 0.0 0.0
+*

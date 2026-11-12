@@ -1,0 +1,17 @@
+%chk=S.chk
+#P UB3LYP/6-31G(2df,p) Int=UltraFine SCF=Tight Stable=Opt
+
+QM40 atomic reference (Gaussian 16): isolated S atom, multiplicity 3
+
+0 3
+S 0.0 0.0 0.0
+
+--Link1--
+%chk=S.chk
+#P UB3LYP/6-31G(2df,p) Int=UltraFine SCF=Tight Freq Geom=Check Guess=Read
+
+QM40 atomic reference (Gaussian 16): isolated S atom, multiplicity 3
+
+0 3
+
+

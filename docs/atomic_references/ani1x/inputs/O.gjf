@@ -1,0 +1,9 @@
+%chk=O.chk
+#P UwB97X/6-31G* Int=FineGrid SCF=Tight Stable=Opt
+
+ANI-1x atomic reference (Gaussian 09): isolated O atom, multiplicity 3
+
+0 3
+O 0.0 0.0 0.0
+
+

@@ -49,7 +49,18 @@ theory or source), unused by MILIA, and removed in 2.0.0.
 |---|---|---|---|
 | QM9 | B3LYP/6-31G(2df,p), Gaussian 09 | U0, U, H, G for H, C, N, O, F | author-published: `atomref.txt` (figshare file 3195395) |
 | xxMD-DFT | UKS M06/6-31G, Psi4 | `energy` for H, C, N, O, S | milia-computed (below) |
-| QM40, ANI-1x, ANI-1ccx, ANI-2x, rMD17, DFT, QDπ | per `configs/datasets/` | — | under review: not computed until verified |
+| DFT (VQM24) | ωB97X-D3/cc-pVDZ, Psi4 1.7 | none needed | author-published atomization energy per molecule (`Eatomization`); MILIA computes none |
+| QM40 | B3LYP/6-31G(2df,p), Gaussian 16 | — | not computed; inputs ready: `docs/atomic_references/qm40/` |
+| ANI-1x | ωB97X/6-31G\*, Gaussian 09 | — | not computed; inputs ready: `docs/atomic_references/ani1x/` |
+| ANI-2x | ωB97X/6-31G\*, Gaussian 09/16 | — | not computed; inputs ready, program version to confirm: `docs/atomic_references/ani2x/` |
+| rMD17 | PBE/def2-SVP, ORCA 4.0.1 | — | not computed; inputs ready: `docs/atomic_references/rmd17/` |
+| ANI-1ccx | CCSD(T)\*/CBS composite, ORCA | — | not computed; recipe needed: `docs/atomic_references/ani1ccx/` |
+| QDπ | ωB97M-D3(BJ)/def2-TZVPPD, Psi4 1.7 | — | not computed; handler does not compute atomization energies yet |
+
+None of these datasets publishes isolated-atom energies. Where MILIA cannot run the original program,
+`docs/atomic_references/<dataset>/` holds the exact inputs (each setting traced to the paper or to the
+program's default), the run commands and `parse_outputs.py`, which writes `results.json` for the
+dataset's `atomic_references`.
 
 ### xxMD-DFT (milia-computed)
 

@@ -1,0 +1,8 @@
+# rMD17 atomic reference (ORCA 4.0.1): isolated C atom, multiplicity 3, initial guess Hueckel
+! UKS PBE def2-SVP def2/J RI VeryTightSCF Grid7 NoFinalGrid
+%scf
+  Guess Hueckel
+end
+* xyz 0 3
+C 0.0 0.0 0.0
+*

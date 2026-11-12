@@ -45,9 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Atomization energies are computed only from atomic references at the dataset's level of theory.**
   They subtracted one global table (`atomic_energies_hartree` in `configs/main.yaml`) for every dataset,
   with no recorded level of theory or source and matching none of them. QM9 (`U0_ATOM`, and U/H/G when
-  selected) now uses its published references, so its values change; xxMD uses its computed ones. QM40,
-  ANI-1x, ANI-1ccx, ANI-2x, rMD17 and DFT declare none yet, so their atomization energy is not computed
-  (a warning says why); total energies and forces are unchanged. `MoleculeConverter` no longer fills
+  selected) now uses its published references, so its values change; xxMD uses its computed ones. The DFT
+  dataset (VQM24) no longer requests `Etot_ATOM`: its authors publish each molecule's atomization energy
+  as `Eatomization`. QM40, ANI-1x, ANI-1ccx, ANI-2x and rMD17 publish no atomic references and were
+  computed in Gaussian or ORCA, so their atomization energy is not computed (a warning says why);
+  `docs/atomic_references/<dataset>/` holds exact inputs, run commands and a parser
+  (`parse_outputs.py`) for computing them in the original program. Total energies and forces are
+  unchanged. `MoleculeConverter` no longer fills
   `atomic_energies_hartree` from the global table. Reprocess datasets processed earlier: processed files
   are not rebuilt automatically.
 

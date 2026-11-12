@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import subprocess
+import sys
 import warnings
 from pathlib import Path
 from unittest.mock import Mock
@@ -18,6 +21,7 @@ import pytest
 import torch
 
 from milia_pipeline.config import config_constants, get_dataset_atomic_references
+from milia_pipeline.config.config_loader import load_config
 from milia_pipeline.datasets.milia_dataset import miliaDataset
 from milia_pipeline.exceptions import ConfigurationError
 from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
@@ -176,3 +180,101 @@ def test_atomization_without_references_uses_the_deprecated_global_ones():
             -1.2, z, 0, logging.getLogger(__name__), atomic_energies_hartree={1: -0.5}
         )
     assert energy == pytest.approx((-1.2 + 1.0) * config_constants.get_har2ev())
+
+
+def test_vqm24_dft_uses_its_published_atomization_energy():
+    """VQM24 publishes Eatomization per molecule, so MILIA computes no atomization energy for it."""
+    config = load_config()
+    assert (
+        config["data_config"]["property_selection"]["DFT"]["calculate_atomization_energy_from"]
+        is None
+    )
+    assert "Eatomization" in config["property_availability"]["DFT"]["scalar_graph_targets"]
+    assert get_dataset_atomic_references("DFT") is None
+
+
+# Ground-state spin multiplicities of the isolated atoms.
+MULTIPLICITY = {"H": 2, "C": 3, "N": 4, "O": 3, "F": 2, "S": 3, "Cl": 2}
+REFERENCE_INPUTS = {
+    "qm40": ("gjf", {"H", "C", "N", "O", "F", "S", "Cl"}, "UB3LYP/6-31G(2df,p) Int=UltraFine"),
+    "ani1x": ("gjf", {"H", "C", "N", "O"}, "UwB97X/6-31G* Int=FineGrid"),
+    "ani2x": ("gjf", {"H", "C", "N", "O", "F", "S", "Cl"}, "UwB97X/6-31G* Int=FineGrid"),
+    "rmd17": (
+        "inp",
+        {"H", "C", "N", "O"},
+        "UKS PBE def2-SVP def2/J RI VeryTightSCF Grid7 NoFinalGrid",
+    ),
+}
+
+
+@pytest.mark.parametrize("dataset", sorted(REFERENCE_INPUTS))
+def test_reference_inputs_cover_each_element_at_its_ground_state(dataset):
+    suffix, elements, method = REFERENCE_INPUTS[dataset]
+    found = set()
+    for path in (REPO / "docs/atomic_references" / dataset / "inputs").glob(f"*.{suffix}"):
+        text = path.read_text(encoding="utf-8")
+        assert method in text, path
+        charge_multiplicity = re.search(r"^(?:\* xyz )?0 (\d)$", text, re.MULTILINE)
+        element = path.stem.split("_")[0]
+        assert int(charge_multiplicity.group(1)) == MULTIPLICITY[element], path
+        found.add(element)
+    assert found == elements
+    assert (REPO / "docs/atomic_references" / dataset / "README.md").is_file()
+
+
+def _parse(tmp_path, program, files):
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    for name, text in files.items():
+        (outputs / name).write_text(text, encoding="utf-8")
+    return subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            str(REPO / "docs/atomic_references/parse_outputs.py"),
+            str(tmp_path),
+            "--program",
+            program,
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_parse_outputs_reads_gaussian_energies_and_thermochemistry(tmp_path):
+    log = (
+        " Initial command:\n SCF Done:  E(UB3LYP) =  -37.8467720  A.U.\n Normal termination of Gaussian 16\n"
+        " Initial command:\n SCF Done:  E(UB3LYP) =  -37.8467720  A.U.\n"
+        " Sum of electronic and zero-point Energies=  -37.846772\n"
+        " Sum of electronic and thermal Energies=  -37.845355\n"
+        " Sum of electronic and thermal Enthalpies=  -37.844411\n"
+        " Sum of electronic and thermal Free Energies=  -37.861317\n Normal termination of Gaussian 16\n"
+    )
+    assert _parse(tmp_path, "gaussian", {"C.log": log}).returncode == 0
+    energies = json.loads((tmp_path / "results.json").read_text())["atoms"]["C"]["energies_hartree"]
+    assert energies == {
+        "scf": -37.846772,
+        "U0": -37.846772,
+        "U298": -37.845355,
+        "H298": -37.844411,
+        "G298": -37.861317,
+    }
+
+
+def test_parse_outputs_keeps_the_lowest_orca_guess(tmp_path):
+    done = "****ORCA TERMINATED NORMALLY****\n"
+    files = {
+        "C_pmodel.out": "FINAL SINGLE POINT ENERGY   -37.801\n" + done,
+        "C_hcore.out": "FINAL SINGLE POINT ENERGY   -37.802\n" + done,
+    }
+    assert _parse(tmp_path, "orca", files).returncode == 0
+    atom = json.loads((tmp_path / "results.json").read_text())["atoms"]["C"]
+    assert atom["selected_guess"] == "hcore"
+    assert atom["selected_energy_hartree"] == -37.802
+
+
+def test_parse_outputs_rejects_an_abnormal_termination(tmp_path):
+    log = " Initial command:\n Initial command:\n SCF Done:  E(U) = -1.0\n Normal termination of Gaussian 16\n"
+    result = _parse(tmp_path, "gaussian", {"C.log": log})
+    assert result.returncode != 0
+    assert "terminated normally" in result.stderr

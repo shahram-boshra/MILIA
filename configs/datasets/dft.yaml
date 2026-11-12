@@ -14,6 +14,12 @@
 # DFT Dataset Configuration
 # ─────────────────────────
 dft_config:
+  # VQM24 (Vector-QM24), DFT part: D. Khan, A. Benali, S. Kim, G. F. von Rudorff, O. A. von Lilienfeld,
+  # arXiv:2405.05961; data doi:10.5281/zenodo.11164951, complete release zenodo.org/records/15442257.
+  # Level of theory: wB97X-D3/cc-pVDZ, Psi4 1.7, density fitting (cc-pVDZ-JKFIT).
+  # The authors publish each molecule's atomization energy (`Eatomization`), so MILIA does not compute
+  # one from atomic references; select `Eatomization` as a target to use it (see
+  # docs/atomic_reference_energies.md).
   raw_npz_filename: DFT_all_sliced.npz
   raw_data_download_url: https://zenodo.org/records/15442257/files/DFT_all.npz?download=1
 
@@ -51,10 +57,11 @@ data_config:
         - vibmodes
 
       # DFT-specific settings
-      # The key from which to calculate atomization energy
-      calculate_atomization_energy_from: Etot
-      # The name of the key for the calculated atomization energy
-      atomization_energy_key_name: Etot_ATOM
+      # No computed atomization energy: VQM24 publishes it per molecule as `Eatomization`
+      # (author-published; dft_config above). Setting a source here needs
+      # dft_config.atomic_references at wB97X-D3/cc-pVDZ (Psi4 1.7).
+      calculate_atomization_energy_from: null
+      atomization_energy_key_name: null
       # Vibrational refinement settings
       vibration_refinement:
         comparison_tolerance: 1.0e-4 # Tolerance for numerical comparisons when refining freqs and vibmodes

@@ -1,0 +1,8 @@
+# rMD17 atomic reference (ORCA 4.0.1): isolated O atom, multiplicity 3, initial guess HCore
+! UKS PBE def2-SVP def2/J RI VeryTightSCF Grid7 NoFinalGrid
+%scf
+  Guess HCore
+end
+* xyz 0 3
+O 0.0 0.0 0.0
+*
