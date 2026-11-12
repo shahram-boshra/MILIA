@@ -1,14 +1,17 @@
 # ANI-2x — atomic reference inputs (Gaussian 09)
 
-**Status:** inputs ready, not yet computed; **program version to confirm** (below). Until then ANI-2x
-does not compute `energy_ATOM`.
+**Status:** inputs ready, not yet computed; **the training data's program version is not published**
+(below). Until it is confirmed, ANI-2x does not compute `energy_ATOM`.
 
-**Dataset level of theory** (Devereux et al., *J. Chem. Theory Comput.* 16, 4192 (2020)): "all calculations were performed using the DFT functional ωB97X with the
-6-31G\* basis set, using Gaussian 09 and Gaussian 16"; data release doi:10.5281/zenodo.10108942
-(`wB97X/631Gd`); elements H, C, N, O, S, F, Cl. The paper names both versions without saying which
-produced the training data (the modelforge curation of the release states Gaussian 09). Gaussian 09 and 16
-use different default grids (FineGrid / UltraFine), so the version matters: confirm it (authors or the
-release's supplementary information) before computing. No atomic references are published.
+**Dataset level of theory**: ωB97X/6-31G\* (Devereux et al., *J. Chem. Theory Comput.* 16, 4192 (2020),
+doi:10.1021/acs.jctc.0c00121; data release Huddleston et al., doi:10.5281/zenodo.10108942, `wB97X/631Gd`);
+elements H, C, N, O, S, F, Cl. The paper's "using Gaussian 09 and Gaussian 16" (Methods, "Building a
+Database of S-, F-, and Cl-Containing Molecules") describes the reference calculations of its *test sets*,
+and its torsion scans name Gaussian 09 Rev. C.01/D.01 and Gaussian 16; neither states the program of the
+training data. The modelforge curation of the release (doi:10.5281/zenodo.11642744, not by the dataset's
+authors) states Gaussian 09 without a revision. Gaussian 09 and 16 use different default grids (FineGrid /
+UltraFine), so these Gaussian 09 inputs follow the only available statement and are run only once the
+authors confirm the program and revision. No atomic references are published.
 
 | Setting | Value | Source |
 |---|---|---|

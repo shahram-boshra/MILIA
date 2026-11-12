@@ -52,9 +52,9 @@ theory or source), unused by MILIA, and removed in 2.0.0.
 | DFT (VQM24) | ωB97X-D3/cc-pVDZ, Psi4 1.7 | none needed | author-published atomization energy per molecule (`Eatomization`); MILIA computes none |
 | QM40 | B3LYP/6-31G(2df,p), Gaussian 16 | — | not computed; inputs ready: `docs/atomic_references/qm40/` |
 | ANI-1x | ωB97X/6-31G\*, Gaussian 09 | — | not computed; inputs ready: `docs/atomic_references/ani1x/` |
-| ANI-2x | ωB97X/6-31G\*, Gaussian 09/16 | — | not computed; inputs ready, program version to confirm: `docs/atomic_references/ani2x/` |
+| ANI-2x | ωB97X/6-31G\*; training-data program not published (third-party curation: Gaussian 09) | — | not computed; Gaussian 09 inputs ready, run once the authors confirm the program: `docs/atomic_references/ani2x/` |
 | rMD17 | PBE/def2-SVP, ORCA 4.0.1 | — | not computed; inputs ready: `docs/atomic_references/rmd17/` |
-| ANI-1ccx | CCSD(T)\*/CBS composite, ORCA | — | not computed; recipe needed: `docs/atomic_references/ani1ccx/` |
+| ANI-1ccx | CCSD(T)\*/CBS composite, ORCA | — | not computed: ORCA version, auxiliary bases, frozen core and SCF settings unpublished (SI S1.1): `docs/atomic_references/ani1ccx/` |
 | QDπ | ωB97M-D3(BJ)/def2-TZVPPD, Psi4 1.7 | — | not computed; handler does not compute atomization energies yet |
 
 None of these datasets publishes isolated-atom energies. Where MILIA cannot run the original program,
