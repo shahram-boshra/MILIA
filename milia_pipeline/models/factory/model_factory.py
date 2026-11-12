@@ -11,14 +11,19 @@ Author: milia Team
 Version: 1.1.0
 """
 
+import ast
 import contextlib
+import functools
+import inspect
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
 import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
+from torch_geometric.nn import pool as pyg_pool
 
 from .._deprecations import (
     BUILDER_TYPE_DEPRECATION,
@@ -101,165 +106,112 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# DYNAMIC PYG OPTIONAL DEPENDENCY VALIDATION
+# PYG OPTIONAL-KERNEL VALIDATION
 # =============================================================================
-# DYNAMIC: Checks dependencies at runtime by inspecting model source
-# PRODUCTION-READY: Provides clear, actionable error messages
-# FUTURE-PROOF: Works with any PyG model without hardcoded model names
+# Six public functions of ``torch_geometric.nn.pool`` run on an optional compiled backend and raise
+# ``ImportError`` only when called: ``torch-cluster`` up to PyG 2.7, ``pyg-lib>=0.6.0`` from PyG 2.8
+# (PyG CHANGELOG 2.8.0: "Deprecated support for torch-cluster in favor of pyg-lib>=0.6.0"). Their
+# names and signatures are identical in PyG 2.6.1 and 2.8.1. MILIA keeps no map of which package
+# backs which function: it calls PyG's function on a minimal input, so the requirement and its
+# message come from the installed PyG. Layers whose backend is missing (e.g. ``SplineConv``) raise
+# in ``__init__`` and are reported by the instantiation step.
 # =============================================================================
 
+_PYG_KERNEL_PROBES: dict[str, Callable[[torch.Tensor], object]] = {
+    "fps": lambda points: pyg_pool.fps(points),
+    "knn": lambda points: pyg_pool.knn(points, points, k=1),
+    "knn_graph": lambda points: pyg_pool.knn_graph(points, k=1),
+    "nearest": lambda points: pyg_pool.nearest(points, points),
+    "radius": lambda points: pyg_pool.radius(points, points, r=1.0),
+    "radius_graph": lambda points: pyg_pool.radius_graph(points, r=1.0),
+}
 
-def _check_pyg_optional_dependency(package_name: str) -> bool:
-    """
-    Check if a PyG optional dependency is available.
 
-    Args:
-        package_name: Name of the package to check (e.g., 'torch_cluster')
+@functools.cache
+def _missing_pyg_kernel(function_name: str) -> str | None:
+    """Return PyG's message if ``function_name``'s backend is not installed, else ``None``.
 
-    Returns:
-        True if package is available and functional, False otherwise
+    The result is cached: installed packages do not change within a process.
     """
     try:
-        import importlib
-
-        module = importlib.import_module(package_name)
-        return module is not None
-    except ImportError:
-        return False
-    except Exception:
-        return False
+        _PYG_KERNEL_PROBES[function_name](torch.zeros(2, 3))
+    except ImportError as error:
+        return str(error)
+    return None
 
 
-def _get_pyg_function_dependencies() -> dict[str, str]:
+def _is_pyg_module(module_name: str | None) -> bool:
+    return module_name is not None and (
+        module_name == "torch_geometric" or module_name.startswith("torch_geometric.")
+    )
+
+
+def _pyg_kernels_in_source(source: str) -> list[str]:
+    """Names of PyG optional-kernel functions that ``source`` imports from or calls on PyG.
+
+    Counted: ``from torch_geometric... import radius_graph`` and attribute access on a name bound to
+    PyG (``import torch_geometric.nn as pyg_nn`` → ``pyg_nn.radius_graph``). Not counted: words in
+    docstrings or comments, local variables and attributes of other objects (``self.radius``).
     """
-    Map PyG functions to their required optional packages.
+    tree = ast.parse(source)
+    pyg_names: set[str] = set()
+    referenced: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if _is_pyg_module(alias.name):
+                    pyg_names.add(alias.asname or alias.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and _is_pyg_module(node.module):
+            for alias in node.names:
+                if alias.name in _PYG_KERNEL_PROBES:
+                    referenced.add(alias.name)
+                else:
+                    pyg_names.add(alias.asname or alias.name)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in _PYG_KERNEL_PROBES:
+            root = node.value
+            while isinstance(root, ast.Attribute):
+                root = root.value
+            if isinstance(root, ast.Name) and root.id in pyg_names:
+                referenced.add(node.attr)
+    return sorted(referenced)
 
-    Returns:
-        Dict mapping function names to package names
 
-    Note:
-        This mapping is based on PyG's architecture where certain functions
-        are only available when optional packages are installed.
+def _referenced_pyg_kernels(model_class: type) -> list[str]:
+    """PyG optional-kernel functions referenced by the module that defines ``model_class``.
+
+    Only direct references are found; one made through another module raises PyG's own
+    ``ImportError`` at its first use.
     """
-    return {
-        # torch_cluster functions
-        "radius_graph": "torch_cluster",
-        "radius": "torch_cluster",
-        "knn_graph": "torch_cluster",
-        "knn": "torch_cluster",
-        "nearest": "torch_cluster",
-        "graclus_cluster": "torch_cluster",
-        "grid_cluster": "torch_cluster",
-        "fps": "torch_cluster",  # Farthest point sampling
-        "random_walk": "torch_cluster",
-        # torch_sparse functions
-        "SparseTensor": "torch_sparse",
-        "spmm": "torch_sparse",
-        "spspmm": "torch_sparse",
-        # torch_scatter functions
-        "scatter": "torch_scatter",
-        "scatter_add": "torch_scatter",
-        "scatter_mean": "torch_scatter",
-        "scatter_max": "torch_scatter",
-        "scatter_min": "torch_scatter",
-        # torch_spline_conv functions
-        "SplineConv": "torch_spline_conv",
-    }
-
-
-def _detect_model_dependencies(model_class: type) -> dict[str, str]:
-    """
-    Dynamically detect what PyG optional dependencies a model requires.
-
-    Uses source code inspection to find imports and function calls that
-    require optional packages.
-
-    DYNAMIC: Inspects actual model module source code at runtime
-    PRODUCTION-READY: Handles missing source gracefully
-    FUTURE-PROOF: Works with any model without hardcoding
-
-    Args:
-        model_class: The model class to inspect
-
-    Returns:
-        Dict mapping dependency functions found to their required packages
-
-    Example:
-        >>> from torch_geometric.nn.models import SchNet
-        >>> deps = _detect_model_dependencies(SchNet)
-        >>> print(deps)
-        {'radius_graph': 'torch_cluster'}
-    """
-    import inspect
-
-    required_deps = {}
-    function_to_package = _get_pyg_function_dependencies()
-
-    # Primary approach: Check the MODULE source where imports live
-    # This is important because PyG models import functions like radius_graph
-    # at module level, not within the class definition
+    module = inspect.getmodule(model_class)
     try:
-        module = inspect.getmodule(model_class)
-        if module is not None:
-            module_source = inspect.getsource(module)
-            for func_name, package_name in function_to_package.items():
-                if func_name in module_source:
-                    required_deps[func_name] = package_name
+        source = inspect.getsource(module if module is not None else model_class)
     except (OSError, TypeError):
-        # Module source not available, fall back to class source
-        try:
-            source = inspect.getsource(model_class)
-            for func_name, package_name in function_to_package.items():
-                if func_name in source:
-                    required_deps[func_name] = package_name
-        except (OSError, TypeError):
-            pass  # Cannot inspect, will rely on runtime error
-
-    return required_deps
+        return []
+    return _pyg_kernels_in_source(source)
 
 
 def validate_model_dependencies(model_class: type, model_name: str) -> None:
-    """
-    Validate that all required optional dependencies for a model are available.
-
-    DYNAMIC: Detects dependencies from model source code
-    PRODUCTION-READY: Provides clear error message about missing packages
-    FUTURE-PROOF: Works with any PyG model
+    """Fail before training if the model calls a PyG operation whose backend is not installed.
 
     Args:
         model_class: The model class to validate
         model_name: Name of the model (for error messages)
 
     Raises:
-        ModelInstantiationError: If required dependencies are missing
-
-    Example:
-        >>> from torch_geometric.nn.models import SchNet
-        >>> validate_model_dependencies(SchNet, 'SchNet')
-        ModelInstantiationError: Model 'SchNet' requires 'torch_cluster' package...
+        ModelInstantiationError: with PyG's own message, e.g.
+            ``'radius_graph' requires 'torch-cluster'`` (PyG 2.6) or
+            ``'radius_graph' requires 'pyg-lib>=0.6.0'`` (PyG 2.8)
     """
-    # Detect what dependencies this model needs
-    required_deps = _detect_model_dependencies(model_class)
-
-    if not required_deps:
-        return  # No special dependencies detected
-
-    # Check which required packages are missing
-    missing_packages = set()
-    missing_functions = []
-
-    for func_name, package_name in required_deps.items():
-        if not _check_pyg_optional_dependency(package_name):
-            missing_packages.add(package_name)
-            missing_functions.append(f"'{func_name}' (requires {package_name})")
-
-    if missing_packages:
-        packages_str = ", ".join(sorted(missing_packages))
-        functions_str = ", ".join(missing_functions)
-
+    missing = [
+        message
+        for function_name in _referenced_pyg_kernels(model_class)
+        if (message := _missing_pyg_kernel(function_name)) is not None
+    ]
+    if missing:
         raise ModelInstantiationError(
-            f"Model '{model_name}' requires optional PyG package(s): {packages_str}. "
-            f"Functions used: {functions_str}.",
+            f"Model '{model_name}' uses PyG operations whose optional backend is not installed: "
+            f"{'; '.join(missing)}.",
             model_name=model_name,
         )
 
@@ -1422,21 +1374,9 @@ class ModelFactory:
                 f"Failed to get model class for '{name}': {e}", model_name=name
             ) from e
 
-        # =====================================================================
-        # VALIDATE OPTIONAL DEPENDENCIES (DYNAMIC, PRODUCTION-READY)
-        # =====================================================================
-        # Check if model requires optional PyG packages (torch_cluster, etc.)
-        # Raises clear error with installation instructions if missing
-        # NOTE: Does NOT automatically install - user must run command manually
-        # =====================================================================
-        try:
-            validate_model_dependencies(model_class, name)
-        except ModelInstantiationError:
-            # Re-raise dependency errors directly (they have detailed instructions)
-            raise
-        except Exception as e:
-            # Log but don't fail for unexpected validation errors
-            logger.debug(f"Could not validate dependencies for '{name}': {e}")
+        # Fail before training if the model calls a PyG operation whose optional compiled
+        # backend is not installed (PyG's own message names the package).
+        validate_model_dependencies(model_class, name)
 
         # Instantiate model
         try:

@@ -63,6 +63,8 @@ from torch_geometric.data import Data
 
 # Import the module under test
 from milia_pipeline.models.factory.model_factory import (
+    # Helper constant (optional-kernel probes)
+    _PYG_KERNEL_PROBES,
     DataCompatibilityError,
     EdgeLevelModelWrapper,
     GraphLevelModelWrapper,
@@ -75,9 +77,9 @@ from milia_pipeline.models.factory.model_factory import (
     # Classes
     ModelValidator,
     # Helper functions
-    _check_pyg_optional_dependency,
-    _detect_model_dependencies,
-    _get_pyg_function_dependencies,
+    _missing_pyg_kernel,
+    _pyg_kernels_in_source,
+    _referenced_pyg_kernels,
     create_model,
     # Convenience functions
     get_factory,
@@ -2790,143 +2792,140 @@ class TestCreateModelWithInfo:
 # =============================================================================
 
 
-class TestCheckPygOptionalDependency:
-    """Test _check_pyg_optional_dependency helper function."""
+class TestPygKernelProbes:
+    """The probes call PyG's own functions; the requirement and message come from PyG."""
 
-    def test_returns_true_for_available_package(self):
-        """Test returns True for packages that are available."""
-        # 'os' is a standard library module that should always be available
-        result = _check_pyg_optional_dependency("os")
-        assert result is True
+    @pytest.fixture(autouse=True)
+    def _fresh_probe_cache(self):
+        _missing_pyg_kernel.cache_clear()
+        yield
+        _missing_pyg_kernel.cache_clear()
 
-    def test_returns_false_for_unavailable_package(self):
-        """Test returns False for packages that are not available."""
-        result = _check_pyg_optional_dependency("nonexistent_package_xyz123")
-        assert result is False
+    def test_probes_cover_the_pyg_optional_kernel_functions(self):
+        from torch_geometric.nn import pool
 
-    def test_returns_false_on_import_error(self):
-        """Test returns False when ImportError occurs."""
-        # A clearly nonexistent package should trigger ImportError
-        result = _check_pyg_optional_dependency("this_package_does_not_exist_at_all")
-        assert result is False
+        assert set(_PYG_KERNEL_PROBES) == {
+            "fps",
+            "knn",
+            "knn_graph",
+            "nearest",
+            "radius",
+            "radius_graph",
+        }
+        assert set(_PYG_KERNEL_PROBES) <= set(pool.__all__)
 
-    def test_handles_torch_package(self):
-        """Test correctly detects torch package."""
-        result = _check_pyg_optional_dependency("torch")
-        assert result is True
+    @pytest.mark.parametrize("function_name", sorted(_PYG_KERNEL_PROBES))
+    def test_probe_runs_or_reports_pygs_import_error(self, function_name):
+        # Any exception other than ImportError (e.g. a TypeError from a changed PyG signature)
+        # propagates and fails this test.
+        message = _missing_pyg_kernel(function_name)
+        assert message is None or (function_name in message and "requires" in message)
 
+    def test_missing_backend_returns_pygs_message(self):
+        def missing_backend(points):
+            raise ImportError("'radius_graph' requires 'pyg-lib>=0.6.0'")
 
-class TestGetPygFunctionDependencies:
-    """Test _get_pyg_function_dependencies helper function."""
+        with patch.dict(_PYG_KERNEL_PROBES, {"radius_graph": missing_backend}):
+            assert _missing_pyg_kernel("radius_graph") == (
+                "'radius_graph' requires 'pyg-lib>=0.6.0'"
+            )
 
-    def test_returns_dict(self):
-        """Test returns a dictionary."""
-        result = _get_pyg_function_dependencies()
-        assert isinstance(result, dict)
-
-    def test_contains_torch_cluster_functions(self):
-        """Test contains torch_cluster function mappings."""
-        result = _get_pyg_function_dependencies()
-        assert "radius_graph" in result
-        assert result["radius_graph"] == "torch_cluster"
-        assert "knn_graph" in result
-        assert result["knn_graph"] == "torch_cluster"
-
-    def test_contains_torch_sparse_functions(self):
-        """Test contains torch_sparse function mappings."""
-        result = _get_pyg_function_dependencies()
-        assert "SparseTensor" in result
-        assert result["SparseTensor"] == "torch_sparse"
-
-    def test_contains_torch_scatter_functions(self):
-        """Test contains torch_scatter function mappings."""
-        result = _get_pyg_function_dependencies()
-        assert "scatter" in result
-        assert result["scatter"] == "torch_scatter"
-        assert "scatter_add" in result
-        assert result["scatter_add"] == "torch_scatter"
-
-    def test_all_values_are_strings(self):
-        """Test all values in dict are strings."""
-        result = _get_pyg_function_dependencies()
-        assert all(isinstance(v, str) for v in result.values())
-
-    def test_all_keys_are_strings(self):
-        """Test all keys in dict are strings."""
-        result = _get_pyg_function_dependencies()
-        assert all(isinstance(k, str) for k in result)
+    def test_installed_backend_returns_none(self):
+        with patch.dict(_PYG_KERNEL_PROBES, {"radius_graph": lambda points: None}):
+            assert _missing_pyg_kernel("radius_graph") is None
 
 
-class TestDetectModelDependencies:
-    """Test _detect_model_dependencies helper function."""
+class TestPygKernelsInSource:
+    """Only real imports from, and attribute access on, PyG count as a reference."""
 
-    def test_returns_dict(self):
-        """Test returns a dictionary."""
+    def test_from_import(self):
+        source = "from torch_geometric.nn import MessagePassing, radius_graph\n"
+        assert _pyg_kernels_in_source(source) == ["radius_graph"]
 
-        # Test with a simple class that has no dependencies
-        class SimpleModel:
-            pass
+    def test_aliased_from_import(self):
+        source = "from torch_geometric.nn.pool import knn_graph as build\n"
+        assert _pyg_kernels_in_source(source) == ["knn_graph"]
 
-        result = _detect_model_dependencies(SimpleModel)
-        assert isinstance(result, dict)
+    def test_attribute_on_imported_pyg_module(self):
+        source = (
+            "import torch_geometric.nn as pyg_nn\n"
+            "from torch_geometric.nn import pool\n"
+            "import torch_geometric\n"
+            "edges = pyg_nn.radius_graph(pos, r=5.0)\n"
+            "sampled = pool.fps(pos)\n"
+            "pairs = torch_geometric.nn.pool.knn(x, y, k=3)\n"
+        )
+        assert _pyg_kernels_in_source(source) == ["fps", "knn", "radius_graph"]
 
-    def test_empty_dict_for_simple_class(self):
-        """Test returns empty dict for class with no PyG dependencies."""
+    def test_words_variables_and_foreign_attributes_do_not_count(self):
+        source = (
+            '"""Cutoff radius used by radius_graph; knn and fps are mentioned here."""\n'
+            "# radius_graph in a comment\n"
+            "radius = 5.0\n"
+            "value = self.radius + other.knn_graph\n"
+            "def nearest(a, b):\n"
+            "    return a\n"
+        )
+        assert _pyg_kernels_in_source(source) == []
 
-        class NoDepModel:
-            def __init__(self):
-                pass
+    def test_relative_and_other_package_imports_do_not_count(self):
+        source = "from .pool import radius_graph\nfrom torch_cluster import radius_graph\n"
+        assert _pyg_kernels_in_source(source) == []
 
-        result = _detect_model_dependencies(NoDepModel)
-        # Should be empty since SimpleModel doesn't use any PyG functions
-        assert isinstance(result, dict)
+    def test_pyg_models_using_radius_graph(self):
+        from torch_geometric.nn.models import GNNFF, DimeNet, SchNet, ViSNet
 
-    def test_handles_class_without_source(self):
-        """Test gracefully handles classes where source cannot be retrieved."""
-        # Built-in types cannot have their source retrieved
-        result = _detect_model_dependencies(int)
-        assert isinstance(result, dict)
+        for model_class in (SchNet, DimeNet, ViSNet, GNNFF):
+            assert _referenced_pyg_kernels(model_class) == ["radius_graph"]
+
+    def test_pyg_model_without_optional_kernels(self):
+        from torch_geometric.nn.models import GCN
+
+        assert _referenced_pyg_kernels(GCN) == []
+
+    def test_class_without_source(self):
+        assert _referenced_pyg_kernels(int) == []
 
 
 class TestValidateModelDependencies:
-    """Test validate_model_dependencies helper function."""
+    """validate_model_dependencies raises with PyG's own message."""
 
-    def test_no_exception_for_model_without_dependencies(self):
-        """Test no exception raised when model has no special dependencies."""
+    def test_model_without_optional_kernels_passes(self):
+        from torch_geometric.nn.models import GCN
 
-        class SimpleModel:
-            pass
+        validate_model_dependencies(GCN, "GCN")
 
-        # Should not raise
-        validate_model_dependencies(SimpleModel, "SimpleModel")
-
-    def test_no_exception_when_dependencies_satisfied(self):
-        """Test no exception when all detected dependencies are available."""
-
-        # Use a model class that uses 'os' which is always available
-        class AvailableDepModel:
-            pass
-
-        # Should not raise since no PyG-specific dependencies detected
-        validate_model_dependencies(AvailableDepModel, "AvailableDepModel")
-
-    @patch("milia_pipeline.models.factory.model_factory._detect_model_dependencies")
-    @patch("milia_pipeline.models.factory.model_factory._check_pyg_optional_dependency")
-    def test_raises_error_when_dependency_missing(self, mock_check, mock_detect):
-        """Test raises ModelInstantiationError when dependency is missing."""
-        # Mock detection to return a dependency
-        mock_detect.return_value = {"radius_graph": "torch_cluster"}
-        # Mock check to return False (not available)
-        mock_check.return_value = False
-
-        class MockModel:
-            pass
+    @patch("milia_pipeline.models.factory.model_factory._missing_pyg_kernel")
+    @patch("milia_pipeline.models.factory.model_factory._referenced_pyg_kernels")
+    def test_raises_with_pyg_message_when_backend_missing(self, mock_referenced, mock_missing):
+        mock_referenced.return_value = ["radius_graph"]
+        mock_missing.return_value = "'radius_graph' requires 'pyg-lib>=0.6.0'"
 
         with pytest.raises(ModelInstantiationError) as exc_info:
-            validate_model_dependencies(MockModel, "MockModel")
+            validate_model_dependencies(object, "MockModel")
 
-        assert "torch_cluster" in str(exc_info.value)
-        assert "MockModel" in str(exc_info.value)
+        message = str(exc_info.value)
+        assert "MockModel" in message
+        assert "'radius_graph' requires 'pyg-lib>=0.6.0'" in message
+
+    @patch("milia_pipeline.models.factory.model_factory._missing_pyg_kernel")
+    @patch("milia_pipeline.models.factory.model_factory._referenced_pyg_kernels")
+    def test_passes_when_backend_installed(self, mock_referenced, mock_missing):
+        mock_referenced.return_value = ["radius_graph"]
+        mock_missing.return_value = None
+
+        validate_model_dependencies(object, "MockModel")
+
+    def test_schnet_matches_installed_backend(self):
+        from torch_geometric.nn.models import SchNet
+
+        _missing_pyg_kernel.cache_clear()
+        message = _missing_pyg_kernel("radius_graph")
+        if message is None:
+            validate_model_dependencies(SchNet, "SchNet")
+        else:
+            with pytest.raises(ModelInstantiationError, match="radius_graph"):
+                validate_model_dependencies(SchNet, "SchNet")
 
 
 # =============================================================================

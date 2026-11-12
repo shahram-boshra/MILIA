@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Model creation checks PyG's optional compiled operations (`radius_graph`, `radius`, `knn`, `knn_graph`, `fps`,
+  `nearest`) by calling PyG's own function, and reports PyG's message naming the missing package. It previously
+  matched words in the model's source against a fixed package list, so it could reject a model whose code only
+  mentioned a name (for example `scatter`) and would name the wrong package from PyG 2.8 on.
+
 ## [1.20.0] - 2026-11-12
 
 Correctness and safety release. Atomization energies are computed only from isolated-atom references at the
