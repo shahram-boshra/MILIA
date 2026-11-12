@@ -7,20 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Security
+## [1.20.0] - 2026-11-12
 
-- A transformation plugin listed in `plugins.disabled_plugins` is no longer imported. Before, discovery
-  imported the plugin's modules and registered its transforms, so its code ran and its transforms could be
-  used; the list only kept the plugin out of the enabled set. Disabled plugins are now blocked before
-  discovery: their code is never imported, and no transform of theirs is registered.
-  `PluginRegistry.set_blocked(name)` and `PluginRegistry.is_blocked(name)` provide this to code that calls
-  the registry directly; blocking a plugin that is already registered unregisters its transforms.
-- Transformation plugin validation no longer reports security checks it does not perform. The security
-  test always passed (its code scan was a placeholder, and its checksum check only tested that a digest
-  MILIA computed itself was present); it is now reported as skipped, with the reason, and counts neither
-  as a pass nor as a failure. `--validate-plugin` shows it as `SKIP` and no longer says that a validated
-  plugin "can be safely enabled". The plugin trust model (plugins are trusted code; discovering one runs
-  it) is stated in the loader, `configs/plugins.yaml` and the transformation plugin README.
+Correctness and safety release. Atomization energies are computed only from isolated-atom references at the
+dataset's own level of theory, each declared with its source, program and citation and recorded next to the
+processed data; transformation plugins listed as disabled are no longer imported; `import milia_pipeline`
+works outside a project directory. **Behaviour notes:** QM9 atomization energies now use the authors'
+published atom references and xxMD ones references at its own level of theory, so both change; QDπ
+computes `energy_ATOM` for neutral molecules; the DFT dataset (VQM24) provides its published `Eatomization`
+instead of a computed `Etot_ATOM`; QM40, ANI-1x, ANI-1ccx, ANI-2x and rMD17 compute no atomization energy
+until references at their level of theory are available. Reprocess datasets processed earlier. The global
+`atomic_energies_hartree`, inert transformation plugin settings, plugin trust marking and importing through
+a plugin path on `sys.path` are deprecated, ahead of their removal in 2.0.0.
 
 ### Added
 
@@ -126,6 +124,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   would include an ion.
 - The DFT handler no longer rejects a configuration that requests an atomization energy when no atomic
   references are available; the energy is not computed and a warning says why.
+
+### Security
+
+- A transformation plugin listed in `plugins.disabled_plugins` is no longer imported. Before, discovery
+  imported the plugin's modules and registered its transforms, so its code ran and its transforms could be
+  used; the list only kept the plugin out of the enabled set. Disabled plugins are now blocked before
+  discovery: their code is never imported, and no transform of theirs is registered.
+  `PluginRegistry.set_blocked(name)` and `PluginRegistry.is_blocked(name)` provide this to code that calls
+  the registry directly; blocking a plugin that is already registered unregisters its transforms.
+- Transformation plugin validation no longer reports security checks it does not perform. The security
+  test always passed (its code scan was a placeholder, and its checksum check only tested that a digest
+  MILIA computed itself was present); it is now reported as skipped, with the reason, and counts neither
+  as a pass nor as a failure. `--validate-plugin` shows it as `SKIP` and no longer says that a validated
+  plugin "can be safely enabled". The plugin trust model (plugins are trusted code; discovering one runs
+  it) is stated in the loader, `configs/plugins.yaml` and the transformation plugin README.
 
 ## [1.19.0] - 2026-11-08
 
@@ -929,7 +942,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.19.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/shahram-boshra/MILIA/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/shahram-boshra/MILIA/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/shahram-boshra/MILIA/compare/v1.16.0...v1.17.0

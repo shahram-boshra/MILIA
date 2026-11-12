@@ -440,6 +440,8 @@ Each shipped dataset declares an immutable `DatasetFeatures` record (a Pydantic 
 | `QDPi` | ✗ | ✗ | ✓ | ✗ | ✗ |
 | `QM40` | ✗ | ✗ | ✓ | ✗ | ✓ |
 
+The atomization-energy column says a dataset's data supports one. MILIA computes it only from isolated-atom references at that dataset's level of theory, declared in `<dataset>_config.atomic_references` (`docs/atomic_reference_energies.md`): QM9 uses its authors' published `atomref.txt`, xxMD and QDπ (neutral molecules) use references MILIA computed in their own programs, and the DFT dataset (VQM24) publishes `Eatomization` itself; QM40, ANI-1x, ANI-1ccx, ANI-2x and rMD17 compute none until references at their level of theory are available.
+
 These five columns are a subset of the eight flags carried by `DatasetFeatures`; the other three (`rotational_constants`, `frequency_analysis`, `mo_energies`) gate finer-grained behaviour and are queried programmatically rather than displayed here. The matrix is not a documentation artefact — it is the same registry data that MILIA consults to decide, for example, whether a transform that requires vibrational modes is admissible against a given dataset, or whether atomization-energy targets are derivable. Setting `vibrational_analysis: True` on a new dataset's `DatasetFeatures` is therefore sufficient to opt into vibrational-aware processing across the pipeline; no other module needs editing.
 
 ### Adding a dataset
