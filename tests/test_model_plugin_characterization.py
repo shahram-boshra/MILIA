@@ -149,8 +149,11 @@ def import_state(tmp_path):
     sys.path[:] = saved_path
     root = str(tmp_path)
     for name, module in list(sys.modules.items()):
-        module_file = getattr(module, "__file__", None) or ""
-        module_dirs = list(getattr(module, "__path__", None) or [])
+        # Read the import attributes from the module's own namespace: a module type with a
+        # __getattr__ (torch 2.12's ``torch.classes``) answers any name, ``__path__`` included.
+        namespace = getattr(module, "__dict__", None) or {}
+        module_file = namespace.get("__file__") or ""
+        module_dirs = list(namespace.get("__path__") or [])
         if module_file.startswith(root) or any(d.startswith(root) for d in module_dirs):
             del sys.modules[name]
     if saved_bare is not None:
