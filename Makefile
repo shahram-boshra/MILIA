@@ -20,13 +20,13 @@
 #   make clean        Remove build/cache artifacts
 #
 # Requirements:
-#   - Python 3.11+ (pyproject.toml requires-python = ">=3.11,<3.13")
+#   - Python 3.11.4+ (pyproject.toml requires-python = ">=3.11.4,<3.13")
 #   - conda environment with scientific dependencies (see CONTRIBUTING.md)
 # =============================================================================
 
 # ---- Variables ----
 # Overridable from the command line: make test PYTHON=python3.12
-# Source: pyproject.toml requires-python = ">=3.11,<3.13"
+# Source: pyproject.toml requires-python = ">=3.11.4,<3.13"
 PYTHON       ?= python3
 PIP          ?= pip
 PACKAGE_NAME := milia_pipeline

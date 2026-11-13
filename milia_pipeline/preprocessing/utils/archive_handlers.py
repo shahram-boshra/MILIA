@@ -127,7 +127,8 @@ def extract_from_archive(
         with tarfile.open(archive_path, compression_mode) as tar:
             for member in tar:
                 if member.name.endswith(file_extension) and member.isfile():
-                    tar.extract(member, path=temp_dir)
+                    # 'data' filter (PEP 706): refuses paths outside temp_dir.
+                    tar.extract(member, path=temp_dir, filter="data")
                     extracted_count += 1
 
                     # Progress updates at DEBUG level to avoid log clutter for large archives

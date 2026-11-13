@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Python 3.10 support: Python 3.10 reached end of life on 2026-10-01 (PEP 619). MILIA requires Python 3.11 or
-  3.12; the Docker images use Python 3.12.
+- Python 3.10 support: Python 3.10 reached end of life on 2026-10-01 (PEP 619). MILIA requires Python 3.11
+  (3.11.4 or later) or 3.12; the Docker images use Python 3.12.
 - Accelerator extras `cu118`, `cu121` and `cu124` and the `:cu124` images (no torch 2.12 builds exist for CUDA
   11.8, 12.1 or 12.4); existing `:cu124` tags stay available but are no longer updated.
 - `torch-cluster` and `torch-spline-conv`, deprecated by PyG 2.8 in favour of `pyg-lib`.
@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CVE-2025-32434 (PyTorch ≤ 2.5.1): `torch.load(..., weights_only=True)` could still run code from a crafted
   file. MILIA's checkpoint loading tries `weights_only=True` first; PyTorch 2.12.1 contains the fix (2.6.0).
+- Dataset archives (QDπ, ANI-2x, rMD17 and `extract_from_archive`) are extracted with tarfile's `data` filter
+  (PEP 706), which refuses absolute paths, members outside the target directory and special files. Python 3.12
+  warns on unfiltered extraction and 3.14 makes `data` the default; the filter needs Python 3.11.4 or later.
 
 ## [1.20.0] - 2026-11-12
 

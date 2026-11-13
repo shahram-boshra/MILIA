@@ -524,7 +524,8 @@ class QDPiPreprocessor(BasePreprocessor):
 
         with tarfile.open(archive_path, "r:gz") as tar:
             self.logger.info("Extracting archive contents...")
-            tar.extractall(extract_dir)
+            # 'data' filter (PEP 706): no absolute paths, members outside extract_dir or special files.
+            tar.extractall(extract_dir, filter="data")
 
         # Find the data directory (may be nested)
         # QDπ archive structure: QDpiDataset-main/data/neutral/*.hdf5

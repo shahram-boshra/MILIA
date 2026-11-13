@@ -375,7 +375,8 @@ class ANI2xPreprocessor(BasePreprocessor):
             for member in tar.getmembers():
                 if member.name.endswith((".h5", ".hdf5")):
                     self.logger.info(f"Extracting: {member.name}")
-                    tar.extract(member, extract_dir)
+                    # 'data' filter (PEP 706): refuses paths outside extract_dir.
+                    tar.extract(member, extract_dir, filter="data")
                     h5_path = extract_dir / member.name
                     break
 

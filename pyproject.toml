@@ -25,7 +25,9 @@ name = "milia-py"
 dynamic = ["version"]
 description = "Molecular graph processing and machine learning framework for molecular sciences"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+# 3.11.4 is the first 3.11 release with tarfile extraction filters (PEP 706; tarfile docs "Changed in
+# version 3.11.4: Added the filter parameter"), which MILIA's archive extraction uses (filter="data").
+requires-python = ">=3.11.4,<3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 

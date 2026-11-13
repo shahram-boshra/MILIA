@@ -63,7 +63,7 @@ For significant changes (new modules, architectural modifications, new dataset h
 
 ### Prerequisites
 
-MILIA requires **Python 3.11 or 3.12** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
+MILIA requires **Python 3.11 (3.11.4 or later) or 3.12** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
 
 ### Setting Up for Development
 

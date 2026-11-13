@@ -299,7 +299,8 @@ class RMD17Preprocessor(BasePreprocessor):
                 self.logger.info(f"  Archive contains {len(members)} items")
 
                 # Extract all
-                tar.extractall(temp_dir)
+                # 'data' filter (PEP 706): no absolute paths, members outside temp_dir or special files.
+                tar.extractall(temp_dir, filter="data")
 
             # The archive extracts to rmd17/ subdirectory with npz_data/ inside
             # Structure: rmd17.tar.bz2 -> rmd17/npz_data/rmd17_*.npz
