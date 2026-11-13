@@ -66,7 +66,11 @@ def _worker(name: str, worker_index: int, budget: int) -> None:
     from milia_pipeline.models.hpo.backends.optuna_backend import OptunaBackend
 
     optuna.logging.set_verbosity(optuna.logging.ERROR)
-    storage = build_storage(_study_config(heartbeat_interval=1))
+    # No worker dies here, so the grace period only has to exceed the longest stall of a live worker's
+    # heartbeat: each worker fails peers' trials older than it (``fail_stale_trials`` before every
+    # ``ask``), and the owner can then no longer report its trial (optuna: "Cannot tell a FAIL trial").
+    # The default 2 x 1 s was exceeded on a loaded CI runner; staleness itself is tested below.
+    storage = build_storage(_study_config(heartbeat_interval=1, grace_period=60))
     sampler = optuna.samplers.TPESampler(
         seed=derive_worker_seed(42, worker_index), constant_liar=True, n_startup_trials=3
     )
