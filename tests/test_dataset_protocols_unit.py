@@ -1097,12 +1097,22 @@ class TestEdgeCasesAndBoundaryConditions(unittest.TestCase):
         obj = ChildHandler()
         self.assertIsInstance(obj, DatasetHandlerProtocol)
 
-    def test_magic_mock_satisfies_all_protocols(self):
-        """MagicMock satisfies all protocols (it has any attribute)."""
+    def test_magic_mock_protocol_check_follows_the_python_version(self):
+        """A bare MagicMock satisfies the protocols only before Python 3.12.
+
+        From 3.12, isinstance() against runtime-checkable protocols looks attributes up with
+        inspect.getattr_static() instead of hasattr() (What's New in Python 3.12, typing), so
+        attributes a MagicMock creates in __getattr__ no longer count.
+        """
         mock = MagicMock()
-        self.assertIsInstance(mock, DatasetHandlerProtocol)
-        self.assertIsInstance(mock, DatasetConverterProtocol)
-        self.assertIsInstance(mock, DatasetValidatorProtocol)
+        expected = sys.version_info < (3, 12)
+        for protocol in (
+            DatasetHandlerProtocol,
+            DatasetConverterProtocol,
+            DatasetValidatorProtocol,
+        ):
+            with self.subTest(protocol=protocol.__name__):
+                self.assertEqual(isinstance(mock, protocol), expected)
 
 
 # ============================================================================

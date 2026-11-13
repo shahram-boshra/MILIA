@@ -292,7 +292,7 @@ def mock_param_types():
 @pytest.fixture
 def search_space_builder_module(mock_exceptions, mock_param_types):
     """
-    Fixture to import search_space_builder module with mocked dependencies.
+    Fixture to import search_space_builder module with the model registry patched unavailable.
 
     Returns dict containing imported classes and functions for testing.
     """
@@ -305,15 +305,11 @@ def search_space_builder_module(mock_exceptions, mock_param_types):
     for mod in modules_to_clear:
         del sys.modules[mod]
 
-    # Patch the param_types imports at the module level
+    # The builder runs with its real param types and exceptions (pure, deterministic value
+    # objects). Since Python 3.11, patch() resolves its target with pkgutil.resolve_name, which
+    # re-imports the module cleared above, so a patch here applies to the module imported below
+    # (Python 3.10 patched the stale package attribute instead).
     with (
-        patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder.ParamType", MockParamType
-        ),
-        patch(
-            "milia_pipeline.models.hpo.search_spaces.search_space_builder.SearchSpaceParamConfig",
-            MockSearchSpaceParamConfig,
-        ),
         # Patch the model registry as unavailable for most tests
         patch(
             "milia_pipeline.models.hpo.search_spaces.search_space_builder._REGISTRY_AVAILABLE",
