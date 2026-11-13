@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `nearest`) by calling PyG's own function, and reports PyG's message naming the missing package. It previously
   matched words in the model's source against a fixed package list, so it could reject a model whose code only
   mentioned a name (for example `scatter`) and would name the wrong package from PyG 2.8 on.
+- Custom transforms (`CustomTransformBase`, used by every transformation plugin, `DiscretizeTargets` and the
+  classification data preparation) could not be instantiated with PyG 2.8, where `BaseTransform.forward` is
+  abstract. The validation wrapper is now `forward`, called through PyG's `BaseTransform.__call__`, which
+  shallow-copies the input first: attributes a transform sets or replaces no longer change the caller's
+  `Data` object.
 
 ### Security
 

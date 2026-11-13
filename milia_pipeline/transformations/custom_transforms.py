@@ -379,9 +379,13 @@ class CustomTransformBase(BaseTransform, ABC):
         """
         pass
 
-    def __call__(self, data: Data) -> Data | None:
+    def forward(self, data: Data) -> Data | None:
         """
         Wrapper with error handling and validation.
+
+        PyG's ``BaseTransform.__call__`` shallow-copies ``data`` and calls this method; ``forward``
+        is abstract from PyG 2.8 on, so this is the extension point (``transform`` stays the one
+        subclasses implement).
 
         Integrates with multi-level validation system and provides automatic
         error handling, logging, and statistics tracking.
