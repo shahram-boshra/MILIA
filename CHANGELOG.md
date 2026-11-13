@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `compute_graph_statistics` takes the node count from node features, an explicit `num_nodes` or node positions,
   and reports it as unknown (`None`) otherwise. It previously read PyG's `Data.num_nodes`, which then guesses from
   `edge_index` and warns that it cannot infer the count accurately.
+- A process that imported filelock 3.32.2 (installed with torch, Ray and CDK-pywrapper) could print
+  `Exception ignored in audit hook … TypeError` at exit, as the test run did: its fork-safety audit hook ran after
+  CPython had cleared the module globals. The lock now has filelock 3.32.7 (fixed in 3.32.3, filelock changelog).
 
 ### Security
 
