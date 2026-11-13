@@ -1972,14 +1972,33 @@ class TestInferOutChannelsClassificationExtended:
 class TestComputeGraphStatisticsExtended:
     """Extended edge-case tests for compute_graph_statistics."""
 
+    @pytest.mark.filterwarnings("error")
     def test_no_node_info_at_all(self):
-        """Test graph with neither x nor num_nodes."""
+        """Test graph with neither x nor num_nodes (no PyG inference warning)."""
         data = Data()
         stats = compute_graph_statistics(data)
         assert stats["num_nodes"] is None
         assert stats["num_edges"] == 0
         assert stats["density"] == 0
         assert stats["avg_degree"] == 0
+
+    @pytest.mark.filterwarnings("error")
+    def test_edge_index_only_leaves_node_count_unknown(self):
+        """Without node-level attributes the count is unknown, not PyG's warned guess."""
+        data = Data(edge_index=torch.tensor([[0, 1], [1, 2]], dtype=torch.long))
+        stats = compute_graph_statistics(data)
+        assert stats["num_nodes"] is None
+        assert stats["num_edges"] == 2
+        assert stats["density"] == 0
+        assert stats["avg_degree"] == 0
+
+    def test_node_count_from_positions(self):
+        """A node-level attribute other than x (pos) defines the count."""
+        data = Data(
+            pos=torch.zeros(4, 3), edge_index=torch.tensor([[0, 1], [1, 0]], dtype=torch.long)
+        )
+        stats = compute_graph_statistics(data)
+        assert stats["num_nodes"] == 4
 
     def test_two_node_graph_density(self):
         """Test density calculation for 2-node complete graph."""

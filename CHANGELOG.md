@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   abstract. The validation wrapper is now `forward`, called through PyG's `BaseTransform.__call__`, which
   shallow-copies the input first: attributes a transform sets or replaces no longer change the caller's
   `Data` object.
+- `compute_graph_statistics` takes the node count from node features, an explicit `num_nodes` or node positions,
+  and reports it as unknown (`None`) otherwise. It previously read PyG's `Data.num_nodes`, which then guesses from
+  `edge_index` and warns that it cannot infer the count accurately.
 
 ### Security
 

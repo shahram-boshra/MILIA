@@ -726,11 +726,15 @@ def compute_graph_statistics(data: Data) -> dict[str, Any]:
     """
     stats = {}
 
-    # Basic counts
+    # Basic counts. The node count comes from what defines it: node features, an explicit
+    # ``num_nodes`` or node positions. Without them PyG's ``Data.num_nodes`` guesses from
+    # ``edge_index`` and warns that it cannot infer the count accurately, so it is unknown (None).
     if hasattr(data, "x") and data.x is not None:
         stats["num_nodes"] = data.x.size(0)
-    elif hasattr(data, "num_nodes"):
+    elif "num_nodes" in data:
         stats["num_nodes"] = data.num_nodes
+    elif data.pos is not None:
+        stats["num_nodes"] = data.pos.size(0)
     else:
         stats["num_nodes"] = None
 
