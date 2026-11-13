@@ -1167,6 +1167,7 @@ class TestSchedulerFunctionality:
         assert current_lr == initial_lr
 
         # Step 1: epoch becomes 1, no reduction yet (step_size=2)
+        simple_optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler.step()
         assert simple_optimizer.param_groups[0]["lr"] == initial_lr
 
@@ -1192,6 +1193,7 @@ class TestSchedulerFunctionality:
         )
 
         for i in range(1, 5):
+            simple_optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
             scheduler.step()
             expected_lr = initial_lr * (gamma**i)
             assert abs(simple_optimizer.param_groups[0]["lr"] - expected_lr) < 1e-6
@@ -1206,6 +1208,7 @@ class TestSchedulerFunctionality:
 
         # At T_max/2, LR should be around half of initial
         for _ in range(5):
+            simple_optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
             scheduler.step()
 
         mid_lr = simple_optimizer.param_groups[0]["lr"]
@@ -1303,6 +1306,7 @@ class TestEdgeCases:
         )
 
         # Should not crash
+        optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler.step()
         assert optimizer.param_groups[0]["lr"] == 0.0
 
@@ -1322,6 +1326,7 @@ class TestEdgeCases:
             "step_lr", optimizer, {"step_size": 1, "gamma": 0.5}
         )
 
+        optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler.step()
 
         # Both groups should be updated
@@ -1383,6 +1388,7 @@ class TestEdgeCases:
 
         # Step a few times
         for _ in range(3):
+            simple_optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
             scheduler1.step()
 
         # Save state
@@ -1413,6 +1419,7 @@ class TestEdgeCases:
 
         # Should work normally
         initial_lr = simple_optimizer.param_groups[0]["lr"]
+        simple_optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler.step()
         # LR should decrease very slightly
         assert simple_optimizer.param_groups[0]["lr"] < initial_lr
@@ -1427,6 +1434,7 @@ class TestEdgeCases:
         )
 
         # Scheduler should handle NaN (PyTorch's behavior)
+        optimizer.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler.step()
         # Note: This tests that no exception is raised
 
@@ -1570,7 +1578,9 @@ class TestThreadSafety:
         scheduler2 = SchedulerRegistry.get_scheduler("cosine_annealing", optimizer2, {"T_max": 100})
 
         # Both should work independently
+        optimizer1.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler1.step()
+        optimizer2.step()  # PyTorch order: optimizer.step() before scheduler.step()
         scheduler2.step()
 
         assert optimizer1.param_groups[0]["lr"] != optimizer2.param_groups[0]["lr"]
