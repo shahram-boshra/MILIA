@@ -3,8 +3,8 @@
 # MILIA — uv-based multi-stage build (replaces the conda/mamba image).
 # ONE Dockerfile, parameterized by accelerator. Build the variant you need:
 #   docker build -t milia:cpu   .                        # default (ARG ACCEL=cpu)
-#   docker build --build-arg ACCEL=cu124 -t milia:cu124 .
-# A single image contains exactly ONE torch build (cpu | cu118 | cu121 | cu124):
+#   docker build --build-arg ACCEL=cu130 -t milia:cu130 .
+# A single image contains exactly ONE torch build (cpu | cu126 | cu130):
 # CPU+GPU cannot coexist in one environment. "All accelerators" = a CI build
 # matrix over ACCEL publishing one GHCR tag per variant (see docker-publish.yml).
 # TPU is NOT a target: PyG's compiled kernels have no XLA backend and MILIA has no
@@ -18,7 +18,7 @@
 
 # Global build args (available to FROM lines; re-declared inside stages for RUN use).
 ARG UV_VERSION=0.12.0          # pin uv for reproducible builds (the version used to validate the lock)
-ARG ACCEL=cpu                  # cpu | cu118 | cu121 | cu124
+ARG ACCEL=cpu                  # cpu | cu126 | cu130
 
 # Python base image — pinned by DIGEST (PA-0b / F33): a tag is mutable and can point to a different
 # image on rebuild (Docker build best practices: "Pin base image versions"). This is the
@@ -67,7 +67,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # kernels run against this torch build (ABI/R1). Defined once in docker/verify_build.py and shared
 # with the `test` stage. uv installs the project EDITABLE by default (PEP 660), so `milia_pipeline`
 # legitimately resolves to the baked /app source — the single-copy state we want.
-# --accel: the installed torch build must match this variant (cpu → no CUDA; cu124 → CUDA 12.4).
+# --accel: the installed torch build must match this variant (cpu → no CUDA; cu130 → CUDA 13.0).
 RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 
 # ---- Stage 3a: test-base — base + headless JRE (no lock): cached across uv.lock changes (PA-0h) ----
@@ -113,7 +113,7 @@ FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb
 # libgomp1: OpenMP runtime required by torch / scikit-learn at import.
 # gcc g++ libc6-dev (PA-0b): torch.compile's default Inductor backend generates C++ kernels and compiles
 # them at run time; without a working C++ compiler it raises InvalidCxxCompiler. Inductor also imports
-# setuptools (torch.utils.cpp_extension), declared in pyproject.toml. Both are verified at build time
+# setuptools (torch.utils.cpp_extension), which torch itself declares. Both are verified at build time
 # below (verify_build.py --compile).
 # (If a runtime ImportError reports another missing .so — e.g. libXrender for some RDKit
 #  drawing paths — add the minimal lib here; keep the set tight.)

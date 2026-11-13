@@ -10,7 +10,7 @@
 # Dependencies: managed with uv (https://docs.astral.sh/uv/) from the committed uv.lock.
 # All packages (PyTorch, RDKit, PyG + compiled companions, etc.) install from PyPI +
 # the pinned PyTorch/PyG indexes below. Choose one accelerator extra. Install via:
-#   uv sync --locked --extra cpu          # or cu118 | cu121 | cu124
+#   uv sync --locked --extra cpu          # or cu126 | cu130
 #   uv sync --locked --extra cpu --extra dev   # + dev tools
 # =============================================================================
 
@@ -60,10 +60,10 @@ classifiers = [
 
 # Runtime dependencies (uv/PyPI-managed; versions pinned to the validated Phase-0 baseline).
 # Accelerator-agnostic packages live here; torch + the compiled PyG companions live in the
-# mutually-exclusive accelerator extras below (cpu / cu118 / cu121 / cu124), sourced from the
+# mutually-exclusive accelerator extras below (cpu / cu126 / cu130), sourced from the
 # per-accelerator indexes in [tool.uv.sources]. See UV_MIGRATION_STRATEGY.md.
 dependencies = [
-    "torch-geometric==2.6.1",       # pure-Python; compiled kernels are in the accelerator extras
+    "torch-geometric==2.8.1",       # pure-Python; compiled kernels are in the accelerator extras
     "numpy==1.26.4",                # hold NumPy 1.x ABI
     "scipy==1.15.2",
     "pandas==2.3.1",
@@ -97,11 +97,6 @@ dependencies = [
     # implicit direct dep (4 import sites: models/model_plugin_system.py, transformations/plugin_system.py,
     # transformations/graph_transforms.py, models/hpo/backends/optuna_backend.py); was only transitive
     "packaging==26.2",
-    # torch.compile runtime dep (used by models/acceleration/computation_optimization.py): Inductor
-    # imports torch.utils.cpp_extension, whose line 10 is `import setuptools` (torch 2.4.0); torch
-    # declares setuptools only for Python >= 3.12 and uv/venv environments do not ship it, so on 3.10 /
-    # 3.11 torch.compile fails with ModuleNotFoundError (pytorch#113940). Same version as the build floor.
-    "setuptools==82.0.1",
 ]
 
 [project.optional-dependencies]
@@ -142,14 +137,16 @@ descriptors-cdk = [
 # which system updates do not patch; for production servers psycopg recommends a local `psycopg[c]`
 # build against the system libpq. Install: `uv sync --extra cpu --extra hpo-postgres`.
 hpo-postgres = ["psycopg[binary]>=3.3.6"]
-# Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu118 | cu121 | cu124).
+# Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu126 | cu130).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
-# CPU is the validated cutover target (matches the current cpuonly image + CPU-only dev/CI hardware);
-# the CUDA variants are declared+locked for future GPU deployment, validated on a GPU host/runner.
-cpu   = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
-cu118 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
-cu121 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
-cu124 = ["torch==2.4.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18", "torch-cluster==1.6.3", "torch-spline-conv==1.2.2"]
+# torch 2.12 is the newest minor with a PyG release declaring support (PyG 2.8.0) and PyG wheels for
+# every variant below. pyg-lib provides radius/knn/fps and spline kernels (PyG 2.8 deprecated
+# torch-cluster and torch-spline-conv in its favour). cu130 needs NVIDIA driver >= 580 and drops
+# Maxwell/Pascal/Volta GPUs (CUDA 13.0 release notes); cu126 serves those GPUs and older drivers.
+# tests/test_platform_consistency.py keeps these pins, the indexes and dependabot.yml in step.
+cpu   = ["torch==2.12.1", "pyg-lib==0.9.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18"]
+cu126 = ["torch==2.12.1", "pyg-lib==0.9.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18"]
+cu130 = ["torch==2.12.1", "pyg-lib==0.9.0", "torch-scatter==2.1.2", "torch-sparse==0.6.18"]
 
 [project.urls]
 Homepage = "https://github.com/shahram-boshra/MILIA"
@@ -314,12 +311,16 @@ markers = [
 
 # uv — accelerator-aware resolution (see UV_MIGRATION_STRATEGY.md)
 [tool.uv]
-# Lock scoped to Linux x86_64 (matches the deployed amd64 image, CI runners and the validated
-# spike). PyG publishes no linux_aarch64 wheels for torch 2.4 (cpu or cuXXX), so an aarch64 split is
-# unsatisfiable (PA-0i / F41). Broaden only when every platform-specific wheel exists for the target.
+# Lock scoped to Linux x86_64 (matches the deployed amd64 image and CI runners). Broaden only after
+# checking that every platform-specific wheel (torch, pyg-lib, torch-scatter, torch-sparse) exists for
+# the target on each accelerator index (PA-0i / F41).
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 # The accelerator extras are mutually exclusive — uv refuses to resolve two at once.
-conflicts = [[{ extra = "cpu" }, { extra = "cu118" }, { extra = "cu121" }, { extra = "cu124" }]]
+conflicts = [[{ extra = "cpu" }, { extra = "cu126" }, { extra = "cu130" }]]
+# Without an accelerator extra, torch still enters the lock through torchmetrics (`torch>=2.0.0`) and
+# resolves from PyPI; uv keeps the previously locked version there unless constrained, which left
+# torch 2.4.0 (CVE-2025-32434) in the lock. This constraint holds that fork to the extras' release.
+constraint-dependencies = ["torch==2.12.1"]
 
 # pytorch-* are PEP 503 simple indexes; pyg-* are FLAT find-links HTML pages → format="flat"
 # (a plain index entry makes uv probe sub-paths → 403). explicit=true scopes each index to the
@@ -329,58 +330,47 @@ name = "pytorch-cpu"
 url  = "https://download.pytorch.org/whl/cpu"
 explicit = true
 [[tool.uv.index]]
-name = "pytorch-cu118"
-url  = "https://download.pytorch.org/whl/cu118"
+name = "pytorch-cu126"
+url  = "https://download.pytorch.org/whl/cu126"
 explicit = true
 [[tool.uv.index]]
-name = "pytorch-cu121"
-url  = "https://download.pytorch.org/whl/cu121"
+name = "pytorch-cu130"
+url  = "https://download.pytorch.org/whl/cu130"
 explicit = true
-[[tool.uv.index]]
-name = "pytorch-cu124"
-url  = "https://download.pytorch.org/whl/cu124"
-explicit = true
+# PyG names its wheel pages after the minor's .0 release for every patch of it ("PyTorch 2.12.*:
+# ${TORCH}=2.12.0", PyG installation docs), so torch 2.12.1 uses torch-2.12.0+<accel>.html.
 [[tool.uv.index]]
 name = "pyg-cpu"
-url  = "https://data.pyg.org/whl/torch-2.4.0+cpu.html"
+url  = "https://data.pyg.org/whl/torch-2.12.0+cpu.html"
 format = "flat"
 explicit = true
 [[tool.uv.index]]
-name = "pyg-cu118"
-url  = "https://data.pyg.org/whl/torch-2.4.0+cu118.html"
+name = "pyg-cu126"
+url  = "https://data.pyg.org/whl/torch-2.12.0+cu126.html"
 format = "flat"
 explicit = true
 [[tool.uv.index]]
-name = "pyg-cu121"
-url  = "https://data.pyg.org/whl/torch-2.4.0+cu121.html"
-format = "flat"
-explicit = true
-[[tool.uv.index]]
-name = "pyg-cu124"
-url  = "https://data.pyg.org/whl/torch-2.4.0+cu124.html"
+name = "pyg-cu130"
+url  = "https://data.pyg.org/whl/torch-2.12.0+cu130.html"
 format = "flat"
 explicit = true
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cpu", extra = "cpu" }, { index = "pytorch-cu118", extra = "cu118" },
-    { index = "pytorch-cu121", extra = "cu121" }, { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cpu", extra = "cpu" }, { index = "pytorch-cu126", extra = "cu126" },
+    { index = "pytorch-cu130", extra = "cu130" },
+]
+pyg-lib = [
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu126", extra = "cu126" },
+    { index = "pyg-cu130", extra = "cu130" },
 ]
 torch-scatter = [
-    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
-    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu126", extra = "cu126" },
+    { index = "pyg-cu130", extra = "cu130" },
 ]
 torch-sparse = [
-    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
-    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
-]
-torch-cluster = [
-    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
-    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
-]
-torch-spline-conv = [
-    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu118", extra = "cu118" },
-    { index = "pyg-cu121", extra = "cu121" }, { index = "pyg-cu124", extra = "cu124" },
+    { index = "pyg-cpu", extra = "cpu" }, { index = "pyg-cu126", extra = "cu126" },
+    { index = "pyg-cu130", extra = "cu130" },
 ]
 
 # ruff (linter + formatter)

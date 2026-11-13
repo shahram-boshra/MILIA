@@ -116,7 +116,7 @@ def test_parameter_constraints_present(cls):
 
 @pytest.mark.parametrize("cls", ALL_CLASSES)
 def test_metadata_names_are_not_pyg_or_shipped(cls):
-    # Guard against duplicating pyg_augmentation names or PyG 2.6.1 built-ins.
+    # Guard against duplicating pyg_augmentation names or PyG 2.8.1 built-ins.
     forbidden = {
         "DropEdge",
         "DropNode",

@@ -1,7 +1,7 @@
 """
 PyG Augmentation Transform Implementations
 
-These transforms provide data augmentation capabilities missing from PyG 2.6.1.
+These transforms provide data augmentation capabilities missing from PyG 2.8.1.
 Standard PyG-style transforms that don't depend on Milia custom transform system.
 """
 
@@ -12,7 +12,7 @@ class DropEdge(BaseTransform):
     """
     Randomly drops edges from the graph.
 
-    Missing from PyG 2.6.1. Essential for graph contrastive learning.
+    Missing from PyG 2.8.1. Essential for graph contrastive learning.
 
     Args:
         p (float): Probability of dropping each edge (0-1). Default: 0.5
@@ -99,7 +99,7 @@ class DropNode(BaseTransform):
     """
     Randomly drops nodes and their incident edges.
 
-    Missing from PyG 2.6.1. Used for structural augmentation.
+    Missing from PyG 2.8.1. Used for structural augmentation.
 
     Args:
         p (float): Probability of dropping each node (0-1). Default: 0.5
@@ -196,7 +196,7 @@ class MaskFeatures(BaseTransform):
     """
     Randomly masks node features.
 
-    Missing from PyG 2.6.1. Used for feature-level augmentation.
+    Missing from PyG 2.8.1. Used for feature-level augmentation.
 
     Args:
         p (float): Probability of masking each feature (0-1). Default: 0.5
@@ -269,7 +269,7 @@ class RandomNodeSample(BaseTransform):
     """
     Randomly samples nodes from the graph.
 
-    Missing from PyG 2.6.1. Used for subgraph sampling.
+    Missing from PyG 2.8.1. Used for subgraph sampling.
 
     Args:
         num (int): Absolute number of nodes to sample. Takes precedence.

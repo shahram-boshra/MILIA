@@ -46,28 +46,33 @@ env:
 
 jobs:
   # PA-0d: the variant list is computed ONCE and consumed by build-and-push and smoke-test, so the
-  # images built and the images smoke-tested can never diverge. `cpu` on every run; `cu124` only on
-  # release tags (v*) and manual dispatch (PA-0c cadence).
+  # images built and the images smoke-tested can never diverge. `cpu` on every run; the GPU variants
+  # (`cu126`, `cu130`) only on release tags (v*) and manual dispatch (PA-0c cadence). Both GPU variants
+  # are published: CUDA 13.0 dropped Maxwell/Pascal/Volta and needs driver >= 580 (CUDA 13.0 release
+  # notes), so `cu126` serves those GPUs and drivers.
   plan:
     runs-on: ubuntu-24.04
     timeout-minutes: 5  # F47 (R70): max 0.1 min (21 runs)
     permissions: {}
     outputs:
       accel: ${{ steps.variants.outputs.accel }}
+      gpu: ${{ steps.variants.outputs.gpu }}
     steps:
       - name: Select image variants
         id: variants
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            echo 'accel=["cpu", "cu124"]' >> "$GITHUB_OUTPUT"
+            echo 'accel=["cpu", "cu126", "cu130"]' >> "$GITHUB_OUTPUT"
+            echo 'gpu=["cu126", "cu130"]' >> "$GITHUB_OUTPUT"
           else
             echo 'accel=["cpu"]' >> "$GITHUB_OUTPUT"
+            echo 'gpu=[]' >> "$GITHUB_OUTPUT"
           fi
 
   build-and-push:
     needs: plan
     runs-on: ubuntu-24.04
-    # F47 (R70): cpu max 3.6 min (39 runs), cu124 max 7.8 min (5 runs); one value covers both variants.
+    # F47 (R70): cpu max 3.6 min (39 runs), GPU (cu124) max 7.8 min (5 runs); one value covers every variant.
     timeout-minutes: 30
     permissions:
       contents: read
@@ -125,7 +130,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           # Per-accelerator tags: moving `:<accel>`, immutable `:<accel>-<sha>`; `:latest` and bare
           # semver only for the cpu (default) variant; GPU variants get suffixed semver
-          # (`:X.Y.Z-cu124`, `:X.Y-cu124`) and never `latest` (PA-0c; per-tag suffix/enable —
+          # (`:X.Y.Z-cu130`, `:X.Y-cu130`) and never `latest` (PA-0c; per-tag suffix/enable —
           # a global `flavor: suffix` would also suffix the `<accel>` raw/sha tags).
           tags: |
             type=raw,value=${{ matrix.accel }}
@@ -177,7 +182,7 @@ jobs:
     # PA-0a: a build-only run (non-publishing ref) has no registry image to pull.
     if: needs.build-and-push.outputs.publish == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15  # F47 (R70): cpu max 1.8 min (20 runs), cu124 max 2.9 min (2 runs)
+    timeout-minutes: 15  # F47 (R70): cpu max 1.8 min (20 runs), GPU (cu124) max 2.9 min (2 runs)
     permissions:
       contents: read
       packages: read
@@ -241,27 +246,31 @@ jobs:
   # =========================================================================
   # Runs only when the repository variable GPU_RUNNER_LABEL names a GPU runner (GitHub GPU larger
   # runners need a Team/Enterprise Cloud organization; a self-hosted runner works too) AND this run
-  # published a cu124 image. Publishing happens only on `main` and release tags (PA-0a), so this job
+  # published GPU images; each published GPU variant is tested. Publishing happens only on `main` and release tags (PA-0a), so this job
   # never runs for pull requests — required for a self-hosted runner on a public repository.
   gpu-smoke:
     needs: [plan, build-and-push]
     if: >-
       vars.GPU_RUNNER_LABEL != '' &&
       needs.build-and-push.outputs.publish == 'true' &&
-      contains(needs.plan.outputs.accel, 'cu124')
+      needs.plan.outputs.gpu != '[]'
     runs-on: ${{ vars.GPU_RUNNER_LABEL }}
-    # F47 (R70): never run yet (dormant). Bound from its own steps: one cu124 pull (hosted max 2.3 min)
-    # plus one short container run, at the same limit as the build job.
+    # F47 (R70): never run yet (dormant). Bound from its own steps: one GPU-image pull (hosted max
+    # 2.3 min) plus one short container run, at the same limit as the build job.
     timeout-minutes: 30
     permissions:
       contents: read
       packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        accel: ${{ fromJSON(needs.plan.outputs.gpu) }}
     steps:
       - name: Compute lowercase image reference
         id: image
         run: |
           IMAGE_LOWER=$(echo "${{ env.REGISTRY }}/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          REF="${IMAGE_LOWER}:cu124-${GITHUB_SHA::7}"
+          REF="${IMAGE_LOWER}:${{ matrix.accel }}-${GITHUB_SHA::7}"
           echo "ref=${REF}" >> "$GITHUB_OUTPUT"
           echo "Computed image reference: ${REF}"
 
@@ -272,17 +281,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull the cu124 image
+      - name: Pull the ${{ matrix.accel }} image
         run: docker pull ${{ steps.image.outputs.ref }}
 
-      - name: CUDA runtime — torch on the GPU + a PyG CUDA kernel
+      - name: CUDA runtime — torch on the GPU + PyG CUDA kernels (torch_scatter, pyg-lib radius)
         run: |
           docker run --rm --gpus all --entrypoint python ${{ steps.image.outputs.ref }} -c "
           import torch, torch_scatter
+          from torch_geometric.nn import radius_graph
           assert torch.cuda.is_available(), 'CUDA not available inside the container'
           x = torch.ones(4, device='cuda')
           idx = torch.tensor([0, 0, 1, 1], device='cuda')
           out = torch_scatter.scatter_add(x, idx, dim=0)
           assert out.tolist() == [2.0, 2.0], out.tolist()
-          print('OK CUDA', torch.version.cuda, '|', torch.cuda.get_device_name(0), '| torch_scatter CUDA kernel ok')
+          pos = torch.tensor([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [5.0, 0.0, 0.0]], device='cuda')
+          pairs = {tuple(e) for e in radius_graph(pos, r=1.5).t().tolist()}
+          assert pairs == {(0, 1), (1, 0)}, pairs
+          print('OK CUDA', torch.version.cuda, '|', torch.cuda.get_device_name(0), '| torch_scatter + pyg-lib CUDA kernels ok')
           "

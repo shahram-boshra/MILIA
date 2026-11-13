@@ -96,7 +96,7 @@ jobs:
       # Full scientific stack (PyTorch, PyG + compiled companions, RDKit, …) now installs
       # from PyPI via the locked CPU extra — no conda needed. `--locked` fails if uv.lock is
       # out of sync with pyproject (drift gate). NOTE: use explicit `--extra cpu --extra dev`,
-      # never `--all-extras` (the cpu/cu118/cu121/cu124 accelerator extras are mutually
+      # never `--all-extras` (the cpu/cu126/cu130 accelerator extras are mutually
       # exclusive via [tool.uv] conflicts).
       # Fetches the full scientific stack incl. the compiled PyG companions from
       # data.pyg.org. Wrapped in a backed-off step-level retry to absorb transient

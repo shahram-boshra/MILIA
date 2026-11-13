@@ -76,7 +76,7 @@ cd MILIA
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3. Create the locked environment: full CPU stack + dev tools.
-#    Use exactly ONE accelerator extra (cpu | cu118 | cu121 | cu124).
+#    Use exactly ONE accelerator extra (cpu | cu126 | cu130).
 uv sync --locked --extra cpu --extra dev
 
 # 4. Run tooling inside the environment

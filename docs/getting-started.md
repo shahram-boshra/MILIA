@@ -17,7 +17,7 @@ git clone https://github.com/shahram-boshra/MILIA.git
 cd MILIA
 
 # 3. Install the full stack (PyTorch, PyG + compiled companions, RDKit, …) from the
-#    committed lockfile. Choose exactly ONE accelerator extra: cpu | cu118 | cu121 | cu124.
+#    committed lockfile. Choose exactly ONE accelerator extra: cpu | cu126 | cu130.
 uv sync --locked --extra cpu
 
 # 4. Run MILIA (inside the locked environment)

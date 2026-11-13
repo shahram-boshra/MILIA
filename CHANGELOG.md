@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CUDA 13.0 and CUDA 12.6 variants: accelerator extras `cu130` and `cu126`, container images `:cu130` and `:cu126`
+  (with `X.Y.Z-` / `X.Y-` prefixed release tags). `cu130` needs NVIDIA driver 580 or newer and a Turing or newer
+  GPU; `cu126` serves Maxwell, Pascal and Volta GPUs and older drivers.
+
+### Changed
+
+- PyTorch 2.4.0 → 2.12.1 and PyTorch Geometric 2.6.1 → 2.8.1, with `pyg-lib` 0.9.0, `torch-scatter` 2.1.2 and
+  `torch-sparse` 0.6.18 built for torch 2.12. PyG 2.8 takes radius, k-NN, FPS and spline operations from
+  `pyg-lib`.
+
 ### Removed
 
 - Python 3.10 support: Python 3.10 reached end of life on 2026-10-01 (PEP 619). MILIA requires Python 3.11 or
   3.12; the Docker images use Python 3.12.
+- Accelerator extras `cu118`, `cu121` and `cu124` and the `:cu124` images (no torch 2.12 builds exist for CUDA
+  11.8, 12.1 or 12.4); existing `:cu124` tags stay available but are no longer updated.
+- `torch-cluster` and `torch-spline-conv`, deprecated by PyG 2.8 in favour of `pyg-lib`.
 
 ### Fixed
 
@@ -18,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `nearest`) by calling PyG's own function, and reports PyG's message naming the missing package. It previously
   matched words in the model's source against a fixed package list, so it could reject a model whose code only
   mentioned a name (for example `scatter`) and would name the wrong package from PyG 2.8 on.
+
+### Security
+
+- CVE-2025-32434 (PyTorch ≤ 2.5.1): `torch.load(..., weights_only=True)` could still run code from a crafted
+  file. MILIA's checkpoint loading tries `weights_only=True` first; PyTorch 2.12.1 contains the fix (2.6.0).
 
 ## [1.20.0] - 2026-11-12
 

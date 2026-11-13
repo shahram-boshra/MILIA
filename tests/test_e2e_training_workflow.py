@@ -1403,24 +1403,18 @@ class TestModelFactoryIntegration:
         factory = get_factory()
         sample = synthetic_graphs[0]
 
-        try:
-            model = factory.create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 32,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample,
-            )
-            assert model is not None
-            assert isinstance(model, nn.Module)
-        except Exception as e:
-            # Some environments may not have all PyG dependencies
-            if "torch_cluster" in str(e) or "torch_sparse" in str(e):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = factory.create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 32,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample,
+        )
+        assert model is not None
+        assert isinstance(model, nn.Module)
 
     @pytest.mark.skipif(
         not _MODEL_FACTORY_AVAILABLE,

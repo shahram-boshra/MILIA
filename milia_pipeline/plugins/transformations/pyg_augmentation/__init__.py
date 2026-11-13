@@ -1,7 +1,7 @@
 """
 PyG Augmentation Transforms Plugin
 
-Provides PyG transforms missing from PyG 2.6.1.
+Provides PyG transforms missing from PyG 2.8.1.
 These are standard PyG-style transforms for the fallback system.
 
 Production-ready plugin with:
@@ -28,7 +28,7 @@ PLUGIN_METADATA = {
     "version": __version__,
     "author": __author__,
     "plugin_type": "pyg_fallback",  # PyG transforms fallback
-    "description": "PyG augmentation transforms missing from PyG 2.6.1",
+    "description": "PyG augmentation transforms missing from PyG 2.8.1",
     "license": "MIT",
     "milia_version": ">=1.1.0",
     "pyg_version": ">=2.0.0",
@@ -422,7 +422,7 @@ License: {PLUGIN_METADATA.get("license", "MIT")}
 Plugin Type: {PLUGIN_METADATA.get("plugin_type", "pyg_fallback")}
 
 Description:
-{PLUGIN_METADATA.get("description", "PyG augmentation transforms missing from PyG 2.6.1")}
+{PLUGIN_METADATA.get("description", "PyG augmentation transforms missing from PyG 2.8.1")}
 
 Available Transforms:
 {chr(10).join(f"  - {name}" for name in _transform_names)}

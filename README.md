@@ -87,28 +87,31 @@ docker run --rm milia:cpu --help
 
 > The published image is a lean production runtime (no test tools). The smoke suite runs in CI (and locally via `uv run --extra cpu --extra dev pytest -m smoke`), not inside the runtime image.
 
-#### GPU images (CUDA 12.4)
+#### GPU images (CUDA 13.0 and 12.6)
 
-Host prerequisites: an NVIDIA GPU, an NVIDIA driver **≥ 525.60.13** (the CUDA 12.x minimum for minor-version compatibility; a current driver is recommended), and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). The CUDA runtime ships inside the image's PyTorch/PyG wheels — no CUDA toolkit is needed on the host.
+Host prerequisites: an NVIDIA GPU, an NVIDIA driver — **≥ 580** for `cu130`, **≥ 525.60.13** for `cu126` (the CUDA 13.x and 12.x minimums for minor-version compatibility; a current driver is recommended) — and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). The CUDA runtime ships inside the image's PyTorch/PyG wheels — no CUDA toolkit is needed on the host.
 
 ```bash
-docker pull ghcr.io/shahram-boshra/milia:cu124
-docker run --rm --gpus all ghcr.io/shahram-boshra/milia:cu124 --help
+docker pull ghcr.io/shahram-boshra/milia:cu130
+docker run --rm --gpus all ghcr.io/shahram-boshra/milia:cu130 --help
 
 # Confirm the GPU is visible inside the container:
-docker run --rm --gpus all --entrypoint python ghcr.io/shahram-boshra/milia:cu124 \
+docker run --rm --gpus all --entrypoint python ghcr.io/shahram-boshra/milia:cu130 \
   -c "import torch; print(torch.cuda.is_available(), torch.version.cuda, torch.cuda.get_device_name(0))"
 ```
 
 | Tag | Variant |
 |---|---|
 | `latest`, `cpu`, `X.Y.Z`, `X.Y` | CPU (`latest` is always the CPU image) |
-| `cu124`, `X.Y.Z-cu124`, `X.Y-cu124` | CUDA 12.4 — versioned GPU tags start with release 1.16.0 |
-| `cpu-<sha>`, `cu124-<sha>` | Immutable per-commit builds |
+| `cu130`, `X.Y.Z-cu130`, `X.Y-cu130` | CUDA 13.0 — Turing and newer GPUs (CUDA 13.0 dropped Maxwell, Pascal and Volta) |
+| `cu126`, `X.Y.Z-cu126`, `X.Y-cu126` | CUDA 12.6 — for Maxwell, Pascal and Volta GPUs, or drivers older than 580 |
+| `cpu-<sha>`, `cu130-<sha>`, `cu126-<sha>` | Immutable per-commit builds |
 
-Images are `linux/amd64`. **Validation level:** every published `cu124` image is built and verified on a CPU CI runner (PyTorch reports CUDA 12.4; MILIA and the PyG kernels import; `torch.compile` runs) and smoke-tested through the CLI; execution on a GPU is verified in CI only when a GPU runner is configured — run the check above on your host.
+`cu124` tags (CUDA 12.4, torch 2.4) are no longer updated; their last build is from the release before the move to torch 2.12.
 
-To build a GPU image locally: `docker build --build-arg ACCEL=cu124 --build-arg NVIDIA_VISIBLE_DEVICES=all -t milia:cu124 .`
+Images are `linux/amd64`. **Validation level:** every published GPU image is built and verified on a CPU CI runner (PyTorch reports the variant's CUDA version; MILIA and the PyG kernels import; `torch.compile` runs) and smoke-tested through the CLI; execution on a GPU is verified in CI only when a GPU runner is configured — run the check above on your host.
+
+To build a GPU image locally: `docker build --build-arg ACCEL=cu130 --build-arg NVIDIA_VISIBLE_DEVICES=all -t milia:cu130 .`
 
 #### Parallel HPO with Docker Compose (PostgreSQL)
 
@@ -151,7 +154,7 @@ docker compose --profile hpo down
 ```
 
 GPU host: `docker compose -f compose.yaml -f compose.gpu.yaml --profile hpo up -d` gives each worker its own GPU
-(`cu124` image). PostgreSQL is reachable only on the project's network (no published port); a database on another
+(`cu130` image). PostgreSQL is reachable only on the project's network (no published port); a database on another
 host should use `sslmode=verify-full` in the URL. More workers: add `hpo-worker-N` services (see `compose.yaml`).
 Each worker uses 1 PyTorch CPU thread by default (`OMP_NUM_THREADS`, as `torchrun` does for several processes); set
 `MILIA_WORKER_THREADS` in `.env` to at most `floor(CPUs / workers)`. A worker logs its threads, CPUs, GPUs and memory,
@@ -168,13 +171,13 @@ git clone https://github.com/shahram-boshra/MILIA.git
 cd MILIA
 
 # 3. Install the full stack from the committed lockfile.
-#    Choose exactly ONE accelerator extra: cpu | cu118 | cu121 | cu124.
+#    Choose exactly ONE accelerator extra: cpu | cu126 | cu130.
 uv sync --locked --extra cpu
 ```
 
-For GPU support, choose a CUDA accelerator extra instead of `cpu` — e.g. `uv sync --locked --extra cu124` (the CUDA runtime comes with the PyTorch/PyG wheels; the host needs an NVIDIA driver supporting that CUDA version — for CUDA 12.x, ≥ 525.60.13). The NVIDIA Container Toolkit is needed only for Docker.
+For GPU support, choose a CUDA accelerator extra instead of `cpu` — e.g. `uv sync --locked --extra cu130` (the CUDA runtime comes with the PyTorch/PyG wheels; the host needs an NVIDIA driver supporting that CUDA version — ≥ 580 for `cu130`, ≥ 525.60.13 for `cu126`; Maxwell, Pascal and Volta GPUs need `cu126`). The NVIDIA Container Toolkit is needed only for Docker.
 
-Supported platform: **Linux x86_64** — natively via the lockfile, or through the `linux/amd64` Docker image. PyG publishes no `linux_aarch64` wheels for this PyTorch version, so the lock does not resolve for ARM Linux.
+Supported platform: **Linux x86_64** — natively via the lockfile, or through the `linux/amd64` Docker image. The lock is resolved for Linux x86_64 only (`[tool.uv] environments` in `pyproject.toml`).
 
 For development (adds pytest and ruff):
 

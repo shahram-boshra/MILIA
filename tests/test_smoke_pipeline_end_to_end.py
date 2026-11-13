@@ -612,25 +612,19 @@ class TestModelSubsystemSmoke:
         from milia_pipeline.models.factory.model_factory import create_model
 
         sample_data = synthetic_pyg_data_list[0]
-        try:
-            model = create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-            assert model is not None
-            assert isinstance(model, torch.nn.Module)
-        except Exception as e:
-            # Some environments may not have all PyG optional dependencies
-            if "torch_cluster" in str(e) or "torch_scatter" in str(e):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
+        assert model is not None
+        assert isinstance(model, torch.nn.Module)
 
     def test_trainer_importable(self):
         """trainer module can be imported."""
@@ -650,27 +644,17 @@ class TestModelSubsystemSmoke:
         from milia_pipeline.models.training.trainer import Trainer
 
         sample_data = synthetic_pyg_data_list[0]
-        try:
-            model = create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-        except Exception as e:
-            # Only skip for genuinely optional external PyG dependencies
-            error_str = str(e)
-            if any(
-                dep in error_str
-                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
-            ):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
 
         train_loader = DataLoader(synthetic_pyg_data_list[:7], batch_size=2, shuffle=True)
         val_loader = DataLoader(synthetic_pyg_data_list[7:], batch_size=2, shuffle=False)
@@ -722,26 +706,17 @@ class TestMiniTrainingLoopSmoke:
         sample_data = synthetic_pyg_data_list[0]
 
         # Step 1: Create model
-        try:
-            model = create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-        except Exception as e:
-            error_str = str(e)
-            if any(
-                dep in error_str
-                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
-            ):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
 
         # Step 2: Create data loaders
         train_data = synthetic_pyg_data_list[:7]
@@ -816,26 +791,17 @@ class TestMiniTrainingLoopSmoke:
 
         sample_data = synthetic_pyg_data_list[0]
 
-        try:
-            model = create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-        except Exception as e:
-            error_str = str(e)
-            if any(
-                dep in error_str
-                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
-            ):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
 
         train_loader = DataLoader(synthetic_pyg_data_list[:7], batch_size=2, shuffle=True)
         val_loader = DataLoader(synthetic_pyg_data_list[7:], batch_size=2, shuffle=False)
@@ -1077,23 +1043,18 @@ class TestCrossSystemIntegrationSmoke:
 
         # Step 3: Create model instance
         sample_data = synthetic_pyg_data_list[0]
-        try:
-            model = create_model(
-                name=model_name,
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-            assert isinstance(model, torch.nn.Module)
-        except Exception as e:
-            if "torch_cluster" in str(e) or "torch_scatter" in str(e):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name=model_name,
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
+        assert isinstance(model, torch.nn.Module)
 
     def test_full_pipeline_config_to_training(self, synthetic_pyg_data_list, tmp_work_dir):
         """Full pipeline: config → model → data loaders → trainer → fit.
@@ -1109,26 +1070,17 @@ class TestCrossSystemIntegrationSmoke:
         sample_data = synthetic_pyg_data_list[0]
 
         # Create model
-        try:
-            model = create_model(
-                name="GCN",
-                hyperparameters={
-                    "hidden_channels": 16,
-                    "num_layers": 2,
-                    "out_channels": 1,
-                },
-                task_type="graph_regression",
-                sample_data=sample_data,
-                device=torch.device("cpu"),
-            )
-        except Exception as e:
-            error_str = str(e)
-            if any(
-                dep in error_str
-                for dep in ["torch_cluster", "torch_scatter", "torch_sparse", "torch_spline_conv"]
-            ):
-                pytest.skip(f"PyG optional dependency missing: {e}")
-            raise
+        model = create_model(
+            name="GCN",
+            hyperparameters={
+                "hidden_channels": 16,
+                "num_layers": 2,
+                "out_channels": 1,
+            },
+            task_type="graph_regression",
+            sample_data=sample_data,
+            device=torch.device("cpu"),
+        )
 
         # Create loaders
         train_loader = DataLoader(synthetic_pyg_data_list[:7], batch_size=2, shuffle=True)

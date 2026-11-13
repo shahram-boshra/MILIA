@@ -7,9 +7,11 @@ Checks:
   (a) the ``milia-py`` distribution is installed (metadata resolves) and ``milia_pipeline`` imports.
       uv installs the project editable by default (PEP 660), so the package legitimately resolves to
       the baked ``/app`` source tree;
-  (b) the compiled PyG companion kernels load and run against the installed torch build (ABI check);
+  (b) the compiled PyG companions load and run against the installed torch build (ABI check):
+      ``torch_scatter``, ``torch_sparse``, and ``pyg-lib`` through PyG's own ``radius_graph``
+      (PyG >= 2.8 takes radius/knn/fps from pyg-lib);
   (c) ``--accel <variant>``: the installed torch build matches the image variant (PA-0b) — ``cpu`` has
-      no CUDA runtime, ``cuXYZ`` bundles CUDA ``X.Y`` (e.g. ``cu124`` → ``12.4``);
+      no CUDA runtime, ``cuXYZ`` bundles CUDA ``X.Y`` (e.g. ``cu130`` → ``13.0``);
   (d) ``--compile`` (runtime stage only, where the C/C++ toolchain is installed): ``torch.compile`` with
       the default Inductor backend builds and runs a CPU kernel. Inductor generates C++ and raises
       ``InvalidCxxCompiler`` when no working compiler exists, so this proves the published image can
@@ -24,6 +26,8 @@ import re
 
 import torch
 import torch_scatter
+import torch_sparse
+from torch_geometric.nn import radius_graph
 
 import milia_pipeline
 
@@ -32,7 +36,7 @@ def expected_cuda_version(accel: str) -> str | None:
     """Return the CUDA version a torch build for ``accel`` reports (``torch.version.cuda``).
 
     ``cpu`` → ``None``; ``cu<major><minor>`` → ``"<major>.<minor>"`` (the last digit is the minor
-    version: ``cu118`` → ``11.8``, ``cu124`` → ``12.4``). Any other value is a configuration error.
+    version: ``cu126`` → ``12.6``, ``cu130`` → ``13.0``). Any other value is a configuration error.
     """
     if accel == "cpu":
         return None
@@ -51,6 +55,35 @@ def check_accelerator(accel: str) -> None:
             f"expected {expected!r} (torch {torch.__version__})"
         )
     print(f"OK accelerator {accel}: torch.version.cuda={actual!r}")
+
+
+def check_pyg_kernels() -> None:
+    src = torch.tensor([1.0, 1.0, 1.0, 1.0])
+    index = torch.tensor([0, 0, 1, 1])
+    result = torch_scatter.scatter_add(src, index, dim=0).tolist()
+    if result != [2.0, 2.0]:
+        raise SystemExit(
+            f"torch_scatter.scatter_add ABI check failed: got {result}, expected [2.0, 2.0]"
+        )
+    nnz = torch_sparse.SparseTensor.from_dense(torch.eye(2)).nnz()
+    if nnz != 2:
+        raise SystemExit(f"torch_sparse.SparseTensor ABI check failed: nnz={nnz}, expected 2")
+    pos = torch.tensor([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [5.0, 0.0, 0.0]])
+    pairs = {tuple(edge) for edge in radius_graph(pos, r=1.5).t().tolist()}
+    if pairs != {(0, 1), (1, 0)}:
+        raise SystemExit(
+            f"radius_graph (pyg-lib) check failed: got {pairs}, expected {{(0, 1), (1, 0)}}"
+        )
+    print(
+        "OK torch",
+        torch.__version__,
+        "| torch_scatter",
+        torch_scatter.__version__,
+        "| torch_sparse",
+        torch_sparse.__version__,
+        "| pyg-lib",
+        importlib.metadata.version("pyg-lib"),
+    )
 
 
 def check_compile() -> None:
@@ -77,7 +110,7 @@ def check_postgres_driver() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--accel", help="image variant to verify the torch build against (cpu, cu124, ...)"
+        "--accel", help="image variant to verify the torch build against (cpu, cu126, cu130)"
     )
     parser.add_argument(
         "--compile", action="store_true", help="also verify torch.compile (needs a C/C++ compiler)"
@@ -90,14 +123,7 @@ def main() -> None:
         "importable from",
         milia_pipeline.__file__,
     )
-    src = torch.tensor([1.0, 1.0, 1.0, 1.0])
-    index = torch.tensor([0, 0, 1, 1])
-    result = torch_scatter.scatter_add(src, index, dim=0).tolist()
-    if result != [2.0, 2.0]:
-        raise SystemExit(
-            f"torch_scatter.scatter_add ABI check failed: got {result}, expected [2.0, 2.0]"
-        )
-    print("OK torch", torch.__version__, "| torch_scatter", torch_scatter.__version__)
+    check_pyg_kernels()
     check_postgres_driver()
     if args.accel is not None:
         check_accelerator(args.accel)
