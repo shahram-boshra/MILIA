@@ -9,7 +9,7 @@
 # results across Python versions without polluting the developer's environment.
 #
 # Source evidence:
-#   - pyproject.toml: Python 3.10/3.11/3.12 classifiers, [tool.pytest],
+#   - pyproject.toml: Python 3.11/3.12 classifiers, [tool.pytest],
 #     [tool.ruff], [project.optional-dependencies].dev, [build-system]
 #   - conftest.py: 8 markers (smoke, contract, e2e, regression,
 #     thread_safety, slow, integration, gpu)
@@ -21,7 +21,7 @@
 #
 # Sessions:
 #   lint        — Ruff linter + formatter check (Python 3.12 only)
-#   tests       — Full test suite across Python 3.10/3.11/3.12
+#   tests       — Full test suite across Python 3.11/3.12
 #   tests_smoke — Smoke tests only (fast first gate, no heavy deps)
 #   build       — Verify sdist + wheel build (Python 3.12 only)
 #
@@ -38,7 +38,7 @@
 # GitHub Actions integration:
 #   - uses: wntrblm/nox@2026.2.9
 #     with:
-#       python-versions: "3.10, 3.11, 3.12"
+#       python-versions: "3.11, 3.12"
 #   - run: pipx run nox -s lint
 #   - run: pipx run nox -s tests
 #
@@ -74,10 +74,9 @@ nox.options.sessions = ["lint", "tests"]
 # Constants — sourced from pyproject.toml
 # ---------------------------------------------------------------------------
 # Python versions from pyproject.toml classifiers:
-#   "Programming Language :: Python :: 3.10"
 #   "Programming Language :: Python :: 3.11"
 #   "Programming Language :: Python :: 3.12"
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
+PYTHON_VERSIONS = ["3.11", "3.12"]
 
 # Default Python for single-version sessions (latest supported).
 PYTHON_DEFAULT = "3.12"
@@ -90,7 +89,7 @@ DIR = Path(__file__).parent.resolve()
 # Session: lint — Ruff linter + formatter check
 # =============================================================================
 # Runs Ruff linter and formatter check in an isolated environment.
-# Source: pyproject.toml [tool.ruff] (py310, line-length 100,
+# Source: pyproject.toml [tool.ruff] (py311, line-length 100,
 #   select E/W/F/I/UP/B/SIM, ignore E501, isort known-first-party).
 # Mirrors: Makefile `lint` + `format-check` targets, ci.yml lint job.
 @nox.session(python=PYTHON_DEFAULT)
@@ -104,7 +103,7 @@ def lint(session: nox.Session) -> None:
 # =============================================================================
 # Session: tests — Full test suite across Python versions
 # =============================================================================
-# Parametrized across Python 3.10/3.11/3.12 (pyproject.toml classifiers).
+# Parametrized across Python 3.11/3.12 (pyproject.toml classifiers).
 # Installs the package in editable mode with dev extras.
 # Source: pyproject.toml [tool.pytest.ini_options] (testpaths = ["tests"],
 #   addopts = ["-v", "--tb=short", "--strict-markers"]).

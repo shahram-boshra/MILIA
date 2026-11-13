@@ -25,7 +25,7 @@ name = "milia-py"
 dynamic = ["version"]
 description = "Molecular graph processing and machine learning framework for molecular sciences"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 
@@ -52,7 +52,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
@@ -77,17 +76,13 @@ dependencies = [
     # declared at the version already locked.
     # pydantic: 39 modules (config schemas, transforms, plugin manifests, model builders).
     "pydantic==2.13.4",
-    # typing_extensions: 5 modules (`Self`, config schemas and HPO).
-    "typing-extensions==4.16.0",
     # requests, tqdm: datasets/milia_dataset.py.
     "requests==2.34.2",
     "tqdm==4.70.0",
     # sqlalchemy: models/hpo/shared_study.py (storage URLs).
     "sqlalchemy==2.0.51",
-    # networkx: 4 shipped transformation plugins. The lock holds one version per Python range (3.6.1
-    # requires Python >= 3.11; 3.4.2 serves 3.10); the pins follow it.
-    "networkx==3.4.2 ; python_version < '3.11'",
-    "networkx==3.6.1 ; python_version >= '3.11'",
+    # networkx: 4 shipped transformation plugins.
+    "networkx==3.6.1",
     "torchmetrics==1.9.0",
     "hydra-core==1.3.2",
     "optuna==4.9.0",
@@ -133,14 +128,13 @@ docs = [
 ]
 # DEP-BOUND, opt-in: the `cdk_substructure` descriptor plugin (Pace 11 / v1.14.0). Provides the
 # 307 Laggner substructure counts via the CANONICAL CDK engine (jpype + CDK-pywrapper's bundled
-# CDK jar — offline-safe, not fetched from Maven at runtime). Requires a JRE at runtime AND
-# Python >= 3.11 (CDK-pywrapper 1.0.0 drops 3.10) — hence the marker; on Python 3.10 the extra is
-# empty and the plugin auto-skips (dependency-gated). Install: `pip install -e ".[descriptors-cdk]"`
-# (or `uv sync --extra descriptors-cdk`) on Python 3.11+ with a JRE present.
+# CDK jar — offline-safe, not fetched from Maven at runtime). Requires a JRE at runtime; without the
+# extra or the JRE the plugin auto-skips (dependency-gated). Install: `pip install -e ".[descriptors-cdk]"`
+# (or `uv sync --extra descriptors-cdk`) with a JRE present.
 # The base install and the default descriptor count (3,026) are unaffected without this extra.
 descriptors-cdk = [
-    "CDK-pywrapper>=1.0 ; python_version >= '3.11'",  # provides the complete CDK jar in its wheel
-    "jpype1>=1.5 ; python_version >= '3.11'",  # the plugin loads that jar via jpype directly (CDK-pywrapper itself does NOT depend on jpype)
+    "CDK-pywrapper>=1.0",  # provides the complete CDK jar in its wheel
+    "jpype1>=1.5",  # the plugin loads that jar via jpype directly (CDK-pywrapper itself does NOT depend on jpype)
 ]
 # Opt-in: PostgreSQL driver for an HPO study shared by several workers (P2-4b, blueprint S4):
 # psycopg 3, SQLAlchemy URL `postgresql+psycopg://`. Lower bound = the tested release (PyPA: no exact
@@ -391,7 +385,7 @@ torch-spline-conv = [
 
 # ruff (linter + formatter)
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 # Ruff 0.16+ formats Python code blocks inside Markdown by default. MILIA's
 # formatting scope is Python-only (mirrors the ruff-format pre-commit hook),

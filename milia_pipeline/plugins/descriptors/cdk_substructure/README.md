@@ -6,9 +6,7 @@ First-party **DEP-BOUND, opt-in** descriptor plugin shipped with MILIA (descript
 InteLigand SMARTS set) — **not** an RDKit reimplementation.
 
 > ## ⚠ Opt-in + Java required
-> This plugin needs the **`[descriptors-cdk]` extra** (`CDK-pywrapper` + `jpype1`), a **JRE**, and
-> **Python ≥ 3.11** (CDK-pywrapper 1.0.0 drops Python 3.10; the dependency is marker-gated, so on 3.10 the
-> extra is empty and the plugin is auto-skipped).
+> This plugin needs the **`[descriptors-cdk]` extra** (`CDK-pywrapper` + `jpype1`) and a **JRE**.
 > Without them it is **skipped cleanly at discovery** via the plugin system's `requires_extra` gate
 > (this plugin declares `requires_extra: descriptors-cdk`; the loader probes the extra and skips the
 > whole plugin when it is not importable), so the base install and the default descriptor count

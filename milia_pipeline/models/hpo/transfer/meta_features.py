@@ -41,11 +41,10 @@ Pattern References:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 from pydantic import BaseModel, field_validator, model_validator
-from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 

@@ -14,12 +14,12 @@ description: "CDK Laggner substructure-count + Ghose-Crippen descriptors: counts
 license: "MIT"
 homepage: "https://github.com/shahram-boshra/MILIA"
 milia_version: ">=1.14.0"
-python_version: ">=3.11"  # CDK-pywrapper drops 3.10; on 3.10 the plugin is dependency-skipped
+python_version: ">=3.11"  # CDK-pywrapper 1.0.0 requires Python >= 3.11
 dependencies:
   - "CDK-pywrapper"
   - "jpype1"
 # Optional-dependency gate: skip this whole plugin cleanly at discovery when the extra is absent
-# (default install / Python 3.10 without the JRE) — keeps the default count at 3,026.
+# (default install, or no JRE) — keeps the default count at 3,026.
 requires_extra: "descriptors-cdk"
 
 descriptors:

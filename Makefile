@@ -20,13 +20,13 @@
 #   make clean        Remove build/cache artifacts
 #
 # Requirements:
-#   - Python 3.10+ (pyproject.toml requires-python = ">=3.10")
+#   - Python 3.11+ (pyproject.toml requires-python = ">=3.11,<3.13")
 #   - conda environment with scientific dependencies (see CONTRIBUTING.md)
 # =============================================================================
 
 # ---- Variables ----
 # Overridable from the command line: make test PYTHON=python3.12
-# Source: pyproject.toml requires-python = ">=3.10"
+# Source: pyproject.toml requires-python = ">=3.11,<3.13"
 PYTHON       ?= python3
 PIP          ?= pip
 PACKAGE_NAME := milia_pipeline
@@ -103,7 +103,7 @@ test-fast:  ## Run tests excluding slow tests
 # =============================================================================
 # Code Quality
 # =============================================================================
-# Source: pyproject.toml [tool.ruff] (py310, line-length 100,
+# Source: pyproject.toml [tool.ruff] (py311, line-length 100,
 #   select E/W/F/I/UP/B/SIM, ignore E501, isort known-first-party milia_pipeline)
 # Source: CONTRIBUTING.md "Running Ruff" section.
 # Source: .pre-commit-config.yaml — ruff-check args: --fix --exit-non-zero-on-fix --show-fixes

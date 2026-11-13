@@ -3,7 +3,7 @@
 **Molecular graph processing and machine learning framework for computational chemistry**
 
 [![CI](https://github.com/shahram-boshra/MILIA/actions/workflows/ci.yml/badge.svg)](https://github.com/shahram-boshra/MILIA/actions/workflows/ci.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://docs.astral.sh/ruff/)
 [![Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/shahram-boshra/MILIA/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/shahram-boshra/MILIA)

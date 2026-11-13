@@ -5,7 +5,7 @@
 # Tests across the Python version matrix declared in pyproject.toml classifiers.
 #
 # Source evidence:
-#   - pyproject.toml: Python 3.10/3.11/3.12 classifiers, [tool.pytest], [tool.ruff]
+#   - pyproject.toml: Python 3.11/3.12 classifiers, [tool.pytest], [tool.ruff]
 #   - pyproject.toml: [project.optional-dependencies].dev (pytest>=8.0, pytest-mock>=3.14, ruff)
 #   - CONTRIBUTING.md: conda install for heavy deps, pip install -e ".[dev]", smoke marker
 #   - GitHub Docs: actions/checkout@v6, actions/setup-python@v6 (current latest Feb 2026)
@@ -79,8 +79,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # From pyproject.toml classifiers: Python 3.10, 3.11, 3.12
-        python-version: ["3.10", "3.11", "3.12"]
+        # From pyproject.toml classifiers: Python 3.11, 3.12
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
@@ -117,9 +117,8 @@ jobs:
         run: uv run --no-sync pytest -m smoke --tb=short -q tests/
 
   # Gate the opt-in DEP-BOUND `cdk_substructure` plugin (Pace 11 / v1.14.0). It requires the
-  # `[descriptors-cdk]` extra (CDK-pywrapper + jpype1), a JRE, and Python >= 3.11 (CDK-pywrapper
-  # drops 3.10) — so it cannot be exercised by the 3.10 matrix / the default pipeline, and its
-  # tests importorskip elsewhere. This job installs Java + the extra on Python 3.12 and runs the
+  # `[descriptors-cdk]` extra (CDK-pywrapper + jpype1) and a JRE — so it is not exercised by the
+  # default pipeline, and its tests importorskip elsewhere. This job installs Java + the extra on Python 3.12 and runs the
   # plugin's tests explicitly, so the CDK compute path is actually verified in CI.
   test-cdk:
     name: Test CDK plugin (Python 3.12 + Java)
@@ -230,7 +229,7 @@ jobs:
   #     - name: Install uv
   #       uses: astral-sh/setup-uv@v9.0.0
   #       with:
-  #         python-version: "3.10"
+  #         python-version: "3.12"
   #         enable-cache: true
   #         cache-dependency-glob: "uv.lock"
   #     - run: uv sync --locked --extra cpu --extra dev

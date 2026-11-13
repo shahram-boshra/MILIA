@@ -21,10 +21,9 @@ Corrected migration statistics tracking to avoid double-counting
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import Self
 
 try:
     import yaml

@@ -63,7 +63,7 @@ For significant changes (new modules, architectural modifications, new dataset h
 
 ### Prerequisites
 
-MILIA requires **Python 3.10 or later** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
+MILIA requires **Python 3.11 or 3.12** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
 
 ### Setting Up for Development
 
@@ -155,7 +155,7 @@ MILIA uses [Ruff](https://docs.astral.sh/ruff/) for both linting and formatting,
 
 ### Configuration Summary
 
-- **Target Python version**: 3.10
+- **Target Python version**: 3.11
 - **Line length**: 100 characters
 - **Enabled rule sets**: `E` (pycodestyle errors), `W` (pycodestyle warnings), `F` (pyflakes), `I` (isort), `UP` (pyupgrade), `B` (flake8-bugbear), `SIM` (flake8-simplify)
 - **Ignored**: `E501` (line-too-long — handled by the formatter)

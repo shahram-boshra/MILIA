@@ -62,10 +62,9 @@ Pydantic V2 Migration (Phase 14):
 """
 
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import Self
 
 # =============================================================================
 # GNN LAYER TYPE ENUM

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Python 3.10 support: Python 3.10 reached end of life on 2026-10-01 (PEP 619). MILIA requires Python 3.11 or
+  3.12; the Docker images use Python 3.12.
+
 ### Fixed
 
 - Model creation checks PyG's optional compiled operations (`radius_graph`, `radius`, `knn`, `knn_graph`, `fps`,

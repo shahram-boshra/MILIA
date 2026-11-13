@@ -40,11 +40,11 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
+    Self,
     Union,
 )
 
 from pydantic import BaseModel, field_validator, model_validator
-from typing_extensions import Self
 
 # Optional imports with graceful fallbacks
 try:

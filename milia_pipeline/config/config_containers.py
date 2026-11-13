@@ -26,10 +26,9 @@ import json
 import logging
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import Self
 
 # ============================================================================
 # PHASE 6.2 - REGISTRY ACCESS DELEGATED TO CONFIG_LOADER.PY (SINGLE SOURCE OF TRUTH)
