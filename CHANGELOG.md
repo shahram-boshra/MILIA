@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =
+  ">=0.13.7"`), the uv Dependabot's updater runs: a lock written by a different uv changed its `revision` and
+  marker spelling in every dependency PR. The relocked file installs the same packages for every extra and
+  supported Python; a test keeps the pins equal.
+
 ## [1.21.0] - 2026-11-14
 
 Platform release. MILIA moves to PyTorch 2.12.1 and PyTorch Geometric 2.8.1 and adds CUDA 12.6 and CUDA 13.0

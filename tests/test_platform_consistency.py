@@ -106,3 +106,29 @@ def test_docker_publish_builds_only_declared_variants():
     built = {accel for found in lists for accel in json.loads(found)}
     assert built <= set(ACCELERATORS)
     assert set(ACCELERATORS) <= built
+
+
+UV_WORKFLOWS = ("ci.yml", "release.yml")
+DOCKERFILE = REPO / "Dockerfile"
+
+
+def _uv_floor() -> str:
+    floor = PYPROJECT["tool"]["uv"]["required-version"]
+    assert floor.startswith(">="), floor
+    return floor.removeprefix(">=")
+
+
+@pytest.mark.parametrize("workflow", UV_WORKFLOWS)
+def test_workflows_pin_the_uv_that_writes_the_lock(workflow):
+    text = (REPO / ".github" / "workflows" / workflow).read_text()
+    versions = re.findall(r'^\s*version:\s*"([^"]+)"', text, flags=re.MULTILINE)
+    assert versions, f"no setup-uv version in {workflow}"
+    assert set(versions) == {_uv_floor()}
+
+
+@pytest.mark.skipif(
+    not DOCKERFILE.exists(), reason=".dockerignore keeps the Dockerfile out of the test image"
+)
+def test_dockerfile_pins_the_uv_that_writes_the_lock():
+    match = re.search(r"^ARG UV_VERSION=(\S+)", DOCKERFILE.read_text(), flags=re.MULTILINE)
+    assert match and match.group(1) == _uv_floor()

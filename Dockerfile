@@ -17,7 +17,7 @@
 # =============================================================================
 
 # Global build args (available to FROM lines; re-declared inside stages for RUN use).
-ARG UV_VERSION=0.12.0          # pin uv for reproducible builds (the version used to validate the lock)
+ARG UV_VERSION=0.13.7          # pin uv for reproducible builds (the version used to validate the lock)
 ARG ACCEL=cpu                  # cpu | cu126 | cu130
 
 # Python base image — pinned by DIGEST (PA-0b / F33): a tag is mutable and can point to a different

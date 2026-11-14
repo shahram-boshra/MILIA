@@ -72,7 +72,7 @@ MILIA requires **Python 3.11 (3.11.4 or later) or 3.12** and uses [uv](https://d
 git clone https://github.com/<your-username>/MILIA.git
 cd MILIA
 
-# 2. Install uv (https://docs.astral.sh/uv/)
+# 2. Install uv 0.13.7 or later (https://docs.astral.sh/uv/); pyproject.toml's required-version enforces it
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3. Create the locked environment: full CPU stack + dev tools.

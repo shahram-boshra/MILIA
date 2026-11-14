@@ -312,6 +312,11 @@ markers = [
 
 # uv — accelerator-aware resolution (see UV_MIGRATION_STRATEGY.md)
 [tool.uv]
+# One uv writes uv.lock: the Dockerfile `UV_VERSION`, the CI/release `setup-uv` pins and Dependabot's uv updater
+# (0.13.7) — a different uv rewrites the lockfile `revision` and marker spelling (astral-sh/uv#22911). A floor,
+# not an exact pin, so Dependabot can keep locking when its updater moves ahead; Dependabot does not update this
+# field. tests/test_platform_consistency.py keeps the pins equal to the floor.
+required-version = ">=0.13.7"
 # Lock scoped to Linux x86_64 (matches the deployed amd64 image and CI runners). Broaden only after
 # checking that every platform-specific wheel (torch, pyg-lib, torch-scatter, torch-sparse) exists for
 # the target on each accelerator index (PA-0i / F41).
