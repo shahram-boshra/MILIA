@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-14
+
+Platform release. MILIA moves to PyTorch 2.12.1 and PyTorch Geometric 2.8.1 and adds CUDA 12.6 and CUDA 13.0
+variants (extras and container images); model creation reports a missing PyG compiled operation with PyG's own
+message; dataset archives are extracted with tarfile's `data` filter; locked dependencies move to the releases
+that fix their published advisories (filelock, aiohttp, certifi, Mako, msgpack, multidict, Pillow, soupsieve,
+urllib3), and the remaining known ones are listed under Security. **Behaviour notes:** MILIA requires Python
+3.11.4 or later, or 3.12 (on Python 3.10, pip keeps installing 1.20.0); the `cu118`, `cu121` and `cu124` extras
+are removed and `:cu124` images are no longer updated (use `cu126` or `cu130`); `torch-cluster`,
+`torch-spline-conv` and the unused `hydra-core` are no longer installed; custom transforms work on a shallow copy
+of the input `Data`, so attributes they set no longer appear on the caller's object; `compute_graph_statistics`
+reports `num_nodes` as `None` when the count is not defined.
+
 ### Added
 
 - CUDA 13.0 and CUDA 12.6 variants: accelerator extras `cu130` and `cu126`, container images `:cu130` and `:cu126`
@@ -1006,7 +1019,8 @@ values (unknown pruner/sampler/direction/parameter types; sampler `motpe`; backe
 - Production `pyproject.toml` with PEP 517/518/621/639 compliance.
 - Comprehensive `README.md` with installation, quick start, and API reference.
 
-[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.20.0...HEAD
+[unreleased]: https://github.com/shahram-boshra/MILIA/compare/v1.21.0...HEAD
+[1.21.0]: https://github.com/shahram-boshra/MILIA/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/shahram-boshra/MILIA/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/shahram-boshra/MILIA/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/shahram-boshra/MILIA/compare/v1.17.0...v1.18.0

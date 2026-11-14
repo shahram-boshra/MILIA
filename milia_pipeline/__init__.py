@@ -248,7 +248,7 @@ Notes
 
 """
 
-__version__ = "1.20.0"  # Atomic references per level of theory with provenance; plugin security; config-free import
+__version__ = "1.21.0"  # PyTorch 2.12 / PyG 2.8; CUDA 12.6 and 13.0 variants; Python 3.11-3.12
 __author__ = "milia Pipeline Development Team"
 __license__ = "See LICENSE file"
 __maintainer__ = "milia Pipeline Development Team"
