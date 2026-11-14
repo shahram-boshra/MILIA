@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11.4, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and platform_machine == 'x86_64' and sys_platform == 'linux'",
@@ -202,16 +202,16 @@ wheels = [
 
 [[package]]
 name = "choreographer"
-version = "1.3.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "logistro" },
     { name = "platformdirs" },
     { name = "simplejson" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/69/3058cd4f16d6b75c80e8f95e5b713d930526353ce294df9a7887453ba215/choreographer-1.3.0.tar.gz", hash = "sha256:6c44a0e48e9b37977344d40bfa5a9ed88575fe4bc0fd836771bf702bc24d6884", size = 48291, upload-time = "2026-04-28T22:57:45.114Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/21/6b1a021b5fd16696bef7e12093ada05bce6fc3a354d529f67381fc3e83d1/choreographer-1.4.0.tar.gz", hash = "sha256:97ed6d2b44b71271b6cd9fc87816d23bef4fd5eca9855dc24dfa0033ebf08c77", size = 57382, upload-time = "2026-09-16T23:31:23.005Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/6c/ff8bf52315064dbeb55cb5067e191120a5b2e58bb648d0d34cf7969dc2c2/choreographer-1.3.0-py3-none-any.whl", hash = "sha256:cea4cb739e4f61625e4b53888a8d3fa1d3bf73948b56753e460ab44da7d8d44f", size = 52622, upload-time = "2026-04-28T22:57:44.015Z" },
+    { url = "https://files.pythonhosted.org/packages/12/24/96b041b800d1de465758106353bedc1e682c5671b3a18142e71e67613996/choreographer-1.4.0-py3-none-any.whl", hash = "sha256:8acba7ce8e912e1193628eea5bbfd76ac3d63328e3195b2527c04675f16780f7", size = 57999, upload-time = "2026-09-16T23:31:21.791Z" },
 ]
 
 [[package]]
@@ -273,7 +273,7 @@ resolution-markers = [
     "python_full_version < '3.12' and platform_machine == 'x86_64' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "cuda-pathfinder", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "cuda-pathfinder", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/0d/ca24317a31118b90fd60126aec5c0a92a191a7fdd39524032d43328b49b5/cuda_bindings-13.5.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:08b7e8d674c3266facb00453a7e34ea7d3ea965c2f594bb728f269f45f39fbe2", size = 8390178, upload-time = "2026-11-05T12:05:52.653Z" },
@@ -349,34 +349,34 @@ wheels = [
 
 [package.optional-dependencies]
 cudart = [
-    { name = "nvidia-cuda-runtime", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cuda-runtime", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 cufft = [
-    { name = "nvidia-cufft", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cufft", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 cufile = [
-    { name = "nvidia-cufile", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cufile", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 cupti = [
-    { name = "nvidia-cuda-cupti", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cuda-cupti", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 curand = [
-    { name = "nvidia-curand", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-curand", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 cusolver = [
-    { name = "nvidia-cusolver", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cusolver", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 cusparse = [
-    { name = "nvidia-cusparse", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cusparse", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 nvjitlink = [
-    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 nvrtc = [
-    { name = "nvidia-cuda-nvrtc", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cuda-nvrtc", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 nvtx = [
-    { name = "nvidia-nvtx", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvtx", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 
 [[package]]
@@ -567,17 +567,16 @@ wheels = [
 
 [[package]]
 name = "kaleido"
-version = "1.3.0"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "choreographer" },
     { name = "logistro" },
-    { name = "orjson" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/64/53eac73d31dbfc3310ee2e87bcac1ae7417427f0fbe3dd800eaf676db324/kaleido-1.3.0.tar.gz", hash = "sha256:5e0378a7475e98852773deeb6483dee91f8aa7b364dde7b5f2b3622cb468a3e6", size = 68938, upload-time = "2026-05-04T19:45:28.932Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/0b/865d6c9393658888c9f256a6d9ffe745c23764ecbd92a4e6b995b1a16b5c/kaleido-1.5.0.tar.gz", hash = "sha256:e724bbdf94be097879793365afaeba2990ae43e932efaf9c8e2e8d8ad0f1cba0", size = 70412, upload-time = "2026-10-06T15:29:00.084Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/b9/a6d8bb7d228940f01885bd9f327ab7f9d366a9be775c4bf366bf9d9477ae/kaleido-1.3.0-py3-none-any.whl", hash = "sha256:52714dfd38e8f2a114831826200c40bb10d0ca0c11d4272f3f48ad499cd8f8ea", size = 55580, upload-time = "2026-05-04T19:45:27.483Z" },
+    { url = "https://files.pythonhosted.org/packages/07/86/73fa07ff24a29e14f3f44bc5729ef9897cb594dee983923a2bc7ebc4187f/kaleido-1.5.0-py3-none-any.whl", hash = "sha256:de301b73cc9fd6311e54b47087d3a7a5da3b7681ee9175e23b45dcffb4432ff2", size = 55816, upload-time = "2026-10-06T15:28:58.822Z" },
 ]
 
 [[package]]
@@ -771,7 +770,7 @@ requires-dist = [
     { name = "cdk-pywrapper", marker = "extra == 'descriptors-cdk'", specifier = ">=1.0" },
     { name = "h5py", specifier = "==3.16.0" },
     { name = "jpype1", marker = "extra == 'descriptors-cdk'", specifier = ">=1.5" },
-    { name = "kaleido", specifier = "==1.3.0" },
+    { name = "kaleido", specifier = "==1.5.0" },
     { name = "matplotlib", specifier = "==3.10.3" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=4.0" },
     { name = "networkx", specifier = "==3.6.1" },
@@ -912,7 +911,7 @@ name = "nvidia-cublas"
 version = "13.1.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cuda-nvrtc", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cuda-nvrtc", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/cd/154ca20c38269e05eff77c1464e6c1da89f50a6390b565e9d82e06bc11e1/nvidia_cublas-13.1.1.3-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:37936a16db8fe4ac1f065c2139360608a543a09275cb1a1af612e08cfa065436", size = 423138758, upload-time = "2026-04-08T18:46:58.655Z" },
@@ -992,7 +991,7 @@ name = "nvidia-cudnn-cu13"
 version = "9.20.0.48"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cublas", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/5e/edb9c0ae051602c3ccaffe424256463636d639e27d7f302dde9975ef9e7a/nvidia_cudnn_cu13-9.20.0.48-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:0c45dd8eeb50b603f07995b1b300c62ffe6a1980482b82b3bcf94a4ca9d49304", size = 366173588, upload-time = "2026-03-09T19:29:34.474Z" },
@@ -1003,7 +1002,7 @@ name = "nvidia-cufft"
 version = "12.0.0.61"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/2f/7b57e29836ea8714f81e9898409196f47d772d5ddedddf1592eadb8ab743/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:6c44f692dce8fd5ffd3e3df134b6cdb9c2f72d99cf40b62c32dde45eea9ddad3", size = 214085489, upload-time = "2025-09-04T08:31:56.044Z" },
@@ -1059,9 +1058,9 @@ name = "nvidia-cusolver"
 version = "12.0.4.66"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
-    { name = "nvidia-cusparse", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
-    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cublas", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cusparse", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/67/cba3777620cdacb99102da4042883709c41c709f4b6323c10781a9c3aa34/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:0a759da5dea5c0ea10fd307de75cdeb59e7ea4fcb8add0924859b944babf1112", size = 200941980, upload-time = "2025-09-04T08:33:22.767Z" },
@@ -1086,7 +1085,7 @@ name = "nvidia-cusparse"
 version = "12.6.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvjitlink", marker = "extra == 'extra-8-milia-py-cu130' or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/18/623c77619c31d62efd55302939756966f3ecc8d724a14dab2b75f1508850/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:2b3c89c88d01ee0e477cb7f82ef60a11a4bcd57b6b87c33f789350b59759360b", size = 145942937, upload-time = "2025-09-04T08:33:58.029Z" },
@@ -1217,18 +1216,6 @@ wheels = [
 ]
 
 [[package]]
-name = "orjson"
-version = "3.11.9"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7e/0c/964746fcafbd16f8ff53219ad9f6b412b34f345c75f384ad434ceaadb538/orjson-3.11.9.tar.gz", hash = "sha256:4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f", size = 5599163, upload-time = "2026-05-06T15:11:08.309Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/bd/360686f39348aa88827cb6fbf7dc606fd41c831a35235e1abf1db8e3a9e6/orjson-3.11.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:147302878da387104b66bb4a8b0227d1d487e976ce41a8501916161072ed87b1", size = 133971, upload-time = "2026-05-06T15:09:45.239Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/8a/4081492586d75b073d60c5271a8d0f05a0955cabf1e34c8473f6fcd84235/orjson-3.11.9-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:63e0efbc991250c0b3143488fa57d95affcabbfc63c99c48d625dd37779aafe2", size = 136959, upload-time = "2026-05-06T15:09:51.311Z" },
-    { url = "https://files.pythonhosted.org/packages/0e/a4/82b7a2fe5d8a67a59ed831b24d59a3d46ea7d207b66e1602d376541d94a6/orjson-3.11.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be4fa4f0af7fa18951f7ab3fc2148e223af211bf03f59e1c6034ec3f97f21d61", size = 134014, upload-time = "2026-05-06T15:10:08.213Z" },
-    { url = "https://files.pythonhosted.org/packages/df/e5/4d2d8af06f788329b4f78f8cc3679bb395392fcaa1e4d8d3c33e85308fa4/orjson-3.11.9-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:71e63adb0e1f1ed5d9e168f50a91ceb93ae6420731d222dc7da5c69409aa47aa", size = 136943, upload-time = "2026-05-06T15:10:14.405Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "26.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1347,7 +1334,7 @@ wheels = [
 
 [package.optional-dependencies]
 binary = [
-    { name = "psycopg-binary", marker = "implementation_name != 'pypy' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130') or (extra == 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130')" },
+    { name = "psycopg-binary", marker = "implementation_name != 'pypy'" },
 ]
 
 [[package]]
@@ -1985,21 +1972,21 @@ resolution-markers = [
     "python_full_version < '3.12' and platform_machine == 'x86_64' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "cuda-bindings", version = "13.5.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "cuda-toolkit", version = "13.0.2", source = { registry = "https://pypi.org/simple" }, extra = ["cudart", "cufft", "cufile", "cupti", "curand", "cusolver", "cusparse", "nvjitlink", "nvrtc", "nvtx"], marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "filelock", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "fsspec", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "jinja2", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "networkx", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "nvidia-cublas", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "nvidia-cudnn-cu13", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "nvidia-cusparselt-cu13", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "nvidia-nccl-cu13", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "nvidia-nvshmem-cu13", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "setuptools", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "sympy", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "triton", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "typing-extensions", marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
+    { name = "cuda-bindings", version = "13.5.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "cuda-toolkit", version = "13.0.2", source = { registry = "https://pypi.org/simple" }, extra = ["cudart", "cufft", "cufile", "cupti", "curand", "cusolver", "cusparse", "nvjitlink", "nvrtc", "nvtx"], marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "filelock", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "fsspec", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "jinja2", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "networkx", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cublas", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cudnn-cu13", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-cusparselt-cu13", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nccl-cu13", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "nvidia-nvshmem-cu13", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "setuptools", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "sympy", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "triton", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
+    { name = "typing-extensions", marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cu130/torch-2.12.1%2Bcu130-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:6235f3a20b6094c7e8882c65a86a7f3c6e8c3ac8dbec0b57e575937d0166ed0f", upload-time = "2026-06-18T02:35:52Z" },
@@ -2124,7 +2111,7 @@ dependencies = [
     { name = "torch", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130') or (extra == 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra != 'extra-8-milia-py-cu126' and extra != 'extra-8-milia-py-cu130')" },
     { name = "torch", version = "2.12.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "extra == 'extra-8-milia-py-cpu' or (extra == 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130')" },
     { name = "torch", version = "2.12.1+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-8-milia-py-cu126' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
-    { name = "torch", version = "2.12.1+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "(extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126') or (extra != 'extra-8-milia-py-cu126' and extra == 'extra-8-milia-py-cu130') or (extra != 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu130')" },
+    { name = "torch", version = "2.12.1+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "extra == 'extra-8-milia-py-cu130' or (extra == 'extra-8-milia-py-cpu' and extra == 'extra-8-milia-py-cu126')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/81/34/39b8b749333db56c0585d7a11fa62a283c087bb1dfc897d69fb8cedbefb1/torchmetrics-1.9.0.tar.gz", hash = "sha256:a488609948600df52d3db4fcdab02e62aab2a85ef34da67037dc3e65b8512faa", size = 581765, upload-time = "2026-03-09T17:41:22.443Z" }
 wheels = [
