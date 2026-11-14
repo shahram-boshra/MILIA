@@ -93,7 +93,7 @@ dependencies = [
     "kaleido==1.3.0",
     "ase==3.29.0",
     "qc-iodata==1.0.1",
-    "ray[tune]==2.56.1",
+    "ray[tune]==2.60.0",
     "psutil==7.2.2",                # implicit direct dep (3 import sites); conda supplied, never declared
     "h5py==3.16.0",                 # implicit direct dep (4 preprocessor import sites)
     # implicit direct dep (4 import sites: models/model_plugin_system.py, transformations/plugin_system.py,
