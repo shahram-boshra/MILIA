@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `edge_index` and warns that it cannot infer the count accurately.
 - A process that imported filelock 3.32.2 (installed with torch, Ray and CDK-pywrapper) could print
   `Exception ignored in audit hook … TypeError` at exit, as the test run did: its fork-safety audit hook ran after
-  CPython had cleared the module globals. The lock now has filelock 3.32.7 (fixed in 3.32.3, filelock changelog).
+  CPython had cleared the module globals. The lock now has filelock 4.2.10 (fixed in 3.32.3, filelock changelog).
 
 ### Security
 
@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dataset archives (QDπ, ANI-2x, rMD17 and `extract_from_archive`) are extracted with tarfile's `data` filter
   (PEP 706), which refuses absolute paths, members outside the target directory and special files. Python 3.12
   warns on unfiltered extraction and 3.14 makes `data` the default; the filter needs Python 3.11.4 or later.
+- filelock 4.2.10 (installed with torch, Ray and CDK-pywrapper; MILIA does not import it): from 3.20.4 to before
+  4.2.1, a local user who can rename entries in a lock's directory could make `ReadWriteLock` overwrite or delete
+  files (CVE-2026-112940) or let two processes hold one `SoftFileLock` (CVE-2026-112935, CVE-2026-112939).
 
 ## [1.20.0] - 2026-11-12
 
