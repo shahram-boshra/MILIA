@@ -57,6 +57,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - filelock 4.2.10 (installed with torch, Ray and CDK-pywrapper; MILIA does not import it): from 3.20.4 to before
   4.2.1, a local user who can rename entries in a lock's directory could make `ReadWriteLock` overwrite or delete
   files (CVE-2026-112940) or let two processes hold one `SoftFileLock` (CVE-2026-112935, CVE-2026-112939).
+- Locked dependencies moved to the lowest release that contains each fix: aiohttp 3.14.4 (8 advisories, e.g.
+  CVE-2026-123817, CVE-2026-111064, CVE-2026-111066), certifi 2026.10.18 (GHSA-6q48-6c7w-9gw2, emSign roots with
+  compromised intermediate keys), Mako 1.4.2 (CVE-2026-102991), msgpack 1.2.3 (CVE-2026-114613), multidict 6.9.1
+  (CVE-2026-104874), Pillow 13.0.0 (43 advisories, e.g. heap overflows CVE-2026-112393, CVE-2026-112398 and
+  CVE-2026-112403, Ghostscript argument injection CVE-2026-112900), soupsieve 2.10 (CVE-2026-126192) and urllib3
+  2.8.0 (CVE-2026-97687, CVE-2026-97688, CVE-2026-97689); aiohttp 3.14.4 requires yarl 1.25.1.
+- Known advisories without a usable fix in this release: torch 2.12.1, CVE-2025-3000 (low; local memory
+  corruption in `torch.jit.script`, which MILIA calls only on models it builds, when TorchScript optimisation is
+  enabled; fixed in 2.13.0, for which PyG publishes no compiled-extension wheels yet); setuptools 81.0.0,
+  CVE-2026-59890 and GHSA-xmj3-9gf7-h52w (torch 2.12.1 requires setuptools < 82; both concern building sdists and
+  installing legacy wheels on Windows, not running MILIA); soupsieve 2.10, CVE-2026-126190, CVE-2026-126191 and
+  CVE-2026-126193 (reached only through the `docs` extra's Sphinx theme, on MILIA's own documentation; the fixed
+  releases, 3.0.2 and 4.0, need Python 3.11.5 or later).
 
 ## [1.20.0] - 2026-11-12
 
