@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accelerator extras `cu118`, `cu121` and `cu124` and the `:cu124` images (no torch 2.12 builds exist for CUDA
   11.8, 12.1 or 12.4); existing `:cu124` tags stay available but are no longer updated.
 - `torch-cluster` and `torch-spline-conv`, deprecated by PyG 2.8 in favour of `pyg-lib`.
+- `hydra-core` (and with it `omegaconf` and `antlr4-python3-runtime`): declared but never imported by MILIA
+  (deptry rule DEP002, unused dependency). Its locked 1.3.2 was affected by CVE-2026-68508 and CVE-2026-106441.
 
 ### Fixed
 
