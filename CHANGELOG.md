@@ -11,8 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =
   ">=0.13.7"`), the uv Dependabot's updater runs: a lock written by a different uv changed its `revision` and
-  marker spelling in every dependency PR. The relocked file installs the same packages for every extra and
-  supported Python; a test keeps the pins equal.
+  marker spelling in every dependency PR. uv 0.13.7 accepts the existing lock as it is; the first lock it
+  rewrites moves to lockfile revision 5 and respells the CUDA markers, which installs the same packages for every
+  extra and supported Python. A test keeps the pins equal.
+- Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
+  optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
 
 ## [1.21.0] - 2026-11-14
 
