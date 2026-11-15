@@ -139,7 +139,7 @@ jobs:
       # download, no apt — the unbounded apt step took ~20 min on a slow mirror, R67) and sets
       # JAVA_HOME, which jpype's JVM finder reads first.
       - name: Set up Java 21 (Temurin, preinstalled)
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6  # v6.0.1
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78  # v6.2.0
         with:
           distribution: temurin
           java-version: "21"
