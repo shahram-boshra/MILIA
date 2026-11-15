@@ -58,32 +58,8 @@ except ImportError:
         pass
 
 
-# Import the canonical PyTorch>=2.6 safe-load helper from trainer.py.
-#
-# `_safe_torch_load` invokes torch.load() with weights_only=True first (the
-# secure, future-aligned path) and falls back to weights_only=False with a
-# logged warning only on diagnostic-discriminated weights_only blocks. This
-# eliminates the FutureWarning emitted by torch>=2.4 and prepares this
-# module for the torch>=2.6 default flip without weakening security for
-# legitimate MILIA-authored checkpoints.
-#
-# The same retry pattern is implemented in CheckpointManager.load() in
-# milia_pipeline/models/post_training/checkpoint/checkpoint_manager.py.
-# Reusing the helper here keeps the policy centralized in one place.
-#
-# Fallback rationale: if trainer.py is unavailable (e.g., partial install
-# where the training subpackage was excluded), this module degrades to
-# legacy torch.load() behavior rather than failing at import time. That
-# preserves the historical contract for callers that never exercised
-# load_checkpoint().
-try:
-    from milia_pipeline.models.training.trainer import _safe_torch_load
-except ImportError:
-
-    def _safe_torch_load(filepath, map_location=None):
-        """Fallback when trainer module is unavailable; matches legacy semantics."""
-        return torch.load(filepath, map_location=map_location)
-
+# One loading policy for every MILIA checkpoint: weights_only=True, no fallback to full unpickling.
+from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 
 logger = logging.getLogger(__name__)
 
@@ -681,7 +657,12 @@ class DistributedManager:
             logger.info(f"Saved checkpoint to {filepath}")
 
     def load_checkpoint(
-        self, model: nn.Module, filepath: str | Path, optimizer: torch.optim.Optimizer | None = None
+        self,
+        model: nn.Module,
+        filepath: str | Path,
+        optimizer: torch.optim.Optimizer | None = None,
+        *,
+        weights_only: bool = True,
     ) -> dict[str, Any]:
         """
         Load model checkpoint.
@@ -690,6 +671,8 @@ class DistributedManager:
             model: Model to load into
             filepath: Path to checkpoint
             optimizer: Optimizer instance (optional)
+            weights_only: Restricted unpickling (default). Pass False only for a file you trust
+                (see ``milia_pipeline.models.checkpoint_io``).
 
         Returns:
             Checkpoint dictionary
@@ -699,7 +682,7 @@ class DistributedManager:
         if not filepath.exists():
             raise FileNotFoundError(f"Checkpoint not found: {filepath}")
 
-        checkpoint = _safe_torch_load(filepath, map_location="cpu")
+        checkpoint = load_checkpoint_file(filepath, map_location="cpu", weights_only=weights_only)
 
         # Load model state
         if hasattr(model, "module"):

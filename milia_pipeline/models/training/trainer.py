@@ -35,6 +35,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
+from milia_pipeline.models.checkpoint_io import load_checkpoint_file
+
 from .module_utils import unwrap_compiled
 
 
@@ -68,8 +70,8 @@ class _DeviceLossSum:
 
 
 if TYPE_CHECKING:
-    # Type-only: models.acceleration imports this module (_safe_torch_load), so a runtime
-    # import here would be circular. The Trainer only calls the passed object's methods.
+    # Type-only: a runtime import of models.acceleration here would be circular.
+    # The Trainer only calls the passed object's methods.
     from milia_pipeline.models.acceleration import AccelerationManager
 
     from .callbacks import Callback
@@ -111,60 +113,6 @@ def _is_trial_pruned(exc: BaseException) -> bool:
     except ImportError:
         return False
     return isinstance(exc, optuna.TrialPruned)
-
-
-# =============================================================================
-# SAFE CHECKPOINT LOAD HELPER (aligned with CheckpointManager.load() pattern)
-# =============================================================================
-# PyTorch >= 2.6 made `weights_only=True` the default for torch.load(). This
-# helper invokes torch.load() with `weights_only=True` first (the secure,
-# future-aligned path), and on diagnostic-discriminated weights_only blocks,
-# falls back to `weights_only=False` with a logged warning.
-#
-# This mirrors the canonical retry pattern already implemented in
-# milia_pipeline/models/post_training/checkpoint/checkpoint_manager.py
-# (CheckpointManager.load(), lines 318-360 of that module). Using a helper
-# instead of importing CheckpointManager keeps Trainer's dependency graph
-# unchanged while ensuring trainer.py emits no FutureWarning under torch>=2.6.
-#
-# Security note: MILIA's checkpoints are MILIA-authored — we save them and we
-# load them — so the bounded fallback to weights_only=False is acceptable
-# for legitimate MILIA-saved checkpoints containing project Pydantic configs
-# (e.g. StructuralFeaturesConfig under checkpoint['data_info']). For
-# checkpoints from untrusted sources, callers should pass the `weights_only`
-# parameter explicitly via the CheckpointManager API, which exposes it.
-# =============================================================================
-
-
-def _safe_torch_load(
-    filepath: str | Path,
-    map_location: str | torch.device | None = None,
-) -> Any:
-    """Load a torch checkpoint with PyTorch>=2.6 weights_only=True semantics.
-
-    Mirrors CheckpointManager.load() retry behaviour: try weights_only=True
-    first; on a diagnostic-discriminated weights_only rejection, retry with
-    weights_only=False and log a warning. Re-raises any unrelated error.
-    """
-    try:
-        return torch.load(filepath, map_location=map_location, weights_only=True)
-    except Exception as e:  # noqa: BLE001 — discriminated below before fallback
-        error_text = str(e)
-        looks_like_weights_only_block = (
-            "weights_only" in error_text
-            or "WeightsUnpickler" in error_text
-            or "Unsupported global" in error_text
-        )
-        if not looks_like_weights_only_block:
-            raise
-        logger.warning(
-            "torch.load(weights_only=True) rejected a global in the "
-            "checkpoint at %s. Retrying with weights_only=False (safe for "
-            "MILIA-authored checkpoints). Underlying error was: %s",
-            filepath,
-            error_text.splitlines()[0] if error_text else "<no message>",
-        )
-        return torch.load(filepath, map_location=map_location, weights_only=False)
 
 
 # =============================================================================
@@ -2021,7 +1969,7 @@ class Trainer:
         except Exception as e:
             raise CheckpointError(f"Failed to save checkpoint: {e}") from e
 
-    def load_checkpoint(self, filepath: Path) -> dict[str, Any]:
+    def load_checkpoint(self, filepath: Path, *, weights_only: bool = True) -> dict[str, Any]:
         """
         Load training checkpoint with v2.0 format support.
 
@@ -2034,6 +1982,8 @@ class Trainer:
 
         Args:
             filepath: Path to checkpoint file
+            weights_only: Restricted unpickling (default). Pass False only for a file you trust
+                (see ``milia_pipeline.models.checkpoint_io``).
 
         Returns:
             Dictionary with extra data from checkpoint, including:
@@ -2048,7 +1998,9 @@ class Trainer:
             ...     print(f"Model: {extra['hyper_parameters'].get('model_name')}")
         """
         try:
-            checkpoint = _safe_torch_load(filepath, map_location=self.device)
+            checkpoint = load_checkpoint_file(
+                filepath, map_location=self.device, weights_only=weights_only
+            )
 
             # =================================================================
             # DETECT CHECKPOINT FORMAT VERSION
@@ -2123,7 +2075,7 @@ class Trainer:
     # =========================================================================
 
     @staticmethod
-    def get_checkpoint_info(filepath: Path) -> dict[str, Any]:
+    def get_checkpoint_info(filepath: Path, *, weights_only: bool = True) -> dict[str, Any]:
         """
         Get information about a checkpoint without loading the model.
 
@@ -2133,6 +2085,7 @@ class Trainer:
 
         Args:
             filepath: Path to checkpoint file
+            weights_only: Restricted unpickling (default). Pass False only for a file you trust.
 
         Returns:
             Dictionary with checkpoint information:
@@ -2152,7 +2105,7 @@ class Trainer:
             >>> if info['is_v2']:
             ...     print(f"Model: {info['model_name']}")
         """
-        checkpoint = _safe_torch_load(filepath, map_location="cpu")
+        checkpoint = load_checkpoint_file(filepath, map_location="cpu", weights_only=weights_only)
 
         version_info = checkpoint.get("version_info", {})
         format_version = version_info.get("checkpoint_format_version", "1.0")
@@ -2188,7 +2141,7 @@ class Trainer:
             ...     print("Checkpoint can be loaded for inference without config")
         """
         try:
-            checkpoint = _safe_torch_load(filepath, map_location="cpu")
+            checkpoint = load_checkpoint_file(filepath, map_location="cpu")
             version_info = checkpoint.get("version_info", {})
             format_version = version_info.get("checkpoint_format_version", "1.0")
             return format_version >= "2.0"

@@ -20,6 +20,8 @@ from typing import Any
 
 import torch
 
+from milia_pipeline.models.checkpoint_io import load_checkpoint_file
+
 logger = logging.getLogger(__name__)
 
 # Checkpoint format version
@@ -311,8 +313,8 @@ class CheckpointManager:
             map_location: Device to load to
             weights_only: Restrict unpickling to tensors, primitive types, and
                           dictionaries (default: True). Matches PyTorch >= 2.6
-                          default. Set to False only for third-party or legacy
-                          checkpoints containing custom objects.
+                          default. A rejected file raises; set False only for a
+                          file you trust (full unpickling can run code from it).
 
         Returns:
             Checkpoint dictionary
@@ -320,49 +322,14 @@ class CheckpointManager:
         # Resolve path with intelligent search
         resolved_filepath = self._resolve_checkpoint_path(filepath)
 
-        try:
-            checkpoint = torch.load(
-                resolved_filepath,
-                map_location=map_location,
-                weights_only=weights_only,
-            )
-        except Exception as e:
-            # PyTorch >= 2.6 raises pickle.UnpicklingError (or a torch-specific
-            # subclass) when weights_only=True encounters a non-allowlisted
-            # global. The allowlist registered at module import covers the
-            # common cases, but checkpoints may contain types embedded by
-            # transient versions of upstream libraries (PyG, Optuna, etc.)
-            # that we have not yet seen.
-            #
-            # MILIA's checkpoints are MILIA-authored (we save them, we load
-            # them), so the security risk of falling back to
-            # weights_only=False is bounded. We retry once and surface a
-            # clear warning so the missing allowlist entry can be added
-            # permanently in _register_safe_globals() above.
-            #
-            # If `weights_only` was already False (caller's choice), the
-            # error is unrelated and we re-raise unchanged.
-            error_text = str(e)
-            looks_like_weights_only_block = weights_only and (
-                "weights_only" in error_text
-                or "WeightsUnpickler" in error_text
-                or "Unsupported global" in error_text
-            )
-            if not looks_like_weights_only_block:
-                raise
-
-            logger.warning(
-                "torch.load(weights_only=True) rejected a global in the "
-                f"checkpoint at {resolved_filepath}. Retrying with "
-                "weights_only=False (safe for MILIA-authored checkpoints). "
-                "Underlying error was: %s",
-                error_text.splitlines()[0] if error_text else "<no message>",
-            )
-            checkpoint = torch.load(
-                resolved_filepath,
-                map_location=map_location,
-                weights_only=False,
-            )
+        # weights_only=True rejects a corrupt file or one needing a non-allowlisted global, and that
+        # rejection stands: never retried with full unpickling (see milia_pipeline.models.checkpoint_io).
+        # A missing torch/PyG value type belongs in _register_safe_globals() above.
+        checkpoint = load_checkpoint_file(
+            resolved_filepath,
+            map_location=map_location,
+            weights_only=weights_only,
+        )
 
         # Check format version
         version_info = checkpoint.get("version_info", {})

@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
   optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
 
+### Security
+
+- Checkpoint loading no longer falls back to full unpickling. `CheckpointManager.load`, `Trainer.load_checkpoint`,
+  `Trainer.get_checkpoint_info` and `DistributedManager.load_checkpoint` read files with
+  `torch.load(weights_only=True)` only (new `milia_pipeline.models.checkpoint_io.load_checkpoint_file`); before,
+  any rejected file — corrupt or crafted — was retried with `weights_only=False`, which can run code embedded in
+  it. A rejected file now raises `pickle.UnpicklingError` with a note; for a file you trust, pass
+  `weights_only=False` explicitly. Checkpoints MILIA writes hold only state dicts and plain metadata and load as
+  before.
+
 ## [1.21.0] - 2026-11-14
 
 Platform release. MILIA moves to PyTorch 2.12.1 and PyTorch Geometric 2.8.1 and adds CUDA 12.6 and CUDA 13.0
