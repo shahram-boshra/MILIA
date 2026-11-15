@@ -1,0 +1,29 @@
+# =============================================================================
+# MILIA — OSV-Scanner on pull requests (F54)
+# =============================================================================
+# Scans uv.lock of the PR and of its base with OSV-Scanner and fails only on vulnerabilities the PR introduces
+# (Google's reusable PR workflow). Accepted advisories: osv-scanner.toml (reason + effectiveUntil), disclosed in
+# CHANGELOG.md. Results go to Security > Code scanning (SARIF).
+# https://google.github.io/osv-scanner/github-action/
+# =============================================================================
+
+name: OSV-Scanner PR scan
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  scan-pr:
+    permissions:
+      actions: read           # the reusable workflow reads its own artifacts
+      contents: read          # checkout
+      security-events: write  # SARIF upload to code scanning
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932  # v2.7.1
+    with:
+      scan-args: |-
+        --lockfile=./uv.lock

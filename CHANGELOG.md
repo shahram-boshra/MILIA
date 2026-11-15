@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- OSV-Scanner audit of `uv.lock` in GitHub Actions (Google's reusable workflows, v2.7.1): pull requests fail on
+  vulnerabilities they introduce; pushes to `main` and a weekly run fail on any known vulnerability, so an
+  advisory published after the lock was written is caught. Accepted advisories are listed in `osv-scanner.toml`
+  with a reason and a re-triage date (2027-02-15), and a test keeps each one disclosed here.
+
 ### Changed
 
 - uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =

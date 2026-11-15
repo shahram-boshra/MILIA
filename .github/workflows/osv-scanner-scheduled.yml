@@ -1,0 +1,30 @@
+# =============================================================================
+# MILIA — OSV-Scanner on main and weekly (F54)
+# =============================================================================
+# Scans uv.lock on every push to main and every Monday: an advisory published after the lock was written fails
+# this run although nothing changed (v1.21.0 was stopped by such a filelock advisory). Accepted advisories:
+# osv-scanner.toml (reason + effectiveUntil), disclosed in CHANGELOG.md. Results go to Security > Code scanning.
+# https://google.github.io/osv-scanner/github-action/
+# =============================================================================
+
+name: OSV-Scanner scheduled scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"  # Mondays 03:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scan-scheduled:
+    permissions:
+      actions: read           # the reusable workflow reads its own artifacts
+      contents: read          # checkout
+      security-events: write  # SARIF upload to code scanning
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932  # v2.7.1
+    with:
+      scan-args: |-
+        --lockfile=./uv.lock
