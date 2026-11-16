@@ -39,7 +39,13 @@ from pydantic import BaseModel
 from milia_pipeline.exceptions import ConfigurationError as ConfigurationError
 from milia_pipeline.exceptions import DeploymentError as DeploymentError
 from milia_pipeline.exceptions import ModelError as ModelError
-from milia_pipeline.models.deployment.package import is_package, load_package, package_checkpoint
+from milia_pipeline.models.deployment.package import (
+    is_package,
+    load_package,
+    package_checkpoint,
+    verify_package,
+)
+from milia_pipeline.models.deployment.serving import write_serving_dockerfile
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +106,8 @@ class DeploymentConfig(BaseModel):
         enable_caching: Enable response caching
         timeout_seconds: Request timeout in seconds
         max_batch_size: Maximum batch size for inference
+        base_image: Image the generated serving Dockerfile builds on (aws, gcp, azure,
+            container); default: the published MILIA image of the running version
     """
 
     target: str = "local"
@@ -115,6 +123,7 @@ class DeploymentConfig(BaseModel):
     enable_caching: bool = False
     timeout_seconds: int = 30
     max_batch_size: int = 32
+    base_image: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -214,6 +223,31 @@ class DeploymentStrategy(ABC):
 # =============================================================================
 
 
+def _prepare_serving_package(
+    strategy: DeploymentStrategy,
+    model: nn.Module | str | Path,
+    save_path: Path,
+    run_as_root: bool = False,
+) -> Path:
+    """Package a MILIA checkpoint and write the Dockerfile that serves it (aws, gcp, azure,
+    container). These targets run in another process, so they need a package that rebuilds
+    the model; weights alone cannot."""
+    if not isinstance(model, (str, Path)):
+        raise DeploymentError(
+            f"The {strategy.config.target} target serves a MILIA deployment package: pass the path "
+            "of a MILIA checkpoint (for example '<working_root_dir>/checkpoints/best.pt'). Model "
+            "weights alone cannot rebuild the model in the serving container."
+        )
+    save_path = Path(save_path)
+    package_checkpoint(model, save_path)
+    write_serving_dockerfile(
+        save_path, base_image=strategy.config.base_image, run_as_root=run_as_root
+    )
+    if strategy.verbose:
+        logger.info(f"Prepared {strategy.config.target} serving image context: {save_path}")
+    return save_path
+
+
 class AWSDeploymentStrategy(DeploymentStrategy):
     """
     Deployment strategy for AWS SageMaker.
@@ -225,62 +259,15 @@ class AWSDeploymentStrategy(DeploymentStrategy):
         >>> result = strategy.predict(input_data)
     """
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for AWS SageMaker deployment."""
-        save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Package a MILIA checkpoint with a SageMaker-compatible serving Dockerfile.
 
-        # Save PyTorch model
-        model_file = save_path / "model.pth"
-        torch.save(model.state_dict(), model_file)
-
-        # Create inference script
-        inference_script = save_path / "inference.py"
-        self._create_sagemaker_inference_script(inference_script)
-
-        # Create requirements
-        requirements = save_path / "requirements.txt"
-        requirements.write_text("torch\ntorch-geometric\n")
-
-        if self.verbose:
-            logger.info(f"Prepared model for AWS SageMaker: {save_path}")
-
-        return save_path
-
-    def _create_sagemaker_inference_script(self, filepath: Path):
-        """Create SageMaker inference script."""
-        script = """
-import torch
-import torch.nn as nn
-
-def model_fn(model_dir):
-    '''Load model for inference.'''
-    model = torch.load(f'{model_dir}/model.pth')
-    model.eval()
-    return model
-
-def input_fn(request_body, request_content_type):
-    '''Deserialize input data.'''
-    if request_content_type == 'application/json':
-        import json
-        data = json.loads(request_body)
-        return torch.tensor(data['input'])
-    raise ValueError(f'Unsupported content type: {request_content_type}')
-
-def predict_fn(input_data, model):
-    '''Make prediction.'''
-    with torch.no_grad():
-        output = model(input_data)
-    return output
-
-def output_fn(prediction, response_content_type):
-    '''Serialize prediction output.'''
-    if response_content_type == 'application/json':
-        import json
-        return json.dumps({'prediction': prediction.tolist()})
-    raise ValueError(f'Unsupported content type: {response_content_type}')
-"""
-        filepath.write_text(script)
+        The image answers ``GET /ping`` and ``POST /invocations`` on port 8080 and accepts the
+        ``serve`` argument SageMaker starts it with; it runs as root, as SageMaker expects.
+        Push the built image to ECR; the package files may also be uploaded as ``model.tar.gz``
+        (SageMaker extracts them to ``/opt/ml/model``).
+        """
+        return _prepare_serving_package(self, model, save_path, run_as_root=True)
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy to AWS SageMaker."""
@@ -306,11 +293,13 @@ def output_fn(prediction, response_content_type):
             "This is a template implementation."
         )
 
+        verify_package(model_path)
         deployment_info = {
             "target": "aws",
             "model_path": str(model_path),
             "status": "prepared",
-            "message": "Model prepared for SageMaker. Deploy using AWS SDK.",
+            "message": "Serving image context prepared for SageMaker: build it, push it to ECR "
+            "and create the endpoint with the AWS SDK.",
         }
 
         self.is_deployed = True
@@ -335,24 +324,19 @@ def output_fn(prediction, response_content_type):
 class GCPDeploymentStrategy(DeploymentStrategy):
     """Deployment strategy for Google Cloud AI Platform."""
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for GCP AI Platform."""
-        save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Package a MILIA checkpoint with a Vertex AI custom-container serving Dockerfile.
 
-        # Export to SavedModel format
-        model_file = save_path / "model.pth"
-        torch.save(model.state_dict(), model_file)
-
-        if self.verbose:
-            logger.info(f"Prepared model for GCP AI Platform: {save_path}")
-
-        return save_path
+        The server listens on ``AIP_HTTP_PORT`` and adds ``AIP_HEALTH_ROUTE`` and
+        ``AIP_PREDICT_ROUTE`` when Vertex AI sets them.
+        """
+        return _prepare_serving_package(self, model, save_path)
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy to GCP AI Platform."""
         logger.warning("GCP deployment requires GCP credentials and AI Platform setup.")
 
+        verify_package(model_path)
         deployment_info = {"target": "gcp", "model_path": str(model_path), "status": "prepared"}
 
         self.is_deployed = True
@@ -374,23 +358,16 @@ class GCPDeploymentStrategy(DeploymentStrategy):
 class AzureDeploymentStrategy(DeploymentStrategy):
     """Deployment strategy for Azure Machine Learning."""
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for Azure ML."""
-        save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
-
-        model_file = save_path / "model.pth"
-        torch.save(model.state_dict(), model_file)
-
-        if self.verbose:
-            logger.info(f"Prepared model for Azure ML: {save_path}")
-
-        return save_path
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Package a MILIA checkpoint with a serving Dockerfile for an Azure ML custom container
+        (probes: ``GET /health``; scoring: ``POST /predict``, port 8080)."""
+        return _prepare_serving_package(self, model, save_path)
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy to Azure ML."""
         logger.warning("Azure deployment requires Azure credentials and ML workspace setup.")
 
+        verify_package(model_path)
         deployment_info = {"target": "azure", "model_path": str(model_path), "status": "prepared"}
 
         self.is_deployed = True
@@ -488,95 +465,27 @@ class ContainerDeploymentStrategy(DeploymentStrategy):
     Creates Docker images and Kubernetes manifests.
     """
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for container deployment."""
-        save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
-
-        # Save model
-        model_file = save_path / "model.pth"
-        torch.save(model.state_dict(), model_file)
-
-        # Create Dockerfile
-        self._create_dockerfile(save_path)
-
-        # Create serving script
-        self._create_serving_script(save_path)
-
-        # Create requirements
-        (save_path / "requirements.txt").write_text("torch\ntorch-geometric\nflask\n")
-
-        if self.verbose:
-            logger.info(f"Prepared model for container deployment: {save_path}")
-
-        return save_path
-
-    def _create_dockerfile(self, save_path: Path):
-        """Create Dockerfile."""
-        dockerfile = """
-FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY model.pth .
-COPY serve.py .
-
-EXPOSE 8080
-
-CMD ["python", "serve.py"]
-"""
-        (save_path / "Dockerfile").write_text(dockerfile)
-
-    def _create_serving_script(self, save_path: Path):
-        """Create Flask serving script."""
-        script = """
-from flask import Flask, request, jsonify
-import torch
-
-app = Flask(__name__)
-
-# Load model
-model = torch.load('model.pth')
-model.eval()
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.json
-    input_tensor = torch.tensor(data['input'])
-
-    with torch.no_grad():
-        output = model(input_tensor)
-
-    return jsonify({'prediction': output.tolist()})
-
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({'status': 'healthy'})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
-"""
-        (save_path / "serve.py").write_text(script)
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Package a MILIA checkpoint with a serving Dockerfile (Docker, Kubernetes)."""
+        return _prepare_serving_package(self, model, save_path)
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy container."""
+        verify_package(model_path)
         deployment_info = {
             "target": "container",
             "model_path": str(model_path),
             "status": "ready_for_docker",
-            "message": "Build Docker image: docker build -t model:latest .",
-            "run_command": "docker run -p 8080:8080 model:latest",
+            "message": f"Build Docker image: docker build -t milia-serve {model_path}",
+            "run_command": "docker run -p 8080:8080 milia-serve",
         }
 
         self.is_deployed = True
 
         if self.verbose:
             logger.info("Container deployment prepared")
-            logger.info(f"Build: docker build -t model:latest {model_path}")
-            logger.info("Run: docker run -p 8080:8080 model:latest")
+            logger.info(f"Build: docker build -t milia-serve {model_path}")
+            logger.info("Run: docker run -p 8080:8080 milia-serve")
 
         return deployment_info
 

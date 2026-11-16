@@ -98,6 +98,44 @@ def mock_model():
     return model
 
 
+@pytest.fixture(scope="module")
+def milia_checkpoint(tmp_path_factory):
+    """A real MILIA v2 checkpoint (GCN), written by CheckpointManager.save."""
+    from milia_pipeline.models.factory.model_factory import ModelFactory
+    from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
+        CheckpointManager,
+    )
+
+    root = tmp_path_factory.mktemp("milia_root")
+    model, info = ModelFactory().create_model_with_info(
+        name="GCN",
+        hyperparameters={
+            "in_channels": 6,
+            "hidden_channels": 8,
+            "out_channels": 2,
+            "num_layers": 2,
+        },
+        task_type="graph_regression",
+    )
+    return CheckpointManager(working_root_dir=root).save(
+        root / "checkpoints" / "best.pt",
+        model,
+        hyper_parameters={
+            "model_name": "GCN",
+            "task_type": "graph_regression",
+            "hyperparameters": info["hyperparameters_values"],
+            "model_info": info,
+        },
+    )
+
+
+@pytest.fixture
+def serving_package(milia_checkpoint, temp_dir):
+    """A deployment package with its serving Dockerfile (container target)."""
+    strategy = ContainerDeploymentStrategy(DeploymentConfig(target="container"), verbose=False)
+    return strategy.prepare_model(str(milia_checkpoint), temp_dir / "package")
+
+
 @pytest.fixture
 def default_config():
     """Create a default DeploymentConfig."""
@@ -336,6 +374,7 @@ class TestDeploymentConfig:
             "enable_caching",
             "timeout_seconds",
             "max_batch_size",
+            "base_image",
         }
         assert set(result.keys()) == expected_keys
 
@@ -405,6 +444,7 @@ class TestDeploymentConfig:
             "enable_caching",
             "timeout_seconds",
             "max_batch_size",
+            "base_image",
         }
         assert set(fields.keys()) == expected_field_names
 
@@ -486,54 +526,30 @@ class TestAWSDeploymentStrategy:
         assert strategy.config is aws_config
         assert strategy.is_deployed is False
 
-    def test_prepare_model_creates_directory(self, aws_config, mock_model, temp_dir):
-        """Test prepare_model creates save directory."""
+    def test_prepare_model_writes_package_and_sagemaker_dockerfile(
+        self, aws_config, milia_checkpoint, temp_dir
+    ):
+        """A checkpoint becomes a package plus a Dockerfile that serves it as SageMaker expects."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        save_path = temp_dir / "aws_model"
+        save_path = strategy.prepare_model(str(milia_checkpoint), temp_dir / "aws_model")
 
-        with patch.object(torch, "save"):
-            result = strategy.prepare_model(mock_model, save_path)
+        assert sorted(p.name for p in save_path.iterdir()) == [
+            "Dockerfile",
+            "deployment.json",
+            "model.pt",
+        ]
+        dockerfile = (save_path / "Dockerfile").read_text()
+        assert "USER root" in dockerfile  # SageMaker expects containers to run as root
+        assert "EXPOSE 8080" in dockerfile
+        assert '"milia_pipeline.models.deployment.serving"' in dockerfile
 
-        assert save_path.exists()
-        assert result == save_path
-
-    def test_prepare_model_saves_model_file(self, aws_config, mock_model, temp_dir):
-        """Test prepare_model saves model.pth file."""
+    def test_prepare_model_rejects_a_module(self, aws_config, mock_model, temp_dir):
+        """Weights alone cannot rebuild the model in the serving container."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        save_path = temp_dir / "aws_model"
+        with pytest.raises(DeploymentError, match="MILIA checkpoint"):
+            strategy.prepare_model(mock_model, temp_dir / "aws_model")
 
-        with patch.object(torch, "save") as mock_save:
-            strategy.prepare_model(mock_model, save_path)
-            mock_save.assert_called_once()
-            # Check it saves to model.pth
-            call_args = mock_save.call_args
-            assert str(call_args[0][1]).endswith("model.pth")
-
-    def test_prepare_model_creates_inference_script(self, aws_config, mock_model, temp_dir):
-        """Test prepare_model creates inference.py script."""
-        strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        save_path = temp_dir / "aws_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        inference_script = save_path / "inference.py"
-        assert inference_script.exists()
-
-    def test_prepare_model_creates_requirements(self, aws_config, mock_model, temp_dir):
-        """Test prepare_model creates requirements.txt."""
-        strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        save_path = temp_dir / "aws_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        requirements = save_path / "requirements.txt"
-        assert requirements.exists()
-        content = requirements.read_text()
-        assert "torch" in content
-
-    def test_deploy_with_boto3_available(self, aws_config, temp_dir):
+    def test_deploy_with_boto3_available(self, aws_config, serving_package):
         """Test deploy when boto3 is available."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
 
@@ -541,7 +557,7 @@ class TestAWSDeploymentStrategy:
         mock_sagemaker = MagicMock()
 
         with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
-            result = strategy.deploy(temp_dir)
+            result = strategy.deploy(serving_package)
 
         assert result["target"] == "aws"
         assert result["status"] == "prepared"
@@ -566,7 +582,7 @@ class TestAWSDeploymentStrategy:
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
-    def test_predict_after_deployment(self, aws_config, temp_dir):
+    def test_predict_after_deployment(self, aws_config, serving_package):
         """Test predict after deployment."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
 
@@ -574,13 +590,13 @@ class TestAWSDeploymentStrategy:
         mock_sagemaker = MagicMock()
 
         with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
-            strategy.deploy(temp_dir)
+            strategy.deploy(serving_package)
 
         # Predict returns None (placeholder)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
 
-    def test_teardown(self, aws_config, temp_dir):
+    def test_teardown(self, aws_config, serving_package):
         """Test teardown cleans up deployment."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
 
@@ -588,28 +604,11 @@ class TestAWSDeploymentStrategy:
         mock_sagemaker = MagicMock()
 
         with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
-            strategy.deploy(temp_dir)
+            strategy.deploy(serving_package)
 
         assert strategy.is_deployed is True
         strategy.teardown()
         assert strategy.is_deployed is False
-
-    def test_create_sagemaker_inference_script_content(self, aws_config, mock_model, temp_dir):
-        """Test the content of the created SageMaker inference script."""
-        strategy = AWSDeploymentStrategy(aws_config, verbose=False)
-        save_path = temp_dir / "aws_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        inference_script = save_path / "inference.py"
-        content = inference_script.read_text()
-
-        # Check required functions exist in the script
-        assert "def model_fn" in content
-        assert "def input_fn" in content
-        assert "def predict_fn" in content
-        assert "def output_fn" in content
 
 
 # =============================================================================
@@ -627,38 +626,37 @@ class TestGCPDeploymentStrategy:
         assert strategy.config is config
         assert strategy.is_deployed is False
 
-    def test_prepare_model_creates_directory(self, mock_model, temp_dir):
-        """Test prepare_model creates save directory."""
-        config = DeploymentConfig(target="gcp")
-        strategy = GCPDeploymentStrategy(config, verbose=False)
-        save_path = temp_dir / "gcp_model"
+    def test_prepare_model_writes_package_and_dockerfile(self, milia_checkpoint, temp_dir):
+        """A checkpoint becomes a package plus a serving Dockerfile (unprivileged user)."""
+        strategy = GCPDeploymentStrategy(DeploymentConfig(target="gcp"), verbose=False)
+        save_path = strategy.prepare_model(milia_checkpoint, temp_dir / "gcp_model")
 
-        with patch.object(torch, "save"):
-            result = strategy.prepare_model(mock_model, save_path)
+        assert (save_path / "deployment.json").is_file() and (save_path / "model.pt").is_file()
+        assert "USER root" not in (save_path / "Dockerfile").read_text()
 
-        assert save_path.exists()
-        assert result == save_path
+    def test_prepare_model_rejects_a_module(self, mock_model, temp_dir):
+        """Weights alone cannot rebuild the model in the serving container."""
+        strategy = GCPDeploymentStrategy(DeploymentConfig(target="gcp"), verbose=False)
+        with pytest.raises(DeploymentError, match="MILIA checkpoint"):
+            strategy.prepare_model(mock_model, temp_dir / "gcp_model")
 
-    def test_prepare_model_saves_model(self, mock_model, temp_dir):
-        """Test prepare_model saves model file."""
-        config = DeploymentConfig(target="gcp")
-        strategy = GCPDeploymentStrategy(config, verbose=False)
-        save_path = temp_dir / "gcp_model"
+    def test_deploy_requires_a_package(self, temp_dir):
+        """deploy() checks the package before reporting it prepared."""
+        strategy = GCPDeploymentStrategy(DeploymentConfig(target="gcp"), verbose=False)
+        with pytest.raises(DeploymentError, match="not a MILIA deployment package"):
+            strategy.deploy(temp_dir)
+        assert strategy.is_deployed is False
 
-        with patch.object(torch, "save") as mock_save:
-            strategy.prepare_model(mock_model, save_path)
-            mock_save.assert_called_once()
-
-    def test_deploy_returns_correct_info(self, temp_dir):
+    def test_deploy_returns_correct_info(self, serving_package):
         """Test deploy returns correct deployment info."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
-        result = strategy.deploy(temp_dir)
+        result = strategy.deploy(serving_package)
 
         assert result["target"] == "gcp"
         assert result["status"] == "prepared"
-        assert str(temp_dir) in result["model_path"]
+        assert str(serving_package) in result["model_path"]
         assert strategy.is_deployed is True
 
     def test_predict_without_deployment_raises_error(self):
@@ -669,21 +667,21 @@ class TestGCPDeploymentStrategy:
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
-    def test_predict_after_deployment(self, temp_dir):
+    def test_predict_after_deployment(self, serving_package):
         """Test predict after deployment returns None."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
 
-    def test_teardown(self, temp_dir):
+    def test_teardown(self, serving_package):
         """Test teardown cleans up deployment."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         assert strategy.is_deployed is True
 
         strategy.teardown()
@@ -714,34 +712,33 @@ class TestAzureDeploymentStrategy:
         assert strategy.config is config
         assert strategy.is_deployed is False
 
-    def test_prepare_model_creates_directory(self, mock_model, temp_dir):
-        """Test prepare_model creates save directory."""
-        config = DeploymentConfig(target="azure")
-        strategy = AzureDeploymentStrategy(config, verbose=False)
-        save_path = temp_dir / "azure_model"
+    def test_prepare_model_writes_package_and_dockerfile(self, milia_checkpoint, temp_dir):
+        """A checkpoint becomes a package plus a serving Dockerfile (unprivileged user)."""
+        strategy = AzureDeploymentStrategy(DeploymentConfig(target="azure"), verbose=False)
+        save_path = strategy.prepare_model(milia_checkpoint, temp_dir / "azure_model")
 
-        with patch.object(torch, "save"):
-            result = strategy.prepare_model(mock_model, save_path)
+        assert (save_path / "deployment.json").is_file() and (save_path / "model.pt").is_file()
+        assert "USER root" not in (save_path / "Dockerfile").read_text()
 
-        assert save_path.exists()
-        assert result == save_path
+    def test_prepare_model_rejects_a_module(self, mock_model, temp_dir):
+        """Weights alone cannot rebuild the model in the serving container."""
+        strategy = AzureDeploymentStrategy(DeploymentConfig(target="azure"), verbose=False)
+        with pytest.raises(DeploymentError, match="MILIA checkpoint"):
+            strategy.prepare_model(mock_model, temp_dir / "azure_model")
 
-    def test_prepare_model_saves_model(self, mock_model, temp_dir):
-        """Test prepare_model saves model file."""
-        config = DeploymentConfig(target="azure")
-        strategy = AzureDeploymentStrategy(config, verbose=False)
-        save_path = temp_dir / "azure_model"
+    def test_deploy_requires_a_package(self, temp_dir):
+        """deploy() checks the package before reporting it prepared."""
+        strategy = AzureDeploymentStrategy(DeploymentConfig(target="azure"), verbose=False)
+        with pytest.raises(DeploymentError, match="not a MILIA deployment package"):
+            strategy.deploy(temp_dir)
+        assert strategy.is_deployed is False
 
-        with patch.object(torch, "save") as mock_save:
-            strategy.prepare_model(mock_model, save_path)
-            mock_save.assert_called_once()
-
-    def test_deploy_returns_correct_info(self, temp_dir):
+    def test_deploy_returns_correct_info(self, serving_package):
         """Test deploy returns correct deployment info."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
 
-        result = strategy.deploy(temp_dir)
+        result = strategy.deploy(serving_package)
 
         assert result["target"] == "azure"
         assert result["status"] == "prepared"
@@ -755,21 +752,21 @@ class TestAzureDeploymentStrategy:
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
-    def test_predict_after_deployment(self, temp_dir):
+    def test_predict_after_deployment(self, serving_package):
         """Test predict after deployment returns None."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
 
-    def test_teardown(self, temp_dir):
+    def test_teardown(self, serving_package):
         """Test teardown cleans up deployment."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         assert strategy.is_deployed is True
 
         strategy.teardown()
@@ -887,97 +884,40 @@ class TestContainerDeploymentStrategy:
         assert strategy.config is container_config
         assert strategy.is_deployed is False
 
-    def test_prepare_model_creates_directory(self, container_config, mock_model, temp_dir):
-        """Test prepare_model creates save directory."""
+    def test_prepare_model_writes_package_and_dockerfile(
+        self, container_config, milia_checkpoint, temp_dir
+    ):
+        """The Dockerfile builds on the published MILIA image, copies the package and serves it."""
+        from milia_pipeline import __version__
+
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
+        save_path = strategy.prepare_model(milia_checkpoint, temp_dir / "container_model")
 
-        with patch.object(torch, "save"):
-            result = strategy.prepare_model(mock_model, save_path)
-
-        assert save_path.exists()
-        assert result == save_path
-
-    def test_prepare_model_saves_model(self, container_config, mock_model, temp_dir):
-        """Test prepare_model saves model file."""
-        strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
-
-        with patch.object(torch, "save") as mock_save:
-            strategy.prepare_model(mock_model, save_path)
-            mock_save.assert_called_once()
-
-    def test_prepare_model_creates_dockerfile(self, container_config, mock_model, temp_dir):
-        """Test prepare_model creates Dockerfile."""
-        strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        dockerfile = save_path / "Dockerfile"
-        assert dockerfile.exists()
-
-    def test_dockerfile_content(self, container_config, mock_model, temp_dir):
-        """Test Dockerfile has correct content."""
-        strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        dockerfile = save_path / "Dockerfile"
-        content = dockerfile.read_text()
-
-        assert "FROM python" in content
+        content = (save_path / "Dockerfile").read_text()
+        assert f"FROM ghcr.io/shahram-boshra/milia:{__version__}" in content
+        assert "COPY deployment.json model.pt /opt/ml/model/" in content
+        assert "verify_package('/opt/ml/model')" in content
         assert "EXPOSE 8080" in content
-        assert "CMD" in content
+        assert "USER root" not in content
 
-    def test_prepare_model_creates_serving_script(self, container_config, mock_model, temp_dir):
-        """Test prepare_model creates serve.py script."""
+    def test_base_image_is_configurable(self, milia_checkpoint, temp_dir):
+        """DeploymentConfig.base_image overrides the published image tag."""
+        config = DeploymentConfig(target="container", base_image="ghcr.io/shahram-boshra/milia:cpu")
+        strategy = ContainerDeploymentStrategy(config, verbose=False)
+        save_path = strategy.prepare_model(milia_checkpoint, temp_dir / "container_model")
+        assert "FROM ghcr.io/shahram-boshra/milia:cpu\n" in (save_path / "Dockerfile").read_text()
+
+    def test_prepare_model_rejects_a_module(self, container_config, mock_model, temp_dir):
+        """Weights alone cannot rebuild the model in the serving container."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
+        with pytest.raises(DeploymentError, match="MILIA checkpoint"):
+            strategy.prepare_model(mock_model, temp_dir / "container_model")
 
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        serve_script = save_path / "serve.py"
-        assert serve_script.exists()
-
-    def test_serving_script_content(self, container_config, mock_model, temp_dir):
-        """Test serve.py has correct content."""
-        strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        serve_script = save_path / "serve.py"
-        content = serve_script.read_text()
-
-        assert "Flask" in content
-        assert "@app.route('/predict'" in content
-        assert "@app.route('/health'" in content
-
-    def test_prepare_model_creates_requirements(self, container_config, mock_model, temp_dir):
-        """Test prepare_model creates requirements.txt."""
-        strategy = ContainerDeploymentStrategy(container_config, verbose=False)
-        save_path = temp_dir / "container_model"
-
-        with patch.object(torch, "save"):
-            strategy.prepare_model(mock_model, save_path)
-
-        requirements = save_path / "requirements.txt"
-        assert requirements.exists()
-        content = requirements.read_text()
-        assert "torch" in content
-        assert "flask" in content
-
-    def test_deploy_returns_correct_info(self, container_config, temp_dir):
+    def test_deploy_returns_correct_info(self, container_config, serving_package):
         """Test deploy returns correct deployment info."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
 
-        result = strategy.deploy(temp_dir)
+        result = strategy.deploy(serving_package)
 
         assert result["target"] == "container"
         assert result["status"] == "ready_for_docker"
@@ -992,19 +932,19 @@ class TestContainerDeploymentStrategy:
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
-    def test_predict_after_deployment(self, container_config, temp_dir):
+    def test_predict_after_deployment(self, container_config, serving_package):
         """Test predict after deployment returns None."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         result = strategy.predict(torch.randn(1, 10))
         assert result is None
 
-    def test_teardown(self, container_config, temp_dir):
+    def test_teardown(self, container_config, serving_package):
         """Test teardown cleans up deployment."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
         assert strategy.is_deployed is True
 
         strategy.teardown()
@@ -1517,25 +1457,25 @@ class TestEdgeCases:
         # Check config is a dict
         assert isinstance(info["config"], dict)
 
-    def test_multiple_deploys(self, temp_dir):
+    def test_multiple_deploys(self, serving_package):
         """Test deploying multiple times."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
         # First deploy
-        _result1 = strategy.deploy(temp_dir)
+        _result1 = strategy.deploy(serving_package)
         assert strategy.is_deployed is True
 
         # Second deploy (should still work)
-        _result2 = strategy.deploy(temp_dir)
+        _result2 = strategy.deploy(serving_package)
         assert strategy.is_deployed is True
 
-    def test_teardown_multiple_times(self, temp_dir):
+    def test_teardown_multiple_times(self, serving_package):
         """Test calling teardown multiple times."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
-        strategy.deploy(temp_dir)
+        strategy.deploy(serving_package)
 
         # Multiple teardowns should not raise
         strategy.teardown()

@@ -38,6 +38,7 @@ __all__ = [
     "is_package",
     "load_package",
     "package_checkpoint",
+    "verify_package",
 ]
 
 PACKAGE_FORMAT = "milia-deployment/1"
@@ -122,17 +123,15 @@ def is_package(path: str | Path) -> bool:
     return (Path(path) / PACKAGE_MANIFEST).is_file()
 
 
-def load_package(
-    package_dir: str | Path, device: torch.device | None = None
-) -> tuple[nn.Module, dict[str, Any]]:
-    """Rebuild the model of a deployment package, in eval mode.
+def verify_package(package_dir: str | Path) -> tuple[Path, dict[str, Any]]:
+    """Check a package's manifest and checkpoint digest.
 
     Returns:
-        ``(model, model_info)`` as returned by ``ModelLoader.load_from_checkpoint``.
+        ``(checkpoint_path, manifest)``.
 
     Raises:
-        DeploymentError: The manifest is missing or of another format, or ``model.pt`` does not
-            match the recorded SHA-256.
+        DeploymentError: The manifest is missing, unreadable or of another format, names a
+            checkpoint outside the package, or ``model.pt`` does not match the recorded SHA-256.
     """
     package = Path(package_dir).expanduser()
     manifest_path = package / PACKAGE_MANIFEST
@@ -142,16 +141,34 @@ def load_package(
         manifest = json.loads(manifest_path.read_text())
     except (OSError, ValueError) as exc:
         raise DeploymentError(f"Cannot read {manifest_path}: {exc}") from exc
-    if manifest.get("format") != PACKAGE_FORMAT:
-        raise DeploymentError(
-            f"{manifest_path} has format {manifest.get('format')!r}; expected {PACKAGE_FORMAT!r}"
-        )
+    if not isinstance(manifest, dict) or manifest.get("format") != PACKAGE_FORMAT:
+        found = manifest.get("format") if isinstance(manifest, dict) else manifest
+        raise DeploymentError(f"{manifest_path} has format {found!r}; expected {PACKAGE_FORMAT!r}")
 
-    checkpoint = package / str(manifest.get("checkpoint", PACKAGE_CHECKPOINT))
+    name = str(manifest.get("checkpoint", PACKAGE_CHECKPOINT))
+    if Path(name).name != name:
+        raise DeploymentError(f"{manifest_path} names a checkpoint outside the package: {name!r}")
+    checkpoint = package / name
     if not checkpoint.is_file() or _sha256(checkpoint) != manifest.get("sha256"):
         raise DeploymentError(
             f"{checkpoint} is missing or does not match the SHA-256 in {manifest_path}"
         )
+    return checkpoint, manifest
+
+
+def load_package(
+    package_dir: str | Path, device: torch.device | None = None
+) -> tuple[nn.Module, dict[str, Any]]:
+    """Rebuild the model of a deployment package, in eval mode.
+
+    Returns:
+        ``(model, model_info)`` as returned by ``ModelLoader.load_from_checkpoint``.
+
+    Raises:
+        DeploymentError: As :func:`verify_package`.
+    """
+    package = Path(package_dir).expanduser()
+    checkpoint, _ = verify_package(package)
 
     from milia_pipeline.models.post_training.inference.model_loader import ModelLoader
 

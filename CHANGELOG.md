@@ -16,8 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `serve` extra: FastAPI, Starlette (floor 1.3.0, the first release without CVE-2026-54282 and CVE-2026-48710)
   and Uvicorn. These are the HTTP server for deployment packages. The Docker images install it, so a package can
   be served by the published image itself.
+- `milia_pipeline.models.deployment.serving`: one FastAPI app that serves a deployment package on port 8080.
+  - **Routes:** Amazon SageMaker (`GET /ping`, `POST /invocations`, and the `serve` start argument), Vertex AI
+    (`AIP_HEALTH_ROUTE`, `AIP_PREDICT_ROUTE`, `AIP_HTTP_PORT`), and `GET /health`, `POST /predict` for Azure ML,
+    Kubernetes and Docker.
+  - **Requests:** `{"instances": [SMILES, ...]}` returns `{"predictions": [[...], ...]}`, featurized as
+    `milia --predict` does. Input is always parsed as SMILES, so a request cannot name a server file.
+  - **Limits:** instance count (`MILIA_SERVE_MAX_INSTANCES`, default 1000) and length per SMILES (2000).
+  - **Errors:** invalid input returns 422 with the failing index.
+  - **Startup:** the package's SHA-256 is checked before the model loads.
 
 ### Changed
+
+- The `aws`, `gcp`, `azure` and `container` deployment targets package a MILIA checkpoint and write a `Dockerfile`
+  that serves it. The Dockerfile builds `FROM ghcr.io/shahram-boshra/milia:<version>`, or
+  `DeploymentConfig.base_image` when set. For `aws` it runs as root, as SageMaker expects. The build checks the
+  `serve` extra and the package digest.
+  - Before, these targets saved only weights and generated `inference.py`, `serve.py` and `requirements.txt`. Those
+    scripts called `torch.load(...).eval()` on the weights and passed raw tensors to a graph model, so they could
+    not serve; they are no longer generated.
+  - Passing an `nn.Module` to these targets now raises `DeploymentError`, because weights alone cannot rebuild the
+    model in another process.
+  - `deploy()` checks the package first.
 
 - uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =
   ">=0.13.7"`), the uv Dependabot's updater runs: a lock written by a different uv changed its `revision` and

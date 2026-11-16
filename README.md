@@ -354,6 +354,31 @@ Every artifact MILIA produces lands under `working_root_dir`. With the example v
 
 Input paths (`--model-path`, `--test-path`) are looked up first as given, relative to the current directory, then under `working_root_dir`; `--model-path` is also looked up by file name in `{working_root_dir}/checkpoints/`. So `--test-path test_data/molecules.csv` reads the bundled sample from the checkout (or `/app` in the Docker image), and `--model-path ./checkpoints/best.pt` finds the trained checkpoint from any directory. A path that is not found lists every location checked. Output paths such as `--preds-path` are always written under `working_root_dir`.
 
+### Serving a trained model
+
+A trained checkpoint becomes a self-contained serving image. The `aws`, `gcp`, `azure` and `container` deployment targets write a package (`model.pt` plus `deployment.json` with its SHA-256) and a `Dockerfile` built on the published MILIA image, which carries the `serve` extra (FastAPI, Uvicorn):
+
+```python
+from milia_pipeline.models.deployment import DeploymentManager
+
+DeploymentManager(target="container").prepare_model(
+    "~/Chem_Data/Milia_PyG_Dataset/checkpoints/best.pt", "serving_image"
+)
+```
+
+```bash
+docker build -t milia-serve serving_image
+docker run -p 8080:8080 milia-serve
+curl -s localhost:8080/predict -H 'Content-Type: application/json' -d '{"instances": ["CCO", "c1ccccc1"]}'
+```
+
+One app answers every target on port 8080:
+- **Amazon SageMaker:** `GET /ping` and `POST /invocations`.
+- **Vertex AI:** the routes and port it sets in `AIP_HEALTH_ROUTE`, `AIP_PREDICT_ROUTE` and `AIP_HTTP_PORT`.
+- **Azure ML, Kubernetes and plain Docker:** `GET /health` and `POST /predict`.
+
+Every predict route takes `{"instances": [SMILES, ...]}` and returns `{"predictions": [[...], ...]}`, one row per molecule. The SMILES are featurized exactly as `milia --predict` featurizes them. `MILIA_SERVE_MAX_INSTANCES` caps the batch size per request (default 1000).
+
 ### Introspection commands
 
 These are read-only and useful for orientation:
