@@ -37,26 +37,10 @@ import torch.nn as nn
 from pydantic import BaseModel
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import DistributedError, HardwareError, ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class HardwareError(ModelError):
-        """Exception raised for hardware-related errors."""
-
-        pass
-
-    class DistributedError(HardwareError):
-        """Exception raised for distributed training errors."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import DistributedError as DistributedError
+from milia_pipeline.exceptions import HardwareError as HardwareError
+from milia_pipeline.exceptions import ModelError as ModelError
 
 # One loading policy for every MILIA checkpoint: weights_only=True, no fallback to full unpickling.
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file

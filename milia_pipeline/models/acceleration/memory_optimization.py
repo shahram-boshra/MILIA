@@ -44,27 +44,10 @@ from pydantic import BaseModel
 # Reference: https://pytorch.org/docs/stable/amp.html
 from torch.amp import GradScaler
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import HardwareError, ModelError
-    from milia_pipeline.exceptions import MemoryError as VQMMemoryError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class HardwareError(ModelError):
-        """Exception raised for hardware-related errors."""
-
-        pass
-
-    class VQMMemoryError(HardwareError):
-        """Exception raised for memory-related errors."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import AcceleratorMemoryError as VQMMemoryError  # noqa: F401
+from milia_pipeline.exceptions import HardwareError as HardwareError
+from milia_pipeline.exceptions import ModelError as ModelError
 
 logger = logging.getLogger(__name__)
 

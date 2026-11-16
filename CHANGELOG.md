@@ -31,6 +31,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
   optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
 
+### Fixed
+
+- `milia_pipeline.exceptions` now defines `HardwareError`, `DeviceNotAvailableError`, `AcceleratorMemoryError`
+  (re-exported by `milia_pipeline.models.acceleration` as `VQMMemoryError`), `OptimizationError`,
+  `DistributedError`, `DeploymentError`, `ExportError`, `MonitoringError` and `AlertError`. The acceleration and
+  deployment modules imported these names inside `try`/`except ImportError` and, because they did not exist,
+  each module defined its own copies. A `DeploymentError` imported from `milia_pipeline.models.deployment` did
+  not catch one raised by a deployment strategy, and none of these errors was a `BaseProjectError`. The modules
+  now import the classes directly, so every re-export is the same class, and the documented hierarchies hold.
+  `ConfigurationError` from these modules is MILIA's `ConfigurationError` (before, a stand-in subclass of
+  `ModelError`), and every one of these exceptions takes a message.
+
 ### Security
 
 - Checkpoint loading no longer falls back to full unpickling. `CheckpointManager.load`, `Trainer.load_checkpoint`,

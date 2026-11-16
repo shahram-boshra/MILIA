@@ -103,6 +103,16 @@ logger = logging.getLogger(__name__)
 # CORE IMPORTS
 # =============================================================================
 
+# Exceptions: defined once in milia_pipeline.exceptions and re-exported here.
+from milia_pipeline.exceptions import AcceleratorMemoryError as VQMMemoryError
+from milia_pipeline.exceptions import (
+    DeviceNotAvailableError,
+    DistributedError,
+    HardwareError,
+    ModelError,
+    OptimizationError,
+)
+
 # Device Management
 # Computation Optimization
 from .computation_optimization import (
@@ -140,52 +150,6 @@ from .memory_optimization import (
     estimate_model_memory,
     get_memory_efficient_settings,
 )
-
-# =============================================================================
-# EXCEPTION IMPORTS (with fallback)
-# =============================================================================
-
-try:
-    from milia_pipeline.exceptions import (
-        DeviceNotAvailableError,
-        DistributedError,
-        HardwareError,
-        ModelError,
-        OptimizationError,
-    )
-    from milia_pipeline.exceptions import MemoryError as VQMMemoryError
-except ImportError:
-    # Fallback exception definitions
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class HardwareError(ModelError):
-        """Exception raised for hardware-related errors."""
-
-        pass
-
-    class DeviceNotAvailableError(HardwareError):
-        """Exception raised when requested device is not available."""
-
-        pass
-
-    class VQMMemoryError(HardwareError):
-        """Exception raised for memory-related errors."""
-
-        pass
-
-    class OptimizationError(HardwareError):
-        """Exception raised for optimization-related errors."""
-
-        pass
-
-    class DistributedError(HardwareError):
-        """Exception raised for distributed training errors."""
-
-        pass
-
 
 # =============================================================================
 # UNIFIED ACCELERATION MANAGER

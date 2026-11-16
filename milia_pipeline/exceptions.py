@@ -2842,6 +2842,53 @@ class CheckpointError(ModelError):
         return msg
 
 
+# -----------------------------------------------------------------------------
+# Hardware acceleration (milia_pipeline.models.acceleration) and deployment
+# (milia_pipeline.models.deployment). These modules import the classes from here; there is
+# one class per error, so ``except`` clauses written against any re-export match.
+# -----------------------------------------------------------------------------
+
+
+class HardwareError(ModelError):
+    """A hardware acceleration operation failed (device, memory, compilation, distribution)."""
+
+
+class DeviceNotAvailableError(HardwareError):
+    """A requested compute device (CUDA, MPS, TPU, ...) is not available."""
+
+
+class AcceleratorMemoryError(HardwareError):
+    """A memory optimization or allocation on an accelerator failed.
+
+    Re-exported by ``milia_pipeline.models.acceleration`` as ``VQMMemoryError``; the name avoids
+    shadowing the built-in ``MemoryError``.
+    """
+
+
+class OptimizationError(HardwareError):
+    """A model optimization failed: compilation, quantization or pruning."""
+
+
+class DistributedError(HardwareError):
+    """Distributed training setup or communication failed."""
+
+
+class DeploymentError(ModelError):
+    """Preparing, packaging, deploying or serving a model failed."""
+
+
+class ExportError(ModelError):
+    """Exporting a model to another format (ONNX, TorchScript, ...) failed."""
+
+
+class MonitoringError(ModelError):
+    """Production monitoring of a deployed model failed."""
+
+
+class AlertError(MonitoringError):
+    """Raising or delivering a monitoring alert failed."""
+
+
 class DataError(ModelError):
     """
     Exception raised for data-related issues in the models module.

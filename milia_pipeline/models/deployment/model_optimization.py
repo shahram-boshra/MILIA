@@ -39,26 +39,10 @@ import torch.nn.functional as F
 from pydantic import BaseModel
 from torch.nn.utils import prune
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import ExportError, ModelError, OptimizationError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class OptimizationError(ModelError):
-        """Exception raised for optimization-related errors."""
-
-        pass
-
-    class ExportError(ModelError):
-        """Exception raised for model export errors."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import ExportError as ExportError
+from milia_pipeline.exceptions import ModelError as ModelError
+from milia_pipeline.exceptions import OptimizationError as OptimizationError
 
 logger = logging.getLogger(__name__)
 

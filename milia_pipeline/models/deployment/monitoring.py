@@ -40,26 +40,10 @@ import numpy as np
 import torch
 from pydantic import BaseModel, Field
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import AlertError, ModelError, MonitoringError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class MonitoringError(ModelError):
-        """Exception raised for monitoring-related errors."""
-
-        pass
-
-    class AlertError(MonitoringError):
-        """Exception raised for alert-related errors."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import AlertError as AlertError
+from milia_pipeline.exceptions import ModelError as ModelError
+from milia_pipeline.exceptions import MonitoringError as MonitoringError
 
 logger = logging.getLogger(__name__)
 

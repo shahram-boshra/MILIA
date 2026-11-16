@@ -35,26 +35,10 @@ import torch
 import torch.nn as nn
 from pydantic import BaseModel
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import ConfigurationError, DeploymentError, ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class DeploymentError(ModelError):
-        """Exception raised for deployment-related errors."""
-
-        pass
-
-    class ConfigurationError(ModelError):
-        """Exception raised for configuration errors."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import ConfigurationError as ConfigurationError
+from milia_pipeline.exceptions import DeploymentError as DeploymentError
+from milia_pipeline.exceptions import ModelError as ModelError
 
 logger = logging.getLogger(__name__)
 

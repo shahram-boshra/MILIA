@@ -33,26 +33,10 @@ import torch
 import torch.nn as nn
 from pydantic import BaseModel
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import DeviceNotAvailableError, HardwareError, ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class HardwareError(ModelError):
-        """Exception raised for hardware-related errors."""
-
-        pass
-
-    class DeviceNotAvailableError(HardwareError):
-        """Exception raised when requested device is not available."""
-
-        pass
-
+# Re-exported: callers import these names from this module (`X as X` marks a re-export).
+from milia_pipeline.exceptions import DeviceNotAvailableError as DeviceNotAvailableError
+from milia_pipeline.exceptions import HardwareError as HardwareError
+from milia_pipeline.exceptions import ModelError as ModelError
 
 logger = logging.getLogger(__name__)
 

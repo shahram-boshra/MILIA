@@ -47,6 +47,8 @@ import torch
 import torch.nn as nn
 
 # Import the module under test
+import milia_pipeline.exceptions as milia_exceptions
+from milia_pipeline.exceptions import BaseProjectError
 from milia_pipeline.models.deployment.deployment_strategies import (
     # Concrete Strategies
     AWSDeploymentStrategy,
@@ -1446,11 +1448,11 @@ class TestExceptionHandling:
         assert isinstance(error, ModelError)
         assert isinstance(error, Exception)
 
-    def test_configuration_error_inherits_from_model_error(self):
-        """Test ConfigurationError inherits from ModelError."""
+    def test_configuration_error_is_milia_configuration_error(self):
+        """ConfigurationError is milia_pipeline.exceptions.ConfigurationError."""
         error = ConfigurationError("Test error")
-        assert isinstance(error, ModelError)
-        assert isinstance(error, Exception)
+        assert isinstance(error, BaseProjectError)
+        assert ConfigurationError is milia_exceptions.ConfigurationError
 
     def test_model_error_message(self):
         """Test ModelError preserves message."""
@@ -1471,36 +1473,27 @@ class TestExceptionHandling:
         assert str(error) == message
 
     def test_exception_hierarchy_is_consistent(self):
-        """Test that the exception hierarchy is consistent and follows expected pattern."""
-        # Verify the class relationships directly
+        """The module re-exports MILIA's exceptions (milia_pipeline.exceptions)."""
         assert issubclass(DeploymentError, ModelError)
-        assert issubclass(ConfigurationError, ModelError)
-        assert issubclass(ModelError, Exception)
+        assert issubclass(ModelError, BaseProjectError)
+        # ConfigurationError is MILIA's configuration error, not a model error.
+        assert issubclass(ConfigurationError, BaseProjectError)
+        assert not issubclass(ConfigurationError, ModelError)
 
     def test_exceptions_can_be_caught_by_base_class(self):
-        """Test that specific exceptions can be caught by their base class."""
-        # DeploymentError should be catchable as ModelError
-        try:
+        """Specific exceptions are caught by their base classes."""
+        with pytest.raises(ModelError, match="deployment failed"):
             raise DeploymentError("deployment failed")
-        except ModelError as e:
-            assert str(e) == "deployment failed"
 
-        # ConfigurationError should be catchable as ModelError
-        try:
+        with pytest.raises(BaseProjectError, match="config invalid"):
             raise ConfigurationError("config invalid")
-        except ModelError as e:
-            assert str(e) == "config invalid"
 
-    def test_exceptions_can_be_raised_with_no_args(self):
-        """Test that exceptions can be raised with no arguments."""
-        # Should not raise during construction
-        model_err = ModelError()
-        deploy_err = DeploymentError()
-        config_err = ConfigurationError()
-
-        assert isinstance(model_err, ModelError)
-        assert isinstance(deploy_err, DeploymentError)
-        assert isinstance(config_err, ConfigurationError)
+    def test_exceptions_require_a_message(self):
+        """MILIA exceptions take a message; it is their string form."""
+        for exc_cls in (ModelError, DeploymentError, ConfigurationError):
+            with pytest.raises(TypeError):
+                exc_cls()
+            assert str(exc_cls("what failed")) == "what failed"
 
 
 # =============================================================================

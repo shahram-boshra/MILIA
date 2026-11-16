@@ -83,56 +83,17 @@ import torch
 import torch.nn as nn
 
 # =============================================================================
-# EXCEPTION HANDLING WITH FALLBACK
+# EXCEPTIONS (defined in milia_pipeline.exceptions)
 # =============================================================================
-
-try:
-    from milia_pipeline.exceptions import (
-        AlertError,
-        ConfigurationError,
-        DeploymentError,
-        ExportError,
-        ModelError,
-        MonitoringError,
-        OptimizationError,
-    )
-except ImportError:
-    # Fallback exception definitions
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class DeploymentError(ModelError):
-        """Exception raised for deployment-related errors."""
-
-        pass
-
-    class OptimizationError(ModelError):
-        """Exception raised for optimization-related errors."""
-
-        pass
-
-    class MonitoringError(ModelError):
-        """Exception raised for monitoring-related errors."""
-
-        pass
-
-    class ConfigurationError(ModelError):
-        """Exception raised for configuration errors."""
-
-        pass
-
-    class ExportError(ModelError):
-        """Exception raised for model export errors."""
-
-        pass
-
-    class AlertError(MonitoringError):
-        """Exception raised for alert-related errors."""
-
-        pass
-
+from milia_pipeline.exceptions import (
+    AlertError,
+    ConfigurationError,
+    DeploymentError,
+    ExportError,
+    ModelError,
+    MonitoringError,
+    OptimizationError,
+)
 
 logger = logging.getLogger(__name__)
 
