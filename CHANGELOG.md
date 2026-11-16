@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Local deployment works. `LocalDeploymentStrategy.deploy` called `torch.load(...).eval()` on the `state_dict` that
+  `prepare_model` saved, which raised `AttributeError`; unit tests mocked `torch.load`, which hid it. Deploying a
+  prepared module now loads its weights back into that module with `torch.load(weights_only=True)`, and the
+  local target (`DeploymentManager`, `deploy_locally`) also takes the path of a MILIA checkpoint. That writes a
+  deployment package (new `milia_pipeline.models.deployment.package`): `model.pt` holds the checkpoint reduced to
+  inference (weights, recreation metadata, data and version info), and `deployment.json` records the format,
+  MILIA version, model name, task type and SHA-256. Any process can deploy the package: the digest is checked
+  and `ModelLoader` rebuilds the model. Deploying a weights-only directory from a fresh strategy now names this
+  remedy instead of failing.
 - `milia_pipeline.exceptions` now defines `HardwareError`, `DeviceNotAvailableError`, `AcceleratorMemoryError`
   (re-exported by `milia_pipeline.models.acceleration` as `VQMMemoryError`), `OptimizationError`,
   `DistributedError`, `DeploymentError`, `ExportError`, `MonitoringError` and `AlertError`. The acceleration and

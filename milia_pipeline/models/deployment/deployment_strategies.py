@@ -39,6 +39,7 @@ from pydantic import BaseModel
 from milia_pipeline.exceptions import ConfigurationError as ConfigurationError
 from milia_pipeline.exceptions import DeploymentError as DeploymentError
 from milia_pipeline.exceptions import ModelError as ModelError
+from milia_pipeline.models.deployment.package import is_package, load_package, package_checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -598,20 +599,39 @@ if __name__ == '__main__':
 
 
 class LocalDeploymentStrategy(DeploymentStrategy):
-    """Local deployment strategy for development/testing."""
+    """Local deployment strategy for development/testing.
+
+    Two sources are supported:
+
+    * a MILIA checkpoint path: ``prepare_model`` writes a self-describing deployment package
+      (``model.pt`` + ``deployment.json``, see :mod:`.package`) and ``deploy`` rebuilds the
+      model from it with ``ModelLoader``, in this or any later process;
+    * an ``nn.Module`` (for example one returned by ``optimize_model_for_deployment``):
+      ``prepare_model`` saves its weights to ``model.pth`` and keeps the module, and ``deploy``
+      loads those weights back into it. Weights alone cannot rebuild a model, so such a
+      directory can be deployed only by the strategy that prepared it.
+    """
 
     def __init__(self, config: DeploymentConfig, verbose: bool = True):
         """Initialize local deployment."""
         super().__init__(config, verbose)
         self.model = None
+        self._module: nn.Module | None = None
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for local deployment."""
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Prepare a module or a MILIA checkpoint for local deployment."""
         save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
 
+        if isinstance(model, (str, Path)):
+            package_checkpoint(model, save_path)
+            if self.verbose:
+                logger.info(f"Prepared deployment package from {model}: {save_path}")
+            return save_path
+
+        save_path.mkdir(parents=True, exist_ok=True)
         model_file = save_path / "model.pth"
         torch.save(model.state_dict(), model_file)
+        self._module = model
 
         if self.verbose:
             logger.info(f"Prepared model for local deployment: {model_file}")
@@ -620,14 +640,22 @@ class LocalDeploymentStrategy(DeploymentStrategy):
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy locally (load model into memory)."""
-        model_file = Path(model_path) / "model.pth"
+        model_path = Path(model_path)
 
-        if not model_file.exists():
-            raise DeploymentError(f"Model file not found: {model_file}")
-
-        # Load model
-        self.model = torch.load(model_file)
-        self.model.eval()
+        if is_package(model_path):
+            self.model, _ = load_package(model_path)
+        else:
+            model_file = model_path / "model.pth"
+            if not model_file.exists():
+                raise DeploymentError(f"Model file not found: {model_file}")
+            if self._module is None:
+                raise DeploymentError(
+                    f"{model_file} holds only weights, which cannot rebuild a model. Deploy it "
+                    "with the strategy that prepared it, or prepare a package from a MILIA "
+                    "checkpoint: prepare_model('<working_root_dir>/checkpoints/best.pt', path)."
+                )
+            self._module.load_state_dict(torch.load(model_file, weights_only=True))
+            self.model = self._module.eval()
 
         deployment_info = {"target": "local", "model_path": str(model_path), "status": "deployed"}
 
@@ -723,12 +751,14 @@ class DeploymentManager:
         if self.verbose:
             logger.info(f"DeploymentManager initialized - Target: {config.target}")
 
-    def prepare_model(self, model: nn.Module, save_path: str | Path) -> Path:
+    def prepare_model(self, model: nn.Module | str | Path, save_path: str | Path) -> Path:
         """
         Prepare model for deployment.
 
         Args:
-            model: Model to deploy
+            model: Model to deploy. The local target also takes the path of a MILIA checkpoint
+                (for example ``{working_root_dir}/checkpoints/best.pt``) and writes a deployment
+                package that rebuilds the model in any process.
             save_path: Path to save prepared model
 
         Returns:
@@ -780,12 +810,12 @@ class DeploymentManager:
 # =============================================================================
 
 
-def deploy_locally(model: nn.Module, save_path: str | Path) -> DeploymentManager:
+def deploy_locally(model: nn.Module | str | Path, save_path: str | Path) -> DeploymentManager:
     """
     Quick local deployment.
 
     Args:
-        model: Model to deploy
+        model: Model to deploy, or the path of a MILIA checkpoint to package
         save_path: Path to save model
 
     Returns:

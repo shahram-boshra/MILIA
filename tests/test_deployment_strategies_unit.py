@@ -1046,26 +1046,32 @@ class TestLocalDeploymentStrategy:
             strategy.prepare_model(mock_model, save_path)
             mock_save.assert_called_once()
 
-    def test_deploy_loads_model(self, local_config, mock_model, temp_dir):
-        """Test deploy loads model into memory."""
+    def test_deploy_loads_model(self, local_config, temp_dir):
+        """deploy() loads the saved weights back into the prepared module (no mocked torch.load)."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        save_path = temp_dir / "local_model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
+        module = nn.Linear(10, 2)
+        saved = {name: tensor.clone() for name, tensor in module.state_dict().items()}
+        save_path = strategy.prepare_model(module, temp_dir / "local_model")
+        with torch.no_grad():
+            module.weight.zero_()  # deploy must restore the saved weights
 
-        # Create a mock model for loading
-        loaded_model = MagicMock()
-        loaded_model.eval = MagicMock(return_value=loaded_model)
-
-        with patch.object(torch, "load", return_value=loaded_model):
-            # Touch the file so it exists
-            model_file.touch()
-            result = strategy.deploy(save_path)
+        result = strategy.deploy(save_path)
 
         assert result["target"] == "local"
         assert result["status"] == "deployed"
         assert strategy.is_deployed is True
-        assert strategy.model is loaded_model
+        assert strategy.model is module
+        assert strategy.model.training is False
+        assert torch.equal(module.weight, saved["weight"])
+
+    def test_deploy_weights_without_prepared_module_raises_error(self, local_config, temp_dir):
+        """Weights alone cannot rebuild a model: a fresh strategy says how to package instead."""
+        LocalDeploymentStrategy(local_config, verbose=False).prepare_model(
+            nn.Linear(10, 2), temp_dir / "local_model"
+        )
+        fresh = LocalDeploymentStrategy(local_config, verbose=False)
+        with pytest.raises(DeploymentError, match="holds only weights"):
+            fresh.deploy(temp_dir / "local_model")
 
     def test_deploy_missing_model_raises_error(self, local_config, temp_dir):
         """Test deploy raises error when model file is missing."""
@@ -1095,37 +1101,19 @@ class TestLocalDeploymentStrategy:
     def test_predict_after_deployment(self, local_config, temp_dir):
         """Test predict after deployment."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        save_path = temp_dir / "local_model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        # Create a mock model that can handle input
-        mock_loaded_model = MagicMock()
-        mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-        mock_loaded_model.return_value = torch.tensor([1.0, 2.0])
-
-        with patch.object(torch, "load", return_value=mock_loaded_model):
-            strategy.deploy(save_path)
+        module = nn.Linear(10, 2)
+        strategy.deploy(strategy.prepare_model(module, temp_dir / "local_model"))
 
         input_data = torch.randn(1, 10)
-        _result = strategy.predict(input_data)
+        with torch.no_grad():
+            expected = module(input_data)
 
-        mock_loaded_model.assert_called_once_with(input_data)
+        assert torch.equal(strategy.predict(input_data), expected)
 
     def test_teardown(self, local_config, temp_dir):
         """Test teardown cleans up deployment."""
         strategy = LocalDeploymentStrategy(local_config, verbose=False)
-        save_path = temp_dir / "local_model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        mock_loaded_model = MagicMock()
-        mock_loaded_model.eval = MagicMock(return_value=mock_loaded_model)
-
-        with patch.object(torch, "load", return_value=mock_loaded_model):
-            strategy.deploy(save_path)
+        strategy.deploy(strategy.prepare_model(nn.Linear(10, 2), temp_dir / "local_model"))
 
         assert strategy.is_deployed is True
         assert strategy.model is not None
@@ -1234,72 +1222,37 @@ class TestDeploymentManager:
     def test_deploy(self, temp_dir):
         """Test deploy delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
+        save_path = manager.prepare_model(nn.Linear(10, 2), temp_dir / "model")
 
-        save_path = temp_dir / "model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        mock_model = MagicMock()
-        mock_model.eval = MagicMock(return_value=mock_model)
-
-        with patch.object(torch, "load", return_value=mock_model):
-            result = manager.deploy(save_path)
+        result = manager.deploy(save_path)
 
         assert result["status"] == "deployed"
 
     def test_deploy_with_string_path(self, temp_dir):
         """Test deploy accepts string path."""
         manager = DeploymentManager(target="local", verbose=False)
+        save_path = manager.prepare_model(nn.Linear(10, 2), temp_dir / "model")
 
-        save_path = temp_dir / "model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        mock_model = MagicMock()
-        mock_model.eval = MagicMock(return_value=mock_model)
-
-        with patch.object(torch, "load", return_value=mock_model):
-            result = manager.deploy(str(save_path))
+        result = manager.deploy(str(save_path))
 
         assert result["status"] == "deployed"
 
     def test_predict(self, temp_dir):
         """Test predict delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-
-        save_path = temp_dir / "model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        mock_model = MagicMock()
-        mock_model.eval = MagicMock(return_value=mock_model)
-        mock_model.return_value = torch.tensor([1.0])
-
-        with patch.object(torch, "load", return_value=mock_model):
-            manager.deploy(save_path)
+        module = nn.Linear(10, 2)
+        manager.deploy(manager.prepare_model(module, temp_dir / "model"))
 
         input_data = torch.randn(1, 10)
-        manager.predict(input_data)
+        with torch.no_grad():
+            expected = module(input_data)
 
-        mock_model.assert_called_once_with(input_data)
+        assert torch.equal(manager.predict(input_data), expected)
 
     def test_teardown(self, temp_dir):
         """Test teardown delegates to strategy."""
         manager = DeploymentManager(target="local", verbose=False)
-
-        save_path = temp_dir / "model"
-        save_path.mkdir(parents=True)
-        model_file = save_path / "model.pth"
-        model_file.touch()
-
-        mock_model = MagicMock()
-        mock_model.eval = MagicMock(return_value=mock_model)
-
-        with patch.object(torch, "load", return_value=mock_model):
-            manager.deploy(save_path)
+        manager.deploy(manager.prepare_model(nn.Linear(10, 2), temp_dir / "model"))
 
         assert manager.strategy.is_deployed is True
         manager.teardown()
