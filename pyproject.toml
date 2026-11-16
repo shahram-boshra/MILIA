@@ -97,7 +97,7 @@ dependencies = [
     "h5py==3.16.0",                 # implicit direct dep (4 preprocessor import sites)
     # implicit direct dep (4 import sites: models/model_plugin_system.py, transformations/plugin_system.py,
     # transformations/graph_transforms.py, models/hpo/backends/optuna_backend.py); was only transitive
-    "packaging==26.2",
+    "packaging==26.3",
 ]
 
 [project.optional-dependencies]
