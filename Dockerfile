@@ -13,6 +13,8 @@
 # use at runtime needs the host NVIDIA driver + `--gpus all` (nvidia-container-toolkit).
 # Every image also carries the `hpo-postgres` extra (psycopg 3), so it can run as a worker of an HPO
 # study shared through PostgreSQL (P2-4b; like optuna-dashboard's image, which bundles its RDB drivers).
+# It also carries the `serve` extra (FastAPI + Uvicorn), so a deployment package is served by this image
+# itself: generated serving Dockerfiles are `FROM` the published tag plus the package (F57-2).
 # Refs: Astral uv — Docker guide; PyPA; PyTorch/PyG wheels bundle the CUDA runtime.
 # =============================================================================
 
@@ -54,14 +56,14 @@ ARG ACCEL
 # Dependencies only (no project) — this layer is cached until pyproject.toml/uv.lock change.
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --no-dev --extra ${ACCEL} --extra hpo-postgres
+    uv sync --locked --no-install-project --no-dev --extra ${ACCEL} --extra hpo-postgres --extra serve
 
 # ---- Stage 2: builder — project source + MILIA itself (feeds `runtime`) ----
 FROM deps AS builder
 ARG ACCEL
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --extra ${ACCEL} --extra hpo-postgres
+    uv sync --locked --no-dev --extra ${ACCEL} --extra hpo-postgres --extra serve
 
 # Build-time verification (fails the build early): dist metadata + import, and the compiled PyG
 # kernels run against this torch build (ABI/R1). Defined once in docker/verify_build.py and shared
@@ -92,7 +94,7 @@ ARG ACCEL
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --extra ${ACCEL} --extra dev --extra descriptors-cdk \
-        --extra hpo-postgres
+        --extra hpo-postgres --extra serve
 
 # ---- Stage 4: test — test-deps + project source, for in-image test runs (not published) ----
 # Built with `--target test`; BuildKit builds only this chain (base → test-base → test-deps → test),
@@ -102,7 +104,8 @@ FROM test-deps AS test
 ARG ACCEL
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk --extra hpo-postgres
+    uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk --extra hpo-postgres \
+        --extra serve
 RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 ENV PATH="/app/.venv/bin:$PATH" \
     MILIA_LOG_DIR=/tmp

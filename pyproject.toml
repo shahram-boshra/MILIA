@@ -138,6 +138,16 @@ descriptors-cdk = [
 # which system updates do not patch; for production servers psycopg recommends a local `psycopg[c]`
 # build against the system libpq. Install: `uv sync --extra cpu --extra hpo-postgres`.
 hpo-postgres = ["psycopg[binary]>=3.3.6"]
+# Opt-in: the HTTP server for deployment packages (milia_pipeline.models.deployment.serving, F57-2):
+# one FastAPI app on port 8080 that answers SageMaker (/ping, /invocations), Vertex AI (AIP_* routes) and
+# plain /health + /predict. Built into the published image, so generated serving Dockerfiles only add the
+# package. starlette is a FastAPI dependency, listed for its security floor: < 1.3.0 is affected by
+# CVE-2026-54282 (and < 1.0.1 by CVE-2026-48710). Install: `uv sync --extra cpu --extra serve`.
+serve = [
+    "fastapi>=0.163.1",
+    "starlette>=1.3.0",
+    "uvicorn>=0.54.0",
+]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu126 | cu130).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
 # torch 2.12 is the newest minor with a PyG release declaring support (PyG 2.8.0) and PyG wheels for

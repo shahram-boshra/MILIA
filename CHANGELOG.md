@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   vulnerabilities they introduce; pushes to `main` and a weekly run fail on any known vulnerability, so an
   advisory published after the lock was written is caught. Accepted advisories are listed in `osv-scanner.toml`
   with a reason and a re-triage date (2027-02-15), and a test keeps each one disclosed here.
+- `serve` extra: FastAPI, Starlette (floor 1.3.0, the first release without CVE-2026-54282 and CVE-2026-48710)
+  and Uvicorn. These are the HTTP server for deployment packages. The Docker images install it, so a package can
+  be served by the published image itself.
 
 ### Changed
 
