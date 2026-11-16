@@ -196,6 +196,7 @@ from milia_pipeline.config.config_containers import (
 
 # Configuration
 from milia_pipeline.config.config_loader import load_config
+from milia_pipeline.path_resolution import InputPathNotFoundError, resolve_input_path
 
 # Transformations
 try:
@@ -3238,22 +3239,23 @@ def handle_predict_mode(
         if model_path_arg is None:
             logger.error("--model-path is required for prediction mode")
             return 1
-        model_path = Path(model_path_arg).expanduser()
-        if not model_path.is_absolute():
-            # Check in checkpoint directory first
-            checkpoint_dir = working_root_dir / "checkpoints"
-            candidate = checkpoint_dir / model_path.name
-            model_path = candidate if candidate.exists() else working_root_dir / model_path
-        logger.info(f"Model checkpoint: {model_path}")
-
-        # Resolve test path (--test-path)
         test_path_arg = getattr(args, "test_path", None)
         if test_path_arg is None:
             logger.error("--test-path is required for prediction mode")
             return 1
-        test_path = Path(test_path_arg).expanduser()
-        if not test_path.is_absolute():
-            test_path = working_root_dir / test_path
+
+        # Resolve both inputs the same way as the CLI's pre-flight validation (path_resolution):
+        # as given (current directory), then the checkpoints directory by name for the model,
+        # then relative to working_root_dir.
+        try:
+            model_path = resolve_input_path(
+                model_path_arg, working_root_dir, name_dirs=(working_root_dir / "checkpoints",)
+            )
+            test_path = resolve_input_path(test_path_arg, working_root_dir)
+        except InputPathNotFoundError as missing:
+            logger.error(f"Prediction input {missing}")
+            return 1
+        logger.info(f"Model checkpoint: {model_path}")
         logger.info(f"Test data path: {test_path}")
 
         # Resolve output path (--preds-path)

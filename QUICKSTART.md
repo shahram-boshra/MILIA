@@ -314,10 +314,10 @@ The 7-step walkthrough is documented authoritatively in [`README.md` § "Trying 
 
 ### Pass criterion
 
-After completing step 7 of the README walkthrough, the file `./predictions.csv` exists in the current directory and contains predicted property values for the molecules in your `--test-path` input CSV (`smiles,molecule_id` header, one molecule per row). Confirm with:
+After completing step 7 of the README walkthrough, the file `predictions.csv` exists in your `working_root_dir`, which is `~/Chem_Data/Milia_PyG_Dataset/` on the host with the `/data` mount above, and contains predicted property values for the molecules in your `--test-path` input CSV (`smiles,molecule_id` header, one molecule per row). Confirm with:
 
 ```bash
-ls -lh ./predictions.csv && head -n 6 ./predictions.csv
+ls -lh ~/Chem_Data/Milia_PyG_Dataset/predictions.csv && head -n 6 ~/Chem_Data/Milia_PyG_Dataset/predictions.csv
 ```
 
 If the file exists, has non-zero size, and the first line is a CSV header followed by five data rows, **you have completed the §5e.1 acceptance criterion** — pulled the image, run the smoke test, and executed one full walkthrough command, within roughly 30 minutes total.

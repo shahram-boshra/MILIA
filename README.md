@@ -337,7 +337,7 @@ milia --predict \
     --preds-path ./predictions.csv
 ```
 
-After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `./predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row.
+After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `{working_root_dir}/predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row.
 
 ### Where the outputs live
 
@@ -350,8 +350,9 @@ Every artifact MILIA produces lands under `working_root_dir`. With the example v
 | Per-epoch checkpoints | `~/Chem_Data/Milia_PyG_Dataset/checkpoints/epoch=*.pt` |
 | HPO best parameters | `~/Chem_Data/Milia_PyG_Dataset/hpo_output/best_params.json` |
 | Training plots | `~/Chem_Data/Milia_PyG_Dataset/training_plots/` |
+| Predictions (`--preds-path ./predictions.csv`) | `~/Chem_Data/Milia_PyG_Dataset/predictions.csv` |
 
-The CLI resolves checkpoint paths against `working_root_dir` automatically, so commands that reference `./checkpoints/best.pt` work regardless of which directory you run them from.
+Input paths (`--model-path`, `--test-path`) are looked up first as given, relative to the current directory, then under `working_root_dir`; `--model-path` is also looked up by file name in `{working_root_dir}/checkpoints/`. So `--test-path test_data/molecules.csv` reads the bundled sample from the checkout (or `/app` in the Docker image), and `--model-path ./checkpoints/best.pt` finds the trained checkpoint from any directory. A path that is not found lists every location checked. Output paths such as `--preds-path` are always written under `working_root_dir`.
 
 ### Introspection commands
 

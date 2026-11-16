@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   marker spelling in every dependency PR. uv 0.13.7 accepts the existing lock as it is; the first lock it
   rewrites moves to lockfile revision 5 and respells the CUDA markers, which installs the same packages for every
   extra and supported Python. A test keeps the pins equal.
+- `--test-path` and `--model-path` take a relative path as given first, relative to the current directory, then
+  under `working_root_dir` (`--model-path` is also looked up by name in `{working_root_dir}/checkpoints/`). Before,
+  `--test-path` was resolved only under `working_root_dir`, so the README's `--test-path test_data/molecules.csv`
+  failed, and the error listed a location that was never checked. The CLI's validation and prediction share one
+  resolver (new `milia_pipeline.path_resolution`), and a missing path lists exactly the locations checked.
+  `--preds-path` is unchanged; a relative path is written under `working_root_dir`, as the README and QUICKSTART
+  now state.
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
   optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
 

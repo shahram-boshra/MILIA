@@ -145,6 +145,7 @@ from milia_pipeline.config.config_accessors import (
 # Configuration system
 from milia_pipeline.config.config_loader import load_config
 from milia_pipeline.models._deprecations import BUILDER_TYPE_DEPRECATION, warn_deprecated
+from milia_pipeline.path_resolution import InputPathNotFoundError, resolve_input_path
 
 # Validation system
 try:
@@ -1514,7 +1515,9 @@ class CLIManager:
             default=None,
             metavar="PATH",
             dest="model_path",
-            help="Path to trained model checkpoint (.pt file) for inference. "
+            help="Path to trained model checkpoint (.pt file) for inference. A relative path is "
+            "looked up in the current directory, then by name in {working_root_dir}/checkpoints, "
+            "then under {working_root_dir}. "
             "Note: Use --checkpoint for resuming training, --model-path for prediction.",
         )
 
@@ -1525,7 +1528,8 @@ class CLIManager:
             metavar="PATH",
             dest="test_path",
             help="Path to input data: molecular file (CSV, XYZ, SDF), "
-            "processed dataset (.pt), or miliaDataset root directory",
+            "processed dataset (.pt), or miliaDataset root directory. A relative path is "
+            "looked up in the current directory, then under {working_root_dir}",
         )
 
         prediction.add_argument(
@@ -1534,7 +1538,8 @@ class CLIManager:
             default="./predictions.csv",
             metavar="PATH",
             dest="preds_path",
-            help="Path to save predictions (default: ./predictions.csv)",
+            help="Path to save predictions; a relative path is written under "
+            "{working_root_dir} (default: ./predictions.csv)",
         )
 
         # =================================================================
@@ -2359,23 +2364,17 @@ For more information, see: https://docs.example.com/milia-cli
             # Get working_root_dir from config (same logic as main.py)
             working_root_dir = self._get_working_root_dir_for_validation()
 
-            # Resolve and validate model path
-            model_path = Path(args.model_path).expanduser()
-            if not model_path.is_absolute():
-                # Check in checkpoint directory first (same logic as main.py)
-                checkpoint_dir = working_root_dir / "checkpoints"
-                candidate = checkpoint_dir / model_path.name
-                model_path = candidate if candidate.exists() else working_root_dir / model_path
-
-            if not model_path.exists():
+            # Resolve and validate model path (shared with main.py: path_resolution)
+            try:
+                model_path = resolve_input_path(
+                    args.model_path, working_root_dir, name_dirs=(working_root_dir / "checkpoints",)
+                )
+            except InputPathNotFoundError as missing:
                 raise CLIValidationError(
                     f"Model checkpoint not found: {args.model_path}\n"
-                    f"Searched locations:\n"
-                    f"  1. {Path(args.model_path).expanduser()} (as provided)\n"
-                    f"  2. {working_root_dir / 'checkpoints' / Path(args.model_path).name} (checkpoints dir)\n"
-                    f"  3. {working_root_dir / args.model_path} (working_root_dir relative)\n"
+                    f"Searched locations:\n{missing.searched}\n"
                     f"Ensure the path to your trained model checkpoint is correct."
-                )
+                ) from missing
 
             # Validate model path has .pt extension
             if model_path.suffix != ".pt":
@@ -2386,20 +2385,16 @@ For more information, see: https://docs.example.com/milia-cli
 
             self.logger.debug(f"Resolved model path: {model_path}")
 
-            # Resolve and validate test path
-            test_path = Path(args.test_path).expanduser()
-            if not test_path.is_absolute():
-                test_path = working_root_dir / test_path
-
-            if not test_path.exists():
+            # Resolve and validate test path (shared with main.py: path_resolution)
+            try:
+                test_path = resolve_input_path(args.test_path, working_root_dir)
+            except InputPathNotFoundError as missing:
                 raise CLIValidationError(
                     f"Test path not found: {args.test_path}\n"
-                    f"Searched locations:\n"
-                    f"  1. {Path(args.test_path).expanduser()} (as provided)\n"
-                    f"  2. {working_root_dir / args.test_path} (working_root_dir relative)\n"
+                    f"Searched locations:\n{missing.searched}\n"
                     f"Provide a valid path to: molecular file (CSV, XYZ, SDF), "
                     f"processed dataset (.pt), or miliaDataset directory."
-                )
+                ) from missing
 
             self.logger.debug(f"Resolved test path: {test_path}")
 
