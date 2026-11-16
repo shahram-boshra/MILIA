@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it. A rejected file now raises `pickle.UnpicklingError` with a note; for a file you trust, pass
   `weights_only=False` explicitly. Checkpoints MILIA writes hold only state dicts and plain metadata and load as
   before.
+- Processed datasets and processing chunks are read with `torch.load(weights_only=True)` only (new
+  `milia_pipeline.datasets.processed_io`). The processed file is written in PyG's `InMemoryDataset.save` layout
+  (`data.to_dict()`, slices, data class) and chunks as plain dictionaries; before, both were pickled `Data`
+  objects, which PyG's loader retried with full unpickling (its "Weights only load failed" warning on every
+  run). A processed file in the older layout is rebuilt once from the raw data, with a warning; predicting on a
+  `.pt` file accepts only the new layout.
 
 ## [1.21.0] - 2026-11-14
 

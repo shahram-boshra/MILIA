@@ -95,6 +95,13 @@ except ImportError as e:
     DESCRIPTORS_AVAILABLE = False
     DESCRIPTOR_IMPORT_ERROR = str(e)
 
+from milia_pipeline.datasets.processed_io import (
+    StaleProcessedFileError,
+    load_chunk,
+    load_processed,
+    save_chunk,
+    save_processed,
+)
 from milia_pipeline.exceptions import (
     ConfigurationError,
     DataProcessingError,
@@ -696,14 +703,19 @@ class miliaDataset(InMemoryDataset):
         processed_file_path: str = self.processed_paths[0]
         if Path(processed_file_path).exists():
             try:
-                # PyG >= 2.4: use the public `InMemoryDataset.load()` API.
-                # This method internally performs `torch.load` and populates the
-                # underlying `_data` / `slices` storage WITHOUT triggering the
-                # `UserWarning` emitted by the public `data` property on direct
-                # access. It is the documented, future-proof replacement for the
-                # legacy `self.data, self.slices = torch.load(...)` pattern.
-                # Reference: https://pytorch-geometric.readthedocs.io/en/latest/notes/create_dataset.html
-                self.load(processed_file_path)
+                # Read with weights_only=True only (milia_pipeline.datasets.processed_io). PyG's
+                # InMemoryDataset.load would retry an older-layout file with full unpickling; MILIA
+                # instead rebuilds that file once from the raw data, and a rebuilt file that still
+                # cannot be read is an error (no loop).
+                try:
+                    self.data, self.slices = load_processed(processed_file_path)
+                except StaleProcessedFileError as stale:
+                    self.logger.warning(
+                        f"{stale}. Rebuilding the processed dataset from the raw files "
+                        "(a dataset file is never fully unpickled)."
+                    )
+                    self.process()
+                    self.data, self.slices = load_processed(processed_file_path)
                 self.logger.info(f"Dataset data and slices loaded from {processed_file_path}.")
             except Exception as e:
                 self.logger.error(f"Error during manual load of {processed_file_path}: {e}")
@@ -5981,7 +5993,7 @@ class miliaDataset(InMemoryDataset):
             self.logger.info(
                 f"Saving chunk {chunk_idx} with {len(chunk_data)} molecules to {chunk_path}..."
             )
-            torch.save(chunk_data, chunk_path)
+            save_chunk(chunk_data, chunk_path)  # weights_only-loadable layout (processed_io)
             self.logger.debug(f"Chunk {chunk_idx} saved successfully.")
             return chunk_path
 
@@ -6043,26 +6055,16 @@ class miliaDataset(InMemoryDataset):
         for chunk_path in tqdm(chunk_file_paths, desc="Loading and concatenating chunks"):
             if chunk_path.exists():
                 try:
-                    # M2 fix: Explicitly set weights_only=False for PyG Data objects
-                    # Chunk files contain lists of PyG Data objects that require full pickle support.
-                    # This is safe for locally-generated chunk files from our own pipeline.
-                    chunk_data = torch.load(chunk_path, weights_only=False)
-                    if isinstance(chunk_data, list):
-                        all_processed_data.extend(chunk_data)
-                        self.logger.debug(
-                            f"Successfully loaded chunk {chunk_path} with {len(chunk_data)} molecules"
-                        )
-                    else:
-                        failed_chunks.append(
-                            f"{chunk_path}: Invalid chunk data type {type(chunk_data)}"
-                        )
-                        self.logger.warning(
-                            f"Chunk {chunk_path} contains invalid data type: {type(chunk_data)}"
-                        )
+                    # weights_only=True only: chunks are written by save_chunk (processed_io)
+                    chunk_data = load_chunk(chunk_path)
+                    all_processed_data.extend(chunk_data)
+                    self.logger.debug(
+                        f"Successfully loaded chunk {chunk_path} with {len(chunk_data)} molecules"
+                    )
 
-                except torch.serialization.pickle.UnpicklingError as e:
-                    failed_chunks.append(f"{chunk_path}: Unpickling error")
-                    self.logger.error(f"Failed to unpickle chunk {chunk_path}: {str(e)}")
+                except StaleProcessedFileError as e:
+                    failed_chunks.append(f"{chunk_path}: not readable with weights_only=True")
+                    self.logger.error(f"Failed to read chunk {chunk_path}: {str(e)}")
 
                 except Exception as e:
                     failed_chunks.append(f"{chunk_path}: {str(e)}")
@@ -6838,7 +6840,8 @@ class miliaDataset(InMemoryDataset):
 
                     # Enhanced save with error handling
                     try:
-                        torch.save((data, slices), processed_path)
+                        # InMemoryDataset.save layout, read back with weights_only=True
+                        save_processed(data, slices, processed_path)
                         self.logger.info(f"Consolidated processed data saved to {processed_path}")
                         self.logger.info("Processing complete.")
 

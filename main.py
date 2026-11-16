@@ -3347,78 +3347,48 @@ def handle_predict_mode(
             else:
                 data_list = [dataset[i] for i in range(len(dataset))]
         elif test_path.suffix == ".pt":
-            # =================================================================
-            # FIX 22: HANDLE ALL PYG .PT FILE FORMATS
-            # =================================================================
-            # DYNAMIC: Detects and handles multiple PyG data formats:
-            #   1. List[Data]: Direct list of Data objects
-            #   2. Tuple (data, slices): PyG < 2.4 InMemoryDataset collated format
-            #   3. Tuple (data, slices, data_cls): PyG >= 2.4 collated format
-            #   4. Single Data object: Wrapped into list
-            # PRODUCTION-READY: Uses official PyG separate() for reconstruction
-            # FUTURE-PROOF: Compatible with all PyG versions and formats
-            # =================================================================
-            loaded_data = torch.load(test_path)
+            # A processed dataset file in InMemoryDataset.save layout, read with
+            # torch.load(weights_only=True) only. A pickled Data object (older layout)
+            # needs full unpickling, which can execute code embedded in the file, so it
+            # is rejected; re-process the raw data to rebuild it.
+            from torch_geometric.data.separate import separate
 
-            if isinstance(loaded_data, list):
-                # Format 1: Direct list of Data objects
-                data_list = loaded_data
-            elif isinstance(loaded_data, tuple) and len(loaded_data) in (2, 3):
-                # Format 2/3: PyG InMemoryDataset collated format (data, slices[, data_cls])
-                # This is the internal storage format of InMemoryDataset
-                from torch_geometric.data import Data
-                from torch_geometric.data.separate import separate
+            from milia_pipeline.datasets.processed_io import StaleProcessedFileError, load_processed
 
-                if len(loaded_data) == 2:
-                    # PyG < 2.4 format: (collated_data, slices)
-                    collated_data, slices = loaded_data
-                    data_cls = Data
-                else:
-                    # PyG >= 2.4 format: (collated_data, slices, data_cls)
-                    collated_data, slices, data_cls = loaded_data
-                    # Handle dict-based storage (PyG >= 2.4)
-                    if isinstance(collated_data, dict):
-                        collated_data = data_cls.from_dict(collated_data)
-
-                # Determine number of graphs from slices
-                # The slices dict contains start/end indices for each attribute
-                # We can infer count from any attribute's slice tensor
-                num_graphs = None
-                if slices is not None:
-                    for _key, slice_tensor in slices.items():
-                        if hasattr(slice_tensor, "__len__"):
-                            num_graphs = len(slice_tensor) - 1
-                            break
-
-                if num_graphs is not None and num_graphs > 0:
-                    # Reconstruct individual Data objects using PyG's separate()
-                    data_list = []
-                    for idx in range(num_graphs):
-                        data = separate(
-                            cls=collated_data.__class__,
-                            batch=collated_data,
-                            idx=idx,
-                            slice_dict=slices,
-                            decrement=False,
-                        )
-                        data_list.append(data)
-                    logger.info(f"Reconstructed {num_graphs} graphs from PyG collated format")
-                elif slices is None:
-                    # Single graph stored without slices
-                    data_list = [collated_data]
-                else:
-                    raise ValueError(f"Could not determine number of graphs from slices: {slices}")
-            elif hasattr(loaded_data, "x") or hasattr(loaded_data, "edge_index"):
-                # Format 4: Single Data/HeteroData object (duck-typing check)
-                data_list = [loaded_data]
-            else:
+            try:
+                collated_data, slices = load_processed(test_path)
+            except StaleProcessedFileError as exc:
                 raise ValueError(
-                    f"Unsupported .pt file format. Expected one of:\n"
-                    f"  1. List[Data]: List of PyG Data objects\n"
-                    f"  2. Tuple[Data, Dict]: PyG InMemoryDataset collated format\n"
-                    f"  3. Data: Single PyG Data object\n"
-                    f"Got: {type(loaded_data)}"
-                )
+                    f"{exc}. Pass a processed file written by this MILIA version "
+                    "(re-run processing to rebuild it), or a CSV/SDF input."
+                ) from exc
+
+            # The slices dict holds start/end indices per attribute; any entry gives the count.
+            num_graphs = None
+            if slices is not None:
+                for _key, slice_tensor in slices.items():
+                    if hasattr(slice_tensor, "__len__"):
+                        num_graphs = len(slice_tensor) - 1
+                        break
+
+            if num_graphs is not None and num_graphs > 0:
+                # Reconstruct individual Data objects using PyG's separate()
+                data_list = []
+                for idx in range(num_graphs):
+                    data = separate(
+                        cls=collated_data.__class__,
+                        batch=collated_data,
+                        idx=idx,
+                        slice_dict=slices,
+                        decrement=False,
+                    )
+                    data_list.append(data)
+                logger.info(f"Reconstructed {num_graphs} graphs from PyG collated format")
+            elif slices is None:
+                # Single graph stored without slices
+                data_list = [collated_data]
+            else:
+                raise ValueError(f"Could not determine number of graphs from slices: {slices}")
         else:
             # File input (CSV, XYZ, SDF, etc.)
             if test_path.suffix == ".csv":
@@ -3536,8 +3506,8 @@ def handle_predict_mode(
                         f"            - Use miliaDataset with same config as training\n"
                         f"\n"
                         f"  Option 2: Provide pre-processed .pt file\n"
-                        f"            - Use --test-path with a .pt file containing\n"
-                        f"              properly featurized PyG Data objects\n"
+                        f"            - Use --test-path with the processed .pt file MILIA\n"
+                        f"              writes for a dataset featurized like the training data\n"
                         f"\n"
                         f"  Option 3: Train a new model on SMILES-featurized data\n"
                         f"            - Use SMILESConverter-compatible training data\n"
