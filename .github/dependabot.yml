@@ -63,6 +63,13 @@ updates:
       - dependency-name: "torch-scatter"
       - dependency-name: "torch-sparse"
       - dependency-name: "torch-geometric"
+      # setuptools: torch 2.12.1 requires setuptools<82, so the locked version cannot move. Dependabot
+      # still reads the [build-system] requirement (setuptools>=82.0.1) as a direct dependency, and
+      # its uv update then changes no file ("No files have changed!") and fails the whole job (run
+      # 44103151599, 2026-11-17). The update-types scope this to version updates; security updates
+      # still apply. Lift it with the torch pace that removes the <82 cap.
+      - dependency-name: "setuptools"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
       # Optuna 5 is a gated phase of the HPO strategy; minor/patch updates stay automated.
       - dependency-name: "optuna"
         update-types: ["version-update:semver-major"]
