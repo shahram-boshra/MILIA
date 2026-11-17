@@ -66,10 +66,10 @@ updates:
       # Optuna 5 is a gated phase of the HPO strategy; minor/patch updates stay automated.
       - dependency-name: "optuna"
         update-types: ["version-update:semver-major"]
-      # pyproject.toml holds the NumPy 1.x ABI (numpy==1.26.4) for the compiled stack; NumPy 2 is a
-      # deliberate, tested change. Minor/patch updates stay automated.
+      # NumPy stays on 2.4.x while MILIA supports Python 3.11: NumPy 2.5 needs Python 3.12, so a
+      # minor update moves with the Python-range change. Patch updates stay automated.
       - dependency-name: "numpy"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels:
       - "dependencies"
     # `include: scope` appends "(deps)" / "(deps-dev)" to the prefix (GitHub Docs — Dependabot

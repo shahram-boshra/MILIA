@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The README, `StorageConfig` and `configs/models.yaml` explain how to choose the HPO heartbeat `grace_period` for
   `rdb` storage. It should be `heartbeat_interval` plus the longest stall of a live worker (a suspended process or VM,
   or a slow database), or that worker's trial is failed and the worker stops.
+- NumPy 2.4.6 (before, 1.26.4), the last NumPy series that supports Python 3.11; NumPy 2.5 needs Python 3.12. NumPy 2
+  changes how Python scalars combine with NumPy values (NEP 50) and breaks the binary interface of packages compiled
+  against NumPy 1. Every locked compiled dependency (torch, RDKit, scikit-learn, SciPy, h5py, pandas, matplotlib)
+  supports NumPy 2. Ruff's `NPY201` rule now guards against APIs NumPy 2 removed. Dependabot no longer proposes NumPy
+  minor updates; NumPy 2.5 comes with the Python-range change.
 
 ### Deprecated
 
