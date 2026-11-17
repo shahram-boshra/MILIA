@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Python 3.12), pydata-sphinx-theme 0.24.0 and myst-parser 5.2.0. `docs/requirements.txt`, which Read the Docs
   installs, now states the same requirements as the `docs` extra, and a test keeps them equal; its comment still
   said MILIA supports Python 3.10.
+- The README, `StorageConfig` and `configs/models.yaml` explain how to choose the HPO heartbeat `grace_period` for
+  `rdb` storage. It should be `heartbeat_interval` plus the longest stall of a live worker (a suspended process or VM,
+  or a slow database), or that worker's trial is failed and the worker stops.
 
 ### Deprecated
 

@@ -463,6 +463,9 @@ class StorageConfig(BaseModel):
       for ``grace_period`` seconds (default ``2 * heartbeat_interval``; must exceed the interval, or
       healthy trials are failed between two heartbeats) is marked ``FAIL`` by the next worker that asks
       for a trial; ``max_retry`` re-queues such a trial at most that many times (absent = no retry).
+      A live worker whose heartbeat stalls longer than ``grace_period`` (suspended process, container
+      or VM; slow or unreachable database) also loses its trial, so ``grace_period`` should be
+      ``heartbeat_interval`` plus the longest such stall (Optuna's example: 60 and 120 seconds).
       Heartbeat applies to ``Study.optimize`` (MILIA's path) and is experimental in Optuna 4.9.0.
     - ``"journal_file"`` — ``optuna.storages.JournalStorage(JournalFileBackend(journal_path))``: safe
       for several processes on **one host** (file locks); for several hosts Optuna recommends ``"rdb"``

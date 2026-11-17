@@ -160,6 +160,17 @@ Each worker uses 1 PyTorch CPU thread by default (`OMP_NUM_THREADS`, as `torchru
 `MILIA_WORKER_THREADS` in `.env` to at most `floor(CPUs / workers)`. A worker logs its threads, CPUs, GPUs and memory,
 and stops before loading a processed dataset larger than the memory available to it.
 
+**Heartbeat and grace period (`rdb` storage).** A background thread in each worker writes the running trial's heartbeat
+to the database every `heartbeat_interval` seconds. When another worker asks for a trial, Optuna marks as `FAIL` every
+running trial whose last heartbeat is older than `grace_period` (default `2 × heartbeat_interval`). Both timestamps are
+the database server's clock (`now()`), so clock differences between hosts do not matter. A worker that is alive but
+cannot write a heartbeat for longer than `grace_period` loses its trial: it is failed, and the worker's own result
+for it is then rejected ("Cannot tell a FAIL trial") and the worker stops. Such pauses include a suspended process,
+container or VM, a host under memory pressure, and a database that is slow or unreachable. Set `grace_period` to
+`heartbeat_interval` plus the longest pause a live worker can have. Optuna's own example uses `heartbeat_interval: 60`
+and `grace_period: 120`; MILIA requires `grace_period` to be greater than `heartbeat_interval`. A shorter interval
+detects a dead worker sooner but writes to the database more often.
+
 ### Method 2: uv (Without Docker)
 
 ```bash
