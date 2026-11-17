@@ -42,15 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `deploy()` verifies it. Before, they traced the model with an image-shaped placeholder tensor, which a graph
   model rejects, and silently saved bare weights while reporting `ready_for_edge`. `predict()` now raises
   `DeploymentError` instead of returning `None`.
-
-### Deprecated
-
-- The `mobile` and `iot` deployment targets (`EdgeDeploymentStrategy`) emit a `DeprecationWarning` and will be
-  removed in 2.0.0. MILIA builds no on-device model. Featurization needs RDKit. PyTorch's TorchScript lite
-  interpreter is deprecated in favour of ExecuTorch, which needs `torch.export`, and MILIA's graph pooling is
-  data-dependent, so its models do not export. Serve the package with the `container` target, or load it in-process
-  with the `local` target.
-
 - uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =
   ">=0.13.7"`), the uv Dependabot's updater runs: a lock written by a different uv changed its `revision` and
   marker spelling in every dependency PR. uv 0.13.7 accepts the existing lock as it is; the first lock it
@@ -65,6 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now state.
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
   optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
+
+### Deprecated
+
+- The `mobile` and `iot` deployment targets (`EdgeDeploymentStrategy`) emit a `DeprecationWarning` and will be
+  removed in 2.0.0. MILIA builds no on-device model. Featurization needs RDKit. PyTorch's TorchScript lite
+  interpreter is deprecated in favour of ExecuTorch, which needs `torch.export`, and MILIA's graph pooling is
+  data-dependent, so its models do not export. Serve the package with the `container` target, or load it in-process
+  with the `local` target.
 
 ### Fixed
 
