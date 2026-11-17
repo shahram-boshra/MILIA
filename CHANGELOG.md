@@ -55,7 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--preds-path` is unchanged; a relative path is written under `working_root_dir`, as the README and QUICKSTART
   now state.
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
-  optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0.
+  optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0; matplotlib 3.11.2, packaging 26.3, plotly 7.1.0
+  (bundles Plotly.js 4), pytest 9.2.0 and SciPy 1.17.1 (requires NumPy 1.26.4 or later, the version MILIA locks).
 
 ### Deprecated
 
