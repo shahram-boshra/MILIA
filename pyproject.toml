@@ -79,7 +79,7 @@ dependencies = [
     # Implicit direct deps, imported unguarded by first-party code but only transitive until now; each is
     # declared at the version already locked.
     # pydantic: 39 modules (config schemas, transforms, plugin manifests, model builders).
-    "pydantic==2.13.4",
+    "pydantic==2.14.3",
     # requests, tqdm: datasets/milia_dataset.py.
     "requests==2.34.2",
     "tqdm==4.70.0",
