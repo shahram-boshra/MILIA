@@ -12,7 +12,7 @@ This module integrates:
 - Production monitoring (performance, drift detection, health checks)
 
 Features:
-- Multi-platform deployment (AWS, GCP, Azure, Edge, Container, Local)
+- Multi-platform deployment (AWS, GCP, Azure, Container, Local; Edge deprecated)
 - Model optimization for inference (quantization, pruning, ONNX export)
 - Real-time monitoring and alerting
 - Health checks and drift detection

@@ -74,6 +74,7 @@ from milia_pipeline.models.deployment.deployment_strategies import (
     deploy_locally,
     list_deployment_targets,
 )
+from milia_pipeline.models.deployment.package import load_package
 
 # =============================================================================
 # FIXTURES
@@ -779,91 +780,69 @@ class TestAzureDeploymentStrategy:
 
 
 class TestEdgeDeploymentStrategy:
-    """Tests for EdgeDeploymentStrategy."""
+    """The edge targets are deprecated: they warn, then write and verify a deployment package."""
 
-    def test_initialization_mobile(self, edge_config):
-        """Test Edge strategy initialization for mobile."""
-        strategy = EdgeDeploymentStrategy(edge_config)
-        assert strategy.config is edge_config
+    @staticmethod
+    def _strategy(config):
+        with pytest.warns(DeprecationWarning, match="removed in MILIA 2.0.0"):
+            return EdgeDeploymentStrategy(config, verbose=False)
+
+    @pytest.mark.parametrize("target", ["mobile", "iot"])
+    def test_initialization_warns_and_names_the_replacement(self, target):
+        config = DeploymentConfig(target=target)
+        with pytest.warns(DeprecationWarning, match="'container' target") as record:
+            strategy = EdgeDeploymentStrategy(config)
+        assert record[0].filename == __file__  # attributed to the caller
+        assert strategy.config is config
         assert strategy.is_deployed is False
 
-    def test_initialization_iot(self):
-        """Test Edge strategy initialization for IoT."""
-        config = DeploymentConfig(target="iot")
-        strategy = EdgeDeploymentStrategy(config)
-        assert strategy.config is config
+    def test_prepare_model_writes_a_package_and_no_device_artifact(
+        self, edge_config, milia_checkpoint, temp_dir
+    ):
+        strategy = self._strategy(edge_config)
+        save_path = strategy.prepare_model(str(milia_checkpoint), temp_dir / "edge")
 
-    def test_prepare_model_creates_directory(self, edge_config, mock_model, temp_dir):
-        """Test prepare_model creates save directory."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        save_path = temp_dir / "edge_model"
+        assert sorted(p.name for p in save_path.iterdir()) == ["deployment.json", "model.pt"]
+        model, _ = load_package(save_path)
+        assert isinstance(model, nn.Module)
 
-        with (
-            patch.object(torch, "save"),
-            patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")),
-        ):
-            result = strategy.prepare_model(mock_model, save_path)
+    def test_prepare_model_rejects_a_module(self, edge_config, temp_dir):
+        strategy = self._strategy(edge_config)
+        with pytest.raises(DeploymentError, match="MILIA checkpoint"):
+            strategy.prepare_model(nn.Linear(2, 2), temp_dir / "edge")
 
-        assert save_path.exists()
-        assert result == save_path
+    def test_deploy_verifies_the_package(self, edge_config, milia_checkpoint, temp_dir):
+        strategy = self._strategy(edge_config)
+        package = strategy.prepare_model(str(milia_checkpoint), temp_dir / "edge")
 
-    def test_prepare_model_fallback_on_trace_failure(self, edge_config, mock_model, temp_dir):
-        """Test prepare_model falls back to standard save on trace failure."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        save_path = temp_dir / "edge_model"
+        result = strategy.deploy(package)
 
-        with (
-            patch.object(torch.jit, "trace", side_effect=Exception("Trace failed")),
-            patch.object(torch, "save") as mock_save,
-        ):
-            strategy.prepare_model(mock_model, save_path)
-            mock_save.assert_called_once()
-
-    def test_prepare_model_with_mobile_optimization(self, edge_config, mock_model, temp_dir):
-        """Test prepare_model with mobile optimization."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-        save_path = temp_dir / "edge_model"
-
-        mock_traced = MagicMock()
-        mock_optimized = MagicMock()
-
-        with (
-            patch.object(torch.jit, "trace", return_value=mock_traced),
-            patch("torch.utils.mobile_optimizer.optimize_for_mobile", return_value=mock_optimized),
-        ):
-            strategy.prepare_model(mock_model, save_path)
-            mock_optimized._save_for_lite_interpreter.assert_called_once()
-
-    def test_deploy_returns_correct_info(self, edge_config, temp_dir):
-        """Test deploy returns correct deployment info."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-
-        result = strategy.deploy(temp_dir)
-
-        assert result["target"] == "edge"
-        assert result["status"] == "ready_for_edge"
+        assert (result["target"], result["status"]) == ("mobile", "prepared")
+        assert "removed in MILIA 2.0.0" in result["message"]
         assert strategy.is_deployed is True
 
-    def test_predict_without_deployment_raises_error(self, edge_config):
-        """Test predict raises error when not deployed."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
+    def test_deploy_rejects_a_directory_without_a_package(self, edge_config, temp_dir):
+        strategy = self._strategy(edge_config)
+        with pytest.raises(DeploymentError, match="not a MILIA deployment package"):
+            strategy.deploy(temp_dir)
+        assert strategy.is_deployed is False
 
+    def test_predict_without_deployment_raises_error(self, edge_config):
+        strategy = self._strategy(edge_config)
         with pytest.raises(DeploymentError, match="not deployed"):
             strategy.predict(torch.randn(1, 10))
 
-    def test_predict_after_deployment(self, edge_config, temp_dir):
-        """Test predict after deployment returns None."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
+    def test_predict_after_deployment_is_not_supported(
+        self, edge_config, milia_checkpoint, temp_dir
+    ):
+        strategy = self._strategy(edge_config)
+        strategy.deploy(strategy.prepare_model(str(milia_checkpoint), temp_dir / "edge"))
+        with pytest.raises(DeploymentError, match="does not run predictions"):
+            strategy.predict(torch.randn(1, 10))
 
-        strategy.deploy(temp_dir)
-        result = strategy.predict(torch.randn(1, 10))
-        assert result is None
-
-    def test_teardown(self, edge_config, temp_dir):
-        """Test teardown cleans up deployment."""
-        strategy = EdgeDeploymentStrategy(edge_config, verbose=False)
-
-        strategy.deploy(temp_dir)
+    def test_teardown(self, edge_config, milia_checkpoint, temp_dir):
+        strategy = self._strategy(edge_config)
+        strategy.deploy(strategy.prepare_model(str(milia_checkpoint), temp_dir / "edge"))
         assert strategy.is_deployed is True
 
         strategy.teardown()
@@ -1117,16 +1096,12 @@ class TestDeploymentManager:
         manager = DeploymentManager(config=config, verbose=False)
         assert isinstance(manager.strategy, AzureDeploymentStrategy)
 
-    def test_initialization_mobile_target(self):
-        """Test initialization with mobile target."""
-        config = DeploymentConfig(target="mobile")
-        manager = DeploymentManager(config=config, verbose=False)
-        assert isinstance(manager.strategy, EdgeDeploymentStrategy)
-
-    def test_initialization_iot_target(self):
-        """Test initialization with IoT target."""
-        config = DeploymentConfig(target="iot")
-        manager = DeploymentManager(config=config, verbose=False)
+    @pytest.mark.parametrize("target", ["mobile", "iot"])
+    def test_initialization_edge_target_is_deprecated(self, target):
+        """The mobile and IoT targets still resolve, with a DeprecationWarning."""
+        config = DeploymentConfig(target=target)
+        with pytest.warns(DeprecationWarning, match="removed in MILIA 2.0.0"):
+            manager = DeploymentManager(config=config, verbose=False)
         assert isinstance(manager.strategy, EdgeDeploymentStrategy)
 
     def test_initialization_container_target(self):

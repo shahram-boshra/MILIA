@@ -6,7 +6,7 @@ Supports cloud, edge, federated, and serverless deployment.
 
 Features:
 - Cloud deployment (AWS SageMaker, GCP AI Platform, Azure ML)
-- Edge deployment (mobile, IoT devices)
+- Edge targets (mobile, IoT): deprecated, removed in 2.0.0; they write a deployment package
 - Federated learning deployment
 - Serverless deployment (Lambda, Cloud Functions)
 - Container-based deployment (Docker, Kubernetes)
@@ -26,6 +26,7 @@ Version: 1.1.0
 
 import importlib.util
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -61,8 +62,8 @@ class DeploymentTarget(Enum):
     CLOUD_AWS = "aws"  # AWS SageMaker
     CLOUD_GCP = "gcp"  # Google Cloud AI Platform
     CLOUD_AZURE = "azure"  # Azure Machine Learning
-    EDGE_MOBILE = "mobile"  # Mobile devices
-    EDGE_IOT = "iot"  # IoT devices
+    EDGE_MOBILE = "mobile"  # Deprecated (removed in 2.0.0): writes a deployment package
+    EDGE_IOT = "iot"  # Deprecated (removed in 2.0.0): writes a deployment package
     FEDERATED = "federated"  # Federated learning
     SERVERLESS = "serverless"  # Lambda/Cloud Functions
     CONTAINER = "container"  # Docker/Kubernetes
@@ -391,60 +392,68 @@ class AzureDeploymentStrategy(DeploymentStrategy):
 # =============================================================================
 
 
+EDGE_TARGET_DEPRECATION = (
+    "The 'mobile' and 'iot' deployment targets (EdgeDeploymentStrategy) are deprecated and "
+    "will be removed in MILIA 2.0.0. MILIA builds no on-device model: featurization needs RDKit "
+    "and the models' graph pooling is data-dependent, so torch.export cannot export them for "
+    "on-device runtimes. Use the 'container' target and "
+    "serve the package over HTTP (python -m milia_pipeline.models.deployment.serving), or the "
+    "'local' target in-process."
+)
+
+
 class EdgeDeploymentStrategy(DeploymentStrategy):
-    """
-    Deployment strategy for edge devices (mobile, IoT).
+    """Deprecated target for edge devices (``mobile``, ``iot``); removed in MILIA 2.0.0.
 
-    Optimizes model for edge deployment with quantization and pruning.
+    MILIA does not build an on-device model. Featurizing a molecule needs RDKit. PyTorch's
+    TorchScript lite interpreter is deprecated in favour of ExecuTorch, which consumes
+    ``torch.export`` programs, and MILIA's graph pooling is data-dependent, so its models do
+    not export. ``prepare_model`` writes the same verified deployment package as the other
+    targets; serve it with :mod:`.serving` (``container`` target) or load it with the ``local``
+    target.
     """
 
-    def prepare_model(self, model: nn.Module, save_path: Path) -> Path:
-        """Prepare model for edge deployment."""
+    def __init__(self, config: DeploymentConfig, verbose: bool = True):
+        """Initialize the deprecated edge strategy (emits ``DeprecationWarning``)."""
+        warnings.warn(EDGE_TARGET_DEPRECATION, DeprecationWarning, stacklevel=2)
+        logger.warning(EDGE_TARGET_DEPRECATION)
+        super().__init__(config, verbose)
+
+    def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
+        """Write a deployment package for a MILIA checkpoint (no device-specific format)."""
+        if not isinstance(model, (str, Path)):
+            raise DeploymentError(
+                f"The {self.config.target} target writes a MILIA deployment package: pass the path "
+                "of a MILIA checkpoint (for example '<working_root_dir>/checkpoints/best.pt'). "
+                "Model weights alone cannot rebuild the model."
+            )
         save_path = Path(save_path)
-        save_path.mkdir(parents=True, exist_ok=True)
-
-        # Optimize for mobile/edge
-        try:
-            # Trace model for mobile
-            example_input = torch.randn(1, 3, 224, 224)  # Placeholder
-            traced = torch.jit.trace(model, example_input)
-
-            # Optimize for mobile
-            from torch.utils.mobile_optimizer import optimize_for_mobile
-
-            optimized = optimize_for_mobile(traced)
-
-            # Save for lite interpreter
-            model_file = save_path / "model_mobile.ptl"
-            optimized._save_for_lite_interpreter(str(model_file))
-
-            if self.verbose:
-                logger.info(f"Prepared model for edge deployment: {model_file}")
-
-        except Exception as e:
-            logger.warning(f"Mobile optimization failed: {e}. Saving standard model.")
-            model_file = save_path / "model.pth"
-            torch.save(model.state_dict(), model_file)
-
+        package_checkpoint(model, save_path)
+        if self.verbose:
+            logger.info(f"Prepared {self.config.target} deployment package: {save_path}")
         return save_path
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
-        """Deploy to edge device."""
+        """Verify the package; MILIA does not install it on a device."""
+        verify_package(model_path)
         deployment_info = {
-            "target": "edge",
+            "target": self.config.target,
             "model_path": str(model_path),
-            "status": "ready_for_edge",
-            "message": "Model optimized for edge. Deploy to device manually.",
+            "status": "prepared",
+            "message": EDGE_TARGET_DEPRECATION,
         }
 
         self.is_deployed = True
         return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
-        """Make prediction on edge device."""
+        """Not supported: MILIA runs no model on the device."""
         if not self.is_deployed:
             raise DeploymentError("Model not deployed")
-        return None
+        raise DeploymentError(
+            f"The {self.config.target} target does not run predictions. Serve the package "
+            "(container target) or deploy it with the local target."
+        )
 
     def teardown(self):
         """Clean up edge deployment."""

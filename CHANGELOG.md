@@ -38,6 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Passing an `nn.Module` to these targets now raises `DeploymentError`, because weights alone cannot rebuild the
     model in another process.
   - `deploy()` checks the package first.
+- The `mobile` and `iot` targets (`EdgeDeploymentStrategy`) write a deployment package from a MILIA checkpoint
+  and `deploy()` verifies it. Before, they traced the model with an image-shaped placeholder tensor, which a graph
+  model rejects, and silently saved bare weights while reporting `ready_for_edge`. `predict()` now raises
+  `DeploymentError` instead of returning `None`.
+
+### Deprecated
+
+- The `mobile` and `iot` deployment targets (`EdgeDeploymentStrategy`) emit a `DeprecationWarning` and will be
+  removed in 2.0.0. MILIA builds no on-device model. Featurization needs RDKit. PyTorch's TorchScript lite
+  interpreter is deprecated in favour of ExecuTorch, which needs `torch.export`, and MILIA's graph pooling is
+  data-dependent, so its models do not export. Serve the package with the `container` target, or load it in-process
+  with the `local` target.
 
 - uv 0.13.7 writes and validates `uv.lock` (Dockerfile, CI and release, and `[tool.uv] required-version =
   ">=0.13.7"`), the uv Dependabot's updater runs: a lock written by a different uv changed its `revision` and
