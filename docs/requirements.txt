@@ -3,10 +3,11 @@
 # =============================================================================
 # Install with: pip install -r docs/requirements.txt
 #
-# Version constraints:
-#   - Sphinx <8.2: Sphinx 8.2+ drops Python 3.10 support (sphinx-doc/sphinx#13325).
-#     MILIA supports Python >=3.10 (pyproject.toml requires-python).
-#   - All other packages: latest releases compatible with Sphinx 8.1.x.
+# These requirements equal the `docs` extra in pyproject.toml (tests/test_docs_requirements.py keeps
+# them equal); uv.lock pins the versions the `docs` extra resolves to.
+#   - Sphinx >=9.0.4: the newest release line for Python 3.11. Sphinx 9.1 needs Python 3.12 and
+#     9.2 needs 3.13, so on Python 3.12 (Read the Docs, below) pip installs 9.1.x.
+#   - pydata-sphinx-theme >=0.24.0 and myst-parser >=5.2.0: current releases (both allow Sphinx <10).
 #
 # Source: Sphinx install docs — "it is advisable to pin sphinx and
 #   third-party extension versions in a requirements.txt file"
@@ -14,14 +15,14 @@
 # Source: Scientific Python Dev Guide — MyST parser for Markdown documentation
 # =============================================================================
 
-# Sphinx documentation generator (8.1.x line; 8.2 drops Python 3.10)
-sphinx>=8.1,<8.2
+# Sphinx documentation generator
+sphinx>=9.0.4
 
 # PyData Sphinx theme (scientific Python ecosystem standard)
-pydata-sphinx-theme>=0.16
+pydata-sphinx-theme>=0.24.0
 
 # MyST Markdown parser for Sphinx
-myst-parser>=4.0
+myst-parser>=5.2.0
 
 # Sphinx extensions
-sphinx-copybutton>=0.5
+sphinx-copybutton>=0.5.2

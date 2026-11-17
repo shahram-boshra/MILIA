@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locked dependency updates (Dependabot): kaleido 1.5.0 (with choreographer 1.4.0; orjson is no longer needed),
   optuna-dashboard 0.21.0, PyYAML 6.0.3 and Ray (Tune) 2.60.0; matplotlib 3.11.2, packaging 26.3, plotly 7.1.0
   (bundles Plotly.js 4), pytest 9.2.0 and SciPy 1.17.1 (requires NumPy 1.26.4 or later, the version MILIA locks).
+- Documentation tooling: Sphinx 9.0.4 on Python 3.11 and 9.1.1 on Python 3.12 (before, 8.1.3; Sphinx 9.1 needs
+  Python 3.12), pydata-sphinx-theme 0.24.0 and myst-parser 5.2.0. `docs/requirements.txt`, which Read the Docs
+  installs, now states the same requirements as the `docs` extra, and a test keeps them equal; its comment still
+  said MILIA supports Python 3.10.
 
 ### Deprecated
 
@@ -102,6 +106,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   objects, which PyG's loader retried with full unpickling (its "Weights only load failed" warning on every
   run). A processed file in the older layout is rebuilt once from the raw data, with a warning; predicting on a
   `.pt` file accepts only the new layout.
+- MILIA requires Python 3.11.5 or later, or 3.12 (`requires-python = ">=3.11.5,<3.13"`; before, 3.11.4).
+  Python 3.11.5 fixes CVE-2023-40217 (TLS handshake bypass on closed sockets in `ssl`), and the soupsieve fixes
+  below need it. On Python 3.11.4, pip keeps installing the previous MILIA release.
+- soupsieve 4.0, reached through the `docs` extra's Sphinx theme, fixes CVE-2026-126190 (fixed in 4.0),
+  CVE-2026-126191 and CVE-2026-126193 (fixed in 3.0.2), which 1.21.0 had listed as known advisories without a
+  usable fix.
 
 ## [1.21.0] - 2026-11-14
 
