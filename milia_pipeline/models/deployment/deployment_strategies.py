@@ -429,23 +429,20 @@ class AzureDeploymentStrategy(DeploymentStrategy):
 
 EDGE_TARGET_DEPRECATION = (
     "The 'mobile' and 'iot' deployment targets (EdgeDeploymentStrategy) are deprecated and "
-    "will be removed in MILIA 2.0.0. MILIA builds no on-device model: featurization needs RDKit "
-    "and the models' graph pooling is data-dependent, so torch.export cannot export them for "
-    "on-device runtimes. Use the 'container' target and "
-    "serve the package over HTTP (python -m milia_pipeline.models.deployment.serving), or the "
-    "'local' target in-process."
+    "will be removed in MILIA 2.0.0. MILIA builds no on-device model: a prediction starts from "
+    "a SMILES that MILIA featurizes with RDKit in Python, so the model alone cannot predict on a "
+    "device. Use the 'container' target and serve the package over HTTP "
+    "(python -m milia_pipeline.models.deployment.serving), or the 'local' target in-process."
 )
 
 
 class EdgeDeploymentStrategy(DeploymentStrategy):
     """Deprecated target for edge devices (``mobile``, ``iot``); removed in MILIA 2.0.0.
 
-    MILIA does not build an on-device model. Featurizing a molecule needs RDKit. PyTorch's
-    TorchScript lite interpreter is deprecated in favour of ExecuTorch, which consumes
-    ``torch.export`` programs, and MILIA's graph pooling is data-dependent, so its models do
-    not export. ``prepare_model`` writes the same verified deployment package as the other
-    targets; serve it with :mod:`.serving` (``container`` target) or load it with the ``local``
-    target.
+    MILIA does not build an on-device model: a prediction starts from a SMILES that MILIA
+    featurizes with RDKit in Python, so the model alone cannot predict on a device.
+    ``prepare_model`` writes the same verified deployment package as the other targets; serve
+    it with :mod:`.serving` (``container`` target) or load it with the ``local`` target.
     """
 
     def __init__(self, config: DeploymentConfig, verbose: bool = True):

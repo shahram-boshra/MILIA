@@ -89,16 +89,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - The `mobile` and `iot` deployment targets (`EdgeDeploymentStrategy`) emit a `DeprecationWarning` and will be
-  removed in 2.0.0. MILIA builds no on-device model. Featurization needs RDKit. PyTorch's TorchScript lite
-  interpreter is deprecated in favour of ExecuTorch, which needs `torch.export`, and MILIA's graph pooling is
-  data-dependent, so its models do not export. Serve the package with the `container` target, or load it in-process
-  with the `local` target.
+  removed in 2.0.0. MILIA builds no on-device model: a prediction starts from a SMILES that MILIA featurizes with
+  RDKit in Python, so the model alone cannot predict on a device. Serve the package with the `container` target,
+  or load it in-process with the `local` target.
 - TorchScript in the Python API emits a `DeprecationWarning` and will be removed in 2.0.0:
   `ComputationOptimizer(jit_compile=True)`, its `jit_script_model`, `jit_freeze_model`, `optimize_graph`,
   `enable_fusion` and `disable_fusion` methods, `ModelOptimizer(optimize_for_mobile=True)` and
   `ModelOptimizer.optimize_for_mobile`, and `optimize_model_for_deployment(optimize_for_mobile=True)`. PyTorch
   deprecated `torch.jit` in 2.10 in favour of `torch.compile` and `torch.export`. MILIA's graph models cannot be
-  scripted, and `torch.export` handles them only at the example batch's fixed sizes. Use `compile_model=True`
+  scripted, and a traced graph model keeps the example batch's sizes. Use `compile_model=True`
   (`torch.compile`) for speed, and a deployment package to serve a model. No configuration or CLI option used
   TorchScript.
 
