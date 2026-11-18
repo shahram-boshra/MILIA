@@ -72,6 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pydantic 2.14.3 (pydantic-core 2.50.4), pytest-mock 3.17.0 and Ruff 0.17.4; Ruff's pins in pyproject.toml,
   `.pre-commit-config.yaml` and CI move together. Ruff 0.17 reports a nested `if` that is the last branch of an
   `elif` chain (SIM102); three such blocks are merged into their `elif`, which keeps their behaviour.
+- pandas 3.1.1 (before, 2.3.1). pandas 3 infers text columns as the `str` dtype (PyArrow-backed; pyarrow comes with
+  `ray[tune]`), makes Copy-on-Write the only mode and parses datetimes at microsecond resolution. MILIA uses pandas to
+  read SMILES from CSV files and to write prediction, HPO-analysis and research-API tables, and none of these depends
+  on the changed behaviour. pytz and tzdata leave the lock, since pandas 3 no longer requires them on Linux.
 
 ### Deprecated
 
