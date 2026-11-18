@@ -43,6 +43,7 @@ from torch.nn.utils import prune
 from milia_pipeline.exceptions import ExportError as ExportError
 from milia_pipeline.exceptions import ModelError as ModelError
 from milia_pipeline.exceptions import OptimizationError as OptimizationError
+from milia_pipeline.models._deprecations import TORCHSCRIPT_DEPRECATION, warn_api_deprecated
 from milia_pipeline.models._graph_trace import GRAPH_TRACE_ERROR, is_graph_model
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,8 @@ class OptimizationConfig(BaseModel):
         distillation_temperature: Temperature for distillation
         distillation_alpha: Weight for distillation loss
         export_onnx: Enable ONNX export
-        optimize_for_mobile: Optimize for mobile deployment
+        optimize_for_mobile: Optimize for mobile deployment (TorchScript lite interpreter;
+            deprecated, removed in 2.0.0; a ``ModelOptimizer`` built with it warns)
     """
 
     quantization_enabled: bool = False
@@ -183,9 +185,14 @@ class ModelOptimizer:
             distillation_temperature: Softmax temperature for distillation
             distillation_alpha: Weight for distillation loss
             export_onnx: Enable ONNX export
-            optimize_for_mobile: Optimize for mobile deployment
+            optimize_for_mobile: Optimize for mobile deployment (deprecated: emits
+                ``DeprecationWarning``; removed in 2.0.0)
             verbose: Whether to log information
         """
+        if optimize_for_mobile:
+            warn_api_deprecated(
+                TORCHSCRIPT_DEPRECATION.format(api="ModelOptimizer(optimize_for_mobile=True)")
+            )
         self.verbose = verbose
 
         # Create config
@@ -601,7 +608,10 @@ class ModelOptimizer:
 
     def optimize_for_mobile(self, model: nn.Module, example_inputs: tuple, filepath: str | Path):
         """
-        Optimize model for mobile deployment.
+        Optimize model for mobile deployment (deprecated, removed in 2.0.0).
+
+        Traces ``model`` and saves it for PyTorch's TorchScript lite interpreter, which PyTorch
+        has replaced with ExecuTorch.
 
         Args:
             model: Model to optimize
@@ -612,6 +622,9 @@ class ModelOptimizer:
             ExportError: ``model`` is a graph model (``torch.jit.trace`` cannot convert it
                 correctly), or tracing or saving fails
         """
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ModelOptimizer.optimize_for_mobile")
+        )
         if not self.config.optimize_for_mobile:
             return
 

@@ -1208,8 +1208,8 @@ class TestOptimizeModel:
         mock_frozen = Mock(spec=torch.jit.ScriptModule)
 
         with (
-            patch.object(optimizer, "jit_script_model", return_value=mock_scripted) as mock_script,
-            patch.object(optimizer, "jit_freeze_model", return_value=mock_frozen) as mock_freeze,
+            patch.object(optimizer, "_jit_script_model", return_value=mock_scripted) as mock_script,
+            patch.object(optimizer, "_jit_freeze_model", return_value=mock_frozen) as mock_freeze,
         ):
             _result = optimizer.optimize_model(simple_model)
 
@@ -1241,8 +1241,8 @@ class TestOptimizeModel:
         real_scripted = torch.jit.script(SimpleModule())
 
         with (
-            patch.object(optimizer, "jit_script_model", return_value=real_scripted),
-            patch.object(optimizer, "jit_freeze_model", return_value=real_scripted),
+            patch.object(optimizer, "_jit_script_model", return_value=real_scripted),
+            patch.object(optimizer, "_jit_freeze_model", return_value=real_scripted),
             patch.object(optimizer, "compile_model", return_value=real_scripted) as mock_compile,
         ):
             _result = optimizer.optimize_model(simple_model)
@@ -1259,13 +1259,13 @@ class TestOptimizeModel:
         mock_scripted = Mock(spec=torch.jit.ScriptModule)
 
         with (
-            patch.object(optimizer, "jit_script_model", return_value=mock_scripted) as mock_script,
-            patch.object(optimizer, "jit_freeze_model", return_value=mock_scripted),
+            patch.object(optimizer, "_jit_script_model", return_value=mock_scripted) as mock_script,
+            patch.object(optimizer, "_jit_freeze_model", return_value=mock_scripted),
         ):
             _result = optimizer.optimize_model(simple_model, example_inputs=(sample_input,))
 
         # Verify example_inputs was passed as second positional argument
-        # jit_script_model(model, example_inputs) - positional args
+        # _jit_script_model(model, example_inputs) - positional args
         call_args = mock_script.call_args
         # call_args[0] contains positional arguments: (model, example_inputs)
         assert len(call_args[0]) == 2
@@ -1999,7 +1999,7 @@ class TestConvenienceFunctions:
         assert settings["cudnn_deterministic"] is False
         assert settings["use_tf32"] is True
         assert settings["channels_last"] is True
-        assert settings["jit_compile"] is True
+        assert settings["jit_compile"] is False  # TorchScript is deprecated
         assert settings["operator_fusion"] is True
 
     def test_get_optimal_settings_unknown_task_defaults_to_inference(self):
@@ -2010,7 +2010,7 @@ class TestConvenienceFunctions:
 
         # Should match inference settings
         assert settings["compile_mode"] == "max-autotune"
-        assert settings["jit_compile"] is True
+        assert settings["jit_compile"] is False
 
     def test_auto_optimize_model_training(self, simple_model):
         """Test auto_optimize_model for training."""
@@ -2240,8 +2240,8 @@ class TestEdgeCases:
         mock_scripted = Mock(spec=torch.jit.ScriptModule)
 
         with (
-            patch.object(optimizer, "jit_script_model", return_value=mock_scripted),
-            patch.object(optimizer, "jit_freeze_model", return_value=mock_scripted),
+            patch.object(optimizer, "_jit_script_model", return_value=mock_scripted),
+            patch.object(optimizer, "_jit_freeze_model", return_value=mock_scripted),
         ):
             result = optimizer.optimize_model(simple_model, example_inputs=None)
 

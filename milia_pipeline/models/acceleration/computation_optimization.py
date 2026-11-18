@@ -7,8 +7,8 @@ Supports torch.compile, cuDNN optimization, graph optimization, and performance 
 Features:
 - torch.compile support (PyTorch 2.0+)
 - cuDNN benchmark mode and deterministic operations
-- Graph optimization and fusion
-- JIT (Just-In-Time) compilation
+- Graph optimization and fusion (TorchScript; deprecated, removed in 2.0.0)
+- JIT (Just-In-Time) compilation (TorchScript; deprecated, removed in 2.0.0)
 - Operator fusion strategies
 - Performance profiling and benchmarking
 - TensorCore optimization
@@ -41,6 +41,7 @@ from pydantic import BaseModel
 from milia_pipeline.exceptions import HardwareError as HardwareError
 from milia_pipeline.exceptions import ModelError as ModelError
 from milia_pipeline.exceptions import OptimizationError as OptimizationError
+from milia_pipeline.models._deprecations import TORCHSCRIPT_DEPRECATION, warn_api_deprecated
 from milia_pipeline.models._graph_trace import GRAPH_TRACE_ERROR, is_graph_model
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,8 @@ class ComputationConfig(BaseModel):
         use_tf32: Enable TensorFloat-32 on Ampere+ GPUs
         channels_last: Use channels-last memory format
         fusion_strategy: Kernel fusion strategy (none, default, aggressive)
-        jit_compile: Enable JIT compilation
+        jit_compile: Enable TorchScript JIT compilation (deprecated, removed in 2.0.0; a
+            ``ComputationOptimizer`` built with it warns)
         operator_fusion: Enable operator fusion
     """
 
@@ -155,11 +157,16 @@ class ComputationOptimizer:
             use_tf32: Enable TF32 on Ampere GPUs
             channels_last: Use channels-last format
             fusion_strategy: Kernel fusion strategy
-            jit_compile: Enable JIT compilation
+            jit_compile: Enable TorchScript JIT compilation (deprecated: emits
+                ``DeprecationWarning``; removed in 2.0.0)
             operator_fusion: Enable operator fusion
             device: Target device
             verbose: Whether to log information
         """
+        if jit_compile:
+            warn_api_deprecated(
+                TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer(jit_compile=True)")
+            )
         self.verbose = verbose
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._compiled_models = {}
@@ -300,7 +307,7 @@ class ComputationOptimizer:
         self, model: nn.Module, example_inputs: tuple | None = None
     ) -> torch.jit.ScriptModule:
         """
-        JIT script model for optimization.
+        JIT script model for optimization (deprecated, removed in 2.0.0).
 
         Args:
             model: Model to script
@@ -310,9 +317,22 @@ class ComputationOptimizer:
             JIT scripted model, or ``model`` when scripting fails
 
         Raises:
-            OptimizationError: ``example_inputs`` given for a graph model. ``torch.jit.trace``
-                records the example batch's sizes and the branches taken for it, so the result
-                would be wrong for other batches.
+            OptimizationError: ``example_inputs`` given for a graph model (see
+                :func:`_jit_script_model`)
+        """
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer.jit_script_model")
+        )
+        return self._jit_script_model(model, example_inputs)
+
+    def _jit_script_model(
+        self, model: nn.Module, example_inputs: tuple | None = None
+    ) -> torch.jit.ScriptModule:
+        """Trace (``example_inputs`` given) or script ``model``; ``model`` itself on failure.
+
+        A graph model is never traced: ``torch.jit.trace`` records the example batch's sizes and
+        the branches taken for it, so the result would be wrong for other batches. That raises
+        ``OptimizationError`` instead of returning a model that silently computes wrong outputs.
         """
         if not self.config.jit_compile:
             return model
@@ -343,7 +363,7 @@ class ComputationOptimizer:
 
     def jit_freeze_model(self, model: torch.jit.ScriptModule) -> torch.jit.ScriptModule:
         """
-        Freeze JIT model for inference optimization.
+        Freeze JIT model for inference optimization (deprecated, removed in 2.0.0).
 
         Args:
             model: JIT scripted model
@@ -351,6 +371,13 @@ class ComputationOptimizer:
         Returns:
             Frozen model
         """
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer.jit_freeze_model")
+        )
+        return self._jit_freeze_model(model)
+
+    def _jit_freeze_model(self, model: torch.jit.ScriptModule) -> torch.jit.ScriptModule:
+        """Freeze a scripted model; ``model`` itself when freezing fails."""
         try:
             frozen = torch.jit.freeze(model)
             if self.verbose:
@@ -417,11 +444,11 @@ class ComputationOptimizer:
         if self.config.channels_last:
             model = self.convert_to_channels_last(model)
 
-        # JIT compilation
+        # JIT compilation: TorchScript (deprecated; the constructor warned when jit_compile was set)
         if self.config.jit_compile:
-            model = self.jit_script_model(model, example_inputs)
+            model = self._jit_script_model(model, example_inputs)
             if isinstance(model, torch.jit.ScriptModule):
-                model = self.jit_freeze_model(model)
+                model = self._jit_freeze_model(model)
 
         # torch.compile (PyTorch 2.0+)
         if self.config.compile_model and not isinstance(model, torch.jit.ScriptModule):
@@ -593,11 +620,16 @@ class ComputationOptimizer:
 
     def enable_fusion(self, aggressive: bool = False):
         """
-        Enable kernel fusion optimizations.
+        Enable TorchScript kernel fusion (deprecated, removed in 2.0.0).
+
+        These switches act only on TorchScript execution; torch.compile fuses kernels itself.
 
         Args:
             aggressive: Use aggressive fusion strategy
         """
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer.enable_fusion")
+        )
         if aggressive:
             torch._C._jit_set_texpr_fuser_enabled(True)
             torch._C._jit_set_nvfuser_enabled(True)
@@ -609,7 +641,10 @@ class ComputationOptimizer:
                 logger.info("Enabled default kernel fusion")
 
     def disable_fusion(self):
-        """Disable kernel fusion optimizations."""
+        """Disable TorchScript kernel fusion (deprecated, removed in 2.0.0)."""
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer.disable_fusion")
+        )
         torch._C._jit_set_texpr_fuser_enabled(False)
         torch._C._jit_set_nvfuser_enabled(False)
         torch._C._jit_set_profiling_executor(False)
@@ -624,7 +659,7 @@ class ComputationOptimizer:
         self, model: torch.jit.ScriptModule, optimization_level: int = 1
     ) -> torch.jit.ScriptModule:
         """
-        Optimize JIT graph.
+        Optimize JIT graph (deprecated, removed in 2.0.0).
 
         Args:
             model: JIT scripted model
@@ -633,6 +668,9 @@ class ComputationOptimizer:
         Returns:
             Optimized model
         """
+        warn_api_deprecated(
+            TORCHSCRIPT_DEPRECATION.format(api="ComputationOptimizer.optimize_graph")
+        )
         try:
             # Apply graph optimizations
             torch._C._jit_pass_inline(model.graph)
@@ -711,7 +749,7 @@ def get_optimal_settings(device: torch.device, task_type: str = "training") -> d
             "cudnn_deterministic": False,
             "use_tf32": True,
             "channels_last": True,
-            "jit_compile": True,
+            "jit_compile": False,  # TorchScript is deprecated; torch.compile does the work
             "operator_fusion": True,
         }
 

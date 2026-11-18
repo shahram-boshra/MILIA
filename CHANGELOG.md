@@ -81,6 +81,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   driver (`postgresql+psycopg://`), so 2.1's change of the default PostgreSQL driver to psycopg 3 does not apply.
   A seeded study on `rdb` storage records the same trials under 2.0.51 and 2.1.8, and a worker killed mid-trial
   is failed and retried after `grace_period`.
+- `get_optimal_settings(task_type="inference")`, and so `auto_optimize_model(..., "inference")`, no longer
+  enables `jit_compile` (TorchScript); `torch.compile` already does the work there. Before, scripting failed for
+  MILIA's graph models and the eager model was kept. `optimize_model_for_deployment(optimize_for_mobile=True)`
+  never exported a mobile model; it now only warns.
 
 ### Deprecated
 
@@ -89,6 +93,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interpreter is deprecated in favour of ExecuTorch, which needs `torch.export`, and MILIA's graph pooling is
   data-dependent, so its models do not export. Serve the package with the `container` target, or load it in-process
   with the `local` target.
+- TorchScript in the Python API emits a `DeprecationWarning` and will be removed in 2.0.0:
+  `ComputationOptimizer(jit_compile=True)`, its `jit_script_model`, `jit_freeze_model`, `optimize_graph`,
+  `enable_fusion` and `disable_fusion` methods, `ModelOptimizer(optimize_for_mobile=True)` and
+  `ModelOptimizer.optimize_for_mobile`, and `optimize_model_for_deployment(optimize_for_mobile=True)`. PyTorch
+  deprecated `torch.jit` in 2.10 in favour of `torch.compile` and `torch.export`. MILIA's graph models cannot be
+  scripted, and `torch.export` handles them only at the example batch's fixed sizes. Use `compile_model=True`
+  (`torch.compile`) for speed, and a deployment package to serve a model. No configuration or CLI option used
+  TorchScript.
 
 ### Fixed
 

@@ -94,6 +94,7 @@ from milia_pipeline.exceptions import (
     MonitoringError,
     OptimizationError,
 )
+from milia_pipeline.models import _deprecations
 
 logger = logging.getLogger(__name__)
 
@@ -352,7 +353,8 @@ def optimize_model_for_deployment(
         export_onnx: Export to ONNX format
         onnx_path: Path for ONNX export (required if export_onnx=True)
         dummy_input: Example input for ONNX export
-        optimize_for_mobile: Optimize for mobile deployment
+        optimize_for_mobile: Deprecated, removed in 2.0.0. It never exported a mobile model
+            here; ``True`` only emits ``DeprecationWarning``
         verbose: Whether to log optimization information
 
     Returns:
@@ -379,6 +381,12 @@ def optimize_model_for_deployment(
         OptimizationError: If optimization fails
         ExportError: If ONNX export fails
     """
+    if optimize_for_mobile:
+        _deprecations.warn_api_deprecated(
+            _deprecations.TORCHSCRIPT_DEPRECATION.format(
+                api="optimize_model_for_deployment(optimize_for_mobile=True)"
+            )
+        )
     try:
         optimizer = ModelOptimizer(
             quantization_enabled=quantize,
@@ -386,7 +394,6 @@ def optimize_model_for_deployment(
             pruning_enabled=prune,
             pruning_amount=prune_amount,
             export_onnx=export_onnx,
-            optimize_for_mobile=optimize_for_mobile,
             verbose=verbose,
         )
 
