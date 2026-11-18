@@ -2997,14 +2997,17 @@ class ModelFactory:
                 if "regression" in task_type.lower():
                     processed["out_channels"] = 1
                     logger.debug("Inferred out_channels=1 for regression task (fallback)")
-                elif "classification" in task_type.lower() and sample_data is not None:
-                    if hasattr(sample_data, "y") and sample_data.y is not None:
-                        y = sample_data.y
-                        if y.dim() > 1:
-                            processed["out_channels"] = y.size(-1)
-                        else:
-                            with contextlib.suppress(Exception):
-                                processed["out_channels"] = len(torch.unique(y))
+                elif (
+                    "classification" in task_type.lower()
+                    and sample_data is not None
+                    and getattr(sample_data, "y", None) is not None
+                ):
+                    y = sample_data.y
+                    if y.dim() > 1:
+                        processed["out_channels"] = y.size(-1)
+                    else:
+                        with contextlib.suppress(Exception):
+                            processed["out_channels"] = len(torch.unique(y))
 
         # =====================================================================
         # PNA-SPECIFIC PARAMETER HANDLING

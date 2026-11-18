@@ -14,7 +14,7 @@
 #   - conftest.py: 8 markers (smoke, contract, e2e, regression,
 #     thread_safety, slow, integration, gpu)
 #   - ci.yml: smoke tests as first CI gate, Ruff lint + format check
-#   - .pre-commit-config.yaml: pre-commit-hooks v6.0.0, ruff v0.15.0,
+#   - .pre-commit-config.yaml: pre-commit-hooks v6.0.0, ruff v0.17.4,
 #     detect-secrets v1.5.0
 #   - Makefile: 20 targets (test, lint, format, build, etc.)
 #   - CONTRIBUTING.md: conda install for heavy deps, pip install -e ".[dev]"

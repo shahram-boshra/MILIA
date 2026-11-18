@@ -69,6 +69,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against NumPy 1. Every locked compiled dependency (torch, RDKit, scikit-learn, SciPy, h5py, pandas, matplotlib)
   supports NumPy 2. Ruff's `NPY201` rule now guards against APIs NumPy 2 removed. Dependabot no longer proposes NumPy
   minor updates; NumPy 2.5 comes with the Python-range change.
+- pydantic 2.14.3 (pydantic-core 2.50.4), pytest-mock 3.17.0 and Ruff 0.17.4; Ruff's pins in pyproject.toml,
+  `.pre-commit-config.yaml` and CI move together. Ruff 0.17 reports a nested `if` that is the last branch of an
+  `elif` chain (SIM102); three such blocks are merged into their `elif`, which keeps their behaviour.
 
 ### Deprecated
 

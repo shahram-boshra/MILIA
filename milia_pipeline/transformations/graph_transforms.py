@@ -518,9 +518,8 @@ class ParameterConstraint(BaseModel):
             elif self.type == "choices":
                 if value not in self.constraint_value:
                     return False, f"Value {value} not in allowed choices: {self.constraint_value}"
-            elif self.type == "pattern":
-                if not re.match(self.constraint_value, str(value)):
-                    return False, f"Value {value} does not match pattern: {self.constraint_value}"
+            elif self.type == "pattern" and not re.match(self.constraint_value, str(value)):
+                return False, f"Value {value} does not match pattern: {self.constraint_value}"
             return True, None
         except Exception as e:
             return False, f"Constraint validation error: {e}"

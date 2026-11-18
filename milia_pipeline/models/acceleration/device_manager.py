@@ -273,13 +273,12 @@ class DeviceManager:
                         "MPS requires PyTorch 1.12+ on Apple Silicon."
                     )
 
-        elif device.type == "tpu":
-            if not self._is_tpu_available():
-                if self.allow_fallback:
-                    logger.warning("TPU not available, falling back to CPU")
-                    return torch.device("cpu")
-                else:
-                    raise DeviceNotAvailableError("TPU requested but not available.")
+        elif device.type == "tpu" and not self._is_tpu_available():
+            if self.allow_fallback:
+                logger.warning("TPU not available, falling back to CPU")
+                return torch.device("cpu")
+            else:
+                raise DeviceNotAvailableError("TPU requested but not available.")
 
         return device
 

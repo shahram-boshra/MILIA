@@ -107,7 +107,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.15.1",
-    # Pinned to match .pre-commit-config.yaml (ruff-pre-commit rev v0.15.0) so
+    # Pinned to match .pre-commit-config.yaml (ruff-pre-commit rev v0.17.4) and ci.yml so
     # local hooks and CI run byte-identical Ruff. Leaving 'ruff' unpinned let CI
     # pull 0.16.0 (released 2026-07-23), whose breaking default — formatting
     # Python code blocks inside Markdown — failed `ruff format --check .` on

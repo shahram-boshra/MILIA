@@ -47,7 +47,7 @@ repos:
   # Lint hook runs before format hook per Ruff docs:
   #   "Ruff's fix behavior can output code changes that require reformatting"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.0
+    rev: v0.17.4
     hooks:
       # Run the linter (with --fix for auto-fixable violations)
       - id: ruff-check

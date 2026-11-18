@@ -65,10 +65,10 @@ jobs:
           command: uv lock --check
 
       - name: Ruff lint
-        run: uvx ruff@0.15.0 check .
+        run: uvx ruff@0.17.4 check .
 
       - name: Ruff format check
-        run: uvx ruff@0.15.0 format --check .
+        run: uvx ruff@0.17.4 format --check .
 
   test:
     name: Test (Python ${{ matrix.python-version }})
