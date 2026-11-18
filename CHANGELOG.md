@@ -109,6 +109,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   two-graph batch. `ComputationOptimizer.optimize_model` with `jit_compile` and `example_inputs`, and
   `ModelOptimizer.optimize_for_mobile`, now raise `OptimizationError` and `ExportError` for a graph model instead
   of tracing it (any model containing a PyTorch Geometric or MILIA module). Other modules are still traced.
+- `predict()` on the `aws`, `gcp`, `azure` and `container` deployment targets no longer returns `None`, which looked
+  like a prediction. `deploy()` on these targets prepares a serving image and creates no endpoint, so `predict()`
+  now raises `DeploymentError` naming the endpoint route (SageMaker `POST /invocations`, Vertex AI
+  `AIP_PREDICT_ROUTE`, `POST /predict`) and the request body `{"instances": [SMILES, ...]}`.
 
 - Local deployment works. `LocalDeploymentStrategy.deploy` called `torch.load(...).eval()` on the `state_dict` that
   `prepare_model` saved, which raised `AttributeError`; unit tests mocked `torch.load`, which hid it. Deploying a

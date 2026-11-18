@@ -390,6 +390,8 @@ One app answers every target on port 8080:
 
 Every predict route takes `{"instances": [SMILES, ...]}` and returns `{"predictions": [[...], ...]}`, one row per molecule. The SMILES are featurized exactly as `milia --predict` featurizes them. `MILIA_SERVE_MAX_INSTANCES` caps the batch size per request (default 1000).
 
+MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
+
 The `mobile` and `iot` targets are deprecated (`DeprecationWarning`) and will be removed in 2.0.0. MILIA builds no on-device model, because featurization needs RDKit and its models do not export to on-device runtimes. These targets write the same package, without a `Dockerfile`, and do not predict. Serve the package instead.
 
 ### Introspection commands

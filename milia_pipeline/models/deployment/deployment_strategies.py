@@ -249,6 +249,25 @@ def _prepare_serving_package(
     return save_path
 
 
+_SERVING_REQUEST = '{"instances": ["CCO", "c1ccccc1"]}'
+
+
+def _serving_predict_error(strategy: DeploymentStrategy, how: str) -> DeploymentError:
+    """Error for ``predict`` on a target whose ``deploy`` only prepares a serving image.
+
+    MILIA creates no endpoint for these targets, so it has nothing to call; returning
+    ``None`` would look like a prediction. ``how`` names the endpoint and route to call.
+    """
+    if not strategy.is_deployed:
+        return DeploymentError("Model not deployed. Call deploy() first.")
+    return DeploymentError(
+        f"The {strategy.config.target} target prepares a serving image; MILIA does not create or "
+        f"call its endpoint, so predict() has no result to return. {how} with the request body "
+        f"{_SERVING_REQUEST} (one row of predictions per SMILES). For in-process predictions, "
+        "use the 'local' target."
+    )
+
+
 class AWSDeploymentStrategy(DeploymentStrategy):
     """
     Deployment strategy for AWS SageMaker.
@@ -256,8 +275,9 @@ class AWSDeploymentStrategy(DeploymentStrategy):
     Usage:
         >>> strategy = AWSDeploymentStrategy(config)
         >>> model_path = strategy.prepare_model(model, save_path)
-        >>> deployment_info = strategy.deploy(model_path)
-        >>> result = strategy.predict(input_data)
+        >>> deployment_info = strategy.deploy(model_path)  # status "prepared"
+
+    Predictions come from the SageMaker endpoint created from the image, not from ``predict``.
     """
 
     def prepare_model(self, model: nn.Module | str | Path, save_path: Path) -> Path:
@@ -307,13 +327,16 @@ class AWSDeploymentStrategy(DeploymentStrategy):
         return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
-        """Make prediction using SageMaker endpoint."""
-        if not self.is_deployed:
-            raise DeploymentError("Model not deployed. Call deploy() first.")
+        """Not run by MILIA: call the SageMaker endpoint created from the image.
 
-        # Placeholder - actual prediction through SageMaker endpoint
-        logger.warning("Prediction through SageMaker endpoint not implemented")
-        return None
+        Raises:
+            DeploymentError: Always; names the SageMaker call and request body.
+        """
+        raise _serving_predict_error(
+            self,
+            "Invoke the SageMaker endpoint you create from the image (SageMaker Runtime "
+            "InvokeEndpoint, ContentType application/json; the container serves POST /invocations)",
+        )
 
     def teardown(self):
         """Delete SageMaker endpoint."""
@@ -344,10 +367,16 @@ class GCPDeploymentStrategy(DeploymentStrategy):
         return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
-        """Make prediction using GCP AI Platform."""
-        if not self.is_deployed:
-            raise DeploymentError("Model not deployed")
-        return None
+        """Not run by MILIA: call the Vertex AI endpoint created from the image.
+
+        Raises:
+            DeploymentError: Always; names the Vertex AI call and request body.
+        """
+        raise _serving_predict_error(
+            self,
+            "Call predict on the Vertex AI endpoint you deploy the image to (the container serves "
+            "AIP_PREDICT_ROUTE)",
+        )
 
     def teardown(self):
         """Delete GCP deployment."""
@@ -375,10 +404,16 @@ class AzureDeploymentStrategy(DeploymentStrategy):
         return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
-        """Make prediction using Azure ML."""
-        if not self.is_deployed:
-            raise DeploymentError("Model not deployed")
-        return None
+        """Not run by MILIA: call the Azure ML online endpoint created from the image.
+
+        Raises:
+            DeploymentError: Always; names the Azure ML call and request body.
+        """
+        raise _serving_predict_error(
+            self,
+            "POST to the scoring URI of the Azure ML online endpoint you create from the image "
+            "(the container serves POST /predict on port 8080)",
+        )
 
     def teardown(self):
         """Delete Azure deployment."""
@@ -499,10 +534,16 @@ class ContainerDeploymentStrategy(DeploymentStrategy):
         return deployment_info
 
     def predict(self, input_data: Any, **kwargs) -> Any:
-        """Make prediction via container API."""
-        if not self.is_deployed:
-            raise DeploymentError("Model not deployed")
-        return None
+        """Not run by MILIA: call the running container.
+
+        Raises:
+            DeploymentError: Always; names the container route and request body.
+        """
+        raise _serving_predict_error(
+            self,
+            "Build and run the image (docker build -t milia-serve <package>; docker run -p "
+            "8080:8080 milia-serve), then POST to http://<host>:8080/predict",
+        )
 
     def teardown(self):
         """Stop container."""

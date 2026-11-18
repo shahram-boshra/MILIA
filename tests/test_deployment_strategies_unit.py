@@ -584,7 +584,7 @@ class TestAWSDeploymentStrategy:
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, aws_config, serving_package):
-        """Test predict after deployment."""
+        """predict() after deploy() names the SageMaker call instead of returning None."""
         strategy = AWSDeploymentStrategy(aws_config, verbose=False)
 
         mock_boto3 = MagicMock()
@@ -593,9 +593,8 @@ class TestAWSDeploymentStrategy:
         with patch.dict(sys.modules, {"boto3": mock_boto3, "sagemaker": mock_sagemaker}):
             strategy.deploy(serving_package)
 
-        # Predict returns None (placeholder)
-        result = strategy.predict(torch.randn(1, 10))
-        assert result is None
+        with pytest.raises(DeploymentError, match=r"InvokeEndpoint.*POST /invocations.*instances"):
+            strategy.predict(torch.randn(1, 10))
 
     def test_teardown(self, aws_config, serving_package):
         """Test teardown cleans up deployment."""
@@ -669,13 +668,15 @@ class TestGCPDeploymentStrategy:
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, serving_package):
-        """Test predict after deployment returns None."""
+        """predict() after deploy() names the Vertex AI call instead of returning None."""
         config = DeploymentConfig(target="gcp")
         strategy = GCPDeploymentStrategy(config, verbose=False)
 
         strategy.deploy(serving_package)
-        result = strategy.predict(torch.randn(1, 10))
-        assert result is None
+        with pytest.raises(
+            DeploymentError, match=r"Vertex AI endpoint.*AIP_PREDICT_ROUTE.*instances"
+        ):
+            strategy.predict(torch.randn(1, 10))
 
     def test_teardown(self, serving_package):
         """Test teardown cleans up deployment."""
@@ -754,13 +755,15 @@ class TestAzureDeploymentStrategy:
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, serving_package):
-        """Test predict after deployment returns None."""
+        """predict() after deploy() names the Azure ML call instead of returning None."""
         config = DeploymentConfig(target="azure")
         strategy = AzureDeploymentStrategy(config, verbose=False)
 
         strategy.deploy(serving_package)
-        result = strategy.predict(torch.randn(1, 10))
-        assert result is None
+        with pytest.raises(
+            DeploymentError, match=r"Azure ML online endpoint.*POST /predict.*instances"
+        ):
+            strategy.predict(torch.randn(1, 10))
 
     def test_teardown(self, serving_package):
         """Test teardown cleans up deployment."""
@@ -912,12 +915,12 @@ class TestContainerDeploymentStrategy:
             strategy.predict(torch.randn(1, 10))
 
     def test_predict_after_deployment(self, container_config, serving_package):
-        """Test predict after deployment returns None."""
+        """predict() after deploy() names the container route instead of returning None."""
         strategy = ContainerDeploymentStrategy(container_config, verbose=False)
 
         strategy.deploy(serving_package)
-        result = strategy.predict(torch.randn(1, 10))
-        assert result is None
+        with pytest.raises(DeploymentError, match=r"http://<host>:8080/predict.*instances"):
+            strategy.predict(torch.randn(1, 10))
 
     def test_teardown(self, container_config, serving_package):
         """Test teardown cleans up deployment."""
@@ -928,6 +931,24 @@ class TestContainerDeploymentStrategy:
 
         strategy.teardown()
         assert strategy.is_deployed is False
+
+
+class TestServingPredictError:
+    """predict() on a serving-image target names a request the serving app accepts."""
+
+    def test_documented_request_body_matches_the_serving_contract(self):
+        from milia_pipeline.models.deployment.deployment_strategies import _SERVING_REQUEST
+        from milia_pipeline.models.deployment.serving import PredictRequest
+
+        request = PredictRequest.model_validate_json(_SERVING_REQUEST)
+        assert request.instances == ["CCO", "c1ccccc1"]
+
+    @pytest.mark.parametrize("target", ["gcp", "azure", "container"])
+    def test_manager_predict_raises_after_deploy(self, target, serving_package):
+        manager = DeploymentManager(DeploymentConfig(target=target), verbose=False)
+        manager.deploy(serving_package)
+        with pytest.raises(DeploymentError, match="does not create or call its endpoint"):
+            manager.predict(["CCO"])
 
 
 # =============================================================================
