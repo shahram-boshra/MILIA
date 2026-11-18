@@ -149,7 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   below need it. On Python 3.11.4, pip keeps installing the previous MILIA release.
 - soupsieve 4.0, reached through the `docs` extra's Sphinx theme, fixes CVE-2026-126190 (fixed in 4.0),
   CVE-2026-126191 and CVE-2026-126193 (fixed in 3.0.2), which 1.21.0 had listed as known advisories without a
-  usable fix.
+  usable fix. OSV-Scanner no longer ignores them (`osv-scanner.toml`), so a soupsieve that reintroduced them would
+  fail the scan.
 
 ## [1.21.0] - 2026-11-14
 

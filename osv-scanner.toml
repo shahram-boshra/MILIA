@@ -6,7 +6,7 @@
 [[IgnoredVulns]]
 id = "CVE-2025-3000"
 effectiveUntil = 2027-02-15
-reason = "torch 2.12.1, low, local memory corruption in torch.jit.script, which MILIA calls only on models it builds; fixed in 2.13.0, for which PyG publishes no compiled-extension wheels yet (F55)"
+reason = "torch 2.12.1, low, local memory corruption in torch.jit.script, reached only through MILIA's deprecated TorchScript Python API (removed in 2.0.0; no configuration or CLI option calls it); fixed in 2.13.0, for which no PyG release declares support yet (F55)"
 
 [[IgnoredVulns]]
 id = "CVE-2026-59890"
@@ -17,18 +17,3 @@ reason = "setuptools 81.0.0: MANIFEST.in exclusion bypass when building an sdist
 id = "GHSA-xmj3-9gf7-h52w"
 effectiveUntil = 2027-02-15
 reason = "setuptools 81.0.0: Windows path escape during legacy wheel installation; torch 2.12.1 requires setuptools < 82, MILIA targets Linux"
-
-[[IgnoredVulns]]
-id = "CVE-2026-126190"
-effectiveUntil = 2027-02-15
-reason = "soupsieve 2.10, reached only through the docs extra's Sphinx theme on MILIA's own documentation; fixed releases need Python 3.11.5+ (F56)"
-
-[[IgnoredVulns]]
-id = "CVE-2026-126191"
-effectiveUntil = 2027-02-15
-reason = "soupsieve 2.10, reached only through the docs extra's Sphinx theme on MILIA's own documentation; fixed releases need Python 3.11.5+ (F56)"
-
-[[IgnoredVulns]]
-id = "CVE-2026-126193"
-effectiveUntil = 2027-02-15
-reason = "soupsieve 2.10, reached only through the docs extra's Sphinx theme on MILIA's own documentation; fixed releases need Python 3.11.5+ (F56)"
