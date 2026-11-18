@@ -84,7 +84,7 @@ dependencies = [
     "requests==2.34.2",
     "tqdm==4.70.0",
     # sqlalchemy: models/hpo/shared_study.py (storage URLs).
-    "sqlalchemy==2.0.51",
+    "sqlalchemy==2.1.8",
     # networkx: 4 shipped transformation plugins.
     "networkx==3.6.1",
     "torchmetrics==1.9.0",
