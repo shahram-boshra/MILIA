@@ -76,6 +76,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ray[tune]`), makes Copy-on-Write the only mode and parses datetimes at microsecond resolution. MILIA uses pandas to
   read SMILES from CSV files and to write prediction, HPO-analysis and research-API tables, and none of these depends
   on the changed behaviour. pytz and tzdata leave the lock, since pandas 3 no longer requires them on Linux.
+- SQLAlchemy 2.1.8 (before, 2.0.51), used by Optuna's `rdb` study storage. SQLAlchemy 2.1 no longer installs
+  greenlet, which only its asyncio extension needs, so greenlet leaves the lock. MILIA's storage URLs name their
+  driver (`postgresql+psycopg://`), so 2.1's change of the default PostgreSQL driver to psycopg 3 does not apply.
+  A seeded study on `rdb` storage records the same trials under 2.0.51 and 2.1.8, and a worker killed mid-trial
+  is failed and retried after `grace_period`.
 
 ### Deprecated
 
