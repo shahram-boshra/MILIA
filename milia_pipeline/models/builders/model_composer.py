@@ -23,6 +23,8 @@ import torch
 import torch.nn as nn
 from pydantic import BaseModel, ConfigDict, Field
 
+from milia_pipeline.models._graph_output import produces_graph_output
+
 # Import exceptions
 try:
     from milia_pipeline.exceptions import ModelError
@@ -82,12 +84,21 @@ def _resolve_num_graphs(num_graphs: int | None, batch: torch.Tensor | None) -> i
     return None
 
 
-def _needs_graph_pooling(rows: int, num_graphs: int | None, batch: torch.Tensor | None) -> bool:
+def _needs_graph_pooling(
+    rows: int,
+    num_graphs: int | None,
+    batch: torch.Tensor | None,
+    module: nn.Module | None = None,
+) -> bool:
     """True when an output with ``rows`` rows is node-level and must be pooled.
 
-    Known count → the original rule (``rows > num_graphs``). Unknown count → node-level iff one
-    row per node (``rows == batch.numel()``), a shape comparison that reads no tensor values.
+    A ``module`` that declares graph-level output (:func:`produces_graph_output`) is never
+    pooled again. Otherwise: known count → the original rule (``rows > num_graphs``); unknown
+    count → node-level iff one row per node (``rows == batch.numel()``), a shape comparison that
+    reads no tensor values.
     """
+    if module is not None and produces_graph_output(module):
+        return False
     if num_graphs is not None:
         return rows > num_graphs
     return batch is not None and rows == batch.numel()
@@ -789,6 +800,11 @@ class ParallelEnsemble(nn.Module):
 
         logger.debug(f"Initialized ParallelEnsemble: {len(models)} models, fusion={fusion}")
 
+    @property
+    def produces_graph_output(self) -> bool:
+        """One row per graph: a graph-level task's ensemble that reads out (pools per graph)."""
+        return self.readout and self._is_graph_level_task()
+
     def _is_graph_level_task(self) -> bool:
         """
         Determine if the current task requires graph-level predictions.
@@ -1309,7 +1325,7 @@ class ParallelEnsemble(nn.Module):
                 raise
 
             # For graph-level tasks: apply pooling if output is node-level
-            if is_graph_task and _needs_graph_pooling(pred.size(0), num_graphs, batch):
+            if is_graph_task and _needs_graph_pooling(pred.size(0), num_graphs, batch, model):
                 pred = self._apply_global_pooling(pred, batch, pooling_method, size=num_graphs)
 
             predictions.append(pred)
@@ -1488,6 +1504,11 @@ class SequentialStack(nn.Module):
         self.models = nn.ModuleList(models)
 
         logger.debug(f"Initialized SequentialStack: {len(models)} models, task_type={task_type}")
+
+    @property
+    def produces_graph_output(self) -> bool:
+        """One row per graph for a graph-level task (the final output is pooled per graph)."""
+        return self._is_graph_level_task()
 
     def _is_graph_level_task(self) -> bool:
         """
@@ -2001,7 +2022,9 @@ class SequentialStack(nn.Module):
                 raise
 
         # For graph-level tasks: apply pooling if final output is node-level
-        if is_graph_task and _needs_graph_pooling(current.size(0), num_graphs, batch):
+        if is_graph_task and _needs_graph_pooling(
+            current.size(0), num_graphs, batch, self.models[-1] if len(self.models) else None
+        ):
             current = self._apply_global_pooling(current, batch, pooling_method, size=num_graphs)
 
         return current
@@ -2082,6 +2105,11 @@ class HierarchicalComposition(nn.Module):
         logger.debug(
             f"Initialized HierarchicalComposition: {len(self.levels)} levels, fusion={fusion}"
         )
+
+    @property
+    def produces_graph_output(self) -> bool:
+        """As the last level, the only one that reads out."""
+        return produces_graph_output(self.level_ensembles[-1])
 
     def forward(
         self,

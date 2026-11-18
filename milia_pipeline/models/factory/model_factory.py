@@ -30,6 +30,7 @@ from .._deprecations import (
     CUSTOM_ARCHITECTURE_DEPRECATION,
     warn_deprecated,
 )
+from .._graph_output import produces_graph_output
 from ..registry.model_registry import ModelRegistry
 
 # Dynamic introspection replaces static model_categories (Phase 4 Migration)
@@ -298,6 +299,11 @@ class GraphLevelModelWrapper(torch.nn.Module):
             f"pooling_method={pooling_method}, out_channels={out_channels}"
         )
 
+    @property
+    def produces_graph_output(self) -> bool:
+        """One row per graph for a graph-level task: this wrapper pools node outputs per graph."""
+        return self._is_graph_level_task()
+
     def _is_graph_level_task(self) -> bool:
         """
         Determine if current task is graph-level.
@@ -390,9 +396,12 @@ class GraphLevelModelWrapper(torch.nn.Module):
             # Check if output is node-level (needs pooling)
             # Node-level: [num_nodes, features], Graph-level: [num_graphs, features]
             if batch is not None:
-                # Decided without reading tensor values: known count → original rule; unknown →
-                # node-level iff one row per node.
-                if num_graphs is not None:
+                # Decided without reading tensor values: an inner model that declares graph-level
+                # output (a MILIA ensemble) is never pooled again; else known count → original
+                # rule; unknown → node-level iff one row per node.
+                if produces_graph_output(self.model):
+                    is_node_level = False
+                elif num_graphs is not None:
                     is_node_level = out.size(0) != num_graphs
                 else:
                     is_node_level = out.size(0) == batch.numel()

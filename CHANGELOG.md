@@ -108,6 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   two-graph batch. `ComputationOptimizer.optimize_model` with `jit_compile` and `example_inputs`, and
   `ModelOptimizer.optimize_for_mobile`, now raise `OptimizationError` and `ExportError` for a graph model instead
   of tracing it (any model containing a PyTorch Geometric or MILIA module). Other modules are still traced.
+- A graph-level ensemble (`ParallelEnsemble` that reads out, `SequentialStack`, `HierarchicalComposition`) and
+  `GraphLevelModelWrapper` declare that their output has one row per graph (`produces_graph_output`). The wrapper
+  and the ensembles no longer infer it by comparing the output's row count with the node count, a branch on the
+  graph count (a value of `batch`) that `torch.export` cannot trace; a wrapped ensemble now exports. Eager results
+  are unchanged; a batch of single-atom molecules (graph count = node count) is no longer pooled a second time.
 - `predict()` on the `aws`, `gcp`, `azure` and `container` deployment targets no longer returns `None`, which looked
   like a prediction. `deploy()` on these targets prepares a serving image and creates no endpoint, so `predict()`
   now raises `DeploymentError` naming the endpoint route (SageMaker `POST /invocations`, Vertex AI
