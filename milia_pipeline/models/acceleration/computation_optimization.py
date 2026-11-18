@@ -41,6 +41,7 @@ from pydantic import BaseModel
 from milia_pipeline.exceptions import HardwareError as HardwareError
 from milia_pipeline.exceptions import ModelError as ModelError
 from milia_pipeline.exceptions import OptimizationError as OptimizationError
+from milia_pipeline.models._graph_trace import GRAPH_TRACE_ERROR, is_graph_model
 
 logger = logging.getLogger(__name__)
 
@@ -306,10 +307,18 @@ class ComputationOptimizer:
             example_inputs: Example inputs for tracing (optional)
 
         Returns:
-            JIT scripted model
+            JIT scripted model, or ``model`` when scripting fails
+
+        Raises:
+            OptimizationError: ``example_inputs`` given for a graph model. ``torch.jit.trace``
+                records the example batch's sizes and the branches taken for it, so the result
+                would be wrong for other batches.
         """
         if not self.config.jit_compile:
             return model
+
+        if example_inputs is not None and isinstance(model, nn.Module) and is_graph_model(model):
+            raise OptimizationError(GRAPH_TRACE_ERROR)
 
         try:
             if example_inputs is not None:
@@ -393,6 +402,10 @@ class ComputationOptimizer:
 
         Returns:
             Optimized model
+
+        Raises:
+            OptimizationError: ``jit_compile`` with ``example_inputs`` for a graph model, which
+                ``torch.jit.trace`` cannot convert correctly
         """
         if self.verbose:
             logger.info("Starting model optimization...")

@@ -43,6 +43,7 @@ from torch.nn.utils import prune
 from milia_pipeline.exceptions import ExportError as ExportError
 from milia_pipeline.exceptions import ModelError as ModelError
 from milia_pipeline.exceptions import OptimizationError as OptimizationError
+from milia_pipeline.models._graph_trace import GRAPH_TRACE_ERROR, is_graph_model
 
 logger = logging.getLogger(__name__)
 
@@ -606,9 +607,16 @@ class ModelOptimizer:
             model: Model to optimize
             example_inputs: Example inputs for tracing
             filepath: Output file path
+
+        Raises:
+            ExportError: ``model`` is a graph model (``torch.jit.trace`` cannot convert it
+                correctly), or tracing or saving fails
         """
         if not self.config.optimize_for_mobile:
             return
+
+        if isinstance(model, nn.Module) and is_graph_model(model):
+            raise ExportError(GRAPH_TRACE_ERROR)
 
         try:
             # Trace model

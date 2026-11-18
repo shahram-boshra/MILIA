@@ -92,6 +92,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- TorchScript no longer returns a graph model that computes wrong results. `torch.jit.trace` keeps the example
+  batch's sizes and the branches taken for it: a traced GIN, GAT or GraphSAGE model returned one row for a
+  two-graph batch. `ComputationOptimizer.optimize_model` with `jit_compile` and `example_inputs`, and
+  `ModelOptimizer.optimize_for_mobile`, now raise `OptimizationError` and `ExportError` for a graph model instead
+  of tracing it (any model containing a PyTorch Geometric or MILIA module). Other modules are still traced.
+
 - Local deployment works. `LocalDeploymentStrategy.deploy` called `torch.load(...).eval()` on the `state_dict` that
   `prepare_model` saved, which raised `AttributeError`; unit tests mocked `torch.load`, which hid it. Deploying a
   prepared module now loads its weights back into that module with `torch.load(weights_only=True)`, and the
