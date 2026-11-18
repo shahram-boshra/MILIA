@@ -70,7 +70,7 @@ dependencies = [
     "torch-geometric==2.8.1",       # pure-Python; compiled kernels are in the accelerator extras
     "numpy==2.4.6",                 # 2.4.x: the last NumPy series for Python 3.11 (2.5 needs 3.12)
     "scipy==1.17.1",
-    "pandas==2.3.1",
+    "pandas==3.1.1",
     "pyyaml==6.0.3",
     "rdkit==2025.3.6",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
     "matplotlib==3.11.2",
