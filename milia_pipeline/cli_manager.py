@@ -2165,19 +2165,25 @@ For more information, see: https://docs.example.com/milia-cli
             Merged configuration dictionary
 
         Raises:
-            CLIValidationError: If configuration loading fails
+            CLIValidationError: If the configuration file cannot be loaded, or a command-line
+                argument is invalid (raised by the override step with its own message).
         """
         try:
             # Load base configuration
             self.config = load_config(args.config)
-
-            # Apply CLI overrides
-            self._apply_cli_overrides(args)
-
-            return self.config
-
         except Exception as e:
-            raise CLIValidationError(f"Failed to load configuration: {e}") from e
+            raise CLIValidationError(f"Failed to load configuration {args.config}: {e}") from e
+
+        # Apply CLI overrides. Their validation errors (e.g. "Test path not found: ...") already
+        # say what is wrong and are not configuration-loading failures, so they pass through.
+        try:
+            self._apply_cli_overrides(args)
+        except CLIValidationError:
+            raise
+        except Exception as e:
+            raise CLIValidationError(f"Failed to apply command-line arguments: {e}") from e
+
+        return self.config
 
     def _apply_cli_overrides(self, args: argparse.Namespace) -> None:
         """

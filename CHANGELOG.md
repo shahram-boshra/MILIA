@@ -129,6 +129,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CLI errors name what failed. A wrong command-line argument (for example `--predict --test-path` pointing at a file
+  that does not exist) was reported as `Configuration error: Failed to load configuration: Test path not found: ...`.
+  Argument errors are now reported as they are (`Test path not found: ...`); only a configuration file that cannot be
+  loaded reads `Failed to load configuration <path>: ...`.
 - AttentiveFP and NeuralFingerprint export to ONNX. They pool each molecule themselves, which MILIA's graph-level wrapper
   inferred from the number of output rows, a data-dependent branch `torch.export` cannot capture. The wrapper and
   ensembles now read graph-level output from the capability tags the factory attaches to a built model. The README

@@ -5072,7 +5072,8 @@ def main():
             try:
                 config = cli_manager.load_and_merge_config(args)
             except CLIValidationError as e:
-                logger.error(f"Configuration error: {e}")
+                # The message names the failure (configuration file or argument)
+                logger.error(str(e))
                 sys.exit(1)
 
             return handle_predict_mode(args, logger, config)
@@ -5081,7 +5082,8 @@ def main():
         try:
             config = cli_manager.load_and_merge_config(args)
         except CLIValidationError as e:
-            logger.error(f"Configuration error: {e}")
+            # The message names the failure (configuration file or argument)
+            logger.error(str(e))
             sys.exit(1)
 
         # Validate configuration if not skipped
