@@ -403,6 +403,16 @@ class Predictor:
             if built is not None and not built.accepts_edge_attr:
                 kwargs.pop("edge_attr", None)
 
+            # Called directly, a model that does not read the edges (PyG MLP) gets x only;
+            # through the graph-level wrapper, the wrapper drops edge_index itself.
+            if (
+                actual_model is self.model
+                and built is not None
+                and not built.uses_graph_structure
+                and not built.requires_positions
+            ):
+                return self.model(x, **kwargs)
+
             # Call model with filtered kwargs
             return self.model(x, edge_index, **kwargs)
 

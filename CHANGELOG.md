@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The model registry lists the public models of `torch_geometric.nn.models` (its `__all__`) only. Discovery used to scan
+  every module attribute, so classes those modules merely import (`torch.nn` `GRU`, `GRUCell`, `LSTM`, `Linear`,
+  `Embedding`) and internal helpers (`TimeEncoder`, `IdentityMessage`, `LastAggregator`, `MeanAggregator`,
+  `SignedConv`) were listed as models for every task.
 - The task types the model registry lists for a model now follow from its capability tags instead of its name.
   Models that already return one prediction per molecule (AttentiveFP, NeuralFingerprint, SchNet, DimeNet,
   DimeNetPlusPlus, ViSNet) are offered for graph tasks only. GNNFF, which predicts per-atom forces, is offered for
@@ -125,6 +129,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- PyG's `MLP` trains and predicts through MILIA. Its `forward(x, batch=None, ...)` takes no `edge_index`, but MILIA called
+  every 2D model as `model(x, edge_index, ...)`, so `edge_index` landed in `batch`. A model whose capability tags say it
+  does not read the graph's edges now gets `x` without `edge_index` from the graph-level wrapper and the Predictor.
 - PNA built without `edge_dim` predicts, joins ensembles and exports. PyG's PNA and GAT accept a molecule's bond
   features only when built with `edge_dim` (PNAConv creates its edge encoder, GATConv its edge projection, only
   then), but the Predictor, ensembles and ONNX export passed them whenever the class could take them, and PNAConv

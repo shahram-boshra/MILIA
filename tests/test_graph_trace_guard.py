@@ -17,7 +17,7 @@ from milia_pipeline.exceptions import ExportError, OptimizationError
 from milia_pipeline.models._graph_trace import is_graph_model
 from milia_pipeline.models.acceleration.computation_optimization import ComputationOptimizer
 from milia_pipeline.models.deployment.model_optimization import ModelOptimizer
-from milia_pipeline.models.factory.model_factory import ModelFactory
+from milia_pipeline.models.factory.model_factory import GraphLevelModelWrapper, ModelFactory
 
 CPU = torch.device("cpu")
 
@@ -58,14 +58,9 @@ class TestIsGraphModel:
     def test_milia_graph_model(self, graph_model):
         assert is_graph_model(graph_model)
 
-    def test_wrapped_torch_nn_registry_model(self):
-        """A plain ``torch.nn`` registry model is pooled per graph by MILIA's wrapper."""
-        model = ModelFactory().create_model(
-            name="Linear",
-            hyperparameters={"in_features": 8, "out_features": 2},
-            task_type="graph_regression",
-            sample_data=_graph(5),
-        )
+    def test_wrapped_torch_nn_model(self):
+        """A plain ``torch.nn`` model pooled per graph by MILIA's wrapper is a graph model."""
+        model = GraphLevelModelWrapper(nn.Linear(8, 2), "graph_regression")
         assert not type(model).__module__.startswith("torch.")
         assert is_graph_model(model)
 

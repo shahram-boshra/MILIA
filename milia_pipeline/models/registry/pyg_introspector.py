@@ -74,7 +74,7 @@ def discover_pyg_models() -> dict[str, str]:
     Dynamically discover ALL available models from PyG.
 
     Based on PyG documentation (pytorch-geometric.readthedocs.io):
-    - Models are in torch_geometric.nn.models (GCN, GAT, GraphSAGE, etc.)
+    - Models are the public classes of torch_geometric.nn.models (its ``__all__``)
     - Convolutions are in torch_geometric.nn.conv (GCNConv, GATConv, etc.)
 
     Returns:
@@ -88,52 +88,22 @@ def discover_pyg_models() -> dict[str, str]:
     discovered = {}
 
     # ==========================================================================
-    # PRIMARY: torch_geometric.nn.models (high-level model classes)
-    # Evidence: https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.models.GCN.html
+    # The models are the classes torch_geometric.nn.models exports in its public
+    # API, ``__all__`` ("the list of public names", Python reference, the import
+    # statement). Scanning dir() of the package and of its submodules also picked up
+    # what those modules merely import (torch.nn.GRU/LSTM/Linear/Embedding/GRUCell)
+    # and internal helpers (TimeEncoder, IdentityMessage, LastAggregator,
+    # MeanAggregator, SignedConv), which were then listed as models for every task.
     # ==========================================================================
     try:
         import torch_geometric.nn.models as models_module
 
-        for name in dir(models_module):
-            if name.startswith("_"):
-                continue
-            obj = getattr(models_module, name)
+        for name in getattr(models_module, "__all__", ()):
+            obj = getattr(models_module, name, None)
             if isinstance(obj, type) and issubclass(obj, nn.Module) and obj is not nn.Module:
                 discovered[name] = f"torch_geometric.nn.models.{name}"
     except ImportError as e:
         logger.warning(f"Could not import torch_geometric.nn.models: {e}")
-
-    # ==========================================================================
-    # SECONDARY: Scan submodules of torch_geometric.nn.models
-    # These contain specialized models (autoencoders, temporal, etc.)
-    # ==========================================================================
-    model_submodules = [
-        "torch_geometric.nn.models.autoencoder",
-        "torch_geometric.nn.models.deep_graph_infomax",
-        "torch_geometric.nn.models.metapath2vec",
-        "torch_geometric.nn.models.node2vec",
-        "torch_geometric.nn.models.jumping_knowledge",
-        "torch_geometric.nn.models.signed_gcn",
-        "torch_geometric.nn.models.re_net",
-        "torch_geometric.nn.models.tgn",
-    ]
-
-    for module_path in model_submodules:
-        try:
-            module = importlib.import_module(module_path)
-            for name in dir(module):
-                if name.startswith("_"):
-                    continue
-                obj = getattr(module, name)
-                if (
-                    isinstance(obj, type)
-                    and issubclass(obj, nn.Module)
-                    and obj is not nn.Module
-                    and name not in discovered
-                ):  # Avoid duplicates
-                    discovered[name] = f"{module_path}.{name}"
-        except ImportError as e:
-            logger.debug(f"Could not import {module_path}: {e}")
 
     # ==========================================================================
     # ALSO DISCOVER: Models exposed directly in torch_geometric.nn

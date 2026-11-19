@@ -225,6 +225,18 @@ def _build_fake_pyg_nn_models_module():
     mod._PrivateHelper = type("_PrivateHelper", (_FakeModule,), {})
     mod.some_function = lambda: None
     mod.SOME_CONSTANT = 42
+    # A class the module only imports (like torch.nn.Linear in PyG's models): not in __all__
+    mod.ImportedLayer = type("ImportedLayer", (_FakeModule,), {})
+    mod.__all__ = [
+        "GCN",
+        "GAT",
+        "GraphSAGE",
+        "EdgeCNN",
+        "SchNet",
+        "DimeNet",
+        "some_function",
+        "SOME_CONSTANT",
+    ]
     return mod
 
 
@@ -1110,6 +1122,10 @@ class TestDiscoverPygModels:
         assert "GAT" in models
         assert "SchNet" in models
         assert "DimeNet" in models
+
+    def test_excludes_classes_outside_the_public_api(self, fake_discovery_env):
+        intro = pytest.importorskip(_MODULE_PATH)
+        assert "ImportedLayer" not in intro.discover_pyg_models()
 
     def test_excludes_private_names(self, fake_discovery_env):
         intro = pytest.importorskip(_MODULE_PATH)

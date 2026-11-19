@@ -303,6 +303,11 @@ class GraphLevelModelWrapper(torch.nn.Module):
         # models without attached capabilities (not built by the factory) keep receiving them.
         built = attached_capabilities(model)
         self._drops_edge_attr = built is not None and not built.accepts_edge_attr
+        # A model that does not read the graph's edges (PyG MLP: forward(x, batch=None, ...)) must
+        # not receive edge_index, which would land in its next positional parameter (batch).
+        self._drops_edge_index = (
+            built is not None and not built.uses_graph_structure and not built.requires_positions
+        )
 
         # Output projection layer for models with fixed output dimensions
         # This is dynamically created on first forward pass when we know the model's output dim
@@ -398,6 +403,10 @@ class GraphLevelModelWrapper(torch.nn.Module):
             num_graphs = None  # only a real count is trusted (e.g. not a mock attribute)
 
         inner_kwargs = kwargs
+        if self._drops_edge_index and not from_data:
+            if len(args) >= 2:
+                args = (args[0], *args[2:])
+            inner_kwargs = {k: v for k, v in inner_kwargs.items() if k != "edge_index"}
         if self._drops_edge_attr and "edge_attr" in inner_kwargs:
             inner_kwargs = {k: v for k, v in inner_kwargs.items() if k != "edge_attr"}
         if batch is not None and self._forwards_batch and not from_data:

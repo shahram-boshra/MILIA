@@ -174,13 +174,27 @@ def requires_positions(model_class: type) -> bool:
     return "z" in first and "pos" in first
 
 
+def _forward_takes_varargs(model_class: type) -> bool:
+    try:
+        parameters = inspect.signature(model_class.forward).parameters.values()
+    except (AttributeError, TypeError, ValueError):
+        return False
+    variadic = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+    return any(p.kind in variadic for p in parameters)
+
+
 def default_capabilities(model_class: type) -> ModelCapabilities:
-    """Capabilities read from the forward signature: one feature row per node."""
+    """Capabilities read from the forward signature: one feature row per node.
+
+    A forward that names no ``edge_index`` and takes no ``*args``/``**kwargs`` does not read the
+    graph's edges (PyG ``MLP.forward(x, batch=None, ...)``); one that forwards variadic arguments
+    (graph autoencoders, ``DeepGraphInfomax``) is assumed to.
+    """
     params = _forward_parameters(model_class)
     return ModelCapabilities(
         outputs=(OutputSpec("features", "node", "features"),),
         requires_positions=requires_positions(model_class),
-        uses_graph_structure="edge_index" in params,
+        uses_graph_structure="edge_index" in params or _forward_takes_varargs(model_class),
         accepts_edge_attr=getattr(model_class, "supports_edge_attr", "edge_attr" in params) is True,
     )
 
