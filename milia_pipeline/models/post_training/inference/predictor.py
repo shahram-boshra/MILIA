@@ -24,6 +24,9 @@ import torch.nn as nn
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
+from milia_pipeline.models._batch_input import consumes_batch
+from milia_pipeline.models.training.module_utils import unwrap_compiled
+
 if TYPE_CHECKING:
     import numpy
     from torch_geometric.data import Dataset
@@ -297,6 +300,10 @@ class Predictor:
             # 2. 'pos' is in the first 3 parameters (3D positions)
             # This is more robust than name-based detection (SchNet, DimeNet, etc.)
             # =============================================================
+            # F73: the called model pools by graph (declares `consumes_batch`), so it gets `batch`
+            # even when the model it wraps (whose signature is read here) takes none.
+            batch_consumed = consumes_batch(unwrap_compiled(self.model))
+
             first_params = params[:3] if len(params) >= 3 else params
             is_3d_molecular_model = "z" in first_params and "pos" in first_params
 
@@ -328,7 +335,7 @@ class Predictor:
 
                 # Build kwargs for any additional parameters the model accepts
                 kwargs_3d = {}
-                if "batch" in valid_params and batch is not None:
+                if batch is not None and ("batch" in valid_params or batch_consumed):
                     kwargs_3d["batch"] = batch
 
                 # Some 3D models may accept additional parameters
@@ -386,6 +393,8 @@ class Predictor:
             else:
                 # Model has fixed signature, filter to valid params only
                 kwargs = {k: v for k, v in candidate_kwargs.items() if k in valid_params}
+                if batch_consumed and "batch" in candidate_kwargs:
+                    kwargs["batch"] = candidate_kwargs["batch"]
 
             # Call model with filtered kwargs
             return self.model(x, edge_index, **kwargs)

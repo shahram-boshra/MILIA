@@ -35,6 +35,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
+from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 
 from .module_utils import unwrap_compiled
@@ -934,6 +935,18 @@ class Trainer:
         num_graphs = getattr(batch, "num_graphs", None)
         return {"num_graphs": num_graphs} if isinstance(num_graphs, int) else {}
 
+    def _batch_kwargs(self, batch: Data | Batch) -> dict[str, torch.Tensor]:
+        """``{"batch": batch.batch}`` for a model whose class declares ``consumes_batch`` (F73).
+
+        The graph-level wrapper pools node outputs per graph with this vector; it forwards it to
+        the model it wraps only if that model accepts it. Read from the unwrapped module's class,
+        as for ``accepts_num_graphs`` (PA-1e).
+        """
+        if not consumes_batch(self.unwrapped_model):
+            return {}
+        vector = getattr(batch, "batch", None)
+        return {"batch": vector} if isinstance(vector, torch.Tensor) else {}
+
     @staticmethod
     def _call_forward_strategies(strategies: list[tuple[str, Any]], context: str) -> torch.Tensor:
         """Run forward calling conventions in order; fall back ONLY when a call does not fit (PA-5).
@@ -1070,6 +1083,9 @@ class Trainer:
 
         # PA-1d: graph count for MILIA wrappers/ensembles (consumed by the outer model)
         kwargs.update(self._num_graphs_kwargs(batch))
+        # F73: the batch vector for a model that pools by graph, even if the model it wraps (whose
+        # signature built `kwargs`) takes none
+        kwargs.update(self._batch_kwargs(batch))
 
         # Try the dynamic forward call
         try:

@@ -107,6 +107,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Graph-level training and prediction give one row per molecule for models whose `forward` takes no `batch`
+  (PyG `PMLP`, for example). The Trainer and `Predictor` chose keyword arguments from the wrapped model's signature,
+  so `batch` never reached `GraphLevelModelWrapper`, which then pooled the whole mini-batch into one row. The wrapper
+  now declares that it consumes `batch` and passes it on only to a model that accepts it; both callers pass it.
+  Pooling several graphs without `batch` now raises `ValueError` instead of merging them.
 - ONNX export works. `ModelOptimizer.export_to_onnx` and `optimize_model_for_deployment(export_onnx=True)`
   called PyTorch's default exporter (`torch.export`-based since 2.9), which needs onnxscript; MILIA's environment
   had neither it nor onnx, so every export failed. The new `milia_pipeline.models.deployment.onnx_export` (install

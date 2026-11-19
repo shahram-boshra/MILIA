@@ -25,6 +25,7 @@ from torch_geometric.data import Data
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 from torch_geometric.nn import pool as pyg_pool
 
+from .._batch_input import forward_accepts
 from .._deprecations import (
     BUILDER_TYPE_DEPRECATION,
     CUSTOM_ARCHITECTURE_DEPRECATION,
@@ -263,6 +264,9 @@ class GraphLevelModelWrapper(torch.nn.Module):
     # PA-1d: forward accepts `num_graphs=`; it is consumed here and forwarded only to an inner
     # model that also declares `accepts_num_graphs` (never to a plain PyG model).
     accepts_num_graphs = True
+    # F73: forward accepts `batch=` whatever the wrapped model accepts; it is consumed here (graph
+    # pooling) and forwarded only to a wrapped model whose forward accepts it (see _batch_input).
+    consumes_batch = True
 
     def __init__(
         self,
@@ -288,6 +292,7 @@ class GraphLevelModelWrapper(torch.nn.Module):
         self.task_type = task_type
         self.pooling_method = pooling_method
         self.out_channels = out_channels
+        self._forwards_batch = forward_accepts(model, "batch")
 
         # Output projection layer for models with fixed output dimensions
         # This is dynamically created on first forward pass when we know the model's output dim
@@ -370,11 +375,12 @@ class GraphLevelModelWrapper(torch.nn.Module):
         # `accepts_num_graphs` (e.g. a MILIA ensemble), never to a plain PyG model.
         num_graphs = kwargs.pop("num_graphs", None)
 
-        # Extract batch from kwargs or args
-        batch = kwargs.get("batch")
+        # F73: `batch` is consumed here; the wrapped model receives it only if it accepts it.
+        batch = kwargs.pop("batch", None)
 
-        # Check if first argument is a Data object
-        if len(args) > 0 and hasattr(args[0], "batch"):
+        # Check if first argument is a Data object (it carries its own batch to the wrapped model)
+        from_data = len(args) > 0 and hasattr(args[0], "batch")
+        if from_data:
             batch = args[0].batch
             if num_graphs is None:
                 num_graphs = getattr(args[0], "num_graphs", None)
@@ -382,17 +388,24 @@ class GraphLevelModelWrapper(torch.nn.Module):
             num_graphs = None  # only a real count is trusted (e.g. not a mock attribute)
 
         inner_kwargs = kwargs
+        if batch is not None and self._forwards_batch and not from_data:
+            inner_kwargs = {**inner_kwargs, "batch": batch}
         if (
             num_graphs is not None
             and getattr(type(self.model), "accepts_num_graphs", False) is True
         ):
-            inner_kwargs = {**kwargs, "num_graphs": num_graphs}
+            inner_kwargs = {**inner_kwargs, "num_graphs": num_graphs}
 
         # Forward through wrapped model
         out = self.model(*args, **inner_kwargs)
 
         # Apply global pooling for graph-level tasks
         if self._is_graph_level_task():
+            if batch is None and num_graphs is not None and num_graphs > 1:
+                raise ValueError(
+                    f"{type(self).__name__}: {num_graphs} graphs but no `batch` vector; pooling "
+                    "without it would merge them into one graph. Pass batch=<node-to-graph index>."
+                )
             # Check if output is node-level (needs pooling)
             # Node-level: [num_nodes, features], Graph-level: [num_graphs, features]
             if batch is not None:
