@@ -30,6 +30,14 @@ from typing import Any
 import torch
 from pydantic import BaseModel, ConfigDict
 
+# Import exceptions
+from milia_pipeline.exceptions import (
+    ModelError,
+)
+from milia_pipeline.exceptions import (
+    ModelValidationError as ModelValidationError,
+)
+
 # Dynamic introspection replaces static model_categories
 from .pyg_introspector import (
     ModelCategory,
@@ -37,22 +45,6 @@ from .pyg_introspector import (
     generate_search_space,
     get_introspector,
 )
-
-# Import exceptions
-try:
-    from milia_pipeline.exceptions import ModelError, ModelValidationError
-except ImportError:
-    # Fallback exceptions
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class ModelValidationError(ModelError):
-        """Exception raised when model validation fails."""
-
-        pass
-
 
 logger = logging.getLogger(__name__)
 

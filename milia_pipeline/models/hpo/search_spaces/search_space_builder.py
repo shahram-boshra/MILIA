@@ -35,31 +35,9 @@ import logging
 from copy import deepcopy
 from typing import Any
 
+from milia_pipeline.exceptions import ConfigurationError, SearchSpaceError
+
 from .param_types import ParamType, SearchSpaceParamConfig
-
-try:
-    from milia_pipeline.exceptions import ConfigurationError, SearchSpaceError
-except ImportError:
-
-    class SearchSpaceError(Exception):
-        """Exception for search space errors."""
-
-        def __init__(
-            self,
-            message: str,
-            parameter_name: str | None = None,
-            parameter_config: dict[str, Any] | None = None,
-            **kwargs,
-        ):
-            super().__init__(message)
-            self.parameter_name = parameter_name
-            self.parameter_config = parameter_config
-
-    class ConfigurationError(Exception):
-        """Exception for configuration errors."""
-
-        pass
-
 
 # Dynamic search spaces come from the model registry, which knows every model
 # whatever its origin (PyG discovery, plugins, register_model).

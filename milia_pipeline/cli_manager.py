@@ -165,15 +165,24 @@ try:
 except ValueError:
     TRANSFORMS_AVAILABLE = False
 
+from milia_pipeline.exceptions import (
+    PluginDependencyError as PluginDependencyError,
+)
+from milia_pipeline.exceptions import (
+    PluginDiscoveryError as PluginDiscoveryError,
+)
+from milia_pipeline.exceptions import (
+    PluginError as PluginError,
+)
+from milia_pipeline.exceptions import (
+    PluginSecurityError as PluginSecurityError,
+)
+from milia_pipeline.exceptions import (
+    PluginValidationError,
+)
+
 # Plugin system (Plugin management support)
 try:
-    from milia_pipeline.exceptions import (
-        PluginDependencyError,
-        PluginDiscoveryError,
-        PluginError,
-        PluginSecurityError,
-        PluginValidationError,
-    )
     from milia_pipeline.transformations.plugin_system import (
         TRUST_DEPRECATION,
         PluginMetadata,
@@ -188,12 +197,6 @@ except ImportError:
     PluginValidator = None
     TRUST_DEPRECATION = None
     PluginMetadata = None
-    # Set exception classes to None as well for completeness
-    PluginError = None
-    PluginValidationError = None
-    PluginSecurityError = None
-    PluginDependencyError = None
-    PluginDiscoveryError = None
 
 
 # ============================================================================

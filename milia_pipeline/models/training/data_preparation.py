@@ -24,31 +24,8 @@ import torch
 # =============================================================================
 # CONDITIONAL IMPORTS WITH FALLBACK
 # =============================================================================
-
-# Import DataCompatibilityError with fallback
-try:
-    from milia_pipeline.exceptions import DataCompatibilityError
-except ImportError:
-
-    class DataCompatibilityError(Exception):
-        """Fallback exception for data compatibility issues."""
-
-        def __init__(
-            self,
-            message: str,
-            model_name: str | None = None,
-            missing_features: list[str] | None = None,
-            incompatibility_reason: str | None = None,
-            **kwargs,
-        ):
-            self.model_name = model_name
-            self.missing_features = missing_features or []
-            self.incompatibility_reason = incompatibility_reason
-            # Store any additional kwargs (e.g., task_type)
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-            super().__init__(message)
-
+# Import DataCompatibilityError
+from milia_pipeline.exceptions import DataCompatibilityError
 
 # Import TargetSelectionConfig with fallback
 try:

@@ -25,6 +25,9 @@ import torch.nn as nn
 from pydantic import BaseModel, Field
 from torch_geometric.data import Data
 
+# Import exceptions
+from milia_pipeline.exceptions import ModelError
+
 # Import layer registry
 from .layer_registry import (
     FunctionalLayerWrapper,
@@ -33,15 +36,6 @@ from .layer_registry import (
     LayerRegistry,
 )
 from .layer_registry import registry as layer_registry
-
-# Import exceptions
-try:
-    from milia_pipeline.exceptions import ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        pass
-
 
 logger = logging.getLogger(__name__)
 

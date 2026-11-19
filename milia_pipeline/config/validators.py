@@ -249,91 +249,42 @@ from typing import TYPE_CHECKING, Any, Union
 import numpy as np
 import torch
 
+# Handler-specific exceptions for enhanced error handling
+from milia_pipeline.exceptions import (
+    ConfigurationError as ConfigurationError,
+)
+from milia_pipeline.exceptions import (
+    DatasetSpecificHandlerError,
+    HandlerConfigurationError,
+    HandlerError,
+    HandlerValidationError,
+    StructuralFeatureError,
+    UncertaintyProcessingError,
+    ValidationError,
+)
+from milia_pipeline.exceptions import (
+    HandlerCompatibilityError as HandlerCompatibilityError,
+)
+from milia_pipeline.exceptions import (
+    MoleculeProcessingError as MoleculeProcessingError,
+)
+from milia_pipeline.exceptions import (
+    PropertyEnrichmentError as PropertyEnrichmentError,
+)
+from milia_pipeline.exceptions import (
+    TransformationError as TransformationError,
+)
+from milia_pipeline.exceptions import (
+    TransformCompositionError as TransformCompositionError,
+)
+from milia_pipeline.exceptions import (
+    TransformValidationError as TransformValidationError,
+)
+
 if TYPE_CHECKING:
     from .config_containers import DescriptorConfig
 
 logger = logging.getLogger(__name__)
-
-# Handler-specific exceptions for enhanced error handling
-try:
-    from milia_pipeline.exceptions import (
-        ConfigurationError,
-        DatasetSpecificHandlerError,
-        HandlerCompatibilityError,
-        HandlerConfigurationError,
-        HandlerError,
-        HandlerValidationError,
-        MoleculeProcessingError,
-        PropertyEnrichmentError,
-        StructuralFeatureError,
-        # Transformation exceptions
-        TransformationError,
-        TransformCompositionError,
-        TransformValidationError,
-        UncertaintyProcessingError,
-        ValidationError,
-    )
-except ImportError:
-    # Fallback for testing or when exceptions module is not available
-    class MoleculeProcessingError(Exception):
-        def __init__(self, message: str, molecule_index: int = None, inchi: str = None, **kwargs):
-            super().__init__(message)
-            self.molecule_index = molecule_index
-            self.inchi = inchi
-
-    class PropertyEnrichmentError(MoleculeProcessingError):
-        pass
-
-    class ValidationError(Exception):
-        pass
-
-    class HandlerError(Exception):
-        pass
-
-    class HandlerValidationError(HandlerError):
-        pass
-
-    class HandlerConfigurationError(HandlerError):
-        pass
-
-    class HandlerCompatibilityError(HandlerError):
-        pass
-
-    class DatasetSpecificHandlerError(HandlerError):
-        def __init__(self, message: str, dataset_type: str = "", **kwargs):
-            super().__init__(message)
-            self.dataset_type = dataset_type
-            self.property_name = kwargs.get("property_name")
-
-    class UncertaintyProcessingError(MoleculeProcessingError):
-        def __init__(
-            self,
-            message: str,
-            dataset_type: str = "",
-            molecule_index: int = None,
-            inchi: str = None,
-            detail: str = None,
-            uncertainty_property_name: str = None,
-            **kwargs,
-        ):
-            super().__init__(message, molecule_index=molecule_index, inchi=inchi, **kwargs)
-            self.dataset_type = dataset_type
-            self.uncertainty_property_name = uncertainty_property_name
-
-    class StructuralFeatureError(MoleculeProcessingError):
-        pass
-
-    class TransformationError(Exception):
-        pass
-
-    class TransformValidationError(TransformationError):
-        pass
-
-    class TransformCompositionError(TransformationError):
-        pass
-
-    class ConfigurationError(Exception):
-        pass
 
 
 # Import transformation containers for Transformation System integration

@@ -35,6 +35,16 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from milia_pipeline.exceptions import (
+    PluginDependencyError,
+    PluginError,
+    PluginSecurityError,
+    PluginValidationError,
+)
+from milia_pipeline.exceptions import (
+    TransformValidationError as TransformValidationError,
+)
+
 # Lazy import to avoid circular dependency during plugin discovery
 CustomTransformBase = None
 MolecularTransformBase = None
@@ -119,63 +129,6 @@ try:
 except ImportError:
     load_config = None
 
-try:
-    from milia_pipeline.exceptions import (
-        PluginDependencyError,
-        PluginError,
-        PluginSecurityError,
-        PluginValidationError,
-        TransformValidationError,
-    )
-except ImportError:
-    # Fallback exception classes
-    class PluginError(Exception):
-        """Base exception for plugin-related errors."""
-
-        def __init__(self, message: str, plugin_name: str | None = None, **kwargs):
-            super().__init__(message)
-            self.plugin_name = plugin_name
-
-    class PluginValidationError(PluginError):
-        """Exception raised when plugin validation fails."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            validation_errors: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.validation_errors = validation_errors or []
-
-    class PluginSecurityError(PluginError):
-        """Exception raised for plugin security concerns."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            security_issues: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.security_issues = security_issues or []
-
-    class PluginDependencyError(PluginError):
-        """Exception raised when plugin dependencies are not satisfied."""
-
-        def __init__(
-            self,
-            message: str,
-            plugin_name: str | None = None,
-            missing_dependencies: list | None = None,
-            **kwargs,
-        ):
-            super().__init__(message, plugin_name=plugin_name)
-            self.missing_dependencies = missing_dependencies or []
-
-    TransformValidationError = Exception
 
 # Logging (02_Relevant_Files)
 # Note: logging_config.py doesn't have get_logger(), using standard logging

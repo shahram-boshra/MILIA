@@ -40,7 +40,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from milia_pipeline.exceptions import CheckpointError
+
 # Import the module under test
+# Import the _is_tensorboard_available function for testing
 from milia_pipeline.models.training.callbacks import (
     # Base class
     Callback,
@@ -53,17 +56,8 @@ from milia_pipeline.models.training.callbacks import (
     ModelCheckpoint,
     ProgressBar,
     TensorBoardLogger,
+    _is_tensorboard_available,
 )
-
-# Import exception
-try:
-    from milia_pipeline.exceptions import CheckpointError
-except ImportError:
-    # Use the fallback defined in callbacks.py
-    from milia_pipeline.models.training.callbacks import CheckpointError
-
-# Import the _is_tensorboard_available function for testing
-from milia_pipeline.models.training.callbacks import _is_tensorboard_available
 
 # =============================================================================
 # TEST FIXTURES

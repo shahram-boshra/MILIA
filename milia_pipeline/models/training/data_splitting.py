@@ -19,16 +19,8 @@ from collections import defaultdict
 
 from torch.utils.data import Dataset, Subset
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import DataError
-except ImportError:
-
-    class DataError(Exception):
-        """Exception raised for data-related errors."""
-
-        pass
-
+# Import exceptions
+from milia_pipeline.exceptions import DataError
 
 logger = logging.getLogger(__name__)
 

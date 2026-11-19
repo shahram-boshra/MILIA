@@ -24,23 +24,15 @@ from typing import Any
 
 import yaml
 
+# Import exceptions
+from milia_pipeline.exceptions import ConfigurationError
+
 from .architecture_builder import (
     ArchitectureBuilder,
 )
 from .model_composer import ModelComposer
 from .templates import ArchitectureTemplates
 from .validation import ArchitectureValidator
-
-# Import exceptions
-try:
-    from milia_pipeline.exceptions import ConfigurationError
-except ImportError:
-
-    class ConfigurationError(Exception):
-        """Configuration error."""
-
-        pass
-
 
 logger = logging.getLogger(__name__)
 

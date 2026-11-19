@@ -24,26 +24,14 @@ import torch
 from torch_geometric.data import Batch, Data, Dataset
 from torch_geometric.loader import DataLoader
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import DataCompatibilityError, DataError, ValidationError
-except ImportError:
-
-    class DataError(Exception):
-        """Exception raised for data-related errors."""
-
-        pass
-
-    class DataCompatibilityError(DataError):
-        """Exception raised when data is incompatible."""
-
-        pass
-
-    class ValidationError(Exception):
-        """Exception raised for validation failures."""
-
-        pass
-
+# Import exceptions
+from milia_pipeline.exceptions import (
+    DataCompatibilityError as DataCompatibilityError,
+)
+from milia_pipeline.exceptions import (
+    DataError,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 

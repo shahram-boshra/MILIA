@@ -25,6 +25,18 @@ from torch_geometric.data import Data
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 from torch_geometric.nn import pool as pyg_pool
 
+# Import exceptions
+from milia_pipeline.exceptions import (
+    DataCompatibilityError,
+    HyperparameterError,
+    ModelInstantiationError,
+    ModelNotFoundError,
+    ModelValidationError,
+)
+from milia_pipeline.exceptions import (
+    ModelError as ModelError,
+)
+
 from .._batch_input import forward_accepts
 from .._deprecations import (
     BUILDER_TYPE_DEPRECATION,
@@ -46,49 +58,6 @@ from ..registry.pyg_introspector import (
     get_model_conv_kwargs,  # NEW (Fix 19): Model-specific conv kwargs filtering
     validate_params_against_signature,
 )
-
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import (
-        DataCompatibilityError,
-        HyperparameterError,
-        ModelError,
-        ModelInstantiationError,
-        ModelNotFoundError,
-        ModelValidationError,
-    )
-except ImportError:
-    # Fallback exceptions if main exceptions module not available
-    class ModelError(Exception):
-        """Base exception for model-related errors."""
-
-        pass
-
-    class ModelValidationError(ModelError):
-        """Exception raised when model validation fails."""
-
-        pass
-
-    class ModelInstantiationError(ModelError):
-        """Exception raised when model instantiation fails."""
-
-        pass
-
-    class ModelNotFoundError(ModelError):
-        """Exception raised when model is not found in registry."""
-
-        pass
-
-    class HyperparameterError(ModelError):
-        """Exception raised for hyperparameter issues."""
-
-        pass
-
-    class DataCompatibilityError(ModelError):
-        """Exception raised when data is incompatible with model."""
-
-        pass
-
 
 # Import builders module (conditional for backward compatibility)
 try:

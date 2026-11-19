@@ -35,6 +35,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
+from milia_pipeline.exceptions import CheckpointError, TrainingError
 from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 
@@ -76,21 +77,6 @@ if TYPE_CHECKING:
     from milia_pipeline.models.acceleration import AccelerationManager
 
     from .callbacks import Callback
-
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import CheckpointError, TrainingError
-except ImportError:
-
-    class TrainingError(Exception):
-        """Exception raised during training."""
-
-        pass
-
-    class CheckpointError(Exception):
-        """Exception raised for checkpoint issues."""
-
-        pass
 
 
 logger = logging.getLogger(__name__)

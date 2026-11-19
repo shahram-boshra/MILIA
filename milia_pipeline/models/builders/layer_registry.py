@@ -27,13 +27,7 @@ import torch_geometric.nn as pyg_nn
 from pydantic import BaseModel, Field
 
 # Import exceptions
-try:
-    from milia_pipeline.exceptions import ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        pass
-
+from milia_pipeline.exceptions import ModelError
 
 logger = logging.getLogger(__name__)
 

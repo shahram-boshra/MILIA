@@ -15,18 +15,12 @@ from typing import Any
 
 import torch
 
+# CheckpointError is re-exported (imported from this module elsewhere)
+from milia_pipeline.exceptions import (
+    CheckpointError as CheckpointError,
+)
+
 from .module_utils import unwrap_compiled
-
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import CheckpointError
-except ImportError:
-
-    class CheckpointError(Exception):
-        """Exception raised for checkpoint issues."""
-
-        pass
-
 
 logger = logging.getLogger(__name__)
 

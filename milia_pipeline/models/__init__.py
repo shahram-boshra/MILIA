@@ -574,43 +574,18 @@ except ImportError as e:
 
 
 # Exceptions (from main exceptions module)
-try:
-    from milia_pipeline.exceptions import (
-        CheckpointError,
-        DataCompatibilityError,
-        DataError,
-        HyperparameterError,
-        ModelError,
-        ModelInstantiationError,
-        ModelNotFoundError,
-        ModelValidationError,
-        PluginModelError,
-        TrainingError,
-    )
-except ImportError:
-    # Fallback if exceptions module structure is different
-    from .factory.model_factory import (
-        DataCompatibilityError,
-        HyperparameterError,
-        ModelError,
-        ModelInstantiationError,
-        ModelValidationError,
-    )
-    from .training.data_splitting import (
-        DataError,
-    )
-    from .training.trainer import (
-        CheckpointError,
-        TrainingError,
-    )
-
-    # Define missing ones
-    class ModelNotFoundError(ModelError):
-        pass
-
-    class PluginModelError(ModelError):
-        pass
-
+from milia_pipeline.exceptions import (
+    CheckpointError,
+    DataCompatibilityError,
+    DataError,
+    HyperparameterError,
+    ModelError,
+    ModelInstantiationError,
+    ModelNotFoundError,
+    ModelValidationError,
+    PluginModelError,
+    TrainingError,
+)
 
 # ============================================================================
 # PUBLIC API DEFINITION

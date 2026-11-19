@@ -111,12 +111,9 @@ def _lazy_import_warm_start():
 
 def _lazy_import_hpo_error():
     """Lazy import HPOError from exceptions module."""
-    try:
-        from milia_pipeline.exceptions import HPOError
+    from milia_pipeline.exceptions import HPOError
 
-        return HPOError
-    except ImportError:
-        return None
+    return HPOError
 
 
 # =============================================================================

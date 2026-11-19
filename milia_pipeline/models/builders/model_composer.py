@@ -23,17 +23,10 @@ import torch
 import torch.nn as nn
 from pydantic import BaseModel, ConfigDict, Field
 
+# Import exceptions
+from milia_pipeline.exceptions import ModelError
 from milia_pipeline.models._graph_output import produces_graph_output
 from milia_pipeline.models.capabilities import attached_capabilities, select_primary_output
-
-# Import exceptions
-try:
-    from milia_pipeline.exceptions import ModelError
-except ImportError:
-
-    class ModelError(Exception):
-        pass
-
 
 logger = logging.getLogger(__name__)
 

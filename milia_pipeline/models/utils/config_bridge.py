@@ -56,26 +56,16 @@ except ImportError:
             return yaml.safe_load(f)
 
 
-# Import exceptions with fallback
-try:
-    from milia_pipeline.exceptions import ConfigurationError, ModelError, ValidationError
-except ImportError:
-
-    class ConfigurationError(Exception):
-        """Configuration error."""
-
-        pass
-
-    class ModelError(Exception):
-        """Model error."""
-
-        pass
-
-    class ValidationError(Exception):
-        """Validation error."""
-
-        pass
-
+# Import exceptions
+from milia_pipeline.exceptions import (
+    ConfigurationError,
+)
+from milia_pipeline.exceptions import (
+    ModelError as ModelError,
+)
+from milia_pipeline.exceptions import (
+    ValidationError as ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
