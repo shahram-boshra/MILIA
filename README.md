@@ -406,6 +406,14 @@ export_onnx(model, "model.onnx", example_batch)  # verified against PyTorch with
 
 MILIA captures the model with `torch.export` in strict mode, which keeps the number of graphs in a batch symbolic, and the exported file is run with ONNX Runtime on the example and compared with PyTorch before it is kept. A model `torch.export` cannot capture raises `ExportError` naming the cause.
 
+Coverage for graph-level tasks (PyG 2.8.1, PyTorch 2.12; `tests/test_onnx_export_coverage.py`):
+
+| Exports | Blocked upstream (`ExportError`) |
+|---|---|
+| GCN, GAT, GIN, GraphSAGE, EdgeCNN, PNA, MLP, PMLP (`norm=False`), Polynormer, AttentiveFP, NeuralFingerprint | GraphUNet (TopKPooling keeps a data-dependent number of nodes), SGFormer (ONNX decomposition expects a constant size), SchNet, DimeNet, DimeNetPlusPlus, ViSNet (`radius_graph` builds a data-dependent interaction graph) |
+
+Only tensors are graph inputs; Python numbers such as PyG's `batch_size` would be frozen into the file and are not exported. PMLP's default `norm=True` normalizes with the statistics of the batch it is given, also at inference, so its exported predictions depend on batch composition.
+
 ### Introspection commands
 
 These are read-only and useful for orientation:
