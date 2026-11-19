@@ -228,3 +228,34 @@ def test_capabilities_match_real_outputs(name, hyperparameters, primary, molecul
     torch.manual_seed(0)
     caps = check_model_capabilities(getattr(pyg_models, name), hyperparameters, molecules)
     assert (caps.primary.level, caps.primary.kind) == primary
+
+
+# --- the registry lists the tasks the capabilities imply ---------------------------------------
+@pytest.mark.parametrize(
+    ("name", "tasks"),
+    [
+        ("GCN", NODE_TASKS + GRAPH_TASKS + EDGE_TASKS),
+        ("AttentiveFP", GRAPH_TASKS),
+        ("NeuralFingerprint", GRAPH_TASKS),
+        ("SchNet", GRAPH_TASKS),
+        ("ViSNet", GRAPH_TASKS),
+        ("GNNFF", ("node_regression",)),
+        ("ARGVA", ("link_prediction", "node_embedding")),
+    ],
+)
+def test_registry_tasks_come_from_capabilities(name, tasks):
+    from milia_pipeline.models.registry import get_model_info
+
+    assert tuple(get_model_info(name)["supported_tasks"]) == tasks
+
+
+def test_factory_rejects_a_task_the_model_cannot_serve(molecules):
+    from milia_pipeline.models.factory.model_factory import ModelFactory, ModelValidationError
+
+    with pytest.raises(ModelValidationError, match="does not support task 'node_classification'"):
+        ModelFactory().create_model(
+            name="AttentiveFP",
+            hyperparameters={"num_layers": 2, "num_timesteps": 2, "edge_dim": EDGE_DIM, **H},
+            task_type="node_classification",
+            sample_data=molecules[0],
+        )

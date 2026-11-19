@@ -888,8 +888,9 @@ def build_metadata_for_class(
     # Convert ParameterInfo dict to hyperparameters dict format (BACKWARD COMPATIBLE)
     hyperparameters = _parameters_to_hyperparameters_dict(parameters)
 
-    # Infer supported tasks based on model characteristics
-    supported_tasks = _infer_supported_tasks(model_name, import_path, parameters)
+    # Supported tasks follow from the class's capability tags (its own declaration, a registered
+    # provider, or the forward signature), not from its name
+    supported_tasks = _infer_supported_tasks(model_class)
 
     # Infer tags from model name and characteristics
     tags = _infer_tags(model_name, import_path, parameters)
@@ -1151,117 +1152,27 @@ def _parameters_to_hyperparameters_dict(parameters: dict[str, ParameterInfo]) ->
     return hyperparameters
 
 
-def _infer_supported_tasks(
-    model_name: str, import_path: str, parameters: dict[str, ParameterInfo]
-) -> list[str]:
+def _infer_supported_tasks(model_class: type) -> list[str]:
     """
-    Infer supported tasks based on model characteristics.
+    The task types ``model_class`` supports, computed from its capability tags.
 
-    This replaces hardcoded supported_tasks lists with dynamic inference.
+    ``milia_pipeline.models.capabilities`` resolves what the class outputs (per-node features,
+    one property per graph, a per-node vector such as forces, or a transductive node embedding)
+    from the class's own ``milia_capabilities`` declaration, a provider registered for it, or its
+    ``forward`` signature; the tasks follow from that output:
 
-    Task categories:
-    - Node-level: node_classification, node_regression
-    - Graph-level: graph_classification, graph_regression
-    - Edge-level: link_prediction, edge_regression, edge_classification
-    - Embedding: node_embedding
+    - node features: node, graph (MILIA pools them) and edge tasks (``EdgeLevelModelWrapper``
+      decodes node pairs with an external MLP, so the model needs no native edge features)
+    - graph property: graph tasks only
+    - node vector: node regression only
+    - node embedding: link prediction and node embedding
 
-    Task support rules:
-    1. link_prediction: ANY model with node embeddings (uses dot product decoder)
-    2. edge_regression: ANY model with node embeddings (uses MLP decoder via EdgeLevelModelWrapper)
-    3. edge_classification: ANY model with node embeddings (uses MLP decoder via EdgeLevelModelWrapper)
-    4. Autoencoder models: link_prediction, node_embedding only
-
-    Note on edge-level tasks:
-    - edge_regression and edge_classification do NOT require the model to natively process
-      edge features. The EdgeLevelModelWrapper in model_factory.py uses an external MLP
-      decoder that takes node embeddings from ANY GNN and produces edge-level predictions.
-    - This is a standard encoder-decoder pattern in graph ML.
-    - The edge-aware detection below is preserved for metadata (requires_edge_features)
-      but is NOT used to restrict task support.
+    Called with default hyperparameters (the registry describes the class); the factory resolves
+    the capabilities again with the hyperparameters a model is built with.
     """
-    name_lower = model_name.lower()
-    path_lower = import_path.lower()
+    from milia_pipeline.models.capabilities import get_model_capabilities, supported_tasks
 
-    # Default tasks most GNN models support
-    default_tasks = [
-        "node_classification",
-        "node_regression",
-        "graph_classification",
-        "graph_regression",
-    ]
-
-    # Edge-level tasks work with ANY model that produces node embeddings:
-    # - link_prediction: uses dot product decoder on node pairs
-    # - edge_regression: uses MLP decoder on concatenated node pair embeddings (via EdgeLevelModelWrapper)
-    # - edge_classification: uses MLP decoder on concatenated node pair embeddings (via EdgeLevelModelWrapper)
-    edge_level_tasks = ["link_prediction", "edge_regression", "edge_classification"]
-
-    # Autoencoders typically support link prediction only
-    if "autoencoder" in path_lower or "gae" in name_lower or "vgae" in name_lower:
-        return ["link_prediction", "node_embedding"]
-
-    # Node2Vec, MetaPath2Vec are embedding models
-    if "node2vec" in name_lower or "metapath2vec" in name_lower:
-        return ["node_embedding", "link_prediction"]
-
-    # Pooling models are typically for graph-level tasks only
-    if "pool" in name_lower:
-        return ["graph_classification", "graph_regression"]
-
-    # =========================================================================
-    # Edge-aware model detection (PRESERVED for metadata/requires_edge_features)
-    # =========================================================================
-    # This detection is useful for determining if a model can NATIVELY process
-    # edge features (sets requires_edge_features metadata). However, it does NOT
-    # restrict task support since EdgeLevelModelWrapper handles edge-level tasks
-    # for ALL models via external decoders.
-    # =========================================================================
-
-    # Check if model supports edge features natively
-    # Detection: parameters with 'edge' + ('dim', 'channels', 'features') in name
-    requires_edge_features = any(
-        "edge" in p.lower() and any(x in p.lower() for x in ["dim", "channels", "features"])
-        for p in parameters
-    )
-
-    # Known edge-aware model patterns (process edge attributes natively)
-    edge_aware_patterns = [
-        "nnconv",  # Neural Message Passing for Quantum Chemistry
-        "cgconv",  # Crystal Graph CNN
-        "ecconv",  # Edge-Conditioned Convolution
-        "mpnn",  # Message Passing Neural Network
-        "gatconv",  # GAT can use edge features
-        "gat",  # GAT variants
-        "transformerconv",  # Transformer with edge features
-        "pnaconv",  # Principal Neighbourhood Aggregation
-        "genconv",  # GENeralized graph convolution
-        "gine",  # GIN with edge features
-        "edgeconv",  # Edge Convolution
-        "edgecnn",  # Edge CNN
-    ]
-    is_edge_aware_model = any(pattern in name_lower for pattern in edge_aware_patterns)
-
-    # Log edge-awareness for debugging (this info is used by generate_model_metadata
-    # to set requires_edge_features field, but does NOT restrict task support)
-    if requires_edge_features or is_edge_aware_model:
-        logger.debug(f"Model '{model_name}' detected as edge-aware (native edge feature support)")
-
-    # =========================================================================
-    # Task support assignment
-    # =========================================================================
-    # ALL models with out_channels support ALL edge-level tasks via EdgeLevelModelWrapper
-    # The wrapper provides external MLP decoders that work with any node embeddings
-    # =========================================================================
-
-    # Models with out_channels can produce node embeddings
-    if "out_channels" in parameters:
-        # ALL models with node embeddings support ALL edge-level tasks
-        # EdgeLevelModelWrapper handles edge_regression/edge_classification via MLP decoder
-        return default_tasks + edge_level_tasks
-
-    # For other models without out_channels, still support edge tasks
-    # (most GNNs produce node embeddings even without explicit out_channels param)
-    return default_tasks + edge_level_tasks
+    return list(supported_tasks(get_model_capabilities(model_class)))
 
 
 def _infer_tags(

@@ -764,30 +764,38 @@ class TestInferSupportedTasks:
 
     def test_standard_gnn_all_tasks(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = intro.introspect_model_signature(_FakeGCN)
-        tasks = intro._infer_supported_tasks("GCN", "torch_geometric.nn.models.GCN", params)
+        tasks = intro._infer_supported_tasks(_FakeGCN)
         assert "node_classification" in tasks
         assert "graph_classification" in tasks
         assert "link_prediction" in tasks
 
     def test_autoencoder_link_and_embedding(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = intro.introspect_model_signature(_FakeGAE)
-        tasks = intro._infer_supported_tasks(
-            "GAE", "torch_geometric.nn.models.autoencoder.GAE", params
-        )
-        assert "link_prediction" in tasks
-        assert "node_embedding" in tasks
-        assert "graph_classification" not in tasks
+        from torch_geometric.nn.models import GAE, VGAE
 
-    def test_pool_graph_level_only(self):
+        for cls in (GAE, VGAE):  # VGAE inherits GAE's registered capabilities
+            tasks = intro._infer_supported_tasks(cls)
+            assert "link_prediction" in tasks
+            assert "node_embedding" in tasks
+            assert "graph_classification" not in tasks
+
+    def test_declared_graph_output_graph_level_only(self):
         intro = pytest.importorskip(_MODULE_PATH)
-        params = intro.introspect_model_signature(_FakePoolModel)
-        tasks = intro._infer_supported_tasks(
-            "TopKPool", "torch_geometric.nn.models.TopKPool", params
-        )
+        from milia_pipeline.models.capabilities import ModelCapabilities, OutputSpec
+
+        class _Readout(_FakePoolModel):
+            @classmethod
+            def milia_capabilities(cls, hyperparameters):
+                return ModelCapabilities(outputs=(OutputSpec("property", "graph", "property"),))
+
+        tasks = intro._infer_supported_tasks(_Readout)
         assert "graph_classification" in tasks
         assert "node_classification" not in tasks
+
+    def test_name_does_not_decide_tasks(self):
+        intro = pytest.importorskip(_MODULE_PATH)
+        # An undeclared class gets per-node features whatever its name (no "pool" rule).
+        assert "node_classification" in intro._infer_supported_tasks(_FakePoolModel)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

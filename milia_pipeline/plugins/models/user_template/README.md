@@ -38,6 +38,13 @@ Scaffold for adding your own **model** plugin, symmetric with
 - `forward(x, edge_index, batch=None)` (`edge_attr` may follow `edge_index`), or
   `forward(z, pos, batch=None)` for 3D models, returning one row per node
   (`[num_nodes, out_channels]`). For graph-level tasks the factory pools the rows per graph.
+- A model that returns something else declares it with a `milia_capabilities(cls,
+  hyperparameters)` classmethod returning `milia_pipeline.models.capabilities.ModelCapabilities`:
+  for example one row per graph (`OutputSpec("property", "graph", "property")`, graph tasks
+  only) or a per-atom vector (`OutputSpec("forces", "node", "vector", width=3)`, node
+  regression only). The tasks the registry lists for the model follow from it when the
+  manifest omits `supported_tasks`. `check_model_capabilities(MyModel, hyperparameters,
+  graphs)` builds the model and checks the declaration against its real outputs.
 
 A model that does not follow them is still registered, with a warning:
 

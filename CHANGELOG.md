@@ -39,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The task types the model registry lists for a model now follow from its capability tags instead of its name.
+  Models that already return one prediction per molecule (AttentiveFP, NeuralFingerprint, SchNet, DimeNet,
+  DimeNetPlusPlus, ViSNet) are offered for graph tasks only. GNNFF, which predicts per-atom forces, is offered for
+  node regression only. ARGA and ARGVA, like GAE and VGAE, for link prediction and node embedding. Before, these
+  models were also offered for node and edge tasks they cannot serve (and GNNFF's forces were averaged into one
+  molecular value). A plugin class named like a pooling model is no longer limited to graph tasks by its name; it
+  declares graph output with `milia_capabilities` or the manifest's `supported_tasks`.
+
 - The `aws`, `gcp`, `azure` and `container` deployment targets package a MILIA checkpoint and write a `Dockerfile`
   that serves it. The Dockerfile builds `FROM ghcr.io/shahram-boshra/milia:<version>`, or
   `DeploymentConfig.base_image` when set. For `aws` it runs as root, as SageMaker expects. The build checks the
