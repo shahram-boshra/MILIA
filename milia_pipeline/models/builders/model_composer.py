@@ -24,7 +24,7 @@ import torch.nn as nn
 from pydantic import BaseModel, ConfigDict, Field
 
 from milia_pipeline.models._graph_output import produces_graph_output
-from milia_pipeline.models.capabilities import select_primary_output
+from milia_pipeline.models.capabilities import attached_capabilities, select_primary_output
 
 # Import exceptions
 try:
@@ -918,6 +918,12 @@ class ParallelEnsemble(nn.Module):
         # Recursively unwrap to find the actual PyG model
         inner_model = self._get_innermost_model(model)
 
+        # How the member was built decides (PNA/GAT use edge_attr only with edge_dim); the
+        # class attribute below says only what the class can do.
+        built = attached_capabilities(inner_model)
+        if built is not None:
+            return built.accepts_edge_attr
+
         # Check class attribute (PyG BasicGNN convention)
         # Also check instance attribute for custom models
         supports = getattr(inner_model, "supports_edge_attr", None)
@@ -1608,6 +1614,12 @@ class SequentialStack(nn.Module):
         """
         # Recursively unwrap to find the actual PyG model
         inner_model = self._get_innermost_model(model)
+
+        # How the member was built decides (PNA/GAT use edge_attr only with edge_dim); the
+        # class attribute below says only what the class can do.
+        built = attached_capabilities(inner_model)
+        if built is not None:
+            return built.accepts_edge_attr
 
         # Check class attribute (PyG BasicGNN convention)
         # Also check instance attribute for custom models

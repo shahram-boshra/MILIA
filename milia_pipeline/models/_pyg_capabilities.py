@@ -19,6 +19,17 @@ _FORCES = OutputSpec("forces", "node", "vector", width=3)
 _NODE_EMBEDDING = OutputSpec("embedding", "node", "embedding")
 
 
+@register_capabilities(f"{_PYG}.basic_gnn.GAT", f"{_PYG}.basic_gnn.PNA")
+def _edge_dim_gnn(hyperparameters: Mapping[str, Any]) -> ModelCapabilities:
+    # BasicGNN passes edge_attr to every conv when the class sets supports_edge_attr (GAT, PNA).
+    # The convs use it only when built with edge_dim: GATConv creates lin_edge and PNAConv
+    # edge_encoder only then; without it GATConv ignores edge_attr and PNAConv fails on it.
+    return ModelCapabilities(
+        outputs=(OutputSpec("features", "node", "features"),),
+        accepts_edge_attr=hyperparameters.get("edge_dim") is not None,
+    )
+
+
 @register_capabilities(f"{_PYG}.attentive_fp.AttentiveFP")
 def _attentive_fp(hyperparameters: Mapping[str, Any]) -> ModelCapabilities:
     # forward(x, edge_index, edge_attr, batch): GRU readout over the molecule -> [num_graphs, out]

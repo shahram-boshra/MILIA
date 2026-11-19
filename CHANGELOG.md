@@ -125,6 +125,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- PNA built without `edge_dim` predicts, joins ensembles and exports. PyG's PNA and GAT accept a molecule's bond
+  features only when built with `edge_dim` (PNAConv creates its edge encoder, GATConv its edge projection, only
+  then), but the Predictor, ensembles and ONNX export passed them whenever the class could take them, and PNAConv
+  failed with `'PNAConv' object has no attribute 'edge_encoder'`. The model factory now attaches to each model the
+  capabilities resolved for the hyperparameters it was built with (`attach_capabilities` /
+  `attached_capabilities`), and the graph-level wrapper, ensembles and the Predictor pass edge features only to a
+  model built to use them. A GAT built without `edge_dim` ignored them already, so its predictions do not change.
 - ViSNet trains and predicts through MILIA. PyG's `ViSNet` returns `(energy, forces or None)`; the graph-level
   wrapper called `.size` on the tuple, and an ensemble's 3D member path passed the tuple on to fusion. Both now take
   the output a model's capability tags declare as primary (the energy). A model that returns a tuple it does not

@@ -25,6 +25,7 @@ from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
 from milia_pipeline.models._batch_input import consumes_batch
+from milia_pipeline.models.capabilities import attached_capabilities
 from milia_pipeline.models.training.module_utils import unwrap_compiled
 
 if TYPE_CHECKING:
@@ -395,6 +396,12 @@ class Predictor:
                 kwargs = {k: v for k, v in candidate_kwargs.items() if k in valid_params}
                 if batch_consumed and "batch" in candidate_kwargs:
                     kwargs["batch"] = candidate_kwargs["batch"]
+
+            # A model built without edge features (PNA/GAT without edge_dim) must not get them,
+            # whatever its forward signature accepts.
+            built = attached_capabilities(actual_model)
+            if built is not None and not built.accepts_edge_attr:
+                kwargs.pop("edge_attr", None)
 
             # Call model with filtered kwargs
             return self.model(x, edge_index, **kwargs)

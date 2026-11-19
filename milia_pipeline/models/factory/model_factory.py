@@ -32,7 +32,12 @@ from .._deprecations import (
     warn_deprecated,
 )
 from .._graph_output import produces_graph_output
-from ..capabilities import get_model_capabilities, select_primary_output
+from ..capabilities import (
+    attach_capabilities,
+    attached_capabilities,
+    get_model_capabilities,
+    select_primary_output,
+)
 from ..registry.model_registry import ModelRegistry
 
 # Dynamic introspection replaces static model_categories (Phase 4 Migration)
@@ -294,6 +299,10 @@ class GraphLevelModelWrapper(torch.nn.Module):
         self.pooling_method = pooling_method
         self.out_channels = out_channels
         self._forwards_batch = forward_accepts(model, "batch")
+        # A model built without edge features (PNA/GAT without edge_dim) must not receive them;
+        # models without attached capabilities (not built by the factory) keep receiving them.
+        built = attached_capabilities(model)
+        self._drops_edge_attr = built is not None and not built.accepts_edge_attr
 
         # Output projection layer for models with fixed output dimensions
         # This is dynamically created on first forward pass when we know the model's output dim
@@ -389,6 +398,8 @@ class GraphLevelModelWrapper(torch.nn.Module):
             num_graphs = None  # only a real count is trusted (e.g. not a mock attribute)
 
         inner_kwargs = kwargs
+        if self._drops_edge_attr and "edge_attr" in inner_kwargs:
+            inner_kwargs = {k: v for k, v in inner_kwargs.items() if k != "edge_attr"}
         if batch is not None and self._forwards_batch and not from_data:
             inner_kwargs = {**inner_kwargs, "batch": batch}
         if (
@@ -1428,6 +1439,10 @@ class ModelFactory:
                 model_name=name,
                 hyperparameters=processed_params,
             ) from e
+
+        # What this instance does depends on how it was built (PNA/GAT use edge features only
+        # with edge_dim); record it for the wrapper, the ensembles and the Predictor.
+        attach_capabilities(model, get_model_capabilities(model_class, processed_params))
 
         # Wrap model for graph-level tasks
         # PyG BasicGNN models output node-level predictions [num_nodes, out_channels]

@@ -39,6 +39,8 @@ __all__ = [
     "default_capabilities",
     "requires_positions",
     "select_primary_output",
+    "attach_capabilities",
+    "attached_capabilities",
 ]
 
 OutputLevel = Literal["node", "graph"]
@@ -209,6 +211,37 @@ def _validated(value: Any, model_class: type) -> ModelCapabilities:
             f"got {type(value).__name__}"
         )
     return value
+
+
+_ATTRIBUTE = "_milia_capabilities"
+
+
+def attach_capabilities(model: torch.nn.Module, capabilities: ModelCapabilities) -> None:
+    """Record on a built model the capabilities resolved for the hyperparameters it was built with.
+
+    The class alone cannot say what an instance does: PyG ``PNA`` and ``GAT`` accept edge features
+    only when built with ``edge_dim`` (``PNAConv`` creates ``edge_encoder`` and ``GATConv``
+    ``lin_edge`` only then). The factory attaches them; callers read them with
+    ``attached_capabilities``. Stored as a plain attribute (not a parameter or buffer), so it
+    never enters a ``state_dict``.
+    """
+    if not isinstance(capabilities, ModelCapabilities):
+        raise ModelCapabilityError(
+            f"attach_capabilities needs ModelCapabilities, got {type(capabilities).__name__}"
+        )
+    object.__setattr__(model, _ATTRIBUTE, capabilities)
+
+
+def attached_capabilities(model: Any) -> ModelCapabilities | None:
+    """The capabilities attached to ``model`` itself when it was built, else ``None``.
+
+    Read from the instance only (a wrapper that delegates attribute access to the model it holds
+    does not report that model's capabilities as its own); a ``torch.compile`` wrapper is looked
+    through.
+    """
+    module = getattr(model, "_orig_mod", model)
+    value = vars(module).get(_ATTRIBUTE) if hasattr(module, "__dict__") else None
+    return value if isinstance(value, ModelCapabilities) else None
 
 
 def select_primary_output(model: torch.nn.Module, result: Any) -> Any:
