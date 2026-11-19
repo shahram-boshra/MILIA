@@ -32,6 +32,7 @@ from .._deprecations import (
     warn_deprecated,
 )
 from .._graph_output import produces_graph_output
+from ..capabilities import get_model_capabilities, select_primary_output
 from ..registry.model_registry import ModelRegistry
 
 # Dynamic introspection replaces static model_categories (Phase 4 Migration)
@@ -397,7 +398,9 @@ class GraphLevelModelWrapper(torch.nn.Module):
             inner_kwargs = {**inner_kwargs, "num_graphs": num_graphs}
 
         # Forward through wrapped model
-        out = self.model(*args, **inner_kwargs)
+        # A model may return several outputs (PyG ViSNet: energy, forces); its capability tags say
+        # which one MILIA trains on, and an undeclared tuple raises naming the model.
+        out = select_primary_output(self.model, self.model(*args, **inner_kwargs))
 
         # Apply global pooling for graph-level tasks
         if self._is_graph_level_task():
@@ -1380,6 +1383,22 @@ class ModelFactory:
             except Exception as e:
                 # Don't fail if signature validation itself fails
                 logger.debug(f"Could not perform signature validation for '{name}': {e}")
+
+        # MILIA trains on a model's primary output and evaluates and predicts without gradients
+        # (torch.no_grad); a model that differentiates its outputs with respect to its inputs
+        # inside forward (ViSNet derivative=True: forces = -dE/dpos) cannot run there.
+        if model_class is not None:
+            capabilities = get_model_capabilities(model_class, processed_params)
+            if capabilities.differentiates_inputs:
+                outputs = ", ".join(spec.name for spec in capabilities.outputs)
+                raise ModelValidationError(
+                    f"Model '{name}' is configured to differentiate its outputs ({outputs}) with "
+                    "respect to its inputs inside forward, which needs gradients during evaluation "
+                    "and prediction; MILIA evaluates and predicts without gradients and trains on "
+                    f"the primary output ({capabilities.primary.name}) only. Build it without that "
+                    "option (ViSNet: derivative=False).",
+                    model_name=name,
+                )
 
         # Validate data compatibility if sample data provided
         if sample_data is not None:

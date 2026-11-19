@@ -38,6 +38,7 @@ __all__ = [
     "check_model_capabilities",
     "default_capabilities",
     "requires_positions",
+    "select_primary_output",
 ]
 
 OutputLevel = Literal["node", "graph"]
@@ -93,12 +94,15 @@ class ModelCapabilities:
         requires_positions: The forward takes atomic numbers ``z`` and positions ``pos``.
         uses_graph_structure: The forward reads ``edge_index``.
         accepts_edge_attr: The forward can use edge features.
+        differentiates_inputs: The forward differentiates an output with respect to its inputs
+            (forces = -dE/dpos), so it cannot run under ``torch.no_grad``.
     """
 
     outputs: tuple[OutputSpec, ...]
     requires_positions: bool = False
     uses_graph_structure: bool = True
     accepts_edge_attr: bool = False
+    differentiates_inputs: bool = False
     _tasks: tuple[str, ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -205,6 +209,29 @@ def _validated(value: Any, model_class: type) -> ModelCapabilities:
             f"got {type(value).__name__}"
         )
     return value
+
+
+def select_primary_output(model: torch.nn.Module, result: Any) -> Any:
+    """The output MILIA trains on, from what ``model``'s forward returned.
+
+    ``model`` is the module that produced ``result`` (a ``torch.compile`` wrapper is looked
+    through to the compiled module's class). A tensor is returned as is. A tuple is accepted only when the class declares that many outputs
+    (PyG ViSNet: ``(energy, forces or None)``); its first element, the primary output, is returned.
+    Any other tuple raises ``ModelCapabilityError`` naming the class: taking an element MILIA cannot
+    identify would silently train on the wrong quantity.
+    """
+    if not isinstance(result, tuple):
+        return result
+    model_class = type(getattr(model, "_orig_mod", model))
+    declared = get_model_capabilities(model_class).outputs
+    if len(result) != len(declared):
+        raise ModelCapabilityError(
+            f"{model_class.__name__}.forward returned a tuple of {len(result)}, but its capabilities "
+            f"declare {len(declared)} output(s) ({', '.join(spec.name for spec in declared)}). "
+            "Declare its outputs with a milia_capabilities classmethod "
+            "(milia_pipeline.models.capabilities)."
+        )
+    return result[0]
 
 
 # ---------------------------------------------------------------------------------------------

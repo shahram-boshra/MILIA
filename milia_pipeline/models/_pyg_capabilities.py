@@ -44,10 +44,12 @@ def _energy_model(hyperparameters: Mapping[str, Any]) -> ModelCapabilities:
 def _visnet(hyperparameters: Mapping[str, Any]) -> ModelCapabilities:
     # forward(z, pos, batch) -> (y, -dy) with derivative=True, else (y, None): "y: The energies or
     # properties for each molecule", "dy: The negative derivative of energies" (per atom, 3D).
+    # derivative=True: forces = -dE/dpos via torch.autograd.grad inside forward.
     return ModelCapabilities(
         outputs=(OutputSpec("energy", "graph", "property"), _FORCES),
         requires_positions=True,
         uses_graph_structure=False,
+        differentiates_inputs=bool(hyperparameters.get("derivative", False)),
     )
 
 

@@ -125,6 +125,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- ViSNet trains and predicts through MILIA. PyG's `ViSNet` returns `(energy, forces or None)`; the graph-level
+  wrapper called `.size` on the tuple, and an ensemble's 3D member path passed the tuple on to fusion. Both now take
+  the output a model's capability tags declare as primary (the energy). A model that returns a tuple it does not
+  declare raises an error naming it, instead of being cut to its first element in ensembles. `ViSNet(derivative=True)`
+  is rejected when the model is built: it computes forces with `torch.autograd.grad` inside `forward`, which fails
+  under the `torch.no_grad` of evaluation and prediction, and MILIA trains on the energy only.
 - Graph-level training and prediction give one row per molecule for models whose `forward` takes no `batch`
   (PyG `PMLP`, for example). The Trainer and `Predictor` chose keyword arguments from the wrapped model's signature,
   so `batch` never reached `GraphLevelModelWrapper`, which then pooled the whole mini-batch into one row. The wrapper

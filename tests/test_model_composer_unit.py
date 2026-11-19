@@ -2351,9 +2351,19 @@ class TestAutoencoderSupport:
         assert callable(model.encode)
 
     def test_tuple_output_handled(self, sample_input):
-        """Test that tuple outputs from VGAE are handled correctly."""
+        """A member returning a tuple it declares (mu, logstd) contributes its primary output."""
+        from milia_pipeline.models.capabilities import ModelCapabilities, OutputSpec
 
         class MockVGAETuple(nn.Module):
+            @classmethod
+            def milia_capabilities(cls, hyperparameters):
+                return ModelCapabilities(
+                    outputs=(
+                        OutputSpec("mu", "node", "features"),
+                        OutputSpec("logstd", "node", "features"),
+                    )
+                )
+
             def __init__(self):
                 super().__init__()
                 self.linear = nn.Linear(10, 10)
@@ -2374,6 +2384,23 @@ class TestAutoencoderSupport:
 
         assert isinstance(output, torch.Tensor)
         # Output should be tensor, not tuple
+
+    def test_undeclared_tuple_output_raises(self, sample_input):
+        """A member returning a tuple it does not declare is not silently cut to its first element."""
+
+        class UndeclaredTuple(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.linear = nn.Linear(10, 10)
+
+            def forward(self, x, edge_index=None, batch=None, **kwargs):
+                return self.linear(x), self.linear(x)
+
+        ensemble = ParallelEnsemble(
+            models=[UndeclaredTuple()], weights=[1.0], fusion="mean", task_type="graph_regression"
+        )
+        with pytest.raises(Exception, match="UndeclaredTuple.forward returned a tuple of 2"):
+            ensemble(sample_input["x"], sample_input["edge_index"], batch=sample_input["batch"])
 
 
 # =============================================================================

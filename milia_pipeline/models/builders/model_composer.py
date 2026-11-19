@@ -24,6 +24,7 @@ import torch.nn as nn
 from pydantic import BaseModel, ConfigDict, Field
 
 from milia_pipeline.models._graph_output import produces_graph_output
+from milia_pipeline.models.capabilities import select_primary_output
 
 # Import exceptions
 try:
@@ -1055,7 +1056,8 @@ class ParallelEnsemble(nn.Module):
                 )
 
             # Call with 3D signature
-            return model(z=z, pos=pos, batch=batch)
+            # A model may return several outputs (ViSNet: energy, forces); keep the declared primary
+            return select_primary_output(inner_model, model(z=z, pos=pos, batch=batch))
 
         # ================================================================
         # STANDARD GNN SIGNATURE - TRY MULTIPLE STRATEGIES
@@ -1080,9 +1082,9 @@ class ParallelEnsemble(nn.Module):
                     result = model(x, edge_index, batch=batch, edge_label_index=edge_label_index)
                 else:
                     result = model(x, edge_index, edge_label_index=edge_label_index)
-                # Handle tuple output from variational autoencoders (Fix 30)
+                # Tuple output: the declared primary output (capabilities); undeclared tuples raise
                 if isinstance(result, tuple):
-                    result = result[0]
+                    result = select_primary_output(inner_model, result)
                 return result
             except TypeError:
                 pass  # Fall through to next strategy
@@ -1145,10 +1147,12 @@ class ParallelEnsemble(nn.Module):
             else:
                 logger.debug("[DIAGNOSTIC] Strategy 2d: model(x, edge_index)")
                 result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output from variational autoencoders (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                logger.debug("[DIAGNOSTIC] Strategy 2: Got tuple output, using first element (mu)")
-                result = result[0]
+                logger.debug(
+                    "[DIAGNOSTIC] Strategy 2: Got tuple output, selecting the declared primary output"
+                )
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError as te:
             logger.debug(f"[DIAGNOSTIC] Strategy 2 TypeError: {te}")
@@ -1179,9 +1183,9 @@ class ParallelEnsemble(nn.Module):
                     result = model(x, edge_index, batch=batch)
             else:
                 result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output from variational autoencoders (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError:
             pass  # Fall through to final fallback
@@ -1189,16 +1193,16 @@ class ParallelEnsemble(nn.Module):
         # Strategy 4: Minimal signature
         try:
             result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError:
             # Final fallback
             result = model.encode(x) if use_encode_method else model(x)
-            # Handle tuple output (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
 
     # -------
@@ -1759,7 +1763,8 @@ class SequentialStack(nn.Module):
                 f"[SequentialStack] Calling 3D model {type(inner_model).__name__} with z, pos, batch"
             )
             # Call with 3D signature
-            return model(z=z, pos=pos, batch=batch)
+            # A model may return several outputs (ViSNet: energy, forces); keep the declared primary
+            return select_primary_output(inner_model, model(z=z, pos=pos, batch=batch))
 
         # ================================================================
         # STANDARD GNN SIGNATURE - TRY MULTIPLE STRATEGIES
@@ -1833,12 +1838,12 @@ class SequentialStack(nn.Module):
             else:
                 logger.debug("[SequentialStack] Strategy 2d: model(x, edge_index)")
                 result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output from variational autoencoders (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
                 logger.debug(
-                    "[SequentialStack] Strategy 2: Got tuple output, using first element (mu)"
+                    "[SequentialStack] Strategy 2: Got tuple output, selecting the declared primary output"
                 )
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError as te:
             logger.debug(f"[SequentialStack] Strategy 2 TypeError: {te}")
@@ -1863,9 +1868,9 @@ class SequentialStack(nn.Module):
                     result = model(x, edge_index, batch=batch)
             else:
                 result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output from variational autoencoders (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError:
             pass  # Fall through to final fallback
@@ -1873,16 +1878,16 @@ class SequentialStack(nn.Module):
         # Strategy 4: Minimal signature
         try:
             result = model.encode(x, edge_index) if use_encode_method else model(x, edge_index)
-            # Handle tuple output (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
         except TypeError:
             # Final fallback
             result = model.encode(x) if use_encode_method else model(x)
-            # Handle tuple output (Fix 30)
+            # Tuple output: the declared primary output (capabilities); undeclared tuples raise
             if isinstance(result, tuple):
-                result = result[0]
+                result = select_primary_output(inner_model, result)
             return result
 
     # -------
