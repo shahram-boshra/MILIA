@@ -394,6 +394,18 @@ MILIA prepares the image but creates no endpoint, so `predict()` on these four t
 
 The `mobile` and `iot` targets are deprecated (`DeprecationWarning`) and will be removed in 2.0.0. MILIA builds no on-device model, because a prediction starts from a SMILES that MILIA featurizes with RDKit in Python, so the model alone cannot predict on a device. These targets write the same package, without a `Dockerfile`, and do not predict. Serve the package instead.
 
+### Exporting a model to ONNX
+
+With the `onnx` extra (`pip install 'milia-py[onnx]'`), a trained model exports to ONNX with PyTorch's `torch.export`-based exporter. Pass a PyG `Data` or `Batch` as the example: the ONNX inputs become `x`, `edge_index`, `edge_attr` (when the data has it) and `batch`, with dynamic node and edge counts, and the output has one row per graph.
+
+```python
+from milia_pipeline.models.deployment.onnx_export import export_onnx
+
+export_onnx(model, "model.onnx", example_batch)  # verified against PyTorch with ONNX Runtime
+```
+
+MILIA captures the model with `torch.export` in strict mode, which keeps the number of graphs in a batch symbolic, and the exported file is run with ONNX Runtime on the example and compared with PyTorch before it is kept. A model `torch.export` cannot capture raises `ExportError` naming the cause.
+
 ### Introspection commands
 
 These are read-only and useful for orientation:

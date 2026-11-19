@@ -47,6 +47,14 @@ TORCHSCRIPT_DEPRECATION = (
 )
 
 
+ONNX_DYNAMIC_AXES_DEPRECATION = (
+    "ModelOptimizer.export_to_onnx(dynamic_axes=...) is deprecated and will be removed in "
+    f"MILIA {REMOVAL_VERSION}: dynamic_axes belongs to PyTorch's legacy TorchScript-based ONNX "
+    "exporter. Pass dynamic_shapes (torch.export form); graph models get dynamic node and edge "
+    "counts automatically."
+)
+
+
 def warn_deprecated(message: str, stacklevel: int = 2) -> None:
     """Emit ``message`` as a ``FutureWarning`` and log it.
 

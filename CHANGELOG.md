@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Limits:** instance count (`MILIA_SERVE_MAX_INSTANCES`, default 1000) and length per SMILES (2000).
   - **Errors:** invalid input returns 422 with the failing index.
   - **Startup:** the package's SHA-256 is checked before the model loads.
+- `onnx` extra: onnx, onnxscript and onnxruntime, which ONNX export needs. The test image installs it.
 
 ### Changed
 
@@ -100,9 +101,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scripted, and a traced graph model keeps the example batch's sizes. Use `compile_model=True`
   (`torch.compile`) for speed, and a deployment package to serve a model. No configuration or CLI option used
   TorchScript.
+- `ModelOptimizer.export_to_onnx(dynamic_axes=...)` emits a `DeprecationWarning` and will be removed in 2.0.0:
+  `dynamic_axes` belongs to PyTorch's legacy TorchScript-based ONNX exporter. Pass `dynamic_shapes`; graph models
+  get dynamic node and edge counts automatically.
 
 ### Fixed
 
+- ONNX export works. `ModelOptimizer.export_to_onnx` and `optimize_model_for_deployment(export_onnx=True)`
+  called PyTorch's default exporter (`torch.export`-based since 2.9), which needs onnxscript; MILIA's environment
+  had neither it nor onnx, so every export failed. The new `milia_pipeline.models.deployment.onnx_export` (install
+  the `onnx` extra) exports a graph model from a PyG `Data`/`Batch` example with inputs `x`, `edge_index`,
+  `edge_attr` (when present) and `batch` and dynamic node and edge counts, so the ONNX model takes any batch and
+  returns one row per graph. MILIA captures the model with `torch.export` in strict mode, which keeps the graph
+  count symbolic (the exporter's own non-strict capture fails on every MILIA graph model), and falls back to
+  non-strict. Each export is run with ONNX Runtime on the example and compared with PyTorch; a mismatch removes
+  the file. A model neither capture handles raises `ExportError` naming both causes. `opset_version` now defaults
+  to the exporter's own.
 - TorchScript no longer returns a graph model that computes wrong results. `torch.jit.trace` keeps the example
   batch's sizes and the branches taken for it: a traced GIN, GAT or GraphSAGE model returned one row for a
   two-graph batch. `ComputationOptimizer.optimize_model` with `jit_compile` and `example_inputs`, and

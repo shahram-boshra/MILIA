@@ -94,7 +94,7 @@ ARG ACCEL
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --extra ${ACCEL} --extra dev --extra descriptors-cdk \
-        --extra hpo-postgres --extra serve
+        --extra hpo-postgres --extra serve --extra onnx
 
 # ---- Stage 4: test — test-deps + project source, for in-image test runs (not published) ----
 # Built with `--target test`; BuildKit builds only this chain (base → test-base → test-deps → test),
@@ -105,7 +105,7 @@ ARG ACCEL
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk --extra hpo-postgres \
-        --extra serve
+        --extra serve --extra onnx
 RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
 ENV PATH="/app/.venv/bin:$PATH" \
     MILIA_LOG_DIR=/tmp

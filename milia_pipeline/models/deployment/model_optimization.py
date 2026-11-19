@@ -43,8 +43,13 @@ from torch.nn.utils import prune
 from milia_pipeline.exceptions import ExportError as ExportError
 from milia_pipeline.exceptions import ModelError as ModelError
 from milia_pipeline.exceptions import OptimizationError as OptimizationError
-from milia_pipeline.models._deprecations import TORCHSCRIPT_DEPRECATION, warn_api_deprecated
+from milia_pipeline.models._deprecations import (
+    ONNX_DYNAMIC_AXES_DEPRECATION,
+    TORCHSCRIPT_DEPRECATION,
+    warn_api_deprecated,
+)
 from milia_pipeline.models._graph_trace import GRAPH_TRACE_ERROR, is_graph_model
+from milia_pipeline.models.deployment.onnx_export import export_onnx
 
 logger = logging.getLogger(__name__)
 
@@ -558,53 +563,56 @@ class ModelOptimizer:
         self,
         model: nn.Module,
         filepath: str | Path,
-        dummy_input: torch.Tensor,
+        dummy_input: Any,
         input_names: list[str] | None = None,
         output_names: list[str] | None = None,
         dynamic_axes: dict[str, dict[int, str]] | None = None,
-        opset_version: int = 14,
-    ):
+        opset_version: int | None = None,
+        dynamic_shapes: Any = None,
+        verify: bool = True,
+    ) -> Path:
         """
-        Export model to ONNX format.
+        Export model to ONNX with PyTorch's ``torch.export``-based exporter.
+
+        Needs the ``onnx`` extra. See :func:`.onnx_export.export_onnx`: a graph model is
+        exported from a PyG ``Data``/``Batch`` example with dynamic node and edge counts, and
+        the result is checked against PyTorch with ONNX Runtime.
 
         Args:
             model: Model to export
             filepath: Output file path
-            dummy_input: Example input tensor
-            input_names: Names for input tensors
+            dummy_input: Example input: a PyG ``Data``/``Batch`` for a graph model, else a
+                tensor or a tuple of tensors
+            input_names: Names for input tensors (graph models: set from the example)
             output_names: Names for output tensors
-            dynamic_axes: Dynamic axes for variable-size inputs
-            opset_version: ONNX opset version
+            dynamic_axes: Deprecated (``DeprecationWarning``); use ``dynamic_shapes``, which
+                PyTorch's exporter prefers. Still converted by PyTorch
+            opset_version: ONNX opset version; ``None`` uses the exporter's default
+            dynamic_shapes: ``torch.export`` dynamic shapes (graph models: automatic)
+            verify: Compare the ONNX model's output with PyTorch's on ``dummy_input``
+
+        Returns:
+            Path of the ONNX file
 
         Raises:
-            ExportError: If export fails
+            ExportError: If export or verification fails
         """
-        filepath = Path(filepath)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        input_names = input_names or ["input"]
-        output_names = output_names or ["output"]
-
-        try:
-            model.eval()
-
-            torch.onnx.export(
-                model,
-                dummy_input,
-                str(filepath),
-                input_names=input_names,
-                output_names=output_names,
-                dynamic_axes=dynamic_axes,
-                opset_version=opset_version,
-                do_constant_folding=True,
-                export_params=True,
-            )
-
-            if self.verbose:
-                logger.info(f"Exported model to ONNX: {filepath}")
-
-        except Exception as e:
-            raise ExportError(f"ONNX export failed: {e}") from e
+        if dynamic_axes is not None:
+            warn_api_deprecated(ONNX_DYNAMIC_AXES_DEPRECATION)
+        path = export_onnx(
+            model,
+            filepath,
+            dummy_input,
+            input_names=input_names,
+            output_names=output_names,
+            dynamic_shapes=dynamic_shapes,
+            dynamic_axes=dynamic_axes,
+            opset_version=opset_version,
+            verify=verify,
+        )
+        if self.verbose:
+            logger.info(f"Exported model to ONNX: {path}")
+        return path
 
     def optimize_for_mobile(self, model: nn.Module, example_inputs: tuple, filepath: str | Path):
         """

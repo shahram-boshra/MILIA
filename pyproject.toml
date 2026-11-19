@@ -150,6 +150,14 @@ serve = [
     "starlette>=1.3.0",
     "uvicorn>=0.54.0",
 ]
+# Opt-in: ONNX export (milia_pipeline.models.deployment.onnx_export). PyTorch's default exporter since
+# 2.9 (`dynamo=True`, torch.export-based) needs onnx + onnxscript; onnxruntime runs and verifies the
+# exported model. Lower bounds = the tested releases. Install: `uv sync --extra cpu --extra onnx`.
+onnx = [
+    "onnx>=1.23.2",
+    "onnxscript>=0.7.2",
+    "onnxruntime>=1.32.0",
+]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu126 | cu130).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
 # torch 2.12 is the newest minor with a PyG release declaring support (PyG 2.8.0) and PyG wheels for

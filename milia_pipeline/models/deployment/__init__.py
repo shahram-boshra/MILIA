@@ -333,7 +333,7 @@ def optimize_model_for_deployment(
     prune_amount: float = 0.3,
     export_onnx: bool = False,
     onnx_path: str | Path | None = None,
-    dummy_input: torch.Tensor | None = None,
+    dummy_input: Any = None,
     optimize_for_mobile: bool = False,
     verbose: bool = True,
 ) -> nn.Module:
@@ -350,9 +350,10 @@ def optimize_model_for_deployment(
         quantization_type: Type of quantization ('dynamic', 'static', 'fp16')
         prune: Enable pruning
         prune_amount: Fraction of weights to prune (0.0-1.0)
-        export_onnx: Export to ONNX format
+        export_onnx: Export to ONNX (needs the ``onnx`` extra; verified with ONNX Runtime)
         onnx_path: Path for ONNX export (required if export_onnx=True)
-        dummy_input: Example input for ONNX export
+        dummy_input: Example input for ONNX export: a PyG ``Data``/``Batch`` for a graph model
+            (exported with dynamic node and edge counts), else a tensor or tuple of tensors
         optimize_for_mobile: Deprecated, removed in 2.0.0. It never exported a mobile model
             here; ``True`` only emits ``DeprecationWarning``
         verbose: Whether to log optimization information

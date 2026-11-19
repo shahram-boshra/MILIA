@@ -919,106 +919,111 @@ class TestModelOptimizerDistillation:
 class TestModelOptimizerExport:
     """Tests for ModelOptimizer export methods."""
 
-    def test_export_to_onnx(self, simple_linear_model, temp_dir):
-        """Test ONNX export."""
+    # These tests check what export_to_onnx passes to PyTorch's exporter. The exporter (and the
+    # check for the `onnx` extra) is mocked and verification is off; tests/test_onnx_export_unit.py
+    # exports and runs real ONNX models when the extra is installed.
+
+    @pytest.fixture
+    def mock_export(self):
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export") as mock,
+        ):
+            yield mock
+
+    def test_export_to_onnx(self, simple_linear_model, temp_dir, mock_export):
+        """export_to_onnx uses PyTorch's torch.export-based exporter."""
         optimizer = ModelOptimizer(verbose=False)
 
         filepath = temp_dir / "model.onnx"
-        dummy_input = torch.randn(1, 10)
+        result = optimizer.export_to_onnx(
+            simple_linear_model, filepath, torch.randn(1, 10), verify=False
+        )
 
-        with patch("torch.onnx.export") as mock_export:
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
+        mock_export.assert_called_once()
+        assert mock_export.call_args[1]["dynamo"] is True
+        assert mock_export.call_args[1]["opset_version"] is None  # the exporter's default
+        assert result == filepath
 
-            mock_export.assert_called_once()
-
-    def test_export_to_onnx_creates_directory(self, simple_linear_model, temp_dir):
+    def test_export_to_onnx_creates_directory(self, simple_linear_model, temp_dir, mock_export):
         """Test ONNX export creates parent directory."""
         optimizer = ModelOptimizer(verbose=False)
 
         nested_path = temp_dir / "nested" / "path" / "model.onnx"
-        dummy_input = torch.randn(1, 10)
+        optimizer.export_to_onnx(simple_linear_model, nested_path, torch.randn(1, 10), verify=False)
 
-        with patch("torch.onnx.export"):
-            optimizer.export_to_onnx(simple_linear_model, nested_path, dummy_input)
+        assert nested_path.parent.exists()
 
-            assert nested_path.parent.exists()
-
-    def test_export_to_onnx_with_custom_names(self, simple_linear_model, temp_dir):
+    def test_export_to_onnx_with_custom_names(self, simple_linear_model, temp_dir, mock_export):
         """Test ONNX export with custom input/output names."""
         optimizer = ModelOptimizer(verbose=False)
 
-        filepath = temp_dir / "model.onnx"
-        dummy_input = torch.randn(1, 10)
+        optimizer.export_to_onnx(
+            simple_linear_model,
+            temp_dir / "model.onnx",
+            torch.randn(1, 10),
+            input_names=["features"],
+            output_names=["predictions"],
+            verify=False,
+        )
 
-        with patch("torch.onnx.export") as mock_export:
-            optimizer.export_to_onnx(
-                simple_linear_model,
-                filepath,
-                dummy_input,
-                input_names=["features"],
-                output_names=["predictions"],
-            )
+        call_kwargs = mock_export.call_args[1]
+        assert call_kwargs["input_names"] == ["features"]
+        assert call_kwargs["output_names"] == ["predictions"]
 
-            mock_export.assert_called_once()
-            call_kwargs = mock_export.call_args[1]
-            assert call_kwargs["input_names"] == ["features"]
-            assert call_kwargs["output_names"] == ["predictions"]
-
-    def test_export_to_onnx_with_dynamic_axes(self, simple_linear_model, temp_dir):
-        """Test ONNX export with dynamic axes."""
+    def test_export_to_onnx_dynamic_axes_is_deprecated(
+        self, simple_linear_model, temp_dir, mock_export
+    ):
+        """dynamic_axes (legacy exporter) warns and is still passed on for PyTorch to convert."""
         optimizer = ModelOptimizer(verbose=False)
-
-        filepath = temp_dir / "model.onnx"
-        dummy_input = torch.randn(1, 10)
         dynamic_axes = {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
 
-        with patch("torch.onnx.export") as mock_export:
+        with pytest.warns(DeprecationWarning, match="dynamic_axes"):
             optimizer.export_to_onnx(
-                simple_linear_model, filepath, dummy_input, dynamic_axes=dynamic_axes
+                simple_linear_model,
+                temp_dir / "model.onnx",
+                torch.randn(1, 10),
+                dynamic_axes=dynamic_axes,
+                verify=False,
             )
 
-            mock_export.assert_called_once()
-            call_kwargs = mock_export.call_args[1]
-            assert call_kwargs["dynamic_axes"] == dynamic_axes
+        assert mock_export.call_args[1]["dynamic_axes"] == dynamic_axes
 
-    def test_export_to_onnx_with_opset_version(self, simple_linear_model, temp_dir):
+    def test_export_to_onnx_with_opset_version(self, simple_linear_model, temp_dir, mock_export):
         """Test ONNX export with custom opset version."""
         optimizer = ModelOptimizer(verbose=False)
 
-        filepath = temp_dir / "model.onnx"
-        dummy_input = torch.randn(1, 10)
+        optimizer.export_to_onnx(
+            simple_linear_model,
+            temp_dir / "model.onnx",
+            torch.randn(1, 10),
+            opset_version=18,
+            verify=False,
+        )
 
-        with patch("torch.onnx.export") as mock_export:
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input, opset_version=12)
-
-            mock_export.assert_called_once()
-            call_kwargs = mock_export.call_args[1]
-            assert call_kwargs["opset_version"] == 12
+        assert mock_export.call_args[1]["opset_version"] == 18
 
     def test_export_to_onnx_failure_raises_error(self, simple_linear_model, temp_dir):
         """Test ONNX export failure raises ExportError."""
         optimizer = ModelOptimizer(verbose=False)
 
-        filepath = temp_dir / "model.onnx"
-        dummy_input = torch.randn(1, 10)
-
         with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
             patch("torch.onnx.export", side_effect=RuntimeError("Export failed")),
-            pytest.raises(ExportError, match="ONNX export failed"),
+            pytest.raises(ExportError, match="ONNX export failed: Export failed"),
         ):
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
+            optimizer.export_to_onnx(
+                simple_linear_model, temp_dir / "model.onnx", torch.randn(1, 10), verify=False
+            )
 
-    def test_export_to_onnx_string_path(self, simple_linear_model, temp_dir):
+    def test_export_to_onnx_string_path(self, simple_linear_model, temp_dir, mock_export):
         """Test ONNX export with string path."""
         optimizer = ModelOptimizer(verbose=False)
 
         filepath = str(temp_dir / "model.onnx")
-        dummy_input = torch.randn(1, 10)
+        optimizer.export_to_onnx(simple_linear_model, filepath, torch.randn(1, 10), verify=False)
 
-        with patch("torch.onnx.export") as mock_export:
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
-
-            mock_export.assert_called_once()
+        mock_export.assert_called_once()
 
     def test_optimize_for_mobile_when_disabled(self, simple_linear_model, temp_dir):
         """Test optimize_for_mobile returns when disabled."""
@@ -1567,8 +1572,11 @@ class TestIntegrationScenarios:
         filepath = temp_dir / "model.onnx"
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export") as mock_export:
-            optimizer.export_to_onnx(pruned, filepath, dummy_input)
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export") as mock_export,
+        ):
+            optimizer.export_to_onnx(pruned, filepath, dummy_input, verify=False)
             mock_export.assert_called_once()
 
     def test_compare_before_after_optimization(self, simple_linear_model):
@@ -1615,8 +1623,11 @@ class TestIntegrationScenarios:
         filepath = temp_dir / "optimized_model.onnx"
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export"):
-            optimizer.export_to_onnx(pruned, filepath, dummy_input)
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export"),
+        ):
+            optimizer.export_to_onnx(pruned, filepath, dummy_input, verify=False)
 
         # Print summary
         optimizer.print_optimization_summary()
@@ -1993,8 +2004,11 @@ class TestPathHandling:
         filepath = Path(temp_dir) / "model.onnx"
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export"):
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export"),
+        ):
+            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input, verify=False)
 
         assert filepath.parent.exists()
 
@@ -2005,8 +2019,11 @@ class TestPathHandling:
         filepath = str(temp_dir / "model.onnx")
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export"):
-            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input)
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export"),
+        ):
+            optimizer.export_to_onnx(simple_linear_model, filepath, dummy_input, verify=False)
 
     def test_nested_directory_creation(self, simple_linear_model, temp_dir):
         """Test methods create nested directories."""
@@ -2015,8 +2032,11 @@ class TestPathHandling:
         nested_path = temp_dir / "a" / "b" / "c" / "model.onnx"
         dummy_input = torch.randn(1, 10)
 
-        with patch("torch.onnx.export"):
-            optimizer.export_to_onnx(simple_linear_model, nested_path, dummy_input)
+        with (
+            patch("milia_pipeline.models.deployment.onnx_export._require"),
+            patch("torch.onnx.export"),
+        ):
+            optimizer.export_to_onnx(simple_linear_model, nested_path, dummy_input, verify=False)
 
         assert nested_path.parent.exists()
 
