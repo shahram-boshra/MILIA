@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Errors:** invalid input returns 422 with the failing index.
   - **Startup:** the package's SHA-256 is checked before the model loads.
 - `onnx` extra: onnx, onnxscript and onnxruntime, which ONNX export needs. The test image installs it.
+- `milia_pipeline.models.capabilities`: typed capability tags for model classes (`ModelCapabilities`,
+  `OutputSpec`). They record what a model returns (per-node features, one property per graph, a per-node vector
+  such as forces, or a node embedding), whether it needs `z` and `pos`, and whether it uses the graph's edges.
+  - Resolved for a class and its hyperparameters from the class's own `milia_capabilities` classmethod, a provider
+    registered with `register_capabilities` (MILIA registers PyG's AttentiveFP, NeuralFingerprint, SchNet,
+    DimeNet, DimeNetPlusPlus, ViSNet, GNNFF, the graph autoencoders, Node2Vec and MetaPath2Vec), or the `forward`
+    signature.
+  - `supported_tasks(capabilities)` gives the task types that follow from them.
+  - `check_model_capabilities(model_class, hyperparameters, graphs)` builds a model and checks its declared
+    capabilities against its real outputs; plugin authors can run it on their models.
 
 ### Changed
 
