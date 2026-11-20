@@ -62,6 +62,18 @@ None of these datasets publishes isolated-atom energies. Where MILIA cannot run 
 program's default), the run commands and `parse_outputs.py`, which writes `results.json` for the
 dataset's `atomic_references`.
 
+```{toctree}
+:maxdepth: 1
+:caption: Per-dataset reference inputs
+
+atomic_references/qm40/README
+atomic_references/ani1x/README
+atomic_references/ani2x/README
+atomic_references/rmd17/README
+atomic_references/ani1ccx/README
+atomic_references/qdpi/README
+```
+
 ### xxMD-DFT (milia-computed)
 
 xxMD-DFT energies are spin-polarized (unrestricted) Kohn-Sham M06/6-31G single points from Psi4

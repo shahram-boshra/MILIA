@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to MILIA! We welcome contributions of all kinds — bug reports, feature requests, documentation improvements, and code changes. Whether this is your first open-source contribution or your hundredth, we appreciate your time and effort.
 
-Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all interactions.
+Please read and follow our [Code of Conduct](https://github.com/shahram-boshra/MILIA/blob/main/CODE_OF_CONDUCT.md) in all interactions.
 
 ## How to Contribute
 
@@ -63,7 +63,7 @@ For significant changes (new modules, architectural modifications, new dataset h
 
 ### Prerequisites
 
-MILIA requires **Python 3.11 (3.11.5 or later) or 3.12** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](README.md#installation) for full installation details.
+MILIA requires **Python 3.11 (3.11.5 or later) or 3.12** and uses [uv](https://docs.astral.sh/uv/) to manage all dependencies (PyTorch, PyTorch Geometric, RDKit, …) from a committed lockfile. See the [README](https://github.com/shahram-boshra/MILIA/blob/main/README.md#installation) for full installation details.
 
 ### Setting Up for Development
 
@@ -210,7 +210,7 @@ make docs-clean
 
 MILIA follows the [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) format and adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-If your contribution adds, changes, deprecates, removes, or fixes functionality, add a brief entry under the `## [Unreleased]` section at the top of [CHANGELOG.md](CHANGELOG.md). Use the appropriate subsection (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`). Use past-tense, concise descriptions (e.g., "Added support for XYZ dataset handler").
+If your contribution adds, changes, deprecates, removes, or fixes functionality, add a brief entry under the `## [Unreleased]` section at the top of [CHANGELOG.md](https://github.com/shahram-boshra/MILIA/blob/main/CHANGELOG.md). Use the appropriate subsection (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`). Use past-tense, concise descriptions (e.g., "Added support for XYZ dataset handler").
 
 ## Pull Request Guidelines
 
@@ -225,7 +225,7 @@ When submitting a pull request:
 
 ## Project Structure
 
-For an overview of the codebase architecture, module organization, and configuration system, see the [README](README.md#architecture).
+For an overview of the codebase architecture, module organization, and configuration system, see the [README](https://github.com/shahram-boshra/MILIA/blob/main/README.md#architecture).
 
 Key directories for contributors:
 
@@ -241,4 +241,4 @@ If you have questions that are not answered by this guide, please [open an issue
 
 ## License
 
-By contributing to MILIA, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing to MILIA, you agree that your contributions will be licensed under the [MIT License](https://github.com/shahram-boshra/MILIA/blob/main/LICENSE).
