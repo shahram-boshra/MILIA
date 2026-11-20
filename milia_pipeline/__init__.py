@@ -388,6 +388,7 @@ from milia_pipeline.exceptions import (
     TransformCompositionError,
     TransformConfigurationError,
     TransformError,
+    TransformExecutionError,
     TransformHandlerIntegrationError,
     TransformNotFoundError,
     TransformRegistryError,
@@ -508,6 +509,7 @@ __all__ = [
     # Transform System Exceptions
     "TransformError",
     "TransformCompatibilityError",
+    "TransformExecutionError",
     "TransformationError",
     "DatasetIntegrationError",
     "TransformValidationError",

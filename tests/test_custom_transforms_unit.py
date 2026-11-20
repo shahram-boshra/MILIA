@@ -1762,9 +1762,9 @@ class TestExceptionHandling:
         error = TransformValidationError(
             "Test validation error", transform_name="TestTransform", param="test_param"
         )
-        assert str(error) == "Test validation error"
+        assert str(error) == "Test validation error (Transform: TestTransform)"
         assert error.transform_name == "TestTransform"
-        assert error.details["param"] == "test_param"
+        assert error.extra_info["param"] == "test_param"
 
     def test_transform_execution_error_creation(self):
         """Test TransformExecutionError creation"""
@@ -1772,7 +1772,7 @@ class TestExceptionHandling:
         error = TransformExecutionError(
             "Test execution error", transform_name="TestTransform", original_error=original
         )
-        assert str(error) == "Test execution error"
+        assert str(error) == "Test execution error (Transform: TestTransform)"
         assert error.transform_name == "TestTransform"
         assert error.original_error is original
 
@@ -1781,9 +1781,9 @@ class TestExceptionHandling:
         error = TransformConfigurationError(
             "Test config error", transform_name="TestTransform", config_key="test_key"
         )
-        assert str(error) == "Test config error"
+        assert str(error) == "Test config error (Transform: TestTransform)"
         assert error.transform_name == "TestTransform"
-        assert error.details["config_key"] == "test_key"
+        assert error.config_key == "test_key"
 
 
 # =============================================================================

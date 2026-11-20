@@ -270,6 +270,7 @@ class TestSmokeExceptionExports:
         "MigrationError",
         "LegacyCodeError",
         "TransformCompatibilityError",
+        "TransformExecutionError",
         "TransformationError",
         "DatasetIntegrationError",
         "TransformValidationError",
@@ -890,6 +891,7 @@ class TestContractAllCompleteness:
             # Transform Exceptions
             "TransformError",
             "TransformCompatibilityError",
+            "TransformExecutionError",
             "TransformationError",
             "DatasetIntegrationError",
             "TransformValidationError",
@@ -1101,6 +1103,7 @@ class TestContractExceptionHierarchy:
         "DatasetSpecificHandlerError": "HandlerError",
         # Transform exceptions
         "TransformCompatibilityError": "TransformError",
+        "TransformExecutionError": "TransformError",
         # TransformationError inherits BaseProjectError (not TransformError)
         "TransformationError": "BaseProjectError",
         "TransformNotFoundError": "TransformationError",
@@ -1326,8 +1329,8 @@ class TestContractPublicAPISurface:
         This test guards against silent additions or removals. Update
         the expected count when intentionally changing the public API.
         """
-        # Counted from lines 450-579 of __init__.py (94 entries)
-        EXPECTED_COUNT = 94
+        # Counted from the __all__ list of __init__.py (95 entries)
+        EXPECTED_COUNT = 95
         actual = len(all_names)
         assert actual == EXPECTED_COUNT, (
             f"__all__ has {actual} entries, expected {EXPECTED_COUNT}. "

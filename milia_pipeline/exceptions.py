@@ -72,8 +72,8 @@ Exception Categories
 4. **Validation & Compatibility** (4 classes)
    - ValidationError, CompatibilityError, MigrationError, LegacyCodeError
 
-5. **Transform System** (10 classes)
-   - TransformError, TransformCompatibilityError, TransformationError
+5. **Transform System** (11 classes)
+   - TransformError, TransformCompatibilityError, TransformExecutionError, TransformationError
    - DatasetIntegrationError, TransformValidationError, TransformCompositionError
    - TransformNotFoundError, TransformRegistryError, ExperimentalSetupError
    - TransformConfigurationError
@@ -1906,6 +1906,42 @@ class TransformCompatibilityError(TransformError):
         if self.suggested_alternatives:
             msg += f", Alternatives: {self.suggested_alternatives}"
         return msg
+
+
+class TransformExecutionError(TransformError):
+    """
+    Raised when a transform fails while it is applied to a graph.
+
+    Covers runtime failures of a correctly configured transform: an unmet
+    precondition of the input graph, a numerical failure, or an error raised
+    by a library the transform calls (kept as ``original_error``).
+
+    Args:
+        message (str): Description of the failure.
+        transform_name (str, optional): Name of the transform that failed.
+        original_error (Exception, optional): The underlying exception, if any.
+        experimental_setup (str, optional): Experimental setup context.
+        details (str, optional): Additional technical details.
+        **kwargs: Additional keyword arguments.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        transform_name: str | None = None,
+        original_error: Exception | None = None,
+        experimental_setup: str | None = None,
+        details: str | None = None,
+        **kwargs,
+    ):
+        super().__init__(
+            message,
+            transform_name=transform_name,
+            experimental_setup=experimental_setup,
+            details=details,
+            **kwargs,
+        )
+        self.original_error = original_error
 
 
 class TransformationError(BaseProjectError):

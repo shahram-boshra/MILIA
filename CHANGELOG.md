@@ -201,6 +201,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now import the classes directly, so every re-export is the same class, and the documented hierarchies hold.
   `ConfigurationError` from these modules is MILIA's `ConfigurationError` (before, a stand-in subclass of
   `ModelError`), and every one of these exceptions takes a message.
+- `milia_pipeline.exceptions` now defines `TransformExecutionError` (a `TransformError`, exported by
+  `milia_pipeline`), raised when a transform fails while it is applied; it keeps the underlying exception as
+  `original_error`. `milia_pipeline.transformations.custom_transforms` imported it inside `try`/`except
+  ImportError` and, because it did not exist, defined its own `TransformExecutionError`,
+  `TransformConfigurationError` and `TransformValidationError` derived from `Exception`. So `except
+  BaseProjectError`, `except TransformError` or `except ConfigurationError` did not catch errors of custom or
+  plugin transforms, including `TransformPreconditionError`. The module now imports the central classes, and
+  their messages name the transform ("... (Transform: NormalizeTargets)"). Keyword arguments these classes do not
+  define are kept in `extra_info` (before, in a `details` dictionary).
 
 ### Security
 

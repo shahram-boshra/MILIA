@@ -62,6 +62,12 @@ from pydantic import BaseModel, Field
 from torch_geometric.data import Data
 from torch_geometric.transforms import BaseTransform
 
+from ..exceptions import (
+    TransformConfigurationError,
+    TransformExecutionError,
+    TransformValidationError,
+)
+
 # Core infrastructure imports (Registry and Introspection layers)
 # Lazy import to avoid circular dependency with plugin_system
 GRAPH_TRANSFORMS_AVAILABLE = False
@@ -137,44 +143,6 @@ try:
 except ImportError:
     CONFIG_CONTAINERS_AVAILABLE = False
     TransformSpec = None
-
-try:
-    from ..exceptions import (
-        TransformConfigurationError,
-        TransformExecutionError,
-        TransformValidationError,
-    )
-
-    EXCEPTIONS_AVAILABLE = True
-except ImportError:
-    # Fallback exception definitions
-    EXCEPTIONS_AVAILABLE = False
-
-    class TransformValidationError(Exception):
-        """Validation error during transform configuration or execution."""
-
-        def __init__(self, message: str, transform_name: str = None, **kwargs):
-            super().__init__(message)
-            self.transform_name = transform_name
-            self.details = kwargs
-
-    class TransformExecutionError(Exception):
-        """Error during transform execution."""
-
-        def __init__(
-            self, message: str, transform_name: str = None, original_error: Exception = None
-        ):
-            super().__init__(message)
-            self.transform_name = transform_name
-            self.original_error = original_error
-
-    class TransformConfigurationError(Exception):
-        """Error in transform configuration."""
-
-        def __init__(self, message: str, transform_name: str = None, **kwargs):
-            super().__init__(message)
-            self.transform_name = transform_name
-            self.details = kwargs
 
 
 class TransformPreconditionError(TransformExecutionError):
@@ -2657,7 +2625,6 @@ if __name__ == "__main__":
     print("milia Custom Transforms Module v1.0")
     print(f"Graph transforms available: {GRAPH_TRANSFORMS_AVAILABLE}")
     print(f"Config containers available: {CONFIG_CONTAINERS_AVAILABLE}")
-    print(f"Exceptions module available: {EXCEPTIONS_AVAILABLE}")
     print("\nAvailable base classes:")
     print("  - CustomTransformBase")
     print("  - MolecularTransformBase")
