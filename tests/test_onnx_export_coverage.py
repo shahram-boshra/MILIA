@@ -36,10 +36,17 @@ def _upstream_limit(reason: str, *marks):
     return [pytest.mark.xfail(strict=True, raises=ExportError, reason=reason), *marks]
 
 
-TOPK = "GraphUNet: TopKPooling keeps ceil(ratio * N) nodes, a data-dependent size (strict and non-strict capture fail)"
-SGFORMER = "SGFormer: capture succeeds, ONNX decomposition fails on a size it expects constant"
+GRAPH_UNET = (
+    "GraphUNet: augment_adj -> coalesce() branches on tensor values (`if mask.all():`), then builds "
+    "sparse CSR tensors, which torch.export does not support (pyg-team/pytorch_geometric#10914)"
+)
+SGFORMER = (
+    "SGFormer: capture succeeds; ONNX translation fails on PyTorch 2.12 (`should have been constant`, "
+    "passes on 2.15), and aten::sort.stable from `batch.sort(stable=True)` has no ONNX function"
+)
 RADIUS = (
-    "3D models: radius_graph builds the interaction graph with a data-dependent size (index2ptr)"
+    "3D models: radius_graph sets batch_size = int(batch.max()) + 1 (pyg-team/pytorch_geometric#10915), "
+    "and torch.ops.pyg.radius has no fake kernel (pyg-team/pyg-lib#740)"
 )
 H3D = {"hidden_channels": 16}
 CASES = [
@@ -54,7 +61,11 @@ CASES = [
     ("Polynormer", {"hidden_channels": 16, "out_channels": 2}, ()),
     ("AttentiveFP", {**H, "num_timesteps": 2, "edge_dim": "from_data"}, ()),
     ("NeuralFingerprint", H, ()),
-    ("GraphUNet", {"hidden_channels": 16, "out_channels": 2, "depth": 2}, _upstream_limit(TOPK)),
+    (
+        "GraphUNet",
+        {"hidden_channels": 16, "out_channels": 2, "depth": 2},
+        _upstream_limit(GRAPH_UNET),
+    ),
     ("SGFormer", {"hidden_channels": 16, "out_channels": 2}, _upstream_limit(SGFORMER)),
     (
         "SchNet",

@@ -410,7 +410,7 @@ Coverage for graph-level tasks (PyG 2.8.1, PyTorch 2.12; `tests/test_onnx_export
 
 | Exports | Blocked upstream (`ExportError`) |
 |---|---|
-| GCN, GAT, GIN, GraphSAGE, EdgeCNN, PNA, MLP, PMLP (`norm=False`), Polynormer, AttentiveFP, NeuralFingerprint | GraphUNet (TopKPooling keeps a data-dependent number of nodes), SGFormer (ONNX decomposition expects a constant size), SchNet, DimeNet, DimeNetPlusPlus, ViSNet (`radius_graph` builds a data-dependent interaction graph) |
+| GCN, GAT, GIN, GraphSAGE, EdgeCNN, PNA, MLP, PMLP (`norm=False`), Polynormer, AttentiveFP, NeuralFingerprint | GraphUNet (`augment_adj` branches on tensor values in `coalesce()` and builds sparse CSR tensors; [pyg-team/pytorch_geometric#10914](https://github.com/pyg-team/pytorch_geometric/issues/10914)), SGFormer (ONNX translation fails on PyTorch 2.12, and `aten::sort.stable` has no ONNX function), SchNet, DimeNet, DimeNetPlusPlus, ViSNet (`radius_graph` infers the graph count with `int(batch.max())`, [pyg-team/pytorch_geometric#10915](https://github.com/pyg-team/pytorch_geometric/issues/10915); the `pyg.radius` operator has no fake kernel, [pyg-team/pyg-lib#740](https://github.com/pyg-team/pyg-lib/issues/740)) |
 
 Only tensors are graph inputs; Python numbers such as PyG's `batch_size` would be frozen into the file and are not exported. PMLP's default `norm=True` normalizes with the statistics of the batch it is given, also at inference, so its exported predictions depend on batch composition.
 

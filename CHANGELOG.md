@@ -142,7 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AttentiveFP and NeuralFingerprint export to ONNX. They pool each molecule themselves, which MILIA's graph-level wrapper
   inferred from the number of output rows, a data-dependent branch `torch.export` cannot capture. The wrapper and
   ensembles now read graph-level output from the capability tags the factory attaches to a built model. The README
-  lists which architectures export and which are blocked upstream; `tests/test_onnx_export_coverage.py` pins both.
+  lists which architectures export and which are blocked upstream, with the cause and the upstream issue
+  (pyg-team/pytorch_geometric#10914, #10915; pyg-team/pyg-lib#740); `tests/test_onnx_export_coverage.py` pins both.
 - PyG's `MLP` trains and predicts through MILIA. Its `forward(x, batch=None, ...)` takes no `edge_index`, but MILIA called
   every 2D model as `model(x, edge_index, ...)`, so `edge_index` landed in `batch`. A model whose capability tags say it
   does not read the graph's edges now gets `x` without `edge_index` from the graph-level wrapper and the Predictor.
