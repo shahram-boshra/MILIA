@@ -390,6 +390,14 @@ One app answers every target on port 8080:
 
 Every predict route takes `{"instances": [SMILES, ...]}` and returns `{"predictions": [[...], ...], "output_names": [...]}`, one row per molecule. At startup the server featurizes the package's input example and refuses to serve a model whose node-feature width or output count differs from its signature. The SMILES are featurized exactly as `milia --predict` featurizes them. `MILIA_SERVE_MAX_INSTANCES` caps the batch size per request (default 1000).
 
+Every package is verified before it is kept: reloaded as the server loads it, it must predict its input example as the source checkpoint does. To keep every packaging as its own version, `publish_package` writes `<output_dir>/<model_name>/<N>/` (1, 2, …) and never overwrites an existing version:
+
+```python
+from milia_pipeline.models.deployment.package import publish_package
+
+publish_package("~/Chem_Data/Milia_PyG_Dataset/checkpoints/best.pt", "models")  # models/<name>/1
+```
+
 MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
 
 The `mobile` and `iot` targets are deprecated (`DeprecationWarning`) and will be removed in 2.0.0. MILIA builds no on-device model, because a prediction starts from a SMILES that MILIA featurizes with RDKit in Python, so the model alone cannot predict on a device. These targets write the same package, without a `Dockerfile`, and do not predict. Serve the package instead.

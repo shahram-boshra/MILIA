@@ -28,9 +28,17 @@ from milia_pipeline.models.deployment.package import (
     package_checkpoint,
 )
 from milia_pipeline.models.factory.model_factory import ModelFactory
+from milia_pipeline.models.post_training import convert_to_pyg
 from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import CheckpointManager
 
-HYPERPARAMETERS = {"in_channels": 4, "hidden_channels": 8, "out_channels": 1, "num_layers": 2}
+# Packaging verifies the package on a SMILES example, so the model takes MILIA's featurization.
+IN_CHANNELS = convert_to_pyg("CCO", format="smiles").x.shape[1]
+HYPERPARAMETERS = {
+    "in_channels": IN_CHANNELS,
+    "hidden_channels": 8,
+    "out_channels": 1,
+    "num_layers": 2,
+}
 
 
 @pytest.fixture
@@ -51,7 +59,9 @@ def trained(tmp_path):
             "model_info": info,
         },
     )
-    graph = Data(x=torch.randn(5, 4), edge_index=torch.tensor([[0, 1, 2, 3], [1, 2, 3, 4]]))
+    graph = Data(
+        x=torch.randn(5, IN_CHANNELS), edge_index=torch.tensor([[0, 1, 2, 3], [1, 2, 3, 4]])
+    )
     batch = Batch.from_data_list([graph, graph])
     model.eval()
     with torch.no_grad():

@@ -29,6 +29,12 @@ The signature, input example and lineage come from the checkpoint's ``run_info``
 trainer records (``milia_pipeline.models.training.run_info``). A checkpoint without
 it still packages; those fields are ``null`` and the card says "not recorded".
 
+:func:`package_checkpoint` verifies what it wrote: the package, loaded as the server loads it,
+must predict the input example as the source checkpoint does, or its files are removed.
+:func:`publish_package` writes each package to a new integer version folder
+(``<output_dir>/<model_name>/<N>/``) through a temporary sibling and a rename, so a version is
+either complete and verified or absent, and is never overwritten.
+
 :func:`load_package` checks the format (``milia-deployment/1`` packages still load) and the
 digest, then rebuilds the model with ``ModelLoader``. Every read uses
 ``torch.load(weights_only=True)``.
@@ -38,6 +44,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +56,8 @@ import torch.nn as nn
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "MAX_SMILES_LENGTH",
@@ -58,6 +70,7 @@ __all__ = [
     "load_package",
     "model_card",
     "package_checkpoint",
+    "publish_package",
     "verify_package",
 ]
 
@@ -80,20 +93,32 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def package_checkpoint(checkpoint_path: str | Path, save_path: str | Path) -> Path:
-    """Write a deployment package for a MILIA v2 checkpoint.
+def package_checkpoint(
+    checkpoint_path: str | Path,
+    save_path: str | Path,
+    *,
+    verify: bool = True,
+    rtol: float = 1e-4,
+    atol: float = 1e-5,
+) -> Path:
+    """Write a deployment package for a MILIA v2 checkpoint, and verify it.
 
     Args:
         checkpoint_path: A checkpoint written by MILIA's trainer (for example
             ``{working_root_dir}/checkpoints/best.pt``).
         save_path: Directory to create the package in.
+        verify: Reload the written package, predict its input example (``"CCO"`` when none is
+            recorded) and compare with the model built from ``checkpoint_path``
+            (``rtol``/``atol``, as :func:`~.onnx_export.export_onnx`). A mismatch removes the
+            files this call wrote and raises.
 
     Returns:
         The package directory.
 
     Raises:
         DeploymentError: The checkpoint is missing, unreadable, or lacks the model weights or the
-            model name and task type needed to rebuild the model.
+            model name and task type needed to rebuild the model; or the written package does not
+            reproduce the checkpoint's predictions.
     """
     source = Path(checkpoint_path).expanduser()
     if not source.is_file():
@@ -154,7 +179,99 @@ def package_checkpoint(checkpoint_path: str | Path, save_path: str | Path) -> Pa
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
     (package / MODEL_CARD).write_text(model_card(manifest))
+    if verify:
+        try:
+            _check_reproduces(source, package, manifest["input_example"], rtol=rtol, atol=atol)
+        except DeploymentError:
+            for name in (PACKAGE_CHECKPOINT, PACKAGE_MANIFEST, MODEL_CARD):
+                (package / name).unlink(missing_ok=True)
+            raise
     return package
+
+
+_FALLBACK_EXAMPLE = ("CCO",)
+
+
+def _predictions(checkpoint: Path, smiles: list[str]) -> torch.Tensor:
+    from milia_pipeline.models.post_training import convert_to_pyg
+    from milia_pipeline.models.post_training.inference.predictor import Predictor
+
+    predictor = Predictor.from_checkpoint(
+        checkpoint_path=checkpoint, working_root_dir=checkpoint.parent, device=torch.device("cpu")
+    )
+    config = predictor.structural_features_config
+    graphs = [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+    out = predictor.predict_batch(graphs, return_numpy=True)
+    return torch.as_tensor(out).reshape(len(graphs), -1)
+
+
+def _check_reproduces(
+    source: Path, package: Path, example: list[str], *, rtol: float, atol: float
+) -> None:
+    """The package, loaded as a server loads it, predicts as the source checkpoint does."""
+    smiles = list(example) or list(_FALLBACK_EXAMPLE)
+    try:
+        checkpoint, _ = verify_package(package)
+        expected = _predictions(source, smiles)
+        actual = _predictions(checkpoint, smiles)
+        torch.testing.assert_close(actual, expected, rtol=rtol, atol=atol)
+    except Exception as exc:
+        raise DeploymentError(
+            f"The package in {package} does not reproduce the predictions of {source} on "
+            f"{smiles}: {exc}"
+        ) from exc
+
+
+def _folder_name(model_name: str) -> str:
+    """A model name as one safe path component."""
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", model_name).strip(".")
+    return name or "model"
+
+
+def _next_version(model_dir: Path) -> int:
+    versions = [int(p.name) for p in model_dir.iterdir() if p.name.isdigit()]
+    return max(versions, default=0) + 1
+
+
+def publish_package(
+    checkpoint_path: str | Path,
+    output_dir: str | Path,
+    *,
+    rtol: float = 1e-4,
+    atol: float = 1e-5,
+) -> Path:
+    """Write a verified package as a new version: ``<output_dir>/<model_name>/<N>/``.
+
+    The package is written to a temporary sibling, verified (:func:`package_checkpoint`) and
+    then renamed into the next free integer version, so a version folder is either complete and
+    verified or absent, and an existing version is never overwritten. Versions start at 1.
+
+    Raises:
+        DeploymentError: As :func:`package_checkpoint`; nothing is left behind.
+    """
+    output = Path(output_dir).expanduser()
+    output.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=output))
+    try:
+        package_checkpoint(checkpoint_path, staging, rtol=rtol, atol=atol)
+        model_name = json.loads((staging / PACKAGE_MANIFEST).read_text())["model_name"]
+        model_dir = output / _folder_name(str(model_name))
+        model_dir.mkdir(exist_ok=True)
+        while True:
+            target = model_dir / str(_next_version(model_dir))
+            if target.exists():
+                continue  # another writer took it between the scan and the check
+            try:
+                staging.rename(target)
+            except OSError as exc:
+                if target.exists():
+                    continue  # taken between the check and the rename
+                raise DeploymentError(f"Cannot move the package to {target}: {exc}") from exc
+            logger.info(f"Published deployment package {target}")
+            return target
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
 
 
 def _json(value: Any) -> Any:

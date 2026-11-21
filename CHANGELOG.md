@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those fields `null` and "not recorded" in the card; `milia-deployment/1` packages still load. At startup the
   serving app featurizes the input example and refuses to serve when the node-feature width or the output count
   differs from the signature, and every prediction response names its columns (`output_names`).
+- Packages are verified and versioned. `package_checkpoint` reloads the package it wrote as the server loads it and
+  predicts the input example (`CCO` when none is recorded); when that differs from the source checkpoint's
+  predictions (`rtol=1e-4`, `atol=1e-5`, as ONNX export) it removes its files and raises `DeploymentError`
+  (`verify=False` skips the check). New `publish_package(checkpoint, output_dir)` writes
+  `<output_dir>/<model_name>/<N>/`: the next integer version, through a temporary sibling that is verified and then
+  renamed, so a version is complete and verified or absent and is never overwritten.
 
 ### Changed
 
