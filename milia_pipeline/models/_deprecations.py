@@ -42,8 +42,10 @@ TORCHSCRIPT_DEPRECATION = (
     "{api} uses TorchScript, which is deprecated in MILIA and will be removed in "
     f"MILIA {REMOVAL_VERSION}. PyTorch has deprecated TorchScript (torch.jit) in favour of "
     "torch.compile and torch.export. MILIA's graph models cannot be scripted, and a traced graph "
-    "model keeps the example batch's sizes. Use torch.compile (compile_model=True) for speed, and "
-    "a deployment package (milia_pipeline.models.deployment) to serve a model."
+    "model keeps the example batch's sizes. Use torch.compile (compile_model=True) for speed, "
+    "export_pt2 (milia_pipeline.models.deployment.pt2_export, torch.export) for a model file "
+    "that runs without MILIA's model code, and a deployment package "
+    "(milia_pipeline.models.deployment) to serve a model."
 )
 
 

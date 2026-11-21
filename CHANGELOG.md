@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `supported_tasks(capabilities)` gives the task types that follow from them.
   - `check_model_capabilities(model_class, hyperparameters, graphs)` builds a model and checks its declared
     capabilities against its real outputs; plugin authors can run it on their models.
+- `milia_pipeline.models.deployment.pt2_export.export_pt2`: exports a model with `torch.export` to a `.pt2` file,
+  PyTorch's replacement for TorchScript, with the capture ONNX export uses (strict mode first; graph models from a
+  PyG `Data`/`Batch` with dynamic node and edge counts). By default it writes the `ExportedProgram`
+  (`torch.export.load(path).module()` runs it without MILIA's model code), with MILIA's metadata in `milia.json`
+  (MILIA and PyTorch versions, input names). With `aot_compile=True` it writes an AOTInductor package compiled
+  ahead of time (`torch._inductor.aoti_load_package`; needs a C++ compiler). Each file is loaded back and compared
+  with the eager model on the example; a mismatch removes it. The TorchScript deprecation message names it.
 
 ### Changed
 

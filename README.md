@@ -414,6 +414,24 @@ Coverage for graph-level tasks (PyG 2.8.1, PyTorch 2.12; `tests/test_onnx_export
 
 Only tensors are graph inputs; Python numbers such as PyG's `batch_size` would be frozen into the file and are not exported. PMLP's default `norm=True` normalizes with the statistics of the batch it is given, also at inference, so its exported predictions depend on batch composition.
 
+### Exporting a model to `.pt2` (`torch.export`)
+
+`export_pt2` writes the same captured program (inputs, dynamic node and edge counts, coverage as above) as a PyTorch `.pt2` file, PyTorch's replacement for TorchScript. No extra is needed.
+
+```python
+from milia_pipeline.models.deployment.pt2_export import export_pt2
+
+export_pt2(model, "model.pt2", example_batch)                    # ExportedProgram
+export_pt2(model, "model_aoti.pt2", example_batch, aot_compile=True)  # AOTInductor package (needs a C++ compiler)
+```
+
+| Artifact | Load with | Runs |
+|---|---|---|
+| `ExportedProgram` (default) | `torch.export.load("model.pt2").module()` | in Python with PyTorch, without MILIA's model code |
+| AOTInductor package (`aot_compile=True`) | `torch._inductor.aoti_load_package("model_aoti.pt2")` | compiled ahead of time to native code |
+
+Each file is loaded back and compared with PyTorch on the example before it is kept. An `ExportedProgram` stores MILIA's metadata (`milia.json`: MILIA and PyTorch versions, input names), read with `torch.export.load(path, extra_files={"milia.json": ""})`. Two PyTorch rules apply: `torch.export.load` uses pickle, so load only files from a trusted source; and the format is under active development, so a file may not load with a newer PyTorch than the one recorded.
+
 ### Introspection commands
 
 These are read-only and useful for orientation:
