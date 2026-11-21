@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those fields `null` and "not recorded" in the card; `milia-deployment/1` packages still load. At startup the
   serving app featurizes the input example and refuses to serve when the node-feature width or the output count
   differs from the signature, and every prediction response names its columns (`output_names`).
+- A validated `models.deployment` section (`milia_pipeline.models.deployment.settings`): `enabled`, `target`
+  (aws, gcp, azure, container, local), `base_image`, `output_dir`, `onnx.enabled`, `predict.input_path` and
+  `gate` (`metric`, `mode` min/max, `threshold`, `compare_to_current`). An unknown key or a wrong value is a
+  `ConfigurationError`, and training checks the section before it starts. `configs/models.yaml` ships the new
+  section, disabled. No step acts on the section yet; deployment after training and a deploy command will
+  read it.
 - Packages are verified and versioned. `package_checkpoint` reloads the package it wrote as the server loads it and
   predicts the input example (`CCO` when none is recorded); when that differs from the source checkpoint's
   predictions (`rtol=1e-4`, `atol=1e-5`, as ONNX export) it removes its files and raises `DeploymentError`
@@ -143,6 +149,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+- The earlier `models.deployment` keys `strategy`, `edge`, `cloud`, `federated`, `optimization` (`quantization`,
+  `pruning`, `distillation`) and `monitoring` emit a `FutureWarning` and a log line, one per key, are ignored, and
+  will be removed in 2.0.0: no code acted on them. `ModelOptimizer` and `ModelMonitor` stay available as Python API.
+  `ModelConfig.deployment` and `get_deployment_config()` (the earlier schema) emit a `DeprecationWarning`, and so
+  does setting a `DeploymentConfig` field that only `to_dict()` records (`instance_type`, `num_instances`,
+  `auto_scaling`, `min_instances`, `max_instances`, `api_type`, `enable_monitoring`, `enable_logging`,
+  `enable_caching`, `timeout_seconds`, `max_batch_size`) to a value other than its default; all removed in 2.0.0.
 - The `mobile` and `iot` deployment targets (`EdgeDeploymentStrategy`) emit a `DeprecationWarning` and will be
   removed in 2.0.0. MILIA builds no on-device model: a prediction starts from a SMILES that MILIA featurizes with
   RDKit in Python, so the model alone cannot predict on a device. Serve the package with the `container` target,

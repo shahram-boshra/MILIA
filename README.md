@@ -398,6 +398,8 @@ from milia_pipeline.models.deployment.package import publish_package
 publish_package("~/Chem_Data/Milia_PyG_Dataset/checkpoints/best.pt", "models")  # models/<name>/1
 ```
 
+The `models.deployment` section of `configs/models.yaml` holds the deployment settings (target, base image, output folder, ONNX export, a molecules file to predict, and a gate on a checkpoint metric). It is validated before training: an unknown key is an error, and the keys of the earlier section (`strategy`, `edge`, `cloud`, `federated`, `optimization`, `monitoring`) warn and are ignored until their removal in 2.0.0.
+
 MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
 
 The `mobile` and `iot` targets are deprecated (`DeprecationWarning`) and will be removed in 2.0.0. MILIA builds no on-device model, because a prediction starts from a SMILES that MILIA featurizes with RDKit in Python, so the model alone cannot predict on a device. These targets write the same package, without a `Dockerfile`, and do not predict. Serve the package instead.

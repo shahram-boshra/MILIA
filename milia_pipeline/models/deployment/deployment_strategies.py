@@ -34,7 +34,7 @@ from typing import Any
 
 import torch
 import torch.nn as nn
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 # Re-exported: callers import these names from this module (`X as X` marks a re-export).
 from milia_pipeline.exceptions import ConfigurationError as ConfigurationError
@@ -83,6 +83,22 @@ class ServingMode(Enum):
 # =============================================================================
 
 
+# DeploymentConfig fields that only to_dict() records; deprecated, removal in 2.0.0.
+RECORDED_ONLY_DEPLOYMENT_FIELDS = (
+    "instance_type",
+    "num_instances",
+    "auto_scaling",
+    "min_instances",
+    "max_instances",
+    "api_type",
+    "enable_monitoring",
+    "enable_logging",
+    "enable_caching",
+    "timeout_seconds",
+    "max_batch_size",
+)
+
+
 class DeploymentConfig(BaseModel):
     """
     Configuration for model deployment.
@@ -125,6 +141,23 @@ class DeploymentConfig(BaseModel):
     timeout_seconds: int = 30
     max_batch_size: int = 32
     base_image: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_recorded_only_fields(cls, data: Any) -> Any:
+        """Setting a field no deployment step reads to a value other than its default warns
+        (``DeprecationWarning``, removal in 2.0.0)."""
+        if isinstance(data, dict):
+            for name in RECORDED_ONLY_DEPLOYMENT_FIELDS:
+                if name in data and data[name] != cls.model_fields[name].default:
+                    message = (
+                        f"DeploymentConfig.{name} is deprecated and will be removed in MILIA "
+                        "2.0.0: no deployment step reads it (MILIA writes a serving image and "
+                        "provisions no endpoint); it is only recorded by to_dict()"
+                    )
+                    warnings.warn(message, DeprecationWarning, stacklevel=3)
+                    logger.warning(message)
+        return data
 
     def to_dict(self) -> dict[str, Any]:
         """

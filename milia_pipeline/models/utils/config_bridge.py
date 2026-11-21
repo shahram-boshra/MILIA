@@ -879,8 +879,15 @@ class MonitoringConfig(BaseModel):
     retraining: RetrainingConfig = Field(default_factory=RetrainingConfig)
 
 
+_DEPLOYMENT_CONFIG_DEPRECATION = (
+    "ModelConfig.deployment and get_deployment_config() are deprecated and will be removed in "
+    "MILIA 2.0.0: no code acts on this schema. Read the models.deployment section with "
+    "milia_pipeline.models.deployment.settings.load_deployment_settings."
+)
+
+
 class DeploymentConfig(BaseModel):
-    """Deployment configuration (Phase 3)."""
+    """Earlier deployment configuration; deprecated with ``ModelConfig.deployment`` (2.0.0)."""
 
     enabled: bool = False
     optimization: OptimizationConfig = Field(default_factory=OptimizationConfig)
@@ -1349,7 +1356,9 @@ class ModelConfig(BaseModel):
         training: Training configuration
         evaluation: Evaluation configuration
         acceleration: Hardware acceleration configuration (Phase 2)
-        deployment: Deployment configuration (Phase 3)
+        deployment: Deprecated (removal in 2.0.0): the earlier deployment schema, which no code
+            acts on; reading it emits ``DeprecationWarning``. The ``models.deployment`` section
+            is read by ``milia_pipeline.models.deployment.settings.load_deployment_settings``.
         plugins: Plugin system configuration
         hpo: HPO configuration (Phase 8)
         raw: Raw configuration dictionary
@@ -1363,7 +1372,9 @@ class ModelConfig(BaseModel):
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     acceleration: AccelerationConfig = Field(default_factory=AccelerationConfig)
-    deployment: DeploymentConfig = Field(default_factory=DeploymentConfig)
+    deployment: DeploymentConfig = Field(
+        default_factory=DeploymentConfig, deprecated=_DEPLOYMENT_CONFIG_DEPRECATION
+    )
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
     hpo: HPOConfigBridge = Field(default_factory=HPOConfigBridge)
     raw: dict[str, Any] = Field(default_factory=dict)
@@ -1392,7 +1403,8 @@ class ModelConfig(BaseModel):
         phase_map = {
             "core": self.enabled,
             "acceleration": self.enabled and self.acceleration.enabled,
-            "deployment": self.enabled and self.deployment.enabled,
+            # The field itself, without the deprecated attribute access.
+            "deployment": self.enabled and self.__dict__["deployment"].enabled,
             "plugins": self.enabled and self.plugins.enabled,
             "hpo": self.enabled and self.hpo.enabled,
         }
@@ -1907,7 +1919,10 @@ def get_acceleration_config(config_path: Path | None = None) -> AccelerationConf
 
 def get_deployment_config(config_path: Path | None = None) -> DeploymentConfig:
     """
-    Get deployment configuration.
+    Get the earlier deployment configuration (deprecated, removal in 2.0.0).
+
+    Emits ``DeprecationWarning``: no code acts on this schema. Read the ``models.deployment``
+    section with ``milia_pipeline.models.deployment.settings.load_deployment_settings``.
 
     Args:
         config_path: Optional path to config.yaml
@@ -1915,8 +1930,9 @@ def get_deployment_config(config_path: Path | None = None) -> DeploymentConfig:
     Returns:
         DeploymentConfig instance
     """
+    warnings.warn(_DEPLOYMENT_CONFIG_DEPRECATION, DeprecationWarning, stacklevel=2)
     config = get_models_config(config_path)
-    return config.deployment
+    return config.__dict__["deployment"]
 
 
 def get_plugins_config(config_path: Path | None = None) -> PluginsConfig:

@@ -3192,6 +3192,16 @@ def handle_training_mode(
     # Get models configuration
     models_config = config.get("models", {})
 
+    # Validate models.deployment before training: an unknown key is a configuration error,
+    # and each deprecated key warns (FutureWarning and a log line) once per run.
+    from milia_pipeline.models.deployment.settings import load_deployment_settings
+
+    try:
+        load_deployment_settings(models_config.get("deployment"))
+    except ConfigurationError as exc:
+        logger.error(str(exc))
+        return 1
+
     # HPO enabled from merged config (CLI overrides already applied by cli_manager)
     hpo_enabled = models_config.get("hpo", {}).get("enabled", False)
 

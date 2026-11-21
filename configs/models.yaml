@@ -1026,81 +1026,25 @@ models:
         persistent_workers: false
 
   # ───────────────────────────────────────────────────────────
-  # DEPLOYMENT & OPTIMIZATION (Optional - Default: Disabled)
+  # DEPLOYMENT (Optional - Default: Disabled)
   # ───────────────────────────────────────────────────────────
-
+  # What MILIA does with the trained model (milia_pipeline/models/deployment/settings.py).
+  # Unknown keys are errors. The keys of the earlier section (strategy, edge, cloud,
+  # federated, optimization, monitoring) still load, warn and are ignored; removal in 2.0.0.
   deployment:
-    enabled: false                       # ⚠️ Set to true to enable
-
-    # Model Optimization
-    optimization:
-      # Quantization
-      quantization:
-        enabled: false
-        method: "dynamic"                # dynamic, static, qat (quantization-aware)
-        backend: "fbgemm"                # fbgemm (x86), qnnpack (ARM)
-        dtype: "qint8"                   # qint8, quint8, float16
-
-      # Pruning
-      pruning:
-        enabled: false
-        method: "magnitude"              # magnitude, l1_unstructured, random
-        amount: 0.3                      # Sparsity level (0.0-1.0)
-        iterative: false
-        iterations: 5
-
-      # Knowledge Distillation
-      distillation:
-        enabled: false
-        teacher_checkpoint: null         # Path to teacher model
-        temperature: 3.0
-        alpha: 0.5                       # Weight for distillation loss
-
-    # Deployment Strategy
-    strategy: "cloud"                    # local, cloud, edge, federated, serverless
-
-    # Edge Deployment
-    edge:
-      target_device: "jetson_nano"       # jetson_nano, raspberry_pi, coral, custom
-      optimization_level: "balanced"     # speed, balanced, size
-
-    # Cloud Deployment
-    cloud:
-      provider: null                     # aws, gcp, azure, local
-      instance_type: null                # e.g., p3.2xlarge, n1-highmem-8
-      accelerator: "gpu"                 # gpu, tpu, trainium, inferentia
-      auto_scaling: false
-      min_instances: 1
-      max_instances: 10
-
-    # Federated Learning
-    federated:
-      num_clients: 10
-      rounds: 50
-      aggregation: "fedavg"              # fedavg, fedprox, fedadam
-      client_selection: "random"
-
-    # Monitoring
-    monitoring:
-      enabled: true
-      metrics:
-        - "inference_latency"
-        - "throughput"
-        - "memory_usage"
-        - "prediction_accuracy"
-
-      # Drift Detection
-      drift_detection:
-        enabled: true
-        method: "statistical"            # statistical, model_based
-        threshold: 0.1
-
-      # Retraining
-      retraining:
-        enabled: false
-        trigger: "manual"                # drift, schedule, manual, performance
-        schedule: null                   # e.g., "0 0 * * 0" (weekly cron)
-        performance_threshold: 0.05      # Retrain if performance drops > 5%
+    enabled: false                       # true: gate, package, verify (export, predict) after training
+    target: "container"                  # aws, gcp, azure, container, local
+    base_image: null                     # serving image to build on; null: the published MILIA image
+    output_dir: "deployments"            # <output_dir>/<model_name>/<N>/; relative: to working_root_dir
+    onnx:
+      enabled: false                     # also export the packaged model to ONNX
+    predict:
+      input_path: null                   # molecules file to predict with the packaged model
+    gate:
+      metric: "val_loss"                 # checkpoint metric that decides deployment
+      mode: "min"                        # min: lower is better; max: higher is better
+      threshold: null                    # deploy only if at least this good; null: no threshold
+      compare_to_current: false          # deploy only if better than the newest package
 
   # ───────────────────────────────────────────────────────────
   # PLUGIN SYSTEM
