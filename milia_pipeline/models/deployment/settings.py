@@ -4,7 +4,7 @@
 
     models:
       deployment:
-        enabled: false          # true: gate, package, verify (and export, predict) after training
+        enabled: false          # true: gate, package, verify (export, predict) after standard training
         target: container       # aws, gcp, azure, container, local (DeploymentManager targets)
         base_image: null        # serving image the Dockerfile builds on; null: the published MILIA image
         output_dir: deployments # versioned packages: <output_dir>/<model_name>/<N>/ (relative: to working_root_dir)

@@ -167,7 +167,7 @@ import time
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -242,6 +242,9 @@ except ImportError as e:
 import contextlib
 
 from milia_pipeline.datasets.milia_dataset import miliaDataset
+
+if TYPE_CHECKING:
+    from milia_pipeline.models.deployment.settings import DeploymentSettings
 
 # Exceptions
 from milia_pipeline.exceptions import (
@@ -3197,7 +3200,7 @@ def handle_training_mode(
     from milia_pipeline.models.deployment.settings import load_deployment_settings
 
     try:
-        load_deployment_settings(models_config.get("deployment"))
+        deployment_settings = load_deployment_settings(models_config.get("deployment"))
     except ConfigurationError as exc:
         logger.error(str(exc))
         return 1
@@ -3208,7 +3211,9 @@ def handle_training_mode(
     if hpo_enabled:
         return _run_hpo_training(args, logger, dataset, config)
     else:
-        return _run_standard_training(args, logger, dataset, config)
+        return _run_standard_training(
+            args, logger, dataset, config, deployment_settings=deployment_settings
+        )
 
 
 def handle_deploy_mode(
@@ -3637,8 +3642,14 @@ def _run_standard_training(
     logger: logging.Logger,
     dataset: "miliaDataset",
     config: dict[str, Any],
+    deployment_settings: "DeploymentSettings | None" = None,
 ) -> int:
-    """Execute standard (non-HPO) training workflow."""
+    """Execute standard (non-HPO) training workflow.
+
+    With ``models.deployment.enabled``, the best checkpoint is then gated and deployed
+    (:func:`_deploy_after_training`); ``deployment_settings`` is the validated section
+    (``None``: read it from ``config``).
+    """
     logger.info("=" * 60)
     logger.info("STANDARD TRAINING MODE")
     logger.info("=" * 60)
@@ -4238,6 +4249,18 @@ def _run_standard_training(
         _save_training_results(trainer, results, args, logger, config)
 
         logger.info("✅ Training completed successfully!")
+
+        # 12. Deploy the best checkpoint (models.deployment.enabled)
+        if deployment_settings is None:
+            from milia_pipeline.models.deployment.settings import load_deployment_settings
+
+            deployment_settings = load_deployment_settings(
+                config.get("models", {}).get("deployment")
+            )
+        if deployment_settings.enabled:
+            return _deploy_after_training(
+                trainer.best_checkpoint_path, deployment_settings, logger, config
+            )
         return 0
 
     except ModelError as e:
@@ -4251,6 +4274,61 @@ def _run_standard_training(
     except Exception as e:
         logger.error(f"Training failed: {e}", exc_info=True)
         return 1
+
+
+def _deploy_after_training(
+    checkpoint: Path | None,
+    settings: "DeploymentSettings",
+    logger: logging.Logger,
+    config: dict[str, Any],
+) -> int:
+    """Gate, deploy and (with ``predict.input_path``) predict with the best checkpoint.
+
+    A failed gate skips the deployment and returns 0 (``gate.json`` records why). A failed
+    packaging, verification, export or prediction returns 1; training itself has completed.
+    """
+    from milia_pipeline.exceptions import DeploymentError, ExportError
+    from milia_pipeline.models.deployment.after_training import GATE_FILE, deploy_after_training
+    from milia_pipeline.models.deployment.deploy import manifest_summary
+
+    if checkpoint is None:
+        logger.warning(
+            "Deployment skipped: training saved no best checkpoint (no ModelCheckpoint callback)"
+        )
+        return 0
+    working_root_dir = _get_working_root_dir(config, logger)
+    results_dir = working_root_dir / config.get("models", {}).get(
+        "training_output_subdir", "training_output"
+    )
+    try:
+        decision, result = deploy_after_training(
+            checkpoint, settings, working_root_dir, results_dir
+        )
+    except (DeploymentError, ExportError) as exc:
+        logger.error(f"Training completed; deployment failed and published nothing: {exc}")
+        return 1
+    if result is None:
+        return 0
+    logger.info(
+        f"Gate passed ({decision.metric} = {decision.value:.6g}; {results_dir / GATE_FILE})"
+    )
+    logger.info(f"Published {result.version_dir}: {', '.join(result.files)}")
+    for line in manifest_summary(result.manifest):
+        logger.info(line)
+
+    if settings.predict.input_path:
+        version = result.version_dir
+        preds_path = results_dir / f"predictions_{version.parent.name}_v{version.name}.csv"
+        predict_args = argparse.Namespace(
+            model_path=str(version),
+            test_path=settings.predict.input_path,
+            preds_path=str(preds_path),
+        )
+        if handle_predict_mode(predict_args, logger, config) != 0:
+            logger.error(f"Deployed {version}, but predicting {settings.predict.input_path} failed")
+            return 1
+        logger.info(f"Predictions of {version}: {preds_path}")
+    return 0
 
 
 def _cli_override(args: argparse.Namespace, name: str, fallback: Any) -> Any:

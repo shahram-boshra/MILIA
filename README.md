@@ -405,7 +405,7 @@ milia --deploy --model-path best.pt --deploy-target container   # {working_root_
 milia --predict --model-path deployments/<name>/1 --test-path molecules.csv
 ```
 
-The `models.deployment` section of `configs/models.yaml` holds the deployment settings (target, base image, output folder, ONNX export, a molecules file to predict, and a gate on a checkpoint metric). It is validated before training: an unknown key is an error, and the keys of the earlier section (`strategy`, `edge`, `cloud`, `federated`, `optimization`, `monitoring`) warn and are ignored until their removal in 2.0.0.
+The `models.deployment` section of `configs/models.yaml` holds the deployment settings (target, base image, output folder, ONNX export, a molecules file to predict, and a gate on a checkpoint metric). With `enabled: true`, standard training gates its best checkpoint on `gate.metric` (threshold, and optionally the newest published version), records the decision in `training_output/gate.json`, and when the gate passes publishes the next version as `milia --deploy` does and predicts `predict.input_path`; a failed gate deploys nothing and the run still succeeds. The section is validated before training: an unknown key is an error, and the keys of the earlier section (`strategy`, `edge`, `cloud`, `federated`, `optimization`, `monitoring`) warn and are ignored until their removal in 2.0.0.
 
 MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
 

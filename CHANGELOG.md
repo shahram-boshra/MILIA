@@ -67,8 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (aws, gcp, azure, container, local), `base_image`, `output_dir`, `onnx.enabled`, `predict.input_path` and
   `gate` (`metric`, `mode` min/max, `threshold`, `compare_to_current`). An unknown key or a wrong value is a
   `ConfigurationError`, and training checks the section before it starts. `configs/models.yaml` ships the new
-  section, disabled. No step acts on the section yet; deployment after training and a deploy command will
-  read it.
+  section, disabled.
+- With `models.deployment.enabled: true`, standard training deploys its best checkpoint after the test evaluation:
+  the gate checks `gate.metric` against `gate.threshold` and, with `compare_to_current`, against the same metric of
+  the newest published version (`mode` min or max); `training_output/gate.json` records the decision either way. A
+  failed gate deploys nothing, logs a warning and the run still succeeds; a passing gate publishes the next version
+  as `milia --deploy` does, then predicts `predict.input_path` into
+  `training_output/predictions_<model>_v<N>.csv`. A failed packaging, export or prediction exits 1 after training.
+  HPO's final training does not deploy yet.
 - Packages are verified and versioned. `package_checkpoint` reloads the package it wrote as the server loads it and
   predicts the input example (`CCO` when none is recorded); when that differs from the source checkpoint's
   predictions (`rtol=1e-4`, `atol=1e-5`, as ONNX export) it removes its files and raises `DeploymentError`

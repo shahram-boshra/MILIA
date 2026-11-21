@@ -134,4 +134,4 @@ def test_a_tampered_published_model_fails_verification(checkpoint, tmp_path):
     [("GCN", "GCN"), ("my model/v2", "my_model_v2"), ("..", "model"), ("Ens.1", "Ens.1")],
 )
 def test_model_names_become_one_safe_folder(name, folder):
-    assert package_module._folder_name(name) == folder
+    assert package_module.model_folder_name(name) == folder

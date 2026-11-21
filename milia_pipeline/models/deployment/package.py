@@ -62,6 +62,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "MAX_SMILES_LENGTH",
+    "checkpoint_scores",
+    "manifest_scores",
     "MODEL_CARD",
     "PACKAGE_CHECKPOINT",
     "PACKAGE_FORMAT",
@@ -70,6 +72,7 @@ __all__ = [
     "is_package",
     "load_package",
     "model_card",
+    "model_folder_name",
     "package_checkpoint",
     "publish_package",
     "verify_package",
@@ -223,7 +226,7 @@ def _check_reproduces(
         ) from exc
 
 
-def _folder_name(model_name: str) -> str:
+def model_folder_name(model_name: str) -> str:
     """A model name as one safe path component."""
     name = re.sub(r"[^A-Za-z0-9._-]", "_", model_name).strip(".")
     return name or "model"
@@ -276,7 +279,7 @@ def publish_package(
         if prepare is not None:
             prepare(staging)
         model_name = json.loads((staging / PACKAGE_MANIFEST).read_text())["model_name"]
-        model_dir = output / _folder_name(str(model_name))
+        model_dir = output / model_folder_name(str(model_name))
         model_dir.mkdir(exist_ok=True)
         while True:
             target = model_dir / str(_next_version(model_dir))
@@ -351,6 +354,31 @@ def _metrics(checkpoint: dict[str, Any]) -> dict[str, Any]:
         "validation": validation or None,
         "test": {name: float(value) for name, value in test.items()} if test else None,
     }
+
+
+def manifest_scores(metrics: dict[str, Any] | None) -> dict[str, float]:
+    """A manifest's ``metrics`` as one name → value mapping (validation, test, monitored)."""
+    metrics = metrics or {}
+    scores = dict(metrics.get("validation") or {})
+    scores.update(metrics.get("test") or {})
+    monitored = metrics.get("monitored") or {}
+    if monitored.get("name") and monitored.get("value") is not None:
+        scores.setdefault(monitored["name"], monitored["value"])
+    return {name: float(value) for name, value in scores.items()}
+
+
+def checkpoint_scores(checkpoint_path: str | Path) -> dict[str, float]:
+    """The scores a package of this checkpoint would record (:func:`manifest_scores`).
+
+    Raises:
+        DeploymentError: The checkpoint cannot be read.
+    """
+    path = Path(checkpoint_path).expanduser()
+    try:
+        checkpoint = load_checkpoint_file(path, map_location="cpu")
+    except Exception as exc:
+        raise DeploymentError(f"Cannot read checkpoint {path}: {exc}") from exc
+    return manifest_scores(_metrics(checkpoint))
 
 
 def _show(value: Any) -> str:
