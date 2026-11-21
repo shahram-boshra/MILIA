@@ -142,6 +142,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The test evaluation after training scores the best checkpoint. `Trainer.fit()` tested the weights of the last
+  epoch, and `milia` training then tested those same weights a second time, while `checkpoints/best.pt` — the
+  checkpoint MILIA packages and predicts with — holds the best validation epoch. `fit()` now evaluates the test set
+  once with the weights of the checkpoint a `ModelCheckpoint` saved as best (as PyTorch Lightning's
+  `trainer.test()` does after `fit`), stores the metrics in that checkpoint as `test_metrics`, and returns its path
+  as `tested_checkpoint`; the final weights stay in the model, so `final_model.pt` is unchanged. Without a checkpoint
+  callback the final weights are tested, as before. `Trainer.test(ckpt_path=...)` evaluates a given checkpoint
+  (`"best"` or a path) and restores the current weights. `fit(test=False)` skips the test set, and
+  `evaluation.test_after_training: false` now turns the test evaluation off; before, `fit()` tested regardless.
 - CLI errors name what failed. A wrong command-line argument (for example `--predict --test-path` pointing at a file
   that does not exist) was reported as `Configuration error: Failed to load configuration: Test path not found: ...`.
   Argument errors are now reported as they are (`Test path not found: ...`); only a configuration file that cannot be

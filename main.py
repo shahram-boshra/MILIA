@@ -4042,27 +4042,16 @@ def _run_standard_training(
         # ====================================================================
         # STANDARD TRAINING MODE
         # ====================================================================
-        # 9. Train
-        logger.info("Starting training...")
-        results = trainer.fit()
-
-        # 10. Evaluate on test set (if not already done in fit())
-        # The MILIA Trainer may evaluate on test_loader during fit() if provided.
-        # Check if test results are already in results, or use test() method if available.
+        # 9. Train, then test once: fit() scores the best checkpoint's weights (stored in
+        # best.pt as test_metrics) when evaluation.test_after_training is true (default).
         eval_config = training_config.get("evaluation", {})
-        if eval_config.get("test_after_training", True):
-            # Check if Trainer has test() method (standard pattern)
-            if hasattr(trainer, "test") and callable(trainer.test):
-                # MILIA Trainer.test() takes no arguments - uses test_loader from constructor
-                test_results = trainer.test()
-                logger.info(f"Test Results: {test_results}")
-            # Otherwise, check if test_loss is already in results from fit()
-            elif "test_loss" in results:
-                logger.info(f"Test Results (from fit): test_loss={results['test_loss']}")
-            else:
-                logger.debug(
-                    "No separate test evaluation method available; test may have been run during fit()"
-                )
+        logger.info("Starting training...")
+        results = trainer.fit(test=eval_config.get("test_after_training", True))
+
+        # 10. Report the test evaluation
+        if results.get("test_metrics"):
+            tested = results.get("tested_checkpoint") or "final weights"
+            logger.info(f"Test Results ({tested}): {results['test_metrics']}")
 
         # 10.5 Generate training visualization (NEW)
         # DYNAMIC: Uses metrics_history from Trainer, reads config from evaluation.visualization

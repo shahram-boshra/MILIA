@@ -23,8 +23,10 @@ Version: 1.1.0
 from __future__ import annotations
 
 import contextlib
+import copy
 import inspect
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -350,7 +352,7 @@ class Trainer:
                 f"accumulate_grad_batches must be >= 1, got {self.accumulate_grad_batches}"
             )
 
-    def fit(self) -> dict[str, Any]:
+    def fit(self, test: bool = True) -> dict[str, Any]:
         """
         Main training loop.
 
@@ -363,13 +365,23 @@ class Trainer:
         6. Calls on_epoch_end callbacks
         7. Checks for early stopping
         8. Calls on_train_end callbacks
-        9. Evaluates on test set (if test loader provided)
+        9. Evaluates on test set (if ``test`` and a test loader is provided)
+
+        The test set is scored with the best checkpoint's weights when a checkpoint callback saved
+        one (:attr:`best_checkpoint_path`, as Lightning's ``trainer.test()`` does after ``fit``),
+        otherwise with the final weights. The final weights are back in the model afterwards, and
+        the test metrics are also stored in the best checkpoint as ``test_metrics``.
+
+        Args:
+            test: Evaluate on the test set after training.
 
         Returns:
             Dictionary containing:
                 - 'train_metrics': Training metrics history
                 - 'val_metrics': Validation metrics (if val_loader provided)
-                - 'test_metrics': Test metrics (if test_loader provided)
+                - 'test_metrics': Test metrics (if tested)
+                - 'tested_checkpoint': Path of the checkpoint whose weights were tested, or
+                  ``None`` (final weights, or not tested)
                 - 'training_time': Total training time in seconds
                 - 'best_epoch': Epoch with best validation loss
 
@@ -442,11 +454,22 @@ class Trainer:
             # Calculate total training time
             self.training_time = (datetime.now() - start_time).total_seconds()
 
-            # Test evaluation
+            # Test evaluation: the best checkpoint's weights when one was saved
             test_metrics = {}
-            if self.test_loader is not None:
-                logger.info("Evaluating on test set...")
-                test_metrics = self.test()
+            tested_checkpoint = None
+            if test and self.test_loader is not None:
+                tested_checkpoint = self.best_checkpoint_path
+                if tested_checkpoint is None:
+                    logger.info(
+                        "Evaluating on test set with the final weights (no best checkpoint)"
+                    )
+                else:
+                    logger.info(
+                        f"Evaluating on test set with the best checkpoint {tested_checkpoint}"
+                    )
+                test_metrics = self.test(ckpt_path=tested_checkpoint)
+                if tested_checkpoint is not None:
+                    self._record_test_metrics(tested_checkpoint, test_metrics)
 
             # Find best epoch
             best_epoch = None
@@ -462,6 +485,7 @@ class Trainer:
             return {
                 "train_metrics": dict(self.metrics_history),
                 "test_metrics": test_metrics,
+                "tested_checkpoint": str(tested_checkpoint) if tested_checkpoint else None,
                 "training_time": self.training_time,
                 "best_epoch": best_epoch,
                 "best_val_loss": self.best_val_loss if best_epoch is not None else None,
@@ -669,10 +693,67 @@ class Trainer:
 
         return results
 
-    @torch.no_grad()
-    def test(self) -> dict[str, float]:
+    @property
+    def best_checkpoint_path(self) -> Path | None:
+        """The best checkpoint a callback saved (``ModelCheckpoint.best_model_path``), if any."""
+        for callback in self.callbacks:
+            path = getattr(callback, "best_model_path", None)
+            if isinstance(path, str | Path) and Path(path).is_file():
+                return Path(path)
+        return None
+
+    def test(self, ckpt_path: str | Path | None = None) -> dict[str, float]:
+        """Evaluate on the test set.
+
+        Args:
+            ckpt_path: ``None`` evaluates the model's current weights. ``"best"`` evaluates
+                :attr:`best_checkpoint_path`; a path evaluates that checkpoint's
+                ``model_state_dict``. The current weights are restored afterwards.
+
+        Returns:
+            Test metrics (``test_loss``, ``test_<metric>``).
+
+        Raises:
+            TrainingError: ``ckpt_path="best"`` and no checkpoint callback saved a best checkpoint.
+            CheckpointError: The checkpoint cannot be read or does not fit the model.
         """
-        Evaluate on test set.
+        if ckpt_path is None or self.test_loader is None:
+            return self._evaluate_test()
+        path = self.best_checkpoint_path if ckpt_path == "best" else Path(ckpt_path)
+        if path is None:
+            raise TrainingError(
+                "test(ckpt_path='best') needs a checkpoint callback that saved a best checkpoint"
+            )
+        model = self.unwrapped_model
+        current = copy.deepcopy(model.state_dict())
+        try:
+            checkpoint = load_checkpoint_file(path, map_location=self.device)
+            model.load_state_dict(checkpoint["model_state_dict"])
+        except Exception as exc:
+            model.load_state_dict(current)
+            raise CheckpointError(f"Cannot test checkpoint {path}: {exc}") from exc
+        try:
+            return self._evaluate_test()
+        finally:
+            model.load_state_dict(current)
+
+    def _record_test_metrics(self, path: Path, metrics: dict[str, float]) -> None:
+        """Store ``metrics`` in the checkpoint at ``path`` as ``test_metrics`` (atomic rewrite)."""
+        temporary = path.with_name(f".{path.name}.tmp")
+        try:
+            checkpoint = load_checkpoint_file(path, map_location="cpu")
+            checkpoint["test_metrics"] = dict(metrics)
+            torch.save(checkpoint, temporary)
+            os.replace(temporary, path)
+            logger.info(f"Test metrics stored in {path}")
+        except Exception as exc:
+            temporary.unlink(missing_ok=True)
+            logger.error(f"Could not store the test metrics in {path}: {exc}")
+
+    @torch.no_grad()
+    def _evaluate_test(self) -> dict[str, float]:
+        """
+        Evaluate the model's current weights on the test set.
 
         UPDATED: Now computes configured metrics alongside loss.
 
