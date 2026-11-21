@@ -169,6 +169,7 @@ class Trainer:
         # NEW: Metrics for evaluation
         metrics: dict[str, nn.Module] | None = None,
         acceleration: AccelerationManager | None = None,
+        run_info: dict[str, Any] | None = None,
     ):
         """
         Initialize trainer.
@@ -209,6 +210,8 @@ class Trainer:
                     HPO objective and metrics are comparable across trials. If ``device`` is not
                     given, the manager's device is used; a different device type is an error.
                     ``None`` (default) leaves training exactly as before.
+            run_info: What the run records about itself (``collect_run_info`` in
+                    ``training/run_info.py``); written to every checkpoint as ``run_info``.
         """
         self.model = model
         self.train_loader = train_loader
@@ -233,6 +236,9 @@ class Trainer:
 
         # Store HPO callback reference (set by HPOManager)
         self.hpo_callback = hpo_callback
+
+        # What the run records about itself in every checkpoint (training/run_info.py)
+        self.run_info = run_info
 
         # Store model metadata for intelligent forward pass
         self.model_info = model_info or {}
@@ -2039,6 +2045,8 @@ class Trainer:
                 "pyg_version": pyg_version,
                 "created_at": datetime.now().isoformat(),
             }
+            if self.run_info is not None:
+                checkpoint["run_info"] = self.run_info
 
             # =================================================================
             # EXTRA DATA (Existing - unchanged)

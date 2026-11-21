@@ -3975,6 +3975,22 @@ def _run_standard_training(
                 "No structural_features_config found on dataset - checkpoint will use default featurization"
             )
 
+        # 6.9 What the run records in every checkpoint (dataset, targets, config hash, split,
+        # code version, input example); the deployment package and model card are built from it.
+        from milia_pipeline.models.training.run_info import collect_run_info, target_names_for
+
+        target_names = target_names_for(
+            model_info.get("target_selection"), train_data[0] if len(train_data) > 0 else dataset[0]
+        )
+        run_info = collect_run_info(
+            config,
+            task_type=task_type,
+            out_channels=model_info.get("out_channels"),
+            target_names=target_names,
+            data_split=data_split_config,
+            train_graphs=(train_data[i] for i in range(len(train_data))),
+        )
+
         # 7. Create trainer with model_info for target selection
         trainer = Trainer(
             model=train_model,
@@ -3989,6 +4005,7 @@ def _run_standard_training(
             model_info=model_info,  # NEW: Pass model_info for target selection
             metrics=metrics,  # NEW: Pass metrics for evaluation
             acceleration=acceleration,  # PA-1e: AMP via the manager (None = unchanged)
+            run_info=run_info,
         )
 
         # 8. Check for checkpoint resume

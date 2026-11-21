@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (MILIA and PyTorch versions, input names). With `aot_compile=True` it writes an AOTInductor package compiled
   ahead of time (`torch._inductor.aoti_load_package`; needs a C++ compiler). Each file is loaded back and compared
   with the eager model on the example; a mismatch removes it. The TorchScript deprecation message names it.
+- Every checkpoint MILIA's trainer writes records `run_info` (new `milia_pipeline.models.training.run_info`): the
+  dataset type and the units its source data declares, the target names (`y_property_names`, or the target
+  selection's), the SHA-256 of the resolved configuration, the data split, the git commit when MILIA runs from a
+  checkout, the Python, MILIA, PyTorch, PyG and RDKit versions, and up to five training molecules as SMILES.
+  Standard training records it; HPO's final training does not yet.
 
 ### Changed
 

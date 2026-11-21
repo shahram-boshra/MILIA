@@ -611,6 +611,9 @@ class ModelCheckpoint(Callback):
             "pyg_version": pyg_version,
             "created_at": datetime.now().isoformat(),
         }
+        run_info = getattr(trainer, "run_info", None)
+        if isinstance(run_info, dict):  # Trainer(run_info=...); see training/run_info.py
+            checkpoint["run_info"] = run_info
 
         torch.save(checkpoint, path)
 
