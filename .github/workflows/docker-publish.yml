@@ -7,6 +7,10 @@
 #   - actions/checkout@v6 (current latest per actions/checkout releases, Feb 2026)
 #   - docker/metadata-action README: automatic org.opencontainers.image.source label
 #     generation from GitHub context (enables GHCR → repository linking)
+#   - GitHub Docs "Publishing Docker images" and "Using artifact attestations": every published
+#     image digest gets a Sigstore-signed SLSA build provenance attestation and a signed SPDX SBOM
+#     attestation (actions/attest, pushed to GHCR next to the image), which reach SLSA v1.0 Build L2
+#     on GitHub-hosted runners. smoke-test verifies both with `gh attestation verify`.
 name: Build and Publish Docker Image
 
 on:
@@ -77,6 +81,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # actions/attest: OIDC token for the Sigstore signing certificate, attestation storage, and the
+      # artifact storage record (actions/attest README, "Permissions").
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     outputs:
       publish: ${{ steps.publish.outputs.enabled }}
     strategy:
@@ -144,6 +153,7 @@ jobs:
             type=raw,value=${{ inputs.version }}-${{ matrix.accel }},enable=${{ matrix.accel != 'cpu' && inputs.version != '' }}
 
       - name: Build and push Docker image
+        id: push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7
         with:
           context: .
@@ -154,6 +164,46 @@ jobs:
             NVIDIA_VISIBLE_DEVICES=${{ matrix.accel == 'cpu' && 'void' || 'all' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # Attestations name the image by its lowercase registry path (GHCR repository names are
+      # lowercase; github.repository keeps its case) and by the digest just pushed.
+      - name: Compute lowercase image name
+        if: steps.publish.outputs.enabled == 'true'
+        id: subject
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        run: echo "name=${IMAGE,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance (signed, SLSA)
+        if: steps.publish.outputs.enabled == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
+        with:
+          subject-name: ${{ steps.subject.outputs.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      # The SBOM describes the pushed image itself (pulled from GHCR by digest), not the build context.
+      # Measured 2026-11-21 with Syft: cpu 6.5 MB, cu130 6.7 MB of SPDX JSON (actions/attest limit 16 MB).
+      - name: Generate SBOM of the pushed image (SPDX JSON)
+        if: steps.publish.outputs.enabled == 'true'
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c  # v0.24.3
+        with:
+          image: ${{ steps.subject.outputs.name }}@${{ steps.push.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          output-file: ${{ runner.temp }}/sbom-${{ matrix.accel }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest SBOM (signed)
+        if: steps.publish.outputs.enabled == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
+        with:
+          subject-name: ${{ steps.subject.outputs.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: ${{ runner.temp }}/sbom-${{ matrix.accel }}.spdx.json
+          push-to-registry: true
 
   # =========================================================================
   # Smoke-test job — satisfies §5f items 8 + 9 of the MILIA Release Guide
@@ -186,6 +236,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      attestations: read  # gh attestation verify
     strategy:
       fail-fast: false
       matrix:
@@ -220,6 +271,17 @@ jobs:
           docker pull ${{ steps.image.outputs.ref }}
           docker inspect ${{ steps.image.outputs.ref }} \
             --format 'Image: {{.Id}}{{"\n"}}Created: {{.Created}}{{"\n"}}Labels: {{json .Config.Labels}}'
+
+      # What a consumer checks: the image's signed attestations were issued by this repository's
+      # workflow (GitHub Docs, "Verifying artifact attestations with the GitHub CLI").
+      - name: Verify the signed provenance and SBOM attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ steps.image.outputs.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh attestation verify "oci://${REF}" -R "${REPO}"
+          gh attestation verify "oci://${REF}" -R "${REPO}" --predicate-type https://spdx.dev/Document/v2.3
 
       - name: §5f #9 — Verify milia CLI entry point (--help)
         run: |

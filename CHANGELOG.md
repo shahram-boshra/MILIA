@@ -247,6 +247,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CVE-2026-126191 and CVE-2026-126193 (fixed in 3.0.2), which 1.21.0 had listed as known advisories without a
   usable fix. OSV-Scanner no longer ignores them (`osv-scanner.toml`), so a soupsieve that reintroduced them would
   fail the scan.
+- Every published Docker image carries signed attestations: a SLSA build provenance and an SPDX SBOM of the
+  image, created with GitHub artifact attestations (Sigstore) and stored in GHCR next to the image. Before, the
+  images had neither. Verify an image with
+  `gh attestation verify oci://ghcr.io/shahram-boshra/milia:<tag> -R shahram-boshra/MILIA`, adding
+  `--predicate-type https://spdx.dev/Document/v2.3` for the SBOM. The publish workflow checks both after each push.
 
 ## [1.21.0] - 2026-11-14
 
