@@ -3211,6 +3211,61 @@ def handle_training_mode(
         return _run_standard_training(args, logger, dataset, config)
 
 
+def handle_deploy_mode(
+    args: argparse.Namespace, logger: logging.Logger, config: dict[str, Any]
+) -> int:
+    """``milia --deploy``: publish ``--model-path`` (checkpoint or package) as a new version.
+
+    ``models.deployment`` gives the defaults; ``--deploy-target``, ``--deploy-output-dir``,
+    ``--deploy-base-image`` and ``--deploy-onnx`` override them.
+
+    Returns:
+        0 when the version was published; 1 on an invalid section, a missing input, or a failed
+        packaging, verification or export (nothing is published then).
+    """
+    from milia_pipeline.exceptions import DeploymentError, ExportError
+    from milia_pipeline.models.deployment.deploy import deploy, manifest_summary
+    from milia_pipeline.models.deployment.settings import load_deployment_settings
+
+    try:
+        settings = load_deployment_settings(config.get("models", {}).get("deployment"))
+    except ConfigurationError as exc:
+        logger.error(str(exc))
+        return 1
+    overrides: dict[str, Any] = {
+        key: value
+        for key, value in (
+            ("target", getattr(args, "deploy_target", None)),
+            ("output_dir", getattr(args, "deploy_output_dir", None)),
+            ("base_image", getattr(args, "deploy_base_image", None)),
+        )
+        if value is not None
+    }
+    if getattr(args, "deploy_onnx", None) is not None:
+        overrides["onnx"] = settings.onnx.model_copy(update={"enabled": args.deploy_onnx})
+    settings = settings.model_copy(update=overrides)
+
+    working_root_dir = _get_working_root_dir(config, logger)
+    try:
+        model_path = resolve_input_path(
+            args.model_path, working_root_dir, name_dirs=(working_root_dir / "checkpoints",)
+        )
+    except InputPathNotFoundError as missing:
+        logger.error(f"Deployment input {missing}")
+        return 1
+
+    logger.info(f"Deploying {model_path} (target {settings.target})")
+    try:
+        result = deploy(model_path, settings, working_root_dir)
+    except (DeploymentError, ExportError) as exc:
+        logger.error(f"Deployment failed, nothing was published: {exc}")
+        return 1
+    logger.info(f"Published {result.version_dir}: {', '.join(result.files)}")
+    for line in manifest_summary(result.manifest):
+        logger.info(line)
+    return 0
+
+
 def handle_predict_mode(
     args: argparse.Namespace, logger: logging.Logger, config: dict[str, Any]
 ) -> int:
@@ -3265,6 +3320,20 @@ def handle_predict_mode(
         except InputPathNotFoundError as missing:
             logger.error(f"Prediction input {missing}")
             return 1
+        # A deployment package: verify its checkpoint digest, then predict with its model.pt
+        from milia_pipeline.exceptions import DeploymentError
+        from milia_pipeline.models.deployment.deploy import manifest_summary
+        from milia_pipeline.models.deployment.package import is_package, verify_package
+
+        if is_package(model_path):
+            try:
+                model_path, manifest = verify_package(model_path)
+            except DeploymentError as exc:
+                logger.error(f"Prediction input {exc}")
+                return 1
+            logger.info(f"Deployment package verified (SHA-256 of {model_path.name})")
+            for line in manifest_summary(manifest):
+                logger.info(line)
         logger.info(f"Model checkpoint: {model_path}")
         logger.info(f"Test data path: {test_path}")
 
@@ -5075,6 +5144,15 @@ def main():
                 logger.error("Preprocessing system not available")
                 sys.exit(1)
             return handle_preprocessor_testing(args, logger)
+
+        # DEPLOYMENT MODE: publish a checkpoint or package as a new version
+        if getattr(args, "deploy", False):
+            try:
+                config = cli_manager.load_and_merge_config(args)
+            except CLIValidationError as e:
+                logger.error(str(e))
+                sys.exit(1)
+            return handle_deploy_mode(args, logger, config)
 
         # PREDICTION MODE (Phase 5b + Phase 6)
         if getattr(args, "predict", False):

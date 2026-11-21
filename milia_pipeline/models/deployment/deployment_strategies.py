@@ -257,6 +257,16 @@ class DeploymentStrategy(ABC):
 # =============================================================================
 
 
+# Targets served from an image built on the generated Dockerfile, and whether the server runs
+# as root there (Amazon SageMaker expects root; elsewhere the image's ``milia`` user is kept).
+SERVING_IMAGE_TARGETS: dict[str, bool] = {
+    "aws": True,
+    "gcp": False,
+    "azure": False,
+    "container": False,
+}
+
+
 def _prepare_serving_package(
     strategy: DeploymentStrategy,
     model: nn.Module | str | Path,
@@ -321,7 +331,9 @@ class AWSDeploymentStrategy(DeploymentStrategy):
         Push the built image to ECR; the package files may also be uploaded as ``model.tar.gz``
         (SageMaker extracts them to ``/opt/ml/model``).
         """
-        return _prepare_serving_package(self, model, save_path, run_as_root=True)
+        return _prepare_serving_package(
+            self, model, save_path, run_as_root=SERVING_IMAGE_TARGETS["aws"]
+        )
 
     def deploy(self, model_path: Path) -> dict[str, Any]:
         """Deploy to AWS SageMaker."""

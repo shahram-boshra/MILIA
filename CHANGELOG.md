@@ -56,6 +56,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those fields `null` and "not recorded" in the card; `milia-deployment/1` packages still load. At startup the
   serving app featurizes the input example and refuses to serve when the node-feature width or the output count
   differs from the signature, and every prediction response names its columns (`output_names`).
+- `milia --deploy --model-path <checkpoint|package>` publishes a new version `<output_dir>/<model_name>/<N>/` for
+  the configured target: the verified package, the serving `Dockerfile` for aws, gcp, azure and container (none for
+  local), and `model.onnx` with `onnx.enabled`, all written before the version appears, so a failed step publishes
+  nothing (exit 1). Defaults come from `models.deployment`; `--deploy-target`, `--deploy-output-dir`,
+  `--deploy-base-image` and `--deploy-onnx`/`--no-deploy-onnx` override them. A package given to `--deploy` is
+  verified and copied unchanged. `milia --predict --model-path` also takes a package directory: its `model.pt` is
+  checked against the manifest's SHA-256 first (a mismatch exits 1), and the manifest summary is logged.
 - A validated `models.deployment` section (`milia_pipeline.models.deployment.settings`): `enabled`, `target`
   (aws, gcp, azure, container, local), `base_image`, `output_dir`, `onnx.enabled`, `predict.input_path` and
   `gate` (`metric`, `mode` min/max, `threshold`, `compare_to_current`). An unknown key or a wrong value is a

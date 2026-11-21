@@ -596,8 +596,59 @@ class CLIManager:
         self._add_descriptor_arguments(parser)
         self._add_training_arguments(parser)
         self._add_prediction_arguments(parser)  # Phase 5b: Post-training inference
+        self._add_deployment_arguments(parser)
 
         return parser
+
+    def _add_deployment_arguments(self, parser: argparse.ArgumentParser) -> None:
+        """``--deploy``: publish a checkpoint or package as a new versioned deployment.
+
+        Defaults come from ``models.deployment`` (``milia_pipeline.models.deployment.settings``);
+        the ``--deploy-*`` flags override them, as ``--predict-*`` flags do for prediction.
+        """
+        from milia_pipeline.models.deployment.settings import DEPLOYMENT_TARGETS
+
+        deployment = parser.add_argument_group(
+            "Deployment",
+            "Publish a trained model as <output_dir>/<model_name>/<N>/ (verified package, plus "
+            "a serving Dockerfile and optional ONNX export); defaults from models.deployment",
+        )
+        deployment.add_argument(
+            "--deploy",
+            action="store_true",
+            default=False,
+            help="Deploy the checkpoint or package given by --model-path",
+        )
+        deployment.add_argument(
+            "--deploy-target",
+            choices=DEPLOYMENT_TARGETS,
+            default=None,
+            dest="deploy_target",
+            help="Deployment target (default: models.deployment.target)",
+        )
+        deployment.add_argument(
+            "--deploy-output-dir",
+            default=None,
+            metavar="PATH",
+            dest="deploy_output_dir",
+            help="Folder of the versioned packages; relative: under {working_root_dir} "
+            "(default: models.deployment.output_dir)",
+        )
+        deployment.add_argument(
+            "--deploy-base-image",
+            default=None,
+            metavar="IMAGE",
+            dest="deploy_base_image",
+            help="Image the serving Dockerfile builds on (default: models.deployment.base_image, "
+            "else the published MILIA image of this version)",
+        )
+        deployment.add_argument(
+            "--deploy-onnx",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            dest="deploy_onnx",
+            help="Also export model.onnx (default: models.deployment.onnx.enabled)",
+        )
 
     def _add_basic_arguments(self, parser: argparse.ArgumentParser) -> None:
         """Add basic operation arguments."""
@@ -1518,7 +1569,8 @@ class CLIManager:
             default=None,
             metavar="PATH",
             dest="model_path",
-            help="Path to trained model checkpoint (.pt file) for inference. A relative path is "
+            help="Path to trained model checkpoint (.pt file) or deployment package directory "
+            "for inference (with --deploy: what to deploy). A relative path is "
             "looked up in the current directory, then by name in {working_root_dir}/checkpoints, "
             "then under {working_root_dir}. "
             "Note: Use --checkpoint for resuming training, --model-path for prediction.",
@@ -2155,6 +2207,25 @@ For more information, see: https://docs.example.com/milia-cli
 
             self.logger.debug("Prediction arguments (basic) validated successfully")
 
+        if getattr(args, "deploy", False):
+            if not getattr(args, "model_path", None):
+                raise CLIValidationError(
+                    "--model-path is required with --deploy (a checkpoint or a package).\n"
+                    f"Example: {self.parser.prog} --deploy --model-path best.pt --deploy-target container"
+                )
+            conflicts = [
+                flag
+                for flag, used in (
+                    ("--train", getattr(args, "train", False)),
+                    ("--predict", getattr(args, "predict", False)),
+                )
+                if used
+            ]
+            if conflicts:
+                raise CLIValidationError(
+                    f"--deploy cannot be combined with {', '.join(conflicts)}: run them separately"
+                )
+
     def load_and_merge_config(self, args: argparse.Namespace) -> dict[str, Any]:
         """
         Load configuration and merge with CLI arguments.
@@ -2385,8 +2456,10 @@ For more information, see: https://docs.example.com/milia-cli
                     f"Ensure the path to your trained model checkpoint is correct."
                 ) from missing
 
-            # Validate model path has .pt extension
-            if model_path.suffix != ".pt":
+            # Validate model path has .pt extension (a deployment package is a directory)
+            from milia_pipeline.models.deployment.package import is_package
+
+            if model_path.suffix != ".pt" and not is_package(model_path):
                 self.logger.warning(
                     f"Model path does not have .pt extension: {model_path}. "
                     "Continuing, but this may not be a valid checkpoint."

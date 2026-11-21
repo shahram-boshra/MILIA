@@ -48,6 +48,7 @@ import logging
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -237,6 +238,7 @@ def publish_package(
     checkpoint_path: str | Path,
     output_dir: str | Path,
     *,
+    prepare: Callable[[Path], None] | None = None,
     rtol: float = 1e-4,
     atol: float = 1e-5,
 ) -> Path:
@@ -246,14 +248,33 @@ def publish_package(
     then renamed into the next free integer version, so a version folder is either complete and
     verified or absent, and an existing version is never overwritten. Versions start at 1.
 
+    Args:
+        checkpoint_path: A MILIA checkpoint, or an existing package (verified with
+            :func:`verify_package`, then copied: its manifest, card and checkpoint unchanged).
+        output_dir: The folder holding ``<model_name>/<N>/``.
+        prepare: Called with the staged package after verification and before the rename, to
+            add files to the version (a serving ``Dockerfile``, an ONNX export); an exception
+            from it publishes nothing.
+
     Raises:
-        DeploymentError: As :func:`package_checkpoint`; nothing is left behind.
+        DeploymentError: As :func:`package_checkpoint` or :func:`verify_package`; nothing is
+            left behind.
     """
     output = Path(output_dir).expanduser()
     output.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=output))
     try:
-        package_checkpoint(checkpoint_path, staging, rtol=rtol, atol=atol)
+        source = Path(checkpoint_path).expanduser()
+        if is_package(source):
+            checkpoint, _ = verify_package(source)
+            for name in (checkpoint.name, PACKAGE_MANIFEST, MODEL_CARD):
+                if (source / name).is_file():
+                    shutil.copy2(source / name, staging / name)
+            verify_package(staging)
+        else:
+            package_checkpoint(source, staging, rtol=rtol, atol=atol)
+        if prepare is not None:
+            prepare(staging)
         model_name = json.loads((staging / PACKAGE_MANIFEST).read_text())["model_name"]
         model_dir = output / _folder_name(str(model_name))
         model_dir.mkdir(exist_ok=True)
