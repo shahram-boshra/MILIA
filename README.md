@@ -367,7 +367,7 @@ Input paths (`--model-path`, `--test-path`) are looked up first as given, relati
 
 ### Serving a trained model
 
-A trained checkpoint becomes a self-contained serving image. The `aws`, `gcp`, `azure` and `container` deployment targets write a package (`model.pt` plus `deployment.json` with its SHA-256) and a `Dockerfile` built on the published MILIA image, which carries the `serve` extra (FastAPI, Uvicorn):
+A trained checkpoint becomes a self-contained serving image. The `aws`, `gcp`, `azure` and `container` deployment targets write a package (`model.pt`; `deployment.json` with its SHA-256, the model's signature, an input example, its validation and test metrics and its lineage; and `MODEL_CARD.md`, the same for people) and a `Dockerfile` built on the published MILIA image, which carries the `serve` extra (FastAPI, Uvicorn):
 
 ```python
 from milia_pipeline.models.deployment import DeploymentManager
@@ -388,7 +388,7 @@ One app answers every target on port 8080:
 - **Vertex AI:** the routes and port it sets in `AIP_HEALTH_ROUTE`, `AIP_PREDICT_ROUTE` and `AIP_HTTP_PORT`.
 - **Azure ML, Kubernetes and plain Docker:** `GET /health` and `POST /predict`.
 
-Every predict route takes `{"instances": [SMILES, ...]}` and returns `{"predictions": [[...], ...]}`, one row per molecule. The SMILES are featurized exactly as `milia --predict` featurizes them. `MILIA_SERVE_MAX_INSTANCES` caps the batch size per request (default 1000).
+Every predict route takes `{"instances": [SMILES, ...]}` and returns `{"predictions": [[...], ...], "output_names": [...]}`, one row per molecule. At startup the server featurizes the package's input example and refuses to serve a model whose node-feature width or output count differs from its signature. The SMILES are featurized exactly as `milia --predict` featurizes them. `MILIA_SERVE_MAX_INSTANCES` caps the batch size per request (default 1000).
 
 MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
 

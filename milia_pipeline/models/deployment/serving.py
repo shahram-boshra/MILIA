@@ -21,7 +21,12 @@ Request body (the Vertex AI shape, used for every predict route)::
 
 Response::
 
-    {"predictions": [[...], [...]], "model_name": "...", "task_type": "..."}
+    {"predictions": [[...], [...]], "model_name": "...", "task_type": "...",
+     "output_names": ["...", ...]}
+
+At startup the app featurizes the package's input example and checks it against the package's
+signature (:meth:`PackagedPredictor.check_signature`), so a MILIA that featurizes differently
+from the one that trained the model refuses to serve it.
 
 Run: ``python -m milia_pipeline.models.deployment.serving --package /opt/ml/model``.
 Requires the ``serve`` extra (FastAPI, Uvicorn), which MILIA's Docker images install.
@@ -41,7 +46,7 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 
 from milia_pipeline.exceptions import DeploymentError
-from milia_pipeline.models.deployment.package import verify_package
+from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
 
 __all__ = [
     "DEFAULT_PACKAGE_DIR",
@@ -59,7 +64,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_PACKAGE_DIR = "/opt/ml/model"  # SageMaker's model directory; the image copies packages here
 DEFAULT_PORT = 8080  # SageMaker requires 8080; Vertex AI's AIP_HTTP_PORT defaults to it
 DEFAULT_MAX_INSTANCES = 1000  # MILIA_SERVE_MAX_INSTANCES overrides it
-MAX_SMILES_LENGTH = 2000
 
 
 class PredictRequest(BaseModel):
@@ -71,11 +75,15 @@ class PredictRequest(BaseModel):
 
 
 class PredictResponse(BaseModel):
-    """One row of model outputs per instance, in request order."""
+    """One row of model outputs per instance, in request order.
+
+    ``output_names`` names the columns, when the package's signature records them.
+    """
 
     predictions: list[list[float]]
     model_name: str
     task_type: str
+    output_names: list[str] | None = None
 
 
 class PackagedPredictor:
@@ -96,7 +104,50 @@ class PackagedPredictor:
         predictor = Predictor.from_checkpoint(
             checkpoint_path=checkpoint, working_root_dir=Path(package_dir), device=device
         )
-        return cls(predictor, manifest)
+        packaged = cls(predictor, manifest)
+        packaged.check_signature()
+        return packaged
+
+    @property
+    def output_names(self) -> list[str] | None:
+        """The output column names of the package's signature (``None``: not recorded)."""
+        names = ((self.manifest.get("signature") or {}).get("outputs") or {}).get("names")
+        return list(names) if names else None
+
+    def check_signature(self) -> None:
+        """Featurize a molecule as requests are featurized and compare it with the signature.
+
+        The model was trained on ``signature.inputs.node_features`` columns; MILIA code that
+        featurizes differently would compute wrong values rather than fail, so the server refuses
+        to start instead. A version-1 package has no signature and is not checked.
+
+        Raises:
+            DeploymentError: The featurized width or the output count differs from the signature.
+        """
+        signature = self.manifest.get("signature")
+        if not signature:
+            return
+        from milia_pipeline.models.post_training import convert_to_pyg
+
+        expected_inputs = (signature.get("inputs") or {}).get("node_features")
+        expected_outputs = (signature.get("outputs") or {}).get("count")
+        smiles = (self.manifest.get("input_example") or ["C"])[0]
+        config = self.predictor.structural_features_config
+        graph = convert_to_pyg(smiles, format="smiles", structural_features_config=config)
+        width = graph.x.size(-1) if getattr(graph, "x", None) is not None else None
+        if expected_inputs is not None and width != expected_inputs:
+            raise DeploymentError(
+                f"This MILIA featurizes {smiles!r} into {width} node features; the package's "
+                f"model was trained on {expected_inputs}. Serve it with the MILIA version that "
+                f"wrote it ({self.manifest.get('milia_version')})."
+            )
+        if expected_outputs is not None:
+            out = self.predictor.predict_batch([graph], return_numpy=True).reshape(1, -1)
+            if out.shape[1] != expected_outputs:
+                raise DeploymentError(
+                    f"The model returns {out.shape[1]} values per molecule; the package's "
+                    f"signature records {expected_outputs}"
+                )
 
     def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
         """One row of model outputs per SMILES, in input order.
@@ -174,6 +225,7 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             predictions=rows,
             model_name=model.manifest["model_name"],
             task_type=model.manifest["task_type"],
+            output_names=model.output_names,
         )
 
     health_routes = ["/health", "/ping"]

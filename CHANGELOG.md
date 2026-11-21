@@ -48,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selection's), the SHA-256 of the resolved configuration, the data split, the git commit when MILIA runs from a
   checkout, the Python, MILIA, PyTorch, PyG and RDKit versions, and up to five training molecules as SMILES.
   Standard training records it; HPO's final training does not yet.
+- Deployment package format `milia-deployment/2`. `deployment.json` adds a `signature` (SMILES input, the
+  featurization and its node-feature width; output count, names and task type), an `input_example`, the
+  checkpoint's `metrics` (epoch, monitored metric, validation metrics at that epoch, test metrics when training
+  tested it) and its `lineage` (source checkpoint SHA-256, versions, dataset, split, configuration SHA-256, git
+  commit), and a `MODEL_CARD.md` states the same for people. A checkpoint without `run_info` still packages, with
+  those fields `null` and "not recorded" in the card; `milia-deployment/1` packages still load. At startup the
+  serving app featurizes the input example and refuses to serve when the node-feature width or the output count
+  differs from the signature, and every prediction response names its columns (`output_names`).
 
 ### Changed
 

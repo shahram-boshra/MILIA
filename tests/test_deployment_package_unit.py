@@ -19,6 +19,7 @@ from milia_pipeline.models.deployment.deployment_strategies import (
     LocalDeploymentStrategy,
 )
 from milia_pipeline.models.deployment.package import (
+    MODEL_CARD,
     PACKAGE_CHECKPOINT,
     PACKAGE_FORMAT,
     PACKAGE_MANIFEST,
@@ -68,7 +69,11 @@ def test_package_holds_an_inference_checkpoint_and_a_manifest(trained, tmp_path)
     package = package_checkpoint(checkpoint, tmp_path / "package")
 
     assert is_package(package)
-    assert sorted(path.name for path in package.iterdir()) == [PACKAGE_MANIFEST, PACKAGE_CHECKPOINT]
+    assert sorted(path.name for path in package.iterdir()) == [
+        MODEL_CARD,
+        PACKAGE_MANIFEST,
+        PACKAGE_CHECKPOINT,
+    ]
     manifest = json.loads((package / PACKAGE_MANIFEST).read_text())
     assert manifest["format"] == PACKAGE_FORMAT
     assert (manifest["model_name"], manifest["task_type"]) == ("GCN", "graph_regression")
@@ -111,7 +116,7 @@ def test_unknown_manifest_format_is_rejected(trained, tmp_path):
     manifest = json.loads((package / PACKAGE_MANIFEST).read_text())
     manifest["format"] = "milia-deployment/999"
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest))
-    with pytest.raises(DeploymentError, match="expected 'milia-deployment/1'"):
+    with pytest.raises(DeploymentError, match="expected one of"):
         load_package(package)
 
 

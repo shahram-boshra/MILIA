@@ -536,6 +536,7 @@ class TestAWSDeploymentStrategy:
 
         assert sorted(p.name for p in save_path.iterdir()) == [
             "Dockerfile",
+            "MODEL_CARD.md",
             "deployment.json",
             "model.pt",
         ]
@@ -805,7 +806,11 @@ class TestEdgeDeploymentStrategy:
         strategy = self._strategy(edge_config)
         save_path = strategy.prepare_model(str(milia_checkpoint), temp_dir / "edge")
 
-        assert sorted(p.name for p in save_path.iterdir()) == ["deployment.json", "model.pt"]
+        assert sorted(p.name for p in save_path.iterdir()) == [
+            "MODEL_CARD.md",
+            "deployment.json",
+            "model.pt",
+        ]
         model, _ = load_package(save_path)
         assert isinstance(model, nn.Module)
 

@@ -11,11 +11,27 @@ A package is a directory holding:
 * ``model.pt``: the checkpoint reduced to what inference needs (model weights, recreation
   metadata, data compatibility and version information), with no optimizer, scheduler or
   training history;
-* ``deployment.json``: the package format, the MILIA version that wrote it, the model name and
-  task type, and the SHA-256 of ``model.pt``.
+* ``deployment.json`` (format ``milia-deployment/2``): the MILIA version that wrote it, the model
+  name and task type and the SHA-256 of ``model.pt``, plus
 
-:func:`load_package` checks the format and the digest, then rebuilds the model with
-``ModelLoader``. Every read uses ``torch.load(weights_only=True)``.
+  - ``signature``: the input (SMILES, featurized with the run's ``structural_features_config``
+    into ``node_features`` columns) and the outputs (count, names, task type);
+  - ``input_example``: up to five training molecules as SMILES;
+  - ``metrics``: the checkpoint's epoch, its monitored metric, its validation metrics at that
+    epoch, and its test metrics (when training tested this checkpoint);
+  - ``lineage``: the source checkpoint's SHA-256, when and with which versions it was written,
+    the dataset, the data split, the configuration's SHA-256 and the git commit;
+
+* ``MODEL_CARD.md``: the same facts for people (model details, inputs and outputs, training data,
+  evaluation, limitations, how to load).
+
+The signature, input example and lineage come from the checkpoint's ``run_info``, which MILIA's
+trainer records (``milia_pipeline.models.training.run_info``). A checkpoint without
+it still packages; those fields are ``null`` and the card says "not recorded".
+
+:func:`load_package` checks the format (``milia-deployment/1`` packages still load) and the
+digest, then rebuilds the model with ``ModelLoader``. Every read uses
+``torch.load(weights_only=True)``.
 """
 
 from __future__ import annotations
@@ -32,18 +48,25 @@ from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 
 __all__ = [
+    "MAX_SMILES_LENGTH",
+    "MODEL_CARD",
     "PACKAGE_CHECKPOINT",
     "PACKAGE_FORMAT",
     "PACKAGE_MANIFEST",
+    "SUPPORTED_FORMATS",
     "is_package",
     "load_package",
+    "model_card",
     "package_checkpoint",
     "verify_package",
 ]
 
-PACKAGE_FORMAT = "milia-deployment/1"
+PACKAGE_FORMAT = "milia-deployment/2"
+SUPPORTED_FORMATS = ("milia-deployment/1", PACKAGE_FORMAT)
 PACKAGE_MANIFEST = "deployment.json"
 PACKAGE_CHECKPOINT = "model.pt"
+MODEL_CARD = "MODEL_CARD.md"
+MAX_SMILES_LENGTH = 2000  # longest SMILES the serving app accepts
 
 # Checkpoint entries inference needs; training state (optimizer, scheduler, history) is dropped.
 _INFERENCE_KEYS = ("model_state_dict", "hyper_parameters", "data_info", "version_info")
@@ -103,6 +126,8 @@ def package_checkpoint(checkpoint_path: str | Path, save_path: str | Path) -> Pa
     target = package / PACKAGE_CHECKPOINT
     torch.save({key: checkpoint[key] for key in _INFERENCE_KEYS if key in checkpoint}, target)
 
+    run_info = checkpoint.get("run_info") or {}
+    version_info = checkpoint.get("version_info") or {}
     manifest = {
         "format": PACKAGE_FORMAT,
         "milia_version": __version__,
@@ -110,12 +135,191 @@ def package_checkpoint(checkpoint_path: str | Path, save_path: str | Path) -> Pa
         "sha256": _sha256(target),
         "model_name": hyper_parameters["model_name"],
         "task_type": hyper_parameters["task_type"],
-        "checkpoint_format_version": checkpoint.get("version_info", {}).get(
-            "checkpoint_format_version"
-        ),
+        "checkpoint_format_version": version_info.get("checkpoint_format_version"),
+        "signature": _signature(checkpoint, run_info),
+        "input_example": list(run_info.get("input_example") or []),
+        "metrics": _metrics(checkpoint),
+        "lineage": {
+            "source_checkpoint_sha256": _sha256(source),
+            "checkpoint_created_at": version_info.get("created_at"),
+            "torch_version": version_info.get("pytorch_version"),
+            "pyg_version": version_info.get("pyg_version"),
+            "run_info_version": run_info.get("run_info_version"),
+            "dataset": run_info.get("dataset"),
+            "data_split": run_info.get("data_split"),
+            "config_sha256": run_info.get("config_sha256"),
+            "git_commit": run_info.get("git_commit"),
+            "versions": run_info.get("versions"),
+        },
     }
-    (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n")
+    (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
+    (package / MODEL_CARD).write_text(model_card(manifest))
     return package
+
+
+def _json(value: Any) -> Any:
+    """JSON for values a checkpoint may hold (tensors, numpy scalars, paths)."""
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    return str(value)
+
+
+def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str, Any]:
+    """What the model takes and returns, from the checkpoint and its ``run_info``."""
+    hyper_parameters = checkpoint.get("hyper_parameters") or {}
+    values = hyper_parameters.get("hyperparameters") or {}
+    model_info = hyper_parameters.get("model_info") or {}
+    data_info = checkpoint.get("data_info") or {}
+    targets = run_info.get("targets") or {}
+    return {
+        "inputs": {
+            "type": "smiles",
+            "max_length": MAX_SMILES_LENGTH,
+            "featurization": data_info.get("structural_features_config") or None,
+            "node_features": values.get("in_channels"),
+            "uses_edge_features": bool(
+                data_info.get("uses_edge_features", model_info.get("uses_edge_features"))
+            ),
+        },
+        "outputs": {
+            "count": model_info.get("out_channels", values.get("out_channels")),
+            "names": targets.get("names"),
+            "task_type": hyper_parameters.get("task_type"),
+        },
+    }
+
+
+def _metrics(checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """The checkpoint's own scores: validation at its epoch, and test when it was tested.
+
+    ``metrics_history`` holds one value per epoch up to the checkpoint's epoch, so the last value
+    of each ``val_*`` series is the checkpoint's.
+    """
+    history = checkpoint.get("metrics_history") or {}
+    validation = {
+        name: float(values[-1])
+        for name, values in sorted(history.items())
+        if name.startswith("val_") and isinstance(values, list | tuple) and values
+    }
+    test = checkpoint.get("test_metrics")
+    monitored = checkpoint.get("monitored_metric")
+    return {
+        "epoch": checkpoint.get("epoch"),
+        "monitored": (
+            {"name": monitored, "value": float(checkpoint["monitored_score"])}
+            if monitored and checkpoint.get("monitored_score") is not None
+            else None
+        ),
+        "validation": validation or None,
+        "test": {name: float(value) for name, value in test.items()} if test else None,
+    }
+
+
+def _show(value: Any) -> str:
+    if value is None or value == [] or value == {}:
+        return "not recorded"
+    if isinstance(value, list | tuple):
+        return ", ".join(f"`{item}`" for item in value)
+    return f"`{value}`"
+
+
+def _table(scores: dict[str, float] | None) -> list[str]:
+    if not scores:
+        return ["Not recorded."]
+    return ["| Metric | Value |", "|---|---|"] + [
+        f"| `{name}` | {value:.6g} |" for name, value in scores.items()
+    ]
+
+
+def model_card(manifest: dict[str, Any]) -> str:
+    """``MODEL_CARD.md`` for a package manifest (Hugging Face / Mitchell et al. sections)."""
+    signature = manifest.get("signature") or {}
+    inputs = signature.get("inputs") or {}
+    outputs = signature.get("outputs") or {}
+    metrics = manifest.get("metrics") or {}
+    lineage = manifest.get("lineage") or {}
+    dataset = lineage.get("dataset") or {}
+    units = dataset.get("source_units") or {}
+    featurization = inputs.get("featurization") or {}
+    split = lineage.get("data_split") or {}
+    monitored = metrics.get("monitored") or {}
+    versions = lineage.get("versions") or {}
+    lines = [
+        f"# {manifest.get('model_name')} ({manifest.get('task_type')})",
+        "",
+        f"MILIA deployment package (`{manifest.get('format')}`), written by MILIA "
+        f"{manifest.get('milia_version')}. `{PACKAGE_MANIFEST}` holds the same facts as data.",
+        "",
+        "## Model details",
+        "",
+        f"- Architecture: `{manifest.get('model_name')}`; task: `{manifest.get('task_type')}`",
+        f"- Weights: `{manifest.get('checkpoint')}` (SHA-256 `{manifest.get('sha256')}`)",
+        f"- Checkpoint epoch: {_show(metrics.get('epoch'))}; written "
+        f"{_show(lineage.get('checkpoint_created_at'))} with PyTorch "
+        f"{_show(lineage.get('torch_version'))} and PyG {_show(lineage.get('pyg_version'))}",
+        "",
+        "## Inputs and outputs",
+        "",
+        f"- Input: a SMILES string per molecule, at most {inputs.get('max_length')} characters. "
+        f"MILIA featurizes it into {_show(inputs.get('node_features'))} node features with "
+        + (
+            f"the training run's settings (atom: {_show(featurization.get('atom'))}; "
+            f"bond: {_show(featurization.get('bond'))})."
+            if featurization
+            else "MILIA's default featurization (the checkpoint records no settings)."
+        ),
+        f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
+        f"{_show(outputs.get('names'))}.",
+        f"- Example input: {_show(manifest.get('input_example'))}",
+        "",
+        "## Training data",
+        "",
+        f"- Dataset: {_show(dataset.get('type'))}; source data units (dataset schema): energy "
+        f"{_show(units.get('energy'))}, coordinates {_show(units.get('coordinates'))}. "
+        "A configured transformation may convert the targets; the configuration is identified "
+        "below.",
+        f"- Split: {_show(split or None)}",
+        "",
+        "## Evaluation",
+        "",
+        f"Monitored metric: {_show(monitored.get('name'))} = "
+        f"{_show(monitored.get('value'))} at the checkpoint's epoch.",
+        "",
+        "Validation set, at the checkpoint's epoch:",
+        "",
+        *_table(metrics.get("validation")),
+        "",
+        "Test set, scored with these weights:",
+        "",
+        *_table(metrics.get("test")),
+        "",
+        "## Limitations",
+        "",
+        "- Predictions are only as reliable as the molecule is similar to the training data; "
+        "this package does not assess a molecule's applicability domain.",
+        "- The input is a SMILES string: properties that depend on a 3D conformation are "
+        "predicted from the 2D graph MILIA builds from it.",
+        "",
+        "## Reproducibility",
+        "",
+        f"- Source checkpoint SHA-256: {_show(lineage.get('source_checkpoint_sha256'))}",
+        f"- Configuration SHA-256: {_show(lineage.get('config_sha256'))}",
+        f"- Git commit: {_show(lineage.get('git_commit'))}",
+        f"- Versions: {_show([f'{k} {v}' for k, v in versions.items()] or None)}",
+        "",
+        "## How to load",
+        "",
+        "```python",
+        "from milia_pipeline.models.deployment.package import load_package",
+        "",
+        'model, model_info = load_package("<this directory>")',
+        "```",
+        "",
+        "Serve it with `python -m milia_pipeline.models.deployment.serving --package "
+        "<this directory>`.",
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def is_package(path: str | Path) -> bool:
@@ -141,9 +345,11 @@ def verify_package(package_dir: str | Path) -> tuple[Path, dict[str, Any]]:
         manifest = json.loads(manifest_path.read_text())
     except (OSError, ValueError) as exc:
         raise DeploymentError(f"Cannot read {manifest_path}: {exc}") from exc
-    if not isinstance(manifest, dict) or manifest.get("format") != PACKAGE_FORMAT:
+    if not isinstance(manifest, dict) or manifest.get("format") not in SUPPORTED_FORMATS:
         found = manifest.get("format") if isinstance(manifest, dict) else manifest
-        raise DeploymentError(f"{manifest_path} has format {found!r}; expected {PACKAGE_FORMAT!r}")
+        raise DeploymentError(
+            f"{manifest_path} has format {found!r}; expected one of {SUPPORTED_FORMATS}"
+        )
 
     name = str(manifest.get("checkpoint", PACKAGE_CHECKPOINT))
     if Path(name).name != name:
