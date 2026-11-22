@@ -215,7 +215,15 @@ def _predictions(checkpoint: Path, smiles: list[str]) -> torch.Tensor:
     )
     config = predictor.structural_features_config
     graphs = predictor.prepare_inputs(
-        [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+        [
+            convert_to_pyg(
+                s,
+                format="smiles",
+                structural_features_config=config,
+                **predictor.featurization_kwargs,
+            )
+            for s in smiles
+        ]
     )
     out = predictor.predict_batch(graphs, return_numpy=True)
     return torch.as_tensor(out).reshape(len(graphs), -1)
@@ -337,6 +345,9 @@ def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str
             # (pre_transform_record.py); None: none, or not recorded (transforms_recorded)
             "transforms": (data_info.get("input_transforms") or {}).get("repr"),
             "transforms_recorded": "input_transforms" in data_info,
+            # Hydrogens as nodes in the training graphs, added to featurized molecules
+            # (molecules/featurization_record.py); None: not recorded
+            "explicit_hydrogens": data_info.get("explicit_hydrogens"),
         },
         "outputs": {
             "count": model_info.get("out_channels", values.get("out_channels")),
@@ -451,6 +462,14 @@ def _target_scaling_line(scaler: dict[str, Any] | None) -> str:
     )
 
 
+def _hydrogens_line(explicit: bool | None) -> str:
+    if explicit is None:
+        return "not recorded (molecules are featurized with implicit hydrogens)"
+    if explicit:
+        return "yes: the training graphs hold hydrogens as atoms; featurized molecules get them too"
+    return "no: the training graphs hold heavy atoms only"
+
+
 def _transforms_line(inputs: dict[str, Any]) -> str:
     if not inputs.get("transforms_recorded"):
         return (
@@ -506,6 +525,7 @@ def model_card(manifest: dict[str, Any]) -> str:
             else "MILIA's default featurization (the checkpoint records no settings)."
         ),
         f"- Input transforms: {_transforms_line(inputs)}",
+        f"- Explicit hydrogens: {_hydrogens_line(inputs.get('explicit_hydrogens'))}",
         f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
         f"{_show(outputs.get('names'))}.",
         f"- Target scaling: {_target_scaling_line(manifest.get('target_scaler'))}",

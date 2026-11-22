@@ -663,6 +663,7 @@ class TestConvertToPygWithStructuralFeaturesConfig:
         mock_apply.assert_called_once_with(
             synthetic_pyg_data,
             sample_structural_features_config_atom_and_bond,
+            add_hydrogens=False,  # featurization option, off unless the training graphs had H
         )
 
     @patch(
@@ -1231,7 +1232,7 @@ class TestCheckpointDataInfoStructureIntegrity:
         """
         data_info must contain exactly: requires_edge_features,
         uses_edge_features, structural_features_config, input_transforms
-        (the training data's pre-transforms, which inference applies).
+        (the training data's pre-transforms, which inference applies) and explicit_hydrogens.
         """
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -1246,6 +1247,7 @@ class TestCheckpointDataInfoStructureIntegrity:
             "uses_edge_features",
             "structural_features_config",
             "input_transforms",
+            "explicit_hydrogens",
         }
         assert set(data_info.keys()) == expected_keys, (
             f"data_info keys mismatch.\nExpected: {expected_keys}\nGot: {set(data_info.keys())}"

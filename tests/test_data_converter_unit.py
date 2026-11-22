@@ -2370,7 +2370,7 @@ class TestConvertToPyg:
         with patch(
             "milia_pipeline.models.post_training.data_preparation.data_converter._apply_structural_features_if_available"
         ) as mock_apply:
-            mock_apply.side_effect = lambda data, config: data
+            mock_apply.side_effect = lambda data, config, add_hydrogens=False: data
 
             convert_to_pyg(
                 sample_smiles["ethanol"],
@@ -4247,7 +4247,7 @@ class TestConvertSdfToPygList:
         with patch(
             "milia_pipeline.models.post_training.data_preparation.data_converter._apply_structural_features_if_available"
         ) as mock_apply:
-            mock_apply.side_effect = lambda data, config: data  # Pass through
+            mock_apply.side_effect = lambda data, config, add_hydrogens=False: data  # Pass through
 
             result = convert_sdf_to_pyg_list(
                 str(sdf_path), structural_features_config=structural_features_config_basic

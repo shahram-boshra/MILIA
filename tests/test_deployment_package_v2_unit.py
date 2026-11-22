@@ -88,7 +88,8 @@ def recorded(tmp_path):
         monitored_score=1.5,
         test_metrics={"test_loss": 1.75, "test_mae": 1.0},
         run_info=RUN_INFO,
-        data_info={"input_transforms": None},  # trained on data without a pre-transform
+        # trained on heavy-atom graphs without a pre-transform
+        data_info={"input_transforms": None, "explicit_hydrogens": False},
         input_reference=INPUT_REFERENCE,
     )
     return checkpoint, package_checkpoint(checkpoint, tmp_path / "package"), in_channels
@@ -150,6 +151,7 @@ def test_model_card_states_the_recorded_facts(recorded):
         assert text in card, text
     assert "MILIA's default featurization" in card  # the test checkpoint records none
     assert "Input transforms: none (the training data had no pre-transform)" in card
+    assert "Explicit hydrogens: no: the training graphs hold heavy atoms only" in card
     assert "histograms of 1 node-feature columns and of atoms per molecule over 3" in card
     assert "not recorded" not in card
 

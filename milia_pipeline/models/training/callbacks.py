@@ -599,6 +599,10 @@ class ModelCheckpoint(Callback):
             "input_transforms": trainer.model_info.get("input_transforms")
             if hasattr(trainer, "model_info") and trainer.model_info
             else None,
+            # Hydrogens in the training graphs (molecules/featurization_record.py)
+            "explicit_hydrogens": trainer.model_info.get("explicit_hydrogens")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
         }
 
         # Version info for format detection

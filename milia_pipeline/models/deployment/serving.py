@@ -174,7 +174,12 @@ class PackagedPredictor:
         for index, text in enumerate(smiles):
             try:
                 graphs.append(
-                    convert_to_pyg(text, format="smiles", structural_features_config=config)
+                    convert_to_pyg(
+                        text,
+                        format="smiles",
+                        structural_features_config=config,
+                        **self.predictor.featurization_kwargs,
+                    )
                 )
             except ValueError as exc:
                 raise ValueError(f"instances[{index}]: {exc}") from exc

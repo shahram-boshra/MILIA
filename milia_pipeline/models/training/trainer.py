@@ -2224,6 +2224,9 @@ class Trainer:
                     "input_transforms": self.model_info.get("input_transforms")
                     if self.model_info
                     else None,
+                    "explicit_hydrogens": self.model_info.get("explicit_hydrogens")
+                    if self.model_info
+                    else None,
                 }
 
             # =================================================================

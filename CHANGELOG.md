@@ -211,6 +211,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Inference reproduces the hydrogens of the training graphs. Datasets built from QM data (DFT, QM9, …) hold
+  hydrogens as atoms, with the QM-optimized coordinates of every atom, but `--predict` on molecule files,
+  deployment-package verification, the ONNX export sample and serving featurized SMILES and InChI with implicit
+  hydrogens. `add_hydrogens=True` did not help: the structural-feature step re-read the molecule from its SMILES or
+  InChI and dropped the hydrogens, so it now adds them again; formats with coordinates (XYZ, ASE) ignore the option
+  and keep every atom and position as given. Training records whether its graphs hold hydrogens
+  (`data_info.explicit_hydrogens`, from their atomic numbers) and every inference path featurizes accordingly
+  (`Predictor.featurization_kwargs`). The package signature and model card state it.
 - `val_loss` is scored on the standardized targets when target scaling is on, as the training loss is, so every
   target weighs alike in early stopping, the choice of `best.pt` and the deploy gate (`metric: val_loss`). Scored
   in the targets' units, it followed the targets with the largest spread: a run with two energy targets of std 921

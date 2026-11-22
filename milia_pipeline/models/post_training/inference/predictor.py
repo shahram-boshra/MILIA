@@ -153,6 +153,18 @@ class Predictor:
         return (self.model_info.get("data_info") or {}).get("input_transforms")
 
     @property
+    def featurization_kwargs(self) -> dict[str, Any]:
+        """Converter options that reproduce the training graphs' representation.
+
+        ``{"add_hydrogens": True}`` when the training graphs held hydrogens
+        (``data_info.explicit_hydrogens``, ``molecules/featurization_record.py``); pass them to
+        ``convert_to_pyg`` / ``convert_sdf_to_pyg_list`` with the structural features config.
+        """
+        if (self.model_info.get("data_info") or {}).get("explicit_hydrogens"):
+            return {"add_hydrogens": True}
+        return {}
+
+    @property
     def records_input_transforms(self) -> bool:
         """Whether the checkpoint says which pre-transforms its training graphs went through."""
         return "input_transforms" in (self.model_info.get("data_info") or {})

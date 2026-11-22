@@ -14,6 +14,7 @@ Version: 1.1.0
 """
 
 import contextlib
+import inspect
 import logging
 import threading
 from abc import ABC, abstractmethod
@@ -1014,7 +1015,7 @@ class SDFConverter(BaseDataConverter):
 
 
 def _apply_structural_features_if_available(
-    data: Data, structural_features_config: dict[str, Any] | None
+    data: Data, structural_features_config: dict[str, Any] | None, add_hydrogens: bool = False
 ) -> Data:
     """
     Apply structural features to PyG Data if config is provided and mol can be reconstructed.
@@ -1029,6 +1030,9 @@ def _apply_structural_features_if_available(
     Args:
         data: PyG Data object (may have smiles or inchi attribute)
         structural_features_config: Featurization config from checkpoint
+        add_hydrogens: Featurize the molecule with explicit hydrogens (as the training graphs
+            had them). The molecule is re-read from its SMILES/InChI, which carries no explicit
+            hydrogens, so the converter's ``add_hydrogens`` must be applied again here.
 
     Returns:
         Enhanced PyG Data with structural features, or original data if not applicable
@@ -1073,6 +1077,9 @@ def _apply_structural_features_if_available(
                 "(this is expected for XYZ, ASE, dict formats)"
             )
         return data
+
+    if add_hydrogens:
+        mol = Chem.AddHs(mol)
 
     # Apply structural features using existing infrastructure
     try:
@@ -1216,6 +1223,11 @@ def convert_to_pyg(
     # Get converter and convert
     # Note: structural_features_config is handled in post-processing, not passed to converter
     converter_class = registry.get(format)
+    # add_hydrogens is a featurization option: the identifier converters (SMILES, InChI) take it;
+    # formats with coordinates (XYZ, ASE, SDF) already list every atom, hydrogens included.
+    add_hydrogens = bool(kwargs.pop("add_hydrogens", False))
+    if add_hydrogens and "add_hydrogens" in inspect.signature(converter_class.__init__).parameters:
+        kwargs["add_hydrogens"] = True
     converter = converter_class(**kwargs) if kwargs else converter_class()
 
     if not converter.is_available:
@@ -1225,7 +1237,9 @@ def convert_to_pyg(
         )
 
     # Step 1: Basic conversion
-    data = converter.convert(input_data, **kwargs)
+    data = converter.convert(
+        input_data, **{k: v for k, v in kwargs.items() if k != "add_hydrogens"}
+    )
 
     # ========================================================================
     # FIX 20: DYNAMIC POST-PROCESSING FOR STRUCTURAL FEATURES
@@ -1235,7 +1249,11 @@ def convert_to_pyg(
     # FUTURE-PROOF: New converters automatically benefit by storing smiles/inchi
     # ========================================================================
     if structural_features_config:
-        data = _apply_structural_features_if_available(data, structural_features_config)
+        data = _apply_structural_features_if_available(
+            data,
+            structural_features_config,
+            add_hydrogens=add_hydrogens,
+        )
 
     return data
 
@@ -1307,12 +1325,16 @@ def convert_sdf_to_pyg_list(
         raise ImportError("SDFConverter requires RDKit. Install with: pip install rdkit")
 
     # Use convert_all to get all molecules
+    # Explicit hydrogens apply to the structural featurization (the molecule is re-read there)
+    add_hydrogens = bool(kwargs.pop("add_hydrogens", False))
     data_list = converter.convert_all(sdf_path, **kwargs)
 
     # Apply structural features to each molecule if config provided
     if structural_features_config:
         data_list = [
-            _apply_structural_features_if_available(data, structural_features_config)
+            _apply_structural_features_if_available(
+                data, structural_features_config, add_hydrogens=add_hydrogens
+            )
             for data in data_list
         ]
 

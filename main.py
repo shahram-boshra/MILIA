@@ -3500,6 +3500,7 @@ def handle_predict_mode(
                         inp,
                         format=input_format if input_format != "auto" else None,
                         structural_features_config=structural_features_config,  # FIX 21: Same featurization as training
+                        **predictor.featurization_kwargs,  # hydrogens as in the training graphs
                     )
                     for inp in inputs
                 ]
@@ -3515,6 +3516,7 @@ def handle_predict_mode(
                     test_path,
                     structural_features_config=structural_features_config,
                     working_root_dir=working_root_dir,
+                    **predictor.featurization_kwargs,
                 )
                 # Generate identifiers for each molecule (use index if no names)
                 input_identifiers = [f"mol_{i}" for i in range(len(data_list))]
@@ -3531,6 +3533,7 @@ def handle_predict_mode(
                         inp,
                         format=input_format if input_format != "auto" else None,
                         structural_features_config=structural_features_config,
+                        **predictor.featurization_kwargs,
                     )
                     for inp in inputs
                 ]
@@ -4092,6 +4095,10 @@ def _run_standard_training(
         from milia_pipeline.transformations.pre_transform_record import record_pre_transforms
 
         model_info["input_transforms"] = record_pre_transforms(dataset)
+        # Whether the training graphs hold hydrogens, which inference must then add
+        from milia_pipeline.molecules.featurization_record import graphs_have_explicit_hydrogens
+
+        model_info["explicit_hydrogens"] = graphs_have_explicit_hydrogens(dataset)
         if model_info["input_transforms"]:
             logger.info(
                 f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"
