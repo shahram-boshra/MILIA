@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Input drift monitoring in serving. Training records a reference of its inputs (`input_reference` in every
+  checkpoint and the package manifest): a histogram of each node-feature column of `x`, as the model saw it, and of
+  atoms per molecule over the training split (a uniform sample of at most 100000 atoms). The server keeps the same
+  histograms over a sliding window of the last `MILIA_DRIFT_WINDOW` molecules (default 1000) and, once it is full,
+  scores each feature with the Jensen-Shannon distance to the reference (columns with at most 10 distinct values are
+  categorical, with a bucket for unseen values; others are binned at the reference deciles). Features at or above
+  `MILIA_DRIFT_THRESHOLD` (default 0.1) drift; `GET /monitoring/drift` returns the report and each change of
+  status is logged as one JSON line. The model card states the reference. Packages without one report
+  `not_recorded`.
 - Prediction intervals (split conformal). After training, the best checkpoint of a regression model is calibrated
   on the validation set and stores, per target, the conformal quantile of its residuals as `calibration` (method,
   `alpha`, `n`, quantiles; `models.evaluation.calibration_alpha`, default 0.1, `null` to turn it off). For a

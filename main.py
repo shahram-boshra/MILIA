@@ -4132,6 +4132,8 @@ def _run_standard_training(
             calibration_alpha=models_config.get("evaluation", {}).get("calibration_alpha", 0.1),
             # Regression targets standardized with training-split statistics (null: none)
             target_scaling=training_config.get("target_scaling", "standard"),
+            # Histograms of the training inputs, which serving compares requests with
+            record_input_reference=True,
         )
 
         # 8. Check for checkpoint resume

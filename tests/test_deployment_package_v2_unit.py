@@ -38,6 +38,16 @@ RUN_INFO = {
     "input_example": ["CCO", "c1ccccc1"],
 }
 HISTORY = {"train_loss": [3.0, 2.0], "val_loss": [2.5, 1.5], "val_mae": [1.2, 0.9]}
+INPUT_REFERENCE = {  # deployment/drift.py: one node-feature column and atoms per molecule
+    "version": 1,
+    "method": "jensen_shannon_distance",
+    "molecules": 3,
+    "atoms": 9,
+    "features": {
+        "x_0": {"kind": "categorical", "values": [0.0, 1.0], "probabilities": [0.5, 0.5, 0.0]},
+        "num_atoms": {"kind": "categorical", "values": [3.0], "probabilities": [1.0, 0.0]},
+    },
+}
 
 
 def _checkpoint(root, **extra):
@@ -79,6 +89,7 @@ def recorded(tmp_path):
         test_metrics={"test_loss": 1.75, "test_mae": 1.0},
         run_info=RUN_INFO,
         data_info={"input_transforms": None},  # trained on data without a pre-transform
+        input_reference=INPUT_REFERENCE,
     )
     return checkpoint, package_checkpoint(checkpoint, tmp_path / "package"), in_channels
 
@@ -139,6 +150,7 @@ def test_model_card_states_the_recorded_facts(recorded):
         assert text in card, text
     assert "MILIA's default featurization" in card  # the test checkpoint records none
     assert "Input transforms: none (the training data had no pre-transform)" in card
+    assert "histograms of 1 node-feature columns and of atoms per molecule over 3" in card
     assert "not recorded" not in card
 
 

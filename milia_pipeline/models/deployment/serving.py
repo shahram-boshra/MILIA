@@ -47,6 +47,7 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 
 from milia_pipeline.exceptions import DeploymentError
+from milia_pipeline.models.deployment.drift import DriftMonitor, drift_settings
 from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
 
 __all__ = [
@@ -97,6 +98,8 @@ class PackagedPredictor:
     def __init__(self, predictor: Any, manifest: dict[str, Any]):
         self.predictor = predictor
         self.manifest = manifest
+        # Set by from_package (deployment/drift.py); None: requests are not monitored
+        self.drift: DriftMonitor | None = None
 
     @classmethod
     def from_package(
@@ -111,6 +114,10 @@ class PackagedPredictor:
         )
         packaged = cls(predictor, manifest)
         packaged.check_signature()
+        # Requests compared with the training inputs (deployment/drift.py); after the signature
+        # check, so only served molecules enter the window
+        threshold, window = drift_settings()
+        packaged.drift = DriftMonitor(manifest.get("input_reference"), threshold, window)
         return packaged
 
     @property
@@ -171,7 +178,10 @@ class PackagedPredictor:
                 )
             except ValueError as exc:
                 raise ValueError(f"instances[{index}]: {exc}") from exc
-        return self.predictor.prepare_inputs(graphs)
+        graphs = self.predictor.prepare_inputs(graphs)
+        if self.drift is not None:
+            self.drift.observe(graphs)
+        return graphs
 
     def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
         """One row of model outputs per SMILES, in input order.
@@ -260,6 +270,12 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             output_names=model.output_names,
             intervals=intervals,
         )
+
+    def drift() -> dict[str, Any]:
+        monitor = state["model"].drift
+        return monitor.report() if monitor is not None else DriftMonitor(None).report()
+
+    app.add_api_route("/monitoring/drift", drift, methods=["GET"])
 
     health_routes = ["/health", "/ping"]
     predict_routes = ["/predict", "/invocations"]

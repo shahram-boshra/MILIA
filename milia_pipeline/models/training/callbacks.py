@@ -618,11 +618,14 @@ class ModelCheckpoint(Callback):
         run_info = getattr(trainer, "run_info", None)
         if isinstance(run_info, dict):  # Trainer(run_info=...); see training/run_info.py
             checkpoint["run_info"] = run_info
+        # Trainer(target_scaling=...): training/target_scaling.py
         target_scaler = getattr(trainer, "target_scaler", None)
-        if isinstance(
-            target_scaler, dict
-        ):  # Trainer(target_scaling=...); training/target_scaling.py
+        if isinstance(target_scaler, dict):
             checkpoint["target_scaler"] = target_scaler
+        # Trainer(record_input_reference=True): deployment/drift.py
+        input_reference = getattr(trainer, "input_reference", None)
+        if isinstance(input_reference, dict):
+            checkpoint["input_reference"] = input_reference
 
         torch.save(checkpoint, path)
 

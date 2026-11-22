@@ -177,6 +177,7 @@ def package_checkpoint(
         "metrics": _metrics(checkpoint),
         "calibration": checkpoint.get("calibration"),
         "target_scaler": checkpoint.get("target_scaler"),
+        "input_reference": checkpoint.get("input_reference"),
         "lineage": {
             "source_checkpoint_sha256": _sha256(source),
             "checkpoint_created_at": version_info.get("created_at"),
@@ -429,6 +430,16 @@ def _calibration_lines(calibration: dict[str, Any] | None) -> list[str]:
     ]
 
 
+def _drift_line(reference: dict[str, Any] | None) -> str:
+    if not reference:
+        return "not recorded (the server reports no drift)"
+    return (
+        f"histograms of {len(reference['features']) - 1} node-feature columns and of atoms per "
+        f"molecule over {reference['molecules']} training molecules; the server compares served "
+        "molecules with them (Jensen-Shannon distance, `GET /monitoring/drift`)"
+    )
+
+
 def _target_scaling_line(scaler: dict[str, Any] | None) -> str:
     if not scaler:
         return "none recorded (the model's outputs are its predictions)"
@@ -498,6 +509,7 @@ def model_card(manifest: dict[str, Any]) -> str:
         f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
         f"{_show(outputs.get('names'))}.",
         f"- Target scaling: {_target_scaling_line(manifest.get('target_scaler'))}",
+        f"- Input drift reference: {_drift_line(manifest.get('input_reference'))}",
         f"- Example input: {_show(manifest.get('input_example'))}",
         "",
         "## Training data",

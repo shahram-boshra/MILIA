@@ -186,6 +186,7 @@ class Trainer:
         run_info: dict[str, Any] | None = None,
         calibration_alpha: float | None = DEFAULT_ALPHA,
         target_scaling: str | None = None,
+        record_input_reference: bool = False,
     ):
         """
         Initialize trainer.
@@ -234,6 +235,10 @@ class Trainer:
                     ``val_loss``; the other validation metrics, test, calibration and prediction
                     are in the targets' units. The scaler is stored in every checkpoint as
                     ``target_scaler``. ``None``: none.
+            record_input_reference: Record a reference of the training inputs (histograms of each
+                    node-feature column and of atoms per molecule, ``deployment/drift.py``) when
+                    ``fit()`` starts; stored in every checkpoint as ``input_reference`` and compared
+                    with served requests.
             run_info: What the run records about itself (``collect_run_info`` in
                     ``training/run_info.py``); written to every checkpoint as ``run_info``.
         """
@@ -273,6 +278,8 @@ class Trainer:
         self.target_scaling = target_scaling
         # Fit on the training split when fit() starts (regression); restored by load_checkpoint
         self.target_scaler: dict[str, Any] | None = None
+        self.record_input_reference = record_input_reference
+        self.input_reference: dict[str, Any] | None = None
 
         # Store model metadata for intelligent forward pass
         self.model_info = model_info or {}
@@ -445,6 +452,10 @@ class Trainer:
                 and self.target_scaler is None
             ):
                 self.target_scaler = self._fit_target_scaler()
+            if self.record_input_reference and self.input_reference is None:
+                from milia_pipeline.models.deployment.drift import build_input_reference
+
+                self.input_reference = build_input_reference(self.train_loader)
 
             self._on_train_begin()
 
@@ -2237,6 +2248,8 @@ class Trainer:
                 checkpoint["run_info"] = self.run_info
             if self.target_scaler is not None:
                 checkpoint["target_scaler"] = self.target_scaler
+            if self.input_reference is not None:
+                checkpoint["input_reference"] = self.input_reference
 
             # =================================================================
             # EXTRA DATA (Existing - unchanged)
@@ -2314,6 +2327,8 @@ class Trainer:
             # The training split's target scaler (resume keeps the statistics trained with)
             if checkpoint.get("target_scaler") is not None:
                 self.target_scaler = checkpoint["target_scaler"]
+            if checkpoint.get("input_reference") is not None:
+                self.input_reference = checkpoint["input_reference"]
             self.metrics_history = defaultdict(list, checkpoint.get("metrics_history", {}))
 
             # =================================================================
