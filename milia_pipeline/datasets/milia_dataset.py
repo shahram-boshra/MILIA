@@ -1439,36 +1439,15 @@ class miliaDataset(InMemoryDataset):
         Returns:
             Composed transforms from registry
         """
-        transforms_list = []
+        # One construction path for training and inference (pre_transform_record.py): the
+        # registry first, then torch_geometric.transforms.
+        from milia_pipeline.transformations.pre_transform_record import instantiate_transforms
 
-        for transform_spec in validated_config:
-            transform_name = transform_spec["name"]
-            transform_kwargs = transform_spec.get("kwargs", {})
-
-            try:
-                # Use registry to get transform class
-                transform_class = gt.registry.get_transform_class(transform_name)
-                transform_instance = transform_class(**transform_kwargs)
-                transforms_list.append(transform_instance)
-
-                self.logger.debug(
-                    f"Created {transform_name} from registry with {len(transform_kwargs)} params"
-                )
-
-            except Exception as e:
-                self.logger.warning(f"Registry creation failed for {transform_name}: {e}")
-                # Try fallback creation
-                try:
-                    transform_class = getattr(torch_geometric.transforms, transform_name)
-                    transform_instance = transform_class(**transform_kwargs)
-                    transforms_list.append(transform_instance)
-                except Exception:
-                    self.logger.error(
-                        f"Both registry and fallback creation failed for {transform_name}"
-                    )
-                    raise
-
-        return Compose(transforms_list) if transforms_list else None
+        try:
+            return instantiate_transforms(validated_config, registry=gt.registry)
+        except Exception as e:
+            self.logger.error(f"Transform creation from the registry failed: {e}")
+            raise
 
     def _create_cache_key_phase2(
         self, config: list[dict[str, Any]], experimental_setup: str | None
@@ -4094,6 +4073,10 @@ class miliaDataset(InMemoryDataset):
             dataset_config = self._dataset_config
             self.logger.debug("Using internal dataset configuration for pre-transforms")
 
+        # The specs of the pipeline returned (training records them for inference,
+        # transformations/pre_transform_record.py); None unless a pipeline is built from them.
+        self.pre_transform_config: list[dict[str, Any]] | None = None
+
         # Step 1: Determine configuration source
         config_source, transform_config = self._determine_transform_config_source(
             experimental_setup, pyg_pre_transforms_config, dataset_config
@@ -4133,6 +4116,20 @@ class miliaDataset(InMemoryDataset):
                 self._validate_and_cache_transforms_phase2(
                     composed_transforms, experimental_setup, validated_config
                 )
+                specs = [
+                    {"name": spec["name"], "kwargs": dict(spec.get("kwargs") or {})}
+                    for spec in validated_config
+                ]
+                built = [type(t).__name__ for t in getattr(composed_transforms, "transforms", [])]
+                if built == [spec["name"] for spec in specs]:
+                    self.pre_transform_config = specs
+                else:
+                    # A recovery path built another pipeline than the configured one: no
+                    # configuration describes it, so inference cannot rebuild it.
+                    self.logger.warning(
+                        f"Pre-transform pipeline {built} differs from the configured "
+                        f"{[spec['name'] for spec in specs]}; it is not recorded for inference"
+                    )
 
             return composed_transforms
 

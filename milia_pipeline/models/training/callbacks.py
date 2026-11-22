@@ -595,6 +595,10 @@ class ModelCheckpoint(Callback):
             "structural_features_config": trainer.model_info.get("structural_features_config", {})
             if hasattr(trainer, "model_info") and trainer.model_info
             else {},
+            # The pre-transforms inference applies to raw inputs (pre_transform_record.py)
+            "input_transforms": trainer.model_info.get("input_transforms")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
         }
 
         # Version info for format detection

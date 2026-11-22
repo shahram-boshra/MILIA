@@ -2120,6 +2120,16 @@ class Trainer:
                     "uses_edge_features": self.model_info.get("uses_edge_features", False)
                     if self.model_info
                     else False,
+                    # As ModelCheckpoint writes them: featurization and the pre-transforms
+                    # inference applies to raw inputs (pre_transform_record.py)
+                    "structural_features_config": self.model_info.get(
+                        "structural_features_config", {}
+                    )
+                    if self.model_info
+                    else {},
+                    "input_transforms": self.model_info.get("input_transforms")
+                    if self.model_info
+                    else None,
                 }
 
             # =================================================================

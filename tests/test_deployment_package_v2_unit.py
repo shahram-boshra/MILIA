@@ -78,6 +78,7 @@ def recorded(tmp_path):
         monitored_score=1.5,
         test_metrics={"test_loss": 1.75, "test_mae": 1.0},
         run_info=RUN_INFO,
+        data_info={"input_transforms": None},  # trained on data without a pre-transform
     )
     return checkpoint, package_checkpoint(checkpoint, tmp_path / "package"), in_channels
 
@@ -137,6 +138,7 @@ def test_model_card_states_the_recorded_facts(recorded):
     ):
         assert text in card, text
     assert "MILIA's default featurization" in card  # the test checkpoint records none
+    assert "Input transforms: none (the training data had no pre-transform)" in card
     assert "not recorded" not in card
 
 

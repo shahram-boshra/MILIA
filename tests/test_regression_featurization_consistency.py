@@ -1227,10 +1227,11 @@ class TestCheckpointDataInfoStructureIntegrity:
     backward-compatible fields alongside the new structural_features_config.
     """
 
-    def test_data_info_has_exactly_three_keys(self, mock_trainer, checkpoint_dir):
+    def test_data_info_has_exactly_the_recorded_keys(self, mock_trainer, checkpoint_dir):
         """
         data_info must contain exactly: requires_edge_features,
-        uses_edge_features, structural_features_config.
+        uses_edge_features, structural_features_config, input_transforms
+        (the training data's pre-transforms, which inference applies).
         """
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -1244,6 +1245,7 @@ class TestCheckpointDataInfoStructureIntegrity:
             "requires_edge_features",
             "uses_edge_features",
             "structural_features_config",
+            "input_transforms",
         }
         assert set(data_info.keys()) == expected_keys, (
             f"data_info keys mismatch.\nExpected: {expected_keys}\nGot: {set(data_info.keys())}"

@@ -3,9 +3,10 @@ HTTP serving of a MILIA deployment package (one FastAPI app for every serving ta
 
 The app loads a verified package (:func:`.package.verify_package`) once at startup with
 ``Predictor.from_checkpoint``. It featurizes each SMILES with the training run's
-``structural_features_config``, exactly as ``main.py --predict`` does, and returns one row of
-model outputs per molecule. Input is always parsed as SMILES (``format="smiles"``): automatic
-format detection would let a request string name a file on the server.
+``structural_features_config`` and applies the training data's recorded pre-transforms, exactly
+as ``main.py --predict`` does, and returns one row of model outputs per molecule. Input is
+always parsed as SMILES (``format="smiles"``): automatic format detection would let a request
+string name a file on the server.
 
 Routes, one app for every target:
 
@@ -131,13 +132,10 @@ class PackagedPredictor:
         signature = self.manifest.get("signature")
         if not signature:
             return
-        from milia_pipeline.models.post_training import convert_to_pyg
-
         expected_inputs = (signature.get("inputs") or {}).get("node_features")
         expected_outputs = (signature.get("outputs") or {}).get("count")
         smiles = (self.manifest.get("input_example") or ["C"])[0]
-        config = self.predictor.structural_features_config
-        graph = convert_to_pyg(smiles, format="smiles", structural_features_config=config)
+        (graph,) = self.featurize([smiles])
         width = graph.x.size(-1) if getattr(graph, "x", None) is not None else None
         if expected_inputs is not None and width != expected_inputs:
             raise DeploymentError(
@@ -153,8 +151,11 @@ class PackagedPredictor:
                     f"signature records {expected_outputs}"
                 )
 
-    def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
-        """One row of model outputs per SMILES, in input order.
+    def featurize(self, smiles: Sequence[str]) -> list[Any]:
+        """Graphs for SMILES, prepared as the training graphs were.
+
+        Featurized with the training run's ``structural_features_config``, then passed through
+        the training data's pre-transforms (``Predictor.prepare_inputs``).
 
         Raises:
             ValueError: A SMILES cannot be parsed; the message names its index.
@@ -170,6 +171,15 @@ class PackagedPredictor:
                 )
             except ValueError as exc:
                 raise ValueError(f"instances[{index}]: {exc}") from exc
+        return self.predictor.prepare_inputs(graphs)
+
+    def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
+        """One row of model outputs per SMILES, in input order.
+
+        Raises:
+            ValueError: A SMILES cannot be parsed; the message names its index.
+        """
+        graphs = self.featurize(smiles)
         predictions = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
         return predictions.reshape(len(graphs), -1).tolist()
 
@@ -179,17 +189,7 @@ class PackagedPredictor:
         """Rows as :meth:`predict_smiles`, plus conformal intervals when the package has them."""
         if not self.predictor.calibration:
             return self.predict_smiles(smiles, batch_size), None
-        from milia_pipeline.models.post_training import convert_to_pyg
-
-        config = self.predictor.structural_features_config
-        graphs = []
-        for index, text in enumerate(smiles):
-            try:
-                graphs.append(
-                    convert_to_pyg(text, format="smiles", structural_features_config=config)
-                )
-            except ValueError as exc:
-                raise ValueError(f"instances[{index}]: {exc}") from exc
+        graphs = self.featurize(smiles)
         result = self.predictor.predict_with_intervals(graphs, batch_size=batch_size)
         intervals = {
             "alpha": result["alpha"],

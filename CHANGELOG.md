@@ -197,6 +197,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Inference applies the training data's pre-transforms. A dataset applies its configured `pre_transform` (by
+  default `NormalizeFeatures`, which scales each row of `x` to sum to one) when it is processed, but `--predict`
+  on molecule files, deployment-package verification, the ONNX export sample and serving featurized molecules
+  without it, so the model received inputs scaled differently from its training data. Training now records the
+  pipeline in the checkpoint (`data_info.input_transforms`: the transform names and arguments, and PyG's
+  description of the pipeline), and every inference path rebuilds it with the code the dataset uses, checks it is
+  the same pipeline, and applies it (`Predictor.prepare_inputs`); graphs read from a processed dataset are not
+  transformed again. Training stops when the dataset was processed with another pipeline than the configured one
+  (re-process it), and inference refuses a recorded pipeline it cannot rebuild. The package signature and model
+  card state the transforms. Checkpoints written before this change do not record them: their inputs are used as
+  featurized, with a warning, and the card says "not recorded". Models trained on pre-transformed data need
+  retraining to be served correctly.
 - Standard training reads `models.evaluation`, where `configs/models.yaml` and `ModelConfig` put it. It read
   `models.training.evaluation`, which the shipped configuration does not have, so `evaluation.metrics`,
   `test_after_training` and `visualization` from the configuration had no effect and the defaults were used.

@@ -3535,6 +3535,10 @@ def handle_predict_mode(
                     for inp in inputs
                 ]
 
+            # Raw inputs go through the training data's pre-transforms; graphs from a processed
+            # dataset (the branches above) already carry them.
+            data_list = predictor.prepare_inputs(data_list)
+
         # Apply sample limit
         if num_samples is not None and num_samples < len(data_list):
             data_list = data_list[:num_samples]
@@ -4082,6 +4086,15 @@ def _run_standard_training(
         else:
             logger.debug(
                 "No structural_features_config found on dataset - checkpoint will use default featurization"
+            )
+
+        # The dataset's pre-transforms, which inference must apply to raw inputs as well
+        from milia_pipeline.transformations.pre_transform_record import record_pre_transforms
+
+        model_info["input_transforms"] = record_pre_transforms(dataset)
+        if model_info["input_transforms"]:
+            logger.info(
+                f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"
             )
 
         # 6.9 What the run records in every checkpoint (dataset, targets, config hash, split,

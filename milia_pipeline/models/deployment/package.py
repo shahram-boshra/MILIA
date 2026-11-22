@@ -211,7 +211,9 @@ def _predictions(checkpoint: Path, smiles: list[str]) -> torch.Tensor:
         checkpoint_path=checkpoint, working_root_dir=checkpoint.parent, device=torch.device("cpu")
     )
     config = predictor.structural_features_config
-    graphs = [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+    graphs = predictor.prepare_inputs(
+        [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+    )
     out = predictor.predict_batch(graphs, return_numpy=True)
     return torch.as_tensor(out).reshape(len(graphs), -1)
 
@@ -328,6 +330,10 @@ def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str
             "uses_edge_features": bool(
                 data_info.get("uses_edge_features", model_info.get("uses_edge_features"))
             ),
+            # The training data's pre-transforms, applied to every featurized input
+            # (pre_transform_record.py); None: none, or not recorded (transforms_recorded)
+            "transforms": (data_info.get("input_transforms") or {}).get("repr"),
+            "transforms_recorded": "input_transforms" in data_info,
         },
         "outputs": {
             "count": model_info.get("out_channels", values.get("out_channels")),
@@ -421,6 +427,23 @@ def _calibration_lines(calibration: dict[str, Any] | None) -> list[str]:
     ]
 
 
+def _transforms_line(inputs: dict[str, Any]) -> str:
+    if not inputs.get("transforms_recorded"):
+        return (
+            "not recorded (the checkpoint predates the record; inputs are used as featurized, "
+            "which matches training only if its data had no pre-transform)"
+        )
+    if not inputs.get("transforms"):
+        return "none (the training data had no pre-transform)"
+    names = re.findall(r"^\s+(\w+)\(", inputs["transforms"], flags=re.MULTILINE) or [
+        inputs["transforms"]
+    ]
+    return (
+        f"{_show(names)}, the training data's pre-transforms, applied to every featurized "
+        "molecule before the model (an ONNX export does not include them)"
+    )
+
+
 def model_card(manifest: dict[str, Any]) -> str:
     """``MODEL_CARD.md`` for a package manifest (Hugging Face / Mitchell et al. sections)."""
     signature = manifest.get("signature") or {}
@@ -458,6 +481,7 @@ def model_card(manifest: dict[str, Any]) -> str:
             if featurization
             else "MILIA's default featurization (the checkpoint records no settings)."
         ),
+        f"- Input transforms: {_transforms_line(inputs)}",
         f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
         f"{_show(outputs.get('names'))}.",
         f"- Example input: {_show(manifest.get('input_example'))}",

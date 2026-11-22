@@ -103,6 +103,9 @@ class Predictor:
         # FUTURE-PROOF: Works with any model_info structure
         # ====================================================================
         self.model_info = model_info or {}
+        # The rebuilt training pre-transform (prepare_inputs), built on first use
+        self._input_transform: Any = None
+        self._input_transform_loaded = False
 
         # Ensure model is on correct device and in eval mode
         self.model.to(self.device)
@@ -133,6 +136,53 @@ class Predictor:
             data_info = self.model_info.get("data_info", {})
             return data_info.get("structural_features_config")
         return None
+
+    @property
+    def input_transforms(self) -> dict[str, Any] | None:
+        """The checkpoint's record of the training pre-transforms (``pre_transform_record.py``).
+
+        ``None``: the dataset had none, or the checkpoint predates the record
+        (:attr:`records_input_transforms` tells the two apart).
+        """
+        return (self.model_info.get("data_info") or {}).get("input_transforms")
+
+    @property
+    def records_input_transforms(self) -> bool:
+        """Whether the checkpoint says which pre-transforms its training graphs went through."""
+        return "input_transforms" in (self.model_info.get("data_info") or {})
+
+    def prepare_inputs(self, graphs: list[Data]) -> list[Data]:
+        """Apply the training pre-transforms to graphs featurized from raw inputs.
+
+        Training graphs went through the dataset's ``pre_transform`` when the dataset was
+        processed; a graph built at inference (``convert_to_pyg``) has not. Call this on every
+        such graph before predicting, and never on graphs taken from a processed dataset (they
+        already carry the transforms).
+
+        A checkpoint written before MILIA recorded the pre-transforms returns the graphs
+        unchanged, with a warning: it cannot say what its training graphs went through.
+
+        Raises:
+            ConfigurationError: The recorded pipeline cannot be rebuilt
+                (``load_input_transform``).
+        """
+        if not self.records_input_transforms:
+            if not self._input_transform_loaded:
+                logger.warning(
+                    "The checkpoint does not record the pre-transforms of its training data "
+                    "(written before MILIA recorded them); raw inputs are used as featurized. "
+                    "Retrain to record them."
+                )
+                self._input_transform_loaded = True
+            return list(graphs)
+        if not self._input_transform_loaded:
+            from milia_pipeline.transformations.pre_transform_record import load_input_transform
+
+            self._input_transform = load_input_transform(self.input_transforms)
+            self._input_transform_loaded = True
+        if self._input_transform is None:
+            return list(graphs)
+        return [self._input_transform(graph) for graph in graphs]
 
     def _resolve_path(self, path: str | Path, create_parents: bool = False) -> Path:
         """

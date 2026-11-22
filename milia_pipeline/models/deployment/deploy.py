@@ -63,7 +63,9 @@ def _export_onnx(package_dir: Path) -> None:
     )
     model, config = predictor.model.eval(), predictor.structural_features_config
     smiles = list(manifest.get("input_example") or _FALLBACK_EXAMPLE)
-    graphs = [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+    graphs = predictor.prepare_inputs(
+        [convert_to_pyg(s, format="smiles", structural_features_config=config) for s in smiles]
+    )
     export_onnx(model, package_dir / ONNX_FILE, Batch.from_data_list(graphs))
 
 
