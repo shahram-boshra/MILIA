@@ -27,6 +27,7 @@ import copy
 import inspect
 import logging
 import os
+import re
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -229,9 +230,10 @@ class Trainer:
                     validation set after training and stored in the best checkpoint as
                     ``calibration`` (regression only; ``None``: no calibration).
             target_scaling: ``"standard"``: regression targets are standardized with the mean and
-                    std of the training split (``training/target_scaling.py``) for the loss;
-                    validation, test, calibration and prediction are in the targets' units. The
-                    scaler is stored in every checkpoint as ``target_scaler``. ``None``: none.
+                    std of the training split (``training/target_scaling.py``) for the loss and
+                    ``val_loss``; the other validation metrics, test, calibration and prediction
+                    are in the targets' units. The scaler is stored in every checkpoint as
+                    ``target_scaler``. ``None``: none.
             run_info: What the run records about itself (``collect_run_info`` in
                     ``training/run_info.py``); written to every checkpoint as ``run_info``.
         """
@@ -704,12 +706,15 @@ class Trainer:
         for batch in self.val_loader:
             try:
                 batch = batch.to(self.device)
-                # Evaluated in the targets' own units (outputs unscaled, target_scaling.py)
-                out = unscale_outputs(self._forward_pass(batch), self.target_scaler)
+                raw = self._forward_pass(batch)
                 # Get appropriate target based on task type
                 target = self._get_target(batch)
-                loss = self.loss_fn(out, target)
+                # val_loss is the training objective: on standardized targets when target scaling
+                # is on (every target weighs alike in early stopping, best.pt and the deploy
+                # gate). The other metrics are in the targets' own units (target_scaling.py).
+                loss = self.loss_fn(raw, scale_targets(target, self.target_scaler))
                 loss_sum.add(loss)
+                out = unscale_outputs(raw, self.target_scaler)
 
                 # Collect predictions and targets for metrics
                 all_preds.append(out.detach())
@@ -755,6 +760,7 @@ class Trainer:
                 logger.warning(f"Error computing metric '{name}': {e}")
                 continue
 
+        results.update(self._per_target_metrics("val", all_preds, all_targets))
         return results
 
     @property
@@ -862,6 +868,36 @@ class Trainer:
         return conformal_quantiles(
             torch.cat(targets), torch.cat(predictions), alpha=alpha, spread=spread_all
         )
+
+    def _target_labels(self, count: int) -> list[str]:
+        """Metric-name suffixes of the targets: their names (``run_info``), else ``t<i>``."""
+        names = ((self.run_info or {}).get("targets") or {}).get("names")
+        if isinstance(names, list | tuple) and len(names) == count:
+            labels = [re.sub(r"[^A-Za-z0-9]+", "_", str(name)).strip("_") for name in names]
+            if all(labels) and len(set(labels)) == count:
+                return labels
+        return [f"t{i}" for i in range(count)]
+
+    def _per_target_metrics(
+        self, prefix: str, preds: list[torch.Tensor], targets: list[torch.Tensor]
+    ) -> dict[str, float]:
+        """MAE and RMSE of each target, in its own units (regression with several targets)."""
+        if not self.is_regression or not preds:
+            return {}
+        predicted = torch.cat(preds).detach().float()
+        actual = torch.cat(targets).detach().float()
+        if predicted.dim() < 2 or predicted.size(-1) < 2 or predicted.shape != actual.shape:
+            return {}
+        error = (predicted - actual).reshape(-1, predicted.size(-1))
+        mae = error.abs().nanmean(dim=0)
+        rmse = error.pow(2).nanmean(dim=0).sqrt()
+        results = {}
+        for label, a, r in zip(
+            self._target_labels(predicted.size(-1)), mae.tolist(), rmse.tolist(), strict=True
+        ):
+            results[f"{prefix}_mae_{label}"] = a
+            results[f"{prefix}_rmse_{label}"] = r
+        return results
 
     @torch.no_grad()
     def _fit_target_scaler(self) -> dict[str, Any]:
@@ -981,6 +1017,8 @@ class Trainer:
             except Exception as e:
                 logger.warning(f"Error computing metric '{name}': {e}")
                 continue
+
+        results.update(self._per_target_metrics("test", all_preds, all_targets))
 
         # Log all results
         logger.info(f"Test results: {results}")

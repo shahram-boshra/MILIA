@@ -202,6 +202,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `val_loss` is scored on the standardized targets when target scaling is on, as the training loss is, so every
+  target weighs alike in early stopping, the choice of `best.pt` and the deploy gate (`metric: val_loss`). Scored
+  in the targets' units, it followed the targets with the largest spread: a run with two energy targets of std 921
+  and five targets of std 0.01 to 421 selected its checkpoint on the energies alone. Validation and test metrics
+  stay in the targets' units and are also reported per target (`val_mae_<target>`, `test_rmse_<target>`; target
+  names from the run's record, else `t0`, `t1`, …). A `gate.threshold` on `val_loss` is now in standardized units, and `compare_to_current` compares `val_loss`
+  only with a package trained with the same `target_scaler` (other scales are skipped with a warning).
 - Regression targets are scaled with statistics of the training split. `models.training.target_scaling:
   standard` (the shipped default) standardizes each target with its mean and population std over the training
   split only, for the training loss; validation and test metrics, conformal calibration and every prediction

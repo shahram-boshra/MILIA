@@ -78,6 +78,10 @@ def _model_folder(checkpoint: Path) -> str:
     return model_folder_name(str(hyper_parameters.get("model_name", "model")))
 
 
+# The metric scored on the standardized targets when target scaling is on
+SCALED_METRIC = "val_loss"
+
+
 def evaluate_gate(
     checkpoint: str | Path, gate: GateSettings, output_dir: str | Path
 ) -> GateDecision:
@@ -109,7 +113,23 @@ def evaluate_gate(
             current_version = str(newest)
             manifest = json.loads((newest / PACKAGE_MANIFEST).read_text())
             current_value = manifest_scores(manifest.get("metrics")).get(gate.metric)
-            if current_value is None:
+            candidate_scaler = (load_checkpoint_file(checkpoint, map_location="cpu") or {}).get(
+                "target_scaler"
+            )
+            if (
+                current_value is not None
+                and gate.metric == SCALED_METRIC
+                and manifest.get("target_scaler") != candidate_scaler
+            ):
+                # val_loss is scored on targets standardized with each run's own training-split
+                # scaler (training/target_scaling.py): two runs with different scalers measure it
+                # on different scales.
+                logger.warning(
+                    f"{gate.metric} of {newest} is on another target scale than this checkpoint's "
+                    "(different target_scaler): not compared"
+                )
+                current_value = None
+            elif current_value is None:
                 logger.info(f"{newest} records no {gate.metric}: nothing to compare with")
             elif value is not None and not _better(value, current_value, gate.mode):
                 reasons.append(

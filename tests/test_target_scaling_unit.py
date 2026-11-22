@@ -112,24 +112,30 @@ class TestTrainer:
         best = load_checkpoint_file(tmp_path / "checkpoints" / "best.pt", map_location="cpu")
         assert best["target_scaler"] == trainer.target_scaler
 
-    def test_validation_and_calibration_are_in_the_targets_units(self, tmp_path):
+    def test_val_loss_is_scaled_and_metrics_and_calibration_are_in_units(self, tmp_path):
         torch.manual_seed(0)
         trainer = _trainer(tmp_path)
         trainer.fit()
         trainer.model.eval()
-        preds, targets = [], []
+        preds, targets, scaled_losses = [], [], []
         with torch.no_grad():
             for batch in trainer.val_loader:
                 out = trainer.model(batch.x, batch.edge_index, batch=batch.batch)
                 preds.append(unscale_outputs(out, trainer.target_scaler))
                 targets.append(batch.y)
-        # val_loss is the mean of the batch losses
-        expected = (
-            torch.stack([nn.functional.mse_loss(p, t) for p, t in zip(preds, targets, strict=True)])
-            .mean()
-            .item()
+                scaled_losses.append(
+                    nn.functional.mse_loss(out, scale_targets(batch.y, trainer.target_scaler))
+                )
+        results = trainer._validate_epoch()
+        # val_loss: the mean of the batch losses on standardized targets (the training objective)
+        expected = torch.stack(scaled_losses).mean().item()
+        assert results["val_loss"] == pytest.approx(expected, rel=1e-5)
+        # the other metrics, per target too, in the targets' units
+        error = torch.cat(preds) - torch.cat(targets)
+        assert results["val_mae_t0"] == pytest.approx(error[:, 0].abs().mean().item(), rel=1e-5)
+        assert results["val_rmse_t1"] == pytest.approx(
+            error[:, 1].pow(2).mean().sqrt().item(), rel=1e-5
         )
-        assert trainer._validate_epoch()["val_loss"] == pytest.approx(expected, rel=1e-5)
         assert trainer.calibrate() == conformal_quantiles(
             torch.cat(targets), torch.cat(preds), alpha=0.1
         )
@@ -296,3 +302,71 @@ class TestDeprecationAndConfig:
         best = load_checkpoint_file(tmp_path / "checkpoints" / "best.pt", map_location="cpu")
         assert best["target_scaler"]["method"] == "standard"
         assert len(best["target_scaler"]["mean"]) == 2
+
+
+class TestPerTargetMetrics:
+    def test_test_metrics_per_target_use_the_recorded_names(self, tmp_path):
+        torch.manual_seed(0)
+        trainer = _trainer(
+            tmp_path, epochs=1, run_info={"targets": {"names": ["E tot", "gap (eV)"], "count": 2}}
+        )
+        results = trainer.fit()["test_metrics"]
+        assert {"test_mae_E_tot", "test_rmse_E_tot", "test_mae_gap_eV", "test_rmse_gap_eV"} <= set(
+            results
+        )
+
+    def test_one_target_or_classification_adds_none(self, tmp_path):
+        trainer = _trainer(tmp_path, epochs=1)
+        one = [torch.zeros(4, 1)]
+        assert trainer._per_target_metrics("val", one, one) == {}
+        trainer._task_type = "graph_classification"
+        two = [torch.zeros(4, 2)]
+        assert trainer._per_target_metrics("val", two, two) == {}
+
+
+class TestDeployGate:
+    def _setup(self, tmp_path, current_scaler, candidate_scaler):
+        from milia_pipeline.models.deployment.package import PACKAGE_MANIFEST
+
+        version = tmp_path / "deployments" / "GCN" / "1"
+        version.mkdir(parents=True)
+        (version / PACKAGE_MANIFEST).write_text(
+            json.dumps(
+                {
+                    "metrics": {"validation": {"val_loss": 0.1, "val_mae": 5.0}},
+                    "target_scaler": current_scaler,
+                }
+            )
+        )
+        checkpoint = tmp_path / "best.pt"
+        torch.save(
+            {
+                "hyper_parameters": {"model_name": "GCN"},
+                "metrics_history": {"val_loss": [0.5], "val_mae": [4.0]},
+                "target_scaler": candidate_scaler,
+            },
+            checkpoint,
+        )
+        return checkpoint, tmp_path / "deployments"
+
+    def test_val_loss_on_another_target_scale_is_not_compared(self, tmp_path):
+        from milia_pipeline.models.deployment.after_training import evaluate_gate
+        from milia_pipeline.models.deployment.settings import GateSettings
+
+        scaler = {"method": "standard", "n": 8, "mean": [1.0], "std": [2.0]}
+        checkpoint, output = self._setup(tmp_path, None, scaler)
+        decision = evaluate_gate(checkpoint, GateSettings(compare_to_current=True), output)
+        assert decision.passed and decision.current_value is None
+        # same scale: compared (0.5 does not beat 0.1)
+        checkpoint, output = self._setup(tmp_path / "same", scaler, scaler)
+        assert not evaluate_gate(checkpoint, GateSettings(compare_to_current=True), output).passed
+
+    def test_metrics_in_units_are_compared_whatever_the_scale(self, tmp_path):
+        from milia_pipeline.models.deployment.after_training import evaluate_gate
+        from milia_pipeline.models.deployment.settings import GateSettings
+
+        scaler = {"method": "standard", "n": 8, "mean": [1.0], "std": [2.0]}
+        checkpoint, output = self._setup(tmp_path, None, scaler)
+        gate = GateSettings(metric="val_mae", compare_to_current=True)
+        decision = evaluate_gate(checkpoint, gate, output)
+        assert decision.passed and decision.current_value == 5.0  # 4.0 beats 5.0

@@ -63,7 +63,12 @@ def test_test_after_training_false_is_honoured(tmp_path):
 
 def test_the_configured_metrics_are_computed(tmp_path):
     best = _train(tmp_path, {"metrics": ["mae"], "visualization": {"enabled": False}})
+    # the configured metric, plus the per-target MAE and RMSE of the two targets
     assert {name for name in best["metrics_history"] if name.startswith("val_")} == {
         "val_loss",
         "val_mae",
+        "val_mae_t0",
+        "val_rmse_t0",
+        "val_mae_t1",
+        "val_rmse_t1",
     }

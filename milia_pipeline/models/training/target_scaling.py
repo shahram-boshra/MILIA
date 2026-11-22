@@ -7,9 +7,13 @@ reach the model (scikit-learn ``TransformedTargetRegressor``: ``transformer.fit`
 targets, ``inverse_transform`` of every prediction; Chemprop: target scaler fit on the training
 data, its inverse stored with the model and applied at inference).
 
-Training (``Trainer``) computes the loss on standardized targets; validation, test, conformal
-calibration and prediction work in the targets' own units (the model's outputs are unscaled
-first). The scaler is stored in every checkpoint as ``target_scaler``::
+Training (``Trainer``) computes the loss on standardized targets, and so does ``val_loss``, the
+validation objective that early stopping, the best checkpoint and the deploy gate use: every
+target weighs alike, whatever its units (Chemprop scores its validation loss on the scaled
+targets, with the scaler fit on the training split). The other validation metrics, the test
+metrics, conformal calibration and prediction work in the targets' own units (the model's outputs
+are unscaled first), overall and per target (``val_mae_<target>``, ``test_rmse_<target>``).
+The scaler is stored in every checkpoint as ``target_scaler``::
 
     {"method": "standard", "n": 1200, "mean": [...], "std": [...]}   # one value per target
 

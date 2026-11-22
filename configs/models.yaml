@@ -535,9 +535,10 @@ models:
       random_seed: 42
       shuffle: true
 
-    # Regression targets: standardized per target with the mean and std of the training split for
-    # the loss (fit on the training split only); validation, test metrics and predictions are in
-    # the targets' own units. null: train on the targets as they are.
+    # Regression targets: standardized per target with the mean and std of the training split (fit
+    # on the training split only) for the loss and val_loss, so every target weighs alike in early
+    # stopping, best.pt and the deploy gate; the other metrics (also per target) and predictions are
+    # in the targets' own units. null: train on the targets as they are.
     target_scaling: "standard"
 
     # Loss Function
