@@ -4028,7 +4028,7 @@ def _run_standard_training(
         # FUTURE-PROOF: Reads from EvaluationConfig, extensible via registry
         metrics = {}
         if METRICS_AVAILABLE:
-            eval_config = training_config.get("evaluation", {})
+            eval_config = models_config.get("evaluation", {})
             config_metrics = eval_config.get("metrics", None)
 
             try:
@@ -4151,7 +4151,7 @@ def _run_standard_training(
         # ====================================================================
         # 9. Train, then test once: fit() scores the best checkpoint's weights (stored in
         # best.pt as test_metrics) when evaluation.test_after_training is true (default).
-        eval_config = training_config.get("evaluation", {})
+        eval_config = models_config.get("evaluation", {})
         logger.info("Starting training...")
         results = trainer.fit(test=eval_config.get("test_after_training", True))
 

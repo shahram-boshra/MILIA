@@ -187,6 +187,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Standard training reads `models.evaluation`, where `configs/models.yaml` and `ModelConfig` put it. It read
+  `models.training.evaluation`, which the shipped configuration does not have, so `evaluation.metrics`,
+  `test_after_training` and `visualization` from the configuration had no effect and the defaults were used.
 - The test evaluation after training scores the best checkpoint. `Trainer.fit()` tested the weights of the last
   epoch, and `milia` training then tested those same weights a second time, while `checkpoints/best.pt` — the
   checkpoint MILIA packages and predicts with — holds the best validation epoch. `fit()` now evaluates the test set
