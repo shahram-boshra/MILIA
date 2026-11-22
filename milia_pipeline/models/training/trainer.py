@@ -46,6 +46,13 @@ from milia_pipeline.models.post_training.conformal import (
     member_spread,
     recording_members,
 )
+from milia_pipeline.models.training.target_scaling import (
+    TARGET_SCALING_METHODS,
+    fit_target_scaler,
+    scale_targets,
+    unscale_outputs,
+    unscale_spread,
+)
 
 from .module_utils import unwrap_compiled
 
@@ -177,6 +184,7 @@ class Trainer:
         acceleration: AccelerationManager | None = None,
         run_info: dict[str, Any] | None = None,
         calibration_alpha: float | None = DEFAULT_ALPHA,
+        target_scaling: str | None = None,
     ):
         """
         Initialize trainer.
@@ -220,6 +228,10 @@ class Trainer:
             calibration_alpha: Miscoverage level of the split conformal intervals fitted on the
                     validation set after training and stored in the best checkpoint as
                     ``calibration`` (regression only; ``None``: no calibration).
+            target_scaling: ``"standard"``: regression targets are standardized with the mean and
+                    std of the training split (``training/target_scaling.py``) for the loss;
+                    validation, test, calibration and prediction are in the targets' units. The
+                    scaler is stored in every checkpoint as ``target_scaler``. ``None``: none.
             run_info: What the run records about itself (``collect_run_info`` in
                     ``training/run_info.py``); written to every checkpoint as ``run_info``.
         """
@@ -251,6 +263,14 @@ class Trainer:
         self.run_info = run_info
         # Miscoverage level of the conformal intervals fitted after training (None: no calibration)
         self.calibration_alpha = calibration_alpha
+        if target_scaling is not None and target_scaling not in TARGET_SCALING_METHODS:
+            raise ValueError(
+                f"target_scaling must be one of {TARGET_SCALING_METHODS} or None, "
+                f"got {target_scaling!r}"
+            )
+        self.target_scaling = target_scaling
+        # Fit on the training split when fit() starts (regression); restored by load_checkpoint
+        self.target_scaler: dict[str, Any] | None = None
 
         # Store model metadata for intelligent forward pass
         self.model_info = model_info or {}
@@ -417,6 +437,13 @@ class Trainer:
         start_time = datetime.now()
 
         try:
+            if (
+                self.target_scaling is not None
+                and self.is_regression
+                and self.target_scaler is None
+            ):
+                self.target_scaler = self._fit_target_scaler()
+
             self._on_train_begin()
 
             for epoch in range(self.max_epochs):
@@ -588,7 +615,8 @@ class Trainer:
                         out = self._forward_pass(batch)
                         # Get appropriate target based on task type
                         target = self._get_target(batch)
-                        loss = self.loss_fn(out, target)
+                        # Standardized targets (training split statistics) when configured
+                        loss = self.loss_fn(out, scale_targets(target, self.target_scaler))
 
                     # Scale loss for gradient accumulation
                     loss = loss / self.accumulate_grad_batches
@@ -676,7 +704,8 @@ class Trainer:
         for batch in self.val_loader:
             try:
                 batch = batch.to(self.device)
-                out = self._forward_pass(batch)
+                # Evaluated in the targets' own units (outputs unscaled, target_scaling.py)
+                out = unscale_outputs(self._forward_pass(batch), self.target_scaler)
                 # Get appropriate target based on task type
                 target = self._get_target(batch)
                 loss = self.loss_fn(out, target)
@@ -822,8 +851,8 @@ class Trainer:
             for batch in self.val_loader:
                 batch = batch.to(self.device)
                 with recording_members(self.model) as ensemble:
-                    out = self._forward_pass(batch)
-                    spread = member_spread(ensemble)
+                    out = unscale_outputs(self._forward_pass(batch), self.target_scaler)
+                    spread = unscale_spread(member_spread(ensemble), self.target_scaler)
                 target = self._get_target(batch)
                 predictions.append(out.detach().float().reshape(out.size(0), -1).cpu())
                 targets.append(target.detach().float().reshape(out.size(0), -1).cpu())
@@ -833,6 +862,21 @@ class Trainer:
         return conformal_quantiles(
             torch.cat(targets), torch.cat(predictions), alpha=alpha, spread=spread_all
         )
+
+    @torch.no_grad()
+    def _fit_target_scaler(self) -> dict[str, Any]:
+        """The target scaler of the training split (``training/target_scaling.py``)."""
+        targets = []
+        for batch in self.train_loader:
+            target = self._get_target(batch.to(self.device))
+            targets.append(target.detach().float().reshape(target.size(0), -1).cpu())
+        scaler = fit_target_scaler(torch.cat(targets), method=self.target_scaling)
+        logger.info(
+            f"Target scaling ({scaler['method']}) fit on {scaler['n']} training targets: "
+            f"mean {[round(v, 6) for v in scaler['mean']]}, "
+            f"std {[round(v, 6) for v in scaler['std']]}"
+        )
+        return scaler
 
     def _record_in_checkpoint(self, path: Path, key: str, value: Any) -> None:
         """Store ``value`` in the checkpoint at ``path`` under ``key`` (atomic rewrite)."""
@@ -889,7 +933,8 @@ class Trainer:
         for batch in self.test_loader:
             try:
                 batch = batch.to(self.device)
-                out = self._forward_pass(batch)
+                # Evaluated in the targets' own units (outputs unscaled, target_scaling.py)
+                out = unscale_outputs(self._forward_pass(batch), self.target_scaler)
                 # Get appropriate target based on task type
                 target = self._get_target(batch)
                 loss = self.loss_fn(out, target)
@@ -2152,6 +2197,8 @@ class Trainer:
             }
             if self.run_info is not None:
                 checkpoint["run_info"] = self.run_info
+            if self.target_scaler is not None:
+                checkpoint["target_scaler"] = self.target_scaler
 
             # =================================================================
             # EXTRA DATA (Existing - unchanged)
@@ -2226,6 +2273,9 @@ class Trainer:
             self.current_epoch = checkpoint.get("epoch", 0)
             self.global_step = checkpoint.get("global_step", 0)
             self.best_val_loss = checkpoint.get("best_val_loss", float("inf"))
+            # The training split's target scaler (resume keeps the statistics trained with)
+            if checkpoint.get("target_scaler") is not None:
+                self.target_scaler = checkpoint["target_scaler"]
             self.metrics_history = defaultdict(list, checkpoint.get("metrics_history", {}))
 
             # =================================================================

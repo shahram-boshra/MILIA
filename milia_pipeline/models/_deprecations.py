@@ -57,6 +57,15 @@ ONNX_DYNAMIC_AXES_DEPRECATION = (
 )
 
 
+PER_MOLECULE_TARGET_SCALING_DEPRECATION = (
+    "The {name} transform is deprecated and will be removed in MILIA "
+    f"{REMOVAL_VERSION}: as a dataset transform it scales each molecule's targets with that "
+    "molecule's own statistics, which no prediction can undo. Scale targets with "
+    "models.training.target_scaling: standard (statistics of the training split, undone at "
+    "prediction) and re-process the dataset without {name}."
+)
+
+
 def warn_deprecated(message: str, stacklevel: int = 2) -> None:
     """Emit ``message`` as a ``FutureWarning`` and log it.
 

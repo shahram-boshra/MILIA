@@ -172,6 +172,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+- The `StandardizeTargets` and `NormalizeTargets` transforms emit a `FutureWarning` and a log line and will be
+  removed in 2.0.0. As dataset transforms they run on each molecule alone, so they scaled every molecule's targets
+  with that molecule's own mean and std (or min and max): a single-target `y` became 0, several targets became a
+  within-molecule z-score, and no prediction could be converted back to units. `StandardizeTargets` is disabled in
+  the shipped `configs/transformations.yaml`; use `models.training.target_scaling`.
 - The earlier `models.deployment` keys `strategy`, `edge`, `cloud`, `federated`, `optimization` (`quantization`,
   `pruning`, `distillation`) and `monitoring` emit a `FutureWarning` and a log line, one per key, are ignored, and
   will be removed in 2.0.0: no code acted on them. `ModelOptimizer` and `ModelMonitor` stay available as Python API.
@@ -197,6 +202,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Regression targets are scaled with statistics of the training split. `models.training.target_scaling:
+  standard` (the shipped default) standardizes each target with its mean and population std over the training
+  split only, for the training loss; validation and test metrics, conformal calibration and every prediction
+  (`Predictor`, `--predict`, serving) are in the targets' own units. The scaler is stored in every checkpoint and
+  in the package manifest as `target_scaler`, and the model card states it (a model exported to ONNX outputs the
+  standardized values). It replaces the per-molecule `StandardizeTargets` transform, which was enabled by default:
+  a dataset processed with it must be re-processed (training stops on the mismatch with the configured pipeline)
+  and its models retrained. `Trainer(target_scaling=None)`, the Python API default, trains on the targets as they
+  are.
 - Inference applies the training data's pre-transforms. A dataset applies its configured `pre_transform` (by
   default `NormalizeFeatures`, which scales each row of `x` to sum to one) when it is processed, but `--predict`
   on molecule files, deployment-package verification, the ONNX export sample and serving featurized molecules

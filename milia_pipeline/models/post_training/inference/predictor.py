@@ -27,6 +27,7 @@ from torch_geometric.loader import DataLoader
 from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.capabilities import attached_capabilities
 from milia_pipeline.models.training.module_utils import unwrap_compiled
+from milia_pipeline.models.training.target_scaling import unscale_outputs, unscale_spread
 
 if TYPE_CHECKING:
     import numpy
@@ -75,6 +76,7 @@ class Predictor:
         task_type: str | None = None,
         model_info: dict[str, Any] | None = None,  # FIX 19: NEW PARAMETER
         calibration: dict[str, Any] | None = None,
+        target_scaler: dict[str, Any] | None = None,
     ):
         """
         Initialize predictor.
@@ -88,9 +90,13 @@ class Predictor:
             model_info: Model metadata including featurization config from checkpoint
             calibration: The checkpoint's conformal calibration (``post_training/conformal.py``),
                 which :meth:`predict_with_intervals` needs
+            target_scaler: The checkpoint's training-split target scaler
+                (``training/target_scaling.py``); predictions are unscaled with it, so they are
+                in the targets' own units
         """
         self.model = model
         self.calibration = calibration
+        self.target_scaler = target_scaler
         self._working_root_dir = Path(working_root_dir).expanduser().resolve()
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.task_type = task_type
@@ -266,6 +272,7 @@ class Predictor:
             task_type=task_type,
             model_info=model_info,  # FIX 19: Pass model_info for featurization config access
             calibration=checkpoint.get("calibration"),
+            target_scaler=checkpoint.get("target_scaler"),
         )
 
     def predict(
@@ -290,7 +297,8 @@ class Predictor:
 
         # Run inference
         with torch.no_grad():
-            output = self._forward(data)
+            # In the targets' own units when the model was trained on standardized targets
+            output = unscale_outputs(self._forward(data), self.target_scaler)
 
         # Post-process based on task type
         output = self._postprocess(output, data)
@@ -572,7 +580,7 @@ class Predictor:
         for batch in loader:
             with recording_members(self.model) as ensemble:
                 out = self.predict(batch, return_numpy=False)
-                spread = member_spread(ensemble)
+                spread = unscale_spread(member_spread(ensemble), self.target_scaler)
             rows = out.detach().float().reshape(out.size(0), -1).cpu()
             spread = spread.reshape(rows.shape).cpu() if spread is not None else None
             lower, upper = intervals(rows, self.calibration, spread)

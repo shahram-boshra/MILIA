@@ -29,10 +29,11 @@ transformations:
       params:
         attrs: ["x"]
 
-    # Standardize target labels (Y) - CRITICAL for large energy values
-    # Z-score normalization: mean=0, std=1
+    # Deprecated (removed in 2.0.0): standardizes each molecule's y with that molecule's own mean
+    # and std, which cannot be undone at prediction. Target scaling is
+    # models.training.target_scaling (training-split statistics, undone at prediction).
     - name: "StandardizeTargets"
-      enabled: true
+      enabled: false
       params:
         attrs: ["y"]
         eps: 1.0e-8

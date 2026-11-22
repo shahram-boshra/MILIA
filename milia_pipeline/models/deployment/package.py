@@ -92,6 +92,7 @@ _INFERENCE_KEYS = (
     "data_info",
     "version_info",
     "calibration",
+    "target_scaler",
 )
 
 
@@ -175,6 +176,7 @@ def package_checkpoint(
         "input_example": list(run_info.get("input_example") or []),
         "metrics": _metrics(checkpoint),
         "calibration": checkpoint.get("calibration"),
+        "target_scaler": checkpoint.get("target_scaler"),
         "lineage": {
             "source_checkpoint_sha256": _sha256(source),
             "checkpoint_created_at": version_info.get("created_at"),
@@ -427,6 +429,17 @@ def _calibration_lines(calibration: dict[str, Any] | None) -> list[str]:
     ]
 
 
+def _target_scaling_line(scaler: dict[str, Any] | None) -> str:
+    if not scaler:
+        return "none recorded (the model's outputs are its predictions)"
+    return (
+        f"trained on targets standardized with the mean and std of {scaler['n']} training "
+        "values per target; MILIA returns predictions in the targets' own units. A model "
+        "exported to ONNX outputs the standardized values: multiply by `target_scaler.std` and "
+        f"add `target_scaler.mean` from `{PACKAGE_MANIFEST}`."
+    )
+
+
 def _transforms_line(inputs: dict[str, Any]) -> str:
     if not inputs.get("transforms_recorded"):
         return (
@@ -484,6 +497,7 @@ def model_card(manifest: dict[str, Any]) -> str:
         f"- Input transforms: {_transforms_line(inputs)}",
         f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
         f"{_show(outputs.get('names'))}.",
+        f"- Target scaling: {_target_scaling_line(manifest.get('target_scaler'))}",
         f"- Example input: {_show(manifest.get('input_example'))}",
         "",
         "## Training data",

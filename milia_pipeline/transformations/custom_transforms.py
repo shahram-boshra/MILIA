@@ -1354,9 +1354,23 @@ class ScaleMullikenCharges(QuantumTransformBase):
 # =============================================================================
 
 
+def _warn_per_molecule_target_scaling(name: str) -> None:
+    """``FutureWarning``: per-molecule target scaling is replaced by training-split scaling."""
+    from milia_pipeline.models._deprecations import (
+        PER_MOLECULE_TARGET_SCALING_DEPRECATION,
+        warn_deprecated,
+    )
+
+    warn_deprecated(PER_MOLECULE_TARGET_SCALING_DEPRECATION.format(name=name), stacklevel=3)
+
+
 class StandardizeTargets(QuantumTransformBase):
     """
     Standardize target values (y) using z-score normalization.
+
+    .. deprecated::
+        Removed in MILIA 2.0.0. As a dataset transform it uses each molecule's own
+        statistics, which no prediction can undo; use ``models.training.target_scaling``.
 
     Transforms targets to have mean=0 and std=1, which is critical for:
     - Training stability with large energy values (DFT energies in Hartrees)
@@ -1403,6 +1417,7 @@ class StandardizeTargets(QuantumTransformBase):
             eps: Small constant to prevent division by zero when std is very small.
         """
         super().__init__()
+        _warn_per_molecule_target_scaling("StandardizeTargets")
         self.attrs = attrs if attrs is not None else ["y"]
         self.eps = eps
 
@@ -1509,6 +1524,10 @@ class NormalizeTargets(QuantumTransformBase):
     """
     Normalize target values (y) to a specified range using min-max scaling.
 
+    .. deprecated::
+        Removed in MILIA 2.0.0. As a dataset transform it uses each molecule's own
+        statistics, which no prediction can undo; use ``models.training.target_scaling``.
+
     Transforms targets to a bounded range (default [0, 1]), which is useful for:
     - Targets with known bounds
     - Activation functions with bounded outputs (sigmoid, tanh)
@@ -1563,6 +1582,7 @@ class NormalizeTargets(QuantumTransformBase):
             eps: Small constant to prevent division by zero.
         """
         super().__init__()
+        _warn_per_molecule_target_scaling("NormalizeTargets")
         self.attrs = attrs if attrs is not None else ["y"]
         self.range_min = range_min
         self.range_max = range_max

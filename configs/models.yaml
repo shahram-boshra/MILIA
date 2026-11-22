@@ -535,6 +535,11 @@ models:
       random_seed: 42
       shuffle: true
 
+    # Regression targets: standardized per target with the mean and std of the training split for
+    # the loss (fit on the training split only); validation, test metrics and predictions are in
+    # the targets' own units. null: train on the targets as they are.
+    target_scaling: "standard"
+
     # Loss Function
     loss:
       name: "mse"                        # Regression: mse, mae, huber, smooth_l1

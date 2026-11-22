@@ -4130,6 +4130,8 @@ def _run_standard_training(
             run_info=run_info,
             # Split conformal intervals of the best checkpoint (regression; null: none)
             calibration_alpha=models_config.get("evaluation", {}).get("calibration_alpha", 0.1),
+            # Regression targets standardized with training-split statistics (null: none)
+            target_scaling=training_config.get("target_scaling", "standard"),
         )
 
         # 8. Check for checkpoint resume

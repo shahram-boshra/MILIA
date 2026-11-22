@@ -618,6 +618,11 @@ class ModelCheckpoint(Callback):
         run_info = getattr(trainer, "run_info", None)
         if isinstance(run_info, dict):  # Trainer(run_info=...); see training/run_info.py
             checkpoint["run_info"] = run_info
+        target_scaler = getattr(trainer, "target_scaler", None)
+        if isinstance(
+            target_scaler, dict
+        ):  # Trainer(target_scaling=...); training/target_scaling.py
+            checkpoint["target_scaler"] = target_scaler
 
         torch.save(checkpoint, path)
 

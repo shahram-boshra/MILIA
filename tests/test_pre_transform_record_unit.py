@@ -145,16 +145,16 @@ class TestMiliaDataset:
         assert pipeline_repr(load_input_transform(record)) == pipeline_repr(dataset.pre_transform)
 
     def test_a_pipeline_built_differently_from_its_configuration_is_not_recorded(self, tmp_path):
+        from torch_geometric.transforms import AddSelfLoops
+
         from milia_pipeline.datasets.milia_dataset import miliaDataset
 
         with patch.object(
             miliaDataset,
             "_create_transforms_with_phase2_system",
-            return_value=Compose([NormalizeFeatures()]),
+            return_value=Compose([AddSelfLoops()]),  # not the configured pipeline
         ):
             dataset = self._dataset(tmp_path)
-        if len(dataset.pre_transform.transforms) == len(DEFAULT_SPECS):
-            pytest.skip("the configuration has one transform")
         assert dataset.pre_transform_config is None
 
 
