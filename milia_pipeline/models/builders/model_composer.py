@@ -794,6 +794,11 @@ class ParallelEnsemble(nn.Module):
 
         logger.debug(f"Initialized ParallelEnsemble: {len(models)} models, fusion={fusion}")
 
+        # Member outputs of the last forward pass, kept only while ``record_members`` is True
+        # (uncertainty: the spread across members scales conformal intervals).
+        self.record_members = False
+        self.last_member_outputs: torch.Tensor | None = None
+
     @property
     def produces_graph_output(self) -> bool:
         """One row per graph: a graph-level task's ensemble that reads out (pools per graph)."""
@@ -1391,6 +1396,8 @@ class ParallelEnsemble(nn.Module):
 
         # Stack predictions (now all same dimension)
         predictions = torch.stack(predictions, dim=0)
+        if self.record_members:
+            self.last_member_outputs = predictions.detach()
 
         # Aggregate based on fusion method
         if self.fusion == "mean":

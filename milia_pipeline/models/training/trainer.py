@@ -40,6 +40,12 @@ from torch_geometric.data import Batch, Data
 from milia_pipeline.exceptions import CheckpointError, TrainingError
 from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
+from milia_pipeline.models.post_training.conformal import (
+    DEFAULT_ALPHA,
+    conformal_quantiles,
+    member_spread,
+    recording_members,
+)
 
 from .module_utils import unwrap_compiled
 
@@ -170,6 +176,7 @@ class Trainer:
         metrics: dict[str, nn.Module] | None = None,
         acceleration: AccelerationManager | None = None,
         run_info: dict[str, Any] | None = None,
+        calibration_alpha: float | None = DEFAULT_ALPHA,
     ):
         """
         Initialize trainer.
@@ -210,6 +217,9 @@ class Trainer:
                     HPO objective and metrics are comparable across trials. If ``device`` is not
                     given, the manager's device is used; a different device type is an error.
                     ``None`` (default) leaves training exactly as before.
+            calibration_alpha: Miscoverage level of the split conformal intervals fitted on the
+                    validation set after training and stored in the best checkpoint as
+                    ``calibration`` (regression only; ``None``: no calibration).
             run_info: What the run records about itself (``collect_run_info`` in
                     ``training/run_info.py``); written to every checkpoint as ``run_info``.
         """
@@ -239,6 +249,8 @@ class Trainer:
 
         # What the run records about itself in every checkpoint (training/run_info.py)
         self.run_info = run_info
+        # Miscoverage level of the conformal intervals fitted after training (None: no calibration)
+        self.calibration_alpha = calibration_alpha
 
         # Store model metadata for intelligent forward pass
         self.model_info = model_info or {}
@@ -477,6 +489,22 @@ class Trainer:
                 if tested_checkpoint is not None:
                     self._record_test_metrics(tested_checkpoint, test_metrics)
 
+            # Conformal calibration of the best checkpoint on the validation set (regression)
+            calibration = None
+            best = self.best_checkpoint_path
+            if (
+                self.calibration_alpha is not None
+                and best is not None
+                and self.val_loader is not None
+                and self.is_regression
+            ):
+                calibration = self.calibrate(ckpt_path=best, alpha=self.calibration_alpha)
+                self._record_in_checkpoint(best, "calibration", calibration)
+                logger.info(
+                    f"Conformal calibration ({calibration['method']}, alpha "
+                    f"{calibration['alpha']}, n {calibration['n']}) stored in {best}"
+                )
+
             # Find best epoch
             best_epoch = None
             if "val_loss" in self.metrics_history:
@@ -492,6 +520,7 @@ class Trainer:
                 "train_metrics": dict(self.metrics_history),
                 "test_metrics": test_metrics,
                 "tested_checkpoint": str(tested_checkpoint) if tested_checkpoint else None,
+                "calibration": calibration,
                 "training_time": self.training_time,
                 "best_epoch": best_epoch,
                 "best_val_loss": self.best_val_loss if best_epoch is not None else None,
@@ -730,6 +759,12 @@ class Trainer:
             raise TrainingError(
                 "test(ckpt_path='best') needs a checkpoint callback that saved a best checkpoint"
             )
+        with self._checkpoint_weights(path, "test"):
+            return self._evaluate_test()
+
+    @contextlib.contextmanager
+    def _checkpoint_weights(self, path: Path, purpose: str):
+        """Run the block with ``path``'s ``model_state_dict`` loaded; restore the weights after."""
         model = self.unwrapped_model
         current = copy.deepcopy(model.state_dict())
         try:
@@ -737,24 +772,84 @@ class Trainer:
             model.load_state_dict(checkpoint["model_state_dict"])
         except Exception as exc:
             model.load_state_dict(current)
-            raise CheckpointError(f"Cannot test checkpoint {path}: {exc}") from exc
+            raise CheckpointError(f"Cannot {purpose} checkpoint {path}: {exc}") from exc
         try:
-            return self._evaluate_test()
+            yield
         finally:
             model.load_state_dict(current)
 
-    def _record_test_metrics(self, path: Path, metrics: dict[str, float]) -> None:
-        """Store ``metrics`` in the checkpoint at ``path`` as ``test_metrics`` (atomic rewrite)."""
+    @property
+    def is_regression(self) -> bool:
+        """Whether the task predicts continuous values (conformal calibration applies)."""
+        task = (self._task_type or "").lower()
+        return not self._is_classification_task and "regression" in task
+
+    @torch.no_grad()
+    def calibrate(
+        self, ckpt_path: str | Path | None = None, alpha: float = DEFAULT_ALPHA
+    ) -> dict[str, Any]:
+        """Split conformal calibration on the validation set (``post_training/conformal.py``).
+
+        Args:
+            ckpt_path: The checkpoint to calibrate (``"best"``: :attr:`best_checkpoint_path`);
+                ``None`` calibrates the current weights, which are restored afterwards either way.
+            alpha: Miscoverage level of the intervals.
+
+        Returns:
+            ``{"method", "alpha", "n", "quantiles"}`` (one quantile per target).
+
+        Raises:
+            TrainingError: No validation loader, a task that is not regression, or
+                ``ckpt_path="best"`` without a best checkpoint.
+        """
+        if self.val_loader is None:
+            raise TrainingError("Conformal calibration needs a validation loader")
+        if not self.is_regression:
+            raise TrainingError(
+                f"Conformal calibration applies to regression, not {self._task_type}"
+            )
+        path = self.best_checkpoint_path if ckpt_path == "best" else ckpt_path
+        if ckpt_path == "best" and path is None:
+            raise TrainingError("calibrate(ckpt_path='best') needs a saved best checkpoint")
+        context = (
+            self._checkpoint_weights(Path(path), "calibrate")
+            if path is not None
+            else contextlib.nullcontext()
+        )
+        targets, predictions, spreads = [], [], []
+        with context:
+            self.model.eval()
+            for batch in self.val_loader:
+                batch = batch.to(self.device)
+                with recording_members(self.model) as ensemble:
+                    out = self._forward_pass(batch)
+                    spread = member_spread(ensemble)
+                target = self._get_target(batch)
+                predictions.append(out.detach().float().reshape(out.size(0), -1).cpu())
+                targets.append(target.detach().float().reshape(out.size(0), -1).cpu())
+                if spread is not None:
+                    spreads.append(spread.reshape(out.size(0), -1).cpu())
+        spread_all = torch.cat(spreads) if spreads and len(spreads) == len(predictions) else None
+        return conformal_quantiles(
+            torch.cat(targets), torch.cat(predictions), alpha=alpha, spread=spread_all
+        )
+
+    def _record_in_checkpoint(self, path: Path, key: str, value: Any) -> None:
+        """Store ``value`` in the checkpoint at ``path`` under ``key`` (atomic rewrite)."""
         temporary = path.with_name(f".{path.name}.tmp")
         try:
             checkpoint = load_checkpoint_file(path, map_location="cpu")
-            checkpoint["test_metrics"] = dict(metrics)
+            checkpoint[key] = value
             torch.save(checkpoint, temporary)
             os.replace(temporary, path)
-            logger.info(f"Test metrics stored in {path}")
+            logger.info(f"{key} stored in {path}")
         except Exception as exc:
             temporary.unlink(missing_ok=True)
-            logger.error(f"Could not store the test metrics in {path}: {exc}")
+            logger.error(f"Could not store {key} in {path}: {exc}")
+
+    def _record_test_metrics(self, path: Path, metrics: dict[str, float]) -> None:
+        """Store ``metrics`` in the checkpoint at ``path`` as ``test_metrics`` (atomic rewrite)."""
+        self._record_in_checkpoint(path, "test_metrics", dict(metrics))
 
     @torch.no_grad()
     def _evaluate_test(self) -> dict[str, float]:

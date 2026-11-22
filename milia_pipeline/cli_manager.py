@@ -1632,7 +1632,7 @@ class CLIManager:
             action="store_true",
             default=False,
             dest="predict_uncertainty",
-            help="Enable uncertainty estimation (if model supports)",
+            help="Write split conformal prediction intervals (needs a calibrated checkpoint)",
         )
 
         # =================================================================

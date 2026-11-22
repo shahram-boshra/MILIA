@@ -3374,7 +3374,9 @@ def handle_predict_mode(
         include_inputs = getattr(args, "predict_include_inputs", False) or prediction_config.get(
             "include_inputs", False
         )
-        getattr(args, "predict_uncertainty", False) or prediction_config.get("uncertainty", False)
+        uncertainty = getattr(args, "predict_uncertainty", False) or prediction_config.get(
+            "uncertainty", False
+        )
 
         # Determine device
         if device_str == "auto":
@@ -3608,7 +3610,23 @@ def handle_predict_mode(
         # Run predictions
         # =================================================================
         logger.info("Running predictions...")
-        predictions = predictor.predict_batch(data_list, batch_size=batch_size, return_numpy=True)
+        intervals = None
+        if uncertainty:
+            if not predictor.calibration:
+                logger.error(
+                    "--predict-uncertainty needs a checkpoint with a conformal calibration "
+                    "(recorded by training for regression tasks); this one has none"
+                )
+                return 1
+            intervals = predictor.predict_with_intervals(data_list, batch_size=batch_size)
+            predictions = intervals["mean"]
+            logger.info(
+                f"Conformal intervals at {1 - intervals['alpha']:.0%} ({intervals['method']})"
+            )
+        else:
+            predictions = predictor.predict_batch(
+                data_list, batch_size=batch_size, return_numpy=True
+            )
         logger.info(f"Predictions shape: {predictions.shape}")
 
         # =================================================================
@@ -3621,6 +3639,7 @@ def handle_predict_mode(
             format=output_format,
             include_inputs=include_inputs,
             input_identifiers=input_identifiers,
+            intervals=intervals,
         )
 
         logger.info("=" * 60)
@@ -4096,6 +4115,8 @@ def _run_standard_training(
             metrics=metrics,  # NEW: Pass metrics for evaluation
             acceleration=acceleration,  # PA-1e: AMP via the manager (None = unchanged)
             run_info=run_info,
+            # Split conformal intervals of the best checkpoint (regression; null: none)
+            calibration_alpha=models_config.get("evaluation", {}).get("calibration_alpha", 0.1),
         )
 
         # 8. Check for checkpoint resume

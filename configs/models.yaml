@@ -622,6 +622,11 @@ models:
 
     # Test set evaluation
     test_after_training: true
+
+    # Split conformal prediction intervals (regression): after training, the best checkpoint is
+    # calibrated on the validation set; intervals cover the true value with probability >= 1 - alpha
+    # per target for molecules like the validation set. null: no calibration.
+    calibration_alpha: 0.1
     save_predictions: true
     predictions_dir: null                # null = auto-generate
 
@@ -740,16 +745,10 @@ models:
     # =========================================================================
     # UNCERTAINTY ESTIMATION
     # =========================================================================
-    # Enable uncertainty estimation (if model supports)
+    # Write split conformal intervals (lower_<i>, upper_<i>; std_<i> for ensembles) next to each
+    # prediction; needs a checkpoint calibrated by training (models.evaluation.calibration_alpha).
     # CLI Override: --predict-uncertainty
     uncertainty: false
-
-    # Uncertainty method (for models that support multiple methods)
-    # Options: "dropout", "ensemble", "evidential"
-    uncertainty_method: "dropout"
-
-    # Number of forward passes for dropout-based uncertainty
-    num_dropout_samples: 10
 
     # =========================================================================
     # POST-PROCESSING

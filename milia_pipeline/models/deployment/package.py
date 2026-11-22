@@ -86,7 +86,13 @@ MODEL_CARD = "MODEL_CARD.md"
 MAX_SMILES_LENGTH = 2000  # longest SMILES the serving app accepts
 
 # Checkpoint entries inference needs; training state (optimizer, scheduler, history) is dropped.
-_INFERENCE_KEYS = ("model_state_dict", "hyper_parameters", "data_info", "version_info")
+_INFERENCE_KEYS = (
+    "model_state_dict",
+    "hyper_parameters",
+    "data_info",
+    "version_info",
+    "calibration",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -168,6 +174,7 @@ def package_checkpoint(
         "signature": _signature(checkpoint, run_info),
         "input_example": list(run_info.get("input_example") or []),
         "metrics": _metrics(checkpoint),
+        "calibration": checkpoint.get("calibration"),
         "lineage": {
             "source_checkpoint_sha256": _sha256(source),
             "checkpoint_created_at": version_info.get("created_at"),
@@ -397,6 +404,23 @@ def _table(scores: dict[str, float] | None) -> list[str]:
     ]
 
 
+def _calibration_lines(calibration: dict[str, Any] | None) -> list[str]:
+    if not calibration:
+        return [
+            "Not recorded: no prediction intervals (the checkpoint has no conformal calibration)."
+        ]
+    alpha = calibration["alpha"]
+    scaled = calibration["method"] == "split_conformal_normalized"
+    return [
+        f"Split conformal intervals at {1 - alpha:.0%} (alpha {alpha:g}), fitted on "
+        f"{calibration['n']} validation molecules"
+        + (", scaled by the spread across the ensemble's members." if scaled else ".")
+        + " Each target's interval covers the true value with probability at least "
+        f"{1 - alpha:.0%} on average over molecules exchangeable with the validation set; "
+        "the guarantee is per target, not joint, and not for molecules unlike it.",
+    ]
+
+
 def model_card(manifest: dict[str, Any]) -> str:
     """``MODEL_CARD.md`` for a package manifest (Hugging Face / Mitchell et al. sections)."""
     signature = manifest.get("signature") or {}
@@ -458,6 +482,10 @@ def model_card(manifest: dict[str, Any]) -> str:
         "Test set, scored with these weights:",
         "",
         *_table(metrics.get("test")),
+        "",
+        "## Uncertainty",
+        "",
+        *_calibration_lines(manifest.get("calibration")),
         "",
         "## Limitations",
         "",

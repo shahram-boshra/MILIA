@@ -74,6 +74,7 @@ class Predictor:
         device: torch.device | None = None,
         task_type: str | None = None,
         model_info: dict[str, Any] | None = None,  # FIX 19: NEW PARAMETER
+        calibration: dict[str, Any] | None = None,
     ):
         """
         Initialize predictor.
@@ -85,8 +86,11 @@ class Predictor:
             device: Target device
             task_type: Task type for output formatting
             model_info: Model metadata including featurization config from checkpoint
+            calibration: The checkpoint's conformal calibration (``post_training/conformal.py``),
+                which :meth:`predict_with_intervals` needs
         """
         self.model = model
+        self.calibration = calibration
         self._working_root_dir = Path(working_root_dir).expanduser().resolve()
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.task_type = task_type
@@ -211,6 +215,7 @@ class Predictor:
             device=device,
             task_type=task_type,
             model_info=model_info,  # FIX 19: Pass model_info for featurization config access
+            calibration=checkpoint.get("calibration"),
         )
 
     def predict(
@@ -492,6 +497,51 @@ class Predictor:
             return output.cpu().numpy()
         return output
 
+    def predict_with_intervals(
+        self, dataset: list[Data] | Dataset, batch_size: int = 32
+    ) -> dict[str, Any]:
+        """Predictions with split conformal intervals (``post_training/conformal.py``).
+
+        Returns:
+            ``{"mean", "lower", "upper", "alpha", "method"}`` (``[n, k]`` numpy arrays), plus
+            ``"std"``, the member spread, for an ensemble.
+
+        Raises:
+            ValueError: The checkpoint has no calibration (trained before it was recorded, or
+                not a regression task).
+        """
+        from ..conformal import intervals, member_spread, recording_members
+
+        if not self.calibration:
+            raise ValueError(
+                "This checkpoint has no conformal calibration: retrain it with a MILIA version "
+                "that records one (regression tasks with a validation set)"
+            )
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        means, lowers, uppers, spreads = [], [], [], []
+        for batch in loader:
+            with recording_members(self.model) as ensemble:
+                out = self.predict(batch, return_numpy=False)
+                spread = member_spread(ensemble)
+            rows = out.detach().float().reshape(out.size(0), -1).cpu()
+            spread = spread.reshape(rows.shape).cpu() if spread is not None else None
+            lower, upper = intervals(rows, self.calibration, spread)
+            means.append(rows)
+            lowers.append(lower)
+            uppers.append(upper)
+            if spread is not None:
+                spreads.append(spread)
+        result = {
+            "mean": torch.cat(means).numpy(),
+            "lower": torch.cat(lowers).numpy(),
+            "upper": torch.cat(uppers).numpy(),
+            "alpha": self.calibration["alpha"],
+            "method": self.calibration["method"],
+        }
+        if spreads:
+            result["std"] = torch.cat(spreads).numpy()
+        return result
+
     def save_predictions(
         self,
         predictions: torch.Tensor | numpy.ndarray,
@@ -499,6 +549,7 @@ class Predictor:
         format: str = "csv",
         include_inputs: bool = False,
         input_identifiers: list[str] | None = None,
+        intervals: dict[str, Any] | None = None,
     ) -> Path:
         """
         Save predictions to file.
@@ -515,6 +566,8 @@ class Predictor:
             format: Output format ('csv', 'json', 'npy', 'pt')
             include_inputs: Include input identifiers in output
             input_identifiers: List of input identifiers (e.g., SMILES)
+            intervals: :meth:`predict_with_intervals` output; ``csv`` adds ``lower_<i>`` and
+                ``upper_<i>`` (and ``std_<i>``) columns, ``json`` an ``intervals`` object
 
         Returns:
             Resolved output path
@@ -546,6 +599,12 @@ class Predictor:
                     predictions, columns=[f"prediction_{i}" for i in range(predictions.shape[1])]
                 )
 
+            if intervals is not None:
+                for key in ("lower", "upper", "std"):
+                    if key in intervals:
+                        values = np.asarray(intervals[key]).reshape(len(df), -1)
+                        for i in range(values.shape[1]):
+                            df[f"{key}_{i}"] = values[:, i]
             if include_inputs and input_identifiers:
                 df.insert(0, "input", input_identifiers)
             df.to_csv(resolved_path, index=False)
@@ -554,10 +613,19 @@ class Predictor:
             import json
 
             output_data = {"predictions": predictions.tolist()}
+            if intervals is not None:
+                output_data["intervals"] = {
+                    key: (value.tolist() if hasattr(value, "tolist") else value)
+                    for key, value in intervals.items()
+                    if key != "mean"
+                }
             if include_inputs and input_identifiers:
                 output_data["inputs"] = input_identifiers
             with open(resolved_path, "w") as f:
                 json.dump(output_data, f, indent=2)
+
+        elif intervals is not None:
+            raise ValueError(f"Prediction intervals are written as csv or json, not {format}")
 
         elif format == "npy":
             np.save(resolved_path, predictions)

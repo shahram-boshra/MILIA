@@ -78,12 +78,16 @@ class PredictResponse(BaseModel):
     """One row of model outputs per instance, in request order.
 
     ``output_names`` names the columns, when the package's signature records them.
+    ``intervals`` (when the package has a conformal calibration): ``alpha``, ``method`` and
+    ``lower``/``upper`` rows, each covering the true value with probability at least
+    ``1 - alpha`` per target for molecules like the calibration set.
     """
 
     predictions: list[list[float]]
     model_name: str
     task_type: str
     output_names: list[str] | None = None
+    intervals: dict[str, Any] | None = None
 
 
 class PackagedPredictor:
@@ -169,6 +173,32 @@ class PackagedPredictor:
         predictions = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
         return predictions.reshape(len(graphs), -1).tolist()
 
+    def predict_smiles_with_intervals(
+        self, smiles: Sequence[str], batch_size: int = 32
+    ) -> tuple[list[list[float]], dict[str, Any] | None]:
+        """Rows as :meth:`predict_smiles`, plus conformal intervals when the package has them."""
+        if not self.predictor.calibration:
+            return self.predict_smiles(smiles, batch_size), None
+        from milia_pipeline.models.post_training import convert_to_pyg
+
+        config = self.predictor.structural_features_config
+        graphs = []
+        for index, text in enumerate(smiles):
+            try:
+                graphs.append(
+                    convert_to_pyg(text, format="smiles", structural_features_config=config)
+                )
+            except ValueError as exc:
+                raise ValueError(f"instances[{index}]: {exc}") from exc
+        result = self.predictor.predict_with_intervals(graphs, batch_size=batch_size)
+        intervals = {
+            "alpha": result["alpha"],
+            "method": result["method"],
+            "lower": result["lower"].tolist(),
+            "upper": result["upper"].tolist(),
+        }
+        return result["mean"].tolist(), intervals
+
 
 def _max_instances() -> int:
     raw = os.environ.get("MILIA_SERVE_MAX_INSTANCES", str(DEFAULT_MAX_INSTANCES))
@@ -218,7 +248,9 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             )
         try:
             # Featurization and the forward pass are CPU-bound: run them off the event loop.
-            rows = await run_in_threadpool(model.predict_smiles, request.instances)
+            rows, intervals = await run_in_threadpool(
+                model.predict_smiles_with_intervals, request.instances
+            )
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return PredictResponse(
@@ -226,6 +258,7 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             model_name=model.manifest["model_name"],
             task_type=model.manifest["task_type"],
             output_names=model.output_names,
+            intervals=intervals,
         )
 
     health_routes = ["/health", "/ping"]

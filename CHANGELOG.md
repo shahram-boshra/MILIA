@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Prediction intervals (split conformal). After training, the best checkpoint of a regression model is calibrated
+  on the validation set and stores, per target, the conformal quantile of its residuals as `calibration` (method,
+  `alpha`, `n`, quantiles; `models.evaluation.calibration_alpha`, default 0.1, `null` to turn it off). For a
+  `ParallelEnsemble` the residuals are divided by the spread across its members, so intervals widen where the
+  members disagree. Each target's interval covers the true value with probability at least 1 − alpha for molecules
+  exchangeable with the validation set (marginal, per target). The package manifest and model card carry the
+  calibration; `Predictor.predict_with_intervals`, `milia --predict --predict-uncertainty` (which had no effect
+  before; CSV columns `lower_<i>`, `upper_<i>`, `std_<i>`) and every serving response (`intervals`) return them. The
+  inert `models.prediction.uncertainty_method` and `num_dropout_samples` keys are removed from the shipped
+  configuration.
 - OSV-Scanner audit of `uv.lock` in GitHub Actions (Google's reusable workflows, v2.7.1): pull requests fail on
   vulnerabilities they introduce; pushes to `main` and a weekly run fail on any known vulnerability, so an
   advisory published after the lock was written is caught. Accepted advisories are listed in `osv-scanner.toml`
