@@ -71,7 +71,8 @@ data_config:
     structural_feature_integration:
       # Pass coordinates to structural feature extraction for 3D features
       pass_coordinates: true
-      # Pass Mulliken charges for enhanced atom features (DFT only)
-      pass_mulliken_charges: true
+      # Pass each dataset's atomic charges (its atomic_charges_property) to the atomic_charge feature.
+      # Replaces pass_mulliken_charges (deprecated; read when this key is absent, removed in 2.0.0).
+      pass_atomic_charges: true
       # Enable stereochemistry assignment before structural feature extraction
       enable_stereochemistry_preprocessing: true

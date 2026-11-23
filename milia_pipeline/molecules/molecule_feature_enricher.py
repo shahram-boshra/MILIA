@@ -44,8 +44,8 @@ from milia_pipeline.config.config_accessors import (
     get_structural_features_config,
     is_structural_features_enabled,
     should_enable_stereochemistry_preprocessing,
+    should_pass_atomic_charges_to_structural_features,
     should_pass_coordinates_to_structural_features,
-    should_pass_mulliken_charges_to_structural_features,
 )
 from milia_pipeline.exceptions import (
     HandlerError,
@@ -956,7 +956,7 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
             "dataset_type": dataset_type_str,
             "structural_features_enabled": is_structural_features_enabled(),
             "coordinates_passing": should_pass_coordinates_to_structural_features(),
-            "mulliken_charges_passing": should_pass_mulliken_charges_to_structural_features(),
+            "atomic_charges_passing": should_pass_atomic_charges_to_structural_features(),
             "stereochemistry_preprocessing": should_enable_stereochemistry_preprocessing(),
             "dataset_specific_features": [],
             "handler_integration": {"handler_available": True, "handler_type": dataset_type_str},
@@ -1033,8 +1033,8 @@ def analyze_structural_feature_capabilities(handler: DatasetHandler) -> dict[str
                     ["atomization_energies", "vibrational_frequencies", "electronic_properties"]
                 )
 
-                if should_pass_mulliken_charges_to_structural_features():
-                    capabilities["dataset_specific_features"].append("mulliken_charges")
+                if should_pass_atomic_charges_to_structural_features():
+                    capabilities["dataset_specific_features"].append("atomic_charges")
 
                 charge_config = get_charge_handling_config()
                 capabilities["charge_handling"] = {

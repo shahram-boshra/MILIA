@@ -782,9 +782,10 @@ class TestStructuralFeaturesAndDescriptors(unittest.TestCase):
         self.assertIn("atom", feats)
         self.assertIn("bond", feats)
 
-    def test_atom_includes_mulliken(self):
+    def test_atomic_charge_is_left_to_configuration(self):
         feats = _make_handler().get_supported_structural_features()
-        self.assertIn("mulliken_charge", feats["atom"])
+        self.assertNotIn("atomic_charge", feats["atom"])
+        self.assertNotIn("mulliken_charge", feats["atom"])
 
     def test_bond_includes_length(self):
         feats = _make_handler().get_supported_structural_features()

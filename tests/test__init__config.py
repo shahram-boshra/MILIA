@@ -1668,6 +1668,8 @@ class TestContractStructuralFeatureAccessors:
         "get_atom_features",
         "get_bond_features",
         "should_pass_coordinates_to_structural_features",
+        "should_pass_atomic_charges_to_structural_features",
+        "get_atomic_charges_property",
         "should_pass_mulliken_charges_to_structural_features",
         "should_enable_stereochemistry_preprocessing",
         "get_dataset_appropriate_structural_features",

@@ -54,6 +54,7 @@ from torch_geometric.transforms import Compose
 from tqdm import tqdm
 
 from milia_pipeline.config.config_accessors import (
+    get_atomic_charges_property,
     # Standard transforms accessors
     get_data_config,
     get_dataset_constants,
@@ -62,6 +63,7 @@ from milia_pipeline.config.config_accessors import (
     get_raw_source_filename,
     # Transformation accessors
     get_transformation_config,
+    should_pass_atomic_charges_to_structural_features,
 )
 from milia_pipeline.config.config_constants import (
     get_har2ev,
@@ -6654,6 +6656,10 @@ class miliaDataset(InMemoryDataset):
                             all_required_keys.append(
                                 processing_config.calculate_atomization_energy_from
                             )
+
+                    # Raw per-atom charges read by the atomic_charge structural feature
+                    if should_pass_atomic_charges_to_structural_features():
+                        all_required_keys.append(get_atomic_charges_property())
 
                     # ENHANCED: Use handler interface for uncertainty field determination when possible
                     # PHASE 6: Use registry-based feature queries instead of hardcoded type checks

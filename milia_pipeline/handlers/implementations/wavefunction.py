@@ -815,7 +815,7 @@ class WavefunctionDatasetHandler(DatasetHandler):
                 "in_ring",
                 # Charge features (may not be available for all molecules)
                 # 'partial_charge',  # Excluded - not computed in wavefunction preprocessing
-                # 'mulliken_charge',  # Excluded - not computed in wavefunction preprocessing
+                # atomic_charge is decided by configuration (atomic_charges_property), not here
                 # 3D features (available with coordinates)
                 "chiral_tag",
             ],

@@ -56,6 +56,7 @@ from milia_pipeline.config.config_accessors import (
     create_structural_features_config_container,
     create_transformation_config_container,
     get_atom_features,
+    get_atomic_charges_property,
     get_available_transforms,
     get_bond_features,
     get_combined_transforms,
@@ -127,6 +128,7 @@ from milia_pipeline.config.config_accessors import (
     registry_list_all,
     save_experimental_setup,
     should_enable_stereochemistry_preprocessing,
+    should_pass_atomic_charges_to_structural_features,
     should_pass_coordinates_to_structural_features,
     should_pass_mulliken_charges_to_structural_features,
     # Validation functions
@@ -3570,6 +3572,136 @@ class TestStructuralFeaturesAccessors:
             assert "compatibility_status" in result
 
 
+class TestAtomicChargeAccessors:
+    """The atomic_charge feature's source: data_config.property_selection.<dataset>."""
+
+    ACC = "milia_pipeline.config.config_accessors"
+
+    def _config(self, data_config, node_features=("Qmulliken",)):
+        return (
+            patch(f"{self.ACC}.get_dataset_type", return_value="DFT"),
+            patch(f"{self.ACC}.get_data_config", return_value=data_config),
+            patch(
+                f"{self.ACC}.get_property_availability",
+                return_value={"node_features": list(node_features)},
+            ),
+        )
+
+    def test_configured_property_is_returned_and_passed(self):
+        a, b, c = self._config({"atomic_charges_property": "Qmulliken"})
+        with a, b, c:
+            assert get_atomic_charges_property() == "Qmulliken"
+            assert should_pass_atomic_charges_to_structural_features() is True
+
+    def test_no_property_means_no_charges(self):
+        a, b, c = self._config({})
+        with a, b, c:
+            assert get_atomic_charges_property() is None
+            assert should_pass_atomic_charges_to_structural_features() is False
+
+    def test_any_per_atom_property_can_be_the_source(self):
+        a, b, c = self._config(
+            {"atomic_charges_property": "hirshfeld_charges"},
+            node_features=("forces", "hirshfeld_charges", "cm5_charges"),
+        )
+        with a, b, c:
+            assert get_atomic_charges_property() == "hirshfeld_charges"
+
+    @pytest.mark.parametrize("value", ["Vesp", "", 3])
+    def test_a_property_the_dataset_does_not_provide_is_refused(self, value):
+        a, b, c = self._config({"atomic_charges_property": value})
+        with a, b, c, pytest.raises(ConfigurationError, match="atomic_charges_property"):
+            get_atomic_charges_property()
+
+    def test_passing_can_be_turned_off(self):
+        a, b, c = self._config(
+            {
+                "atomic_charges_property": "Qmulliken",
+                "structural_feature_integration": {"pass_atomic_charges": False},
+            }
+        )
+        with a, b, c:
+            assert should_pass_atomic_charges_to_structural_features() is False
+
+    def test_deprecated_pass_mulliken_charges_key_is_read_with_a_warning(self):
+        a, b, c = self._config(
+            {
+                "atomic_charges_property": "Qmulliken",
+                "structural_feature_integration": {"pass_mulliken_charges": False},
+            }
+        )
+        with a, b, c, pytest.warns(FutureWarning, match="pass_atomic_charges"):
+            assert should_pass_atomic_charges_to_structural_features() is False
+
+    def test_deprecated_accessor_warns_and_delegates(self):
+        a, b, c = self._config({"atomic_charges_property": "Qmulliken"})
+        with a, b, c, pytest.warns(FutureWarning, match="should_pass_atomic_charges"):
+            assert should_pass_mulliken_charges_to_structural_features() is True
+
+    def _appropriate(self, data_config, atom):
+        handler = Mock()
+        handler.get_supported_structural_features.return_value = {
+            "atom": ["degree"],
+            "bond": ["bond_type"],
+        }
+        a, b, c = self._config(data_config)
+        with (
+            a,
+            b,
+            c,
+            patch(f"{self.ACC}.create_dataset_config_container"),
+            patch(f"{self.ACC}.create_filter_config_container"),
+            patch(f"{self.ACC}.create_processing_config_container"),
+            patch("milia_pipeline.handlers.create_dataset_handler", return_value=handler),
+        ):
+            return get_dataset_appropriate_structural_features(
+                "DFT", {"atom": atom, "bond": ["bond_type"]}
+            )
+
+    def test_charge_feature_follows_configuration_not_the_handler_list(self):
+        result = self._appropriate(
+            {"atomic_charges_property": "Qmulliken"}, ["degree", "atomic_charge"]
+        )
+        assert result == {"atom": ["degree", "atomic_charge"], "bond": ["bond_type"]}
+        assert self._appropriate({}, ["degree", "atomic_charge"])["atom"] == ["degree"]
+
+    def test_deprecated_feature_name_is_canonicalized(self):
+        with pytest.warns(FutureWarning, match="mulliken_charge"):
+            result = self._appropriate(
+                {"atomic_charges_property": "Qmulliken"}, ["degree", "mulliken_charge"]
+            )
+        assert result["atom"] == ["degree", "atomic_charge"]
+
+    def test_a_wrong_charges_property_is_not_swallowed(self):
+        with pytest.raises(ConfigurationError, match="atomic_charges_property"):
+            self._appropriate({"atomic_charges_property": "Vesp"}, ["atomic_charge"])
+
+
+def _registered_dataset_types():
+    from milia_pipeline.datasets import registry
+
+    return sorted(registry.list_all())
+
+
+@pytest.mark.parametrize("dataset_type", _registered_dataset_types())
+def test_shipped_configuration_sources_atomic_charge_per_dataset(dataset_type):
+    """Every registered dataset's shipped configuration resolves its atomic_charge source."""
+    from milia_pipeline.config import config_accessors as acc
+
+    with patch.object(acc, "get_dataset_type", return_value=dataset_type):
+        source = acc.get_atomic_charges_property()  # raises on an inconsistent configuration
+        atom = acc.get_dataset_appropriate_structural_features(dataset_type)["atom"]
+    assert ("atomic_charge" in atom) == (source is not None)
+    expected = {
+        "DFT": "Qmulliken",
+        "QM9": "Qmulliken",
+        "QM40": "Qmulliken",
+        "ANI1x": "hirshfeld_charges",
+        "ANI1ccx": "hirshfeld_charges",
+    }
+    assert source == expected.get(dataset_type)
+
+
 class TestConfigValueAccessors:
     """Test configuration value accessor functions."""
 
@@ -3935,7 +4067,9 @@ class TestAllFunctionsCallable:
             get_atom_features,
             get_bond_features,
             should_pass_coordinates_to_structural_features,
+            should_pass_atomic_charges_to_structural_features,
             should_pass_mulliken_charges_to_structural_features,
+            get_atomic_charges_property,
             should_enable_stereochemistry_preprocessing,
             get_feature_compatibility_report,
         ]

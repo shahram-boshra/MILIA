@@ -42,8 +42,12 @@ data_config:
         - Edisp
       # Node-level features to be added to pyg_data.x
       node_features_to_add:
-        - Qmulliken     # Essential for mulliken_charge structural feature
+        - Qmulliken
         - Vesp
+      # Per-atom charges for the atomic_charge structural feature (Mulliken, wB97X-D3/cc-pVDZ); one of
+      # property_availability.<dataset>.node_features. Remove the key for no atomic_charge column.
+      atomic_charges_property: Qmulliken
+
       # Fixed-size vector graph properties to be added as separate attributes
       vector_graph_properties_to_include:
         - dipole

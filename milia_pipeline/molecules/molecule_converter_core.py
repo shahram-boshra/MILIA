@@ -38,6 +38,7 @@ except ImportError:
     AllChem = None
 
 from milia_pipeline.config.config_accessors import (
+    get_atomic_charges_property,
     get_charge_handling_config,
     get_data_config,
     get_dataset_appropriate_structural_features,
@@ -47,8 +48,8 @@ from milia_pipeline.config.config_accessors import (
     is_structural_features_enabled,
     list_experimental_setups,
     should_enable_stereochemistry_preprocessing,
+    should_pass_atomic_charges_to_structural_features,
     should_pass_coordinates_to_structural_features,
-    should_pass_mulliken_charges_to_structural_features,
 )
 from milia_pipeline.config.config_constants import (
     get_handler_required_properties,
@@ -2595,7 +2596,7 @@ class MoleculeDataConverter:
 
             # Prepare enhanced data for milia integration
             enhanced_coordinates = None
-            mulliken_charges = None
+            atomic_charges = None
 
             # Pass coordinates if configured and available
             if should_pass_coordinates_to_structural_features():
@@ -2604,17 +2605,20 @@ class MoleculeDataConverter:
                     f"Passing coordinates to structural features for molecule {current_mol_index}"
                 )
 
-            # Pass Mulliken charges if configured and available
-            if should_pass_mulliken_charges_to_structural_features():
-                qmulliken = raw_properties_dict.get("Qmulliken")
-                if qmulliken is not None and is_value_valid_and_not_nan(qmulliken):
-                    mulliken_charges = np.array(qmulliken, dtype=np.float32)
+            # Pass the dataset's configured per-atom charges (atomic_charges_property)
+            if should_pass_atomic_charges_to_structural_features():
+                charges_property = get_atomic_charges_property()
+                raw_charges = raw_properties_dict.get(charges_property)
+                if raw_charges is not None and is_value_valid_and_not_nan(raw_charges):
+                    atomic_charges = np.array(raw_charges, dtype=np.float32)
                     self.logger.debug(
-                        f"Passing Mulliken charges to structural features for molecule {current_mol_index}"
+                        f"Passing {charges_property} as atomic charges to structural features "
+                        f"for molecule {current_mol_index}"
                     )
                 else:
                     self.logger.debug(
-                        f"Mulliken charges requested but not available for molecule {current_mol_index}"
+                        f"Atomic charges ({charges_property}) requested but not available "
+                        f"for molecule {current_mol_index}"
                     )
 
             # Apply stereochemistry preprocessing if enabled
@@ -2642,7 +2646,7 @@ class MoleculeDataConverter:
                 molecule_index=current_mol_index,
                 inchi=current_mol_identifier,
                 coordinates=enhanced_coordinates,
-                mulliken_charges=mulliken_charges,
+                atomic_charges=atomic_charges,
             )
 
             # Ensure structural features are tensors

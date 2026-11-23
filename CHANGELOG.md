@@ -103,6 +103,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The atom feature `mulliken_charge` is now `atomic_charge`, and its source is configuration:
+  `data_config.property_selection.<dataset>.atomic_charges_property` names the dataset's per-atom charges, which
+  must be one of its `property_availability.<dataset>.node_features`. The shipped configuration sets `Qmulliken`
+  for DFT, QM9 and QM40 (as before) and `hirshfeld_charges` for ANI-1x and ANI-1ccx; a dataset that sets none has
+  no `atomic_charge` column. The converter used to read a fixed `Qmulliken` key, so ANI-1x and ANI-1ccx, whose
+  configuration already selected Hirshfeld charges as node features, had no charge column: their `x` gains one
+  column (re-process those datasets; models trained on them before need retraining). DFT, QM9, QM40 and the other
+  datasets keep the same `x` (DFT checked value by value). The feature is kept or dropped by this setting rather
+  than by each handler's supported-feature list, and the property is loaded with the molecule. A
+  `atomic_charges_property` that the dataset does not provide raises `ConfigurationError`. Training records the
+  feature as `atom.atomic_charge` in `data_info.qm_input_features`, derived from what each structural feature reads
+  (charges, coordinates) instead of fixed lists.
 - The model registry lists the public models of `torch_geometric.nn.models` (its `__all__`) only. Discovery used to scan
   every module attribute, so classes those modules merely import (`torch.nn` `GRU`, `GRUCell`, `LSTM`, `Linear`,
   `Embedding`) and internal helpers (`TimeEncoder`, `IdentityMessage`, `LastAggregator`, `MeanAggregator`,
@@ -184,6 +196,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+- The `mulliken_charge` atom feature name, `add_structural_features(mulliken_charges=...)`, the
+  `structural_feature_integration.pass_mulliken_charges` key and `should_pass_mulliken_charges_to_structural_features`
+  emit a `FutureWarning` and will be removed in 2.0.0. Each still works and maps to its replacement:
+  `atomic_charge`, `atomic_charges=`, `pass_atomic_charges` and `should_pass_atomic_charges_to_structural_features`.
 - The `StandardizeTargets` and `NormalizeTargets` transforms emit a `FutureWarning` and a log line and will be
   removed in 2.0.0. As dataset transforms they run on each molecule alone, so they scaled every molecule's targets
   with that molecule's own mean and std (or min and max): a single-target `y` became 0, several targets became a
@@ -220,7 +236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A model whose structural features came from its dataset's QM data is no longer fed molecule identifiers.
-  Mulliken charges (a QM result; read from a SMILES or InChI the feature was 0.0) and bond lengths of the
+  The dataset's atomic charges (a QM result; read from a SMILES or InChI the feature was 0.0) and bond lengths of the
   QM-optimized geometry (an identifier only gives a generated conformer) cannot be reproduced from a SMILES, an
   InChI or a structure file. Training records these features (`data_info.qm_input_features`, decided as the
   molecule converter decides what it passes to the structural featurization, and for the geometry only when the

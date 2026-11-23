@@ -1353,7 +1353,7 @@ class TestVerifyHandlerAbstractionAndSummary(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 15: get_common_required_properties (3 tests)
+# GROUP 15: get_common_required_properties (4 tests)
 # ============================================================================
 
 
@@ -1375,6 +1375,25 @@ class TestGetCommonRequiredProperties(unittest.TestCase):
         handler = _create_handler_instance()
         self.assertTrue(hasattr(handler, "get_common_required_properties"))
         self.assertTrue(callable(handler.get_common_required_properties))
+
+    def test_configured_atomic_charges_property_is_required(self):
+        """The raw key behind atomic_charge (any charge scheme) is loaded with the molecule."""
+        acc = "milia_pipeline.config.config_accessors"
+        handler = _create_handler_instance()
+        with (
+            patch(f"{acc}.get_required_properties", return_value=["atoms", "coordinates"]),
+            patch(f"{acc}.should_pass_atomic_charges_to_structural_features", return_value=True),
+            patch(f"{acc}.get_atomic_charges_property", return_value="hirshfeld_charges"),
+        ):
+            self.assertEqual(
+                handler.get_common_required_properties(),
+                ["atoms", "coordinates", "hirshfeld_charges"],
+            )
+        with (
+            patch(f"{acc}.get_required_properties", return_value=["atoms", "coordinates"]),
+            patch(f"{acc}.should_pass_atomic_charges_to_structural_features", return_value=False),
+        ):
+            self.assertEqual(handler.get_common_required_properties(), ["atoms", "coordinates"])
 
 
 # ============================================================================
@@ -1494,7 +1513,7 @@ GROUP 11: create_dataset_handler Factory                           (10 tests)
 GROUP 12: validate_dataset_handler_compatibility                   ( 6 tests)
 GROUP 13: filter_descriptors_by_handler_support                    ( 8 tests)
 GROUP 14: verify_handler_abstraction & summary                     ( 6 tests)
-GROUP 15: get_common_required_properties                           ( 3 tests)
+GROUP 15: get_common_required_properties                           ( 4 tests)
 GROUP 16: Edge Cases and Boundary Conditions                       ( 8 tests)
 
 PRODUCTION-READY QUALITIES:

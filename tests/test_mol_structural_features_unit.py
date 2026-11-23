@@ -13,7 +13,7 @@ KEY COVERAGE AREAS:
 1. _one_hot_encoding - Value encoding with known and unknown values
 2. _ensure_conformer_and_charges - Conformer setup and charge assignment
 3. Atom feature functions - degree, total_degree, hybridization, total_valence,
-   is_aromatic, is_in_ring, partial_charge, mulliken_charge, num_aromatic_bonds, chirality
+   is_aromatic, is_in_ring, partial_charge, atomic_charge, num_aromatic_bonds, chirality
 4. Bond feature functions - bond_type, is_conjugated, is_aromatic, is_in_any_ring,
    stereo, bond_length (3D), bond_length_binned
 5. _calculate_atom_features_tensor - Aggregation with error handling
@@ -85,7 +85,7 @@ def _make_water_mol(with_conformer=False, with_gasteiger=False, with_mulliken=Fa
     if with_mulliken:
         charges = [-0.82, 0.41, 0.41]
         for i, c in enumerate(charges):
-            mol.GetAtomWithIdx(i).SetDoubleProp("_MullikenCharge", c)
+            mol.GetAtomWithIdx(i).SetDoubleProp(mol_structural_features.ATOMIC_CHARGE_PROP, c)
     return mol
 
 
@@ -216,18 +216,19 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
         self.assertAlmostEqual(pos0.y, 0.0)
         self.assertAlmostEqual(pos0.z, 0.0)
 
-    def test_adds_mulliken_charges_when_provided(self):
-        """Test that Mulliken charges are set on atoms when provided."""
+    def test_adds_atomic_charges_when_provided(self):
+        """The dataset's atomic charges are set on the atoms when provided."""
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         charges = np.array([-0.82, 0.41, 0.41])
+        prop = mol_structural_features.ATOMIC_CHARGE_PROP
 
-        mol_structural_features._ensure_conformer_and_charges(mol, mulliken_charges=charges)
+        mol_structural_features._ensure_conformer_and_charges(mol, atomic_charges=charges)
 
         for i, expected_charge in enumerate(charges):
             atom = mol.GetAtomWithIdx(i)
-            self.assertTrue(atom.HasProp("_MullikenCharge"))
-            self.assertAlmostEqual(atom.GetDoubleProp("_MullikenCharge"), expected_charge)
+            self.assertTrue(atom.HasProp(prop))
+            self.assertAlmostEqual(atom.GetDoubleProp(prop), expected_charge)
 
     def test_falls_back_to_gasteiger_when_no_mulliken(self):
         """Test that Gasteiger charges are computed as fallback."""
@@ -249,18 +250,18 @@ class TestEnsureConformerAndCharges(unittest.TestCase):
         mol_structural_features._ensure_conformer_and_charges(mol, coordinates=wrong_coords)
         self.assertEqual(mol.GetNumConformers(), 0)
 
-    def test_mulliken_charge_shape_mismatch_falls_back_to_gasteiger(self):
-        """Test that mismatched Mulliken charges length falls back to Gasteiger."""
+    def test_atomic_charge_shape_mismatch_falls_back_to_gasteiger(self):
+        """Atomic charges of the wrong length fall back to Gasteiger."""
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)  # 3 atoms
         wrong_charges = np.array([-0.5, 0.5])  # 2 charges
 
-        mol_structural_features._ensure_conformer_and_charges(mol, mulliken_charges=wrong_charges)
+        mol_structural_features._ensure_conformer_and_charges(mol, atomic_charges=wrong_charges)
 
         atom = mol.GetAtomWithIdx(0)
         # Should have fallen back to Gasteiger
         self.assertTrue(atom.HasProp("_GasteigerCharge"))
-        self.assertFalse(atom.HasProp("_MullikenCharge"))
+        self.assertFalse(atom.HasProp(mol_structural_features.ATOMIC_CHARGE_PROP))
 
     def test_none_coordinates_and_none_charges(self):
         """Test with both coordinates and charges as None (defaults)."""
@@ -381,19 +382,19 @@ class TestAtomFeatureFunctions(unittest.TestCase):
         with self.assertRaises(ValueError):
             mol_structural_features._get_atom_partial_charge(atom)
 
-    def test_get_atom_mulliken_charge_present(self):
-        """Test Mulliken charge retrieval when property is set."""
+    def test_get_atom_atomic_charge_present(self):
+        """The atomic charge is read when the property is set."""
         mol = _make_water_mol(with_mulliken=True)
         atom = mol.GetAtomWithIdx(0)
-        charge = mol_structural_features._get_atom_mulliken_charge(atom)
+        charge = mol_structural_features._get_atom_atomic_charge(atom)
         self.assertAlmostEqual(charge, -0.82)
 
-    def test_get_atom_mulliken_charge_absent_returns_zero(self):
-        """Test Mulliken charge returns 0.0 when property is not set."""
+    def test_get_atom_atomic_charge_absent_returns_zero(self):
+        """The atomic charge is 0.0 when the property is not set."""
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         atom = mol.GetAtomWithIdx(0)
-        charge = mol_structural_features._get_atom_mulliken_charge(atom)
+        charge = mol_structural_features._get_atom_atomic_charge(atom)
         self.assertEqual(charge, 0.0)
 
     def test_get_num_aromatic_bonds_aromatic_carbon(self):
@@ -578,14 +579,14 @@ class TestCalculateAtomFeaturesTensor(unittest.TestCase):
             "is_aromatic",
             "is_in_ring",
             "partial_charge",
-            "mulliken_charge",
+            "atomic_charge",
             "num_aromatic_bonds",
             "chirality",
         ]
         tensor = mol_structural_features._calculate_atom_features_tensor(mol, all_features)
         self.assertEqual(tensor.shape[0], 3)
         # degree(1) + total_degree(1) + hybridization(7) + total_valence(1) +
-        # is_aromatic(1) + is_in_ring(1) + partial_charge(1) + mulliken_charge(1) +
+        # is_aromatic(1) + is_in_ring(1) + partial_charge(1) + atomic_charge(1) +
         # num_aromatic_bonds(1) + chirality(4) = 19
         self.assertEqual(tensor.shape[1], 19)
 
@@ -791,7 +792,7 @@ class TestGetAvailableFeatures(unittest.TestCase):
             "is_aromatic",
             "is_in_ring",
             "partial_charge",
-            "mulliken_charge",
+            "atomic_charge",
             "num_aromatic_bonds",
             "chirality",
         ]
@@ -818,6 +819,34 @@ class TestGetAvailableFeatures(unittest.TestCase):
             self.assertIsInstance(features[key], list)
             for f in features[key]:
                 self.assertIsInstance(f, str)
+
+
+class TestFeatureCatalog(unittest.TestCase):
+    """What each feature reads besides the molecular graph, and deprecated names."""
+
+    def test_reads_are_declared_by_the_catalog(self):
+        msf = mol_structural_features
+        self.assertEqual(
+            msf.feature_reads("atom", "atomic_charge"), frozenset({msf.READS_ATOMIC_CHARGES})
+        )
+        self.assertEqual(
+            msf.feature_reads("bond", "bond_length"), frozenset({msf.READS_COORDINATES})
+        )
+        self.assertEqual(msf.feature_reads("atom", "degree"), frozenset())
+        with self.assertRaises(KeyError):
+            msf.feature_reads("atom", "no_such_feature")
+
+    def test_deprecated_name_maps_to_its_catalog_name_with_a_warning(self):
+        msf = mol_structural_features
+        with self.assertWarns(FutureWarning):
+            self.assertEqual(msf.canonical_feature_name("atom", "mulliken_charge"), "atomic_charge")
+        self.assertEqual(msf.canonical_feature_name("atom", "degree"), "degree")
+        self.assertNotIn("mulliken_charge", msf.get_available_features()["atom"])
+
+    def test_get_structural_feature(self):
+        msf = mol_structural_features
+        self.assertEqual(msf.get_structural_feature("atom", "atomic_charge").name, "atomic_charge")
+        self.assertIsNone(msf.get_structural_feature("atom", "mulliken_charge"))
 
 
 # ============================================================================
@@ -943,15 +972,15 @@ class TestAddStructuralFeatures(unittest.TestCase):
         self.assertIsNone(result.x)
         self.assertIsNone(result.edge_attr)
 
-    def test_with_coordinates_and_mulliken_charges(self):
-        """Test integration with QM-optimized coordinates and Mulliken charges."""
+    def test_with_coordinates_and_atomic_charges(self):
+        """QM-optimized coordinates and the dataset's atomic charges reach x."""
         mol = Chem.MolFromSmiles("O")
         mol = Chem.AddHs(mol)
         coords = np.array([[0.0, 0.0, 0.0], [0.96, 0.0, 0.0], [-0.24, 0.93, 0.0]])
-        mulliken = np.array([-0.82, 0.41, 0.41])
+        charges = np.array([-0.82, 0.41, 0.41])
 
         pyg_data = Data()
-        config = {"atom": ["mulliken_charge"]}
+        config = {"atom": ["atomic_charge"]}
         result = mol_structural_features.add_structural_features(
             rdkit_mol=mol,
             pyg_data=pyg_data,
@@ -959,13 +988,35 @@ class TestAddStructuralFeatures(unittest.TestCase):
             logger=self.logger,
             molecule_index=0,
             coordinates=coords,
-            mulliken_charges=mulliken,
+            atomic_charges=charges,
         )
         self.assertIsNotNone(result.x)
         self.assertEqual(result.x.shape[0], 3)
-        # Verify Mulliken charges are present
         self.assertAlmostEqual(result.x[0, 0].item(), -0.82, places=2)
         self.assertAlmostEqual(result.x[1, 0].item(), 0.41, places=2)
+
+    def test_deprecated_mulliken_names_warn_and_give_the_same_values(self):
+        """mulliken_charges= and the mulliken_charge feature still work, with a FutureWarning."""
+        charges = np.array([-0.82, 0.41, 0.41])
+
+        def featurize(config, **charge_kwarg):
+            mol = Chem.AddHs(Chem.MolFromSmiles("O"))
+            return mol_structural_features.add_structural_features(
+                rdkit_mol=mol,
+                pyg_data=Data(),
+                feature_config=config,
+                logger=self.logger,
+                molecule_index=0,
+                **charge_kwarg,
+            ).x
+
+        expected = featurize({"atom": ["atomic_charge"]}, atomic_charges=charges)
+        with self.assertWarns(FutureWarning):
+            old = featurize({"atom": ["atomic_charge"]}, mulliken_charges=charges)
+        self.assertTrue(torch.equal(old, expected))
+        self.assertTrue(
+            torch.equal(featurize({"atom": ["mulliken_charge"]}, atomic_charges=charges), expected)
+        )
 
     def test_3d_bond_features_with_coordinates(self):
         """Test 3D bond features work when coordinates are provided."""
@@ -1422,6 +1473,7 @@ def suite():
         unittest.TestLoader().loadTestsFromTestCase(TestCalculateBondFeaturesTensor)
     )
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestGetAvailableFeatures))
+    test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestFeatureCatalog))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestAddStructuralFeatures))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEmptyMoleculeEdgeCases))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestAromaticMoleculeFeatures))

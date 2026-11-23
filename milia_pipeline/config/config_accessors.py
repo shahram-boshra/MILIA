@@ -3394,33 +3394,75 @@ def should_pass_coordinates_to_structural_features() -> bool:
     return structural_integration.get("pass_coordinates", True)
 
 
-def should_pass_mulliken_charges_to_structural_features(dataset_type: str | None = None) -> bool:
-    """
-    Checks if Mulliken charges should be passed to structural feature extraction.
+def get_atomic_charges_property() -> str | None:
+    """The raw per-atom property that supplies the ``atomic_charge`` structural feature.
+
+    ``data_config.property_selection.<dataset>.atomic_charges_property`` (for example
+    ``Qmulliken`` for VQM24, ``hirshfeld_charges`` for ANI-1x); it must be one of the dataset's
+    available per-atom properties (``property_availability.<dataset>.node_features``).
 
     Returns:
-        bool: True if Mulliken charges should be passed (and available for current dataset)
+        The property name, or ``None`` when the dataset configures none.
+
+    Raises:
+        ConfigurationError: The value is not a non-empty string, or the dataset does not
+            provide that property.
     """
-    data_config = get_data_config()
-    structural_integration = data_config.get("structural_feature_integration", {})
-
-    # Only pass Mulliken charges if enabled and available for the current dataset
-    pass_charges = structural_integration.get("pass_mulliken_charges", True)
-
-    # PHASE 5 REFACTORING: Check feature support via registry
+    name = get_data_config().get("atomic_charges_property")
+    if name is None:
+        return None
     dataset_type = get_dataset_type()
+    if not isinstance(name, str) or not name:
+        raise ConfigurationError(
+            f"data_config.property_selection.{dataset_type}.atomic_charges_property must be a "
+            f"property name, got {name!r}"
+        )
+    available = list(get_property_availability().get("node_features") or [])
+    if name not in available:
+        raise ConfigurationError(
+            f"data_config.property_selection.{dataset_type}.atomic_charges_property is {name!r}, "
+            f"which {dataset_type} does not provide per atom "
+            f"(property_availability.{dataset_type}.node_features: {available})"
+        )
+    return name
 
-    # Query dataset features to see if mulliken charges are supported
-    features = _get_dataset_features(dataset_type)
-    supports_mulliken = features.get(
-        "mulliken_charges_support", True
-    )  # Default True for backward compatibility
 
-    if not supports_mulliken:
-        logger.debug(f"Dataset type '{dataset_type}' does not support Mulliken charges")
-        return False
+def should_pass_atomic_charges_to_structural_features() -> bool:
+    """Whether the dataset's atomic charges are passed to the structural features.
 
-    return pass_charges
+    True when ``structural_feature_integration.pass_atomic_charges`` is on (default) and the
+    dataset configures an ``atomic_charges_property``. The earlier key
+    ``pass_mulliken_charges`` is read when ``pass_atomic_charges`` is absent, with a
+    ``FutureWarning`` (removal in MILIA 2.0.0).
+    """
+    integration = get_data_config().get("structural_feature_integration", {}) or {}
+    if "pass_atomic_charges" in integration:
+        enabled = integration["pass_atomic_charges"]
+    elif "pass_mulliken_charges" in integration:
+        warnings.warn(
+            "data_config structural_feature_integration.pass_mulliken_charges is deprecated and "
+            "will be removed in MILIA 2.0.0; use pass_atomic_charges",
+            FutureWarning,
+            stacklevel=2,
+        )
+        enabled = integration["pass_mulliken_charges"]
+    else:
+        enabled = True
+    return bool(enabled) and get_atomic_charges_property() is not None
+
+
+def should_pass_mulliken_charges_to_structural_features(dataset_type: str | None = None) -> bool:
+    """Deprecated: :func:`should_pass_atomic_charges_to_structural_features`.
+
+    Warns with ``FutureWarning``; removed in MILIA 2.0.0.
+    """
+    warnings.warn(
+        "should_pass_mulliken_charges_to_structural_features is deprecated and will be removed "
+        "in MILIA 2.0.0; use should_pass_atomic_charges_to_structural_features",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return should_pass_atomic_charges_to_structural_features()
 
 
 def should_enable_stereochemistry_preprocessing() -> bool:
@@ -3471,6 +3513,13 @@ def get_dataset_appropriate_structural_features(
     if not structural_config:
         return {"atom": [], "bond": []}
 
+    # Features that read the dataset's atomic charges are decided by configuration
+    # (atomic_charges_property), not by the handler's list; deprecated names are canonicalized.
+    configured_atom, charge_features = _split_atomic_charge_features(
+        structural_config.get("atom", []), dataset_type
+    )
+    configured_bond = list(structural_config.get("bond", []))
+
     # Try to get handler's supported features
     try:
         # Create handler to query supported features
@@ -3487,11 +3536,10 @@ def get_dataset_appropriate_structural_features(
         handler_supported = handler.get_supported_structural_features()
 
         # Intersect with configured features
-        configured_atom = structural_config.get("atom", [])
-        configured_bond = structural_config.get("bond", [])
-
         filtered_features = {
-            "atom": [f for f in configured_atom if f in handler_supported["atom"]],
+            "atom": [
+                f for f in configured_atom if f in charge_features or f in handler_supported["atom"]
+            ],
             "bond": [f for f in configured_bond if f in handler_supported["bond"]],
         }
 
@@ -3517,8 +3565,8 @@ def get_dataset_appropriate_structural_features(
         )
 
         # FALLBACK: Legacy behavior with registry feature query
-        atom_features = list(structural_config.get("atom", []))
-        bond_features = list(structural_config.get("bond", []))
+        atom_features = list(configured_atom)
+        bond_features = list(configured_bond)
 
         # PHASE 5 REFACTORING: Use registry feature query instead of hardcoded "DMC" check
         features = _get_dataset_features(dataset_type)
@@ -3527,27 +3575,65 @@ def get_dataset_appropriate_structural_features(
         )  # Default True for backward compatibility
 
         if not supports_mulliken:
-            # Remove features that require Mulliken charge support
-            if "mulliken_charge" in atom_features:
-                atom_features.remove("mulliken_charge")
-                logger.info(
-                    f"Legacy fallback: Removed 'mulliken_charge' for {dataset_type} (not supported)"
-                )
             if "partial_charge" in atom_features:
                 atom_features.remove("partial_charge")
                 logger.info(
                     f"Legacy fallback: Removed 'partial_charge' for {dataset_type} (not supported)"
                 )
         # ULTRA-LEGACY: Keep hardcoded DMC check as final fallback if registry unavailable
-        elif dataset_type == "DMC":
-            if "mulliken_charge" in atom_features:
-                atom_features.remove("mulliken_charge")
-                logger.info("Ultra-legacy fallback: Removed 'mulliken_charge' for DMC")
-            if "partial_charge" in atom_features:
-                atom_features.remove("partial_charge")
-                logger.info("Ultra-legacy fallback: Removed 'partial_charge' for DMC")
+        elif dataset_type == "DMC" and "partial_charge" in atom_features:
+            atom_features.remove("partial_charge")
+            logger.info("Ultra-legacy fallback: Removed 'partial_charge' for DMC")
 
         return {"atom": atom_features, "bond": bond_features}
+
+
+def _canonical_atom_feature_name(name: str) -> str:
+    """The catalog name of a configured atom feature, without a deprecation warning."""
+    from milia_pipeline.molecules.mol_structural_features import DEPRECATED_FEATURE_NAMES
+
+    return DEPRECATED_FEATURE_NAMES["atom"].get(name, name)
+
+
+def _split_atomic_charge_features(
+    atom_features: list[str], dataset_type: str
+) -> tuple[list[str], set[str]]:
+    """Canonicalize configured atom features and resolve those that read atomic charges.
+
+    A feature that reads the dataset's atomic charges (``atomic_charge``; the deprecated
+    ``mulliken_charge`` maps to it) is kept only when the dataset passes them
+    (:func:`should_pass_atomic_charges_to_structural_features`), because only then does it
+    carry data rather than the 0.0 fallback.
+
+    Returns:
+        The canonical atom feature list with unsourced charge features removed, and the set
+        of charge-reading features kept (exempt from the handler's supported-feature list).
+    """
+    from milia_pipeline.molecules.mol_structural_features import (
+        ATOM_FEATURES,
+        READS_ATOMIC_CHARGES,
+        canonical_feature_name,
+    )
+
+    passes_charges: bool | None = None  # read once, only when a charge feature is configured
+    kept: list[str] = []
+    charge_features: set[str] = set()
+    for configured in atom_features:
+        name = canonical_feature_name("atom", configured)
+        feature = ATOM_FEATURES.get(name)
+        if feature is not None and READS_ATOMIC_CHARGES in feature.reads:
+            if passes_charges is None:
+                passes_charges = should_pass_atomic_charges_to_structural_features()
+            if not passes_charges:
+                logger.info(
+                    f"Removed atom feature {name!r} for {dataset_type}: no atomic charges "
+                    f"(data_config.property_selection.{dataset_type}.atomic_charges_property)"
+                )
+                continue
+            charge_features.add(name)
+        if name not in kept:
+            kept.append(name)
+    return kept, charge_features
 
 
 def validate_structural_features_for_dataset(
@@ -3599,12 +3685,22 @@ def validate_structural_features_for_dataset(
         handler = create_dataset_handler(dataset_config, filter_config, processing_config, logger)
 
         handler_supported = handler.get_supported_structural_features()
+        atom_features, charge_features = _split_atomic_charge_features(
+            features.get("atom", []), dataset_type
+        )
 
-        # Validate atom features
-        for feature in features.get("atom", []):
-            if feature not in handler_supported["atom"]:
+        # Validate atom features (charge-reading features need atomic_charges_property)
+        for feature in atom_features:
+            if feature not in charge_features and feature not in handler_supported["atom"]:
                 validation_errors.append(
                     f"Atom feature '{feature}' not supported for {dataset_type} dataset"
+                )
+        for feature in features.get("atom", []):
+            if _canonical_atom_feature_name(feature) not in atom_features:
+                validation_errors.append(
+                    f"Atom feature '{feature}' reads atomic charges, which {dataset_type} does "
+                    f"not configure (data_config.property_selection.{dataset_type}."
+                    "atomic_charges_property)"
                 )
 
         # Validate bond features
@@ -3654,7 +3750,7 @@ def get_feature_compatibility_report(dataset_type: str | None = None) -> dict[st
         >>> print(report['compatibility_status'])
         'partial'
         >>> print(report['removed_features']['atom'])
-        ['partial_charge', 'mulliken_charge']
+        ['partial_charge', 'atomic_charge']
     """
     if dataset_type is None:
         dataset_type = get_dataset_type()
@@ -3692,8 +3788,10 @@ def get_feature_compatibility_report(dataset_type: str | None = None) -> dict[st
         # Get filtered features (what will actually be used)
         report["filtered_features"] = get_dataset_appropriate_structural_features()
 
-        # Calculate removed features
-        configured_atom = set(report["configured_features"]["atom"])
+        # Calculate removed features (deprecated names compared under their catalog name)
+        configured_atom = {
+            _canonical_atom_feature_name(f) for f in report["configured_features"]["atom"]
+        }
         filtered_atom = set(report["filtered_features"]["atom"])
         report["removed_features"]["atom"] = list(configured_atom - filtered_atom)
 
@@ -4356,7 +4454,7 @@ def get_handler_compatible_config() -> dict[str, Any]:
                 "uncertainty_enabled": is_uncertainty_enabled(),
                 "structural_features_enabled": is_structural_features_enabled(),
                 "pass_coordinates": should_pass_coordinates_to_structural_features(),
-                "pass_mulliken_charges": should_pass_mulliken_charges_to_structural_features(),
+                "pass_atomic_charges": should_pass_atomic_charges_to_structural_features(),
                 "enable_stereochemistry": should_enable_stereochemistry_preprocessing(),
                 "transformation_validation_enabled": is_transformation_validation_enabled(),  # NEW
                 "transformation_strict_mode": is_transformation_strict_mode_enabled(),  # NEW

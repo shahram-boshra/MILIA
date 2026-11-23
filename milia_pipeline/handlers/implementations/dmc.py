@@ -897,7 +897,7 @@ class DMCDatasetHandler(DatasetHandler):
                 "num_aromatic_bonds",
                 "chirality",
                 # EXCLUDED: 'partial_charge' - Gasteiger calculation fails on DMC
-                # EXCLUDED: 'mulliken_charge' - not available in DMC data
+                # atomic_charge is decided by configuration (atomic_charges_property), not here
             ],
             "bond": [
                 # Bond topology features (always safe for DMC)

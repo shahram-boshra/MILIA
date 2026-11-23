@@ -251,7 +251,7 @@ def structural_features_config_basic():
 
     Note: Uses valid feature names from mol_structural_features.py
     Available atom features: degree, total_degree, hybridization, total_valence,
-        is_aromatic, is_in_ring, partial_charge, mulliken_charge, num_aromatic_bonds, chirality
+        is_aromatic, is_in_ring, partial_charge, atomic_charge, num_aromatic_bonds, chirality
     Available bond features: bond_type, is_conjugated, is_in_ring, stereo
     """
     return {"atom": ["degree", "hybridization"], "bond": ["bond_type"]}

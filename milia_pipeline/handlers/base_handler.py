@@ -1267,15 +1267,26 @@ class DatasetHandler(ABC):
         Get properties required for this dataset type.
 
         Uses configured required properties from HANDLER_REQUIRED_PROPERTIES
-        rather than hardcoded values, making the system extensible.
+        rather than hardcoded values, making the system extensible. When the dataset passes
+        atomic charges to the structural features, the configured
+        ``atomic_charges_property`` is required too, so the raw key is loaded.
 
         Returns:
             List of required property names
         """
-        from milia_pipeline.config.config_accessors import get_required_properties
+        from milia_pipeline.config.config_accessors import (
+            get_atomic_charges_property,
+            get_required_properties,
+            should_pass_atomic_charges_to_structural_features,
+        )
 
         try:
-            return get_required_properties(self.dataset_config.dataset_type)
+            required = list(get_required_properties(self.dataset_config.dataset_type))
+            if should_pass_atomic_charges_to_structural_features():
+                charges_property = get_atomic_charges_property()
+                if charges_property not in required:
+                    required.append(charges_property)
+            return required
         except Exception as e:
             # Fallback if lookup fails
             self.logger.warning(f"Failed to get required properties, using fallback: {e}")

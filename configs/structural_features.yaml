@@ -19,7 +19,8 @@ structural_features:
 
     # NEW: Advanced atom features
     #- partial_charge      # Gasteiger partial charges (fallback)
-    - mulliken_charge     # VQM24 precomputed Mulliken charges (preferred)
+    - atomic_charge       # The dataset's per-atom charges (data_config.property_selection.<dataset>.atomic_charges_property);
+                          # left out for a dataset that configures none. `mulliken_charge` is its deprecated name.
     - num_aromatic_bonds  # Count of aromatic bonds connected to atom
     - chirality           # One-hot encoded chirality (R/S configuration)
 

@@ -707,8 +707,8 @@ class QM9DatasetHandler(DatasetHandler):
                 "num_aromatic_bonds",
                 # Chirality
                 "chirality",
-                # Partial charges (QM9 has Mulliken charges)
-                "mulliken_charge",
+                # Partial charges
+                # atomic_charge is decided by configuration (atomic_charges_property), not here
                 "gasteiger_charge",  # Can be calculated from SMILES
             ],
             "bond": [

@@ -149,39 +149,41 @@ def test_training_records_and_serving_reproduces_the_hydrogens(tmp_path):
 
 
 QM_CONFIG = {
-    "atom": ["degree", "mulliken_charge"],
+    "atom": ["degree", "atomic_charge"],
     "bond": ["bond_type", "bond_length", "bond_length_binned"],
 }
 
 
 class TestQmInputFeatures:
-    def _features(self, monkeypatch, charges=True, coordinates=True, graphs=()):
+    def _features(self, monkeypatch, charges=True, coordinates=True, graphs=(), config=QM_CONFIG):
         from milia_pipeline.config import config_accessors
         from milia_pipeline.molecules.featurization_record import qm_input_features
 
         monkeypatch.setattr(
-            config_accessors,
-            "should_pass_mulliken_charges_to_structural_features",
-            lambda dataset_type=None: charges,
+            config_accessors, "should_pass_atomic_charges_to_structural_features", lambda: charges
         )
         monkeypatch.setattr(
             config_accessors, "should_pass_coordinates_to_structural_features", lambda: coordinates
         )
-        return qm_input_features(QM_CONFIG, graphs)
+        return qm_input_features(config, graphs)
 
     def test_charges_and_given_geometry_are_qm_inputs(self, monkeypatch):
         with_pos = [Data(pos=torch.zeros(3, 3))]
         assert self._features(monkeypatch, graphs=with_pos) == [
-            "atom.mulliken_charge",
+            "atom.atomic_charge",
             "bond.bond_length",
             "bond.bond_length_binned",
         ]
 
     def test_generated_geometry_and_disabled_charges_are_not(self, monkeypatch):
         assert self._features(monkeypatch, graphs=[Data(x=torch.zeros(3, 1))]) == [
-            "atom.mulliken_charge"
+            "atom.atomic_charge"
         ]
         assert self._features(monkeypatch, charges=False, coordinates=False) == []
+
+    def test_deprecated_feature_name_is_recorded_under_its_catalog_name(self, monkeypatch):
+        config = {"atom": ["mulliken_charge"], "bond": []}
+        assert self._features(monkeypatch, config=config) == ["atom.atomic_charge"]
 
     def test_structure_only_features_are_not(self):
         from milia_pipeline.molecules.featurization_record import qm_input_features
@@ -197,7 +199,7 @@ def test_identifier_inputs_are_refused_for_a_qm_model():
         model=nn.Identity(),
         working_root_dir=".",
         device=torch.device("cpu"),
-        model_info={"data_info": {"qm_input_features": ["atom.mulliken_charge"]}},
+        model_info={"data_info": {"qm_input_features": ["atom.atomic_charge"]}},
     )
     with pytest.raises(ConfigurationError, match="Predict from a dataset of the same type"):
         predictor.prepare_inputs([convert_to_pyg("CCO", format="smiles")])
@@ -231,7 +233,7 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
     checkpoint = CheckpointManager(working_root_dir=tmp_path).save(
         tmp_path / "checkpoints" / "best.pt",
         model,
-        data_info={"qm_input_features": ["atom.mulliken_charge"], "explicit_hydrogens": True},
+        data_info={"qm_input_features": ["atom.atomic_charge"], "explicit_hydrogens": True},
         hyper_parameters={
             "model_name": "GCN",
             "task_type": "graph_regression",
@@ -241,8 +243,8 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
     )
     package = package_checkpoint(checkpoint, tmp_path / "package")  # checksums verified
     inputs = json.loads((package / PACKAGE_MANIFEST).read_text())["signature"]["inputs"]
-    assert inputs["qm_input_features"] == ["atom.mulliken_charge"]
-    assert "QM inputs: `atom.mulliken_charge` come from the training dataset's QM data" in (
+    assert inputs["qm_input_features"] == ["atom.atomic_charge"]
+    assert "QM inputs: `atom.atomic_charge` come from the training dataset's QM data" in (
         (package / MODEL_CARD).read_text()
     )
     with pytest.raises(DeploymentError, match="ONNX export"):

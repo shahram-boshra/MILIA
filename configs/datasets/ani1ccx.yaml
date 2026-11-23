@@ -53,6 +53,10 @@ data_config:
         # - cm5_charges       # CM5 atomic charges (e) - alternative charge scheme
         # - forces            # Atomic forces (Hartree/Angstrom) - for force-field training
 
+      # Per-atom charges for the atomic_charge structural feature (Hirshfeld, ωB97x/6-31G*; cm5_charges is the alternative); one of
+      # property_availability.<dataset>.node_features. Remove the key for no atomic_charge column.
+      atomic_charges_property: hirshfeld_charges
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include:
         - dipole          # Molecular dipole moment (Debye)

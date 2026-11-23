@@ -1,7 +1,7 @@
 """What inference must reproduce of the training graphs' molecular representation.
 
 Two records, both in ``data_info``: ``explicit_hydrogens`` (below) and ``qm_input_features``,
-the structural features whose training values came from the dataset's QM data (Mulliken
+the structural features whose training values came from the dataset's QM data (its atomic
 charges, bond lengths of the QM-optimized geometry). No identifier (SMILES, InChI) carries those
 values, so inference refuses to featurize identifiers for such a model
 (``Predictor.prepare_inputs``): it is predicted from a dataset of the same type
@@ -23,19 +23,10 @@ from itertools import islice
 from typing import Any
 
 __all__ = [
-    "QM_ATOM_FEATURES",
-    "QM_GEOMETRY_BOND_FEATURES",
     "SAMPLE_GRAPHS",
     "graphs_have_explicit_hydrogens",
     "qm_input_features",
 ]
-
-# Structural features whose training values come from the dataset's QM data rather than from the
-# molecule's identifier: Mulliken charges (a QM result; an identifier gives none, so the feature
-# is 0.0 at inference) and bond lengths of the QM-optimized geometry (an identifier only gives a
-# generated conformer, a different geometry).
-QM_ATOM_FEATURES = ("mulliken_charge",)
-QM_GEOMETRY_BOND_FEATURES = ("bond_length", "bond_length_binned")
 
 SAMPLE_GRAPHS = 1000  # graphs inspected; a dataset either keeps hydrogens or does not
 
@@ -45,33 +36,52 @@ def qm_input_features(
 ) -> list[str]:
     """The structural features a training run took from its dataset's QM data.
 
-    Decided as the molecule converter decides what it passes to the structural featurization
-    (``should_pass_mulliken_charges_to_structural_features``, which also checks that the dataset
-    type supports Mulliken charges; ``should_pass_coordinates_to_structural_features``), and, for
-    the geometry, only when the training graphs carry coordinates of their own (``pos``): a
-    dataset without coordinates computed its bond lengths from a generated conformer, as
-    inference does.
+    A feature's inputs come from the feature catalog (``StructuralFeature.reads`` in
+    ``mol_structural_features``). Whether the dataset supplied them is decided as the molecule
+    converter decides what it passes to the structural featurization: the dataset's atomic
+    charges (``should_pass_atomic_charges_to_structural_features``: passing is on and the dataset
+    configures an ``atomic_charges_property``) and its coordinates
+    (``should_pass_coordinates_to_structural_features``), the latter only when the training
+    graphs carry coordinates of their own (``pos``): a dataset without coordinates computed its
+    geometric features from a generated conformer, as inference does.
 
     Returns:
-        The names (``atom.<feature>`` / ``bond.<feature>``); empty when every feature can be
-        computed from a molecule's identifier.
+        The catalog names (``atom.<feature>`` / ``bond.<feature>``; a deprecated configured name
+        is recorded under its catalog name), in configuration order; empty when every feature
+        can be computed from a molecule's identifier.
     """
     if not structural_features_config:
         return []
     from milia_pipeline.config.config_accessors import (
+        should_pass_atomic_charges_to_structural_features,
         should_pass_coordinates_to_structural_features,
-        should_pass_mulliken_charges_to_structural_features,
+    )
+    from milia_pipeline.molecules.mol_structural_features import (
+        DEPRECATED_FEATURE_NAMES,
+        READS_ATOMIC_CHARGES,
+        READS_COORDINATES,
+        get_structural_feature,
     )
 
-    atom = set(structural_features_config.get("atom") or [])
-    bond = set(structural_features_config.get("bond") or [])
-    names = []
-    if should_pass_mulliken_charges_to_structural_features():
-        names += [f"atom.{name}" for name in QM_ATOM_FEATURES if name in atom]
+    supplied = set()
+    if should_pass_atomic_charges_to_structural_features():
+        supplied.add(READS_ATOMIC_CHARGES)
     if should_pass_coordinates_to_structural_features() and any(
         getattr(graph, "pos", None) is not None for graph in islice(graphs, SAMPLE_GRAPHS)
     ):
-        names += [f"bond.{name}" for name in QM_GEOMETRY_BOND_FEATURES if name in bond]
+        supplied.add(READS_COORDINATES)
+    if not supplied:
+        return []
+
+    names: list[str] = []
+    for level in ("atom", "bond"):
+        for configured in structural_features_config.get(level) or []:
+            name = DEPRECATED_FEATURE_NAMES[level].get(configured, configured)
+            feature = get_structural_feature(level, name)
+            if feature is None or not feature.reads & supplied:
+                continue
+            if f"{level}.{name}" not in names:
+                names.append(f"{level}.{name}")
     return names
 
 

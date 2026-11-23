@@ -696,11 +696,12 @@ class TestGetSupportedStructuralFeatures(unittest.TestCase):
         self.assertIn("atom", features)
         self.assertIn("bond", features)
 
-    def test_atom_features_include_mulliken(self):
-        """Atom features include mulliken_charge."""
+    def test_atomic_charge_is_left_to_configuration(self):
+        """atomic_charge follows the dataset's atomic_charges_property, not the handler list."""
         handler = _make_handler()
         features = handler.get_supported_structural_features()
-        self.assertIn("mulliken_charge", features["atom"])
+        self.assertNotIn("atomic_charge", features["atom"])
+        self.assertNotIn("mulliken_charge", features["atom"])
 
     def test_atom_features_include_topology(self):
         """Atom features include topology features (degree, hybridization, etc.)."""

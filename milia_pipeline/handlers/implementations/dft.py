@@ -1206,7 +1206,7 @@ class DFTDatasetHandler(DatasetHandler):
                 "chirality",
                 # Charge features (DFT has both)
                 #'partial_charge',      # Gasteiger charges (computed from structure)
-                "mulliken_charge",  # DFT Mulliken charges (from quantum calculation)
+                # atomic_charge is decided by configuration (atomic_charges_property), not here
             ],
             "bond": [
                 # Bond topology features (always available)

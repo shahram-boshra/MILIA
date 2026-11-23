@@ -36,6 +36,9 @@ Dependencies:
 import contextlib
 import logging
 import math
+import warnings
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -51,6 +54,13 @@ from milia_pipeline.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# What a feature can read besides the molecular graph (StructuralFeature.reads)
+READS_COORDINATES = "coordinates"
+READS_ATOMIC_CHARGES = "atomic_charges"
+
+# RDKit atom property that holds the dataset's charge of each atom
+ATOMIC_CHARGE_PROP = "_AtomicCharge"
 
 
 def _one_hot_encoding(value, choices: list) -> list[int]:
@@ -77,7 +87,7 @@ def _one_hot_encoding(value, choices: list) -> list[int]:
 
 # --- Preprocessing Functions for milia Integration ---
 def _ensure_conformer_and_charges(
-    mol: Chem.Mol, coordinates: np.ndarray | None = None, mulliken_charges: np.ndarray | None = None
+    mol: Chem.Mol, coordinates: np.ndarray | None = None, atomic_charges: np.ndarray | None = None
 ) -> None:
     """
     Ensures molecule has conformer data and charges for milia integration.
@@ -85,7 +95,8 @@ def _ensure_conformer_and_charges(
     Args:
         mol: RDKit molecule
         coordinates: QM-optimized coordinates from milia (shape: [n_atoms, 3])
-        mulliken_charges: Precomputed Mulliken charges from milia
+        atomic_charges: The dataset's per-atom charges (Mulliken, Hirshfeld, CM5, ...: the
+            property named by ``property_selection.<dataset>.atomic_charges_property``)
     """
     # Add conformer if coordinates provided
     if coordinates is not None and len(coordinates) == mol.GetNumAtoms():
@@ -94,11 +105,11 @@ def _ensure_conformer_and_charges(
             conf.SetAtomPosition(i, (float(x), float(y), float(z)))
         mol.AddConformer(conf)
 
-    # Add Mulliken charges if available (preferred over Gasteiger for milia)
-    if mulliken_charges is not None and len(mulliken_charges) == mol.GetNumAtoms():
-        for i, charge in enumerate(mulliken_charges):
+    # Add the dataset's atomic charges if available (preferred over Gasteiger for milia)
+    if atomic_charges is not None and len(atomic_charges) == mol.GetNumAtoms():
+        for i, charge in enumerate(atomic_charges):
             atom = mol.GetAtomWithIdx(i)
-            atom.SetDoubleProp("_MullikenCharge", float(charge))
+            atom.SetDoubleProp(ATOMIC_CHARGE_PROP, float(charge))
     else:
         # Fallback to Gasteiger charges
         with contextlib.suppress(Exception):
@@ -217,18 +228,21 @@ def _get_atom_partial_charge(atom: Chem.Atom) -> float:
     return 0.0
 
 
-def _get_atom_mulliken_charge(atom: Chem.Atom) -> float:
+def _get_atom_atomic_charge(atom: Chem.Atom) -> float:
     """
-    Returns precomputed Mulliken charge if available (preferred for milia).
+    Returns the dataset's charge of the atom (set by ``_ensure_conformer_and_charges``).
+
+    Which charge it is (Mulliken, Hirshfeld, CM5, ...) is the dataset's configured
+    ``atomic_charges_property``.
 
     Args:
         atom (Chem.Atom): The RDKit atom object.
 
     Returns:
-        float: The Mulliken charge, or 0.0 if not available.
+        float: The charge, or 0.0 if the dataset supplied none.
     """
-    if atom.HasProp("_MullikenCharge"):
-        return atom.GetDoubleProp("_MullikenCharge")
+    if atom.HasProp(ATOMIC_CHARGE_PROP):
+        return atom.GetDoubleProp(ATOMIC_CHARGE_PROP)
     return 0.0
 
 
@@ -415,35 +429,122 @@ def _get_bond_length_binned(
     return bin_vector
 
 
-# --- Aggregation functions for atom and bond features ---
-def _calculate_atom_features_tensor(
-    rdkit_mol: Chem.Mol,
-    selected_features: list[str],
-    molecule_index: int | None = None,
-    inchi: str | None = None,
-) -> torch.Tensor:
+# --- The feature catalog: one entry per feature, with what it reads ---
+@dataclass(frozen=True)
+class StructuralFeature:
+    """A structural feature: its function, and what it reads besides the molecular graph.
+
+    ``reads`` names the inputs whose values come from outside the RDKit atoms and bonds:
+    :data:`READS_COORDINATES` (the conformer built from the given coordinates) and
+    :data:`READS_ATOMIC_CHARGES` (the per-atom charges the dataset supplies). A feature that
+    reads neither is computed from the molecular graph alone.
     """
-    Calculates atom features based on a list of selected feature names and returns them as a PyTorch tensor.
+
+    name: str
+    function: Callable[..., Any]
+    reads: frozenset[str] = frozenset()
+
+
+ATOM_FEATURES: dict[str, StructuralFeature] = {
+    feature.name: feature
+    for feature in (
+        StructuralFeature("degree", _get_atom_degree),
+        StructuralFeature("total_degree", _get_atom_total_degree),
+        StructuralFeature("hybridization", _get_atom_hybridization_feature),
+        StructuralFeature("total_valence", _get_atom_total_valence),
+        StructuralFeature("is_aromatic", _is_atom_aromatic),
+        StructuralFeature("is_in_ring", _is_atom_in_ring),
+        StructuralFeature("partial_charge", _get_atom_partial_charge),
+        StructuralFeature(
+            "atomic_charge", _get_atom_atomic_charge, frozenset({READS_ATOMIC_CHARGES})
+        ),
+        StructuralFeature("num_aromatic_bonds", _get_num_aromatic_bonds_to_atom),
+        StructuralFeature("chirality", _get_atom_chirality_feature),
+    )
+}
+
+BOND_FEATURES: dict[str, StructuralFeature] = {
+    feature.name: feature
+    for feature in (
+        StructuralFeature("bond_type", _get_bond_type_feature),
+        StructuralFeature("is_conjugated", _is_bond_conjugated),
+        StructuralFeature("is_aromatic", _is_bond_aromatic),
+        StructuralFeature("is_in_any_ring", _is_bond_in_any_ring),
+        StructuralFeature("stereo", _get_bond_stereo_feature),
+        StructuralFeature("bond_length", _get_bond_length_3d, frozenset({READS_COORDINATES})),
+        StructuralFeature(
+            "bond_length_binned", _get_bond_length_binned, frozenset({READS_COORDINATES})
+        ),
+    )
+}
+
+# Renamed features: the old name keeps working, with a FutureWarning, until the removal
+# release (the new name was added alongside the old one).
+DEPRECATED_FEATURE_NAMES: dict[str, dict[str, str]] = {
+    "atom": {"mulliken_charge": "atomic_charge"},
+    "bond": {},
+}
+FEATURE_REMOVAL_VERSION = "2.0.0"
+
+_CATALOGS = {"atom": ATOM_FEATURES, "bond": BOND_FEATURES}
+
+
+def canonical_feature_name(level: str, name: str) -> str:
+    """The catalog name of a configured feature; a deprecated name warns and maps to it.
 
     Args:
-        rdkit_mol (Chem.Mol): The RDKit molecule object.
-        selected_features (List[str]): A list of string names for the atom features to calculate.
-        molecule_index (Optional[int]): The index of the molecule in the dataset, for error context. Defaults to None.
-        inchi (Optional[str]): The InChI string of the molecule, for error context. Defaults to None.
+        level: ``"atom"`` or ``"bond"``.
+        name: The configured feature name.
 
     Returns:
-        torch.Tensor: A tensor of atom features, where each row corresponds to an atom
-                      and columns are the concatenated features. Shape: (num_atoms, feature_dim).
-                      Returns an empty tensor if no atoms or no features are selected.
+        The name under which ``level``'s catalog holds the feature (``name`` itself when it is
+        not a deprecated name; unknown names are returned unchanged for the caller to reject).
+    """
+    new_name = DEPRECATED_FEATURE_NAMES.get(level, {}).get(name)
+    if new_name is None:
+        return name
+    warnings.warn(
+        f"The {level} feature {name!r} is deprecated and will be removed in MILIA "
+        f"{FEATURE_REMOVAL_VERSION}; use {new_name!r}, whose source is the dataset's "
+        "atomic_charges_property",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return new_name
+
+
+def feature_reads(level: str, name: str) -> frozenset[str]:
+    """What a configured feature reads besides the molecular graph (empty: nothing).
 
     Raises:
-        StructuralFeatureError: If an unsupported atom feature is requested,
-                                if an error occurs during an RDKit atom feature calculation,
-                                or if the final tensor conversion fails.
+        KeyError: ``name`` is not a ``level`` feature.
     """
+    return _CATALOGS[level][canonical_feature_name(level, name)].reads
 
 
-# ---
+def get_structural_feature(level: str, name: str) -> StructuralFeature | None:
+    """The catalog entry of a ``level`` feature by its catalog name; ``None`` when unknown."""
+    return _CATALOGS[level].get(name)
+
+
+def _feature_functions(level: str) -> dict[str, Callable[..., Any]]:
+    """Name -> function for ``level``, deprecated names included (they compute the new one)."""
+    functions = {name: feature.function for name, feature in _CATALOGS[level].items()}
+    for old, new in DEPRECATED_FEATURE_NAMES[level].items():
+        functions[old] = _CATALOGS[level][new].function
+    return functions
+
+
+def _reads_coordinates(level: str, selected_features: list[str]) -> bool:
+    functions = _CATALOGS[level]
+    return any(
+        READS_COORDINATES in functions[name].reads
+        for name in selected_features
+        if name in functions
+    )
+
+
+# --- Aggregation functions for atom and bond features ---
 def _calculate_atom_features_tensor(
     rdkit_mol: Chem.Mol,
     selected_features: list[str],
@@ -486,18 +587,7 @@ def _calculate_atom_features_tensor(
                     detail=str(e),
                 ) from e
 
-    atom_feature_map = {
-        "degree": _get_atom_degree,
-        "total_degree": _get_atom_total_degree,
-        "hybridization": _get_atom_hybridization_feature,
-        "total_valence": _get_atom_total_valence,
-        "is_aromatic": _is_atom_aromatic,
-        "is_in_ring": _is_atom_in_ring,
-        "partial_charge": _get_atom_partial_charge,
-        "mulliken_charge": _get_atom_mulliken_charge,
-        "num_aromatic_bonds": _get_num_aromatic_bonds_to_atom,
-        "chirality": _get_atom_chirality_feature,
-    }
+    atom_feature_map = _feature_functions("atom")
 
     features_list = []
     for i, atom in enumerate(rdkit_mol.GetAtoms()):
@@ -600,18 +690,10 @@ def _calculate_bond_features_tensor(
                                 if the dummy bond creation for feature length fails,
                                 or if the final tensor conversion fails.
     """
-    bond_feature_map = {
-        "bond_type": _get_bond_type_feature,
-        "is_conjugated": _is_bond_conjugated,
-        "is_aromatic": _is_bond_aromatic,
-        "is_in_any_ring": _is_bond_in_any_ring,
-        "stereo": _get_bond_stereo_feature,
-        "bond_length": _get_bond_length_3d,
-        "bond_length_binned": _get_bond_length_binned,
-    }
+    bond_feature_map = _feature_functions("bond")
 
     # Check for 3D features requiring conformer
-    requires_3d = any(feat in selected_features for feat in ["bond_length", "bond_length_binned"])
+    requires_3d = _reads_coordinates("bond", selected_features)
     if requires_3d and rdkit_mol.GetNumConformers() == 0:
         raise StructuralFeatureError(
             message="3D bond features requested but molecule has no conformer.",
@@ -656,9 +738,6 @@ def _calculate_bond_features_tensor(
                 )
 
             # Add conformer to dummy if 3D features are requested
-            requires_3d = any(
-                feat in selected_features for feat in ["bond_length", "bond_length_binned"]
-            )
             if requires_3d:
                 conf = Chem.Conformer(2)
                 conf.SetAtomPosition(0, (0.0, 0.0, 0.0))
@@ -812,35 +891,16 @@ def _calculate_bond_features_tensor(
 # --- Helper function to get available features ---
 def get_available_features() -> dict[str, list[str]]:
     """
-    Returns a dictionary of all available atom and bond features.
+    Returns a dictionary of all available atom and bond features (the catalog's names).
+
+    Deprecated names (``DEPRECATED_FEATURE_NAMES``) are accepted in a configuration but not
+    listed here.
 
     Returns:
         Dict[str, List[str]]: Dictionary with 'atom' and 'bond' keys containing
                              lists of available feature names.
     """
-    return {
-        "atom": [
-            "degree",
-            "total_degree",
-            "hybridization",
-            "total_valence",
-            "is_aromatic",
-            "is_in_ring",
-            "partial_charge",
-            "mulliken_charge",
-            "num_aromatic_bonds",
-            "chirality",
-        ],
-        "bond": [
-            "bond_type",
-            "is_conjugated",
-            "is_aromatic",
-            "is_in_any_ring",
-            "stereo",
-            "bond_length",
-            "bond_length_binned",
-        ],
-    }
+    return {"atom": list(ATOM_FEATURES), "bond": list(BOND_FEATURES)}
 
 
 # --- Main function to add structural features to PyG Data object ---
@@ -852,6 +912,8 @@ def add_structural_features(
     molecule_index: int | None = None,
     inchi: str | None = None,
     coordinates: np.ndarray | None = None,
+    atomic_charges: np.ndarray | None = None,
+    *,
     mulliken_charges: np.ndarray | None = None,
 ) -> Data:
     """
@@ -875,8 +937,12 @@ def add_structural_features(
                                Defaults to None.
         coordinates (Optional[np.ndarray]): QM-optimized 3D coordinates for milia integration.
                                            Shape: [n_atoms, 3]. Defaults to None.
-        mulliken_charges (Optional[np.ndarray]): Precomputed Mulliken charges from milia.
-                                                Shape: [n_atoms]. Defaults to None.
+        atomic_charges (Optional[np.ndarray]): The dataset's per-atom charges (the property
+                                              named by ``atomic_charges_property``), read by
+                                              the ``atomic_charge`` feature. Shape: [n_atoms].
+                                              Defaults to None.
+        mulliken_charges: Deprecated name of ``atomic_charges`` (FutureWarning; removed in
+                          MILIA 2.0.0).
 
     Returns:
         Data: The modified PyTorch Geometric Data object with 'x' (atom features)
@@ -891,6 +957,16 @@ def add_structural_features(
                                 RDKit errors during feature extraction, tensor conversion issues).
                                 This acts as a wrapper for more specific issues from helper functions.
     """
+    if mulliken_charges is not None:
+        warnings.warn(
+            "add_structural_features(mulliken_charges=...) is deprecated and will be removed in "
+            f"MILIA {FEATURE_REMOVAL_VERSION}; pass atomic_charges=...",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if atomic_charges is None:
+            atomic_charges = mulliken_charges
+
     if feature_config is None:
         logger.info(f"No structural features configured. Skipping for molecule {molecule_index}.")
         return pyg_data
@@ -919,7 +995,7 @@ def add_structural_features(
 
     # Ensure conformer and charges are available for milia integration
     try:
-        _ensure_conformer_and_charges(rdkit_mol, coordinates, mulliken_charges)
+        _ensure_conformer_and_charges(rdkit_mol, coordinates, atomic_charges)
     except Exception as e:
         logger.warning(f"{log_prefix} Failed to set up conformer or charges: {str(e)}")
 

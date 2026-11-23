@@ -104,6 +104,10 @@ data_config:
       node_features_to_add:
         - Qmulliken       # Mulliken partial charges (per atom)
 
+      # Per-atom charges for the atomic_charge structural feature (Mulliken); one of
+      # property_availability.<dataset>.node_features. Remove the key for no atomic_charge column.
+      atomic_charges_property: Qmulliken
+
       # Fixed-size vector graph properties
       vector_graph_properties_to_include: []
 
