@@ -174,6 +174,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   driver (`postgresql+psycopg://`), so 2.1's change of the default PostgreSQL driver to psycopg 3 does not apply.
   A seeded study on `rdb` storage records the same trials under 2.0.51 and 2.1.8, and a worker killed mid-trial
   is failed and retried after `grace_period`.
+- scikit-learn 1.9.1 (before, 1.5.2; adds narwhals, already locked), kaleido 1.5.1 and tqdm 4.70.1
+  (Dependabot). MILIA's stratified split (`train_test_split`) and k-means binning give the same results under
+  scikit-learn 1.5.2 and 1.9.1.
 - `get_optimal_settings(task_type="inference")`, and so `auto_optimize_model(..., "inference")`, no longer
   enables `jit_compile` (TorchScript); `torch.compile` already does the work there. Before, scripting failed for
   MILIA's graph models and the eager model was kept. `optimize_model_for_deployment(optimize_for_mobile=True)`
