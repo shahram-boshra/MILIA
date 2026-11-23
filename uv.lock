@@ -852,7 +852,7 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "qc-iodata", specifier = "==1.0.1" },
     { name = "ray", extras = ["tune"], specifier = "==2.60.0" },
-    { name = "rdkit", specifier = "==2025.3.6" },
+    { name = "rdkit", specifier = "==2026.9.2" },
     { name = "requests", specifier = "==2.34.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.17.4" },
     { name = "scikit-learn", specifier = "==1.9.1" },
@@ -1717,15 +1717,15 @@ tune = [
 
 [[package]]
 name = "rdkit"
-version = "2025.3.6"
+version = "2026.9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "pillow" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/9d/2622e01e38736a68d84b34c7b955e7ce32f0d19901e79620b80b1217300e/rdkit-2025.3.6-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:afc931d1be1a4ad2fc4f2f2732c10983b1a57fbde9c22870721beafe42be3ab0", size = 36180899, upload-time = "2025-09-05T12:46:31.335Z" },
-    { url = "https://files.pythonhosted.org/packages/47/06/84f140ed025dd96c7ec36aa38555b466f8006bd36085abd3702d75c98160/rdkit-2025.3.6-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:ed5565d4d6423def7c52eb20a6263afcd979383757086dec92f57e77d7c7f856", size = 36119142, upload-time = "2025-09-05T12:46:52.003Z" },
+    { url = "https://files.pythonhosted.org/packages/41/e7/5a631ddc8bd2a58e5aa00bd05b48279aa2f8a7b9b1cf2a4ed0f7d3b4812b/rdkit-2026.9.2-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:88482f282238b0c18afac5070212de6a1f1f7a783ed20cf572fc31d2ae9bc785", size = 29613628, upload-time = "2026-11-11T14:34:48.448Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/9d/b16df09ec2ba2be7bd2156b4e3beae425a6f9ee7de7c8453c831181e850d/rdkit-2026.9.2-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:88a601d6627ca197e8cba0a1aae492f100e114b5eda739b27322514c39c39b92", size = 29550781, upload-time = "2026-11-11T14:35:02.143Z" },
 ]
 
 [[package]]

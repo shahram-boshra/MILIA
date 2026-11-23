@@ -72,7 +72,7 @@ dependencies = [
     "scipy==1.17.1",
     "pandas==3.1.1",
     "pyyaml==6.0.3",
-    "rdkit==2025.3.6",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
+    "rdkit==2026.9.2",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
     # Held at 2025.3.6: RDKit 2026.x changes NumRotatableBonds for molecules with explicit hydrogens
     # (rotatable-bond SMARTS fix, rdkit#9096) and the generated conformers; move only after a check of
     # every dataset type MILIA processes.
