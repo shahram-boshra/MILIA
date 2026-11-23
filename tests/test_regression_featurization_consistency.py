@@ -1232,7 +1232,8 @@ class TestCheckpointDataInfoStructureIntegrity:
         """
         data_info must contain exactly: requires_edge_features,
         uses_edge_features, structural_features_config, input_transforms
-        (the training data's pre-transforms, which inference applies) and explicit_hydrogens.
+        (the training data's pre-transforms, which inference applies), explicit_hydrogens and
+        qm_input_features.
         """
         from milia_pipeline.models.training.callbacks import ModelCheckpoint
 
@@ -1248,6 +1249,7 @@ class TestCheckpointDataInfoStructureIntegrity:
             "structural_features_config",
             "input_transforms",
             "explicit_hydrogens",
+            "qm_input_features",
         }
         assert set(data_info.keys()) == expected_keys, (
             f"data_info keys mismatch.\nExpected: {expected_keys}\nGot: {set(data_info.keys())}"

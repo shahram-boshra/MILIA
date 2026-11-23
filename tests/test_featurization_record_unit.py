@@ -146,3 +146,109 @@ def test_training_records_and_serving_reproduces_the_hydrogens(tmp_path):
     assert torch.allclose(
         torch.tensor(served.predict_smiles(["CCO"])), torch.as_tensor(expected), atol=1e-5
     )
+
+
+QM_CONFIG = {
+    "atom": ["degree", "mulliken_charge"],
+    "bond": ["bond_type", "bond_length", "bond_length_binned"],
+}
+
+
+class TestQmInputFeatures:
+    def _features(self, monkeypatch, charges=True, coordinates=True, graphs=()):
+        from milia_pipeline.config import config_accessors
+        from milia_pipeline.molecules.featurization_record import qm_input_features
+
+        monkeypatch.setattr(
+            config_accessors,
+            "should_pass_mulliken_charges_to_structural_features",
+            lambda dataset_type=None: charges,
+        )
+        monkeypatch.setattr(
+            config_accessors, "should_pass_coordinates_to_structural_features", lambda: coordinates
+        )
+        return qm_input_features(QM_CONFIG, graphs)
+
+    def test_charges_and_given_geometry_are_qm_inputs(self, monkeypatch):
+        with_pos = [Data(pos=torch.zeros(3, 3))]
+        assert self._features(monkeypatch, graphs=with_pos) == [
+            "atom.mulliken_charge",
+            "bond.bond_length",
+            "bond.bond_length_binned",
+        ]
+
+    def test_generated_geometry_and_disabled_charges_are_not(self, monkeypatch):
+        assert self._features(monkeypatch, graphs=[Data(x=torch.zeros(3, 1))]) == [
+            "atom.mulliken_charge"
+        ]
+        assert self._features(monkeypatch, charges=False, coordinates=False) == []
+
+    def test_structure_only_features_are_not(self):
+        from milia_pipeline.molecules.featurization_record import qm_input_features
+
+        assert qm_input_features(CONFIG, [Data(pos=torch.zeros(3, 3))]) == []
+        assert qm_input_features(None) == []
+
+
+def test_identifier_inputs_are_refused_for_a_qm_model():
+    from milia_pipeline.exceptions import ConfigurationError
+
+    predictor = Predictor(
+        model=nn.Identity(),
+        working_root_dir=".",
+        device=torch.device("cpu"),
+        model_info={"data_info": {"qm_input_features": ["atom.mulliken_charge"]}},
+    )
+    with pytest.raises(ConfigurationError, match="Predict from a dataset of the same type"):
+        predictor.prepare_inputs([convert_to_pyg("CCO", format="smiles")])
+
+
+def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
+    from milia_pipeline.exceptions import ConfigurationError, DeploymentError
+    from milia_pipeline.models.deployment.deploy import _export_onnx
+    from milia_pipeline.models.deployment.package import (
+        MODEL_CARD,
+        PACKAGE_MANIFEST,
+        package_checkpoint,
+    )
+    from milia_pipeline.models.factory.model_factory import ModelFactory
+    from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import (
+        CheckpointManager,
+    )
+
+    torch.manual_seed(0)
+    in_channels = convert_to_pyg("CCO", format="smiles").x.shape[1]
+    model, info = ModelFactory().create_model_with_info(
+        name="GCN",
+        hyperparameters={
+            "in_channels": in_channels,
+            "hidden_channels": 8,
+            "out_channels": 1,
+            "num_layers": 2,
+        },
+        task_type="graph_regression",
+    )
+    checkpoint = CheckpointManager(working_root_dir=tmp_path).save(
+        tmp_path / "checkpoints" / "best.pt",
+        model,
+        data_info={"qm_input_features": ["atom.mulliken_charge"], "explicit_hydrogens": True},
+        hyper_parameters={
+            "model_name": "GCN",
+            "task_type": "graph_regression",
+            "hyperparameters": info["hyperparameters_values"],
+            "model_info": info,
+        },
+    )
+    package = package_checkpoint(checkpoint, tmp_path / "package")  # checksums verified
+    inputs = json.loads((package / PACKAGE_MANIFEST).read_text())["signature"]["inputs"]
+    assert inputs["qm_input_features"] == ["atom.mulliken_charge"]
+    assert "QM inputs: `atom.mulliken_charge` come from the training dataset's QM data" in (
+        (package / MODEL_CARD).read_text()
+    )
+    with pytest.raises(DeploymentError, match="ONNX export"):
+        _export_onnx(package)
+    pytest.importorskip("fastapi", reason="the `serve` extra is not installed")
+    from milia_pipeline.models.deployment.serving import PackagedPredictor
+
+    with pytest.raises(ConfigurationError, match="QM data"):
+        PackagedPredictor.from_package(package)

@@ -4099,6 +4099,12 @@ def _run_standard_training(
         from milia_pipeline.molecules.featurization_record import graphs_have_explicit_hydrogens
 
         model_info["explicit_hydrogens"] = graphs_have_explicit_hydrogens(dataset)
+        # Structural features taken from the dataset's QM data (no identifier carries them)
+        from milia_pipeline.molecules.featurization_record import qm_input_features
+
+        model_info["qm_input_features"] = qm_input_features(
+            model_info.get("structural_features_config"), dataset
+        )
         if model_info["input_transforms"]:
             logger.info(
                 f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"

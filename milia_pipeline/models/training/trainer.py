@@ -2227,6 +2227,9 @@ class Trainer:
                     "explicit_hydrogens": self.model_info.get("explicit_hydrogens")
                     if self.model_info
                     else None,
+                    "qm_input_features": self.model_info.get("qm_input_features")
+                    if self.model_info
+                    else None,
                 }
 
             # =================================================================

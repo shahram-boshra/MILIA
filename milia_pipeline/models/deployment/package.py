@@ -193,7 +193,9 @@ def package_checkpoint(
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
     (package / MODEL_CARD).write_text(model_card(manifest))
-    if verify:
+    # A model with features from its dataset's QM data cannot featurize identifiers, so its
+    # reproduction cannot be checked on them; the package's checksums are still verified.
+    if verify and not manifest["signature"]["inputs"]["qm_input_features"]:
         try:
             _check_reproduces(source, package, manifest["input_example"], rtol=rtol, atol=atol)
         except DeploymentError:
@@ -348,6 +350,8 @@ def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str
             # Hydrogens as nodes in the training graphs, added to featurized molecules
             # (molecules/featurization_record.py); None: not recorded
             "explicit_hydrogens": data_info.get("explicit_hydrogens"),
+            # Features from the dataset's QM data: the model takes no identifier inputs
+            "qm_input_features": list(data_info.get("qm_input_features") or []),
         },
         "outputs": {
             "count": model_info.get("out_channels", values.get("out_channels")),
@@ -462,6 +466,16 @@ def _target_scaling_line(scaler: dict[str, Any] | None) -> str:
     )
 
 
+def _qm_line(features: list[str] | None) -> str:
+    if not features:
+        return "none (every feature is computed from the molecule's identifier)"
+    return (
+        f"{_show(features)} come from the training dataset's QM data: predict from a dataset of "
+        "the same type (`milia --predict --test-path <dataset directory>`); SMILES, InChI and "
+        "structure files are refused, so the server does not start for this model"
+    )
+
+
 def _hydrogens_line(explicit: bool | None) -> str:
     if explicit is None:
         return "not recorded (molecules are featurized with implicit hydrogens)"
@@ -526,6 +540,7 @@ def model_card(manifest: dict[str, Any]) -> str:
         ),
         f"- Input transforms: {_transforms_line(inputs)}",
         f"- Explicit hydrogens: {_hydrogens_line(inputs.get('explicit_hydrogens'))}",
+        f"- QM inputs: {_qm_line(inputs.get('qm_input_features'))}",
         f"- Output: {_show(outputs.get('count'))} values per molecule; names: "
         f"{_show(outputs.get('names'))}.",
         f"- Target scaling: {_target_scaling_line(manifest.get('target_scaler'))}",

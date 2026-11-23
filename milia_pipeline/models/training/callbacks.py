@@ -603,6 +603,9 @@ class ModelCheckpoint(Callback):
             "explicit_hydrogens": trainer.model_info.get("explicit_hydrogens")
             if hasattr(trainer, "model_info") and trainer.model_info
             else None,
+            "qm_input_features": trainer.model_info.get("qm_input_features")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
         }
 
         # Version info for format detection

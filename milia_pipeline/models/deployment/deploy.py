@@ -23,6 +23,7 @@ from typing import Any
 
 import torch
 
+from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.deployment.deployment_strategies import SERVING_IMAGE_TARGETS
 from milia_pipeline.models.deployment.package import (
     PACKAGE_MANIFEST,
@@ -61,6 +62,12 @@ def _export_onnx(package_dir: Path) -> None:
     predictor = Predictor.from_checkpoint(
         checkpoint_path=checkpoint, working_root_dir=package_dir, device=torch.device("cpu")
     )
+    if predictor.qm_input_features:
+        raise DeploymentError(
+            "ONNX export traces the model on example molecules featurized from SMILES; this model "
+            f"takes features from its dataset's QM data ({', '.join(predictor.qm_input_features)}). "
+            "Disable models.deployment.onnx for it."
+        )
     model, config = predictor.model.eval(), predictor.structural_features_config
     smiles = list(manifest.get("input_example") or _FALLBACK_EXAMPLE)
     graphs = predictor.prepare_inputs(

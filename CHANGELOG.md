@@ -211,6 +211,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A model whose structural features came from its dataset's QM data is no longer fed molecule identifiers.
+  Mulliken charges (a QM result; read from a SMILES or InChI the feature was 0.0) and bond lengths of the
+  QM-optimized geometry (an identifier only gives a generated conformer) cannot be reproduced from a SMILES, an
+  InChI or a structure file. Training records these features (`data_info.qm_input_features`, decided as the
+  molecule converter decides what it passes to the structural featurization, and for the geometry only when the
+  training graphs carry coordinates); `Predictor.prepare_inputs` then refuses identifier inputs with the reason, so
+  `--predict` on molecule files exits 1 and the server does not start. Such a model is predicted from a dataset of
+  the same type (`--predict --test-path <dataset directory or processed file>`), whose processing keeps the QM
+  geometry and charges as they are. Packaging skips its SMILES reproduction check (checksums are still verified),
+  ONNX export refuses it, and the signature and model card state the QM inputs.
 - Inference reproduces the hydrogens of the training graphs. Datasets built from QM data (DFT, QM9, …) hold
   hydrogens as atoms, with the QM-optimized coordinates of every atom, but `--predict` on molecule files,
   deployment-package verification, the ONNX export sample and serving featurized SMILES and InChI with implicit

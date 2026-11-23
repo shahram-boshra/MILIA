@@ -165,6 +165,11 @@ class Predictor:
         return {}
 
     @property
+    def qm_input_features(self) -> list[str]:
+        """Structural features the model took from its dataset's QM data (none: ``[]``)."""
+        return list((self.model_info.get("data_info") or {}).get("qm_input_features") or [])
+
+    @property
     def records_input_transforms(self) -> bool:
         """Whether the checkpoint says which pre-transforms its training graphs went through."""
         return "input_transforms" in (self.model_info.get("data_info") or {})
@@ -181,9 +186,20 @@ class Predictor:
         unchanged, with a warning: it cannot say what its training graphs went through.
 
         Raises:
-            ConfigurationError: The recorded pipeline cannot be rebuilt
-                (``load_input_transform``).
+            ConfigurationError: The model took features from its dataset's QM data
+                (``qm_input_features``), which no molecule identifier carries; or the recorded
+                pipeline cannot be rebuilt (``load_input_transform``).
         """
+        if self.qm_input_features:
+            from milia_pipeline.exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                f"This model was trained on features from its dataset's QM data "
+                f"({', '.join(self.qm_input_features)}): a SMILES, InChI or structure file does not "
+                "carry them, so its predictions would rest on inputs it never saw. Predict from a "
+                "dataset of the same type (milia --predict --test-path <dataset directory>), whose "
+                "processing keeps the QM geometry and charges as they are."
+            )
         if not self.records_input_transforms:
             if not self._input_transform_loaded:
                 logger.warning(
