@@ -75,7 +75,6 @@ dependencies = [
     "rdkit==2025.3.6",              # 2025.3.6 fixes GETAWAY nondeterminism (rdkit#7264; req. by addcore_3d)
     "matplotlib==3.11.2",
     "scikit-learn==1.5.2",
-    "pydantic-settings==2.10.1",
     # Implicit direct deps, imported unguarded by first-party code but only transitive until now; each is
     # declared at the version already locked.
     # pydantic: 39 modules (config schemas, transforms, plugin manifests, model builders).

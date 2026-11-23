@@ -209,6 +209,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dynamic_axes` belongs to PyTorch's legacy TorchScript-based ONNX exporter. Pass `dynamic_shapes`; graph models
   get dynamic node and edge counts automatically.
 
+### Removed
+
+- `pydantic-settings` (and with it `python-dotenv`): declared but never imported by MILIA (deptry rule DEP002,
+  unused dependency).
+
 ### Fixed
 
 - A model whose structural features came from its dataset's QM data is no longer fed molecule identifiers.
