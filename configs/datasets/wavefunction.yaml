@@ -89,6 +89,7 @@ data_config:
 
       # Node-level features - currently none from .molden files
       node_features_to_add: []
+      node_targets_to_include: []
 
       # Vector graph properties - currently none from .molden files
       vector_graph_properties_to_include: []

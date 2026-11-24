@@ -531,14 +531,19 @@ class TestProcessingConfig:
         config = ProcessingConfig(scalar_graph_targets=["Etot", "HOMO"])
         assert config.scalar_graph_targets == ["Etot", "HOMO"]
         assert config.node_features == []
+        assert config.node_targets == []
         assert config.test_molecule_limit is None
 
     def test_post_init_none_fields(self):
         """Test that None fields are initialized to empty lists."""
         config = ProcessingConfig(
-            scalar_graph_targets=["Etot"], node_features=None, vector_graph_properties=None
+            scalar_graph_targets=["Etot"],
+            node_features=None,
+            node_targets=None,
+            vector_graph_properties=None,
         )
         assert config.node_features == []
+        assert config.node_targets == []
         assert config.vector_graph_properties == []
 
     def test_get_handler_processing_config(self):

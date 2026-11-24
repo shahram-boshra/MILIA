@@ -126,8 +126,12 @@ data_config:
       scalar_graph_targets_to_include:
         - energy          # ωB97M-D3(BJ)/def2-TZVPPD total energy (Hartree, converted from eV)
 
-      # Node-level features to be added to pyg_data.x
-      node_features_to_add:
+      # Per-atom properties appended to pyg_data.x as input columns, in this order, after the
+      # structural features (one of property_availability.<dataset>.node_features each).
+      node_features_to_add: []
+      # Per-atom targets, stored in pyg_data.node_y (column names in node_y_property_names), never
+      # in x; a property is an input or a target, not both (target_selection.target_source: node_y).
+      node_targets_to_include:
         - forces          # Atomic forces (Hartree/Angstrom) - for force-field training
 
       # Fixed-size vector graph properties

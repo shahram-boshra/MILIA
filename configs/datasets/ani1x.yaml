@@ -68,10 +68,14 @@ data_config:
       scalar_graph_targets_to_include:
         - energy          # ωB97x/6-31G* DFT total energy (Hartree)
 
-      # Node-level features to be added to pyg_data.x
-      node_features_to_add:
-        - hirshfeld_charges   # Hirshfeld atomic charges (e) - recommended for charge features
-        # - cm5_charges       # CM5 atomic charges (e) - alternative charge scheme
+      # Per-atom properties appended to pyg_data.x as input columns, in this order, after the
+      # structural features (one of property_availability.<dataset>.node_features each). The
+      # atomic_charges_property below is already the atomic_charge column: do not repeat it here.
+      node_features_to_add: []
+        # - cm5_charges       # CM5 atomic charges (e) - a second charge scheme as an input column
+      # Per-atom targets, stored in pyg_data.node_y (column names in node_y_property_names), never
+      # in x; a property is an input or a target, not both (target_selection.target_source: node_y).
+      node_targets_to_include: []
         # - forces            # Atomic forces (Hartree/Angstrom) - for force-field training
 
       # Per-atom charges for the atomic_charge structural feature (Hirshfeld, ωB97x/6-31G*; cm5_charges is the alternative); one of

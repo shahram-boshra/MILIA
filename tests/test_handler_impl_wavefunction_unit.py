@@ -100,6 +100,7 @@ def _make_processing_config(**overrides):
     cfg = Mock(name="ProcessingConfig")
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["homo_lumo_gap_eV"])
     cfg.node_features = overrides.get("node_features", [])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.common_required_properties = overrides.get(
@@ -1046,94 +1047,27 @@ class TestAddOrbitalPropertiesInternal(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 15: _add_node_features_internal (6 tests)
+# GROUP 15: per-atom properties are not the handler's (1 test)
 # ============================================================================
 
 
 class TestAddNodeFeaturesInternal(unittest.TestCase):
-    """Test Wavefunction node feature addition."""
+    """Per-atom properties are added by the converter's shared step, not the handler."""
 
-    @patch(
-        "milia_pipeline.handlers.implementations.wavefunction.HEAVY_ATOM_SYMBOLS_TO_Z",
-        {"C": 6, "H": 1, "O": 8},
-        create=True,
-    )
-    def test_adds_node_features_from_atoms(self):
-        """Node features are created from atom types."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3)
-        props = _make_raw_properties(atoms=np.array(["C", "H", "H"], dtype=object))
-
-        with patch(
-            "milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z",
-            {"C": 6, "H": 1, "O": 8},
-        ):
-            handler._add_node_features_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "x"))
-        self.assertEqual(data.x.shape[0], 3)
-
-    def test_missing_atoms_raises_property_enrichment_error(self):
-        """Missing atoms raises PropertyEnrichmentError."""
+    def test_handler_leaves_x_to_the_shared_step(self):
+        """With node_features configured, enrichment neither replaces nor extends x."""
         pc = _make_processing_config(node_features=["atoms"])
         handler = _make_handler(processing_config=pc)
         data = _make_pyg_data()
-        props = {"coordinates": np.random.randn(3, 3)}  # No atoms
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_node_features_internal(data, props, 0, "test")
-
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
-    def test_unknown_atom_uses_zero_placeholder(self):
-        """Unknown atom type maps to 0 and logs warning."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=2)
-        props = _make_raw_properties(atoms=np.array(["C", "Xx"], dtype=object), num_atoms=2)
-        with self.assertLogs("test.wavefunction", level="WARNING") as cm:
-            handler._add_node_features_internal(data, props, 0, "test")
-        self.assertTrue(any("Unknown atom type" in msg for msg in cm.output))
-
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
-    def test_node_features_unsqueezed_when_1d(self):
-        """1D node features are unsqueezed to 2D (N, 1)."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=2)
-        props = _make_raw_properties(atoms=np.array(["C", "H"], dtype=object), num_atoms=2)
-        handler._add_node_features_internal(data, props, 0, "test")
-        self.assertEqual(data.x.dim(), 2)
-        self.assertEqual(data.x.shape[1], 1)
-
-    @patch("milia_pipeline.config.config_constants.HEAVY_ATOM_SYMBOLS_TO_Z", {"C": 6, "H": 1})
-    def test_node_features_dtype_long(self):
-        """Node features (atomic numbers) are torch.long."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=2)
-        props = _make_raw_properties(atoms=np.array(["C", "H"], dtype=object), num_atoms=2)
-        handler._add_node_features_internal(data, props, 0, "test")
-        self.assertEqual(data.x.dtype, torch.long)
-
-    def test_exception_during_node_features_raises_enrichment_error(self):
-        """Unexpected exception during node feature addition raises PropertyEnrichmentError."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(atoms=np.array(["C", "H", "H"], dtype=object))
-        # Force _ensure_tensor to raise to trigger the except block
-        with (
-            patch.object(
-                handler,
-                "_ensure_tensor",
-                side_effect=RuntimeError("tensor conversion boom"),
-            ),
-            self.assertRaises(PropertyEnrichmentError),
-        ):
-            handler._add_node_features_internal(data, props, 0, "test")
+        x = torch.rand(int(data.z.size(0)), 4)
+        data.x = x
+        result = handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+        self.assertIs(result.x, x)
+        self.assertFalse(hasattr(handler, "_add_node_features_internal"))
 
 
 # ============================================================================
-# GROUP 16: enrich_pyg_data (7 tests)
+# GROUP 16: enrich_pyg_data (5 tests)
 # ============================================================================
 
 
@@ -1162,24 +1096,6 @@ class TestEnrichPygData(unittest.TestCase):
         with patch.object(handler, "_add_orbital_properties_internal") as mock_orbital:
             handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
             mock_orbital.assert_called_once()
-
-    def test_calls_node_features_when_configured(self):
-        """Enrichment calls _add_node_features_internal when node_features configured."""
-        pc = _make_processing_config(node_features=["atoms"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_node_features_internal") as mock_node:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_node.assert_called_once()
-
-    def test_skips_node_features_when_not_configured(self):
-        """Enrichment skips _add_node_features_internal when no node_features."""
-        pc = _make_processing_config(node_features=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_node_features_internal") as mock_node:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_node.assert_not_called()
 
     def test_enrichment_error_raises_dataset_specific_error(self):
         """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
@@ -1507,8 +1423,8 @@ def run_comprehensive_suite():
         TestEnsureTensor,  # GROUP 12:   8 tests
         TestAddScalarTargetsInternal,  # GROUP 13:  10 tests
         TestAddOrbitalPropertiesInternal,  # GROUP 14:   6 tests
-        TestAddNodeFeaturesInternal,  # GROUP 15:   6 tests
-        TestEnrichPygData,  # GROUP 16:   7 tests
+        TestAddNodeFeaturesInternal,  # GROUP 15:   1 test
+        TestEnrichPygData,  # GROUP 16:   5 tests
         TestGetProcessingStatistics,  # GROUP 17:   6 tests
         TestTransformValidationHelpers,  # GROUP 18:   8 tests
         TestGetDatasetSuitableTransforms,  # GROUP 19:   5 tests
@@ -1565,8 +1481,8 @@ GROUP 11: _is_valid_property                                               (  7 
 GROUP 12: _ensure_tensor                                                   (  8 tests)
 GROUP 13: _add_scalar_targets_internal (tier-aware)                        ( 10 tests)
 GROUP 14: _add_orbital_properties_internal                                 (  6 tests)
-GROUP 15: _add_node_features_internal                                      (  6 tests)
-GROUP 16: enrich_pyg_data                                                  (  7 tests)
+GROUP 15: per-atom properties are not the handler's                        (  1 test)
+GROUP 16: enrich_pyg_data                                                  (  5 tests)
 GROUP 17: get_processing_statistics                                        (  6 tests)
 GROUP 18: Transform Validation Helpers                                     (  8 tests)
 GROUP 19: _get_dataset_suitable_transforms                                 (  5 tests)

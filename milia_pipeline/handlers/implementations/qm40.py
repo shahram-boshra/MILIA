@@ -901,20 +901,8 @@ class QM40DatasetHandler(DatasetHandler):
 
     def _check_transform_incompatibilities(self, transform_names: list[str]) -> list[str]:
         """Check for incompatible transform combinations for QM40."""
-        errors = []
-
-        # VirtualNode incompatibility with Mulliken charges
-        if (
-            "VirtualNode" in transform_names
-            and hasattr(self.processing_config, "node_features")
-            and "Qmulliken" in self.processing_config.node_features
-        ):
-            errors.append(
-                "VirtualNode incompatible with Mulliken charges - "
-                "virtual node would need artificial charge"
-            )
-
-        return errors
+        # Per-atom dataset values vs VirtualNode: checked for every dataset (base handler)
+        return []
 
     def _get_transform_recommendations(self, transform_names: list[str]) -> list[str]:
         """Get transform recommendations for QM40 datasets with specific suggestions."""

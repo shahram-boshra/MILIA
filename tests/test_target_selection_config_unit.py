@@ -164,15 +164,15 @@ class TestTargetSourceEnum:
         assert hasattr(TargetSource, "Y")
         assert TargetSource.Y.value == "y"
 
-    def test_x_source_exists(self):
-        """Test X source exists."""
-        assert hasattr(TargetSource, "X")
-        assert TargetSource.X.value == "x"
+    def test_node_y_source_exists(self):
+        """NODE_Y: the per-atom targets (node_targets_to_include)."""
+        assert TargetSource.NODE_Y.value == "node_y"
 
-    def test_edge_attr_source_exists(self):
-        """Test EDGE_ATTR source exists."""
-        assert hasattr(TargetSource, "EDGE_ATTR")
-        assert TargetSource.EDGE_ATTR.value == "edge_attr"
+    def test_model_inputs_are_not_sources(self):
+        """No source names a model input attribute (x, edge_attr, pos, z, edge_index)."""
+        from milia_pipeline.models.factory.target_selection_config import MODEL_INPUT_ATTRIBUTES
+
+        assert not {s.value for s in TargetSource} & MODEL_INPUT_ATTRIBUTES
 
     def test_edge_label_source_exists(self):
         """Test EDGE_LABEL source exists."""
@@ -193,8 +193,7 @@ class TestTargetSourceEnum:
         """Test all sources have unique values."""
         sources = [
             TargetSource.Y,
-            TargetSource.X,
-            TargetSource.EDGE_ATTR,
+            TargetSource.NODE_Y,
             TargetSource.EDGE_LABEL,
             TargetSource.EDGE_Y,
             TargetSource.CUSTOM,
@@ -379,15 +378,18 @@ class TestFromConfigMethod:
         config = TargetSelectionConfig.from_config({"target_source": "y"})
         assert config.config_source == "y"
 
-    def test_parses_target_source_x(self):
-        """Test parses target_source='x'."""
-        config = TargetSelectionConfig.from_config({"target_source": "x"})
-        assert config.config_source == "x"
+    @pytest.mark.parametrize("source", ["x", "edge_attr", "pos", "z", "edge_index", "X"])
+    def test_refuses_a_model_input_as_target_source(self, source):
+        """A target taken from a model input stays in the input (leakage): refused."""
+        from milia_pipeline.exceptions import ConfigurationError
 
-    def test_parses_target_source_edge_attr(self):
-        """Test parses target_source='edge_attr'."""
-        config = TargetSelectionConfig.from_config({"target_source": "edge_attr"})
-        assert config.config_source == "edge_attr"
+        with pytest.raises(ConfigurationError, match="node_targets_to_include"):
+            TargetSelectionConfig.from_config({"target_source": source})
+
+    def test_parses_target_source_node_y(self):
+        """target_source='node_y' selects the per-atom targets."""
+        config = TargetSelectionConfig.from_config({"target_source": "node_y"})
+        assert config.config_source == "node_y"
 
     def test_parses_target_source_custom(self, caplog):
         """Test parses custom target_source with info log."""
@@ -417,7 +419,7 @@ class TestFromConfigMethod:
         a TargetSelectionConfig object from hpo_manager.py instead of a raw dict.
         """
         original = TargetSelectionConfig.from_config(
-            {"target_level": "node", "target_source": "x", "indices": [0, 1]}
+            {"target_level": "node", "target_source": "node_y", "indices": [0, 1]}
         )
 
         # Calling from_config again with the instance should return the same object
@@ -425,7 +427,7 @@ class TestFromConfigMethod:
 
         assert result is original
         assert result.config_level == "node"
-        assert result.config_source == "x"
+        assert result.config_source == "node_y"
         assert result.indices == [0, 1]
 
     def test_parses_all_true_mode(self):
@@ -589,15 +591,15 @@ class TestInferSourceFromLevel:
         result = TargetSelectionConfig.infer_source_from_level(TargetLevel.GRAPH)
         assert result == TargetSource.Y
 
-    def test_node_level_returns_x(self):
-        """Test NODE level returns X source (fallback)."""
+    def test_node_level_returns_node_y(self):
+        """NODE level falls back to the per-atom targets (node_y), never x."""
         result = TargetSelectionConfig.infer_source_from_level(TargetLevel.NODE)
-        assert result == TargetSource.X
+        assert result == TargetSource.NODE_Y
 
-    def test_edge_level_returns_edge_attr(self):
-        """Test EDGE level returns EDGE_ATTR source (fallback)."""
+    def test_edge_level_returns_edge_y(self):
+        """EDGE level falls back to edge_y, never edge_attr."""
         result = TargetSelectionConfig.infer_source_from_level(TargetLevel.EDGE)
-        assert result == TargetSource.EDGE_ATTR
+        assert result == TargetSource.EDGE_Y
 
     def test_link_prediction_returns_edge_label(self):
         """Test link_prediction task returns EDGE_LABEL."""
@@ -612,7 +614,7 @@ class TestInferSourceFromLevel:
     def test_none_task_type_uses_level_fallback(self):
         """Test None task_type uses level-based fallback."""
         result = TargetSelectionConfig.infer_source_from_level(TargetLevel.NODE, None)
-        assert result == TargetSource.X
+        assert result == TargetSource.NODE_Y
 
 
 # =============================================================================
@@ -649,19 +651,21 @@ class TestResolveForTask:
         assert config.resolved_source == TargetSource.Y
         assert config.resolved_source_attr == "y"
 
-    def test_explicit_source_x(self):
-        """Test explicit source 'x'."""
-        config = TargetSelectionConfig(config_source="x")
+    def test_explicit_source_node_y(self):
+        """Explicit source 'node_y'."""
+        config = TargetSelectionConfig(config_source="node_y")
         config.resolve_for_task("node_regression")
-        assert config.resolved_source == TargetSource.X
-        assert config.resolved_source_attr == "x"
+        assert config.resolved_source == TargetSource.NODE_Y
+        assert config.resolved_source_attr == "node_y"
 
-    def test_explicit_source_edge_attr(self):
-        """Test explicit source 'edge_attr'."""
-        config = TargetSelectionConfig(config_source="edge_attr")
-        config.resolve_for_task("edge_regression")
-        assert config.resolved_source == TargetSource.EDGE_ATTR
-        assert config.resolved_source_attr == "edge_attr"
+    @pytest.mark.parametrize("source", ["x", "edge_attr"])
+    def test_explicit_model_input_source_is_refused(self, source):
+        """A config built directly (not through from_config) is refused at resolution."""
+        from milia_pipeline.exceptions import ConfigurationError
+
+        config = TargetSelectionConfig(config_source=source)
+        with pytest.raises(ConfigurationError, match="model input"):
+            config.resolve_for_task("node_regression")
 
     def test_custom_source_sets_custom_enum(self):
         """Test custom source sets CUSTOM enum."""
@@ -773,8 +777,8 @@ class TestResolveSourceAuto:
         result = config._resolve_source_auto(TargetLevel.NODE, "node_regression", mock_data)
         assert result == TargetSource.Y
 
-    def test_node_level_y_wrong_shape_returns_x(self):
-        """Test NODE level with wrong y shape returns X."""
+    def test_node_level_y_wrong_shape_returns_node_y(self):
+        """Test NODE level with wrong y shape returns NODE_Y."""
         import torch
 
         mock_data = MagicMock()
@@ -783,7 +787,7 @@ class TestResolveSourceAuto:
 
         config = TargetSelectionConfig()
         result = config._resolve_source_auto(TargetLevel.NODE, "node_regression", mock_data)
-        assert result == TargetSource.X
+        assert result == TargetSource.NODE_Y
 
     def test_edge_level_y_correct_shape_returns_y(self):
         """Test EDGE level with correct y shape returns Y."""
@@ -811,10 +815,10 @@ class TestResolveSourceAuto:
 
         config = TargetSelectionConfig()
         result = config._resolve_source_auto(TargetLevel.NODE, "node_regression", mock_data)
-        assert result == TargetSource.X
+        assert result == TargetSource.NODE_Y
 
-    def test_edge_level_y_wrong_shape_returns_edge_attr(self):
-        """Test EDGE level with y shape mismatch falls back to EDGE_ATTR (lines 491-502)."""
+    def test_edge_level_y_wrong_shape_returns_edge_y(self):
+        """Test EDGE level with y shape mismatch falls back to EDGE_Y (lines 491-502)."""
         import torch
 
         mock_data = MagicMock()
@@ -823,7 +827,7 @@ class TestResolveSourceAuto:
 
         config = TargetSelectionConfig()
         result = config._resolve_source_auto(TargetLevel.EDGE, "edge_classification", mock_data)
-        assert result == TargetSource.EDGE_ATTR
+        assert result == TargetSource.EDGE_Y
 
     def test_node_level_infers_num_nodes_from_x(self):
         """Test NODE level infers num_nodes from x when num_nodes is None (lines 478-479)."""
@@ -844,7 +848,7 @@ class TestResolveSourceAuto:
 
         config = TargetSelectionConfig()
         result = config._resolve_source_auto(TargetLevel.NODE, "node_regression", mock_data)
-        assert result == TargetSource.X
+        assert result == TargetSource.NODE_Y
 
     def test_edge_regression_special_case_with_data(self):
         """Test edge_regression returns EDGE_Y even when data_sample provided (lines 458-459)."""
@@ -858,7 +862,7 @@ class TestResolveSourceAuto:
         assert result == TargetSource.EDGE_Y
 
     def test_node_level_no_num_nodes_no_x_falls_back(self):
-        """Test NODE level with no num_nodes and no x attribute falls back to X (lines 477-489)."""
+        """Test NODE level with no num_nodes and no x attribute falls back to NODE_Y (lines 477-489)."""
         import torch
 
         mock_data = MagicMock()
@@ -868,11 +872,11 @@ class TestResolveSourceAuto:
 
         config = TargetSelectionConfig()
         result = config._resolve_source_auto(TargetLevel.NODE, "node_regression", mock_data)
-        # num_nodes is None, so y_first_dim != None check fails, falls back to X
-        assert result == TargetSource.X
+        # num_nodes is None, so y_first_dim != None check fails, falls back to NODE_Y
+        assert result == TargetSource.NODE_Y
 
     def test_edge_level_no_edge_index_falls_back(self):
-        """Test EDGE level with no edge_index attribute falls back to EDGE_ATTR."""
+        """Test EDGE level with no edge_index attribute falls back to EDGE_Y."""
         import torch
 
         mock_data = MagicMock(spec=[])
@@ -881,7 +885,7 @@ class TestResolveSourceAuto:
         config = TargetSelectionConfig()
         # Neither link_prediction nor edge_regression, so it checks y shape
         result = config._resolve_source_auto(TargetLevel.EDGE, "edge_classification", mock_data)
-        assert result == TargetSource.EDGE_ATTR
+        assert result == TargetSource.EDGE_Y
 
 
 # =============================================================================
@@ -1031,10 +1035,10 @@ class TestToDictMethod:
 
     def test_includes_config_source(self):
         """Test includes config_source."""
-        config = TargetSelectionConfig(config_source="x")
+        config = TargetSelectionConfig(config_source="node_y")
         result = config.to_dict()
         assert "config_source" in result
-        assert result["config_source"] == "x"
+        assert result["config_source"] == "node_y"
 
     def test_includes_resolved_level(self):
         """Test includes resolved_level name."""
@@ -1047,10 +1051,10 @@ class TestToDictMethod:
     def test_includes_resolved_source(self):
         """Test includes resolved_source name."""
         config = TargetSelectionConfig()
-        config.resolved_source = TargetSource.X
+        config.resolved_source = TargetSource.NODE_Y
         result = config.to_dict()
         assert "resolved_source" in result
-        assert result["resolved_source"] == "X"
+        assert result["resolved_source"] == "NODE_Y"
 
     def test_includes_resolved_source_attr(self):
         """Test includes resolved_source_attr."""
@@ -1153,9 +1157,9 @@ class TestReprMethod:
     def test_repr_includes_source(self):
         """Test __repr__ includes source."""
         config = TargetSelectionConfig()
-        config.resolved_source_attr = "x"
+        config.resolved_source_attr = "node_y"
         result = repr(config)
-        assert "source=x" in result
+        assert "source=node_y" in result
 
     def test_repr_uses_config_level_if_not_resolved(self):
         """Test __repr__ uses config_level if not resolved."""
@@ -1287,15 +1291,15 @@ class TestPydanticBaseModelBehavior:
         config.resolved_names = ["a", "b"]
         config.total_available = 5
         config.resolved_level = TargetLevel.NODE
-        config.resolved_source = TargetSource.X
-        config.resolved_source_attr = "x"
+        config.resolved_source = TargetSource.NODE_Y
+        config.resolved_source_attr = "node_y"
 
         assert config.resolved_indices == [0, 1]
         assert config.resolved_names == ["a", "b"]
         assert config.total_available == 5
         assert config.resolved_level == TargetLevel.NODE
-        assert config.resolved_source == TargetSource.X
-        assert config.resolved_source_attr == "x"
+        assert config.resolved_source == TargetSource.NODE_Y
+        assert config.resolved_source_attr == "node_y"
 
 
 # =============================================================================
@@ -1323,26 +1327,26 @@ class TestIntegrationScenarios:
         assert config.resolved_indices == [0, 1, 2]
         assert config.resolved_names == ["Etot", "gap", "zpves"]
 
-    def test_node_classification_from_x_workflow(self):
-        """Test node classification extracting from x."""
+    def test_node_classification_from_node_y_workflow(self):
+        """Node classification selecting per-atom targets from node_y."""
         config = TargetSelectionConfig.from_config(
-            {"target_level": "auto", "target_source": "x", "indices": [5, 6], "strict": True}
+            {"target_level": "auto", "target_source": "node_y", "indices": [0], "strict": True}
         )
 
         config.resolve_for_task("node_classification")
         assert config.resolved_level == TargetLevel.NODE
-        assert config.resolved_source == TargetSource.X
-        assert config.resolved_source_attr == "x"
+        assert config.resolved_source == TargetSource.NODE_Y
+        assert config.resolved_source_attr == "node_y"
 
     def test_edge_regression_workflow(self):
         """Test edge regression workflow."""
         config = TargetSelectionConfig.from_config(
-            {"target_level": "auto", "target_source": "edge_attr", "indices": [0], "strict": True}
+            {"target_level": "auto", "target_source": "edge_y", "indices": [0], "strict": True}
         )
 
         config.resolve_for_task("edge_regression")
         assert config.resolved_level == TargetLevel.EDGE
-        assert config.resolved_source == TargetSource.EDGE_ATTR
+        assert config.resolved_source == TargetSource.EDGE_Y
 
     def test_custom_attribute_workflow(self):
         """Test custom attribute workflow."""

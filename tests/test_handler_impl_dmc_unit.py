@@ -99,6 +99,7 @@ def _make_processing_config(**overrides):
     cfg = Mock(name="ProcessingConfig")
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["Etot"])
     cfg.node_features = overrides.get("node_features", [])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.common_required_properties = overrides.get(
         "common_required_properties", ["atoms", "coordinates"]

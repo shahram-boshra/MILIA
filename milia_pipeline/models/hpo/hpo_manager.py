@@ -60,6 +60,10 @@ except ImportError:
     ModelFactory = None
     get_factory = None
 
+from milia_pipeline.models.factory.target_selection_config import (
+    refuse_input_attribute_as_target,
+)
+
 # Import TargetSelectionConfig for node/edge level task support
 try:
     from milia_pipeline.models.factory.target_selection_config import (
@@ -435,7 +439,7 @@ def _prepare_edge_regression_data_hpo(
         return train_data, val_data
 
     # =========================================================================
-    # CASE 2: Extract from configured source (edge_attr by default)
+    # CASE 2: Extract from configured source (edge_y by default; model inputs refused)
     # =========================================================================
     # Determine source attribute from target_selection_config
     if (
@@ -446,8 +450,9 @@ def _prepare_edge_regression_data_hpo(
     ):
         source_attr = target_selection_config.resolved_source_attr
     else:
-        # Default for edge-level: extract from edge_attr
-        source_attr = "edge_attr"
+        # Default for edge-level: edge targets (edge_y)
+        source_attr = "edge_y"
+    refuse_input_attribute_as_target(source_attr)
 
     # Determine which indices to extract
     indices = None
@@ -574,8 +579,9 @@ def _prepare_node_level_data_hpo(
     ):
         source_attr = target_selection_config.resolved_source_attr
     else:
-        # Default for node-level: extract from x
-        source_attr = "x"
+        # Default for node-level: the per-atom targets (node_targets_to_include)
+        source_attr = "node_y"
+    refuse_input_attribute_as_target(source_attr)
 
     # Determine which indices to extract
     if target_selection_config is not None and target_selection_config.resolved_indices is not None:
@@ -594,8 +600,8 @@ def _prepare_node_level_data_hpo(
                 f"y.shape={list(sample.y.shape) if hasattr(sample, 'y') and sample.y is not None else 'None'} "
                 f"is not node-level (expected first dim = {num_nodes}). "
                 f"Source '{source_attr}' also not available. "
-                f"Configure target_selection.indices to specify which columns of x to use as targets, "
-                f"or ensure your data has node-level targets in y."
+                f"Declare per-atom targets in data_config.property_selection.<dataset>."
+                f"node_targets_to_include (stored in node_y) and re-process the dataset."
             ),
         )
 

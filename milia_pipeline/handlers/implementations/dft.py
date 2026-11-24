@@ -301,11 +301,10 @@ class DFTDatasetHandler(DatasetHandler):
                 "DropNode - incompatible with vibrational modes (indexed by atom)"
             )
 
-        if (
-            hasattr(self.processing_config, "node_features")
-            and "Qmulliken" in self.processing_config.node_features
-        ):
-            recommendations["avoid"].append("VirtualNode - incompatible with Mulliken charges")
+        if self.get_per_atom_dataset_properties():
+            recommendations["avoid"].append(
+                "VirtualNode - incompatible with per-atom dataset values (charges, targets)"
+            )
 
         # Warnings about transform combinations
         recommendations["warnings"].extend(
@@ -414,17 +413,6 @@ class DFTDatasetHandler(DatasetHandler):
             List of error messages (empty if all compatible)
         """
         errors = []
-
-        # VirtualNode incompatibility with certain DFT properties
-        if (
-            "VirtualNode" in transform_names
-            and hasattr(self.processing_config, "node_features")
-            and "Qmulliken" in self.processing_config.node_features
-        ):
-            errors.append(
-                "VirtualNode incompatible with Mulliken charges - "
-                "virtual node would need artificial charge"
-            )
 
         # DropNode incompatibility with vibrational modes
         if "DropNode" in transform_names and "vibmodes" in getattr(

@@ -679,7 +679,8 @@ class ProcessingConfig(BaseModel, frozen=True):
 
     Attributes:
         scalar_graph_targets: Scalar properties to include in y tensor
-        node_features: Node-level features to add
+        node_features: Per-atom properties appended to ``x`` as input columns
+        node_targets: Per-atom properties stored as targets in ``node_y`` (never in ``x``)
         vector_graph_properties: Fixed-size vector properties
         variable_len_graph_properties: Variable-length properties
         calculate_atomization_energy_from: Base energy for atomization calculation
@@ -692,6 +693,7 @@ class ProcessingConfig(BaseModel, frozen=True):
 
     scalar_graph_targets: list[str]
     node_features: list[str] | None = None
+    node_targets: list[str] | None = None
     vector_graph_properties: list[str] | None = None
     variable_len_graph_properties: list[str] | None = None
     calculate_atomization_energy_from: str | None = None
@@ -712,6 +714,8 @@ class ProcessingConfig(BaseModel, frozen=True):
             # Initialize list fields
             if data.get("node_features") is None:
                 data["node_features"] = []
+            if data.get("node_targets") is None:
+                data["node_targets"] = []
             if data.get("vector_graph_properties") is None:
                 data["vector_graph_properties"] = []
             if data.get("variable_len_graph_properties") is None:
@@ -740,6 +744,7 @@ class ProcessingConfig(BaseModel, frozen=True):
         base_config = {
             "scalar_graph_targets": self.scalar_graph_targets,
             "node_features": self.node_features,
+            "node_targets": self.node_targets,
             "vector_graph_properties": self.vector_graph_properties,
             "variable_len_graph_properties": self.variable_len_graph_properties,
             "test_molecule_limit": self.test_molecule_limit,
@@ -798,6 +803,7 @@ class ProcessingConfig(BaseModel, frozen=True):
         # Validate optional list fields
         for field_name, field_value in [
             ("node_features", self.node_features),
+            ("node_targets", self.node_targets),
             ("vector_graph_properties", self.vector_graph_properties),
             ("variable_len_graph_properties", self.variable_len_graph_properties),
         ]:
@@ -1971,6 +1977,7 @@ def create_processing_config_from_global(logger: logging.Logger | None = None) -
         return ProcessingConfig(
             scalar_graph_targets=data_config.get("scalar_graph_targets_to_include", []),
             node_features=data_config.get("node_features_to_add", []),
+            node_targets=data_config.get("node_targets_to_include", []),
             vector_graph_properties=data_config.get("vector_graph_properties_to_include", []),
             variable_len_graph_properties=data_config.get(
                 "variable_len_graph_properties_to_include", []

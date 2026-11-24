@@ -44,6 +44,7 @@ data_config:
         - Etot  # Only Etot is a target; std is uncertainty metadata
       # Node-level features (DMC typically doesn't have these)
       node_features_to_add: []
+      node_targets_to_include: []
       # Vector properties (DMC typically doesn't have these)
       vector_graph_properties_to_include: []
       # Variable-length properties (DMC typically doesn't have these)

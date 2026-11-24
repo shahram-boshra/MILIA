@@ -125,6 +125,7 @@ def _make_processing_config(**overrides):
         spec_set=[
             "scalar_graph_targets",
             "node_features",
+            "node_targets",
             "vector_graph_properties",
             "variable_len_graph_properties",
             "calculate_atomization_energy_from",
@@ -133,6 +134,7 @@ def _make_processing_config(**overrides):
     )
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["Internal_E_0K"])
     cfg.node_features = overrides.get("node_features", ["Qmulliken"])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.calculate_atomization_energy_from = overrides.get(
@@ -864,13 +866,15 @@ class TestTransformSystem(unittest.TestCase):
         warnings = _make_handler()._validate_dataset_specific_transforms(["Distance"])
         self.assertTrue(any("edge attribute" in w.lower() for w in warnings))
 
-    def test_incompat_virtualnode_with_qmulliken(self):
-        """VirtualNode + Qmulliken node feature -> incompatibility error (QM40-specific)."""
-        pc = _make_processing_config(node_features=["Qmulliken"])
-        errors = _make_handler(processing_config=pc)._check_transform_incompatibilities(
-            ["VirtualNode"]
-        )
-        self.assertTrue(any("VirtualNode" in e for e in errors))
+    def test_virtualnode_per_atom_values_checked_by_base(self):
+        """VirtualNode vs per-atom values is checked for every dataset by the base handler."""
+        pc = _make_processing_config(node_features=["Qmulliken"], node_targets=["forces"])
+        handler = _make_handler(processing_config=pc)
+        with patch(
+            "milia_pipeline.config.config_accessors.get_atomic_charge_source", return_value=None
+        ):
+            self.assertEqual(handler.get_per_atom_dataset_properties(), ["Qmulliken", "forces"])
+        self.assertEqual(handler._check_transform_incompatibilities(["VirtualNode"]), [])
 
     def test_incompat_virtualnode_without_qmulliken_ok(self):
         pc = _make_processing_config(node_features=["atoms"])

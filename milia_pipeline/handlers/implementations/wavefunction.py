@@ -463,11 +463,8 @@ class WavefunctionDatasetHandler(DatasetHandler):
                 pyg_data, raw_properties_dict, molecule_index, identifier
             )
 
-            # Add node features if configured
-            if self.processing_config.node_features:
-                self._add_node_features_internal(
-                    pyg_data, raw_properties_dict, molecule_index, identifier
-                )
+            # Per-atom properties (node_features_to_add, node_targets_to_include) are added by the
+            # converter's shared step for every dataset type, not by the handler.
 
             return pyg_data
 
@@ -676,58 +673,6 @@ class WavefunctionDatasetHandler(DatasetHandler):
             self.logger.warning(
                 f"Could not add orbital properties for molecule {molecule_index}: {e}"
             )
-
-    def _add_node_features_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """
-        Add wavefunction-specific node features.
-
-        Currently uses atom types as primary node feature.
-        Future: Could add atomic orbital contributions, charges, etc.
-        """
-        try:
-            atoms = raw_properties_dict.get("atoms")
-            if atoms is None:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=identifier,
-                    property_name="atoms",
-                    reason="Atoms required for node features but not found",
-                    detail="Cannot create node features without atomic information",
-                )
-
-            # Convert atoms to atomic numbers (node features)
-            from milia_pipeline.config.config_constants import HEAVY_ATOM_SYMBOLS_TO_Z
-
-            atomic_numbers = []
-            for atom in atoms:
-                if atom in HEAVY_ATOM_SYMBOLS_TO_Z:
-                    atomic_numbers.append(HEAVY_ATOM_SYMBOLS_TO_Z[atom])
-                else:
-                    # Unknown atom - use 0 as placeholder
-                    self.logger.warning(f"Unknown atom type '{atom}' in molecule {molecule_index}")
-                    atomic_numbers.append(0)
-
-            node_features = self._ensure_tensor(
-                atomic_numbers, torch.long, "node_features", molecule_index, identifier
-            )
-            pyg_data.x = node_features.unsqueeze(-1) if node_features.dim() == 1 else node_features
-
-        except PropertyEnrichmentError:
-            raise
-        except Exception as e:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=identifier,
-                property_name="node_features",
-                reason=f"Failed to add node features: {str(e)}",
-                detail=f"Error type: {type(e).__name__}",
-            ) from e
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]

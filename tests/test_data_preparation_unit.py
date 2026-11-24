@@ -81,6 +81,8 @@ class MockDataCompatibilityError(Exception):
 # IMPORT MODULE UNDER TEST WITH FALLBACK HANDLING
 # =============================================================================
 
+from milia_pipeline.exceptions import ConfigurationError
+
 # Import the module under test
 from milia_pipeline.models.training.data_preparation import (
     TARGET_SELECTION_AVAILABLE,
@@ -760,6 +762,36 @@ class TestPrepareGraphClassification:
 class TestPrepareNodeRegression:
     """Test _prepare_node_regression handler."""
 
+    def test_targets_come_from_node_y_and_x_is_untouched(self):
+        """Per-atom targets are node_y's columns; the input x keeps every column."""
+        num_nodes = 6
+        x = torch.randn(num_nodes, 4)
+        node_y = torch.randn(num_nodes, 3)
+        data = [
+            MockPyGData(
+                x=x.clone(), y=torch.tensor([1.0]), node_y=node_y.clone(), num_nodes=num_nodes
+            )
+            for _ in range(4)
+        ]
+        train, _, _, _ = TaskDataPreparer.prepare_for_task(
+            data, data[:2], data[:2], task_type="node_regression"
+        )
+        assert torch.equal(train[0].y, node_y)
+        assert torch.equal(train[0].x, x)
+
+    @pytest.mark.parametrize("source", ["x", "edge_attr", "pos", "z"])
+    def test_a_model_input_is_refused_as_target_source(self, source):
+        num_nodes = 6
+        data = [
+            MockPyGData(x=torch.randn(num_nodes, 4), y=torch.tensor([1.0]), num_nodes=num_nodes)
+            for _ in range(3)
+        ]
+        config = MockTargetSelectionConfig(resolved_source_attr=source)
+        with pytest.raises(ConfigurationError, match="model input"):
+            TaskDataPreparer.prepare_for_task(
+                data, data, data, task_type="node_regression", target_selection_config=config
+            )
+
     def test_node_regression_with_existing_node_level_y(
         self, train_node_data_list, val_node_data_list, test_node_data_list
     ):
@@ -774,12 +806,13 @@ class TestPrepareNodeRegression:
         # Node regression returns None for num_classes
         assert num_classes is None
 
-    def test_node_regression_extracts_from_x(self, caplog):
+    def test_node_regression_extracts_from_node_y(self, caplog):
         """Test that node regression extracts targets from x when y is wrong shape."""
         num_nodes = 10
         data = [
             MockPyGData(
                 x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),  # Graph-level (wrong for node regression)
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -990,8 +1023,8 @@ class TestPrepareEdgeRegression:
         assert num_classes is None
         assert "edge_value" in caplog.text
 
-    def test_edge_regression_extracts_from_edge_attr(self, caplog):
-        """Test edge regression extracts from edge_attr when no edge_y."""
+    def test_edge_regression_never_extracts_from_edge_attr(self):
+        """edge_attr is a model input: with no edge targets the task is refused, not fed edge_attr."""
         num_nodes = 10
         num_edges = 20
         data = [
@@ -1005,14 +1038,17 @@ class TestPrepareEdgeRegression:
             for _ in range(5)
         ]
 
-        with caplog.at_level(logging.INFO):
-            train, val, test, num_classes = TaskDataPreparer.prepare_for_task(
-                data, data[:3], data[:2], task_type="edge_regression"
+        with pytest.raises(DataCompatibilityError, match="edge-level targets"):
+            TaskDataPreparer.prepare_for_task(data, data[:3], data[:2], task_type="edge_regression")
+        config = MockTargetSelectionConfig(resolved_source_attr="edge_attr")
+        with pytest.raises(ConfigurationError, match="model input"):
+            TaskDataPreparer.prepare_for_task(
+                data,
+                data[:3],
+                data[:2],
+                task_type="edge_regression",
+                target_selection_config=config,
             )
-
-        assert num_classes is None
-        # Should have extracted to edge_y
-        assert hasattr(train[0], "edge_y")
 
     def test_edge_regression_empty_dataset_error(self):
         """Test error for empty dataset."""
@@ -1044,13 +1080,16 @@ class TestPrepareEdgeRegression:
                 x=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges + 5, 3),  # Wrong number of edges
+                bond_targets=torch.randn(num_edges + 5, 3),  # Wrong number of edges
             )
             for _ in range(3)
         ]
+        config = MockTargetSelectionConfig(resolved_source_attr="bond_targets")
 
         with pytest.raises(DataCompatibilityError, match="expected first dim"):
-            TaskDataPreparer.prepare_for_task(data, data, data, task_type="edge_regression")
+            TaskDataPreparer.prepare_for_task(
+                data, data, data, task_type="edge_regression", target_selection_config=config
+            )
 
     def test_edge_regression_with_target_selection_indices(self):
         """Test edge regression with specific indices from target_selection_config."""
@@ -1061,14 +1100,14 @@ class TestPrepareEdgeRegression:
                 x=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges, 5),  # 5 edge features
+                bond_targets=torch.randn(num_edges, 5),  # 5 edge features
             )
             for _ in range(5)
         ]
 
         config = MockTargetSelectionConfig(
             indices=[0, 2],  # Select columns 0 and 2
-            resolved_source_attr="edge_attr",
+            resolved_source_attr="bond_targets",
         )
 
         train, val, test, num_classes = TaskDataPreparer.prepare_for_task(
@@ -1094,7 +1133,7 @@ class TestPrepareEdgeRegression:
                 x=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges),  # 1D tensor: single feature
+                bond_targets=torch.randn(num_edges),  # 1D tensor: single feature
             )
             for _ in range(5)
         ]
@@ -1102,7 +1141,7 @@ class TestPrepareEdgeRegression:
         # Config with indices - should resolve against 1D tensor's size(0)
         config = MockTargetSelectionConfig(
             indices=[0],  # Single index for 1D
-            resolved_source_attr="edge_attr",
+            resolved_source_attr="bond_targets",
         )
 
         train, val, test, num_classes = TaskDataPreparer.prepare_for_task(
@@ -1127,7 +1166,7 @@ class TestPrepareEdgeRegression:
                 x=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges, 6),  # 6 edge features
+                bond_targets=torch.randn(num_edges, 6),  # 6 edge features
             )
             for _ in range(5)
         ]
@@ -1135,7 +1174,7 @@ class TestPrepareEdgeRegression:
         # Config with indices but NOT resolved_indices - should trigger resolution
         config = MockTargetSelectionConfig(
             indices=[1, 3],  # Not yet resolved
-            resolved_source_attr="edge_attr",
+            resolved_source_attr="bond_targets",
             resolved_indices=None,  # Explicitly not resolved
         )
 
@@ -1497,12 +1536,13 @@ class TestPrepareNodeLevelData:
         assert train[0].y.shape == (num_nodes, 2)
         mock_logger.info.assert_called()
 
-    def test_prepare_node_level_data_extracts_from_x(self, mock_logger):
+    def test_prepare_node_level_data_extracts_from_node_y(self, mock_logger):
         """Test extraction from x when y is graph-level."""
         num_nodes = 10
         data = [
             MockPyGData(
                 x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),  # Graph-level (wrong shape)
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -1527,7 +1567,8 @@ class TestPrepareNodeLevelData:
         num_nodes = 10
         data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 8),
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 8),
                 y=torch.tensor([1.0]),  # Graph-level
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -1537,7 +1578,7 @@ class TestPrepareNodeLevelData:
 
         config = MockTargetSelectionConfig(
             resolved_indices=[1, 3, 5],
-            resolved_source_attr="x",
+            resolved_source_attr="node_y",
         )
 
         train, val, test = TaskDataPreparer._prepare_node_level_data(
@@ -1558,6 +1599,7 @@ class TestPrepareNodeLevelData:
         data = [
             MockPyGData(
                 x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 # num_nodes not explicitly set - should infer from x
@@ -1587,7 +1629,8 @@ class TestPrepareNodeLevelData:
         num_nodes = 12
         data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 10),  # 10 features
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 10),  # 10 features
                 y=torch.tensor([1.0]),  # Graph-level (wrong shape)
                 edge_index=torch.randint(0, num_nodes, (2, 25)),
                 num_nodes=num_nodes,
@@ -1598,7 +1641,7 @@ class TestPrepareNodeLevelData:
         # Config with indices but NOT resolved_indices - should trigger resolution
         config = MockTargetSelectionConfig(
             indices=[2, 5, 8],  # Not yet resolved
-            resolved_source_attr="x",
+            resolved_source_attr="node_y",
             resolved_indices=None,  # Explicitly not resolved
         )
 
@@ -1626,7 +1669,8 @@ class TestPrepareNodeLevelData:
         num_nodes = 10
         data = [
             MockPyGData(
-                x=torch.randn(num_nodes),  # 1D tensor: single feature per node
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes),  # 1D tensor: single feature per node
                 y=torch.tensor([1.0]),  # Graph-level
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -1637,7 +1681,7 @@ class TestPrepareNodeLevelData:
         # Config with indices for 1D source - total_count should be size(0)
         config = MockTargetSelectionConfig(
             indices=[0],  # Single index
-            resolved_source_attr="x",
+            resolved_source_attr="node_y",
             resolved_indices=None,
         )
 
@@ -2296,14 +2340,14 @@ class TestTargetSelectionConfigIntegration:
                 x=torch.randn(num_nodes, 10),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges, 8),
+                bond_targets=torch.randn(num_edges, 8),
             )
             for _ in range(5)
         ]
 
         config = MockTargetSelectionConfig(
             resolved_indices=[1, 3, 5],
-            resolved_source_attr="edge_attr",
+            resolved_source_attr="bond_targets",
         )
 
         train, val, test, _ = TaskDataPreparer.prepare_for_task(
@@ -2322,14 +2366,14 @@ class TestTargetSelectionConfigIntegration:
                 x=torch.randn(num_nodes, 5),
                 y=torch.tensor([1.0]),
                 edge_index=torch.randint(0, num_nodes, (2, num_edges)),
-                edge_attr=torch.randn(num_edges, 8),
+                bond_targets=torch.randn(num_edges, 8),
             )
             for _ in range(5)
         ]
 
         config = MockTargetSelectionConfig(
             indices=[0, 2],  # Not yet resolved
-            resolved_source_attr="edge_attr",
+            resolved_source_attr="bond_targets",
         )
 
         train, val, test, _ = TaskDataPreparer.prepare_for_task(
@@ -2344,7 +2388,8 @@ class TestTargetSelectionConfigIntegration:
         num_nodes = 10
         data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 8),
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 8),
                 y=torch.tensor([1.0]),  # Graph-level
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -2354,7 +2399,7 @@ class TestTargetSelectionConfigIntegration:
 
         config = MockTargetSelectionConfig(
             resolved_indices=[0, 4],
-            resolved_source_attr="x",
+            resolved_source_attr="node_y",
         )
 
         train, val, test, _ = TaskDataPreparer.prepare_for_task(
@@ -2719,7 +2764,8 @@ class TestIntegration:
 
         train_data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 8),
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 8),
                 y=torch.tensor([1.0]),  # Graph-level (needs extraction)
                 edge_index=torch.randint(0, num_nodes, (2, 30)),
                 num_nodes=num_nodes,
@@ -2729,7 +2775,8 @@ class TestIntegration:
 
         val_data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 8),
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 8),
                 y=torch.tensor([2.0]),
                 edge_index=torch.randint(0, num_nodes, (2, 20)),
                 num_nodes=num_nodes,
@@ -2739,7 +2786,8 @@ class TestIntegration:
 
         test_data = [
             MockPyGData(
-                x=torch.randn(num_nodes, 8),
+                x=torch.randn(num_nodes, 5),
+                node_y=torch.randn(num_nodes, 8),
                 y=torch.tensor([3.0]),
                 edge_index=torch.randint(0, num_nodes, (2, 15)),
                 num_nodes=num_nodes,
@@ -2749,7 +2797,7 @@ class TestIntegration:
 
         config = MockTargetSelectionConfig(
             resolved_indices=[0, 2, 4],
-            resolved_source_attr="x",
+            resolved_source_attr="node_y",
         )
 
         result_train, result_val, result_test, num_classes = TaskDataPreparer.prepare_for_task(

@@ -311,6 +311,7 @@ from .config_accessors import (
     ensure_descriptor_plugins_discovered,
     get_all_transforms,
     get_atom_features,
+    get_atomic_charge_source,
     get_atomic_charges_property,
     # Transform Registry & Discovery
     get_available_transforms,
@@ -414,6 +415,7 @@ from .config_accessors import (
     validate_dataset_config,
     # Dataset Type Validation Functions
     validate_dataset_type,
+    validate_node_property_selection,
     validate_structural_features_for_dataset,
     validate_transform_config,
     validate_transformation_system,
@@ -897,6 +899,8 @@ __all__ = [
     "should_pass_atomic_charges_to_structural_features",
     "should_pass_mulliken_charges_to_structural_features",
     "get_atomic_charges_property",
+    "get_atomic_charge_source",
+    "validate_node_property_selection",
     "should_enable_stereochemistry_preprocessing",
     "get_dataset_appropriate_structural_features",
     "validate_structural_features_for_dataset",

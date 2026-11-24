@@ -4004,6 +4004,7 @@ class miliaDataset(InMemoryDataset):
                 self._processing_config.scalar_graph_targets
             )
             data_config["node_features_to_add"] = self._processing_config.node_features
+            data_config["node_targets_to_include"] = self._processing_config.node_targets
             data_config["vector_graph_properties_to_include"] = (
                 self._processing_config.vector_graph_properties
             )
@@ -6643,6 +6644,7 @@ class miliaDataset(InMemoryDataset):
                         config_keys = [
                             processing_config.scalar_graph_targets,
                             processing_config.node_features,
+                            processing_config.node_targets,
                             processing_config.vector_graph_properties,
                             processing_config.variable_len_graph_properties,
                         ]

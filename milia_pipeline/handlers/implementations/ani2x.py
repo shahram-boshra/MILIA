@@ -755,21 +755,15 @@ class ANI2xDatasetHandler(DatasetHandler):
 
         stats["molecules_with_forces"] = molecules_with_forces
 
-        # Check if forces were configured for processing
-        # Forces may be in node_features OR variable_len_graph_properties depending on config
+        # Check if forces were configured for processing: as per-atom targets (node_y) or as a
+        # variable-length graph property
         forces_configured = False
         if self.processing_config:
-            if (
-                hasattr(self.processing_config, "node_features")
-                and self.processing_config.node_features
-            ):
-                forces_configured = "forces" in self.processing_config.node_features
-            if (
-                not forces_configured
-                and hasattr(self.processing_config, "variable_len_graph_properties")
-                and self.processing_config.variable_len_graph_properties
-            ):
-                forces_configured = "forces" in self.processing_config.variable_len_graph_properties
+            for key in ("node_targets", "variable_len_graph_properties"):
+                values = getattr(self.processing_config, key, None)
+                if isinstance(values, (list, tuple)) and "forces" in values:
+                    forces_configured = True
+                    break
 
         stats["forces_configured"] = forces_configured
 

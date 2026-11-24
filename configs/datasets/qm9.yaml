@@ -100,9 +100,13 @@ data_config:
         # Electronic spatial extent
         - r2              # (Bohr²)
 
-      # Node-level features
-      node_features_to_add:
-        - Qmulliken       # Mulliken partial charges
+      # Per-atom properties appended to pyg_data.x as input columns, in this order, after the
+      # structural features (one of property_availability.<dataset>.node_features each). The
+      # atomic_charges_property below is already the atomic_charge column: do not repeat it here.
+      node_features_to_add: []
+      # Per-atom targets, stored in pyg_data.node_y (column names in node_y_property_names), never
+      # in x; a property is an input or a target, not both (target_selection.target_source: node_y).
+      node_targets_to_include: []
 
       # Per-atom charges for the atomic_charge structural feature (Mulliken); one of
       # property_availability.<dataset>.node_features. Remove the key for no atomic_charge column.

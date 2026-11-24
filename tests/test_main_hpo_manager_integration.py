@@ -319,7 +319,9 @@ class MockPyGData:
         edge_label: torch.Tensor | None = None,
         edge_value: torch.Tensor | None = None,
         edge_y: torch.Tensor | None = None,
+        node_y: torch.Tensor | None = None,
     ):
+        self.node_y = node_y
         # Only use default x if not provided; allow explicit None
         if x is MockPyGData._NOT_PROVIDED:
             self.x = torch.randn(10, 16)
@@ -2338,14 +2340,18 @@ class TestTaskSpecificDataPreparationAllTasks:
         assert len(result_train) == 3
         assert len(result_val) == 2
 
-    def test_node_level_extracts_from_x_when_y_is_none(self):
-        """Test node-level task extracts targets from x when y is None."""
+    def test_node_level_extracts_from_node_y_when_y_is_none(self):
+        """Node-level task takes its targets from node_y (never x) when y is None."""
         from milia_pipeline.models.hpo.hpo_manager import _prepare_data_for_task_hpo
 
         # Create data without y but with valid x
         # The function should extract targets from x (default source for node tasks)
-        train_data = [MockPyGData(x=torch.randn(10, 16), y=None) for _ in range(3)]
-        val_data = [MockPyGData(x=torch.randn(10, 16), y=None) for _ in range(2)]
+        train_data = [
+            MockPyGData(x=torch.randn(10, 16), y=None, node_y=torch.randn(10, 3)) for _ in range(3)
+        ]
+        val_data = [
+            MockPyGData(x=torch.randn(10, 16), y=None, node_y=torch.randn(10, 3)) for _ in range(2)
+        ]
 
         # Should NOT raise - extracts from x instead
         result_train, result_val, _ = _prepare_data_for_task_hpo(
@@ -2355,14 +2361,20 @@ class TestTaskSpecificDataPreparationAllTasks:
         assert len(result_train) == 3
         assert len(result_val) == 2
 
-    def test_node_level_extracts_from_x_when_y_is_scalar(self):
-        """Test node-level task extracts targets from x when y is scalar (graph-level)."""
+    def test_node_level_extracts_from_node_y_when_y_is_scalar(self):
+        """Node-level task takes node_y when y is scalar (graph-level)."""
         from milia_pipeline.models.hpo.hpo_manager import _prepare_data_for_task_hpo
 
         # Create data with scalar y (graph-level) but valid x
         # The function should extract targets from x instead
-        train_data = [MockPyGData(x=torch.randn(10, 16), y=torch.tensor(1.0)) for _ in range(3)]
-        val_data = [MockPyGData(x=torch.randn(10, 16), y=torch.tensor(1.0)) for _ in range(2)]
+        train_data = [
+            MockPyGData(x=torch.randn(10, 16), y=torch.tensor(1.0), node_y=torch.randn(10, 3))
+            for _ in range(3)
+        ]
+        val_data = [
+            MockPyGData(x=torch.randn(10, 16), y=torch.tensor(1.0), node_y=torch.randn(10, 3))
+            for _ in range(2)
+        ]
 
         # Should NOT raise - extracts from x instead
         result_train, result_val, _ = _prepare_data_for_task_hpo(
@@ -2372,8 +2384,8 @@ class TestTaskSpecificDataPreparationAllTasks:
         assert len(result_train) == 3
         assert len(result_val) == 2
 
-    def test_node_level_extracts_from_x_when_y_shape_mismatched(self):
-        """Test node-level task extracts targets from x when y shape doesn't match num_nodes."""
+    def test_node_level_extracts_from_node_y_when_y_shape_mismatched(self):
+        """Node-level task takes node_y when y's shape does not match num_nodes."""
         from milia_pipeline.models.hpo.hpo_manager import _prepare_data_for_task_hpo
 
         # Create data with y shape not matching num_nodes but valid x
@@ -2382,10 +2394,14 @@ class TestTaskSpecificDataPreparationAllTasks:
             MockPyGData(
                 x=torch.randn(10, 16),  # 10 nodes
                 y=torch.randn(5),  # Only 5 targets - doesn't match
+                node_y=torch.randn(10, 3),
             )
             for _ in range(3)
         ]
-        val_data = [MockPyGData(x=torch.randn(10, 16), y=torch.randn(5)) for _ in range(2)]
+        val_data = [
+            MockPyGData(x=torch.randn(10, 16), y=torch.randn(5), node_y=torch.randn(10, 3))
+            for _ in range(2)
+        ]
 
         # Should NOT raise - extracts from x instead
         result_train, result_val, _ = _prepare_data_for_task_hpo(

@@ -75,22 +75,20 @@ models:
       target_level: "auto"
 
       # Target source: Which data attribute contains the targets
-      # - "auto": Try y first (PyG convention), fallback to x/edge_attr if shape mismatch
+      # - "auto": Try y first (PyG convention), fallback to node_y/edge_y if shape mismatch
       # - "y": Standard target attribute
-      # - "x": Node features (when node targets are stored in features)
-      # - "edge_attr": Edge features (when edge targets are stored in features)
+      # - "node_y": Per-atom targets (data_config.property_selection.<dataset>.
+      #             node_targets_to_include; column names in node_y_property_names)
       # - "edge_label": Edge labels (for link prediction)
       # - "edge_y": Edge targets (for edge regression)
-      # - "<custom>": Any custom attribute name (e.g., "node_labels", "bond_types")
+      # - "<custom>": Any custom attribute name that is not a model input
+      # Model inputs are refused (x, edge_attr, pos, z, edge_index): a target taken from the
+      # input stays in the input, so the model would read its own target (data leakage).
       #
       # Examples:
       #   target_source: "auto"          # Smart detection (RECOMMENDED)
       #   target_source: "y"             # Use y directly (standard PyG datasets)
-      #   target_source: "x"             # Extract targets from node features
-      #   target_source: "edge_attr"     # Extract targets from edge features
-      #   target_source: "atomic_charges"  # Custom attribute name
-      # NOTE: For "edge_classification" can set to "edge_attr" to extract
-      #       bond features as targets. Use indices to select specific column.
+      #   target_source: "node_y"        # Per-atom targets declared in the dataset config
       target_source: "auto"
 
       # ─────────────────────────────────────────────────────────
@@ -133,19 +131,20 @@ models:
       #     target_level: "auto"         # → inferred as "node"
       #     target_source: "auto"        # → uses y (already node-level shape)
       #
-      # EXAMPLE 3: Node regression with targets in x (extract from features)
+      # EXAMPLE 3: Per-atom regression (forces), declared at processing time
+      #   datasets/rmd17.yaml: node_targets_to_include: [forces]   # → node_y [n_atoms, 3]
       #   task_type: "node_regression"
       #   target_selection:
       #     target_level: "auto"         # → inferred as "node"
-      #     target_source: "x"           # → extract from node features
-      #     indices: [5, 6]              # → columns 5,6 of x become targets
+      #     target_source: "node_y"      # → per-atom targets, never in x
+      #     properties: ["forces[0]", "forces[1]", "forces[2]"]   # names from node_y_property_names
       #
       # EXAMPLE 4: Edge/bond property prediction
       #   task_type: "edge_regression"
       #   target_selection:
       #     target_level: "auto"         # → inferred as "edge"
-      #     target_source: "edge_attr"   # → extract from edge features
-      #     indices: [0]                 # → first column of edge_attr
+      #     target_source: "edge_y"      # → edge targets stored on the data (edge_y)
+      #     indices: [0]                 # → first column of edge_y
       #
       # EXAMPLE 5: Link prediction (standard)
       #   task_type: "link_prediction"
@@ -153,7 +152,7 @@ models:
       #     target_level: "auto"         # → inferred as "edge"
       #     target_source: "auto"        # → uses edge_label automatically
       #
-      # EXAMPLE 6: Custom attribute as target
+      # EXAMPLE 6: Custom attribute as target (any attribute that is not a model input)
       #   task_type: "node_regression"
       #   target_selection:
       #     target_level: "node"

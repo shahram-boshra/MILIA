@@ -185,6 +185,23 @@ class TestQmInputFeatures:
         config = {"atom": ["mulliken_charge"], "bond": []}
         assert self._features(monkeypatch, config=config) == ["atom.atomic_charge"]
 
+    def test_per_atom_inputs_from_the_dataset_are_qm_inputs(self, monkeypatch):
+        """node_features_to_add columns are dataset values: recorded as x.<property>."""
+        from milia_pipeline.config import config_accessors
+        from milia_pipeline.molecules.featurization_record import qm_input_features
+
+        monkeypatch.setattr(
+            config_accessors, "should_pass_atomic_charges_to_structural_features", lambda: True
+        )
+        monkeypatch.setattr(
+            config_accessors, "should_pass_coordinates_to_structural_features", lambda: False
+        )
+        assert qm_input_features(QM_CONFIG, [], ["Vesp", "Vesp"]) == [
+            "atom.atomic_charge",
+            "x.Vesp",
+        ]
+        assert qm_input_features(None, [], ["Vesp"]) == ["x.Vesp"]
+
     def test_structure_only_features_are_not(self):
         from milia_pipeline.molecules.featurization_record import qm_input_features
 

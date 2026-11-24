@@ -873,20 +873,8 @@ class QM9DatasetHandler(DatasetHandler):
         Returns:
             List of error messages (empty if all compatible)
         """
-        errors = []
-
-        # VirtualNode incompatibility with certain QM9 properties
-        if (
-            "VirtualNode" in transform_names
-            and hasattr(self.processing_config, "node_features")
-            and "Qmulliken" in self.processing_config.node_features
-        ):
-            errors.append(
-                "VirtualNode incompatible with Mulliken charges - "
-                "virtual node would need artificial charge"
-            )
-
-        return errors
+        # Per-atom dataset values vs VirtualNode: checked for every dataset (base handler)
+        return []
 
     def _get_transform_recommendations(self, transform_names: list[str]) -> list[str]:
         """

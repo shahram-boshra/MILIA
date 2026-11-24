@@ -56,6 +56,7 @@ from milia_pipeline.config.config_accessors import (
     create_structural_features_config_container,
     create_transformation_config_container,
     get_atom_features,
+    get_atomic_charge_source,
     get_atomic_charges_property,
     get_available_transforms,
     get_bond_features,
@@ -136,6 +137,7 @@ from milia_pipeline.config.config_accessors import (
     validate_dataset_config,
     validate_dataset_type,
     validate_handler_compatibility,
+    validate_node_property_selection,
     validate_structural_features_for_dataset,
     validate_transformation_config,
 )
@@ -3700,6 +3702,87 @@ def test_shipped_configuration_sources_atomic_charge_per_dataset(dataset_type):
         "ANI1ccx": "hirshfeld_charges",
     }
     assert source == expected.get(dataset_type)
+
+
+@pytest.mark.parametrize("dataset_type", _registered_dataset_types())
+def test_shipped_configuration_per_atom_inputs_and_targets(dataset_type):
+    """Every shipped dataset configuration passes the per-atom selection checks."""
+    from milia_pipeline.config import config_accessors as acc
+
+    with patch.object(acc, "get_dataset_type", return_value=dataset_type):
+        processing = acc.create_processing_config_container()
+        atom = acc.get_dataset_appropriate_structural_features(dataset_type)["atom"]
+        acc.validate_node_property_selection(
+            processing.node_features, processing.node_targets, atom
+        )
+    expected_inputs = {"DFT": ["Vesp"]}
+    expected_targets = {name: ["forces"] for name in ("ANI2x", "RMD17", "XXMD", "QDPi")}
+    assert processing.node_features == expected_inputs.get(dataset_type, [])
+    assert processing.node_targets == expected_targets.get(dataset_type, [])
+
+
+class TestNodePropertySelection:
+    """node_features_to_add (inputs to x) and node_targets_to_include (node_y)."""
+
+    ACC = "milia_pipeline.config.config_accessors"
+
+    def _validate(
+        self, inputs, targets, atom=(), charges=None, available=("Qmulliken", "Vesp", "forces")
+    ):
+        with (
+            patch(f"{self.ACC}.get_dataset_type", return_value="DFT"),
+            patch(
+                f"{self.ACC}.get_property_availability",
+                return_value={"node_features": list(available)},
+            ),
+            patch(
+                f"{self.ACC}.should_pass_atomic_charges_to_structural_features",
+                return_value=charges is not None,
+            ),
+            patch(f"{self.ACC}.get_atomic_charges_property", return_value=charges),
+        ):
+            validate_node_property_selection(inputs, targets, list(atom))
+
+    def test_valid_selection_passes(self):
+        self._validate(["Vesp"], ["forces"], atom=["atomic_charge"], charges="Qmulliken")
+        self._validate([], [])
+
+    @pytest.mark.parametrize(
+        ("inputs", "targets", "match"),
+        [
+            (["Vesp", "Vesp"], [], "more than once"),
+            (["Etot"], [], "not per-atom properties"),
+            ([], ["dipole"], "not per-atom properties"),
+            (["Vesp"], ["Vesp"], "read its own target"),
+        ],
+    )
+    def test_refused_selections(self, inputs, targets, match):
+        with pytest.raises(ConfigurationError, match=match):
+            self._validate(inputs, targets)
+
+    def test_charge_column_is_not_added_twice(self):
+        with pytest.raises(
+            ConfigurationError, match="already the input column of the atomic_charge"
+        ):
+            self._validate(["Qmulliken"], [], atom=["atomic_charge"], charges="Qmulliken")
+
+    def test_charges_read_by_atomic_charge_are_not_a_target(self):
+        with pytest.raises(ConfigurationError, match="read its own target"):
+            self._validate([], ["Qmulliken"], atom=["mulliken_charge"], charges="Qmulliken")
+
+    def test_charges_without_the_feature_can_be_a_target(self):
+        self._validate([], ["Qmulliken"], atom=["degree"], charges="Qmulliken")
+
+    def test_atomic_charge_source_needs_a_feature_that_reads_charges(self):
+        with (
+            patch(
+                f"{self.ACC}.should_pass_atomic_charges_to_structural_features", return_value=True
+            ),
+            patch(f"{self.ACC}.get_atomic_charges_property", return_value="Qmulliken"),
+        ):
+            assert get_atomic_charge_source(["degree", "atomic_charge"]) == "Qmulliken"
+            assert get_atomic_charge_source(["degree"]) is None
+            assert get_atomic_charge_source(None) is None
 
 
 class TestConfigValueAccessors:

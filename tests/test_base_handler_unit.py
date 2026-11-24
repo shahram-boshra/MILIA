@@ -657,13 +657,47 @@ class TestExperimentalSetupSupport(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 8: validate_transform_compatibility (10 tests)
+# GROUP 8: validate_transform_compatibility (12 tests)
 # ============================================================================
 
 
 class TestValidateTransformCompatibility(unittest.TestCase):
     def setUp(self):
         self.handler = _create_handler_instance()
+
+    @patch("milia_pipeline.handlers.base_handler.list_available_transforms", return_value=[])
+    @patch("milia_pipeline.handlers.base_handler.get_transform_info", return_value=None)
+    @patch(
+        "milia_pipeline.handlers.base_handler.validate_comprehensive",
+        return_value={"valid": True, "errors": []},
+    )
+    def test_virtual_node_refused_with_per_atom_dataset_values(self, mock_vc, mock_gti, mock_lat):
+        """Any dataset: VirtualNode has no value for per-atom inputs, targets or charges."""
+
+        class VirtualNode:
+            pass
+
+        seq = MagicMock()
+        seq.transforms = [VirtualNode()]
+        with patch.object(
+            self.handler, "get_per_atom_dataset_properties", return_value=["Vesp", "forces"]
+        ):
+            result = self.handler.validate_transform_compatibility(seq)
+        self.assertFalse(result["compatible"])
+        self.assertTrue(any("['Vesp', 'forces']" in e for e in result["errors"]))
+        with patch.object(self.handler, "get_per_atom_dataset_properties", return_value=[]):
+            self.assertTrue(self.handler.validate_transform_compatibility(seq)["compatible"])
+
+    def test_per_atom_dataset_properties_lists_inputs_targets_and_charges(self):
+        self.handler.processing_config.node_features = ["Vesp"]
+        self.handler.processing_config.node_targets = ["forces", "Vesp"]
+        with patch(
+            "milia_pipeline.config.config_accessors.get_atomic_charge_source",
+            return_value="Qmulliken",
+        ):
+            self.assertEqual(
+                self.handler.get_per_atom_dataset_properties(), ["Vesp", "forces", "Qmulliken"]
+            )
 
     @patch(
         "milia_pipeline.handlers.base_handler.list_available_transforms",
@@ -1353,7 +1387,7 @@ class TestVerifyHandlerAbstractionAndSummary(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 15: get_common_required_properties (4 tests)
+# GROUP 15: get_common_required_properties (5 tests)
 # ============================================================================
 
 
@@ -1394,6 +1428,19 @@ class TestGetCommonRequiredProperties(unittest.TestCase):
             patch(f"{acc}.should_pass_atomic_charges_to_structural_features", return_value=False),
         ):
             self.assertEqual(handler.get_common_required_properties(), ["atoms", "coordinates"])
+
+    def test_configured_node_targets_are_required(self):
+        """Per-atom targets (node_targets_to_include) are loaded with the molecule."""
+        acc = "milia_pipeline.config.config_accessors"
+        handler = _create_handler_instance()
+        handler.processing_config.node_targets = ["forces"]
+        with (
+            patch(f"{acc}.get_required_properties", return_value=["atoms", "coordinates"]),
+            patch(f"{acc}.should_pass_atomic_charges_to_structural_features", return_value=False),
+        ):
+            self.assertEqual(
+                handler.get_common_required_properties(), ["atoms", "coordinates", "forces"]
+            )
 
 
 # ============================================================================
@@ -1506,14 +1553,14 @@ GROUP 4:  _is_valid_property Utility                               ( 9 tests)
 GROUP 5:  _ensure_tensor Utility                                   (16 tests)
 GROUP 6:  validate_configuration                                   ( 7 tests)
 GROUP 7:  Experimental Setup Support                               ( 6 tests)
-GROUP 8:  validate_transform_compatibility                         (10 tests)
+GROUP 8:  validate_transform_compatibility                         (12 tests)
 GROUP 9:  handle_transform_errors Decorator                        ( 8 tests)
 GROUP 10: Registry Functions                                       (12 tests)
 GROUP 11: create_dataset_handler Factory                           (10 tests)
 GROUP 12: validate_dataset_handler_compatibility                   ( 6 tests)
 GROUP 13: filter_descriptors_by_handler_support                    ( 8 tests)
 GROUP 14: verify_handler_abstraction & summary                     ( 6 tests)
-GROUP 15: get_common_required_properties                           ( 4 tests)
+GROUP 15: get_common_required_properties                           ( 5 tests)
 GROUP 16: Edge Cases and Boundary Conditions                       ( 8 tests)
 
 PRODUCTION-READY QUALITIES:

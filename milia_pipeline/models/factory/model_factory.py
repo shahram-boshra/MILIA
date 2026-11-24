@@ -1172,6 +1172,33 @@ class ModelValidator:
 # =============================================================================
 
 
+def _target_source_columns(ts_config: Any, sample_data: Any) -> tuple[list[str] | None, int | None]:
+    """Column names and count of the attribute the targets are selected from.
+
+    The attribute is the configured ``target_source`` (``y`` for ``auto``); a model input
+    attribute is refused (``refuse_input_attribute_as_target``). Names come from
+    ``<attr>_property_names`` (``y_property_names``, ``node_y_property_names``).
+
+    Returns:
+        ``(names or None, column count or None when the attribute is absent)``.
+    """
+    from .target_selection_config import refuse_input_attribute_as_target
+
+    source = (ts_config.config_source or "auto").lower()
+    source_attr = "y" if source == "auto" else source
+    refuse_input_attribute_as_target(source_attr)
+    names = getattr(sample_data, f"{source_attr}_property_names", None)
+    available_names = list(names) if isinstance(names, (list, tuple)) and names else None
+    tensor = getattr(sample_data, source_attr, None)
+    total_count = None
+    if isinstance(tensor, torch.Tensor) and tensor.dim() > 0:
+        total_count = tensor.shape[-1] if tensor.dim() > 1 else tensor.shape[0]
+    logger.debug(
+        f"Target selection source '{source_attr}': total_count={total_count}, names={available_names}"
+    )
+    return available_names, total_count
+
+
 class ModelFactory:
     """
     Factory for creating model instances with validation.
@@ -1689,67 +1716,7 @@ class ModelFactory:
                 total_count = None
 
                 if sample_data is not None:
-                    # ================================================================
-                    # FIX 21: Use correct source attribute based on target_source config
-                    # ================================================================
-                    # BEFORE: Always used y.shape regardless of target_source
-                    # AFTER: Use shape of the configured source attribute
-                    #
-                    # This fixes node_regression with target_source: "x" where the
-                    # indices should be validated against x.shape, not y.shape
-                    # ================================================================
-                    config_source = (
-                        ts_config.config_source.lower() if ts_config.config_source else "auto"
-                    )
-
-                    # Determine which attribute to get property names from
-                    if (
-                        config_source == "x"
-                        and hasattr(sample_data, "x_property_names")
-                        and sample_data.x_property_names is not None
-                    ):
-                        available_names = list(sample_data.x_property_names)
-                        logger.debug(f"Found x_property_names in sample_data: {available_names}")
-                    elif (
-                        config_source == "edge_attr"
-                        and hasattr(sample_data, "edge_attr_property_names")
-                        and sample_data.edge_attr_property_names is not None
-                    ):
-                        available_names = list(sample_data.edge_attr_property_names)
-                        logger.debug(
-                            f"Found edge_attr_property_names in sample_data: {available_names}"
-                        )
-                    elif (
-                        hasattr(sample_data, "y_property_names")
-                        and sample_data.y_property_names is not None
-                    ):
-                        available_names = list(sample_data.y_property_names)
-                        logger.debug(f"Found y_property_names in sample_data: {available_names}")
-
-                    # Determine total_count from the correct source attribute
-                    if config_source == "x":
-                        if hasattr(sample_data, "x") and sample_data.x is not None:
-                            x_shape = sample_data.x.shape
-                            if len(x_shape) > 0:
-                                total_count = x_shape[-1] if len(x_shape) > 1 else x_shape[0]
-                                logger.debug(
-                                    f"Using x.shape for total_count: {total_count} (config_source='x')"
-                                )
-                    elif config_source == "edge_attr":
-                        if hasattr(sample_data, "edge_attr") and sample_data.edge_attr is not None:
-                            ea_shape = sample_data.edge_attr.shape
-                            if len(ea_shape) > 0:
-                                total_count = ea_shape[-1] if len(ea_shape) > 1 else ea_shape[0]
-                                logger.debug(
-                                    f"Using edge_attr.shape for total_count: {total_count} (config_source='edge_attr')"
-                                )
-                    else:
-                        # Default: use y (standard PyG convention)
-                        if hasattr(sample_data, "y") and sample_data.y is not None:
-                            y_shape = sample_data.y.shape
-                            if len(y_shape) > 0:
-                                total_count = y_shape[-1] if len(y_shape) > 1 else y_shape[0]
-                                logger.debug(f"Using y.shape for total_count: {total_count}")
+                    available_names, total_count = _target_source_columns(ts_config, sample_data)
 
                 if total_count is not None:
                     ts_config.resolve(available_names, total_count)
@@ -1939,62 +1906,9 @@ class ModelFactory:
                 total_count = out_channels  # Default to inferred out_channels
 
                 if sample_data is not None:
-                    # ================================================================
-                    # FIX 21b: Use correct source attribute based on target_source config
-                    # (Same logic as Fix 21 in pre-resolution block)
-                    # ================================================================
-                    config_source = (
-                        ts_config.config_source.lower() if ts_config.config_source else "auto"
-                    )
-
-                    # Determine which attribute to get property names from
-                    if (
-                        config_source == "x"
-                        and hasattr(sample_data, "x_property_names")
-                        and sample_data.x_property_names is not None
-                    ):
-                        available_names = list(sample_data.x_property_names)
-                        logger.debug(f"Found x_property_names in sample_data: {available_names}")
-                    elif (
-                        config_source == "edge_attr"
-                        and hasattr(sample_data, "edge_attr_property_names")
-                        and sample_data.edge_attr_property_names is not None
-                    ):
-                        available_names = list(sample_data.edge_attr_property_names)
-                        logger.debug(
-                            f"Found edge_attr_property_names in sample_data: {available_names}"
-                        )
-                    elif (
-                        hasattr(sample_data, "y_property_names")
-                        and sample_data.y_property_names is not None
-                    ):
-                        available_names = list(sample_data.y_property_names)
-                        logger.debug(f"Found y_property_names in sample_data: {available_names}")
-
-                    # Determine total_count from the correct source attribute
-                    if config_source == "x":
-                        if hasattr(sample_data, "x") and sample_data.x is not None:
-                            x_shape = sample_data.x.shape
-                            if len(x_shape) > 0:
-                                total_count = x_shape[-1] if len(x_shape) > 1 else x_shape[0]
-                                logger.debug(
-                                    f"Using x.shape for total_count: {total_count} (config_source='x')"
-                                )
-                    elif config_source == "edge_attr":
-                        if hasattr(sample_data, "edge_attr") and sample_data.edge_attr is not None:
-                            ea_shape = sample_data.edge_attr.shape
-                            if len(ea_shape) > 0:
-                                total_count = ea_shape[-1] if len(ea_shape) > 1 else ea_shape[0]
-                                logger.debug(
-                                    f"Using edge_attr.shape for total_count: {total_count} (config_source='edge_attr')"
-                                )
-                    else:
-                        # Default: use y (standard PyG convention)
-                        if hasattr(sample_data, "y") and sample_data.y is not None:
-                            y_shape = sample_data.y.shape
-                            if len(y_shape) > 0:
-                                total_count = y_shape[-1] if len(y_shape) > 1 else y_shape[0]
-                                logger.debug(f"Using y.shape for total_count: {total_count}")
+                    names, count = _target_source_columns(ts_config, sample_data)
+                    available_names = names
+                    total_count = count if count is not None else total_count
 
                 # Resolve selection against actual data
                 ts_config.resolve(available_names, total_count)

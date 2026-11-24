@@ -4407,8 +4407,8 @@ class TestPrepareNodeLevelDataHpo:
         assert result_train is train_data
         assert result_val is val_data
 
-    def test_extracts_from_x_when_y_shape_mismatch(self):
-        """Test extracts from x when y shape doesn't match num_nodes."""
+    def test_extracts_from_node_y_when_y_shape_mismatch(self):
+        """Takes per-atom targets from node_y when y's shape does not match num_nodes."""
         import torch
 
         from milia_pipeline.models.hpo.hpo_manager import _prepare_node_level_data_hpo
@@ -4416,7 +4416,8 @@ class TestPrepareNodeLevelDataHpo:
         # Create data where y is graph-level (1 element) but x has node features
         mock_sample = MagicMock()
         mock_sample.y = torch.tensor([1.0])  # Graph-level (1 element)
-        mock_sample.x = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]])
+        mock_sample.x = torch.tensor([[0.1, 0.2], [0.4, 0.5], [0.7, 0.8]])
+        mock_sample.node_y = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]])
         mock_sample.num_nodes = 3
 
         train_data = [mock_sample]
@@ -4427,16 +4428,21 @@ class TestPrepareNodeLevelDataHpo:
             from milia_pipeline.models.factory.target_selection_config import TargetSelectionConfig
 
             config = TargetSelectionConfig.from_config(
-                {"target_level": "auto", "target_source": "x", "indices": [0, 1], "strict": True}
+                {
+                    "target_level": "auto",
+                    "target_source": "node_y",
+                    "indices": [0, 1],
+                    "strict": True,
+                }
             )
-            config.resolved_source_attr = "x"
+            config.resolved_source_attr = "node_y"
             config.resolved_indices = [0, 1]
 
             result_train, result_val = _prepare_node_level_data_hpo(
                 train_data, val_data, "node_regression", config
             )
 
-            # Should have extracted targets from x
+            # Should have extracted targets from node_y
             assert len(result_train) == 1
             assert hasattr(result_train[0], "y")
         except ImportError:

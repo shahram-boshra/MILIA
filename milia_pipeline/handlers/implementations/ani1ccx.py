@@ -1043,23 +1043,8 @@ class ANI1ccxDatasetHandler(DatasetHandler):
         """
         Check for incompatible transform combinations for ANI-1ccx.
         """
-        errors = []
-
-        # VirtualNode incompatibility with certain ANI-1ccx properties
-        if (
-            "VirtualNode" in transform_names
-            and hasattr(self.processing_config, "node_features")
-            and any(
-                c in self.processing_config.node_features
-                for c in ["hirshfeld_charges", "cm5_charges"]
-            )
-        ):
-            errors.append(
-                "VirtualNode incompatible with precomputed charges - "
-                "virtual node would need artificial charge"
-            )
-
-        return errors
+        # Per-atom dataset values vs VirtualNode: checked for every dataset (base handler)
+        return []
 
     def _get_transform_recommendations(self, transform_names: list[str]) -> list[str]:
         """

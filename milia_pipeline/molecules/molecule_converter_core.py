@@ -50,6 +50,7 @@ from milia_pipeline.config.config_accessors import (
     should_enable_stereochemistry_preprocessing,
     should_pass_atomic_charges_to_structural_features,
     should_pass_coordinates_to_structural_features,
+    validate_node_property_selection,
 )
 from milia_pipeline.config.config_constants import (
     get_handler_required_properties,
@@ -109,7 +110,10 @@ from milia_pipeline.molecules.molecule_validator import (
     validate_pyg_data_completeness,
     validate_uncertainty_data,
 )
-from milia_pipeline.molecules.property_enrichment import enrich_pyg_data_with_properties
+from milia_pipeline.molecules.property_enrichment import (
+    add_node_features,
+    enrich_pyg_data_with_properties,
+)
 
 try:
     from milia_pipeline.handlers import DatasetHandler, create_dataset_handler
@@ -1891,61 +1895,38 @@ class MoleculeDataConverter:
                 self.logger.debug(f"Handler property processing failed: {e}")
             return raw_properties_dict
 
-    def _enrich_with_handler(
+    def _add_node_properties(
         self,
         pyg_data: Data,
-        processed_properties: dict[str, Any],
+        properties: dict[str, Any],
         molecule_index: int,
         identifier: str,
-    ) -> Data:
+    ) -> None:
+        """Add the configured per-atom properties, after the structural features.
+
+        ``property_selection.<dataset>.node_features_to_add`` become columns of ``x`` in
+        configured order, after the structural features; ``node_targets_to_include`` are stored
+        in ``node_y`` (names in ``node_y_property_names``) and never enter ``x``. One step for
+        every dataset type: handlers do not attach per-atom properties themselves.
+
+        Raises:
+            PropertyEnrichmentError: A selected property is missing or has the wrong shape
+                for this molecule.
         """
-        MIGRATED: Handler-Based Pattern Development - Enhanced enrichment with handler-specific exceptions.
-        Apply handler-based enrichment with optimized error handling.
-        """
-        if not (self._use_handlers and self._dataset_handler):
-            return pyg_data  # No handler enrichment, return immediately
-
-        try:
-            # Call the handler enrichment method
-            enriched_data = self._dataset_handler.enrich_pyg_data(
-                pyg_data, processed_properties, molecule_index, identifier
-            )
-
-            # Reduce debug logging frequency for performance
-            if molecule_index < 3:
-                self.logger.debug(
-                    f"Applied {self._dataset_handler.get_dataset_type()} handler enrichment"
-                )
-
-            return enriched_data
-
-        except HandlerOperationError as e:
-            # Handler enrichment failed - decide if recoverable
-            if is_recoverable_handler_error(e):
-                if molecule_index < 3:
-                    self.logger.debug(f"Recoverable handler enrichment error: {e}")
-                return pyg_data  # Continue without handler enrichment
-            else:
-                raise PropertyEnrichmentError(
+        for keys, attr in (
+            (self._processing_config.node_features, "x"),
+            (self._processing_config.node_targets, "node_y"),
+        ):
+            if keys:
+                add_node_features(
+                    pyg_data=pyg_data,
+                    raw_properties_dict=properties,
                     molecule_index=molecule_index,
-                    inchi=identifier,
-                    property_name="handler_enrichment",
-                    reason=f"Handler enrichment failed: {e.message}",
-                    detail=str(e),
-                ) from e
-
-        except HandlerError as e:
-            # Other handler errors
-            error_summary = format_handler_exception_summary(e)
-            if molecule_index < 3:
-                self.logger.debug(f"Handler enrichment error: {error_summary}")
-            return pyg_data  # Continue without handler enrichment
-
-        except Exception as e:
-            # Log errors only for first few molecules to reduce overhead
-            if molecule_index < 3:
-                self.logger.debug(f"Handler enrichment failed, skipping: {e}")
-            return pyg_data
+                    logger=self.logger,
+                    feature_keys=list(keys),
+                    identifier=identifier,
+                    attr=attr,
+                )
 
     def _validate_converter_configuration(self) -> None:
         """
@@ -1971,6 +1952,15 @@ class MoleculeDataConverter:
             # Structural features validation (common to all datasets)
             if self.is_structural_features_enabled:
                 self._validate_structural_features_configuration()
+
+            # Per-atom inputs and targets: no duplicate input, no target in the input
+            validate_node_property_selection(
+                self._processing_config.node_features,
+                self._processing_config.node_targets,
+                (self.structural_features_config or {}).get("atom", [])
+                if self.is_structural_features_enabled
+                else [],
+            )
 
             # Transformation configuration validation
             if self._transformation_config:
@@ -2239,8 +2229,9 @@ class MoleculeDataConverter:
                 dataset_config,
             )
 
-            # Handler-Based Pattern Development: Handler-based enrichment with enhanced error handling
-            pyg_data = self._enrich_with_handler(
+            # Step 4: per-atom properties from the configuration (inputs to x, targets to
+            # node_y). The handler's enrichment ran once, inside _add_features.
+            self._add_node_properties(
                 pyg_data, processed_properties, current_mol_index, current_mol_identifier
             )
 
@@ -2252,7 +2243,7 @@ class MoleculeDataConverter:
             # CRITICAL FIX: Ensure dataset type from config parameter is preserved
             pyg_data.dataset_type = dataset_config.dataset_type
 
-            # Step 4: Apply pre-filters with configuration containers and handler
+            # Step 5: Apply pre-filters with configuration containers and handler
             apply_pre_filters(
                 pyg_data,
                 dataset_config=dataset_config,
@@ -2261,7 +2252,7 @@ class MoleculeDataConverter:
                 handler=self._dataset_handler,  # ADD: Handler for dataset-specific filtering
             )
 
-            # Step 5: Validate final result
+            # Step 6: Validate final result
             self._validate_result(
                 pyg_data, current_mol_index, current_mol_identifier, dataset_config
             )

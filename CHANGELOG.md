@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Per-atom targets from the configuration: `data_config.property_selection.<dataset>.node_targets_to_include` stores
+  the listed per-atom properties in `node_y` (a per-atom scalar is one column, a per-atom vector such as `forces`
+  is three: `forces[0]` … `forces[2]`, named in `node_y_property_names`), never in `x`. Node tasks read them with
+  `target_selection.target_source: node_y` (also the `auto` fallback when `y` is graph-level), and properties can be
+  selected by those names. The shipped ANI-2x, rMD17, xxMD and QDπ configurations list `forces` there; their
+  graphs gain `node_y` (re-process to use them). A property selected as both an input and a target, directly or as
+  the charges `atomic_charge` reads, raises `ConfigurationError` when processing starts.
 - Input drift monitoring in serving. Training records a reference of its inputs (`input_reference` in every
   checkpoint and the package manifest): a histogram of each node-feature column of `x`, as the model saw it, and of
   atoms per molecule over the training split (a uniform sample of at most 100000 atoms). The server keeps the same
@@ -230,11 +237,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `target_selection.target_source` values that are model inputs (`x`, `edge_attr`, `pos`, `z`, `edge_index`) raise
+  `ConfigurationError`, and the `TargetSource.X` and `TargetSource.EDGE_ATTR` members are removed. Targets copied out
+  of `x` or `edge_attr` stayed in the input, so the model read its own target. Per-atom targets are declared with
+  `node_targets_to_include` (`node_y`); node tasks fall back to `node_y` and edge tasks to `edge_y`, no longer to
+  `x` and `edge_attr`.
 - `pydantic-settings` (and with it `python-dotenv`): declared but never imported by MILIA (deptry rule DEP002,
   unused dependency).
 
 ### Fixed
 
+- `data_config.property_selection.<dataset>.node_features_to_add` is applied: the listed per-atom properties are
+  appended to `x`, in order, after the structural features, by one step for every dataset type. No code read the
+  key before (the Wavefunction handler instead replaced `x` with atomic numbers when it was set; that code is
+  removed). With the shipped configuration DFT (VQM24) graphs gain the electrostatic potential at each nucleus
+  (`Vesp`, `x` 18 → 19 columns; re-process DFT data and retrain models trained on it); the other datasets keep
+  their `x`. A property already read by `atomic_charge` (`atomic_charges_property`) may not be listed again, so the
+  shipped DFT, QM9, QM40, ANI-1x and ANI-1ccx lists drop `Qmulliken` / `hirshfeld_charges`. Such properties are
+  recorded as `x.<property>` in `data_info.qm_input_features`.
+- Each molecule is enriched by its dataset handler once, not twice (the second call also ignored errors the first
+  raised).
+- The `VirtualNode` transform is refused for any dataset whose graphs carry per-atom dataset values (inputs,
+  targets or atomic charges), not only for DFT, QM9, QM40, ANI-1x and ANI-1ccx when their charges were listed as
+  node features.
 - A model whose structural features came from its dataset's QM data is no longer fed molecule identifiers.
   The dataset's atomic charges (a QM result; read from a SMILES or InChI the feature was 0.0) and bond lengths of the
   QM-optimized geometry (an identifier only gives a generated conformer) cannot be reproduced from a SMILES, an

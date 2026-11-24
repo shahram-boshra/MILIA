@@ -868,6 +868,56 @@ class TestAddNodeFeatures(unittest.TestCase):
         # Should have original features + 1 new feature
         self.assertEqual(self.pyg_data.x.shape, (self.num_atoms, original_feature_count + 1))
 
+    def test_per_atom_targets_go_to_node_y_with_column_names(self):
+        """attr='node_y': (n,) and (n, k) properties become node_y columns; x is untouched."""
+        self.pyg_data.x = torch.rand(self.num_atoms, 3)
+        x_before = self.pyg_data.x.clone()
+        forces = np.arange(self.num_atoms * 3, dtype=np.float64).reshape(self.num_atoms, 3)
+        charges = np.linspace(-1.0, 1.0, self.num_atoms)
+
+        add_node_features(
+            pyg_data=self.pyg_data,
+            raw_properties_dict={"forces": forces, "charges": charges},
+            molecule_index=self.molecule_index,
+            logger=self.logger,
+            feature_keys=["forces", "charges"],
+            identifier=self.identifier,
+            attr="node_y",
+        )
+
+        self.assertTrue(torch.equal(self.pyg_data.x, x_before))
+        self.assertEqual(self.pyg_data.node_y.shape, (self.num_atoms, 4))
+        self.assertTrue(
+            torch.equal(self.pyg_data.node_y[:, :3], torch.tensor(forces, dtype=torch.float32))
+        )
+        self.assertEqual(
+            self.pyg_data.node_y_property_names, ["forces[0]", "forces[1]", "forces[2]", "charges"]
+        )
+
+    def test_columns_do_not_set_num_nodes(self):
+        """Adding columns leaves the node count to the graph (no stored num_nodes)."""
+        add_node_features(
+            pyg_data=self.pyg_data,
+            raw_properties_dict={"charges": np.zeros(self.num_atoms)},
+            molecule_index=self.molecule_index,
+            logger=self.logger,
+            feature_keys=["charges"],
+            identifier=self.identifier,
+        )
+        self.assertNotIn("num_nodes", self.pyg_data.keys())
+
+    def test_wrong_atom_count_in_2d_property_raises(self):
+        with self.assertRaises(PropertyEnrichmentError):
+            add_node_features(
+                pyg_data=self.pyg_data,
+                raw_properties_dict={"forces": np.zeros((self.num_atoms + 1, 3))},
+                molecule_index=self.molecule_index,
+                logger=self.logger,
+                feature_keys=["forces"],
+                identifier=self.identifier,
+                attr="node_y",
+            )
+
     def test_unsupported_node_feature_type_raises_error(self):
         """Test that unsupported type for node feature raises error"""
         raw_props = {"charges": "not_an_array_or_list"}

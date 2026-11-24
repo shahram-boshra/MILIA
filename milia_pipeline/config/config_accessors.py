@@ -3465,6 +3465,98 @@ def should_pass_mulliken_charges_to_structural_features(dataset_type: str | None
     return should_pass_atomic_charges_to_structural_features()
 
 
+def get_atomic_charge_source(atom_features: list[str]) -> str | None:
+    """The raw per-atom property the selected atom features read as atomic charges.
+
+    Args:
+        atom_features: The atom structural features in use (deprecated names accepted).
+
+    Returns:
+        The dataset's ``atomic_charges_property`` when charges are passed to the structural
+        features and a selected feature reads them (``atomic_charge``); otherwise ``None``.
+    """
+    from milia_pipeline.molecules.mol_structural_features import (
+        ATOM_FEATURES,
+        DEPRECATED_FEATURE_NAMES,
+        READS_ATOMIC_CHARGES,
+    )
+
+    reads_charges = False
+    for configured in atom_features or []:
+        feature = ATOM_FEATURES.get(DEPRECATED_FEATURE_NAMES["atom"].get(configured, configured))
+        if feature is not None and READS_ATOMIC_CHARGES in feature.reads:
+            reads_charges = True
+            break
+    if not reads_charges or not should_pass_atomic_charges_to_structural_features():
+        return None
+    return get_atomic_charges_property()
+
+
+def validate_node_property_selection(
+    node_features: list[str], node_targets: list[str], atom_features: list[str]
+) -> None:
+    """Refuse per-atom property selections that duplicate an input or put a target in the input.
+
+    ``property_selection.<dataset>.node_features_to_add`` are appended to ``x`` (inputs);
+    ``node_targets_to_include`` are stored in ``node_y`` (targets). Each must be a per-atom
+    property of the dataset (``property_availability.<dataset>.node_features``) and listed once.
+    A property may not be an input and a target at once, directly or through the atomic charges
+    that ``atomic_charge`` reads (``atomic_charges_property``): the model would read its own
+    target (leakage). The property behind ``atomic_charge`` may not be added to ``x`` a second
+    time either.
+
+    Args:
+        node_features: ``node_features_to_add``.
+        node_targets: ``node_targets_to_include``.
+        atom_features: The atom structural features in use.
+
+    Raises:
+        ConfigurationError: Every violation found, in one message.
+    """
+    node_features = list(node_features or [])
+    node_targets = list(node_targets or [])
+    if not node_features and not node_targets:
+        return
+    dataset_type = get_dataset_type()
+    where = f"data_config.property_selection.{dataset_type}"
+    available = list(get_property_availability().get("node_features") or [])
+    errors = []
+    for key, names in (
+        ("node_features_to_add", node_features),
+        ("node_targets_to_include", node_targets),
+    ):
+        repeated = sorted({name for name in names if names.count(name) > 1})
+        if repeated:
+            errors.append(f"{where}.{key} lists {repeated} more than once")
+        unknown = [name for name in names if name not in available]
+        if unknown:
+            errors.append(
+                f"{where}.{key}: {unknown} are not per-atom properties of {dataset_type} "
+                f"(property_availability.{dataset_type}.node_features: {available})"
+            )
+    both = sorted(set(node_features) & set(node_targets))
+    if both:
+        errors.append(
+            f"{both} are both inputs ({where}.node_features_to_add) and targets "
+            f"({where}.node_targets_to_include): the model would read its own target"
+        )
+    charges = get_atomic_charge_source(atom_features)
+    if charges is not None and charges in node_features:
+        errors.append(
+            f"{charges!r} is already the input column of the atomic_charge feature "
+            f"({where}.atomic_charges_property); remove it from {where}.node_features_to_add"
+        )
+    if charges is not None and charges in node_targets:
+        errors.append(
+            f"{charges!r} is a target ({where}.node_targets_to_include) and the input of the "
+            f"atomic_charge feature ({where}.atomic_charges_property): the model would read its "
+            "own target; remove atomic_charge from structural_features.atom or set another "
+            "atomic_charges_property"
+        )
+    if errors:
+        raise ConfigurationError("; ".join(errors))
+
+
 def should_enable_stereochemistry_preprocessing() -> bool:
     """
     Checks if stereochemistry preprocessing should be enabled.
@@ -4103,6 +4195,7 @@ def create_processing_config_container() -> ProcessingConfig:
         return ProcessingConfig(
             scalar_graph_targets=data_config.get("scalar_graph_targets_to_include", []),
             node_features=data_config.get("node_features_to_add", []),
+            node_targets=data_config.get("node_targets_to_include", []),
             vector_graph_properties=data_config.get("vector_graph_properties_to_include", []),
             variable_len_graph_properties=data_config.get(
                 "variable_len_graph_properties_to_include", []

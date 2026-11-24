@@ -159,6 +159,7 @@ def _make_processing_config(**overrides):
         spec_set=[
             "scalar_graph_targets",
             "node_features",
+            "node_targets",
             "vector_graph_properties",
             "variable_len_graph_properties",
             "calculate_atomization_energy_from",
@@ -167,6 +168,7 @@ def _make_processing_config(**overrides):
     )
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["energy"])
     cfg.node_features = overrides.get("node_features", ["atoms"])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.calculate_atomization_energy_from = overrides.get(
@@ -1383,9 +1385,9 @@ class TestGetProcessingStatistics(unittest.TestCase):
         stats = handler.get_processing_statistics(mols)
         self.assertEqual(stats["molecules_with_forces"], 2)
 
-    def test_forces_configured_detection_node_features(self):
-        """Detects forces configured in node_features."""
-        pc = _make_processing_config(node_features=["atoms", "forces"])
+    def test_forces_configured_detection_node_targets(self):
+        """Detects forces configured as per-atom targets (node_targets_to_include)."""
+        pc = _make_processing_config(node_targets=["forces"])
         handler = _make_handler(processing_config=pc)
         stats = handler.get_processing_statistics([])
         self.assertTrue(stats["forces_configured"])

@@ -3603,6 +3603,42 @@ class TestEdgeLevelModelWrapperGetAttr:
         assert wrapper.model.out_features == 5
 
 
+class TestTargetSourceColumns:
+    """The attribute targets are selected from: names and width, model inputs refused."""
+
+    def test_node_y_names_and_width(self):
+        from milia_pipeline.models.factory.model_factory import _target_source_columns
+        from milia_pipeline.models.factory.target_selection_config import TargetSelectionConfig
+
+        sample = Data(
+            x=torch.zeros(4, 7),
+            node_y=torch.zeros(4, 3),
+            node_y_property_names=["forces[0]", "forces[1]", "forces[2]"],
+        )
+        config = TargetSelectionConfig.from_config({"target_source": "node_y"})
+        assert _target_source_columns(config, sample) == (
+            ["forces[0]", "forces[1]", "forces[2]"],
+            3,
+        )
+
+    def test_auto_reads_y(self):
+        from milia_pipeline.models.factory.model_factory import _target_source_columns
+        from milia_pipeline.models.factory.target_selection_config import TargetSelectionConfig
+
+        sample = Data(y=torch.zeros(1, 2), y_property_names=["U0", "gap"])
+        config = TargetSelectionConfig.from_config({})
+        assert _target_source_columns(config, sample) == (["U0", "gap"], 2)
+
+    def test_a_model_input_is_refused(self):
+        from milia_pipeline.exceptions import ConfigurationError
+        from milia_pipeline.models.factory.model_factory import _target_source_columns
+        from milia_pipeline.models.factory.target_selection_config import TargetSelectionConfig
+
+        config = TargetSelectionConfig(config_source="x")
+        with pytest.raises(ConfigurationError, match="model input"):
+            _target_source_columns(config, Data(x=torch.zeros(2, 2)))
+
+
 # =============================================================================
 # MAIN
 # =============================================================================

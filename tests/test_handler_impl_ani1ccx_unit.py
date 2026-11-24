@@ -115,6 +115,7 @@ def _make_processing_config(**overrides):
     cfg = Mock(name="ProcessingConfig")
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["ccsd_energy"])
     cfg.node_features = overrides.get("node_features", [])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.common_required_properties = overrides.get(
@@ -1369,12 +1370,15 @@ class TestTransformValidationHelpers(unittest.TestCase):
         warnings = _make_handler()._validate_dataset_specific_transforms(["Distance"])
         self.assertTrue(any("edge attributes" in w for w in warnings))
 
-    def test_check_virtualnode_with_charges_incompatible(self):
-        pc = _make_processing_config(node_features=["hirshfeld_charges"])
-        errors = _make_handler(processing_config=pc)._check_transform_incompatibilities(
-            ["VirtualNode"]
-        )
-        self.assertTrue(any("VirtualNode" in e for e in errors))
+    def test_virtualnode_per_atom_values_checked_by_base(self):
+        """VirtualNode vs per-atom values is checked for every dataset by the base handler."""
+        pc = _make_processing_config(node_features=["cm5_charges"], node_targets=["forces"])
+        handler = _make_handler(processing_config=pc)
+        with patch(
+            "milia_pipeline.config.config_accessors.get_atomic_charge_source", return_value=None
+        ):
+            self.assertEqual(handler.get_per_atom_dataset_properties(), ["cm5_charges", "forces"])
+        self.assertEqual(handler._check_transform_incompatibilities(["VirtualNode"]), [])
 
     def test_check_no_incompatibilities(self):
         errors = _make_handler()._check_transform_incompatibilities(["GCNNorm", "AddSelfLoops"])

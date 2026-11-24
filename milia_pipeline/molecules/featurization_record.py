@@ -1,8 +1,8 @@
 """What inference must reproduce of the training graphs' molecular representation.
 
 Two records, both in ``data_info``: ``explicit_hydrogens`` (below) and ``qm_input_features``,
-the structural features whose training values came from the dataset's QM data (its atomic
-charges, bond lengths of the QM-optimized geometry). No identifier (SMILES, InChI) carries those
+the input columns whose training values came from the dataset's QM data (its atomic charges,
+bond lengths of the QM-optimized geometry, per-atom properties added to ``x``). No identifier (SMILES, InChI) carries those
 values, so inference refuses to featurize identifiers for such a model
 (``Predictor.prepare_inputs``): it is predicted from a dataset of the same type
 (``milia --predict --test-path <dataset directory>``), whose processing keeps the QM geometry and
@@ -32,9 +32,15 @@ SAMPLE_GRAPHS = 1000  # graphs inspected; a dataset either keeps hydrogens or do
 
 
 def qm_input_features(
-    structural_features_config: dict[str, Any] | None, graphs: Iterable[Any] = ()
+    structural_features_config: dict[str, Any] | None,
+    graphs: Iterable[Any] = (),
+    node_features: Iterable[str] = (),
 ) -> list[str]:
-    """The structural features a training run took from its dataset's QM data.
+    """The input columns a training run took from its dataset's QM data.
+
+    Per-atom properties appended to ``x`` (``node_features``, the dataset's
+    ``node_features_to_add``) are dataset values by definition and are recorded as
+    ``x.<property>``.
 
     A feature's inputs come from the feature catalog (``StructuralFeature.reads`` in
     ``mol_structural_features``). Whether the dataset supplied them is decided as the molecule
@@ -47,11 +53,12 @@ def qm_input_features(
 
     Returns:
         The catalog names (``atom.<feature>`` / ``bond.<feature>``; a deprecated configured name
-        is recorded under its catalog name), in configuration order; empty when every feature
-        can be computed from a molecule's identifier.
+        is recorded under its catalog name), in configuration order, then ``x.<property>``;
+        empty when every input column can be computed from a molecule's identifier.
     """
+    dataset_columns = [f"x.{name}" for name in dict.fromkeys(node_features or ())]
     if not structural_features_config:
-        return []
+        return dataset_columns
     from milia_pipeline.config.config_accessors import (
         should_pass_atomic_charges_to_structural_features,
         should_pass_coordinates_to_structural_features,
@@ -71,7 +78,7 @@ def qm_input_features(
     ):
         supplied.add(READS_COORDINATES)
     if not supplied:
-        return []
+        return dataset_columns
 
     names: list[str] = []
     for level in ("atom", "bond"):
@@ -82,7 +89,7 @@ def qm_input_features(
                 continue
             if f"{level}.{name}" not in names:
                 names.append(f"{level}.{name}")
-    return names
+    return names + dataset_columns
 
 
 def graphs_have_explicit_hydrogens(graphs: Iterable[Any]) -> bool | None:

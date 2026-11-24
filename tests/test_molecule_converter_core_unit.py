@@ -171,6 +171,9 @@ class TestMoleculeDataConverterInitialization(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -364,6 +367,9 @@ class TestMoleculeDataConverterHandlers(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -497,6 +503,9 @@ class TestMoleculeDataConverterTransformationSystem(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
         self.transform_config = Mock(spec=TransformationConfig)
         mock_setup = Mock(spec=ExperimentalSetup)
@@ -713,6 +722,9 @@ class TestMoleculeDataConverterValidation(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
         self.processing_config.enable_validation = True
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
@@ -954,6 +966,9 @@ class TestMoleculeDataConverterDiagnostics(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1090,6 +1105,9 @@ class TestMoleculeDataConverterDatasetTypes(unittest.TestCase):
     def setUp(self):
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1265,6 +1283,9 @@ class TestMoleculeDataConverterCaching(unittest.TestCase):
         self.filter_config = Mock(spec=FilterConfig)
 
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
         self.processing_config.enable_caching = True
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
@@ -1638,6 +1659,9 @@ class TestPhase6RegistryIntegrationStatus(unittest.TestCase):
         self.dataset_config.dataset_type = "DFT"
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1793,6 +1817,9 @@ class TestPhase6RefactoredMethods(unittest.TestCase):
     def setUp(self):
         self.filter_config = Mock(spec=FilterConfig)
         self.processing_config = Mock(spec=ProcessingConfig)
+        # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
+        self.processing_config.node_features = []
+        self.processing_config.node_targets = []
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -2053,6 +2080,95 @@ class TestPhase6LegacyFallback(unittest.TestCase):
         self.assertEqual(
             _get_dataset_molecule_creation_strategy("Wavefunction"), "identifier_coordinate_based"
         )
+
+
+class TestPerAtomPropertiesStep(unittest.TestCase):
+    """convert(): one handler enrichment, then the configured per-atom inputs and targets."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not IMPORTS_SUCCESSFUL:
+            raise unittest.SkipTest(f"Required imports failed: {IMPORT_ERROR}")
+
+    @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
+    @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
+    def _converter(self, mock_create_handler, node_features=(), node_targets=()):
+        handler = Mock()
+        handler.get_dataset_type.return_value = "DFT"
+        mock_create_handler.return_value = handler
+        dataset_config = Mock(spec=DatasetConfig)
+        dataset_config.dataset_type = "DFT"
+        processing_config = Mock(spec=ProcessingConfig)
+        processing_config.node_features = list(node_features)
+        processing_config.node_targets = list(node_targets)
+        with patch(
+            "milia_pipeline.molecules.molecule_converter_core.validate_node_property_selection"
+        ):
+            converter = MoleculeDataConverter(
+                dataset_config=dataset_config,
+                filter_config=Mock(spec=FilterConfig),
+                processing_config=processing_config,
+                dataset_handler=handler,
+            )
+        return converter, handler, dataset_config
+
+    def _convert(self, node_features=(), node_targets=()):
+        import torch
+        from torch_geometric.data import Data
+
+        converter, handler, dataset_config = self._converter(
+            node_features=node_features, node_targets=node_targets
+        )
+        structural_x = torch.ones(3, 2)
+        properties = {
+            "Vesp": np.array([0.1, 0.2, 0.3]),
+            "forces": np.arange(9, dtype=np.float64).reshape(3, 3),
+        }
+        module = "milia_pipeline.molecules.molecule_converter_core"
+        with (
+            patch.object(converter, "_validate_config_containers"),
+            patch.object(
+                converter,
+                "_prepare_molecule_data",
+                return_value={"identifier": "InChI=1S/H2O/h1H2", "id_type": "inchi"},
+            ),
+            patch.object(converter, "_process_properties_with_handler", return_value=properties),
+            patch.object(
+                converter,
+                "_create_base_pyg_data",
+                return_value=Data(z=torch.tensor([8, 1, 1]), x=structural_x.clone()),
+            ),
+            patch.object(converter, "_add_features", side_effect=lambda data, *a, **k: data),
+            patch(f"{module}.apply_pre_filters"),
+            patch.object(converter, "_validate_result"),
+        ):
+            result = converter.convert(0, properties, {}, dataset_config=dataset_config)
+        return result, handler, structural_x
+
+    def test_handler_enrichment_is_not_repeated_after_add_features(self):
+        """The handler enriches inside _add_features only; convert() does not call it again."""
+        result, handler, _ = self._convert()
+        self.assertIsNotNone(result)
+        handler.enrich_pyg_data.assert_not_called()
+        self.assertFalse(hasattr(MoleculeDataConverter, "_enrich_with_handler"))
+
+    def test_inputs_extend_x_and_targets_go_to_node_y(self):
+        """node_features_to_add append to x; node_targets_to_include fill node_y, never x."""
+        import torch
+
+        result, _, structural_x = self._convert(node_features=["Vesp"], node_targets=["forces"])
+        self.assertEqual(tuple(result.x.shape), (3, 3))
+        self.assertTrue(torch.equal(result.x[:, :2], structural_x))
+        self.assertTrue(torch.allclose(result.x[:, 2], torch.tensor([0.1, 0.2, 0.3])))
+        self.assertEqual(tuple(result.node_y.shape), (3, 3))
+        self.assertEqual(result.node_y_property_names, ["forces[0]", "forces[1]", "forces[2]"])
+
+    def test_nothing_configured_leaves_the_graph_as_is(self):
+        import torch
+
+        result, _, structural_x = self._convert()
+        self.assertTrue(torch.equal(result.x, structural_x))
+        self.assertFalse(hasattr(result, "node_y"))
 
 
 # ==============================================================================

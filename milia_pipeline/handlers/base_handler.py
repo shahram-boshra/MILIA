@@ -1269,7 +1269,8 @@ class DatasetHandler(ABC):
         Uses configured required properties from HANDLER_REQUIRED_PROPERTIES
         rather than hardcoded values, making the system extensible. When the dataset passes
         atomic charges to the structural features, the configured
-        ``atomic_charges_property`` is required too, so the raw key is loaded.
+        ``atomic_charges_property`` is required too, and so are the per-atom targets
+        (``node_targets_to_include``), so the raw keys are loaded.
 
         Returns:
             List of required property names
@@ -1286,11 +1287,40 @@ class DatasetHandler(ABC):
                 charges_property = get_atomic_charges_property()
                 if charges_property not in required:
                     required.append(charges_property)
+            node_targets = getattr(self.processing_config, "node_targets", None)
+            if isinstance(node_targets, (list, tuple)):
+                required.extend(key for key in node_targets if key not in required)
             return required
         except Exception as e:
             # Fallback if lookup fails
             self.logger.warning(f"Failed to get required properties, using fallback: {e}")
             return ["atoms", "coordinates"]
+
+    def get_per_atom_dataset_properties(self) -> list[str]:
+        """The dataset's per-atom values the processed graphs carry, in any role.
+
+        Inputs appended to ``x`` (``node_features_to_add``), targets in ``node_y``
+        (``node_targets_to_include``) and the atomic charges read by ``atomic_charge``
+        (``atomic_charges_property``). A transform that adds nodes (``VirtualNode``) has no
+        dataset value to give them.
+
+        Returns:
+            The property names, without repetition, in that order.
+        """
+        from milia_pipeline.config.config_accessors import (
+            get_atomic_charge_source,
+            get_structural_features_config,
+        )
+
+        names: list[str] = []
+        for key in ("node_features", "node_targets"):
+            values = getattr(self.processing_config, key, None)
+            if isinstance(values, (list, tuple)):
+                names.extend(name for name in values if name not in names)
+        charges = get_atomic_charge_source((get_structural_features_config() or {}).get("atom"))
+        if charges is not None and charges not in names:
+            names.append(charges)
+        return names
 
     def _validate_handler_configuration(self) -> None:
         """Comprehensive handler configuration validation."""
@@ -1452,8 +1482,16 @@ class DatasetHandler(ABC):
             dataset_specific_warnings = self._validate_dataset_specific_transforms(transform_names)
             validation_results["warnings"].extend(dataset_specific_warnings)
 
-            # Check for known incompatibilities
-            incompatibility_errors = self._check_transform_incompatibilities(transform_names)
+            # Check for known incompatibilities (dataset-specific, then per-atom values)
+            incompatibility_errors = list(self._check_transform_incompatibilities(transform_names))
+            per_atom = (
+                self.get_per_atom_dataset_properties() if "VirtualNode" in transform_names else []
+            )
+            if per_atom:
+                incompatibility_errors.append(
+                    f"VirtualNode incompatible with per-atom dataset values {per_atom} - "
+                    "the virtual node has no value of its own"
+                )
             if incompatibility_errors:
                 validation_results["compatible"] = False
                 validation_results["errors"] = incompatibility_errors

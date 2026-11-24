@@ -54,6 +54,36 @@ class TargetLevel(Enum):
     EDGE = "edge"  # Edge-level targets: y.shape = [num_edges, *]
 
 
+# Graph attributes a model reads as input. A target taken from one of them stays in the input,
+# so the model would read its own target (data leakage: "information that would not be available
+# at prediction time is used when building the model", scikit-learn, Common pitfalls).
+MODEL_INPUT_ATTRIBUTES = frozenset({"x", "edge_attr", "pos", "z", "edge_index"})
+
+
+def refuse_input_attribute_as_target(source: str) -> None:
+    """Raise when ``source`` is a model input attribute (:data:`MODEL_INPUT_ATTRIBUTES`).
+
+    Raises:
+        ConfigurationError: ``source`` is an input attribute; per-atom targets are declared as
+            ``data_config.property_selection.<dataset>.node_targets_to_include`` (stored in
+            ``node_y``).
+    """
+    if source in MODEL_INPUT_ATTRIBUTES:
+        from milia_pipeline.exceptions import ConfigurationError
+
+        raise ConfigurationError(
+            message=(
+                f"target_selection.target_source {source!r} is a model input: the targets would "
+                "stay in the input the model reads. Declare per-atom targets in "
+                "data_config.property_selection.<dataset>.node_targets_to_include (stored in "
+                "node_y, target_source 'node_y' or 'auto') and re-process the dataset"
+            ),
+            config_key="target_selection.target_source",
+            actual_value=source,
+            expected_value="auto, y, node_y, edge_y, edge_label or a non-input attribute",
+        )
+
+
 class TargetSource(Enum):
     """
     Source attribute for target data extraction.
@@ -64,17 +94,19 @@ class TargetSource(Enum):
 
     Default inference rules (from TargetLevel):
     - GRAPH -> Y (standard target attribute)
-    - NODE -> Y first, fallback to X if shape mismatch
-    - EDGE -> Y first, fallback to EDGE_ATTR if shape mismatch
+    - NODE -> Y first, fallback to NODE_Y if shape mismatch
+    - EDGE -> Y first, fallback to EDGE_Y if shape mismatch
 
     Special cases:
     - link_prediction -> EDGE_LABEL
-    - edge_regression -> EDGE_Y or EDGE_ATTR
+    - edge_regression -> EDGE_Y
+
+    A target is never read from an attribute the model takes as input
+    (:data:`MODEL_INPUT_ATTRIBUTES`): the model would read its own target.
     """
 
     Y = "y"  # Standard target attribute (PyG convention)
-    X = "x"  # Node features (fallback for node-level)
-    EDGE_ATTR = "edge_attr"  # Edge features (fallback for edge-level)
+    NODE_Y = "node_y"  # Per-atom targets (property_selection.<dataset>.node_targets_to_include)
     EDGE_LABEL = "edge_label"  # Binary edge labels (link prediction)
     EDGE_Y = "edge_y"  # Edge targets (edge regression)
     CUSTOM = "custom"  # Placeholder for custom attribute names
@@ -108,7 +140,8 @@ class TargetSelectionConfig(BaseModel):
         resolved_names: Resolved property names after resolution
         total_available: Total number of targets in dataset
         config_level: Config-specified level ("auto", "graph", "node", "edge")
-        config_source: Config-specified source ("auto", "y", "x", "edge_attr", or custom)
+        config_source: Config-specified source ("auto", "y", "node_y", "edge_y", "edge_label",
+            or a custom non-input attribute)
         resolved_level: Resolved TargetLevel after inference
         resolved_source: Resolved TargetSource after inference
         resolved_source_attr: Actual attribute name (for custom sources)
@@ -128,7 +161,7 @@ class TargetSelectionConfig(BaseModel):
 
     # Config-specified level and source (from config.yaml target_selection)
     config_level: str | None = "auto"  # "auto", "graph", "node", "edge"
-    config_source: str | None = "auto"  # "auto", "y", "x", "edge_attr", or custom
+    config_source: str | None = "auto"  # "auto", "y", "node_y", "edge_y", "edge_label", custom
 
     # Resolved level and source (after inference/validation)
     resolved_level: TargetLevel | None = None
@@ -229,8 +262,9 @@ class TargetSelectionConfig(BaseModel):
         config_source = config.get("target_source", "auto")
         if config_source is not None:
             config_source = str(config_source).lower()
-            # Known sources + "auto" + allow any custom attribute name
-            known_sources = {"auto", "y", "x", "edge_attr", "edge_label", "edge_y"}
+            refuse_input_attribute_as_target(config_source)
+            # Known sources + "auto" + allow any custom (non-input) attribute name
+            known_sources = {"auto", "y", "node_y", "edge_label", "edge_y"}
             if config_source not in known_sources:
                 # Treat as custom attribute name (valid - user knows their data)
                 logger.info(
@@ -329,14 +363,14 @@ class TargetSelectionConfig(BaseModel):
         if task_lower == "link_prediction":
             return TargetSource.EDGE_LABEL
         elif task_lower == "edge_regression":
-            return TargetSource.EDGE_Y  # Will fallback to EDGE_ATTR if not available
+            return TargetSource.EDGE_Y
 
         # Fallback mapping based on level (used when y shape doesn't match)
         # NOTE: Y is tried FIRST in resolve_for_task(), these are fallbacks
         level_to_fallback = {
             TargetLevel.GRAPH: TargetSource.Y,  # Graph always uses Y
-            TargetLevel.NODE: TargetSource.X,  # Fallback: extract from node features
-            TargetLevel.EDGE: TargetSource.EDGE_ATTR,  # Fallback: extract from edge features
+            TargetLevel.NODE: TargetSource.NODE_Y,  # Per-atom targets (node_targets_to_include)
+            TargetLevel.EDGE: TargetSource.EDGE_Y,  # Edge targets
         }
 
         return level_to_fallback.get(level, TargetSource.Y)
@@ -357,7 +391,7 @@ class TargetSelectionConfig(BaseModel):
         1. Level: Use config_level if not "auto", else infer from task_type
         2. Source: Use config_source if not "auto", else:
            a. Try Y first (PyG convention)
-           b. If Y shape doesn't match level, use fallback (X for node, EDGE_ATTR for edge)
+           b. If Y shape doesn't match level, use fallback (node_y for node, edge_y for edge)
 
         Args:
             task_type: Task type string
@@ -402,10 +436,10 @@ class TargetSelectionConfig(BaseModel):
         # =========================================================================
         if self.config_source and self.config_source != "auto":
             # Use explicit config value
+            refuse_input_attribute_as_target(self.config_source)
             source_map = {
                 "y": TargetSource.Y,
-                "x": TargetSource.X,
-                "edge_attr": TargetSource.EDGE_ATTR,
+                "node_y": TargetSource.NODE_Y,
                 "edge_label": TargetSource.EDGE_LABEL,
                 "edge_y": TargetSource.EDGE_Y,
             }
@@ -487,9 +521,9 @@ class TargetSelectionConfig(BaseModel):
                 else:
                     logger.debug(
                         f"Y shape mismatch for node-level: y.size(0)={y_first_dim}, "
-                        f"num_nodes={num_nodes}. Falling back to X."
+                        f"num_nodes={num_nodes}. Falling back to node_y."
                     )
-                    return TargetSource.X
+                    return TargetSource.NODE_Y
 
             elif level == TargetLevel.EDGE:
                 num_edges = (
@@ -502,9 +536,9 @@ class TargetSelectionConfig(BaseModel):
                 else:
                     logger.debug(
                         f"Y shape mismatch for edge-level: y.size(0)={y_first_dim}, "
-                        f"num_edges={num_edges}. Falling back to EDGE_ATTR."
+                        f"num_edges={num_edges}. Falling back to edge_y."
                     )
-                    return TargetSource.EDGE_ATTR
+                    return TargetSource.EDGE_Y
 
         # Y doesn't exist - use fallback
         fallback = self.infer_source_from_level(level, task_type)

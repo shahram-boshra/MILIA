@@ -26,6 +26,9 @@ import torch
 # =============================================================================
 # Import DataCompatibilityError
 from milia_pipeline.exceptions import DataCompatibilityError
+from milia_pipeline.models.factory.target_selection_config import (
+    refuse_input_attribute_as_target,
+)
 
 # Import TargetSelectionConfig with fallback
 try:
@@ -631,8 +634,9 @@ class TaskDataPreparer:
         ):
             source_attr = target_selection_config.resolved_source_attr
         else:
-            # Default for edge-level: extract from edge_attr
-            source_attr = "edge_attr"
+            # Default for edge-level: edge targets (edge_y)
+            source_attr = "edge_y"
+        refuse_input_attribute_as_target(source_attr)
 
         # Check if source exists
         if not hasattr(sample, source_attr) or getattr(sample, source_attr) is None:
@@ -951,7 +955,9 @@ class TaskDataPreparer:
 
         Logic:
         1. Check if y already has correct shape (num_nodes) -> use as-is
-        2. If not, check configured source (x by default for node tasks)
+        2. If not, check configured source (node_y by default for node tasks: the per-atom
+           targets of property_selection.<dataset>.node_targets_to_include); a model input
+           (x, edge_attr, pos, z) is refused, the targets would stay in the input
         3. Extract targets from source and assign to y
 
         Args:
@@ -1014,8 +1020,9 @@ class TaskDataPreparer:
         ):
             source_attr = target_selection_config.resolved_source_attr
         else:
-            # Default for node-level: extract from x
-            source_attr = "x"
+            # Default for node-level: the per-atom targets (node_targets_to_include)
+            source_attr = "node_y"
+        refuse_input_attribute_as_target(source_attr)
 
         # Check if source exists
         if not hasattr(sample, source_attr) or getattr(sample, source_attr) is None:
@@ -1024,8 +1031,8 @@ class TaskDataPreparer:
                 f"y.shape={list(sample.y.shape) if hasattr(sample, 'y') and sample.y is not None else 'None'} "
                 f"is not node-level (expected first dim = {num_nodes}). "
                 f"Source '{source_attr}' also not available. "
-                f"Configure target_selection.indices to specify which columns of x to use as targets, "
-                f"or ensure your data has node-level targets in y.",
+                f"Declare per-atom targets in data_config.property_selection.<dataset>."
+                f"node_targets_to_include (stored in node_y) and re-process the dataset.",
                 task_type=task_type,
             )
 
@@ -1064,7 +1071,8 @@ class TaskDataPreparer:
                     source_tensor.size(-1) if source_tensor.dim() > 1 else source_tensor.size(0)
                 )
                 target_selection_config.resolve(
-                    available_names=None, total_count=source_total_count
+                    available_names=cls._column_names(sample, source_attr),
+                    total_count=source_total_count,
                 )
                 indices = target_selection_config.resolved_indices
                 logger.debug(
@@ -1090,6 +1098,12 @@ class TaskDataPreparer:
         )
 
         return train_data, val_data, test_data
+
+    @staticmethod
+    def _column_names(sample: Any, source_attr: str) -> list[str] | None:
+        """The column names a dataset stores for ``source_attr`` (``<attr>_property_names``)."""
+        names = getattr(sample, f"{source_attr}_property_names", None)
+        return list(names) if isinstance(names, (list, tuple)) and names else None
 
     @classmethod
     def _extract_targets_from_source(

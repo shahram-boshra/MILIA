@@ -133,6 +133,7 @@ def _make_processing_config(**overrides):
     cfg = Mock(name="ProcessingConfig")
     cfg.scalar_graph_targets = overrides.get("scalar_graph_targets", ["U0"])
     cfg.node_features = overrides.get("node_features", [])
+    cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
     cfg.calculate_atomization_energy_from = overrides.get("calculate_atomization_energy_from")
@@ -1386,12 +1387,15 @@ class TestTransformValidationHelpers(unittest.TestCase):
         warnings = handler._validate_dataset_specific_transforms(["Distance"])
         self.assertTrue(any("edge attribute" in w.lower() for w in warnings))
 
-    def test_check_incompatibilities_virtualnode_qmulliken(self):
-        """VirtualNode + Qmulliken flagged as incompatible."""
-        pc = _make_processing_config(node_features=["Qmulliken"])
+    def test_virtualnode_per_atom_values_checked_by_base(self):
+        """VirtualNode vs per-atom values is checked for every dataset by the base handler."""
+        pc = _make_processing_config(node_features=["Qmulliken"], node_targets=["forces"])
         handler = _make_handler(processing_config=pc)
-        errors = handler._check_transform_incompatibilities(["VirtualNode"])
-        self.assertTrue(any("VirtualNode" in e for e in errors))
+        with patch(
+            "milia_pipeline.config.config_accessors.get_atomic_charge_source", return_value=None
+        ):
+            self.assertEqual(handler.get_per_atom_dataset_properties(), ["Qmulliken", "forces"])
+        self.assertEqual(handler._check_transform_incompatibilities(["VirtualNode"]), [])
 
     def test_check_incompatibilities_empty_when_no_conflicts(self):
         """No conflicts returns empty list."""

@@ -667,9 +667,16 @@ def add_node_features(
     logger: logging.Logger,
     feature_keys: list[str],
     identifier: str = "N/A",
+    attr: str = "x",
 ) -> None:
     """
-    Adds specified node-level features to `pyg_data.x`.
+    Adds specified per-atom properties as columns of `pyg_data.x` (or of `attr`).
+
+    ``attr="x"`` appends input columns (``property_selection.<dataset>.node_features_to_add``);
+    ``attr="node_y"`` stores per-atom targets (``node_targets_to_include``), never in ``x``.
+    For an attribute other than ``x`` the column names are stored as
+    ``<attr>_property_names`` (one per column: ``<key>`` for a per-atom scalar,
+    ``<key>[i]`` for column ``i`` of a per-atom vector such as forces).
 
     ORGANIC DYNAMIC FIX: Standardized interface with automatic parameter resolution.
 
@@ -680,9 +687,9 @@ def add_node_features(
     Dataset handlers determine which features to request and validate their availability.
     Enhanced with handler-aware error reporting.
 
-    Features are retrieved from `raw_properties_dict` and validated to be 1D NumPy arrays
-    with length matching the number of nodes. These new features are concatenated with
-    any existing `pyg_data.x` features.
+    Features are retrieved from `raw_properties_dict` and validated to be NumPy arrays of
+    shape ``(num_nodes,)`` or ``(num_nodes, k)``. These new columns are concatenated with
+    any existing columns of `attr`.
 
     Args:
         pyg_data: The PyG Data object for the current molecule
@@ -691,6 +698,7 @@ def add_node_features(
         logger: The logger instance
         feature_keys: List of string keys for the node features to add
         identifier: Molecule identifier for error context
+        attr: The node-level attribute the columns are added to (default ``x``)
 
     Raises:
         PropertyEnrichmentError: If a feature is missing, invalid, has unexpected
@@ -701,6 +709,7 @@ def add_node_features(
         return
 
     additional_node_features_tensors = []
+    column_names: list[str] = []
     handler_context = _get_handler_context()
 
     # Derive expected number of nodes
@@ -747,28 +756,16 @@ def add_node_features(
 
             # CRITICAL FIX: Handle different input types for node features
             if isinstance(node_values, (list, tuple)):
-                if len(node_values) != expected_num_nodes:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=key,
-                        reason=f"Node feature '{key}' list length {len(node_values)} != expected {expected_num_nodes}",
-                        detail=f"Expected: {expected_num_nodes}, Got: {len(node_values)}",
-                    )
-                node_tensor = _ensure_tensor(
-                    node_values, torch.float32, key, molecule_index, identifier
-                )
+                node_values = np.asarray(node_values, dtype=np.float32)
 
-            elif isinstance(node_values, np.ndarray):
-                if not validate_array_shape(
-                    node_values, expected_shape=(expected_num_nodes,), name=f"{key}_node_feature"
-                ):
+            if isinstance(node_values, np.ndarray):
+                if node_values.ndim not in (1, 2) or node_values.shape[0] != expected_num_nodes:
                     raise PropertyEnrichmentError(
                         molecule_index=molecule_index,
                         inchi=identifier,
                         property_name=key,
-                        reason=f"Node feature '{key}' shape mismatch: expected ({expected_num_nodes},), got {node_values.shape}",
-                        detail=f"Expected shape: ({expected_num_nodes},), Got: {node_values.shape}",
+                        reason=f"Node feature '{key}' shape mismatch: expected ({expected_num_nodes},) or ({expected_num_nodes}, k), got {node_values.shape}",
+                        detail=f"Expected shape: ({expected_num_nodes},) or ({expected_num_nodes}, k), Got: {node_values.shape}",
                     )
                 node_tensor = _ensure_tensor(
                     node_values, torch.float32, key, molecule_index, identifier
@@ -786,6 +783,9 @@ def add_node_features(
             # Ensure proper dimensionality for concatenation
             if node_tensor.dim() == 1:
                 node_tensor = node_tensor.unsqueeze(1)
+                column_names.append(key)
+            else:
+                column_names.extend(f"{key}[{i}]" for i in range(node_tensor.size(1)))
 
             additional_node_features_tensors.append(node_tensor)
 
@@ -812,22 +812,26 @@ def add_node_features(
 
     # Concatenate features
     if additional_node_features_tensors:
-        if not hasattr(pyg_data, "x") or pyg_data.x is None or pyg_data.x.numel() == 0:
-            pyg_data.x = torch.cat(additional_node_features_tensors, dim=1)
+        existing = getattr(pyg_data, attr, None)
+        if existing is None or existing.numel() == 0:
+            setattr(pyg_data, attr, torch.cat(additional_node_features_tensors, dim=1))
         else:
-            if pyg_data.x.size(0) != expected_num_nodes:
+            if existing.size(0) != expected_num_nodes:
                 raise PropertyEnrichmentError(
                     molecule_index=molecule_index,
                     inchi=identifier,
                     property_name="node_features_concatenation",
-                    reason=f"Node count mismatch: pyg_data.x has {pyg_data.x.size(0)} nodes, expected {expected_num_nodes}",
-                    detail=f"Current x shape: {pyg_data.x.shape}, Expected nodes: {expected_num_nodes}",
+                    reason=f"Node count mismatch: pyg_data.{attr} has {existing.size(0)} nodes, expected {expected_num_nodes}",
+                    detail=f"Current {attr} shape: {existing.shape}, Expected nodes: {expected_num_nodes}",
                 )
-            pyg_data.x = torch.cat([pyg_data.x] + additional_node_features_tensors, dim=1)
+            setattr(pyg_data, attr, torch.cat([existing] + additional_node_features_tensors, dim=1))
+        if attr != "x":
+            names_attr = f"{attr}_property_names"
+            setattr(
+                pyg_data, names_attr, list(getattr(pyg_data, names_attr, None) or []) + column_names
+            )
 
-    # Update num_nodes to match
-    if hasattr(pyg_data, "x") and pyg_data.x is not None:
-        pyg_data.num_nodes = pyg_data.x.size(0)
+    # Columns do not change the node count: num_nodes stays as the graph defines it (z, pos, x)
 
 
 @resolve_parameters
