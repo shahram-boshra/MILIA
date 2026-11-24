@@ -89,7 +89,7 @@ def recorded(tmp_path):
         test_metrics={"test_loss": 1.75, "test_mae": 1.0},
         run_info=RUN_INFO,
         # trained on heavy-atom graphs without a pre-transform
-        data_info={"input_transforms": None, "explicit_hydrogens": False},
+        data_info={"input_transforms": None, "explicit_hydrogens": False, "qm_input_features": []},
         input_reference=INPUT_REFERENCE,
     )
     return checkpoint, package_checkpoint(checkpoint, tmp_path / "package"), in_channels
@@ -103,8 +103,10 @@ def test_manifest_records_signature_example_metrics_and_lineage(recorded):
     checkpoint, package, in_channels = recorded
     manifest = _manifest(package)
 
-    assert manifest["format"] == PACKAGE_FORMAT == "milia-deployment/2"
-    assert manifest["signature"]["inputs"]["type"] == "smiles"
+    assert manifest["format"] == PACKAGE_FORMAT == "milia-deployment/3"
+    kinds = manifest["signature"]["inputs"]["kinds"]
+    assert kinds["accepted"] == ["identifier", "dataset"]
+    assert set(kinds["refused"]) == {"structure"}
     assert manifest["signature"]["inputs"]["max_length"] == MAX_SMILES_LENGTH
     assert manifest["signature"]["inputs"]["node_features"] == in_channels
     assert manifest["signature"]["outputs"] == {

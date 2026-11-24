@@ -606,6 +606,14 @@ class ModelCheckpoint(Callback):
             "qm_input_features": trainer.model_info.get("qm_input_features")
             if hasattr(trainer, "model_info") and trainer.model_info
             else None,
+            # Source of each QM input and how the dataset built its molecules
+            # (molecules/featurization_record.py; the input contract reads them)
+            "qm_input_sources": trainer.model_info.get("qm_input_sources")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
+            "molecule_creation": trainer.model_info.get("molecule_creation")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
         }
 
         # Version info for format detection

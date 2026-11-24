@@ -158,12 +158,15 @@ class TestMiliaDataset:
         assert dataset.pre_transform_config is None
 
 
-def _predictor(data_info):
+def _predictor(data_info, **records):
+    """A predictor whose checkpoint records ``data_info`` and, by default, the other input
+    contract records of a heavy-atom run without QM inputs."""
+    records = {"explicit_hydrogens": False, "qm_input_features": [], **records}
     return Predictor(
         model=nn.Identity(),
         working_root_dir=".",
         device=torch.device("cpu"),
-        model_info={"data_info": data_info},
+        model_info={"data_info": {**records, **data_info}},
     )
 
 
@@ -178,13 +181,14 @@ class TestPredictor:
         (graph,) = _predictor({"input_transforms": None}).prepare_inputs([raw])
         assert torch.equal(graph.x, raw.x)
 
-    def test_a_checkpoint_without_the_record_warns_and_leaves_inputs_unchanged(self, caplog):
-        raw = convert_to_pyg("CCO", format="smiles")
+    def test_a_checkpoint_without_the_record_refuses_identifier_inputs(self):
+        """Not recorded is unknown, not "none": featurized inputs could differ from training."""
+        from milia_pipeline.exceptions import ConfigurationError
+
         predictor = _predictor({})
-        with caplog.at_level(logging.WARNING):
-            (graph,) = predictor.prepare_inputs([raw])
-        assert torch.equal(graph.x, raw.x) and not predictor.records_input_transforms
-        assert "does not record the pre-transforms" in caplog.text
+        assert not predictor.records_input_transforms
+        with pytest.raises(ConfigurationError, match="does not record input_transforms"):
+            predictor.prepare_inputs([convert_to_pyg("CCO", format="smiles")])
 
 
 def _train(tmp_path, dataset):
@@ -228,8 +232,11 @@ class TestTrainingToServing:
         dataset = _Processed(tmp_path / "data", instantiate_transforms(specs), specs)
         dataset.structural_features_config = None
         best = _train(tmp_path / "run", dataset)
-        record = load_checkpoint_file(best, map_location="cpu")["data_info"]["input_transforms"]
+        data_info = load_checkpoint_file(best, map_location="cpu")["data_info"]
+        record = data_info["input_transforms"]
         assert record == record_pre_transforms(dataset)
+        # the input contract's records: no QM input, no registered dataset type in this config
+        assert data_info["qm_input_sources"] == {} and data_info["molecule_creation"] is None
 
         package = package_checkpoint(best, tmp_path / "package")
         import json

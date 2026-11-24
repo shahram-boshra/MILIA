@@ -3478,7 +3478,11 @@ def handle_predict_mode(
             else:
                 raise ValueError(f"Could not determine number of graphs from slices: {slices}")
         else:
-            # File input (CSV, XYZ, SDF, etc.)
+            # File input (CSV, XYZ, SDF, etc.): molecules featurized here, which the model must
+            # accept (models/input_contract.py); refused before any molecule is featurized
+            from milia_pipeline.models.input_contract import IDENTIFIER
+
+            predictor.input_contract.require(IDENTIFIER)
             if test_path.suffix == ".csv":
                 import pandas as pd
 
@@ -4099,14 +4103,21 @@ def _run_standard_training(
         from milia_pipeline.molecules.featurization_record import graphs_have_explicit_hydrogens
 
         model_info["explicit_hydrogens"] = graphs_have_explicit_hydrogens(dataset)
-        # Input columns taken from the dataset's QM data (no identifier carries them)
-        from milia_pipeline.molecules.featurization_record import qm_input_features
+        # Input columns taken from the dataset's QM data (no identifier carries them), where
+        # each came from, and how the dataset built its molecules: the input contract
+        # (models/input_contract.py) is derived from these records
+        from milia_pipeline.molecules.featurization_record import (
+            molecule_creation_record,
+            qm_input_sources,
+        )
 
-        model_info["qm_input_features"] = qm_input_features(
+        model_info["qm_input_sources"] = qm_input_sources(
             model_info.get("structural_features_config"),
             dataset,
             (getattr(dataset, "data_config", None) or {}).get("node_features_to_add") or (),
         )
+        model_info["qm_input_features"] = list(model_info["qm_input_sources"])
+        model_info["molecule_creation"] = molecule_creation_record(config.get("dataset_type"))
         if model_info["input_transforms"]:
             logger.info(
                 f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"

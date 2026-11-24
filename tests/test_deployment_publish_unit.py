@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 import torch
+from checkpoint_records import IDENTIFIER_DATA_INFO
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.deployment import package as package_module
@@ -46,6 +47,7 @@ def checkpoint(tmp_path):
             "hyperparameters": info["hyperparameters_values"],
             "model_info": info,
         },
+        data_info=IDENTIFIER_DATA_INFO,
     )
 
 

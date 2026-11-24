@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from torch_geometric.data import Data
 
+from milia_pipeline.datasets import registry
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 from milia_pipeline.models.post_training import convert_sdf_to_pyg_list, convert_to_pyg
 from milia_pipeline.models.post_training.inference.predictor import Predictor
@@ -202,6 +203,25 @@ class TestQmInputFeatures:
         ]
         assert qm_input_features(None, [], ["Vesp"]) == ["x.Vesp"]
 
+    def test_each_qm_input_records_where_it_came_from(self, monkeypatch):
+        """Charges and per-atom properties only the dataset holds; bond geometry from the
+        given coordinates (a structure input carries those, never the charges)."""
+        from milia_pipeline.config import config_accessors
+        from milia_pipeline.molecules.featurization_record import qm_input_sources
+
+        monkeypatch.setattr(
+            config_accessors, "should_pass_atomic_charges_to_structural_features", lambda: True
+        )
+        monkeypatch.setattr(
+            config_accessors, "should_pass_coordinates_to_structural_features", lambda: True
+        )
+        assert qm_input_sources(QM_CONFIG, [Data(pos=torch.zeros(3, 3))], ["Vesp"]) == {
+            "atom.atomic_charge": "dataset_property",
+            "bond.bond_length": "coordinates",
+            "bond.bond_length_binned": "coordinates",
+            "x.Vesp": "dataset_property",
+        }
+
     def test_structure_only_features_are_not(self):
         from milia_pipeline.molecules.featurization_record import qm_input_features
 
@@ -216,14 +236,20 @@ def test_identifier_inputs_are_refused_for_a_qm_model():
         model=nn.Identity(),
         working_root_dir=".",
         device=torch.device("cpu"),
-        model_info={"data_info": {"qm_input_features": ["atom.atomic_charge"]}},
+        model_info={
+            "data_info": {
+                "qm_input_features": ["atom.atomic_charge"],
+                "explicit_hydrogens": True,
+                "input_transforms": None,
+            }
+        },
     )
-    with pytest.raises(ConfigurationError, match="Predict from a dataset of the same type"):
+    with pytest.raises(ConfigurationError, match="atom.atomic_charge from its dataset's QM data"):
         predictor.prepare_inputs([convert_to_pyg("CCO", format="smiles")])
 
 
 def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
-    from milia_pipeline.exceptions import ConfigurationError, DeploymentError
+    from milia_pipeline.exceptions import DeploymentError
     from milia_pipeline.models.deployment.deploy import _export_onnx
     from milia_pipeline.models.deployment.package import (
         MODEL_CARD,
@@ -250,7 +276,11 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
     checkpoint = CheckpointManager(working_root_dir=tmp_path).save(
         tmp_path / "checkpoints" / "best.pt",
         model,
-        data_info={"qm_input_features": ["atom.atomic_charge"], "explicit_hydrogens": True},
+        data_info={
+            "qm_input_features": ["atom.atomic_charge"],
+            "explicit_hydrogens": True,
+            "input_transforms": None,
+        },
         hyper_parameters={
             "model_name": "GCN",
             "task_type": "graph_regression",
@@ -261,13 +291,38 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
     package = package_checkpoint(checkpoint, tmp_path / "package")  # checksums verified
     inputs = json.loads((package / PACKAGE_MANIFEST).read_text())["signature"]["inputs"]
     assert inputs["qm_input_features"] == ["atom.atomic_charge"]
-    assert "QM inputs: `atom.atomic_charge` come from the training dataset's QM data" in (
-        (package / MODEL_CARD).read_text()
-    )
+    assert inputs["kinds"]["accepted"] == ["dataset"]
+    card = (package / MODEL_CARD).read_text()
+    assert "QM inputs: `atom.atomic_charge` come from the training dataset's QM data" in card
+    assert "The server does not start for this model" in card
     with pytest.raises(DeploymentError, match="ONNX export"):
         _export_onnx(package)
     pytest.importorskip("fastapi", reason="the `serve` extra is not installed")
     from milia_pipeline.models.deployment.serving import PackagedPredictor
 
-    with pytest.raises(ConfigurationError, match="QM data"):
+    with pytest.raises(DeploymentError, match="QM data"):
         PackagedPredictor.from_package(package)
+
+
+@pytest.mark.parametrize("dataset_type", sorted(registry.list_all()))
+def test_molecule_creation_is_recorded_for_every_registered_dataset(dataset_type):
+    """Read from the dataset class, so a dataset registered later is recorded the same way."""
+    from milia_pipeline.molecules.featurization_record import molecule_creation_record
+
+    dataset_class = registry.get(dataset_type)
+    record = molecule_creation_record(dataset_type)
+    assert record == {
+        "dataset_type": dataset_type,
+        "strategy": dataset_class.get_molecule_creation_strategy(),
+        "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
+        "coordinate_units": dataset_class.get_coordinate_units(),
+    }
+    assert record["strategy"] in ("identifier_coordinate_based", "coordinate_based")
+    json.dumps(record)
+
+
+def test_an_unregistered_dataset_has_no_molecule_creation_record():
+    from milia_pipeline.molecules.featurization_record import molecule_creation_record
+
+    assert molecule_creation_record("NOT_A_DATASET") is None
+    assert molecule_creation_record(None) is None

@@ -11,6 +11,7 @@ import pytest
 import torch
 import torch.nn as nn
 import yaml
+from checkpoint_records import IDENTIFIER_DATA_INFO
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool
@@ -233,6 +234,7 @@ class TestPrediction:
                 "hyperparameters": info["hyperparameters_values"],
                 "model_info": info,
             },
+            data_info=IDENTIFIER_DATA_INFO,
         )
         package = package_checkpoint(checkpoint, tmp_path / "package")
         assert json.loads((package / PACKAGE_MANIFEST).read_text())["target_scaler"] == scaler

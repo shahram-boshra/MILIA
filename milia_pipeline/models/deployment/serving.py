@@ -46,9 +46,10 @@ from typing import Any
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from milia_pipeline.exceptions import DeploymentError
+from milia_pipeline.exceptions import ConfigurationError, DeploymentError
 from milia_pipeline.models.deployment.drift import DriftMonitor, drift_settings
 from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
+from milia_pipeline.models.input_contract import IDENTIFIER
 
 __all__ = [
     "DEFAULT_PACKAGE_DIR",
@@ -58,6 +59,7 @@ __all__ = [
     "create_app",
     "default_base_image",
     "main",
+    "require_servable",
     "write_serving_dockerfile",
 ]
 
@@ -112,6 +114,12 @@ class PackagedPredictor:
         predictor = Predictor.from_checkpoint(
             checkpoint_path=checkpoint, working_root_dir=Path(package_dir), device=device
         )
+        # The app serves identifier inputs; a model that refuses them is not started
+        # (models/input_contract.py, read from the checkpoint, so older packages are checked too)
+        try:
+            predictor.input_contract.require(IDENTIFIER)
+        except ConfigurationError as exc:
+            raise DeploymentError(f"Cannot serve {package_dir}: {exc}") from exc
         packaged = cls(predictor, manifest)
         packaged.check_signature()
         # Requests compared with the training inputs (deployment/drift.py); after the signature
@@ -316,6 +324,30 @@ ENTRYPOINT ["python", "-m", "milia_pipeline.models.deployment.serving"]
 """
 
 
+def require_servable(package_dir: str | Path) -> None:
+    """Refuse a package whose model the server cannot serve (identifier inputs refused).
+
+    The contract is read from the package's checkpoint (``Predictor.input_contract``), as the
+    server reads it at start, so packages written before the contract are checked the same way.
+
+    Raises:
+        DeploymentError: The package is invalid, or the model refuses identifier inputs (the
+            reason names what to do instead).
+    """
+    from milia_pipeline.models.post_training.inference.predictor import Predictor
+
+    checkpoint, _ = verify_package(package_dir)
+    predictor = Predictor.from_checkpoint(
+        checkpoint_path=checkpoint, working_root_dir=Path(package_dir), device=torch.device("cpu")
+    )
+    try:
+        predictor.input_contract.require(IDENTIFIER)
+    except ConfigurationError as exc:
+        raise DeploymentError(
+            f"Cannot serve {package_dir}: {exc} Deploy it with the 'local' target instead."
+        ) from exc
+
+
 def default_base_image() -> str:
     """The published MILIA image of the version that writes the package (same code serves it)."""
     from milia_pipeline import __version__
@@ -336,10 +368,14 @@ def write_serving_dockerfile(
 
     Returns:
         The Dockerfile path.
+
+    Raises:
+        DeploymentError: The package is invalid, or its model does not accept the identifier
+            inputs the server takes (an image whose server would refuse to start is not written).
     """
     from milia_pipeline import __version__
 
-    verify_package(package_dir)
+    require_servable(package_dir)
     dockerfile = Path(package_dir) / "Dockerfile"
     dockerfile.write_text(
         _DOCKERFILE.format(

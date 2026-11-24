@@ -10,6 +10,7 @@ import time
 import pytest
 import torch
 import torch.nn as nn
+from checkpoint_records import IDENTIFIER_DATA_INFO
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool
@@ -223,6 +224,7 @@ class TestServing:
                 "hyperparameters": info["hyperparameters_values"],
                 "model_info": info,
             },
+            data_info=IDENTIFIER_DATA_INFO,
             **extra,
         )
         return package_checkpoint(checkpoint, tmp_path / "package")

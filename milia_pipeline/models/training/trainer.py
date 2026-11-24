@@ -2230,6 +2230,12 @@ class Trainer:
                     "qm_input_features": self.model_info.get("qm_input_features")
                     if self.model_info
                     else None,
+                    "qm_input_sources": self.model_info.get("qm_input_sources")
+                    if self.model_info
+                    else None,
+                    "molecule_creation": self.model_info.get("molecule_creation")
+                    if self.model_info
+                    else None,
                 }
 
             # =================================================================

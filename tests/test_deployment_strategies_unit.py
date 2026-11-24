@@ -45,6 +45,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # We import torch and nn for type annotations and mock creation
 import torch
 import torch.nn as nn
+from checkpoint_records import IDENTIFIER_DATA_INFO
 
 # Import the module under test
 import milia_pipeline.exceptions as milia_exceptions
@@ -127,6 +128,7 @@ def milia_checkpoint(tmp_path_factory):
             "hyperparameters": info["hyperparameters_values"],
             "model_info": info,
         },
+        data_info=IDENTIFIER_DATA_INFO,
     )
 
 

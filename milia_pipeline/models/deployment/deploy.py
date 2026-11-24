@@ -32,6 +32,7 @@ from milia_pipeline.models.deployment.package import (
 )
 from milia_pipeline.models.deployment.serving import write_serving_dockerfile
 from milia_pipeline.models.deployment.settings import DeploymentSettings
+from milia_pipeline.models.input_contract import IDENTIFIER
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +63,10 @@ def _export_onnx(package_dir: Path) -> None:
     predictor = Predictor.from_checkpoint(
         checkpoint_path=checkpoint, working_root_dir=package_dir, device=torch.device("cpu")
     )
-    if predictor.qm_input_features:
+    if not predictor.input_contract.accepts(IDENTIFIER):
         raise DeploymentError(
             "ONNX export traces the model on example molecules featurized from SMILES; this model "
-            f"takes features from its dataset's QM data ({', '.join(predictor.qm_input_features)}). "
+            f"does not accept identifier inputs ({predictor.input_contract.refused[IDENTIFIER]}). "
             "Disable models.deployment.onnx for it."
         )
     model, config = predictor.model.eval(), predictor.structural_features_config
@@ -126,10 +127,12 @@ def manifest_summary(manifest: dict[str, Any]) -> list[str]:
     metrics = manifest.get("metrics") or {}
     monitored = metrics.get("monitored") or {}
     names = outputs.get("names")
+    kinds = (inputs.get("kinds") or {}).get("accepted")
     return [
         f"Model: {manifest.get('model_name')} ({manifest.get('task_type')}), package "
         f"{manifest.get('format')}, written by MILIA {manifest.get('milia_version')}",
-        f"Input: SMILES, {inputs.get('node_features', 'unrecorded')} node features; "
+        f"Inputs: {', '.join(kinds) if kinds else 'not recorded'}; "
+        f"{inputs.get('node_features', 'unrecorded')} node features; "
         f"output: {outputs.get('count', 'unrecorded')} values"
         + (f" ({', '.join(names)})" if names else ""),
         f"Checkpoint epoch {metrics.get('epoch')}; "

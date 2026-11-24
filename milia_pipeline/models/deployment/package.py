@@ -11,11 +11,13 @@ A package is a directory holding:
 * ``model.pt``: the checkpoint reduced to what inference needs (model weights, recreation
   metadata, data compatibility and version information), with no optimizer, scheduler or
   training history;
-* ``deployment.json`` (format ``milia-deployment/2``): the MILIA version that wrote it, the model
+* ``deployment.json`` (format ``milia-deployment/3``): the MILIA version that wrote it, the model
   name and task type and the SHA-256 of ``model.pt``, plus
 
-  - ``signature``: the input (SMILES, featurized with the run's ``structural_features_config``
-    into ``node_features`` columns) and the outputs (count, names, task type);
+  - ``signature``: the inputs (the input kinds the model accepts and why others are refused,
+    ``models/input_contract.py``; identifiers are featurized with the run's
+    ``structural_features_config`` into ``node_features`` columns) and the outputs (count, names,
+    task type);
   - ``input_example``: up to five training molecules as SMILES;
   - ``metrics``: the checkpoint's epoch, its monitored metric, its validation metrics at that
     epoch, and its test metrics (when training tested this checkpoint);
@@ -30,13 +32,14 @@ trainer records (``milia_pipeline.models.training.run_info``). A checkpoint with
 it still packages; those fields are ``null`` and the card says "not recorded".
 
 :func:`package_checkpoint` verifies what it wrote: the package, loaded as the server loads it,
-must predict the input example as the source checkpoint does, or its files are removed.
+must predict the input example as the source checkpoint does, or its files are removed (for a
+model that accepts identifier inputs; the checksums are verified for every package).
 :func:`publish_package` writes each package to a new integer version folder
 (``<output_dir>/<model_name>/<N>/``) through a temporary sibling and a rename, so a version is
 either complete and verified or absent, and is never overwritten.
 
-:func:`load_package` checks the format (``milia-deployment/1`` packages still load) and the
-digest, then rebuilds the model with ``ModelLoader``. Every read uses
+:func:`load_package` checks the format (``milia-deployment/1`` and ``/2`` packages still load) and
+the digest, then rebuilds the model with ``ModelLoader``. Every read uses
 ``torch.load(weights_only=True)``.
 """
 
@@ -57,6 +60,7 @@ import torch.nn as nn
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
+from milia_pipeline.models.input_contract import IDENTIFIER, InputContract
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +82,8 @@ __all__ = [
     "verify_package",
 ]
 
-PACKAGE_FORMAT = "milia-deployment/2"
-SUPPORTED_FORMATS = ("milia-deployment/1", PACKAGE_FORMAT)
+PACKAGE_FORMAT = "milia-deployment/3"  # 3: signature.inputs.kinds (the input contract)
+SUPPORTED_FORMATS = ("milia-deployment/1", "milia-deployment/2", PACKAGE_FORMAT)
 PACKAGE_MANIFEST = "deployment.json"
 PACKAGE_CHECKPOINT = "model.pt"
 MODEL_CARD = "MODEL_CARD.md"
@@ -118,10 +122,10 @@ def package_checkpoint(
         checkpoint_path: A checkpoint written by MILIA's trainer (for example
             ``{working_root_dir}/checkpoints/best.pt``).
         save_path: Directory to create the package in.
-        verify: Reload the written package, predict its input example (``"CCO"`` when none is
-            recorded) and compare with the model built from ``checkpoint_path``
-            (``rtol``/``atol``, as :func:`~.onnx_export.export_onnx`). A mismatch removes the
-            files this call wrote and raises.
+        verify: For a model that accepts identifier inputs, reload the written package, predict
+            its input example (``"CCO"`` when none is recorded) and compare with the model built
+            from ``checkpoint_path`` (``rtol``/``atol``, as :func:`~.onnx_export.export_onnx`). A
+            mismatch removes the files this call wrote and raises.
 
     Returns:
         The package directory.
@@ -157,6 +161,7 @@ def package_checkpoint(
 
     from milia_pipeline import __version__
 
+    contract = _input_contract(source)
     package = Path(save_path).expanduser()
     package.mkdir(parents=True, exist_ok=True)
     target = package / PACKAGE_CHECKPOINT
@@ -172,7 +177,7 @@ def package_checkpoint(
         "model_name": hyper_parameters["model_name"],
         "task_type": hyper_parameters["task_type"],
         "checkpoint_format_version": version_info.get("checkpoint_format_version"),
-        "signature": _signature(checkpoint, run_info),
+        "signature": _signature(checkpoint, run_info, contract),
         "input_example": list(run_info.get("input_example") or []),
         "metrics": _metrics(checkpoint),
         "calibration": checkpoint.get("calibration"),
@@ -193,9 +198,9 @@ def package_checkpoint(
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
     (package / MODEL_CARD).write_text(model_card(manifest))
-    # A model with features from its dataset's QM data cannot featurize identifiers, so its
-    # reproduction cannot be checked on them; the package's checksums are still verified.
-    if verify and not manifest["signature"]["inputs"]["qm_input_features"]:
+    # Reproduction is checked on identifier inputs; a model that refuses them (QM inputs,
+    # positions, records missing) is checked by its checksums only.
+    if verify and contract.accepts(IDENTIFIER):
         try:
             _check_reproduces(source, package, manifest["input_example"], rtol=rtol, atol=atol)
         except DeploymentError:
@@ -206,6 +211,21 @@ def package_checkpoint(
 
 
 _FALLBACK_EXAMPLE = ("CCO",)
+
+
+def _input_contract(checkpoint: Path) -> InputContract:
+    """The input contract of the model a checkpoint rebuilds (``models/input_contract.py``)."""
+    from milia_pipeline.models.post_training.inference.predictor import Predictor
+
+    try:
+        predictor = Predictor.from_checkpoint(
+            checkpoint_path=checkpoint,
+            working_root_dir=checkpoint.parent,
+            device=torch.device("cpu"),
+        )
+    except Exception as exc:
+        raise DeploymentError(f"Cannot rebuild the model of {checkpoint}: {exc}") from exc
+    return predictor.input_contract
 
 
 def _predictions(checkpoint: Path, smiles: list[str]) -> torch.Tensor:
@@ -327,8 +347,10 @@ def _json(value: Any) -> Any:
     return str(value)
 
 
-def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str, Any]:
-    """What the model takes and returns, from the checkpoint and its ``run_info``."""
+def _signature(
+    checkpoint: dict[str, Any], run_info: dict[str, Any], contract: InputContract
+) -> dict[str, Any]:
+    """What the model takes and returns, from the checkpoint, its ``run_info`` and contract."""
     hyper_parameters = checkpoint.get("hyper_parameters") or {}
     values = hyper_parameters.get("hyperparameters") or {}
     model_info = hyper_parameters.get("model_info") or {}
@@ -336,7 +358,9 @@ def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str
     targets = run_info.get("targets") or {}
     return {
         "inputs": {
-            "type": "smiles",
+            # Accepted input kinds, and the reason each other kind is refused
+            "kinds": contract.to_dict(),
+            # Identifier inputs: SMILES strings up to this length (the serving app's limit)
             "max_length": MAX_SMILES_LENGTH,
             "featurization": data_info.get("structural_features_config") or None,
             "node_features": values.get("in_channels"),
@@ -350,8 +374,11 @@ def _signature(checkpoint: dict[str, Any], run_info: dict[str, Any]) -> dict[str
             # Hydrogens as nodes in the training graphs, added to featurized molecules
             # (molecules/featurization_record.py); None: not recorded
             "explicit_hydrogens": data_info.get("explicit_hydrogens"),
-            # Features from the dataset's QM data: the model takes no identifier inputs
+            # Features from the dataset's QM data, and where each came from
             "qm_input_features": list(data_info.get("qm_input_features") or []),
+            "qm_input_sources": data_info.get("qm_input_sources"),
+            # How the training dataset built each molecule (what a structure input must match)
+            "molecule_creation": data_info.get("molecule_creation"),
         },
         "outputs": {
             "count": model_info.get("out_channels", values.get("out_channels")),
@@ -469,11 +496,20 @@ def _target_scaling_line(scaler: dict[str, Any] | None) -> str:
 def _qm_line(features: list[str] | None) -> str:
     if not features:
         return "none (every feature is computed from the molecule's identifier)"
-    return (
-        f"{_show(features)} come from the training dataset's QM data: predict from a dataset of "
-        "the same type (`milia --predict --test-path <dataset directory>`); SMILES, InChI and "
-        "structure files are refused, so the server does not start for this model"
-    )
+    return f"{_show(features)} come from the training dataset's QM data"
+
+
+def _kinds_lines(kinds: dict[str, Any] | None) -> list[str]:
+    if not kinds:
+        return ["- Accepted inputs: not recorded (a package written before the input contract)."]
+    lines = [f"- Accepted inputs: {_show(kinds.get('accepted'))}"]
+    lines += [
+        f"- Refused `{kind}` inputs: {reason}"
+        for kind, reason in (kinds.get("refused") or {}).items()
+    ]
+    if "identifier" not in (kinds.get("accepted") or []):
+        lines.append("- The server does not start for this model: it serves identifier inputs.")
+    return lines
 
 
 def _hydrogens_line(explicit: bool | None) -> str:
@@ -530,8 +566,10 @@ def model_card(manifest: dict[str, Any]) -> str:
         "",
         "## Inputs and outputs",
         "",
-        f"- Input: a SMILES string per molecule, at most {inputs.get('max_length')} characters. "
-        f"MILIA featurizes it into {_show(inputs.get('node_features'))} node features with "
+        *_kinds_lines(inputs.get("kinds")),
+        f"- Identifier input: a SMILES string per molecule, at most {inputs.get('max_length')} "
+        f"characters. MILIA featurizes it into {_show(inputs.get('node_features'))} node features "
+        "with "
         + (
             f"the training run's settings (atom: {_show(featurization.get('atom'))}; "
             f"bond: {_show(featurization.get('bond'))})."
@@ -576,8 +614,8 @@ def model_card(manifest: dict[str, Any]) -> str:
         "",
         "- Predictions are only as reliable as the molecule is similar to the training data; "
         "this package does not assess a molecule's applicability domain.",
-        "- The input is a SMILES string: properties that depend on a 3D conformation are "
-        "predicted from the 2D graph MILIA builds from it.",
+        "- An identifier input is a molecular graph: properties that depend on a 3D conformation "
+        "are predicted from the 2D graph MILIA builds from it.",
         "",
         "## Reproducibility",
         "",

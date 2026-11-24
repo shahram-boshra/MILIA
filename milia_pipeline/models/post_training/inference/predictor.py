@@ -26,6 +26,12 @@ from torch_geometric.loader import DataLoader
 
 from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.capabilities import attached_capabilities
+from milia_pipeline.models.input_contract import (
+    IDENTIFIER,
+    InputContract,
+    input_contract,
+    model_requires_positions,
+)
 from milia_pipeline.models.training.module_utils import unwrap_compiled
 from milia_pipeline.models.training.target_scaling import unscale_outputs, unscale_spread
 
@@ -112,6 +118,7 @@ class Predictor:
         # The rebuilt training pre-transform (prepare_inputs), built on first use
         self._input_transform: Any = None
         self._input_transform_loaded = False
+        self._input_contract: InputContract | None = None
 
         # Ensure model is on correct device and in eval mode
         self.model.to(self.device)
@@ -170,6 +177,16 @@ class Predictor:
         return list((self.model_info.get("data_info") or {}).get("qm_input_features") or [])
 
     @property
+    def input_contract(self) -> InputContract:
+        """The input kinds the model accepts (``models/input_contract.py``), from its checkpoint."""
+        if self._input_contract is None:
+            self._input_contract = input_contract(
+                self.model_info.get("data_info"),
+                requires_positions=model_requires_positions(self.model),
+            )
+        return self._input_contract
+
+    @property
     def records_input_transforms(self) -> bool:
         """Whether the checkpoint says which pre-transforms its training graphs went through."""
         return "input_transforms" in (self.model_info.get("data_info") or {})
@@ -182,33 +199,13 @@ class Predictor:
         such graph before predicting, and never on graphs taken from a processed dataset (they
         already carry the transforms).
 
-        A checkpoint written before MILIA recorded the pre-transforms returns the graphs
-        unchanged, with a warning: it cannot say what its training graphs went through.
-
         Raises:
-            ConfigurationError: The model took features from its dataset's QM data
-                (``qm_input_features``), which no molecule identifier carries; or the recorded
+            ConfigurationError: The model does not accept identifier inputs
+                (:attr:`input_contract`: QM inputs from its dataset, atomic positions, or a
+                checkpoint without the records featurization must reproduce); or the recorded
                 pipeline cannot be rebuilt (``load_input_transform``).
         """
-        if self.qm_input_features:
-            from milia_pipeline.exceptions import ConfigurationError
-
-            raise ConfigurationError(
-                f"This model was trained on features from its dataset's QM data "
-                f"({', '.join(self.qm_input_features)}): a SMILES, InChI or structure file does not "
-                "carry them, so its predictions would rest on inputs it never saw. Predict from a "
-                "dataset of the same type (milia --predict --test-path <dataset directory>), whose "
-                "processing keeps the QM geometry and charges as they are."
-            )
-        if not self.records_input_transforms:
-            if not self._input_transform_loaded:
-                logger.warning(
-                    "The checkpoint does not record the pre-transforms of its training data "
-                    "(written before MILIA recorded them); raw inputs are used as featurized. "
-                    "Retrain to record them."
-                )
-                self._input_transform_loaded = True
-            return list(graphs)
+        self.input_contract.require(IDENTIFIER)
         if not self._input_transform_loaded:
             from milia_pipeline.transformations.pre_transform_record import load_input_transform
 

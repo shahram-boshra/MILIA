@@ -12,6 +12,7 @@ import time
 import pytest
 import requests
 import torch
+from checkpoint_records import IDENTIFIER_DATA_INFO
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.deployment.package import PACKAGE_CHECKPOINT, package_checkpoint
@@ -55,6 +56,7 @@ def package(tmp_path_factory):
             "hyperparameters": info["hyperparameters_values"],
             "model_info": info,
         },
+        data_info=IDENTIFIER_DATA_INFO,
     )
     return package_checkpoint(checkpoint, root / "package")
 

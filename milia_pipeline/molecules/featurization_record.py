@@ -1,10 +1,12 @@
 """What inference must reproduce of the training graphs' molecular representation.
 
-Two records, both in ``data_info``: ``explicit_hydrogens`` (below) and ``qm_input_features``,
-the input columns whose training values came from the dataset's QM data (its atomic charges,
-bond lengths of the QM-optimized geometry, per-atom properties added to ``x``). No identifier (SMILES, InChI) carries those
-values, so inference refuses to featurize identifiers for such a model
-(``Predictor.prepare_inputs``): it is predicted from a dataset of the same type
+Records in ``data_info``: ``explicit_hydrogens`` (below); ``qm_input_features``, the input columns
+whose training values came from the dataset's QM data (its atomic charges, bond lengths of the
+QM-optimized geometry, per-atom properties added to ``x``), and ``qm_input_sources``, where each of
+those values came from (``dataset_property``: a per-atom value only the dataset holds;
+``coordinates``: the given geometry); ``molecule_creation``, how the dataset built each molecule.
+No identifier (SMILES, InChI) carries QM values, so inference refuses identifiers for such a model
+(``models/input_contract.py``): it is predicted from a dataset of the same type
 (``milia --predict --test-path <dataset directory>``), whose processing keeps the QM geometry and
 charges as they are.
 
@@ -24,9 +26,16 @@ from typing import Any
 
 __all__ = [
     "SAMPLE_GRAPHS",
+    "SOURCE_COORDINATES",
+    "SOURCE_DATASET_PROPERTY",
     "graphs_have_explicit_hydrogens",
+    "molecule_creation_record",
     "qm_input_features",
+    "qm_input_sources",
 ]
+
+SOURCE_DATASET_PROPERTY = "dataset_property"  # a per-atom value only the dataset holds
+SOURCE_COORDINATES = "coordinates"  # computed from the dataset's given geometry
 
 SAMPLE_GRAPHS = 1000  # graphs inspected; a dataset either keeps hydrogens or does not
 
@@ -36,7 +45,16 @@ def qm_input_features(
     graphs: Iterable[Any] = (),
     node_features: Iterable[str] = (),
 ) -> list[str]:
-    """The input columns a training run took from its dataset's QM data.
+    """The input columns a training run took from its dataset's QM data (``qm_input_sources``)."""
+    return list(qm_input_sources(structural_features_config, graphs, node_features))
+
+
+def qm_input_sources(
+    structural_features_config: dict[str, Any] | None,
+    graphs: Iterable[Any] = (),
+    node_features: Iterable[str] = (),
+) -> dict[str, str]:
+    """The input columns a training run took from its dataset's QM data, and their source.
 
     Per-atom properties appended to ``x`` (``node_features``, the dataset's
     ``node_features_to_add``) are dataset values by definition and are recorded as
@@ -52,11 +70,15 @@ def qm_input_features(
     geometric features from a generated conformer, as inference does.
 
     Returns:
-        The catalog names (``atom.<feature>`` / ``bond.<feature>``; a deprecated configured name
-        is recorded under its catalog name), in configuration order, then ``x.<property>``;
-        empty when every input column can be computed from a molecule's identifier.
+        Catalog name (``atom.<feature>`` / ``bond.<feature>``; a deprecated configured name is
+        recorded under its catalog name) → source, in configuration order, then
+        ``x.<property>`` → ``dataset_property``. A feature reading the dataset's atomic charges
+        has source ``dataset_property``; one reading only its coordinates, ``coordinates``. Empty
+        when every input column can be computed from a molecule's identifier.
     """
-    dataset_columns = [f"x.{name}" for name in dict.fromkeys(node_features or ())]
+    dataset_columns = {
+        f"x.{name}": SOURCE_DATASET_PROPERTY for name in dict.fromkeys(node_features or ())
+    }
     if not structural_features_config:
         return dataset_columns
     from milia_pipeline.config.config_accessors import (
@@ -80,16 +102,46 @@ def qm_input_features(
     if not supplied:
         return dataset_columns
 
-    names: list[str] = []
+    sources: dict[str, str] = {}
     for level in ("atom", "bond"):
         for configured in structural_features_config.get(level) or []:
             name = DEPRECATED_FEATURE_NAMES[level].get(configured, configured)
             feature = get_structural_feature(level, name)
-            if feature is None or not feature.reads & supplied:
-                continue
-            if f"{level}.{name}" not in names:
-                names.append(f"{level}.{name}")
-    return names + dataset_columns
+            reads = feature.reads & supplied if feature is not None else set()
+            if reads and f"{level}.{name}" not in sources:
+                sources[f"{level}.{name}"] = (
+                    SOURCE_DATASET_PROPERTY if READS_ATOMIC_CHARGES in reads else SOURCE_COORDINATES
+                )
+    return {**sources, **dataset_columns}
+
+
+def molecule_creation_record(dataset_type: str | None) -> dict[str, Any] | None:
+    """How the training dataset built each molecule, from its registered dataset class.
+
+    ``strategy``: ``identifier_coordinate_based`` (bonds from the identifier, the given
+    coordinates assigned through the atom mapping) or ``coordinate_based`` (bonds determined from
+    the given coordinates); ``identifier_keys``: the ``(key, type)`` pairs it reads in priority
+    order; ``coordinate_units``: the units of its coordinates. A structure input must be built the
+    same way to match the training graphs.
+
+    Returns:
+        The record, or ``None`` when no dataset class is registered under ``dataset_type``.
+    """
+    if not dataset_type:
+        return None
+    from milia_pipeline.datasets import registry
+    from milia_pipeline.exceptions import DatasetNotFoundError
+
+    try:
+        dataset_class = registry.get(dataset_type)
+    except DatasetNotFoundError:
+        return None
+    return {
+        "dataset_type": dataset_type,
+        "strategy": dataset_class.get_molecule_creation_strategy(),
+        "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
+        "coordinate_units": dataset_class.get_coordinate_units(),
+    }
 
 
 def graphs_have_explicit_hydrogens(graphs: Iterable[Any]) -> bool | None:

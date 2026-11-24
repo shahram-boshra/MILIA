@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Input contract: training records how the dataset built each molecule (`data_info.molecule_creation`: creation
+  strategy, identifier keys, coordinate units) and where each QM input came from (`data_info.qm_input_sources`:
+  `dataset_property` or `coordinates`). The input kinds a model accepts — `identifier`, `structure`, `dataset` — are
+  derived from these records and the model's capabilities (`milia_pipeline.models.input_contract`), recorded in the
+  package signature (`signature.inputs.kinds`, package format `milia-deployment/3`; formats 1 and 2 still load) and
+  the model card, and enforced wherever a model meets raw inputs.
+
 - Per-atom targets from the configuration: `data_config.property_selection.<dataset>.node_targets_to_include` stores
   the listed per-atom properties in `node_y` (a per-atom scalar is one column, a per-atom vector such as `forces`
   is three: `forces[0]` … `forces[2]`, named in `node_y_property_names`), never in `x`. Node tasks read them with
@@ -109,6 +116,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   renamed, so a version is complete and verified or absent and is never overwritten.
 
 ### Changed
+
+- Identifier inputs (SMILES, InChI, structure files) are refused, with the reason and the accepted kinds, for a model
+  that reads atomic positions (they reached SchNet-type models as float features in place of atomic numbers) and for
+  a checkpoint that does not record what identifier featurization must reproduce (`explicit_hydrogens`,
+  `qm_input_features`, `input_transforms`): such a checkpoint was served as if the answer were "none" (no hydrogens,
+  no QM inputs, no pre-transform). It is predicted from a dataset of the same type; retrain to serve identifiers.
+  For a model that refuses identifiers the server does not start, the `aws`, `gcp`, `azure` and `container` targets
+  publish nothing (no serving image; use `local`), ONNX export is refused, packaging verifies checksums only, and
+  `milia --predict` refuses raw input files before featurizing them.
 
 - Graph-level properties are built by one set of steps for every dataset. `DatasetHandler.enrich_pyg_data` is
   concrete, and a handler that overrides it fails when its class is created; handlers take part through

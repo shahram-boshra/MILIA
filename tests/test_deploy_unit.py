@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 import torch
+from checkpoint_records import IDENTIFIER_DATA_INFO
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.deployment import deploy as deploy_module
@@ -43,6 +44,7 @@ def checkpoint(tmp_path):
             "hyperparameters": info["hyperparameters_values"],
             "model_info": info,
         },
+        data_info=IDENTIFIER_DATA_INFO,
     )
 
 
@@ -114,7 +116,8 @@ def test_onnx_export_is_part_of_the_version(checkpoint, tmp_path):
 def test_manifest_summary_names_model_io_and_metrics(checkpoint, tmp_path):
     result = deploy(checkpoint, _settings(target="local", output_dir="out"), tmp_path)
     lines = manifest_summary(result.manifest)
-    assert lines[0].startswith("Model: GCN (graph_regression), package milia-deployment/2")
+    assert lines[0].startswith("Model: GCN (graph_regression), package milia-deployment/3")
+    assert lines[1].startswith("Inputs: identifier, dataset;")
     assert "output: 2 values" in lines[1]
     assert "monitored metric not recorded" in lines[2]
 
