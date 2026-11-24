@@ -808,9 +808,9 @@ def enrich_pyg_data_from_handler(
     """
     Enriches a PyG Data object with dataset-specific metadata via the handler protocol.
 
-    Delegates to handler.enrich_pyg_data() (DatasetHandlerProtocol method #5),
-    which each handler implements with its own dataset-specific enrichment logic
-    (e.g., uncertainty fields, compound IDs, scalar targets, vibrational data).
+    Delegates to handler.enrich_pyg_data() (DatasetHandlerProtocol method #5): the same
+    shared graph-property steps for every dataset (DatasetHandler), with the handler's hooks
+    for dataset-specific values (e.g. DFT vibrational refinement, DMC uncertainty).
 
     This function is fully dynamic — it works with any dataset type without
     modification. All dataset-specific logic lives in the handler implementation.
@@ -858,7 +858,7 @@ def enrich_pyg_data_from_handler(
 
     try:
         # Delegate to handler.enrich_pyg_data() — DatasetHandlerProtocol method #5
-        # Each handler implements its own dataset-specific enrichment logic
+        # (shared steps for every dataset; handlers contribute through hooks)
         enriched_pyg_data = handler.enrich_pyg_data(
             pyg_data, raw_data_dict, molecule_index, identifier_str
         )

@@ -174,6 +174,12 @@ class TestMoleculeDataConverterInitialization(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -370,6 +376,12 @@ class TestMoleculeDataConverterHandlers(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -506,6 +518,12 @@ class TestMoleculeDataConverterTransformationSystem(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
         self.transform_config = Mock(spec=TransformationConfig)
         mock_setup = Mock(spec=ExperimentalSetup)
@@ -725,6 +743,12 @@ class TestMoleculeDataConverterValidation(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
         self.processing_config.enable_validation = True
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
@@ -969,6 +993,12 @@ class TestMoleculeDataConverterDiagnostics(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1108,6 +1138,12 @@ class TestMoleculeDataConverterDatasetTypes(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1286,6 +1322,12 @@ class TestMoleculeDataConverterCaching(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
         self.processing_config.enable_caching = True
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
@@ -1662,6 +1704,12 @@ class TestPhase6RegistryIntegrationStatus(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -1820,6 +1868,12 @@ class TestPhase6RefactoredMethods(unittest.TestCase):
         # No per-atom inputs or targets (node_features_to_add, node_targets_to_include)
         self.processing_config.node_features = []
         self.processing_config.node_targets = []
+        # No graph-level properties (scalar targets, vectors, variable-length, atomization)
+        self.processing_config.scalar_graph_targets = []
+        self.processing_config.vector_graph_properties = []
+        self.processing_config.variable_len_graph_properties = []
+        self.processing_config.calculate_atomization_energy_from = None
+        self.processing_config.atomization_energy_key_name = None
 
     @patch("milia_pipeline.molecules.molecule_converter_core.HANDLERS_AVAILABLE", True)
     @patch("milia_pipeline.molecules.molecule_converter_core.create_dataset_handler")
@@ -2101,6 +2155,11 @@ class TestPerAtomPropertiesStep(unittest.TestCase):
         processing_config = Mock(spec=ProcessingConfig)
         processing_config.node_features = list(node_features)
         processing_config.node_targets = list(node_targets)
+        processing_config.scalar_graph_targets = []
+        processing_config.vector_graph_properties = []
+        processing_config.variable_len_graph_properties = []
+        processing_config.calculate_atomization_energy_from = None
+        processing_config.atomization_energy_key_name = None
         with patch(
             "milia_pipeline.molecules.molecule_converter_core.validate_node_property_selection"
         ):

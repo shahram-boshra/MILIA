@@ -194,6 +194,13 @@ property_availability:
       - bond_tag        # element-pair tag, e.g. "CC" (string; NOT tensor-convertible)
       - bond_lmod_ka    # local mode stretching force constant (mDyn/Angstrom, float)
 
+    # Shapes of the graph-level properties (null: varies between molecules); a property
+    # without one takes the first molecule's shape, and every molecule must match it
+    shapes:
+      bond_atom1_idx: [null]
+      bond_atom2_idx: [null]
+      bond_lmod_ka: [null]
+
     # Metadata fields (1 key)
     metadata_fields:
       - metadata        # Dataset metadata (object array; written by build_npz)

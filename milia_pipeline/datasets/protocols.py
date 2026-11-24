@@ -52,7 +52,7 @@ class DatasetHandlerProtocol(Protocol):
         molecule_index: int,
         identifier: str = "N/A",
     ) -> Data:
-        """Add dataset-specific enrichments to PyG Data object."""
+        """Attach the configured graph-level properties (DatasetHandler: one implementation for all)."""
         ...
 
     def get_processing_statistics(

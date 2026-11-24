@@ -47,7 +47,6 @@ from milia_pipeline.exceptions import (
     HandlerConfigurationError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.dmc import DMCDatasetHandler
 
@@ -765,186 +764,11 @@ class TestIsValidProperty(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 11: _add_scalar_targets_internal (9 tests)
+# GROUP 13: add_dataset_extras — uncertainty metadata (8 tests)
 # ============================================================================
 
 
-class TestAddScalarTargetsInternal(unittest.TestCase):
-    """Test DMC scalar target addition to PyG data."""
-
-    def test_no_targets_configured_noop(self):
-        """No scalar_graph_targets means no-op."""
-        pc = _make_processing_config(scalar_graph_targets=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        handler._add_scalar_targets_internal(data, _make_raw_properties(), 0, "test")
-        self.assertFalse(hasattr(data, "y") and data.y is not None)
-
-    def test_single_scalar_target(self):
-        """Single scalar target is correctly added as tensor."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=-76.4)
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertIsNotNone(data.y)
-        self.assertEqual(data.y.shape[0], 1)
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_numpy_scalar_target(self):
-        """Numpy scalar (ndarray size 1) is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=np.array(-76.4))
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_string_convertible_scalar(self):
-        """String-convertible scalar (e.g., '-76.4') is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot="-76.4")
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_list_single_element_scalar(self):
-        """Single-element list [val] is handled as scalar."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=[-76.4])
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_missing_target_raises_property_enrichment_error(self):
-        """Missing required scalar target raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["nonexistent_prop"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_multi_element_array_raises(self):
-        """Multi-element array raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=np.array([-76.4, -75.0]))
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_nan_value_raises_property_enrichment_error(self):
-        """NaN scalar target raises PropertyEnrichmentError after conversion."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=float("nan"))
-        with self.assertRaises((PropertyEnrichmentError, HandlerValidationError)):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_unsupported_type_raises_property_enrichment_error(self):
-        """Unsupported type for scalar target raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot={"value": -76.4})
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-
-# ============================================================================
-# GROUP 12: enrich_pyg_data (8 tests)
-# ============================================================================
-
-
-class TestEnrichPygData(unittest.TestCase):
-    """Test DMC PyG data enrichment orchestration."""
-
-    def test_sets_dataset_type(self):
-        """Enrichment sets dataset_type = 'DMC' on PyG data."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertEqual(result.dataset_type, "DMC")
-
-    def test_returns_data_object(self):
-        """Enrichment returns the Data object."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-        self.assertIsInstance(result, Data)
-
-    def test_calls_scalar_targets(self):
-        """Enrichment calls _add_scalar_targets_internal."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_scalar_targets_internal") as mock_scalar:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_scalar.assert_called_once()
-
-    def test_calls_uncertainty_when_enabled(self):
-        """Enrichment calls _add_uncertainty_metadata_internal when uncertainty enabled."""
-        uc = _make_uncertainty_config()
-        dc = _make_dataset_config(is_uncertainty_enabled=True, uncertainty_config=uc)
-        handler = _make_handler(dataset_config=dc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_uncertainty_metadata_internal") as mock_unc:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_unc.assert_called_once()
-
-    def test_no_uncertainty_call_when_disabled(self):
-        """Enrichment does NOT call uncertainty processing when disabled."""
-        dc = _make_dataset_config(is_uncertainty_enabled=False, uncertainty_config=None)
-        handler = _make_handler(dataset_config=dc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_uncertainty_metadata_internal") as mock_unc:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_unc.assert_not_called()
-
-    def test_zero_nodes_raises_dmc_handler_error(self):
-        """Zero-node PyG data raises DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = Data()
-        data.z = None
-        data.num_nodes = 0
-        with self.assertRaises(DatasetSpecificHandlerError):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-
-    def test_enrichment_error_raises_dmc_handler_error(self):
-        """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with (
-            patch.object(
-                handler,
-                "_add_scalar_targets_internal",
-                side_effect=RuntimeError("unexpected"),
-            ),
-            self.assertRaises(DatasetSpecificHandlerError),
-        ):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-
-    def test_sets_num_nodes_from_z(self):
-        """Enrichment sets num_nodes from z tensor when not already set."""
-        handler = _make_handler()
-        data = Data()
-        data.z = torch.tensor([6, 1, 1], dtype=torch.long)
-        data.num_nodes = 0  # Not set
-        props = _make_raw_properties()
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertEqual(result.num_nodes, 3)
-
-
-# ============================================================================
-# GROUP 13: _add_uncertainty_metadata_internal (8 tests)
-# ============================================================================
-
-
-class TestAddUncertaintyMetadataInternal(unittest.TestCase):
+class TestAddDatasetExtrasUncertainty(unittest.TestCase):
     """Test DMC uncertainty metadata addition to PyG data."""
 
     @patch(
@@ -957,7 +781,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler = _make_handler(dataset_config=dc)
         data = _make_pyg_data()
         props = _make_raw_properties(std=0.001)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         self.assertTrue(hasattr(data, "uncertainty"))
         self.assertAlmostEqual(data.uncertainty[0].item(), 0.001, places=6)
 
@@ -971,7 +795,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler = _make_handler(dataset_config=dc)
         data = _make_pyg_data()
         props = _make_raw_properties(std=0.001)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         self.assertTrue(hasattr(data, "uncertainty_weight"))
         # weight = 1.0 / (0.001**2 + 1e-8) ≈ 1000000
         expected_weight = 1.0 / (0.001**2 + 1e-8)
@@ -987,7 +811,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler = _make_handler(dataset_config=dc)
         data = _make_pyg_data()
         props = _make_raw_properties(std=0.001)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         self.assertAlmostEqual(data.uncertainty_weight[0].item(), 1.0, places=4)
 
     @patch(
@@ -1001,7 +825,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         data = _make_pyg_data()
         data.y = torch.tensor([-76.4], dtype=torch.float32)
         props = _make_raw_properties(std=10.0)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         self.assertTrue(hasattr(data, "relative_uncertainty"))
         expected = abs(10.0 / -76.4)
         self.assertAlmostEqual(data.relative_uncertainty[0].item(), expected, places=4)
@@ -1017,7 +841,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         data = _make_pyg_data()
         data.y = torch.tensor([-76.4], dtype=torch.float32)
         props = _make_raw_properties(std=10.0)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         # relative_uncertainty = 10.0/76.4 ≈ 0.131 > 0.1
         self.assertTrue(hasattr(data, "high_uncertainty"))
         self.assertTrue(data.high_uncertainty[0].item())
@@ -1033,7 +857,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         data = _make_pyg_data()
         data.y = torch.tensor([-76.4], dtype=torch.float32)
         props = _make_raw_properties(std=0.001)
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         # relative_uncertainty = 0.001/76.4 ≈ 0.000013 < 0.1
         self.assertTrue(hasattr(data, "high_uncertainty"))
         self.assertFalse(data.high_uncertainty[0].item())
@@ -1046,7 +870,7 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         data = _make_pyg_data()
         props = _make_raw_properties()  # No 'std' key
         # Should not raise - logs warning
-        handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+        handler.add_dataset_extras(data, props, 0, "test")
         self.assertFalse(hasattr(data, "uncertainty"))
 
     @patch(
@@ -1060,9 +884,9 @@ class TestAddUncertaintyMetadataInternal(unittest.TestCase):
         handler = _make_handler(dataset_config=dc)
         data = _make_pyg_data()
         props = _make_raw_properties(std=-0.001)
-        # Should not raise per _add_uncertainty_metadata_internal try/except
+        # Should not raise per add_dataset_extras try/except
         with self.assertLogs("test.dmc", level="WARNING"):
-            handler._add_uncertainty_metadata_internal(data, props, 0, "test")
+            handler.add_dataset_extras(data, props, 0, "test")
 
 
 # ============================================================================
@@ -1383,26 +1207,6 @@ class TestEdgeCasesAndIntegration(unittest.TestCase):
         handler = _make_handler(processing_config=pc)
         self.assertEqual(handler.get_dataset_type(), "DMC")
 
-    def test_enrichment_with_scalar_targets(self):
-        """Full enrichment with scalar properties."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3)
-        props = _make_raw_properties(Etot=-76.4)
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertTrue(hasattr(result, "y"))
-
-    def test_multiple_enrichments_independent(self):
-        """Multiple enrichment calls on separate data objects are independent."""
-        handler = _make_handler()
-        data1 = _make_pyg_data()
-        data2 = _make_pyg_data()
-        props1 = _make_raw_properties(Etot=-76.4)
-        props2 = _make_raw_properties(Etot=-80.0)
-        result1 = handler.enrich_pyg_data(data1, props1, 0, "test1")
-        result2 = handler.enrich_pyg_data(data2, props2, 1, "test2")
-        self.assertNotEqual(result1.y[0].item(), result2.y[0].item())
-
     def test_molecule_processing_error_converted_to_dmc_handler_error(self):
         """MoleculeProcessingError in validate_molecule_data wraps to DatasetSpecificHandlerError."""
         handler = _make_handler()
@@ -1456,9 +1260,7 @@ def run_comprehensive_suite():
         TestGetSupportedDescriptors,  # GROUP 8:    4 tests
         TestGetSupportedStructuralFeatures,  # GROUP 9:    5 tests
         TestIsValidProperty,  # GROUP 10:   9 tests
-        TestAddScalarTargetsInternal,  # GROUP 11:   9 tests
-        TestEnrichPygData,  # GROUP 12:   8 tests
-        TestAddUncertaintyMetadataInternal,  # GROUP 13:   8 tests
+        TestAddDatasetExtrasUncertainty,  # GROUP 13:   8 tests
         TestValidateUncertaintyData,  # GROUP 14:   6 tests
         TestValidateConfiguration,  # GROUP 15:   5 tests
         TestTransformValidationHelpers,  # GROUP 16:   8 tests
@@ -1513,9 +1315,9 @@ GROUP 7:  get_transform_recommendations                                (  5 test
 GROUP 8:  get_supported_descriptors                                    (  4 tests)
 GROUP 9:  get_supported_structural_features                            (  5 tests)
 GROUP 10: _is_valid_property                                           (  9 tests)
-GROUP 11: _add_scalar_targets_internal                                 (  9 tests)
-GROUP 12: enrich_pyg_data                                              (  8 tests)
-GROUP 13: _add_uncertainty_metadata_internal                           (  8 tests)
+Graph-level properties (DatasetHandler.enrich_pyg_data and the shared steps): see
+tests/test_contract_dataset_graph_properties.py and tests/test_property_enrichment_unit.py
+GROUP 13: add_dataset_extras (uncertainty)                        (  8 tests)
 GROUP 14: _validate_uncertainty_data                                   (  6 tests)
 GROUP 15: validate_configuration                                       (  5 tests)
 GROUP 16: Transform Validation Helpers                                 (  8 tests)

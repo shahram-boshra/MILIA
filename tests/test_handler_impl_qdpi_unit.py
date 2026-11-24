@@ -1003,416 +1003,6 @@ class TestEnsureTensor(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 15: enrich_pyg_data — orchestration (10 tests)
-# ============================================================================
-
-
-class TestEnrichPygData(unittest.TestCase):
-    """Test QDπ PyG data enrichment orchestration."""
-
-    def test_sets_dataset_type(self):
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        self.assertEqual(result.dataset_type, "QDPi")
-
-    def test_sets_num_nodes(self):
-        handler = _make_handler()
-        data = _make_pyg_data()
-        data.num_nodes = 0
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        self.assertEqual(result.num_nodes, data.z.size(0))
-
-    def test_zero_nodes_raises(self):
-        handler = _make_handler()
-        data = Data()
-        data.num_nodes = 0
-        with self.assertRaises(DatasetSpecificHandlerError):
-            handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-
-    def test_coordinates_set_as_pos(self):
-        handler = _make_handler()
-        coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=np.float64)
-        data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, coordinates=coords), 0, "test"
-        )
-        self.assertEqual(result.pos.shape, (3, 3))
-
-    def test_energy_set_as_y(self):
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
-        )
-        self.assertTrue(hasattr(result, "y"))
-        self.assertIsInstance(result.y, torch.Tensor)
-
-    def test_forces_added_when_present(self):
-        handler = _make_handler()
-        forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0], [-0.1, 0.2, -0.3]], dtype=np.float32)
-        data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=3), 0, "test"
-        )
-        self.assertTrue(hasattr(result, "forces"))
-
-    def test_molecular_charge_added(self):
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3, molecular_charge=1), 0, "test"
-        )
-        self.assertEqual(result.molecular_charge.item(), 1)
-
-    def test_formula_stored(self):
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3, formula="CH3OH"), 0, "test"
-        )
-        self.assertEqual(result.formula, "CH3OH")
-
-    def test_subset_stored(self):
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3, subset="SPICE"), 0, "test"
-        )
-        self.assertEqual(result.subset, "SPICE")
-
-    def test_unexpected_error_wrapped(self):
-        """Unexpected errors wrap into DatasetSpecificHandlerError.
-
-        EVIDENCE: QDPi's enrich_pyg_data does coordinates processing inline.
-        Patching np.asarray to fail after dataset_type is set triggers the
-        outer except block in enrich_pyg_data (line 583-591).
-        """
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties(energy=-76.3)
-        # Patch _ensure_tensor to raise unexpected error during energy assignment
-        original_ensure = handler._ensure_tensor
-
-        def failing_ensure(value, dtype, prop_name, mol_idx, ident):
-            if prop_name == "energy":
-                raise RuntimeError("unexpected boom")
-            return original_ensure(value, dtype, prop_name, mol_idx, ident)
-
-        with (
-            patch.object(handler, "_ensure_tensor", side_effect=failing_ensure),
-            self.assertRaises(DatasetSpecificHandlerError),
-        ):
-            handler.enrich_pyg_data(data, props, 0, "test")
-
-
-# ============================================================================
-# GROUP 16: enrich_pyg_data — scalar targets via enrich_pyg_data (8 tests)
-# ============================================================================
-
-
-class TestEnrichScalarTargets(unittest.TestCase):
-    """Test QDπ scalar target addition via enrich_pyg_data.
-
-    EVIDENCE: QDPiDatasetHandler.enrich_pyg_data (lines 513-591) handles scalar
-    targets inline rather than delegating to _add_scalar_targets_internal.
-    Energy is set as pyg_data.y via _ensure_tensor.
-    """
-
-    def test_energy_added_as_y(self):
-        """Energy is added as y attribute on PyG data."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        self.assertTrue(hasattr(result, "y"))
-        self.assertIsInstance(result.y, torch.Tensor)
-
-    def test_energy_value_correct(self):
-        """Energy value is correctly stored in y."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        self.assertAlmostEqual(result.y.flatten()[0].item(), -76.3, places=3)
-
-    def test_ndarray_energy_converted(self):
-        """Numpy array energy is properly handled during enrichment.
-
-        EVIDENCE: np.array(-76.3) is a 0-d array. After _ensure_tensor wraps
-        scalars with [value], the result is shape (1,). However, if
-        np.array(-76.3) is treated as ndarray (not scalar), torch.tensor()
-        produces a 0-dim tensor. Use .item() directly to handle both cases.
-        """
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=np.array(-76.3)), 0, "test"
-        )
-        self.assertAlmostEqual(result.y.item(), -76.3, places=3)
-
-    def test_none_energy_no_y(self):
-        """None energy does not set y attribute."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        props["energy"] = None
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        # y should not be set when energy is None
-        self.assertNotIn("y", result)
-
-    def test_forces_shape_matches_nodes(self):
-        """Forces shape must match num_nodes for addition."""
-        handler = _make_handler()
-        n = 3
-        forces = np.array([[0.1, -0.2, 0.3]] * n, dtype=np.float32)
-        data = _make_pyg_data(num_atoms=n)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test"
-        )
-        self.assertEqual(result.forces.shape, (n, 3))
-
-    def test_forces_mismatched_shape_not_added(self):
-        """Forces with wrong shape are not added (logged warning)."""
-        handler = _make_handler()
-        # 2 force vectors for 3-node molecule
-        forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0]], dtype=np.float32)
-        data = _make_pyg_data(num_atoms=3)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, forces=forces), 0, "test"
-        )
-        # Forces should NOT be set due to shape mismatch
-        self.assertFalse(
-            hasattr(result, "forces") and result.forces is not None and result.forces.shape[0] == 3
-        )
-
-    def test_default_charge_zero_when_absent(self):
-        """Default molecular_charge is 0 when no charge info present."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        self.assertEqual(result.molecular_charge.item(), 0)
-
-    def test_property_enrichment_error_reraised(self):
-        """PropertyEnrichmentError from _ensure_tensor is re-raised."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties(energy=-76.3)
-        err = PropertyEnrichmentError(
-            molecule_index=0,
-            inchi="test",
-            property_name="energy",
-            reason="test error",
-            detail="test",
-        )
-        with (
-            patch.object(handler, "_ensure_tensor", side_effect=err),
-            self.assertRaises(PropertyEnrichmentError),
-        ):
-            handler.enrich_pyg_data(data, props, 0, "test")
-
-
-# ============================================================================
-# GROUP 17: enrich_pyg_data — forces via enrichment (4 tests)
-# ============================================================================
-
-
-class TestEnrichForces(unittest.TestCase):
-    """Test QDπ forces addition via enrich_pyg_data."""
-
-    def test_forces_added_as_tensor(self):
-        """Forces (N, 3) are converted to tensor via enrich_pyg_data."""
-        handler = _make_handler()
-        forces = np.array([[0.1, -0.2, 0.3], [0.0, 0.0, 0.0]], dtype=np.float32)
-        data = _make_pyg_data(num_atoms=2)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=2), 0, "test"
-        )
-        self.assertTrue(hasattr(result, "forces"))
-        self.assertEqual(result.forces.dtype, torch.float32)
-
-    def test_missing_forces_not_added(self):
-        """Missing forces leaves no forces attribute on PyG data."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        _result = handler.enrich_pyg_data(data, _make_raw_properties(energy=-76.3), 0, "test")
-        # forces is set if present in props; if not in raw_properties, it won't be set
-        # (the default _make_raw_properties does not include forces)
-
-    def test_forces_with_correct_shape(self):
-        """Forces with correct shape (matching num_nodes) are stored."""
-        handler = _make_handler()
-        n = 3
-        forces = np.random.randn(n, 3).astype(np.float32)
-        data = _make_pyg_data(num_atoms=n)
-        result = handler.enrich_pyg_data(
-            data, _make_raw_properties(energy=-76.3, forces=forces, num_atoms=n), 0, "test"
-        )
-        self.assertEqual(result.forces.shape, (n, 3))
-
-    def test_none_forces_not_added(self):
-        """None forces value does not add forces attribute."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties(energy=-76.3)
-        props["forces"] = None
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertFalse(hasattr(result, "forces") and result.forces is not None)
-
-
-# ============================================================================
-# GROUP 18: enrich_pyg_data — charge and metadata via enrichment (5 tests)
-# ============================================================================
-
-
-class TestEnrichChargeAndMetadata(unittest.TestCase):
-    """Test QDπ charge and metadata enrichment via enrich_pyg_data."""
-
-    def test_molecular_charge_stored_as_long_tensor(self):
-        """Molecular charge is stored as torch.long tensor."""
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3, molecular_charge=1), 0, "test"
-        )
-        self.assertEqual(result.molecular_charge.dtype, torch.long)
-
-    def test_charge_from_charge_key(self):
-        """Charge from 'charge' key is also stored."""
-        handler = _make_handler()
-        props = _make_raw_properties(energy=-76.3)
-        props["charge"] = -1
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "test")
-        self.assertEqual(result.molecular_charge.item(), -1)
-
-    def test_formula_not_stored_when_absent(self):
-        """Formula is not stored when not in raw properties."""
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
-        )
-        self.assertFalse(hasattr(result, "formula") and result.formula is not None)
-
-    def test_subset_stored_as_string(self):
-        """Subset string is stored directly on PyG data."""
-        handler = _make_handler()
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3, subset="ANI"), 0, "test"
-        )
-        self.assertEqual(result.subset, "ANI")
-
-    def test_multiple_metadata_fields_stored(self):
-        """Multiple metadata fields (formula, subset, charge) all stored."""
-        handler = _make_handler()
-        props = _make_raw_properties(
-            energy=-76.3, formula="NaCl", subset="SPICE", molecular_charge=1
-        )
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "test")
-        self.assertEqual(result.formula, "NaCl")
-        self.assertEqual(result.subset, "SPICE")
-        self.assertEqual(result.molecular_charge.item(), 1)
-
-
-# ============================================================================
-# GROUP 19: Atomization energy via enrich_pyg_data (6 tests)
-# ============================================================================
-
-
-class TestAtomizationEnergy(unittest.TestCase):
-    """Test QDπ atomization energy calculation via enrich_pyg_data.
-
-    EVIDENCE: QDPi's enrich_pyg_data calls the base class enrich_pyg_data
-    or handles atomization inline. Atomization energy tests go through the
-    full enrich_pyg_data path.
-    """
-
-    def test_no_atomization_configured(self):
-        """No atomization energy when not configured."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="", atomization_energy_key_name=""
-        )
-        handler = _make_handler(processing_config=pc)
-        result = handler.enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "test"
-        )
-        self.assertFalse(hasattr(result, "atomization_energy"))
-
-    def test_atomization_energy_for_hydrogen(self):
-        """Atomization energy computed correctly for single H atom."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="energy",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        expected_eV = (-0.5 - ATOMIC_ENERGIES_HARTREE[1]) * HAR2EV
-        self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
-
-    def test_atomization_water_like(self):
-        """Atomization energy for water-like molecule (O + 2H)."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="energy",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
-        props = _make_raw_properties(energy=-76.3)
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        expected_eV = (
-            -76.3 - (ATOMIC_ENERGIES_HARTREE[8] + 2 * ATOMIC_ENERGIES_HARTREE[1])
-        ) * HAR2EV
-        self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
-
-    def test_charged_molecule_has_no_atomization_energy(self):
-        """A charged molecule's dissociation products include an ion: not computed."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="energy",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
-        props = _make_raw_properties(energy=-76.3)
-        props["molecular_charge"] = 1
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertFalse(hasattr(result, "atomization_energy"))
-
-    def test_missing_atomic_energy_no_crash(self):
-        """Missing atomic energy for element doesn't crash enrichment."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy")
-        handler = _make_handler(processing_config=pc)
-        # Z=2 (He) — likely not in ATOMIC_ENERGIES_HARTREE
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([2], dtype=torch.long))
-        props = _make_raw_properties(energy=-2.9, num_atoms=1, atoms=np.array([2]))
-        # Should not raise — just won't have atomization energy
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertEqual(result.dataset_type, "QDPi")
-
-    def test_qdpi_sodium_atomization(self):
-        """Atomization energy with QDπ-specific element Na (Z=11)."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="energy",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([11], dtype=torch.long))
-        props = _make_raw_properties(energy=-162.0, num_atoms=1, atoms=np.array([11]))
-        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11)
-        if atomic_Na is not None and HAR2EV is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "test")
-            if hasattr(result, "atomization_energy"):
-                self.assertIsNotNone(result.atomization_energy)
-
-    @patch("milia_pipeline.config.config_constants.HAR2EV", None)
-    def test_missing_har2ev_no_atomization(self):
-        """When HAR2EV constant is None, atomization energy is not computed."""
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="energy",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        # Should still succeed but without atomization_energy
-        self.assertEqual(result.dataset_type, "QDPi")
-
-
-# ============================================================================
 # GROUP 20: get_processing_statistics (7 tests)
 # ============================================================================
 
@@ -1638,6 +1228,49 @@ class TestGetTransformRecommendationsDetail(unittest.TestCase):
 # ============================================================================
 
 
+class TestQDPiGraphProperties(unittest.TestCase):
+    """QDπ through the shared enrich_pyg_data: y from configuration, extras from the hook."""
+
+    def _handler(self, **overrides):
+        return _make_handler(processing_config=_make_processing_config(**overrides))
+
+    def test_y_is_the_configured_energy_with_its_name(self):
+        handler = self._handler(
+            calculate_atomization_energy_from=None, atomization_energy_key_name=None
+        )
+        result = handler.enrich_pyg_data(
+            _make_pyg_data(), _make_raw_properties(energy=-76.3), 0, "m"
+        )
+        torch.testing.assert_close(result.y, torch.tensor([-76.3]))
+        self.assertEqual(result.y_property_names, ["energy"])
+
+    def test_forces_are_not_a_graph_attribute(self):
+        """Per-atom forces are a node target (node_y, converter step), not pyg_data.forces."""
+        handler = self._handler(
+            calculate_atomization_energy_from=None, atomization_energy_key_name=None
+        )
+        props = _make_raw_properties(energy=-76.3, forces=np.zeros((3, 3), dtype=np.float32))
+        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+        self.assertFalse(hasattr(result, "forces"))
+
+    def test_extras_store_charge_formula_and_subset(self):
+        handler = self._handler(
+            calculate_atomization_energy_from=None, atomization_energy_key_name=None
+        )
+        props = _make_raw_properties(energy=-76.3, molecular_charge=-1)
+        props.update(formula="CHO", subset="charged")
+        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+        self.assertEqual(result.molecular_charge.item(), -1)
+        self.assertEqual((result.formula, result.subset), ("CHO", "charged"))
+
+    def test_charged_molecule_refused_when_atomization_energy_is_configured(self):
+        """Neutral-atom references do not describe an ion: the molecule is refused."""
+        handler = self._handler()
+        props = _make_raw_properties(energy=-76.3, molecular_charge=1)
+        with self.assertRaises(PropertyEnrichmentError):
+            handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+
+
 class TestQDPiIntegrationFlow(unittest.TestCase):
     """Integration-level tests for the full QDπ handler flow."""
 
@@ -1664,8 +1297,12 @@ class TestQDPiIntegrationFlow(unittest.TestCase):
         )
 
     def test_charged_molecule_pipeline(self):
-        """Charged molecule (Na+) processes through full pipeline."""
-        handler = _make_handler()
+        """Charged molecule (Na+) processes through full pipeline (no atomization energy)."""
+        handler = _make_handler(
+            processing_config=_make_processing_config(
+                calculate_atomization_energy_from=None, atomization_energy_key_name=None
+            )
+        )
         props = _make_raw_properties(
             energy=-162.0,
             atoms=np.array([11]),
@@ -1791,18 +1428,6 @@ class TestQDPiElementSpecific(unittest.TestCase):
         atoms = np.array([53, 6, 1, 1, 1], dtype=np.int64)  # CH3I
         result = handler.process_property_value("atoms", atoms, 0)
         np.testing.assert_array_equal(result, atoms)
-
-    def test_atomization_with_qdpi_extended_elements(self):
-        """Atomization energy with QDπ-specific elements (Li, Na, K, Br, I)."""
-        pc = _make_processing_config(calculate_atomization_energy_from="energy")
-        handler = _make_handler(processing_config=pc)
-        # Na atom (Z=11)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([11], dtype=torch.long))
-        props = _make_raw_properties(energy=-162.0, num_atoms=1, atoms=np.array([11]))
-        atomic_Na = ATOMIC_ENERGIES_HARTREE.get(11)
-        if atomic_Na is not None and HAR2EV is not None:
-            result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-            self.assertIsNotNone(result)
 
 
 # ============================================================================

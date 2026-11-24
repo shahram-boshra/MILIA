@@ -39,6 +39,7 @@ from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
 )
 from milia_pipeline.exceptions import (
+    DatasetSpecificHandlerError,
     HandlerCompatibilityError,  # Added for validate_dataset_handler_compatibility
     HandlerConfigurationError,
     HandlerError,
@@ -508,16 +509,9 @@ def verify_handler_abstraction() -> dict[str, Any]:
             DFTDatasetHandler = impl.DFTDatasetHandler
             dft_handler_info = {
                 "type": "DFTDatasetHandler",
-                "has_internal_scalar_targets": hasattr(
-                    DFTDatasetHandler, "_add_scalar_targets_internal"
-                ),
-                "has_internal_variable_length": hasattr(
-                    DFTDatasetHandler, "_add_variable_length_properties_internal"
-                ),
+                "uses_shared_graph_steps": "enrich_pyg_data" not in vars(DFTDatasetHandler),
                 "has_tensor_utilities": hasattr(DFTDatasetHandler, "_ensure_tensor"),
-                "has_vibrational_processing": hasattr(
-                    DFTDatasetHandler, "_process_vibrational_data_internal"
-                ),
+                "has_vibrational_processing": "prepare_graph_properties" in vars(DFTDatasetHandler),
                 "has_exceptions": True,
                 "has_transform_validation": hasattr(
                     DFTDatasetHandler, "_validate_dataset_specific_transforms"
@@ -539,12 +533,8 @@ def verify_handler_abstraction() -> dict[str, Any]:
             DMCDatasetHandler = impl.DMCDatasetHandler
             dmc_handler_info = {
                 "type": "DMCDatasetHandler",
-                "has_internal_scalar_targets": hasattr(
-                    DMCDatasetHandler, "_add_scalar_targets_internal"
-                ),
-                "has_uncertainty_processing": hasattr(
-                    DMCDatasetHandler, "_add_uncertainty_metadata_internal"
-                ),
+                "uses_shared_graph_steps": "enrich_pyg_data" not in vars(DMCDatasetHandler),
+                "has_uncertainty_processing": "add_dataset_extras" in vars(DMCDatasetHandler),
                 "has_tensor_utilities": hasattr(DMCDatasetHandler, "_ensure_tensor"),
                 "has_uncertainty_validation": hasattr(
                     DMCDatasetHandler, "_validate_uncertainty_data"
@@ -570,9 +560,10 @@ def verify_handler_abstraction() -> dict[str, Any]:
             WavefunctionDatasetHandler = impl.WavefunctionDatasetHandler
             wavefunction_handler_info = {
                 "type": "WavefunctionDatasetHandler",
-                "has_internal_scalar_targets": hasattr(
-                    WavefunctionDatasetHandler, "_add_scalar_targets_internal"
-                ),
+                "uses_shared_graph_steps": "enrich_pyg_data"
+                not in vars(WavefunctionDatasetHandler),
+                "has_feature_tier_selection": "provided_properties"
+                in vars(WavefunctionDatasetHandler),
                 "has_tensor_utilities": hasattr(WavefunctionDatasetHandler, "_ensure_tensor"),
                 "has_orbital_processing": hasattr(
                     WavefunctionDatasetHandler, "_extract_orbital_properties"
@@ -829,7 +820,7 @@ class DatasetHandler(ABC):
     3. get_required_properties() -> List[str]
     4. get_identifier_keys() -> List[Tuple[str, str]]
     5. process_property_value(...) -> Any
-    6. enrich_pyg_data(...) -> Data
+    6. (concrete, final) enrich_pyg_data(...) -> Data: the shared graph-property steps
     7. get_processing_statistics(...) -> Dict[str, Any]
     8. get_supported_structural_features() -> Dict[str, List[str]]
     9. get_molecular_charge(...) -> int
@@ -842,7 +833,26 @@ class DatasetHandler(ABC):
     - _validate_dataset_specific_transforms(...)
     - _check_transform_incompatibilities(...)
     - _get_transform_recommendations(...)
+
+    Graph-level properties are built by ``enrich_pyg_data`` with the same steps for every dataset
+    (``molecules.property_enrichment``). A handler takes part through three hooks only:
+    ``prepare_graph_properties`` (values that are normalised together), ``provided_properties``
+    (properties a data file does not provide by the user's choice) and ``add_dataset_extras``
+    (attributes outside the configuration). Overriding ``enrich_pyg_data`` fails at import.
     """
+
+    _FINAL_METHODS = ("enrich_pyg_data",)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        overridden = [name for name in DatasetHandler._FINAL_METHODS if name in vars(cls)]
+        if overridden:
+            raise TypeError(
+                f"{cls.__name__} overrides {overridden}: graph properties are built by the shared "
+                "steps of DatasetHandler.enrich_pyg_data for every dataset; implement "
+                "prepare_graph_properties, provided_properties or add_dataset_extras instead "
+                "(README, 'Adding a dataset')"
+            )
 
     def __init__(
         self,
@@ -950,6 +960,7 @@ class DatasetHandler(ABC):
             "atomization_energy": "computed",
             "attribute": attribute,
             "energy_property": energy_key,
+            "unit": "hartree",  # E_molecule − Σ E_atom in the references' unit, not converted
             **references.provenance(energy_key),
         }
 
@@ -1004,7 +1015,6 @@ class DatasetHandler(ABC):
         """Process a property value according to dataset-specific requirements."""
         pass
 
-    @abstractmethod
     def enrich_pyg_data(
         self,
         pyg_data: Data,
@@ -1012,8 +1022,217 @@ class DatasetHandler(ABC):
         molecule_index: int,
         identifier: str = "N/A",
     ) -> Data:
-        """Add dataset-specific enrichments to PyG Data object with exception handling."""
-        pass
+        """Attach the configured graph-level properties; the same steps for every dataset.
+
+        1. ``prepare_graph_properties`` (hook): values the dataset normalises together.
+        2. The atomization energy (Hartree) from ``calculate_atomization_energy_from``, stored as
+           ``atomization_energy_key_name`` when the dataset declares atomic references.
+        3. ``vector_graph_properties_to_include`` and 4. ``variable_len_graph_properties_to_include``,
+           one attribute each, shape-checked (``property_availability.<dataset>.shapes``).
+        5. ``scalar_graph_targets_to_include`` → ``y`` and ``y_property_names``, in configured order.
+        6. ``add_dataset_extras`` (hook): attributes outside the configuration; ``y`` stays as built.
+
+        The selection is the configured properties the data provides (``provided_properties``),
+        fixed by the first molecule for the whole run. A configured property that is missing or
+        malformed refuses the molecule, so every graph carries the same attributes.
+
+        Raises:
+            PropertyEnrichmentError: A configured property is missing or malformed.
+            DatasetSpecificHandlerError: The molecule has no atoms, a hook refuses it, or an
+                extra changes ``y``.
+        """
+        # Imported here: milia_pipeline.molecules imports the handlers package.
+        from milia_pipeline.molecules.property_enrichment import (
+            add_atomization_energy,
+            add_scalar_graph_targets,
+            add_variable_len_graph_properties,
+            add_vector_graph_properties,
+        )
+
+        dataset_type = self.get_dataset_type()
+        try:
+            pyg_data.dataset_type = dataset_type
+            if not getattr(pyg_data, "num_nodes", 0):
+                z = getattr(pyg_data, "z", None)
+                pyg_data.num_nodes = z.size(0) if z is not None else 0
+            if pyg_data.num_nodes == 0:
+                raise DatasetSpecificHandlerError(
+                    dataset_type=dataset_type,
+                    message=f"{dataset_type} molecule has 0 nodes, cannot attach graph properties",
+                    operation="enrich_pyg_data",
+                    details=f"Molecule {molecule_index} ({identifier}): no atoms",
+                )
+            properties = dict(
+                self.prepare_graph_properties(
+                    dict(raw_properties_dict), pyg_data, molecule_index, identifier
+                )
+            )
+            selection = self._graph_property_selection(properties)
+            shapes = self._graph_property_run_shapes()
+            if selection["atomization"] is not None:
+                energy_key, attribute, references = selection["atomization"]
+                properties[attribute] = add_atomization_energy(
+                    pyg_data,
+                    properties,
+                    energy_key,
+                    attribute,
+                    references,
+                    self._molecular_charge_of(properties, pyg_data, identifier),
+                    molecule_index,
+                    identifier,
+                )
+            add_vector_graph_properties(
+                pyg_data, properties, selection["vector"], shapes, molecule_index, identifier
+            )
+            add_variable_len_graph_properties(
+                pyg_data, properties, selection["variable"], shapes, molecule_index, identifier
+            )
+            add_scalar_graph_targets(
+                pyg_data,
+                properties,
+                molecule_index,
+                self.logger,
+                selection["targets"],
+                identifier=identifier,
+            )
+            targets = getattr(pyg_data, "y", None)
+            self.add_dataset_extras(pyg_data, properties, molecule_index, identifier)
+            if getattr(pyg_data, "y", None) is not targets:
+                raise DatasetSpecificHandlerError(
+                    dataset_type=dataset_type,
+                    message=f"{type(self).__name__}.add_dataset_extras changed y",
+                    operation="add_dataset_extras",
+                    details="y holds exactly scalar_graph_targets_to_include",
+                )
+            return pyg_data
+        except (PropertyEnrichmentError, HandlerError):
+            raise
+        except Exception as e:
+            raise DatasetSpecificHandlerError(
+                dataset_type=dataset_type,
+                message=f"{dataset_type} graph properties failed: {e}",
+                operation="enrich_pyg_data",
+                details=f"Molecule {molecule_index} ({identifier}): {type(e).__name__}: {e}",
+            ) from e
+
+    # ------------------------------------------------------------------------
+    # Hooks of enrich_pyg_data (defaults: no dataset-specific work)
+    # ------------------------------------------------------------------------
+
+    def prepare_graph_properties(
+        self,
+        properties: dict[str, Any],
+        pyg_data: Data,
+        molecule_index: int,
+        identifier: str,
+    ) -> dict[str, Any]:
+        """Values the dataset normalises together, before the shared steps read them.
+
+        Single values are normalised in ``process_property_value``. Return the properties (the
+        same mapping or a new one); raise ``DatasetSpecificHandlerError`` to refuse the molecule.
+        """
+        return properties
+
+    def provided_properties(self, properties: Mapping[str, Any]) -> frozenset[str] | None:
+        """The properties this run's data provides, or ``None`` for all the dataset lists.
+
+        For data the user extracted at a chosen level of detail (a feature tier). Called once, with
+        the first molecule; configured properties outside the result are left out for the run.
+        """
+        return None
+
+    def add_dataset_extras(
+        self,
+        pyg_data: Data,
+        properties: Mapping[str, Any],
+        molecule_index: int,
+        identifier: str,
+    ) -> None:
+        """Attributes outside the configuration (metadata such as an uncertainty); never ``y``."""
+        return None
+
+    # ------------------------------------------------------------------------
+    # Per-run state of enrich_pyg_data
+    # ------------------------------------------------------------------------
+
+    def _graph_property_selection(self, properties: Mapping[str, Any]) -> dict[str, Any]:
+        """The run's graph-level selection: configured ∩ provided, fixed by the first molecule."""
+        selection = self.__dict__.get("_graph_selection")
+        if selection is not None:
+            return selection
+        config = self.processing_config
+        provided = self.provided_properties(properties)
+        energy_key = getattr(config, "calculate_atomization_energy_from", None)
+        attribute = getattr(config, "atomization_energy_key_name", None)
+        atomization = None
+        if energy_key and attribute and (provided is None or energy_key in provided):
+            references = self._atomization_reference_energies(energy_key)
+            if references is not None:
+                self._require_hartree_energies(energy_key)
+                atomization = (energy_key, attribute, references)
+        derived = {attribute} if atomization else set()
+
+        def keep(names: Any) -> list[str]:
+            names = list(names or [])
+            return [n for n in names if n in derived or provided is None or n in provided]
+
+        selection = {
+            "targets": keep(config.scalar_graph_targets),
+            "vector": keep(config.vector_graph_properties),
+            "variable": keep(config.variable_len_graph_properties),
+            "atomization": atomization,
+        }
+        configured = [
+            *(config.scalar_graph_targets or []),
+            *(config.vector_graph_properties or []),
+            *(config.variable_len_graph_properties or []),
+        ]
+        kept = {*selection["targets"], *selection["vector"], *selection["variable"]}
+        left_out = [name for name in configured if name not in kept]
+        self.logger.info(
+            f"{self.get_dataset_type()} graph properties for this run: targets (y) "
+            f"{selection['targets']}, vector {selection['vector']}, variable-length "
+            f"{selection['variable']}, atomization energy "
+            f"{attribute + ' (hartree)' if atomization else 'not computed'}"
+            + (f"; not provided by the data: {left_out}" if left_out else "")
+        )
+        self.__dict__["_graph_selection"] = selection
+        return selection
+
+    def _require_hartree_energies(self, energy_key: str) -> None:
+        """Refuse an atomization energy whose total energy is not in Hartree, the references' unit."""
+        from milia_pipeline.datasets.registry import get as get_dataset
+        from milia_pipeline.exceptions import DatasetNotFoundError
+
+        try:
+            unit = get_dataset(self.get_dataset_type()).schema.energy_units
+        except DatasetNotFoundError:
+            return  # a handler without a registered dataset declares no unit
+        if unit != "hartree":
+            raise HandlerConfigurationError(
+                message=(
+                    f"{self.get_dataset_type()} energies are in {unit}; the atomization energy "
+                    f"from '{energy_key}' needs Hartree, the unit of the atomic references"
+                ),
+                handler_type=self.get_dataset_type(),
+                invalid_config_keys=["calculate_atomization_energy_from"],
+            )
+
+    def _graph_property_run_shapes(self) -> dict[str, tuple[int | None, ...]]:
+        """Shapes for the run: declared in the configuration, else taken from the first molecule."""
+        shapes = self.__dict__.get("_graph_shapes")
+        if shapes is None:
+            from milia_pipeline.config.config_accessors import get_graph_property_shapes
+
+            shapes = dict(get_graph_property_shapes(self.get_dataset_type()))
+            self.__dict__["_graph_shapes"] = shapes
+        return shapes
+
+    def _molecular_charge_of(
+        self, properties: Mapping[str, Any], pyg_data: Data, identifier: str
+    ) -> int:
+        atomic_numbers = pyg_data.z.detach().cpu().numpy()
+        return int(self.get_molecular_charge(dict(properties), atomic_numbers, identifier))
 
     @abstractmethod
     def get_processing_statistics(

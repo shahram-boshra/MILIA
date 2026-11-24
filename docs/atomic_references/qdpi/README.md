@@ -1,9 +1,10 @@
 # QDπ — atomic references (Psi4 1.7, computed)
 
 **Status:** computed; declared in `configs/datasets/qdpi.yaml` (`qdpi_config.atomic_references`,
-`source: milia-computed`). QDπ computes `energy_ATOM` for **neutral** molecules only: an atomization
+`source: milia-computed`). `energy_ATOM` is defined for **neutral** molecules only: an atomization
 energy dissociates a neutral molecule into neutral ground-state atoms, and a charged molecule's products
-would include an ion.
+would include an ion. With `calculate_atomization_energy_from: energy` (shipped), charged molecules are
+therefore refused; set it to `null` to process the charged subset.
 
 **Dataset level of theory** (Zeng, Giese, Götz, York, *Sci. Data* 12, 693 (2025),
 doi:10.1038/s41597-025-04972-3; data doi:10.5281/zenodo.14970869): ωB97M-D3(BJ)/def2-TZVPPD "as

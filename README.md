@@ -562,6 +562,16 @@ The architecture enforcing this is **Protocol + ABC + explicit registry**, appli
 - **`DatasetMetadata`, `DatasetSchema`, `DatasetFeatures`** are immutable Pydantic V2 frozen dataclasses, so the new dataset's metadata is validated structurally before registration succeeds.
 - **Feature flags** (`vibrational_analysis`, `uncertainty_handling`, `atomization_energy`, `orbital_analysis`, `homo_lumo_gap`, and three others) declared in the `BaseDataset` subclass make the new dataset visible to feature-aware code paths in `milia_dataset.py` and the transform validator without any of those modules learning the new dataset's name.
 
+**Graph-level properties follow one contract for every dataset.** `DatasetHandler.enrich_pyg_data` is concrete and may not be overridden (a handler that does fails when its class is created). It runs the same shared steps (`milia_pipeline/molecules/property_enrichment.py`) for every dataset, in a fixed order:
+
+1. the handler hook `prepare_graph_properties` — values the dataset normalises together (DFT refines `freqs` and `vibmodes` as pairs); single values are normalised in `process_property_value` (DFT pads a linear molecule's two rotational constants to three);
+2. the atomization energy from `calculate_atomization_energy_from`, stored as `atomization_energy_key_name` in the dataset's energy unit (Hartree), where atomic references are declared (`docs/atomic_reference_energies.md`);
+3. `vector_graph_properties_to_include` and `variable_len_graph_properties_to_include`, one attribute each, checked against `property_availability.<KEY>.shapes` (`null` is a dimension that varies between molecules; a property without a shape takes the first molecule's, and every molecule must match);
+4. `scalar_graph_targets_to_include` → `y`, with its column names in `y_property_names` (recorded in the checkpoint's `run_info.targets.names`); a derived value is a target only when its configured name is listed;
+5. the handler hook `add_dataset_extras` — attributes outside the configuration (DMC uncertainty, QDπ charge, formula and subset); it may not change `y`.
+
+The selection is the configured properties that the data provides: a handler may answer `provided_properties` (Wavefunction: the file's `feature_tier`), and the result is fixed by the first molecule for the whole run and logged once. A configured property missing or malformed for one molecule refuses that molecule, so every graph carries the same attributes. When processing starts, every configured name must be listed in `property_availability.<KEY>` and have one role (input, target or attribute); violations are reported together as a `ConfigurationError`. A new handler therefore contains no graph-building code. `tests/test_contract_dataset_graph_properties.py` checks this contract for every registered dataset, read from the registry, so a new dataset is covered without editing the tests.
+
 Once the three files are in place, the new dataset is a first-class citizen of every part of the pipeline — CLI (`milia --process`, `--train`, `--predict`), YAML configuration, hyperparameter optimization, transform validation, descriptors, and prediction — selectable by setting `dataset_type: <key>` in `configs/main.yaml`. The 11 shipped datasets follow this exact pattern; the registry has no knowledge that they are "built-in" rather than user-added.
 
 ## Testing

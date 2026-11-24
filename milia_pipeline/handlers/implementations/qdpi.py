@@ -35,15 +35,14 @@ Reference: Zeng et al., Scientific Data 12, 693 (2025)
 """
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
-    is_value_valid_and_not_nan,
     validate_molecular_structure,
 )
 from milia_pipeline.exceptions import (
@@ -51,7 +50,6 @@ from milia_pipeline.exceptions import (
     HandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 
 # Import from refactored base handler
@@ -492,177 +490,21 @@ class QDPiDatasetHandler(DatasetHandler):
                 details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
             ) from e
 
-    def enrich_pyg_data(
+    def add_dataset_extras(
         self,
         pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str = "N/A",
-    ) -> Data:
-        """QDπ-specific PyG data enrichment with exception handling."""
-        try:
-            # Set dataset type
-            pyg_data.dataset_type = "QDPi"
-
-            # Ensure num_nodes is set properly
-            if not hasattr(pyg_data, "num_nodes") or pyg_data.num_nodes == 0:
-                pyg_data.num_nodes = (
-                    pyg_data.z.size(0) if hasattr(pyg_data, "z") and pyg_data.z is not None else 0
-                )
-
-            if pyg_data.num_nodes == 0:
-                raise DatasetSpecificHandlerError(
-                    dataset_type="QDPi",
-                    message="QDπ molecule has 0 nodes, cannot proceed with enrichment",
-                    operation="enrich_pyg_data",
-                    molecule_index=molecule_index,
-                    details=f"Identifier: {identifier}",
-                )
-
-            # Get processed coordinates
-            coordinates = raw_properties_dict.get("coordinates")
-            if coordinates is not None:
-                coords_array = np.asarray(coordinates, dtype=np.float32)
-                if coords_array.shape[0] == pyg_data.num_nodes:
-                    pyg_data.pos = torch.tensor(coords_array, dtype=torch.float32)
-                else:
-                    self.logger.warning(
-                        f"QDπ molecule {molecule_index}: Coordinate count mismatch "
-                        f"({coords_array.shape[0]} vs {pyg_data.num_nodes} nodes)"
-                    )
-
-            # Add energy as target (y)
-            energy = raw_properties_dict.get("energy")
-            if energy is not None:
-                # Use _ensure_tensor to properly handle scalar -> (1,) shape conversion
-                pyg_data.y = self._ensure_tensor(
-                    energy, torch.float32, "energy", molecule_index, identifier
-                )
-
-            # Add forces if available
-            forces = raw_properties_dict.get("forces")
-            if forces is not None:
-                forces_array = np.asarray(forces, dtype=np.float32)
-                if forces_array.shape[0] == pyg_data.num_nodes:
-                    pyg_data.forces = torch.tensor(forces_array, dtype=torch.float32)
-
-            # Store molecular charge if available (useful for downstream analysis)
-            charge = raw_properties_dict.get(
-                "molecular_charge", raw_properties_dict.get("charge", 0)
-            )
-            if charge is not None:
-                pyg_data.molecular_charge = torch.tensor([int(charge)], dtype=torch.long)
-
-            # Store formula/identifier if available
-            formula = raw_properties_dict.get("formula")
-            if formula is not None:
-                pyg_data.formula = formula
-
-            # Store subset info if available
-            subset = raw_properties_dict.get("subset")
-            if subset is not None:
-                pyg_data.subset = subset
-
-            # Add atomization energy if configured (neutral molecules only)
-            if (
-                self.processing_config.calculate_atomization_energy_from
-                and self.processing_config.atomization_energy_key_name
-            ):
-                atomization_energy = self._calculate_atomization_energy_internal(
-                    raw_properties_dict, pyg_data, molecule_index, identifier
-                )
-                if atomization_energy is not None:
-                    setattr(
-                        pyg_data,
-                        self.processing_config.atomization_energy_key_name,
-                        self._ensure_tensor(
-                            [atomization_energy],
-                            torch.float32,
-                            "atomization_energy",
-                            molecule_index,
-                            identifier,
-                        ),
-                    )
-
-            return pyg_data
-
-        except (PropertyEnrichmentError, DatasetSpecificHandlerError):
-            raise
-        except Exception as e:
-            # Convert unexpected errors to QDπ handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="QDPi",
-                message=f"Unexpected error during QDπ PyG enrichment: {str(e)}",
-                operation="pyg_enrichment",
-                molecule_index=molecule_index,
-                details=f"Identifier: {identifier}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    def _calculate_atomization_energy_internal(
-        self,
-        raw_properties_dict: dict[str, Any],
-        pyg_data: Data,
+        properties: Mapping[str, Any],
         molecule_index: int,
         identifier: str,
-    ) -> float | None:
-        """Atomization energy (eV) of a neutral QDπ molecule, or ``None``.
-
-        The total energy (ωB97M-D3(BJ)/def2-TZVPPD, Hartree after preprocessing) minus the neutral
-        isolated-atom energies at the same level (``qdpi_config.atomic_references``). An atomization
-        energy dissociates a neutral molecule into neutral ground-state atoms; for a charged molecule
-        the products would include an ion, so it is not computed (``None``, no attribute).
-        """
-        try:
-            base_energy_key = self.processing_config.calculate_atomization_energy_from
-            if not base_energy_key:
-                return None
-            charge = raw_properties_dict.get(
-                "molecular_charge", raw_properties_dict.get("charge", 0)
-            )
-            if charge is not None and int(charge) != 0:
-                self.logger.debug(
-                    f"QDπ molecule {molecule_index}: charge {int(charge)}, atomization energy not "
-                    "defined against neutral atoms; not computed"
-                )
-                return None
-
-            base_energy_raw = raw_properties_dict.get(base_energy_key)
-            if not is_value_valid_and_not_nan(base_energy_raw):
-                self.logger.warning(
-                    f"QDπ molecule {molecule_index} missing {base_energy_key} for atomization energy"
-                )
-                return None
-            if not hasattr(pyg_data, "z") or pyg_data.z is None:
-                self.logger.warning(
-                    f"QDπ molecule {molecule_index} missing atomic numbers for atomization energy"
-                )
-                return None
-            base_energy_hartree = float(
-                np.asarray(base_energy_raw, dtype=np.float64).reshape(-1)[0]
-            )
-
-            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
-            if atomic_energies_hartree is None:
-                return None
-            har2ev = get_har2ev()
-
-            sum_atomic_energies_hartree = 0.0
-            for atomic_num in pyg_data.z.tolist():
-                atomic_energy = atomic_energies_hartree.get(atomic_num)
-                if atomic_energy is None:
-                    self.logger.warning(
-                        f"QDπ molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
-                    )
-                    return None
-                sum_atomic_energies_hartree += atomic_energy
-
-            return (base_energy_hartree - sum_atomic_energies_hartree) * har2ev
-
-        except Exception as e:
-            self.logger.error(
-                f"Error calculating QDπ atomization energy for molecule {molecule_index}: {e}"
-            )
-            return None
+    ) -> None:
+        """The molecular charge (as used to build the molecule), formula and subset of a QDπ molecule."""
+        atomic_numbers = pyg_data.z.detach().cpu().numpy()
+        charge = self.get_molecular_charge(dict(properties), atomic_numbers, identifier)
+        pyg_data.molecular_charge = torch.tensor([int(charge)], dtype=torch.long)
+        for name in ("formula", "subset"):
+            value = properties.get(name)
+            if value is not None:
+                setattr(pyg_data, name, value)
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]

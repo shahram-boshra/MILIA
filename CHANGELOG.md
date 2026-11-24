@@ -110,6 +110,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Graph-level properties are built by one set of steps for every dataset. `DatasetHandler.enrich_pyg_data` is
+  concrete, and a handler that overrides it fails when its class is created; handlers take part through
+  `prepare_graph_properties`, `provided_properties` and `add_dataset_extras`. Every processed graph stores the names
+  of `y`'s columns (`y_property_names`), so checkpoints record `run_info.targets.names`. A configured graph property
+  missing or malformed for one molecule refuses that molecule (graphs without the attribute broke collation or
+  silently dropped it for every molecule). When processing starts, every graph-level name must be listed in
+  `property_availability.<dataset>` and have one role, or `ConfigurationError` lists the violations. Re-process
+  existing datasets.
+- Shapes of graph-level properties come from `property_availability.<dataset>.shapes` (`null` for a dimension that
+  varies); a property without one takes the first molecule's shape and every molecule must match. The shipped DFT,
+  QM9, QM40, ANI-1x, ANI-1ccx and Wavefunction configurations declare them.
+- The atomization energy (`atomization_energy_key_name`, e.g. `U0_ATOM`) is stored in the dataset's energy unit,
+  Hartree, instead of eV, and is a target only when its name is listed in `scalar_graph_targets_to_include` (the DFT
+  handler no longer appends it to `y` as an unnamed column). With an atomization energy configured, a charged molecule
+  is refused for every dataset (QDπ: set `calculate_atomization_energy_from: null` to process charged molecules); a
+  molecule with an element that has no reference is refused.
+- Wavefunction: the scalar targets are the configured ones the file's `feature_tier` extracts, fixed for the run,
+  logged once and named (6 of the 20 shipped with `basic`); `mo_energies` and `mo_occupations` are attached only when
+  listed in `variable_len_graph_properties_to_include`. `property_availability.Wavefunction.scalar_graph_targets`
+  now lists the keys the parser extracts.
+- QDπ: `y` comes from `scalar_graph_targets_to_include` (shipped: `[energy]`), and the graph no longer carries a
+  `forces` attribute (per-atom forces are in `node_y`); `molecular_charge` is the charge used to build the molecule.
 - The atom feature `mulliken_charge` is now `atomic_charge`, and its source is configuration:
   `data_config.property_selection.<dataset>.atomic_charges_property` names the dataset's per-atom charges, which
   must be one of its `property_availability.<dataset>.node_features`. The shipped configuration sets `Qmulliken`
@@ -236,6 +258,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   get dynamic node and edge counts automatically.
 
 ### Removed
+
+- The per-handler copies of the graph-property steps (`_add_scalar_targets_internal`,
+  `_add_vector_properties_internal`, `_add_variable_length_properties_internal`,
+  `_calculate_atomization_energy_internal`, `_add_orbital_properties_internal`) and the unused shared
+  `_process_vibrational_data`, `_process_vibmodes` and `_process_frequencies`; `add_vector_graph_properties` and
+  `add_variable_len_graph_properties` take the run's shape table instead of property names written in the code.
 
 - `target_selection.target_source` values that are model inputs (`x`, `edge_attr`, `pos`, `z`, `edge_index`) raise
   `ConfigurationError`, and the `TargetSource.X` and `TargetSource.EDGE_ATTR` members are removed. Targets copied out

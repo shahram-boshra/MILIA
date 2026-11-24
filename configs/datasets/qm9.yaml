@@ -182,6 +182,11 @@ property_availability:
     variable_len_graph_properties:
       - freqs           # Vibrational frequencies (cm⁻¹)
 
+    # Shapes of the graph-level properties (null: varies between molecules); a property
+    # without one takes the first molecule's shape, and every molecule must match it
+    shapes:
+      freqs: [null]
+
     # Metadata fields (1 key)
     metadata_fields:
       - metadata        # Dataset metadata (object array)

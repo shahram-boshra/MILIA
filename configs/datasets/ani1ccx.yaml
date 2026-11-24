@@ -95,6 +95,10 @@ property_availability:
     vector_graph_properties:
     - dipole
     variable_len_graph_properties: []
+    # Shapes of the graph-level properties (null: varies between molecules); a property
+    # without one takes the first molecule's shape, and every molecule must match it
+    shapes:
+      dipole: [3]
     metadata_fields:
     - _metadata
     uncertainty_fields: []

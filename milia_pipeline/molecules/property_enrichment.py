@@ -52,13 +52,8 @@ from milia_pipeline.config.config_constants import (
     get_har2ev,
 )
 from milia_pipeline.config.config_containers import DatasetConfig, ProcessingConfig
-from milia_pipeline.config.data_refining import (
-    log_vibration_refinement_status,
-    refine_molecular_vibrations,
-)
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
-    validate_array_shape,
     validate_atomic_numbers,
 )
 from milia_pipeline.exceptions import (
@@ -532,7 +527,6 @@ def add_scalar_graph_targets(
         return
 
     collected_targets = []
-    handler_context = _get_handler_context()
 
     for key in target_keys:
         try:
@@ -548,7 +542,8 @@ def add_scalar_graph_targets(
                     detail="Value retrieved was None",
                 )
 
-                # Enhanced error handling for handler context
+                # Enhanced error handling for handler context (stack inspected on errors only)
+                handler_context = _get_handler_context()
                 if handler_context:
                     raise HandlerValidationError(
                         message=f"Handler validation failed for scalar target '{key}'",
@@ -620,7 +615,8 @@ def add_scalar_graph_targets(
         except (PropertyEnrichmentError, HandlerError):
             raise
         except Exception as e:
-            # Better error context for handlers
+            # Better error context for handlers (stack inspected on errors only)
+            handler_context = _get_handler_context()
             if handler_context:
                 raise HandlerOperationError(
                     message=f"Handler operation failed for scalar target '{key}'",
@@ -834,710 +830,251 @@ def add_node_features(
     # Columns do not change the node count: num_nodes stays as the graph defines it (z, pos, x)
 
 
-@resolve_parameters
+def _array_of(value: Any) -> np.ndarray | None:
+    """A property value as a NumPy array, or ``None`` when it is missing."""
+    if value is None:
+        return None
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().numpy()
+    return np.asarray(value)
+
+
+def _graph_property_tensor(
+    value: Any, name: str, molecule_index: int, identifier: str
+) -> tuple[torch.Tensor | list[torch.Tensor], tuple[int, ...]]:
+    """A graph-level property as a tensor (or a list of equally shaped tensors) and its shape.
+
+    Complex values are stored ``complex64``, all others ``float32``. A list whose items are arrays
+    (one array per mode, for example) is kept as a list of tensors; its shape is the stacked shape.
+
+    Raises:
+        PropertyEnrichmentError: The value is missing, not numeric, ragged, or not finite.
+    """
+
+    def refuse(reason: str, detail: str = "") -> PropertyEnrichmentError:
+        return PropertyEnrichmentError(
+            molecule_index=molecule_index,
+            inchi=identifier,
+            property_name=name,
+            reason=reason,
+            detail=detail,
+        )
+
+    if value is None:
+        raise refuse(f"Configured graph property '{name}' is missing", "Value is None")
+    if isinstance(value, (list, tuple)) and any(
+        isinstance(item, (np.ndarray, torch.Tensor)) and np.ndim(item) > 0 for item in value
+    ):
+        items = [_array_of(item) for item in value]
+        shapes = {item.shape for item in items}
+        if len(shapes) > 1:
+            raise refuse(f"Graph property '{name}' has items of different shapes", str(shapes))
+        tensors = []
+        for item in items:
+            dtype = torch.complex64 if np.iscomplexobj(item) else torch.float32
+            try:
+                tensors.append(torch.as_tensor(item).to(dtype))
+            except (TypeError, ValueError, RuntimeError) as e:
+                raise refuse(f"Graph property '{name}' is not numeric", str(e)) from e
+        if not all(bool(torch.isfinite(t).all()) for t in tensors):
+            raise refuse(f"Graph property '{name}' has NaN or Inf values")
+        return tensors, (len(tensors), *next(iter(shapes)))
+    array = _array_of(value)
+    if array.dtype == object:
+        try:  # numbers held in an object container (a loaded ragged column)
+            array = np.array(array.tolist())
+        except (TypeError, ValueError) as e:
+            raise refuse(f"Graph property '{name}' is not a numeric array", str(e)) from e
+    if array.dtype == object or not (
+        np.issubdtype(array.dtype, np.number) or array.dtype == np.bool_
+    ):
+        raise refuse(f"Graph property '{name}' is not numeric", f"dtype {array.dtype}")
+    dtype = torch.complex64 if np.iscomplexobj(array) else torch.float32
+    tensor = torch.as_tensor(array).to(dtype)
+    if not bool(torch.isfinite(tensor).all()):
+        raise refuse(f"Graph property '{name}' has NaN or Inf values")
+    return tensor, tuple(array.shape)
+
+
+def _check_graph_property_shape(
+    name: str,
+    shape: tuple[int, ...],
+    shapes: dict[str, tuple[int | None, ...]],
+    variable_length: bool,
+    molecule_index: int,
+    identifier: str,
+) -> None:
+    """Refuse a value whose shape does not match the property's shape for the run.
+
+    ``shapes`` holds the declared shapes (``property_availability.<dataset>.shapes``; ``None`` is a
+    dimension that varies). A property without one takes this molecule's shape: the exact shape for
+    a vector property, the number of dimensions for a variable-length property. Every later
+    molecule must match.
+    """
+    expected = shapes.get(name)
+    if expected is None:
+        expected = (None,) * len(shape) if variable_length else tuple(shape)
+        shapes[name] = expected
+    empty_list = variable_length and len(shape) == 1 and shape[0] == 0 and len(expected) > 1
+    matches = empty_list or (
+        len(shape) == len(expected)
+        and all(dim is None or dim == size for dim, size in zip(expected, shape, strict=True))
+    )
+    if not matches:
+        raise PropertyEnrichmentError(
+            molecule_index=molecule_index,
+            inchi=identifier,
+            property_name=name,
+            reason=f"Graph property '{name}' has shape {tuple(shape)}, expected {tuple(expected)}",
+            detail="Every molecule of a run carries each property with the same shape",
+        )
+
+
 def add_vector_graph_properties(
     pyg_data: Data,
-    mol_idx: int,
-    raw_properties_dict: dict[str, np.ndarray | None],
-    prop_keys: list[str],
-    logger: logging.Logger,
+    properties: Mapping[str, Any],
+    property_keys: list[str],
+    shapes: dict[str, tuple[int | None, ...]],
+    molecule_index: int,
     identifier: str = "N/A",
 ) -> None:
-    """
-    Adds specified graph-level vector properties to the PyG Data object as attributes.
+    """Attach the configured fixed-size graph properties, one attribute per name.
 
-    ORGANIC DYNAMIC FIX: Standardized interface with automatic parameter resolution.
-
-    CRITICAL FIX: All vector properties are properly converted to tensors to prevent
-    'list' object has no attribute 'dim' errors.
-
-    MIGRATION COMPLETE: Pure vector property processing. Dataset handlers determine
-    which properties are available and appropriate for the dataset type.
-    Enhanced with handler-aware error reporting.
-
-    Expects properties to be 1D NumPy arrays of fixed size. Special handling for 'rots'
-    allows (2,) arrays to be padded to (3,) for linear molecules.
-
-    Args:
-        pyg_data: The PyG Data object for the current molecule
-        mol_idx: The index of the molecule being processed
-        raw_properties_dict: Dictionary containing all raw data extracted for the molecule
-        prop_keys: List of string keys for the vector properties to add
-        logger: The logger instance
-        identifier: Molecule identifier for error context
+    ``property_selection.<dataset>.vector_graph_properties_to_include``. Values are stored as
+    given (the dataset handler normalises them in ``process_property_value``); each must have the
+    property's shape for the run (``_check_graph_property_shape``).
 
     Raises:
-        PropertyEnrichmentError: If any property is invalid, missing, or has unexpected shape
-        HandlerOperationError: If called from handler context and operation fails
+        PropertyEnrichmentError: A property is missing, not finite, or has another shape; the
+            molecule is refused (every graph carries the same attributes).
     """
-    handler_context = _get_handler_context()
-
-    # Validate basic structure requirements
-    if (
-        pyg_data.num_nodes == 0
-        or not hasattr(pyg_data, "pos")
-        or pyg_data.pos is None
-        or pyg_data.pos.numel() == 0
-    ):
-        error = PropertyEnrichmentError(
-            molecule_index=mol_idx,
-            inchi=identifier,
-            property_name="graph_structure",
-            reason="No nodes or valid positions found for vector graph properties",
-            detail="Required for vector property calculation",
+    for name in property_keys:
+        tensor, shape = _graph_property_tensor(
+            properties.get(name), name, molecule_index, identifier
         )
-
-        # Enhanced error handling for handler context
-        if handler_context:
-            raise HandlerValidationError(
-                message="Handler validation failed: Invalid graph structure for vector properties",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                validation_type="graph_structure_validation",
-                molecule_index=mol_idx,
-                details=error.detail,
-            ) from error
-        raise error
-
-    for prop_key in prop_keys:
-        try:
-            value = raw_properties_dict.get(prop_key)
-
-            if not is_value_valid_and_not_nan(value):
-                raise PropertyEnrichmentError(
-                    molecule_index=mol_idx,
-                    inchi=identifier,
-                    property_name=prop_key,
-                    reason=f"Missing, invalid, or NaN vector property '{prop_key}'",
-                    detail=f"Value: {value}",
-                )
-
-            # CRITICAL FIX: Handle different input types
-            if isinstance(value, (list, tuple)):
-                value = np.asarray(value, dtype=np.float32)
-
-            if not isinstance(value, np.ndarray) or value.ndim != 1:
-                raise PropertyEnrichmentError(
-                    molecule_index=mol_idx,
-                    inchi=identifier,
-                    property_name=prop_key,
-                    reason=f"Vector property '{prop_key}' is not a 1D array",
-                    detail=f"Type: {type(value)}, Dims: {getattr(value, 'ndim', 'N/A')}",
-                )
-
-            # Special handling for 'rots' - pad (2,) to (3,) for linear molecules
-            if prop_key == "rots":
-                if value.shape == (2,):
-                    value = np.pad(value, (0, 1), "constant", constant_values=0.0)
-                    logger.debug(f"Padded 'rots' for molecule {mol_idx} from (2,) to (3,)")
-                elif value.shape != (3,):
-                    raise PropertyEnrichmentError(
-                        molecule_index=mol_idx,
-                        inchi=identifier,
-                        property_name=prop_key,
-                        reason=f"Vector property '{prop_key}' has unexpected shape {value.shape}, expected (3,) or (2,)",
-                        detail=f"Shape: {value.shape}",
-                    )
-
-            # Validate expected shapes for known properties
-            expected_shapes = {
-                "dipole": (3,),
-                "quadrupole": (6,),
-                "octupole": (10,),
-                "hexadecapole": (15,),
-            }
-
-            if prop_key in expected_shapes:
-                expected_shape = expected_shapes[prop_key]
-                if not validate_array_shape(value, expected_shape=expected_shape, name=prop_key):
-                    raise PropertyEnrichmentError(
-                        molecule_index=mol_idx,
-                        inchi=identifier,
-                        property_name=prop_key,
-                        reason=f"Vector property '{prop_key}' has unexpected shape {value.shape}, expected {expected_shape}",
-                        detail=f"Shape: {value.shape}",
-                    )
-
-            # CRITICAL FIX: Ensure proper tensor conversion
-            property_tensor = _ensure_tensor(value, torch.float32, prop_key, mol_idx, identifier)
-            setattr(pyg_data, prop_key, property_tensor)
-
-        except (PropertyEnrichmentError, HandlerError):
-            raise
-        except Exception as e:
-            # Better error context for handlers
-            if handler_context:
-                raise HandlerOperationError(
-                    message=f"Handler operation failed for vector property '{prop_key}'",
-                    handler_type=handler_context.get("handler_type", "unknown"),
-                    operation="add_vector_properties",
-                    molecule_index=mol_idx,
-                    details=str(e),
-                ) from e
-            else:
-                raise PropertyEnrichmentError(
-                    molecule_index=mol_idx,
-                    inchi=identifier,
-                    property_name=prop_key,
-                    reason=f"Error processing vector property '{prop_key}'",
-                    detail=str(e),
-                ) from e
+        if isinstance(tensor, list):
+            raise PropertyEnrichmentError(
+                molecule_index=molecule_index,
+                inchi=identifier,
+                property_name=name,
+                reason=f"Vector graph property '{name}' is a list of arrays",
+                detail="Declare it under variable_len_graph_properties_to_include",
+            )
+        _check_graph_property_shape(name, shape, shapes, False, molecule_index, identifier)
+        setattr(pyg_data, name, tensor)
 
 
-@resolve_parameters
 def add_variable_len_graph_properties(
     pyg_data: Data,
-    raw_properties_dict: dict[str, np.ndarray | None],
-    molecule_index: int,
-    logger: logging.Logger,
+    properties: Mapping[str, Any],
     property_keys: list[str],
-    data_config: dict[str, Any],
+    shapes: dict[str, tuple[int | None, ...]],
+    molecule_index: int,
     identifier: str = "N/A",
 ) -> None:
-    """
-    Adds specified graph-level properties that can have a variable number of elements
-    to the PyG Data object.
+    """Attach the configured variable-length graph properties, one attribute per name.
 
-    ORGANIC DYNAMIC FIX: Standardized interface with automatic parameter resolution
-    to eliminate signature mismatches between handlers and property functions.
-
-    CRITICAL FIX: All variable-length properties are properly converted to tensors
-    to prevent 'list' object has no attribute 'dim' errors.
-
-    MIGRATION COMPLETE: Pure variable-length property processing. Dataset handlers
-    determine which properties are appropriate and when refinement should occur.
-    Enhanced with handler-aware error reporting.
-
-    Args:
-        pyg_data: The PyG Data object for the current molecule
-        raw_properties_dict: Dictionary containing all raw data extracted for the molecule
-        molecule_index: The index of the molecule being processed
-        logger: The logger instance
-        property_keys: List of string keys for the variable-length properties to add
-        data_config: Configuration dictionary for data processing settings
-        identifier: The InChI string of the molecule for error reporting
+    ``property_selection.<dataset>.variable_len_graph_properties_to_include``. A value may be an
+    array or a list of equally shaped arrays (kept as a list of tensors). Its number of dimensions,
+    and every dimension the declared shape fixes, must match the property's shape for the run.
 
     Raises:
-        PropertyEnrichmentError: If a property is missing, invalid, or has unexpected format/shape
-        HandlerOperationError: If called from handler context and operation fails
+        PropertyEnrichmentError: A property is missing, not finite, or has another shape; the
+            molecule is refused (every graph carries the same attributes).
     """
-    if not property_keys:
-        return
+    for name in property_keys:
+        tensor, shape = _graph_property_tensor(
+            properties.get(name), name, molecule_index, identifier
+        )
+        _check_graph_property_shape(name, shape, shapes, True, molecule_index, identifier)
+        setattr(pyg_data, name, tensor)
 
-    handler_context = _get_handler_context()
 
-    # Validate basic structure
-    if pyg_data.num_nodes == 0:
-        error = PropertyEnrichmentError(
+def add_atomization_energy(
+    pyg_data: Data,
+    properties: Mapping[str, Any],
+    energy_key: str,
+    attribute: str,
+    atomic_energies_hartree: Mapping[int, float],
+    molecular_charge: int,
+    molecule_index: int,
+    identifier: str = "N/A",
+) -> float:
+    """Store the atomization energy (Hartree) derived from ``energy_key`` as ``attribute``.
+
+    E_atomization = E_molecule − Σ E_atom, both at the dataset's level of theory and in the
+    dataset's energy unit (Hartree), so no unit conversion is applied. The isolated-atom energies
+    are neutral ground-state atoms, which describe a neutral molecule only.
+
+    Returns:
+        The atomization energy in Hartree.
+
+    Raises:
+        PropertyEnrichmentError: The energy is missing or not finite, the molecule is charged, or an
+            element has no reference energy; the molecule is refused.
+    """
+
+    def refuse(reason: str, detail: str = "") -> PropertyEnrichmentError:
+        return PropertyEnrichmentError(
             molecule_index=molecule_index,
             inchi=identifier,
-            property_name="variable_length_properties",
-            reason="No nodes found for variable-length graph properties",
-            detail="Required for variable-length property processing",
+            property_name=attribute,
+            reason=reason,
+            detail=detail,
         )
 
-        # Enhanced error handling for handler context
-        if handler_context:
-            raise HandlerValidationError(
-                message="Handler validation failed: No nodes for variable-length properties",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                validation_type="node_count_validation",
-                molecule_index=molecule_index,
-                details=error.detail,
-            ) from error
-        raise error
-
-    # Get refinement tolerance from config
-    refinement_tolerance = data_config.get("vibration_refinement", {}).get(
-        "comparison_tolerance", 1e-4
+    energy = _array_of(properties.get(energy_key))
+    if energy is None or energy.size != 1 or not np.issubdtype(energy.dtype, np.number):
+        raise refuse(f"'{energy_key}' for the atomization energy is missing or not a scalar")
+    energy_hartree = float(energy.reshape(-1)[0])
+    if not np.isfinite(energy_hartree):
+        raise refuse(f"'{energy_key}' for the atomization energy is not finite")
+    if molecular_charge != 0:
+        raise refuse(
+            f"Atomization energy is defined against neutral atoms; molecular charge is "
+            f"{molecular_charge}",
+            "Set calculate_atomization_energy_from: null to keep charged molecules",
+        )
+    value = atomization_energy_hartree(
+        energy_hartree, pyg_data.z, atomic_energies_hartree, molecule_index, identifier
     )
-
-    # Process vibrational data with refinement if both freqs and vibmodes are requested
-    try:
-        processed_properties = _process_vibrational_data(
-            raw_properties_dict=raw_properties_dict,
-            property_keys=property_keys,
-            molecule_index=molecule_index,
-            logger=logger,
-            refinement_tolerance=refinement_tolerance,
-            identifier=identifier,
-        )
-    except PropertyEnrichmentError as e:
-        if e.inchi == "N/A":
-            e.inchi = identifier
-        # Convert to handler error if in handler context
-        if handler_context:
-            raise HandlerOperationError(
-                message="Handler vibrational data processing failed",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                operation="process_vibrational_data",
-                molecule_index=molecule_index,
-                details=str(e),
-            ) from e
-        raise
-
-    # Process each requested property
-    for key in property_keys:
-        try:
-            value = processed_properties.get(key)
-
-            if not is_value_valid_and_not_nan(value):
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=identifier,
-                    property_name=key,
-                    reason=f"Missing, invalid, or NaN variable-length property '{key}' after processing",
-                    detail=f"Value: {value}",
-                )
-
-            # Special handling for vibmodes
-            if key == "vibmodes":
-                vibmodes_tensors = _process_vibmodes(
-                    vibmodes_data=value,
-                    num_atoms=pyg_data.num_nodes,
-                    molecule_index=molecule_index,
-                    inchi=identifier,
-                    logger=logger,
-                )
-                setattr(pyg_data, key, vibmodes_tensors)
-                continue
-
-            # Special handling for frequencies
-            if key == "freqs":
-                freqs_tensor = _process_frequencies(
-                    freqs_data=value, molecule_index=molecule_index, inchi=identifier, logger=logger
-                )
-                setattr(pyg_data, key, freqs_tensor)
-                continue
-
-            # CRITICAL FIX: Generic processing for other variable-length properties with proper tensor conversion
-            dtype = torch.complex64 if "freq" in key else torch.float32
-            property_tensor = _ensure_tensor(value, dtype, key, molecule_index, identifier)
-            setattr(pyg_data, key, property_tensor)
-
-        except (PropertyEnrichmentError, HandlerError):
-            raise
-        except Exception as e:
-            # Better error context for handlers
-            if handler_context:
-                raise HandlerOperationError(
-                    message=f"Handler operation failed for variable-length property '{key}'",
-                    handler_type=handler_context.get("handler_type", "unknown"),
-                    operation="add_variable_length_properties",
-                    molecule_index=molecule_index,
-                    details=str(e),
-                ) from e
-            else:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=identifier,
-                    property_name=key,
-                    reason=f"Error processing variable-length property '{key}'",
-                    detail=str(e),
-                ) from e
+    setattr(pyg_data, attribute, torch.tensor([value], dtype=torch.float32))
+    return value
 
 
-def _process_vibrational_data(
-    raw_properties_dict: dict[str, np.ndarray | None],
-    property_keys: list[str],
-    molecule_index: int,
-    logger: logging.Logger,
-    refinement_tolerance: float,
+def atomization_energy_hartree(
+    molecular_total_energy_hartree: float,
+    atomic_numbers: torch.Tensor,
+    atomic_energies_hartree: Mapping[int, float],
+    molecule_index: int = 0,
     identifier: str = "N/A",
-) -> dict[str, np.ndarray | None]:
-    """
-    Process and refine vibrational data (frequencies and vibration modes) if both are present.
-
-    CRITICAL FIX: Ensures all processed vibrational data is in proper numpy format
-    before being converted to tensors later.
-
-    MIGRATION COMPLETE: Pure vibrational data processing without dataset-specific logic.
-    Dataset handlers determine when vibrational refinement should be applied.
-    Enhanced with handler-aware error reporting.
-
-    Args:
-        raw_properties_dict: Dictionary containing raw molecular properties
-        property_keys: List of property keys to process
-        molecule_index: Index of molecule being processed
-        logger: Logger instance
-        refinement_tolerance: Tolerance for vibrational refinement
-        identifier: Molecule identifier for error context
-
-    Returns:
-        Dictionary with processed vibrational properties
+) -> float:
+    """E_molecule − Σ E_atom in Hartree.
 
     Raises:
-        PropertyEnrichmentError: If vibrational processing fails
-        HandlerOperationError: If called from handler context and operation fails
+        PropertyEnrichmentError: The atomic numbers are invalid or an element has no reference.
     """
-    processed_dict = raw_properties_dict.copy()
-    handler_context = _get_handler_context()
-
-    has_freqs = "freqs" in property_keys
-    has_vibmodes = "vibmodes" in property_keys
-
-    if not (has_freqs and has_vibmodes):
-        log_vibration_refinement_status(
-            raw_freqs_data=raw_properties_dict.get("freqs") if has_freqs else None,
-            raw_vibmodes_data=raw_properties_dict.get("vibmodes") if has_vibmodes else None,
+    numbers = atomic_numbers.detach().cpu().numpy()
+    if not validate_atomic_numbers(numbers, f"molecule_{molecule_index}"):
+        raise PropertyEnrichmentError(
             molecule_index=molecule_index,
-            logger=logger,
+            inchi=identifier,
+            property_name="atomization_energy",
+            reason="Invalid atomic numbers for the atomization energy",
+            detail=f"Atomic numbers: {numbers.tolist()}",
         )
-        return processed_dict
-
-    raw_freqs_data = raw_properties_dict.get("freqs")
-    raw_vibmodes_data = raw_properties_dict.get("vibmodes")
-
-    if raw_freqs_data is None or raw_vibmodes_data is None:
-        log_vibration_refinement_status(
-            raw_freqs_data=raw_freqs_data,
-            raw_vibmodes_data=raw_vibmodes_data,
+    missing = sorted({int(z) for z in numbers.tolist()} - set(atomic_energies_hartree))
+    if missing:
+        raise PropertyEnrichmentError(
             molecule_index=molecule_index,
-            logger=logger,
+            inchi=identifier,
+            property_name="atomization_energy",
+            reason=f"No isolated-atom reference energy for elements {missing}",
+            detail=f"References for {sorted(atomic_energies_hartree)}",
         )
-        return processed_dict
-
-    try:
-        cleaned_freqs, cleaned_vibmodes, is_accepted = refine_molecular_vibrations(
-            freqs=raw_freqs_data,
-            vibmodes=raw_vibmodes_data,
-            comparison_tolerance=refinement_tolerance,
-        )
-
-        if not is_accepted:
-            error = PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=identifier,
-                property_name="freqs_and_vibmodes",
-                reason=f"Vibrational data refinement rejected for molecule {molecule_index}",
-                detail=f"Freqs count: {len(cleaned_freqs)}, Vibmodes count: {len(cleaned_vibmodes)}",
-            )
-
-            # Enhanced error handling for handler context
-            if handler_context:
-                raise HandlerValidationError(
-                    message="Handler validation failed: Vibrational refinement rejected",
-                    handler_type=handler_context.get("handler_type", "unknown"),
-                    validation_type="vibrational_refinement",
-                    molecule_index=molecule_index,
-                    details=error.detail,
-                ) from error
-            raise error
-
-        logger.info(
-            f"Molecule {molecule_index}: Successfully refined freqs ({len(cleaned_freqs)}) and vibmodes ({len(cleaned_vibmodes)})"
-        )
-
-        # CRITICAL FIX: Ensure cleaned data is in proper numpy format
-        processed_dict["freqs"] = np.asarray(
-            cleaned_freqs,
-            dtype=np.complex64
-            if hasattr(raw_freqs_data, "dtype") and np.iscomplexobj(raw_freqs_data)
-            else np.float32,
-        )
-
-        # Handle vibmodes - ensure it's a proper numpy array or list of numpy arrays
-        if isinstance(cleaned_vibmodes, list):
-            processed_dict["vibmodes"] = [
-                np.asarray(mode, dtype=np.float32) if not isinstance(mode, np.ndarray) else mode
-                for mode in cleaned_vibmodes
-            ]
-        else:
-            processed_dict["vibmodes"] = np.asarray(cleaned_vibmodes, dtype=np.float32)
-
-    except (PropertyEnrichmentError, HandlerError):
-        raise
-    except Exception as e:
-        # Better error context for handlers
-        if handler_context:
-            raise HandlerOperationError(
-                message="Handler vibrational refinement failed",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                operation="refine_vibrational_data",
-                molecule_index=molecule_index,
-                details=str(e),
-            ) from e
-        else:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=identifier,
-                property_name="freqs_and_vibmodes_refinement",
-                reason=f"Error during vibrational data refinement for molecule {molecule_index}",
-                detail=str(e),
-            ) from e
-
-    return processed_dict
-
-
-def _process_vibmodes(
-    vibmodes_data: np.ndarray | list,
-    num_atoms: int,
-    molecule_index: int,
-    inchi: str,
-    logger: logging.Logger,
-) -> list[torch.Tensor]:
-    """
-    Process vibrational modes data into the expected format for PyG Data storage.
-
-    CRITICAL FIX: Ensures all vibrational mode tensors are properly created and validated.
-
-    MIGRATION COMPLETE: Pure vibmode processing without dataset-specific assumptions.
-    Enhanced with handler-aware error reporting.
-
-    Args:
-        vibmodes_data: Raw vibrational modes data
-        num_atoms: Number of atoms in molecule
-        molecule_index: Index of molecule being processed
-        inchi: Molecule InChI identifier
-        logger: Logger instance
-
-    Returns:
-        List of tensors representing vibrational modes
-
-    Raises:
-        PropertyEnrichmentError: If vibmode processing fails
-        HandlerOperationError: If called from handler context and operation fails
-    """
-    handler_context = _get_handler_context()
-
-    if num_atoms == 0:
-        error = PropertyEnrichmentError(
-            molecule_index=molecule_index,
-            inchi=inchi,
-            property_name="vibmodes",
-            reason="Cannot process 'vibmodes': num_nodes is 0",
-            detail="No atoms available for vibmode processing",
-        )
-
-        # Enhanced error handling for handler context
-        if handler_context:
-            raise HandlerValidationError(
-                message="Handler validation failed: No atoms for vibmode processing",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                validation_type="atom_count_validation",
-                molecule_index=molecule_index,
-                details=error.detail,
-            ) from error
-        raise error
-
-    reshaped_value = None
-
-    try:
-        # CRITICAL FIX: Handle different input types and convert to proper numpy arrays
-        # Handle list of arrays (refined vibmodes)
-        if isinstance(vibmodes_data, list) and all(
-            isinstance(v, (np.ndarray, list)) for v in vibmodes_data
-        ):
-            if vibmodes_data:
-                # Convert any non-numpy elements to numpy
-                numpy_modes = []
-                for v in vibmodes_data:
-                    if isinstance(v, np.ndarray):
-                        numpy_modes.append(v)
-                    elif isinstance(v, (list, tuple)):
-                        numpy_modes.append(np.asarray(v, dtype=np.float32))
-                    else:
-                        numpy_modes.append(np.asarray([v], dtype=np.float32))
-
-                # Validate each mode
-                for i, mode in enumerate(numpy_modes):
-                    if mode.ndim == 2 and mode.shape[0] == num_atoms and mode.shape[1] == 3:
-                        continue  # Valid mode
-                    else:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=inchi,
-                            property_name="vibmodes",
-                            reason=f"Vibmode {i} has invalid shape: expected ({num_atoms}, 3), got {mode.shape}",
-                            detail=f"Mode {i} shape: {mode.shape}",
-                        )
-
-                reshaped_value = np.array(numpy_modes)
-                if (
-                    reshaped_value.ndim != 3
-                    or reshaped_value.shape[1] != num_atoms
-                    or reshaped_value.shape[2] != 3
-                ):
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=inchi,
-                        property_name="vibmodes",
-                        reason=f"Refined 'vibmodes' list could not be converted to expected 3D format: {reshaped_value.shape}",
-                        detail=f"Expected: (num_modes, {num_atoms}, 3), Got: {reshaped_value.shape}",
-                    )
-
-        # Handle 2D array that needs reshaping
-        elif (
-            isinstance(vibmodes_data, np.ndarray)
-            and vibmodes_data.ndim == 2
-            and vibmodes_data.shape[1] == 3
-        ):
-            if vibmodes_data.shape[0] % num_atoms != 0:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=inchi,
-                    property_name="vibmodes",
-                    reason=f"'vibmodes' array first dimension ({vibmodes_data.shape[0]}) not multiple of num_nodes ({num_atoms})",
-                    detail=f"Array shape: {vibmodes_data.shape}, Num atoms: {num_atoms}",
-                )
-            num_modes = vibmodes_data.shape[0] // num_atoms
-            reshaped_value = vibmodes_data.reshape(num_modes, num_atoms, 3)
-
-        # Handle 3D array (already correct format)
-        elif (
-            isinstance(vibmodes_data, np.ndarray)
-            and vibmodes_data.ndim == 3
-            and vibmodes_data.shape[2] == 3
-            and vibmodes_data.shape[1] == num_atoms
-        ):
-            if validate_array_shape(
-                vibmodes_data, expected_shape=(-1, num_atoms, 3), name="vibmodes"
-            ):
-                reshaped_value = vibmodes_data
-            else:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=inchi,
-                    property_name="vibmodes",
-                    reason=f"'vibmodes' array validation failed: {vibmodes_data.shape}",
-                    detail=f"Expected: (num_modes, {num_atoms}, 3)",
-                )
-
-        # CRITICAL FIX: Handle list input that needs conversion
-        elif isinstance(vibmodes_data, list):
-            try:
-                # Try to convert list to numpy array
-                vibmodes_array = np.asarray(vibmodes_data, dtype=np.float32)
-                return _process_vibmodes(vibmodes_array, num_atoms, molecule_index, inchi, logger)
-            except Exception as e:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=inchi,
-                    property_name="vibmodes",
-                    reason=f"Failed to convert vibmodes list to numpy array: {str(e)}",
-                    detail=f"List length: {len(vibmodes_data)}, Content type: {type(vibmodes_data[0]) if vibmodes_data else 'empty'}",
-                ) from e
-
-        else:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=inchi,
-                property_name="vibmodes",
-                reason="'vibmodes' has unexpected format",
-                detail=f"Type: {type(vibmodes_data)}, Shape: {vibmodes_data.shape if isinstance(vibmodes_data, np.ndarray) else 'N/A'}",
-            )
-
-        # CRITICAL FIX: Convert to list of tensors with proper error handling
-        tensor_list = []
-        for i, mode_data in enumerate(reshaped_value):
-            mode_tensor = _ensure_tensor(
-                mode_data.astype(np.float32),
-                torch.float32,
-                f"vibmodes_mode_{i}",
-                molecule_index,
-                inchi,
-            )
-            tensor_list.append(mode_tensor)
-        return tensor_list
-
-    except (PropertyEnrichmentError, HandlerError):
-        raise
-    except Exception as e:
-        # Better error context for handlers
-        if handler_context:
-            raise HandlerOperationError(
-                message="Handler vibmode processing failed",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                operation="process_vibmodes",
-                molecule_index=molecule_index,
-                details=str(e),
-            ) from e
-        else:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=inchi,
-                property_name="vibmodes",
-                reason=f"Failed to convert vibmodes to tensor list: {str(e)}",
-                detail=f"Reshaped value shape: {reshaped_value.shape if hasattr(reshaped_value, 'shape') else 'N/A'}",
-            ) from e
-
-
-def _process_frequencies(
-    freqs_data: np.ndarray | list, molecule_index: int, inchi: str, logger: logging.Logger
-) -> torch.Tensor:
-    """
-    Process frequency data into a PyTorch tensor.
-
-    CRITICAL FIX: Ensures proper tensor conversion for frequency data.
-
-    MIGRATION COMPLETE: Pure frequency processing without dataset assumptions.
-    Enhanced with handler-aware error reporting.
-
-    Args:
-        freqs_data: Raw frequency data
-        molecule_index: Index of molecule being processed
-        inchi: Molecule InChI identifier
-        logger: Logger instance
-
-    Returns:
-        Tensor containing frequency data
-
-    Raises:
-        PropertyEnrichmentError: If frequency processing fails
-        HandlerOperationError: If called from handler context and operation fails
-    """
-    handler_context = _get_handler_context()
-
-    if not is_value_valid_and_not_nan(freqs_data):
-        error = PropertyEnrichmentError(
-            molecule_index=molecule_index,
-            inchi=inchi,
-            property_name="freqs",
-            reason="Missing, invalid, or NaN frequency data",
-            detail=f"Value: {freqs_data}",
-        )
-
-        # Enhanced error handling for handler context
-        if handler_context:
-            raise HandlerValidationError(
-                message="Handler validation failed: Invalid frequency data",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                validation_type="frequency_validation",
-                molecule_index=molecule_index,
-                details=error.detail,
-            ) from error
-        raise error
-
-    try:
-        # CRITICAL FIX: Handle different input types for frequencies
-        if isinstance(freqs_data, list):
-            freqs_data = np.asarray(freqs_data)
-
-        # Determine appropriate dtype - preserve complex if input is complex
-        if hasattr(freqs_data, "dtype") and np.iscomplexobj(freqs_data):
-            target_dtype = torch.complex64
-        else:
-            target_dtype = torch.float32
-
-        return _ensure_tensor(freqs_data, target_dtype, "freqs", molecule_index, inchi)
-
-    except Exception as e:
-        # Better error context for handlers
-        if handler_context:
-            raise HandlerOperationError(
-                message="Handler frequency processing failed",
-                handler_type=handler_context.get("handler_type", "unknown"),
-                operation="process_frequencies",
-                molecule_index=molecule_index,
-                details=str(e),
-            ) from e
-        else:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=inchi,
-                property_name="freqs",
-                reason=f"Error processing frequency data: {str(e)}",
-                detail=f"Input type: {type(freqs_data)}",
-            ) from e
+    return molecular_total_energy_hartree - sum(
+        atomic_energies_hartree[int(z)] for z in numbers.tolist()
+    )
 
 
 @resolve_parameters
@@ -1600,35 +1137,13 @@ def calculate_atomization_energy(
                 config_key="ATOMIC_ENERGIES_HARTREE",
             )
 
-        if not validate_atomic_numbers(
-            atomic_numbers_tensor.detach().cpu().numpy(), f"molecule_{molecule_index}"
-        ):
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=identifier,
-                property_name="atomization_energy",
-                reason="Invalid atomic numbers tensor for atomization energy calculation",
-                detail=f"Atomic numbers: {atomic_numbers_tensor.tolist()}",
-            )
-
-        sum_atomic_energies_hartree = 0.0
-        for atomic_num in atomic_numbers_tensor.tolist():
-            atomic_energy = atomic_energies_hartree.get(atomic_num)
-            if atomic_energy is None:
-                raise PropertyEnrichmentError(
-                    molecule_index=molecule_index,
-                    inchi=identifier,
-                    property_name="atomization_energy",
-                    reason=f"Missing atomic energy for atomic number {atomic_num}",
-                    detail=f"Atomic number: {atomic_num}",
-                )
-            sum_atomic_energies_hartree += atomic_energy
-
-        # Convert to eV and calculate atomization energy
-        molecular_total_energy_eV = molecular_total_energy_hartree * har2ev
-        sum_atomic_energies_eV = sum_atomic_energies_hartree * har2ev
-        atomization_energy_eV = molecular_total_energy_eV - sum_atomic_energies_eV
-        return atomization_energy_eV
+        return har2ev * atomization_energy_hartree(
+            molecular_total_energy_hartree,
+            atomic_numbers_tensor,
+            atomic_energies_hartree,
+            molecule_index,
+            identifier,
+        )
 
     except (PropertyEnrichmentError, ConfigurationError, HandlerError):
         raise
@@ -1956,8 +1471,6 @@ def verify_interface_compatibility() -> dict[str, Any]:
     critical_functions = [
         add_scalar_graph_targets,
         add_node_features,
-        add_vector_graph_properties,
-        add_variable_len_graph_properties,
         calculate_atomization_energy,
         enrich_pyg_data_with_properties,
     ]
@@ -2073,14 +1586,12 @@ def get_handler_integration_status() -> dict[str, str]:
     return {
         "add_scalar_graph_targets": "HANDLER_INTEGRATED",
         "add_node_features": "HANDLER_INTEGRATED",
-        "add_vector_graph_properties": "HANDLER_INTEGRATED",
-        "add_variable_len_graph_properties": "HANDLER_INTEGRATED",
+        "add_vector_graph_properties": "SHARED_STEP",
+        "add_variable_len_graph_properties": "SHARED_STEP",
+        "add_atomization_energy": "SHARED_STEP",
         "calculate_atomization_energy": "HANDLER_INTEGRATED",
         "enrich_pyg_data_with_properties": "HANDLER_ORCHESTRATED",
         "_ensure_tensor": "HANDLER_AWARE",
-        "_process_vibrational_data": "HANDLER_AWARE",
-        "_process_vibmodes": "HANDLER_AWARE",
-        "_process_frequencies": "HANDLER_AWARE",
         "_get_handler_context": "HANDLER_UTILITY",
         "validate_handler_compatibility": "HANDLER_VALIDATION",
         "overall_status": "HANDLER_PATTERN_INTEGRATED",

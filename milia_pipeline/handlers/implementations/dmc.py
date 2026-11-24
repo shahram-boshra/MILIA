@@ -19,6 +19,7 @@ Reference: milia Dataset Architecture Refactoring Plan v2.2.0
 """
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -36,11 +37,10 @@ from milia_pipeline.exceptions import (
     HandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 
 # Import from refactored base handler
-from milia_pipeline.handlers.base_handler import DatasetHandler, handle_transform_errors
+from milia_pipeline.handlers.base_handler import DatasetHandler
 from milia_pipeline.handlers.handler_registry import register_handler
 
 logger = logging.getLogger(__name__)
@@ -557,187 +557,21 @@ class DMCDatasetHandler(DatasetHandler):
         return suitable
 
     # ========================================================================
-    # Self-contained scalar targets implementation
+    # Uncertainty metadata (dmc_config.uncertainty_handling)
     # ========================================================================
 
-    def _add_scalar_targets_internal(
+    def add_dataset_extras(
         self,
         pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
+        raw_properties_dict: Mapping[str, Any],
         molecule_index: int,
         identifier: str,
     ) -> None:
-        """Internal DMC-specific implementation of scalar target addition with enhancements."""
-        try:
-            if not self.processing_config.scalar_graph_targets:
-                return
-
-            collected_targets = []
-
-            for key in self.processing_config.scalar_graph_targets:
-                try:
-                    value = raw_properties_dict.get(key)
-
-                    if value is None:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Required DMC scalar target '{key}' is missing from raw data",
-                            detail="Value retrieved was None",
-                        )
-
-                    # Convert to scalar float with DMC-specific handling
-                    if isinstance(value, (int, float, np.number)):
-                        val_to_add = float(value)
-                    elif isinstance(value, np.ndarray):
-                        if value.size == 1:
-                            val_to_add = float(value.item())
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DMC scalar target '{key}' has array shape {value.shape}, expected single scalar",
-                                detail=f"Shape: {value.shape}, Size: {value.size}",
-                            )
-                    elif isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                        try:
-                            val_to_add = float(value)
-                        except ValueError:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DMC scalar target '{key}' string cannot be converted to number",
-                                detail=f"Value: '{value}'",
-                            ) from None
-                    elif isinstance(value, (list, tuple)):
-                        if len(value) == 1:
-                            val_to_add = float(value[0])
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DMC scalar target '{key}' is a list with {len(value)} elements, expected single scalar",
-                                detail=f"Value: {value}",
-                            )
-                    else:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"DMC scalar target '{key}' has unexpected type {type(value)}",
-                            detail=f"Value type: {type(value)}, Value: {value}",
-                        )
-
-                    # Validate the converted value
-                    if not is_value_valid_and_not_nan(val_to_add):
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"DMC scalar target '{key}' has NaN, Inf, or None value after conversion",
-                            detail=f"Converted value: {val_to_add}",
-                        )
-
-                    collected_targets.append(val_to_add)
-
-                except PropertyEnrichmentError:
-                    raise
-                except Exception as e:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=key,
-                        reason=f"Critical error processing DMC scalar target '{key}'",
-                        detail=str(e),
-                    ) from e
-
-            if collected_targets:
-                pyg_data.y = self._ensure_tensor(
-                    collected_targets,
-                    torch.float32,
-                    "dmc_scalar_targets",
-                    molecule_index,
-                    identifier,
-                )
-
-        except PropertyEnrichmentError:
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DMC handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DMC",
-                message=f"DMC scalar targets processing failed: {str(e)}",
-                operation="add_scalar_targets",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    @handle_transform_errors("enrich_pyg_data")
-    def enrich_pyg_data(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str = "N/A",
-    ) -> Data:
-        """DMC-specific PyG data enrichment with exception handling."""
-        try:
-            # Set dataset type
-            pyg_data.dataset_type = "DMC"
-
-            # Ensure num_nodes is set properly
-            if not hasattr(pyg_data, "num_nodes") or pyg_data.num_nodes == 0:
-                pyg_data.num_nodes = (
-                    pyg_data.z.size(0) if hasattr(pyg_data, "z") and pyg_data.z is not None else 0
-                )
-
-            if pyg_data.num_nodes == 0:
-                raise DatasetSpecificHandlerError(
-                    dataset_type="DMC",
-                    message="DMC molecule has 0 nodes, cannot proceed with enrichment",
-                    operation="enrich_pyg_data",
-                    details="No atoms available for processing",
-                )
-
-            # 1. Add scalar graph targets using internal implementation
-            self._add_scalar_targets_internal(
-                pyg_data, raw_properties_dict, molecule_index, identifier
-            )
-
-            # 2. Add DMC-specific uncertainty information if enabled
-            if (
-                self.dataset_config.is_uncertainty_enabled
-                and self.dataset_config.uncertainty_config
-            ):
-                self._add_uncertainty_metadata_internal(
-                    pyg_data, raw_properties_dict, molecule_index, identifier
-                )
-
-            self.logger.debug(f"DMC molecule {molecule_index}: Enrichment completed successfully")
-            return pyg_data
-
-        except (PropertyEnrichmentError, DatasetSpecificHandlerError):
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DMC handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DMC",
-                message=f"DMC enrichment failed: {str(e)}",
-                operation="enrich_pyg_data",
-                details=f"Molecule {molecule_index}, Error during DMC-specific enrichment",
-            ) from e
-
-    def _add_uncertainty_metadata_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """Internal DMC-specific uncertainty metadata implementation with exception handling."""
+        """The DMC statistical uncertainty and its weight, when uncertainty handling is enabled."""
+        if not (
+            self.dataset_config.is_uncertainty_enabled and self.dataset_config.uncertainty_config
+        ):
+            return
         try:
             uncertainty_config = self.dataset_config.uncertainty_config
             uncertainty_field = uncertainty_config.get("uncertainty_field_name", "std")

@@ -19,11 +19,12 @@ from unittest.mock import Mock
 
 import pytest
 import torch
+from torch_geometric.data import Data
 
 from milia_pipeline.config import config_constants, get_dataset_atomic_references
 from milia_pipeline.config.config_loader import load_config
 from milia_pipeline.datasets.milia_dataset import miliaDataset
-from milia_pipeline.exceptions import ConfigurationError
+from milia_pipeline.exceptions import ConfigurationError, PropertyEnrichmentError
 from milia_pipeline.handlers.implementations.qdpi import QDPiDatasetHandler
 from milia_pipeline.handlers.implementations.xxmd import XXMDDatasetHandler
 from milia_pipeline.molecules.property_enrichment import calculate_atomization_energy
@@ -110,12 +111,20 @@ def test_invalid_declarations_raise(monkeypatch, invalid):
         get_dataset_atomic_references("XXMD")
 
 
+def _graph_config(energy_key="energy", attribute="energy_ATOM", targets=()):
+    return Mock(
+        calculate_atomization_energy_from=energy_key,
+        atomization_energy_key_name=attribute,
+        scalar_graph_targets=list(targets),
+        vector_graph_properties=[],
+        variable_len_graph_properties=[],
+    )
+
+
 def _handler(energy_key="energy", attribute="energy_ATOM"):
     handler = XXMDDatasetHandler.__new__(XXMDDatasetHandler)
     handler.logger = Mock(spec=logging.Logger)
-    handler.processing_config = Mock(
-        calculate_atomization_energy_from=energy_key, atomization_energy_key_name=attribute
-    )
+    handler.processing_config = _graph_config(energy_key, attribute)
     return handler
 
 
@@ -124,12 +133,9 @@ def test_without_references_the_atomization_energy_is_not_computed(monkeypatch):
         "milia_pipeline.handlers.base_handler.get_dataset_atomic_references", lambda _: None
     )
     handler = _handler()
-    data = Mock(z=torch.tensor([8, 1, 1]))
     for index in range(3):
-        assert (
-            handler._calculate_atomization_energy_internal({"energy": -76.0}, data, index, "m")
-            is None
-        )
+        data = handler.enrich_pyg_data(Data(z=torch.tensor([8, 1, 1])), {"energy": -76.0}, index)
+        assert not hasattr(data, "energy_ATOM")
     handler.logger.warning.assert_called_once()
     assert "not computed" in handler.logger.warning.call_args.args[0]
 
@@ -296,26 +302,40 @@ def test_qdpi_references_match_the_committed_psi4_results():
     assert dict(references.for_property("energy")) == computed
 
 
-def _qdpi_handler():
+def _qdpi_handler(targets=()):
     handler = QDPiDatasetHandler.__new__(QDPiDatasetHandler)
     handler.logger = Mock(spec=logging.Logger)
-    handler.processing_config = Mock(
-        calculate_atomization_energy_from="energy", atomization_energy_key_name="energy_ATOM"
-    )
+    handler.processing_config = _graph_config(targets=targets)
     return handler
 
 
 def test_qdpi_neutral_molecule_atomization_uses_its_references():
+    """Stored in the dataset's energy unit (Hartree), no conversion."""
     references = get_dataset_atomic_references("QDPi").for_property("energy")
-    data = Mock(z=torch.tensor([8, 1, 1]))
     raw = {"energy": -76.4, "molecular_charge": 0}
-    energy = _qdpi_handler()._calculate_atomization_energy_internal(raw, data, 0, "water")
-    expected = (-76.4 - (references[8] + 2 * references[1])) * config_constants.get_har2ev()
-    assert energy == pytest.approx(expected)
+    data = _qdpi_handler().enrich_pyg_data(Data(z=torch.tensor([8, 1, 1])), raw, 0, "water")
+    expected = -76.4 - (references[8] + 2 * references[1])
+    assert float(data.energy_ATOM) == pytest.approx(expected, abs=1e-6)
+
+
+def test_atomization_energy_is_a_target_only_when_named():
+    """Listed by its configured name, it is a named column of y; never appended unnamed."""
+    raw = {"energy": -76.4, "molecular_charge": 0}
+    plain = _qdpi_handler(targets=["energy"]).enrich_pyg_data(
+        Data(z=torch.tensor([8, 1, 1])), raw, 0, "water"
+    )
+    assert plain.y_property_names == ["energy"] and plain.y.shape == (1,)
+    named = _qdpi_handler(targets=["energy", "energy_ATOM"]).enrich_pyg_data(
+        Data(z=torch.tensor([8, 1, 1])), raw, 0, "water"
+    )
+    assert named.y_property_names == ["energy", "energy_ATOM"]
+    assert float(named.y[1]) == pytest.approx(float(named.energy_ATOM))
 
 
 @pytest.mark.parametrize("charge", [1, -1, 2])
-def test_qdpi_charged_molecule_has_no_atomization_energy(charge):
-    data = Mock(z=torch.tensor([8, 1, 1, 1]))
+def test_qdpi_charged_molecule_is_refused_when_atomization_is_configured(charge):
+    """Neutral-atom references do not describe an ion; a graph without the attribute would
+    break collation, so the molecule is refused."""
     raw = {"energy": -76.7, "molecular_charge": charge}
-    assert _qdpi_handler()._calculate_atomization_energy_internal(raw, data, 0, "ion") is None
+    with pytest.raises(PropertyEnrichmentError):
+        _qdpi_handler().enrich_pyg_data(Data(z=torch.tensor([8, 1, 1, 1])), raw, 0, "ion")

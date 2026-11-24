@@ -115,4 +115,14 @@ property_availability:
     variable_len_graph_properties:
     - freqs
     - vibmodes
+    # Shapes of the graph-level properties (null: varies between molecules); a property
+    # without one takes the first molecule's shape, and every molecule must match it
+    shapes:
+      dipole: [3]
+      quadrupole: [6]
+      octupole: [10]
+      hexadecapole: [15]
+      rots: [3]          # a linear molecule's two constants are padded with 0.0 (DFT handler)
+      freqs: [null]
+      vibmodes: [null, null, 3]  # modes x atoms x 3
     uncertainty_fields: []

@@ -136,6 +136,11 @@ property_availability:
     # Variable-length graph properties
     variable_len_graph_properties: []  # No variable-length properties beyond node_features
 
+    # Shapes of the graph-level properties (null: varies between molecules); a property
+    # without one takes the first molecule's shape, and every molecule must match it
+    shapes:
+      dipole: [3]
+
     # Metadata fields (1 key)
     metadata_fields:
       - _metadata       # Preprocessing metadata as string array (object)

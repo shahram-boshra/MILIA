@@ -341,6 +341,7 @@ from .config_accessors import (
     # Filter Configuration
     get_filter_config,
     get_geometric_features_config,
+    get_graph_property_shapes,
     get_handler_compatible_config,
     get_identifier_keys,
     get_molecule_creation_strategy,
@@ -415,6 +416,7 @@ from .config_accessors import (
     validate_dataset_config,
     # Dataset Type Validation Functions
     validate_dataset_type,
+    validate_graph_property_selection,
     validate_node_property_selection,
     validate_structural_features_for_dataset,
     validate_transform_config,
@@ -901,6 +903,8 @@ __all__ = [
     "get_atomic_charges_property",
     "get_atomic_charge_source",
     "validate_node_property_selection",
+    "validate_graph_property_selection",
+    "get_graph_property_shapes",
     "should_enable_stereochemistry_preprocessing",
     "get_dataset_appropriate_structural_features",
     "validate_structural_features_for_dataset",

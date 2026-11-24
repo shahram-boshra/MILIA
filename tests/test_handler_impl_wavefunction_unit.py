@@ -47,7 +47,6 @@ from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.wavefunction import WavefunctionDatasetHandler
 
@@ -103,6 +102,8 @@ def _make_processing_config(**overrides):
     cfg.node_targets = overrides.get("node_targets", [])
     cfg.vector_graph_properties = overrides.get("vector_graph_properties", [])
     cfg.variable_len_graph_properties = overrides.get("variable_len_graph_properties", [])
+    cfg.calculate_atomization_energy_from = None
+    cfg.atomization_energy_key_name = None
     cfg.common_required_properties = overrides.get(
         "common_required_properties", ["atoms", "coordinates"]
     )
@@ -795,258 +796,6 @@ class TestIsValidProperty(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 12: _ensure_tensor (8 tests)
-# ============================================================================
-
-
-class TestEnsureTensor(unittest.TestCase):
-    """Test tensor conversion utility."""
-
-    def test_numpy_array_to_tensor(self):
-        """Numpy array converts to tensor."""
-        handler = _make_handler()
-        arr = np.array([1.0, 2.0, 3.0])
-        result = handler._ensure_tensor(arr, torch.float32, "test", 0, "id")
-        self.assertIsInstance(result, torch.Tensor)
-        self.assertEqual(result.dtype, torch.float32)
-
-    def test_list_to_tensor(self):
-        """List converts to tensor."""
-        handler = _make_handler()
-        result = handler._ensure_tensor([1, 2, 3], torch.long, "test", 0, "id")
-        self.assertIsInstance(result, torch.Tensor)
-        self.assertEqual(result.dtype, torch.long)
-
-    def test_tuple_to_tensor(self):
-        """Tuple converts to tensor."""
-        handler = _make_handler()
-        result = handler._ensure_tensor((1.0, 2.0), torch.float32, "test", 0, "id")
-        self.assertIsInstance(result, torch.Tensor)
-
-    def test_scalar_to_tensor(self):
-        """Scalar value wraps in tensor."""
-        handler = _make_handler()
-        result = handler._ensure_tensor(42.0, torch.float32, "test", 0, "id")
-        self.assertIsInstance(result, torch.Tensor)
-        self.assertEqual(result.numel(), 1)
-
-    def test_tensor_to_tensor(self):
-        """Existing tensor is cast to correct dtype."""
-        handler = _make_handler()
-        t = torch.tensor([1.0, 2.0], dtype=torch.float64)
-        result = handler._ensure_tensor(t, torch.float32, "test", 0, "id")
-        self.assertEqual(result.dtype, torch.float32)
-
-    def test_invalid_conversion_raises_property_enrichment_error(self):
-        """Failed conversion raises PropertyEnrichmentError."""
-        handler = _make_handler()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._ensure_tensor("not_a_number", torch.float32, "test", 0, "id")
-
-    def test_tensor_preserves_shape(self):
-        """2D numpy array preserves shape in conversion."""
-        handler = _make_handler()
-        arr = np.array([[1.0, 2.0], [3.0, 4.0]])
-        result = handler._ensure_tensor(arr, torch.float32, "test", 0, "id")
-        self.assertEqual(result.shape, (2, 2))
-
-    def test_int_numpy_array_to_long_tensor(self):
-        """Integer numpy array converts to long tensor."""
-        handler = _make_handler()
-        arr = np.array([6, 1, 1])
-        result = handler._ensure_tensor(arr, torch.long, "test", 0, "id")
-        self.assertEqual(result.dtype, torch.long)
-        self.assertEqual(result.tolist(), [6, 1, 1])
-
-
-# ============================================================================
-# GROUP 13: _add_scalar_targets_internal (10 tests)
-# ============================================================================
-
-
-class TestAddScalarTargetsInternal(unittest.TestCase):
-    """Test Wavefunction scalar target addition to PyG data."""
-
-    def test_no_targets_configured_noop(self):
-        """No scalar_graph_targets means no-op."""
-        pc = _make_processing_config(scalar_graph_targets=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        handler._add_scalar_targets_internal(data, _make_raw_properties(), 0, "test")
-        self.assertFalse(hasattr(data, "y") and data.y is not None)
-
-    def test_single_scalar_target(self):
-        """Single scalar target is correctly added as tensor."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV=4.56)
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertIsNotNone(data.y)
-        self.assertEqual(data.y.shape[0], 1)
-        self.assertAlmostEqual(data.y[0].item(), 4.56, places=4)
-
-    def test_numpy_scalar_target(self):
-        """Numpy scalar (ndarray size 1) is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV=np.array(4.56))
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), 4.56, places=4)
-
-    def test_string_convertible_scalar(self):
-        """String-convertible scalar (e.g., '4.56') is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV="4.56")
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), 4.56, places=4)
-
-    def test_list_single_element_scalar(self):
-        """Single-element list [val] is handled as scalar."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV=[4.56])
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), 4.56, places=4)
-
-    def test_missing_target_raises_property_enrichment_error(self):
-        """Missing required scalar target raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["nonexistent_prop"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_multi_element_array_raises(self):
-        """Multi-element array raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV=np.array([4.56, 5.67]))
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_nan_value_raises_property_enrichment_error(self):
-        """NaN scalar target raises PropertyEnrichmentError after conversion."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV=float("nan"))
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_unsupported_type_raises_property_enrichment_error(self):
-        """Unsupported type for scalar target raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(homo_lumo_gap_eV={"value": 4.56})
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    @patch(
-        "milia_pipeline.handlers.implementations.wavefunction.FEATURE_TIERS",
-        {"standard": ["homo_lumo_gap_eV"]},
-        create=True,
-    )
-    def test_tier_aware_filtering(self):
-        """Tier-aware filtering skips targets not in the feature tier."""
-        pc = _make_processing_config(scalar_graph_targets=["homo_lumo_gap_eV", "total_energy"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(
-            homo_lumo_gap_eV=4.56,
-            _feature_tier="standard",
-        )
-        props["total_energy"] = -500.0  # Present but not in tier
-
-        with patch(
-            "milia_pipeline.preprocessing.utils.format_parsers.FEATURE_TIERS",
-            {"standard": ["homo_lumo_gap_eV"]},
-        ):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-        # Only homo_lumo_gap_eV should be in y (tier filters total_energy)
-        self.assertIsNotNone(data.y)
-        self.assertEqual(data.y.shape[0], 1)
-
-
-# ============================================================================
-# GROUP 14: _add_orbital_properties_internal (6 tests)
-# ============================================================================
-
-
-class TestAddOrbitalPropertiesInternal(unittest.TestCase):
-    """Test Wavefunction orbital property addition to PyG data."""
-
-    def test_adds_mo_energies_when_configured(self):
-        """MO energies are added to PyG data when configured."""
-        pc = _make_processing_config(variable_len_graph_properties=["mo_energies"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(mo_energies=np.array([-10.5, -5.2, 0.3, 2.1]))
-        handler._add_orbital_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "mo_energies"))
-        self.assertEqual(data.mo_energies.shape[0], 4)
-
-    def test_adds_mo_occupations_when_configured(self):
-        """MO occupations are added to PyG data when configured."""
-        pc = _make_processing_config(variable_len_graph_properties=["mo_occupations"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(mo_occupations=np.array([2.0, 2.0, 0.0, 0.0]))
-        handler._add_orbital_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "mo_occupations"))
-
-    def test_skips_mo_energies_when_not_configured(self):
-        """MO energies NOT added when not in variable_len_graph_properties."""
-        pc = _make_processing_config(variable_len_graph_properties=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(mo_energies=np.array([-10.5, -5.2]))
-        handler._add_orbital_properties_internal(data, props, 0, "test")
-        self.assertFalse(hasattr(data, "mo_energies"))
-
-    def test_skips_when_mo_energies_absent(self):
-        """No error when mo_energies is absent from raw properties."""
-        pc = _make_processing_config(variable_len_graph_properties=["mo_energies"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()  # No mo_energies key
-        handler._add_orbital_properties_internal(data, props, 0, "test")
-        self.assertFalse(hasattr(data, "mo_energies"))
-
-    def test_both_orbital_properties_added(self):
-        """Both MO energies and occupations can be added simultaneously."""
-        pc = _make_processing_config(
-            variable_len_graph_properties=["mo_energies", "mo_occupations"]
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(
-            mo_energies=np.array([-10.5, -5.2, 0.3]),
-            mo_occupations=np.array([2.0, 2.0, 0.0]),
-        )
-        handler._add_orbital_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "mo_energies"))
-        self.assertTrue(hasattr(data, "mo_occupations"))
-
-    def test_exception_in_orbital_logs_warning(self):
-        """Errors during orbital property addition are non-critical (logged as warning)."""
-        pc = _make_processing_config(variable_len_graph_properties=["mo_energies"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        # Force an exception in _ensure_tensor by providing bad data
-        props = _make_raw_properties(mo_energies="completely_invalid")
-        with self.assertLogs("test.wavefunction", level="WARNING"):
-            handler._add_orbital_properties_internal(data, props, 0, "test")
-
-
-# ============================================================================
 # GROUP 15: per-atom properties are not the handler's (1 test)
 # ============================================================================
 
@@ -1066,70 +815,51 @@ class TestAddNodeFeaturesInternal(unittest.TestCase):
         self.assertFalse(hasattr(handler, "_add_node_features_internal"))
 
 
-# ============================================================================
-# GROUP 16: enrich_pyg_data (5 tests)
-# ============================================================================
+class TestProvidedPropertiesFeatureTier(unittest.TestCase):
+    """The file's feature tier decides which configured properties a run has (user's choice)."""
 
+    TARGETS = ["homo_lumo_gap_eV", "molecular_weight", "n_electrons", "n_shells"]
 
-class TestEnrichPygData(unittest.TestCase):
-    """Test Wavefunction PyG data enrichment orchestration."""
+    def test_no_recorded_tier_provides_everything(self):
+        self.assertIsNone(_make_handler().provided_properties({}))
 
-    def test_returns_data_object(self):
-        """Enrichment returns the Data object."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-        self.assertIsInstance(result, Data)
+    def test_known_tier_provides_its_keys(self):
+        from milia_pipeline.preprocessing.utils.format_parsers import FEATURE_TIERS
 
-    def test_calls_scalar_targets(self):
-        """Enrichment calls _add_scalar_targets_internal."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_scalar_targets_internal") as mock_scalar:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_scalar.assert_called_once()
+        provided = _make_handler().provided_properties({"_feature_tier": "basic"})
+        self.assertEqual(provided, frozenset(FEATURE_TIERS["basic"]))
 
-    def test_calls_orbital_properties(self):
-        """Enrichment calls _add_orbital_properties_internal."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_orbital_properties_internal") as mock_orbital:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_orbital.assert_called_once()
+    def test_tier_stored_as_numpy_string_is_read(self):
+        provided = _make_handler().provided_properties({"_feature_tier": np.array("standard")})
+        self.assertIn("molecular_weight", provided)
 
-    def test_enrichment_error_raises_dataset_specific_error(self):
-        """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with (
-            patch.object(
-                handler,
-                "_add_scalar_targets_internal",
-                side_effect=RuntimeError("unexpected"),
-            ),
-            self.assertRaises(DatasetSpecificHandlerError),
-        ):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+    def test_unknown_tier_refuses(self):
+        with self.assertRaises(DatasetSpecificHandlerError):
+            _make_handler().provided_properties({"_feature_tier": "everything"})
 
-    def test_property_enrichment_error_propagates(self):
-        """PropertyEnrichmentError from internal methods propagates directly."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with (
-            patch.object(
-                handler,
-                "_add_scalar_targets_internal",
-                side_effect=PropertyEnrichmentError(
-                    molecule_index=0,
-                    inchi="test",
-                    property_name="test_prop",
-                    reason="test reason",
-                    detail="test detail",
-                ),
-            ),
-            self.assertRaises(PropertyEnrichmentError),
-        ):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
+    def test_targets_are_configured_intersect_tier_in_configured_order_for_the_run(self):
+        pc = _make_processing_config(scalar_graph_targets=self.TARGETS)
+        handler = _make_handler(processing_config=pc, logger=Mock(spec=logging.Logger))
+        props = _make_raw_properties(_feature_tier="basic")
+        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+        self.assertEqual(result.y_property_names, ["homo_lumo_gap_eV", "n_electrons"])
+        later = _make_raw_properties(_feature_tier="complete", molecular_weight=1.0)
+        again = handler.enrich_pyg_data(_make_pyg_data(), later, 1, "m")
+        self.assertEqual(again.y_property_names, ["homo_lumo_gap_eV", "n_electrons"])
+        messages = [c.args[0] for c in handler.logger.info.call_args_list]
+        run_lines = [m for m in messages if "graph properties for this run" in m]
+        self.assertEqual(len(run_lines), 1)
+        self.assertIn("['molecular_weight', 'n_shells']", run_lines[0])
+
+    def test_orbital_arrays_come_from_the_variable_length_key(self):
+        pc = _make_processing_config(variable_len_graph_properties=["mo_energies"])
+        handler = _make_handler(processing_config=pc)
+        props = _make_raw_properties(
+            mo_energies=np.array([-1.0, -0.5, 0.2]), mo_occupations=np.array([2.0, 2.0, 0.0])
+        )
+        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+        self.assertEqual(tuple(result.mo_energies.shape), (3,))
+        self.assertFalse(hasattr(result, "mo_occupations"))
 
 
 # ============================================================================
@@ -1420,11 +1150,7 @@ def run_comprehensive_suite():
         TestGetSupportedDescriptors,  # GROUP 9:    5 tests
         TestGetSupportedStructuralFeatures,  # GROUP 10:   5 tests
         TestIsValidProperty,  # GROUP 11:   7 tests
-        TestEnsureTensor,  # GROUP 12:   8 tests
-        TestAddScalarTargetsInternal,  # GROUP 13:  10 tests
-        TestAddOrbitalPropertiesInternal,  # GROUP 14:   6 tests
         TestAddNodeFeaturesInternal,  # GROUP 15:   1 test
-        TestEnrichPygData,  # GROUP 16:   5 tests
         TestGetProcessingStatistics,  # GROUP 17:   6 tests
         TestTransformValidationHelpers,  # GROUP 18:   8 tests
         TestGetDatasetSuitableTransforms,  # GROUP 19:   5 tests
@@ -1478,11 +1204,9 @@ GROUP 8:  get_transform_recommendations                                    (  5 
 GROUP 9:  get_supported_descriptors                                        (  5 tests)
 GROUP 10: get_supported_structural_features                                (  5 tests)
 GROUP 11: _is_valid_property                                               (  7 tests)
-GROUP 12: _ensure_tensor                                                   (  8 tests)
-GROUP 13: _add_scalar_targets_internal (tier-aware)                        ( 10 tests)
-GROUP 14: _add_orbital_properties_internal                                 (  6 tests)
 GROUP 15: per-atom properties are not the handler's                        (  1 test)
-GROUP 16: enrich_pyg_data                                                  (  5 tests)
+Graph-level properties (DatasetHandler.enrich_pyg_data and the shared steps): see
+tests/test_contract_dataset_graph_properties.py and tests/test_property_enrichment_unit.py
 GROUP 17: get_processing_statistics                                        (  6 tests)
 GROUP 18: Transform Validation Helpers                                     (  8 tests)
 GROUP 19: _get_dataset_suitable_transforms                                 (  5 tests)

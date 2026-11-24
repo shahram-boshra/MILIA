@@ -36,6 +36,11 @@ qm9_config:
 ```
 
 A table applies only to the energy property it is listed under (`calculate_atomization_energy_from`).
+The atomization energy is stored as the attribute named by `atomization_energy_key_name`, in the
+dataset's energy unit (Hartree; no conversion), and is a target only when that name is listed in
+`scalar_graph_targets_to_include`. The references are neutral ground-state atoms, so with an
+atomization energy configured a charged molecule is refused (every graph of a run carries the same
+attributes); set `calculate_atomization_energy_from: null` to keep charged molecules.
 Processing saves `<processed file stem>.atomic_references.json` next to the processed file, recording
 the source, level of theory, program, citation and the energies used, or why the atomization energy
 was not computed. In Python: `milia_pipeline.config.get_dataset_atomic_references(dataset_type)`.

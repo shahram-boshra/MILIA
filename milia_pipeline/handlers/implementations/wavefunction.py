@@ -20,11 +20,10 @@ Reference: milia Dataset Architecture Refactoring Plan v2.2.0
 """
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
-import torch
-from torch_geometric.data import Data
 
 from milia_pipeline.config.config_containers import DatasetConfig, FilterConfig, ProcessingConfig
 from milia_pipeline.config.validators import (
@@ -36,7 +35,6 @@ from milia_pipeline.exceptions import (
     HandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 
 # Import from refactored base handler
@@ -429,250 +427,30 @@ class WavefunctionDatasetHandler(DatasetHandler):
                 details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
             ) from e
 
-    def enrich_pyg_data(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str = "N/A",
-    ) -> Data:
-        """
-        Add wavefunction-specific enrichments to PyG Data object.
+    def provided_properties(self, properties: Mapping[str, Any]) -> frozenset[str] | None:
+        """The properties of the file's feature tier (``_feature_tier``, set at extraction).
 
-        Args:
-            pyg_data: PyTorch Geometric Data object
-            raw_properties_dict: Dictionary of molecular properties
-            molecule_index: Index of molecule
-            identifier: Molecule identifier
-
-        Returns:
-            Enriched PyG Data object
+        The user chooses the tier (``wavefunction_config.processing_config.feature_tier``);
+        configured properties the tier does not extract are left out for the run.
+        ``None`` (all properties) for a file without a recorded tier.
 
         Raises:
-            PropertyEnrichmentError: If property enrichment fails
-            DatasetSpecificHandlerError: If dataset-specific enrichment fails
+            DatasetSpecificHandlerError: The recorded tier is not a known tier.
         """
-        try:
-            # Add scalar targets (HOMO-LUMO gap, total energy, etc.)
-            self._add_scalar_targets_internal(
-                pyg_data, raw_properties_dict, molecule_index, identifier
-            )
+        from milia_pipeline.preprocessing.utils.format_parsers import FEATURE_TIERS
 
-            # Add orbital properties if configured
-            self._add_orbital_properties_internal(
-                pyg_data, raw_properties_dict, molecule_index, identifier
-            )
-
-            # Per-atom properties (node_features_to_add, node_targets_to_include) are added by the
-            # converter's shared step for every dataset type, not by the handler.
-
-            return pyg_data
-
-        except (PropertyEnrichmentError, DatasetSpecificHandlerError):
-            raise
-        except Exception as e:
+        tier = properties.get("_feature_tier")
+        if tier is None:
+            return None
+        tier = str(np.asarray(tier).reshape(-1)[0]) if not isinstance(tier, str) else tier
+        if tier not in FEATURE_TIERS:
             raise DatasetSpecificHandlerError(
                 dataset_type="Wavefunction",
-                message=f"Wavefunction PyG enrichment failed: {str(e)}",
-                operation="pyg_enrichment",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    def _add_scalar_targets_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """
-        Internal wavefunction-specific implementation of scalar target addition.
-
-        Handles HOMO-LUMO gap, total energy, and other scalar quantum properties.
-        Now tier-aware: only requires targets available for the feature_tier.
-        """
-        try:
-            if not self.processing_config.scalar_graph_targets:
-                return
-
-            collected_targets = []
-
-            # PHASE 6 FIX: Tier-aware scalar target filtering
-            # Get the feature_tier from raw_properties_dict (passed from NPZ metadata)
-            feature_tier = raw_properties_dict.get("_feature_tier")
-
-            # Determine which targets are available for this tier
-            if feature_tier:
-                try:
-                    from milia_pipeline.preprocessing.utils.format_parsers import FEATURE_TIERS
-
-                    tier_available_keys = set(FEATURE_TIERS.get(feature_tier, []))
-
-                    # Filter scalar_graph_targets to only include tier-available keys
-                    targets_to_process = [
-                        key
-                        for key in self.processing_config.scalar_graph_targets
-                        if key in tier_available_keys
-                    ]
-
-                    # Log if some targets are being skipped due to tier
-                    skipped_targets = [
-                        key
-                        for key in self.processing_config.scalar_graph_targets
-                        if key not in tier_available_keys
-                    ]
-                    if skipped_targets:
-                        self.logger.debug(
-                            f"Skipping {len(skipped_targets)} scalar targets not available in "
-                            f"'{feature_tier}' tier: {skipped_targets}"
-                        )
-                except ImportError:
-                    # If FEATURE_TIERS import fails, use all configured targets
-                    targets_to_process = self.processing_config.scalar_graph_targets
-            else:
-                # No tier info available - use all configured targets (backward compatibility)
-                targets_to_process = self.processing_config.scalar_graph_targets
-
-            for key in targets_to_process:
-                try:
-                    value = raw_properties_dict.get(key)
-
-                    if value is None:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Required wavefunction scalar target '{key}' is missing",
-                            detail="Value retrieved was None",
-                        )
-
-                    # Convert to scalar float
-                    if isinstance(value, (int, float, np.number)):
-                        val_to_add = float(value)
-                    elif isinstance(value, np.ndarray):
-                        if value.size == 1:
-                            val_to_add = float(value.item())
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"Wavefunction scalar target '{key}' has array shape {value.shape}",
-                                detail=f"Expected single scalar, got shape: {value.shape}",
-                            )
-                    elif isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                        try:
-                            val_to_add = float(value)
-                        except ValueError:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"Wavefunction scalar target '{key}' string cannot be converted",
-                                detail=f"Value: '{value}'",
-                            ) from None
-                    elif isinstance(value, (list, tuple)):
-                        if len(value) == 1:
-                            val_to_add = float(value[0])
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"Wavefunction scalar target '{key}' is a list with {len(value)} elements",
-                                detail="Expected single scalar",
-                            )
-                    else:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Wavefunction scalar target '{key}' has unexpected type {type(value)}",
-                            detail=f"Value type: {type(value)}",
-                        )
-
-                    # Validate the converted value
-                    if not is_value_valid_and_not_nan(val_to_add):
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Wavefunction scalar target '{key}' has NaN or Inf value",
-                            detail=f"Converted value: {val_to_add}",
-                        )
-
-                    collected_targets.append(val_to_add)
-
-                except PropertyEnrichmentError:
-                    raise
-                except Exception as e:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=key,
-                        reason=f"Critical error processing wavefunction scalar target '{key}'",
-                        detail=str(e),
-                    ) from e
-
-            if collected_targets:
-                pyg_data.y = self._ensure_tensor(
-                    collected_targets,
-                    torch.float32,
-                    "wavefunction_scalar_targets",
-                    molecule_index,
-                    identifier,
-                )
-
-        except PropertyEnrichmentError:
-            raise
-        except Exception as e:
-            raise DatasetSpecificHandlerError(
-                dataset_type="Wavefunction",
-                message=f"Wavefunction scalar targets processing failed: {str(e)}",
-                operation="add_scalar_targets",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    def _add_orbital_properties_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """
-        Add molecular orbital properties to PyG data.
-
-        Handles MO energies, occupations, and derived properties.
-        """
-        try:
-            # Add MO energies if present and configured
-            mo_energies = raw_properties_dict.get("mo_energies")
-            if (
-                mo_energies is not None
-                and "mo_energies" in self.processing_config.variable_len_graph_properties
-            ):
-                mo_array = self._ensure_tensor(
-                    mo_energies, torch.float32, "mo_energies", molecule_index, identifier
-                )
-                pyg_data.mo_energies = mo_array
-
-            # Add MO occupations if present and configured
-            mo_occupations = raw_properties_dict.get("mo_occupations")
-            if (
-                mo_occupations is not None
-                and "mo_occupations" in self.processing_config.variable_len_graph_properties
-            ):
-                occ_array = self._ensure_tensor(
-                    mo_occupations, torch.float32, "mo_occupations", molecule_index, identifier
-                )
-                pyg_data.mo_occupations = occ_array
-
-        except Exception as e:
-            # Non-critical - log warning but don't fail
-            self.logger.warning(
-                f"Could not add orbital properties for molecule {molecule_index}: {e}"
+                message=f"Unknown feature tier {tier!r} recorded in the wavefunction file",
+                operation="provided_properties",
+                details=f"Known tiers: {sorted(FEATURE_TIERS)}",
             )
+        return frozenset(FEATURE_TIERS[tier])
 
     def get_processing_statistics(
         self, processed_molecules: list[dict[str, Any]]
@@ -889,48 +667,6 @@ class WavefunctionDatasetHandler(DatasetHandler):
         if value is None:
             return False
         return not (isinstance(value, (list, tuple, np.ndarray)) and len(value) == 0)
-
-    def _ensure_tensor(
-        self,
-        value: Any,
-        dtype: torch.dtype,
-        property_name: str,
-        molecule_index: int,
-        identifier: str,
-    ) -> torch.Tensor:
-        """
-        Convert value to PyTorch tensor with validation.
-
-        Args:
-            value: Value to convert
-            dtype: Target dtype
-            property_name: Name of property (for error messages)
-            molecule_index: Molecule index
-            identifier: Molecule identifier
-
-        Returns:
-            PyTorch tensor
-
-        Raises:
-            PropertyEnrichmentError: If conversion fails
-        """
-        try:
-            if isinstance(value, torch.Tensor):
-                return value.to(dtype)
-            elif isinstance(value, np.ndarray):
-                return torch.from_numpy(value).to(dtype)
-            elif isinstance(value, (list, tuple)):
-                return torch.tensor(value, dtype=dtype)
-            else:
-                return torch.tensor([value], dtype=dtype)
-        except Exception as e:
-            raise PropertyEnrichmentError(
-                molecule_index=molecule_index,
-                inchi=identifier,
-                property_name=property_name,
-                reason=f"Failed to convert to tensor: {str(e)}",
-                detail=f"Value type: {type(value)}, Target dtype: {dtype}",
-            ) from e
 
     def _validate_dataset_specific_transforms(self, transform_names: list[str]) -> list[str]:
         """

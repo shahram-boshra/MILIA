@@ -3557,6 +3557,131 @@ def validate_node_property_selection(
         raise ConfigurationError("; ".join(errors))
 
 
+_GRAPH_PROPERTY_ROLES = (
+    ("scalar_graph_targets_to_include", "scalar_graph_targets"),
+    ("vector_graph_properties_to_include", "vector_graph_properties"),
+    ("variable_len_graph_properties_to_include", "variable_len_graph_properties"),
+)
+
+
+def get_graph_property_shapes(dataset_type: str) -> dict[str, tuple[int | None, ...]]:
+    """Declared shapes of a dataset's graph-level properties (``property_availability.<dataset>.shapes``).
+
+    Each entry maps a property to a list of dimensions; ``null`` is a dimension that varies between
+    molecules (a variable-length property). A property without an entry takes the shape of the
+    first molecule, and every other molecule must match it.
+
+    Raises:
+        ConfigurationError: An entry is not a list of positive integers and nulls.
+    """
+    availability = (load_config().get("property_availability") or {}).get(dataset_type) or {}
+    declared = availability.get("shapes") or {}
+    where = f"property_availability.{dataset_type}.shapes"
+    if not isinstance(declared, dict):
+        raise ConfigurationError(f"{where} must map property names to shapes, got {declared!r}")
+    shapes: dict[str, tuple[int | None, ...]] = {}
+    errors = []
+    for name, shape in declared.items():
+        if (
+            not isinstance(shape, list)
+            or not shape
+            or not all(
+                dim is None or (isinstance(dim, int) and not isinstance(dim, bool) and dim > 0)
+                for dim in shape
+            )
+        ):
+            errors.append(f"{where}.{name}: {shape!r} is not a list of positive integers and nulls")
+            continue
+        shapes[str(name)] = tuple(shape)
+    if errors:
+        raise ConfigurationError("; ".join(errors))
+    return shapes
+
+
+def validate_graph_property_selection(
+    dataset_type: str,
+    selection: dict[str, list[str]],
+    atomization_energy_from: str | None,
+    atomization_energy_key_name: str | None,
+    node_properties: list[str],
+) -> None:
+    """Refuse graph-level property selections outside the dataset's schema or with two roles.
+
+    Every name in ``property_selection.<dataset>.scalar_graph_targets_to_include``,
+    ``vector_graph_properties_to_include`` and ``variable_len_graph_properties_to_include`` must be
+    listed under the matching key of ``property_availability.<dataset>`` and appear once; the
+    atomization energy's configured name (``atomization_energy_key_name``) may also be a target.
+    The atomization energy needs both of its keys and a scalar property of the dataset to derive
+    from. One name has one role: a property is not a graph target and a vector, or a graph-level
+    and a per-atom property. Shapes in ``property_availability.<dataset>.shapes`` belong to the
+    dataset's vector or variable-length properties.
+
+    Args:
+        dataset_type: The dataset.
+        selection: The three graph-level selection keys and their names.
+        atomization_energy_from: ``calculate_atomization_energy_from``.
+        atomization_energy_key_name: ``atomization_energy_key_name``.
+        node_properties: ``node_features_to_add`` and ``node_targets_to_include``.
+
+    Raises:
+        ConfigurationError: Every violation found, in one message.
+    """
+    availability = (load_config().get("property_availability") or {}).get(dataset_type) or {}
+    where = f"data_config.property_selection.{dataset_type}"
+    errors = []
+    if bool(atomization_energy_from) != bool(atomization_energy_key_name):
+        errors.append(
+            f"{where}: calculate_atomization_energy_from and atomization_energy_key_name are set "
+            "together or not at all"
+        )
+    derived = atomization_energy_key_name if atomization_energy_from else None
+    if derived and derived in (availability.get("scalar_graph_targets") or []):
+        errors.append(
+            f"{where}.atomization_energy_key_name {derived!r} is already a property of "
+            f"{dataset_type}; choose a name the data does not use"
+        )
+    if atomization_energy_from and atomization_energy_from not in (
+        availability.get("scalar_graph_targets") or []
+    ):
+        errors.append(
+            f"{where}.calculate_atomization_energy_from {atomization_energy_from!r} is not a scalar "
+            f"property of {dataset_type} (property_availability.{dataset_type}.scalar_graph_targets)"
+        )
+    roles: dict[str, list[str]] = {}
+    for key, available_key in _GRAPH_PROPERTY_ROLES:
+        names = list(selection.get(key) or [])
+        available = list(availability.get(available_key) or [])
+        if key == "scalar_graph_targets_to_include" and derived:
+            available.append(derived)
+        repeated = sorted({name for name in names if names.count(name) > 1})
+        if repeated:
+            errors.append(f"{where}.{key} lists {repeated} more than once")
+        unknown = [name for name in names if name not in available]
+        if unknown:
+            errors.append(
+                f"{where}.{key}: {unknown} are not {available_key} of {dataset_type} "
+                f"(property_availability.{dataset_type}.{available_key}: {available})"
+            )
+        for name in names:
+            roles.setdefault(name, []).append(key)
+    for name in node_properties or []:
+        roles.setdefault(name, []).append("node_features_to_add/node_targets_to_include")
+    for name, keys in roles.items():
+        if len(set(keys)) > 1:
+            errors.append(f"{name!r} has more than one role in {where}: {sorted(set(keys))}")
+    shaped = set(availability.get("vector_graph_properties") or []) | set(
+        availability.get("variable_len_graph_properties") or []
+    )
+    stray = sorted(set(get_graph_property_shapes(dataset_type)) - shaped)
+    if stray:
+        errors.append(
+            f"property_availability.{dataset_type}.shapes: {stray} are not vector or "
+            f"variable-length properties of {dataset_type}"
+        )
+    if errors:
+        raise ConfigurationError("; ".join(errors))
+
+
 def should_enable_stereochemistry_preprocessing() -> bool:
     """
     Checks if stereochemistry preprocessing should be enabled.

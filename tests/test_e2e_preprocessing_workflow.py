@@ -532,7 +532,8 @@ class TestMoleculeConversionE2E:
                 dataset_type="DFT", working_root_dir=minimal_config["working_root_dir"]
             )
             fc = FilterConfig(max_atoms=100, min_atoms=1)
-            pc = ProcessingConfig(scalar_graph_targets=["total_energy"])
+            # A DFT target from property_availability.DFT: the converter checks the schema at start
+            pc = ProcessingConfig(scalar_graph_targets=["Etot"])
             try:
                 from milia_pipeline.molecules.molecule_converter_core import MoleculeDataConverter
 

@@ -44,14 +44,11 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-import contextlib
 
-from milia_pipeline.config.config_constants import HAR2EV
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerConfigurationError,
     HandlerValidationError,
-    PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.dft import DFTDatasetHandler
 
@@ -826,331 +823,6 @@ class TestValidateVibrationalData(unittest.TestCase):
 
 
 # ============================================================================
-# GROUP 12: _add_scalar_targets_internal (9 tests)
-# ============================================================================
-
-
-class TestAddScalarTargetsInternal(unittest.TestCase):
-    """Test DFT scalar target addition to PyG data."""
-
-    def test_no_targets_configured_noop(self):
-        """No scalar_graph_targets means no-op."""
-        pc = _make_processing_config(scalar_graph_targets=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        handler._add_scalar_targets_internal(data, _make_raw_properties(), 0, "test")
-        self.assertFalse(hasattr(data, "y") and data.y is not None)
-
-    def test_single_scalar_target(self):
-        """Single scalar target is correctly added as tensor."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=-76.4)
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertIsNotNone(data.y)
-        self.assertEqual(data.y.shape[0], 1)
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_multiple_scalar_targets(self):
-        """Multiple scalar targets form a tensor of correct size."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot", "U0"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=-76.4, U0=-76.3)
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertEqual(data.y.shape[0], 2)
-
-    def test_numpy_scalar_target(self):
-        """Numpy scalar (ndarray size 1) is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=np.array(-76.4))
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_string_convertible_scalar(self):
-        """String-convertible scalar (e.g., '-76.4') is handled."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot="-76.4")
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_list_single_element_scalar(self):
-        """Single-element list [val] is handled as scalar."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=[-76.4])
-        handler._add_scalar_targets_internal(data, props, 0, "test")
-        self.assertAlmostEqual(data.y[0].item(), -76.4, places=4)
-
-    def test_missing_target_raises_property_enrichment_error(self):
-        """Missing required scalar target raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["nonexistent_prop"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_multi_element_array_raises(self):
-        """Multi-element array raises PropertyEnrichmentError."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=np.array([-76.4, -75.0]))
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-    def test_nan_value_raises_property_enrichment_error(self):
-        """NaN scalar target raises PropertyEnrichmentError after conversion."""
-        pc = _make_processing_config(scalar_graph_targets=["Etot"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(Etot=float("nan"))
-        with self.assertRaises((PropertyEnrichmentError, HandlerValidationError)):
-            handler._add_scalar_targets_internal(data, props, 0, "test")
-
-
-# ============================================================================
-# GROUP 13: _calculate_atomization_energy_internal (8 tests)
-# ============================================================================
-
-
-class TestCalculateAtomizationEnergyInternal(unittest.TestCase):
-    """Test DFT atomization energy calculation with unit safety."""
-
-    def test_not_configured_returns_none(self):
-        """When calculate_atomization_energy_from is not set, returns None."""
-        pc = _make_processing_config(calculate_atomization_energy_from=None)
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        result = handler._calculate_atomization_energy_internal(
-            _make_raw_properties(), data, 0, "test"
-        )
-        self.assertIsNone(result)
-
-    def test_missing_base_energy_returns_none(self):
-        """When base energy key is missing from raw data, returns None."""
-        pc = _make_processing_config(calculate_atomization_energy_from="U0")
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        # Remove U0
-        props.pop("U0", None)
-        result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-        self.assertIsNone(result)
-
-    def test_missing_z_returns_none(self):
-        """When pyg_data has no z attribute, returns None."""
-        pc = _make_processing_config(calculate_atomization_energy_from="U0")
-        handler = _make_handler(processing_config=pc)
-        data = Data()  # No z
-        props = _make_raw_properties(U0=-76.3)
-        result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-        self.assertIsNone(result)
-
-    def test_correct_unit_calculation(self):
-        """Atomization energy is computed in Hartree then converted to eV."""
-        pc = _make_processing_config(calculate_atomization_energy_from="Etot")
-        handler = _make_handler(processing_config=pc)
-
-        # Use hydrogen atom (Z=1) for simple arithmetic
-        data = _make_pyg_data(
-            num_atoms=1,
-            z=torch.tensor([1], dtype=torch.long),
-        )
-
-        # Set base energy in Hartree
-        base_energy = -0.5  # Hartree
-        props = _make_raw_properties(Etot=base_energy)
-
-        atomic_energy_h = ATOMIC_ENERGIES_HARTREE.get(1)
-        if atomic_energy_h is not None and HAR2EV is not None:
-            expected_eV = (base_energy - atomic_energy_h) * HAR2EV
-            result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-            self.assertIsNotNone(result)
-            self.assertAlmostEqual(result, expected_eV, places=3)
-
-    def test_missing_atomic_energy_for_element_returns_none(self):
-        """When atomic energy for an element is missing, returns None."""
-        pc = _make_processing_config(calculate_atomization_energy_from="Etot")
-        handler = _make_handler(processing_config=pc)
-
-        # Use element 999 (nonexistent)
-        data = _make_pyg_data(
-            num_atoms=1,
-            z=torch.tensor([999], dtype=torch.long),
-        )
-        props = _make_raw_properties(Etot=-100.0)
-        result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-        self.assertIsNone(result)
-
-    def test_numpy_scalar_base_energy(self):
-        """Numpy scalar base energy is handled correctly."""
-        pc = _make_processing_config(calculate_atomization_energy_from="Etot")
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(
-            num_atoms=1,
-            z=torch.tensor([1], dtype=torch.long),
-        )
-        props = _make_raw_properties(Etot=np.float64(-0.5))
-        if ATOMIC_ENERGIES_HARTREE.get(1) is not None:
-            result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-            self.assertIsNotNone(result)
-
-    def test_string_base_energy(self):
-        """String base energy is converted to float."""
-        pc = _make_processing_config(calculate_atomization_energy_from="Etot")
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(
-            num_atoms=1,
-            z=torch.tensor([1], dtype=torch.long),
-        )
-        props = _make_raw_properties(Etot="-0.5")
-        if ATOMIC_ENERGIES_HARTREE.get(1) is not None:
-            result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-            self.assertIsNotNone(result)
-
-    def test_exception_returns_none(self):
-        """Unexpected exceptions during calculation return None (logged)."""
-        pc = _make_processing_config(calculate_atomization_energy_from="Etot")
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        # z.tolist() raises if z is corrupted
-        data.z = "not_a_tensor"
-        props = _make_raw_properties(Etot=-76.4)
-        result = handler._calculate_atomization_energy_internal(props, data, 0, "test")
-        self.assertIsNone(result)
-
-
-# ============================================================================
-# GROUP 14: _add_vector_properties_internal (6 tests)
-# ============================================================================
-
-
-class TestAddVectorPropertiesInternal(unittest.TestCase):
-    """Test DFT vector property addition (rots, dipole, etc.)."""
-
-    def test_single_vector_property(self):
-        """Single vector property (dipole) is added to PyG data."""
-        pc = _make_processing_config(vector_graph_properties=["dipole"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(dipole=np.array([0.1, 0.2, 0.3], dtype=np.float32))
-        handler._add_vector_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "dipole"))
-        self.assertEqual(data.dipole.shape, (3,))
-
-    def test_rots_padding_from_2_to_3(self):
-        """'rots' with shape (2,) is padded to (3,) for linear molecules."""
-        pc = _make_processing_config(vector_graph_properties=["rots"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(rots=np.array([1.0, 2.0], dtype=np.float32))
-        handler._add_vector_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "rots"))
-        self.assertEqual(data.rots.shape, (3,))
-        self.assertAlmostEqual(data.rots[2].item(), 0.0)
-
-    def test_rots_shape_3_passthrough(self):
-        """'rots' with shape (3,) passes through unchanged."""
-        pc = _make_processing_config(vector_graph_properties=["rots"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(rots=np.array([1.0, 2.0, 3.0], dtype=np.float32))
-        handler._add_vector_properties_internal(data, props, 0, "test")
-        self.assertEqual(data.rots.shape, (3,))
-
-    def test_rots_bad_shape_raises(self):
-        """'rots' with unexpected shape raises PropertyEnrichmentError."""
-        pc = _make_processing_config(vector_graph_properties=["rots"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(rots=np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_vector_properties_internal(data, props, 0, "test")
-
-    def test_missing_vector_property_raises(self):
-        """Missing vector property raises PropertyEnrichmentError."""
-        pc = _make_processing_config(vector_graph_properties=["nonexistent"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_vector_properties_internal(data, props, 0, "test")
-
-    def test_list_input_converted_to_tensor(self):
-        """List input is converted to numpy then tensor."""
-        pc = _make_processing_config(vector_graph_properties=["dipole"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        props = _make_raw_properties(dipole=[0.1, 0.2, 0.3])
-        handler._add_vector_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "dipole"))
-
-
-# ============================================================================
-# GROUP 15: _add_variable_length_properties_internal (5 tests)
-# ============================================================================
-
-
-class TestAddVariableLengthPropertiesInternal(unittest.TestCase):
-    """Test DFT variable-length property addition."""
-
-    def test_no_variable_props_noop(self):
-        """No variable_len_graph_properties means no-op."""
-        pc = _make_processing_config(variable_len_graph_properties=[])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        handler._add_variable_length_properties_internal(data, _make_raw_properties(), 0, "test")
-
-    def test_zero_nodes_raises_dft_handler_error(self):
-        """Zero nodes raises DatasetSpecificHandlerError."""
-        pc = _make_processing_config(variable_len_graph_properties=["Qmulliken"])
-        handler = _make_handler(processing_config=pc)
-        data = Data()
-        data.num_nodes = 0
-        with self.assertRaises(DatasetSpecificHandlerError):
-            handler._add_variable_length_properties_internal(
-                data, _make_raw_properties(), 0, "test"
-            )
-
-    def test_non_vibrational_property_added(self):
-        """Non-vibrational variable-length property (e.g. Qmulliken) is added."""
-        pc = _make_processing_config(variable_len_graph_properties=["Qmulliken"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3)
-        charges = np.array([0.1, -0.05, -0.05], dtype=np.float32)
-        props = _make_raw_properties(Qmulliken=charges)
-        handler._add_variable_length_properties_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "Qmulliken"))
-
-    def test_missing_non_vibrational_raises(self):
-        """Missing non-vibrational variable-length property raises."""
-        pc = _make_processing_config(variable_len_graph_properties=["nonexistent"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        with self.assertRaises(PropertyEnrichmentError):
-            handler._add_variable_length_properties_internal(
-                data, _make_raw_properties(), 0, "test"
-            )
-
-    @patch.object(DFTDatasetHandler, "_process_vibrational_data_internal")
-    def test_vibrational_data_dispatched(self, mock_vib):
-        """When freqs+vibmodes configured, _process_vibrational_data_internal is called."""
-        pc = _make_processing_config(variable_len_graph_properties=["freqs", "vibmodes"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        handler._add_variable_length_properties_internal(data, _make_raw_properties(), 0, "test")
-        mock_vib.assert_called_once()
-
-
-# ============================================================================
 # GROUP 16: _process_vibmodes_internal (7 tests)
 # ============================================================================
 
@@ -1211,98 +883,6 @@ class TestProcessVibmodesInternal(unittest.TestCase):
         handler = _make_handler()
         with self.assertRaises(DatasetSpecificHandlerError):
             handler._process_vibmodes_internal("bad_data", 3, 0, "test")
-
-
-# ============================================================================
-# GROUP 17: enrich_pyg_data (8 tests)
-# ============================================================================
-
-
-class TestEnrichPygData(unittest.TestCase):
-    """Test DFT PyG data enrichment orchestration."""
-
-    def test_sets_dataset_type(self):
-        """Enrichment sets dataset_type = 'DFT' on PyG data."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = _make_raw_properties()
-        result = handler.enrich_pyg_data(data, props, 0, "test")
-        self.assertEqual(result.dataset_type, "DFT")
-
-    def test_returns_data_object(self):
-        """Enrichment returns the Data object."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        result = handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-        self.assertIsInstance(result, Data)
-
-    def test_calls_scalar_targets(self):
-        """Enrichment calls _add_scalar_targets_internal."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_scalar_targets_internal") as mock_scalar:
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-            mock_scalar.assert_called_once()
-
-    def test_calls_vector_properties_when_configured(self):
-        """Enrichment calls _add_vector_properties_internal when configured."""
-        pc = _make_processing_config(vector_graph_properties=["dipole"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_vector_properties_internal") as mock_vec:
-            handler.enrich_pyg_data(data, _make_raw_properties(dipole=[1, 2, 3]), 0, "test")
-            mock_vec.assert_called_once()
-
-    def test_calls_variable_length_when_configured(self):
-        """Enrichment calls _add_variable_length_properties_internal when configured."""
-        pc = _make_processing_config(variable_len_graph_properties=["Qmulliken"])
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data()
-        with patch.object(handler, "_add_variable_length_properties_internal") as mock_var:
-            handler.enrich_pyg_data(
-                data, _make_raw_properties(Qmulliken=np.array([0.1, -0.05, -0.05])), 0, "test"
-            )
-            mock_var.assert_called_once()
-
-    def test_zero_nodes_raises_dft_handler_error(self):
-        """Zero-node PyG data raises DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = Data()
-        data.z = None
-        data.num_nodes = 0
-        with self.assertRaises(DatasetSpecificHandlerError):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
-
-    def test_atomization_energy_appended_to_y(self):
-        """Atomization energy appended to existing y when configured."""
-        pc = _make_processing_config(
-            scalar_graph_targets=["Etot"],
-            calculate_atomization_energy_from="Etot",
-            atomization_energy_key_name="atomization_energy",
-        )
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(Etot=-0.5)
-
-        if ATOMIC_ENERGIES_HARTREE.get(1) is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "test")
-            # y should be scalar targets + atomization energy
-            self.assertTrue(hasattr(result, "y"))
-            self.assertGreater(result.y.shape[0], 1)
-
-    def test_enrichment_error_raises_dft_handler_error(self):
-        """Unexpected enrichment error wraps in DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        with (
-            patch.object(
-                handler,
-                "_add_scalar_targets_internal",
-                side_effect=RuntimeError("unexpected"),
-            ),
-            self.assertRaises(DatasetSpecificHandlerError),
-        ):
-            handler.enrich_pyg_data(data, _make_raw_properties(), 0, "test")
 
 
 # ============================================================================
@@ -1499,8 +1079,10 @@ class TestGetProcessingStatistics(unittest.TestCase):
 # ============================================================================
 
 
-class TestProcessVibrationalDataInternal(unittest.TestCase):
-    """Test DFT vibrational data processing with refinement."""
+class TestPrepareGraphProperties(unittest.TestCase):
+    """DFT hook: freqs and vibmodes are refined together before the shared steps."""
+
+    VIB = ["freqs", "vibmodes"]
 
     def setUp(self):
         """Save and reset class-level tracking before each test."""
@@ -1514,75 +1096,78 @@ class TestProcessVibrationalDataInternal(unittest.TestCase):
         DFTDatasetHandler._vibrational_log_emitted = self._saved_log_emitted
         DFTDatasetHandler._vibrational_error_count = self._saved_error_count
 
-    def test_missing_freqs_skips(self):
-        """Missing freqs skips processing (returns silently)."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = {"vibmodes": np.array([1, 2, 3])}
-        handler._process_vibrational_data_internal(data, props, 0, "test")
+    def _handler(self, variable=None):
+        pc = _make_processing_config(
+            variable_len_graph_properties=self.VIB if variable is None else variable,
+            vibration_refinement={"comparison_tolerance": 1e-4},
+        )
+        return _make_handler(processing_config=pc)
 
-    def test_missing_vibmodes_skips(self):
-        """Missing vibmodes skips processing."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = {"freqs": np.array([1000.0, 2000.0])}
-        handler._process_vibrational_data_internal(data, props, 0, "test")
+    def test_not_configured_leaves_properties_unchanged(self):
+        """Without both keys configured the properties pass through untouched."""
+        props = {"freqs": np.array([1000.0]), "vibmodes": np.zeros((1, 3, 3))}
+        result = self._handler(variable=["freqs"]).prepare_graph_properties(
+            props, _make_pyg_data(num_atoms=3), 0, "test"
+        )
+        self.assertIs(result["freqs"], props["freqs"])
+
+    def test_missing_data_is_left_to_the_shared_step(self):
+        """Missing vibmodes: nothing refined; the shared step then refuses the molecule."""
+        props = {"freqs": np.array([1000.0])}
+        result = self._handler().prepare_graph_properties(props, _make_pyg_data(), 0, "test")
+        self.assertNotIn("vibmodes", result)
 
     @patch(
         "milia_pipeline.config.data_refining.refine_molecular_vibrations",
         return_value=(np.array([1000.0]), [np.zeros((3, 3))], True),
     )
-    def test_successful_refinement(self, mock_refine):
-        """Successful refinement sets freqs and vibmodes on PyG data."""
-        pc = _make_processing_config(vibration_refinement={"comparison_tolerance": 1e-4})
-        handler = _make_handler(processing_config=pc)
-        data = _make_pyg_data(num_atoms=3)
-        props = {
-            "freqs": np.array([1000.0]),
-            "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]]),
-        }
-        handler._process_vibrational_data_internal(data, props, 0, "test")
-        self.assertTrue(hasattr(data, "freqs"))
+    def test_successful_refinement_replaces_both(self, mock_refine):
+        """Refined freqs become a tensor and vibmodes one (n_atoms, 3) tensor per mode."""
+        props = {"freqs": np.array([1000.0, 5.0]), "vibmodes": np.zeros((2, 3, 3))}
+        result = self._handler().prepare_graph_properties(
+            props, _make_pyg_data(num_atoms=3), 0, "test"
+        )
+        self.assertEqual(result["freqs"].dtype, torch.float32)
+        self.assertEqual(len(result["vibmodes"]), 1)
+        self.assertEqual(tuple(result["vibmodes"][0].shape), (3, 3))
+
+    @patch(
+        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
+        return_value=(np.array([1000.0 + 0j]), [np.zeros((3, 3))], True),
+    )
+    def test_complex_frequencies_stay_complex(self, mock_refine):
+        """Complex raw frequencies are stored complex64."""
+        props = {"freqs": np.array([1000.0 + 0j]), "vibmodes": np.zeros((1, 3, 3))}
+        result = self._handler().prepare_graph_properties(
+            props, _make_pyg_data(num_atoms=3), 0, "test"
+        )
+        self.assertEqual(result["freqs"].dtype, torch.complex64)
 
     @patch(
         "milia_pipeline.config.data_refining.refine_molecular_vibrations",
         return_value=(np.array([]), [], False),
     )
     def test_rejected_refinement_raises(self, mock_refine):
-        """Rejected refinement raises DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = {
-            "freqs": np.array([1000.0]),
-            "vibmodes": np.array([[[1, 0, 0], [0, 1, 0], [0, 0, 1]]]),
-        }
+        """Rejected refinement refuses the molecule and is counted."""
+        props = {"freqs": np.array([1000.0]), "vibmodes": np.zeros((1, 3, 3))}
         with self.assertRaises(DatasetSpecificHandlerError):
-            handler._process_vibrational_data_internal(data, props, 0, "test")
-
-    @patch(
-        "milia_pipeline.config.data_refining.refine_molecular_vibrations",
-        return_value=(np.array([]), [], False),
-    )
-    def test_rejected_increments_error_count(self, mock_refine):
-        """Rejected refinement increments class-level error count."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = {"freqs": np.array([1000.0]), "vibmodes": np.array([[[1, 0, 0]]])}
-        with contextlib.suppress(DatasetSpecificHandlerError):
-            handler._process_vibrational_data_internal(data, props, 0, "test")
+            self._handler().prepare_graph_properties(props, _make_pyg_data(), 0, "test")
         self.assertGreater(DFTDatasetHandler._vibrational_error_count, 0)
 
     @patch(
         "milia_pipeline.config.data_refining.refine_molecular_vibrations",
         side_effect=ImportError("no refine"),
     )
-    def test_import_error_raises_dft_handler_error(self, mock_refine):
-        """Import error during refinement raises DatasetSpecificHandlerError."""
-        handler = _make_handler()
-        data = _make_pyg_data()
-        props = {"freqs": np.array([1000.0]), "vibmodes": np.array([[[1, 0, 0]]])}
+    def test_refinement_failure_raises_dft_handler_error(self, mock_refine):
+        """A failure inside the refinement refuses the molecule."""
+        props = {"freqs": np.array([1000.0]), "vibmodes": np.zeros((1, 3, 3))}
         with self.assertRaises(DatasetSpecificHandlerError):
-            handler._process_vibrational_data_internal(data, props, 0, "test")
+            self._handler().prepare_graph_properties(props, _make_pyg_data(), 0, "test")
+
+    def test_rots_of_a_linear_molecule_padded_to_three(self):
+        """process_property_value pads two rotational constants with 0.0."""
+        result = _make_handler().process_property_value("rots", np.array([1.5, 2.5]), 0)
+        np.testing.assert_array_equal(result, [1.5, 2.5, 0.0])
 
 
 # ============================================================================
@@ -1673,16 +1258,11 @@ def run_comprehensive_suite():
         TestGetSupportedStructuralFeatures,  # GROUP 9:   5 tests
         TestIsValidProperty,  # GROUP 10:  7 tests
         TestValidateVibrationalData,  # GROUP 11:  5 tests
-        TestAddScalarTargetsInternal,  # GROUP 12:  9 tests
-        TestCalculateAtomizationEnergyInternal,  # GROUP 13:  8 tests
-        TestAddVectorPropertiesInternal,  # GROUP 14:  6 tests
-        TestAddVariableLengthPropertiesInternal,  # GROUP 15:  5 tests
         TestProcessVibmodesInternal,  # GROUP 16:  7 tests
-        TestEnrichPygData,  # GROUP 17:  8 tests
         TestValidateConfiguration,  # GROUP 18:  5 tests
         TestTransformValidationHelpers,  # GROUP 19:  8 tests
         TestGetProcessingStatistics,  # GROUP 20:  5 tests
-        TestProcessVibrationalDataInternal,  # GROUP 21:  6 tests
+        TestPrepareGraphProperties,  # GROUP 21:  6 tests
         TestEdgeCasesAndIntegration,  # GROUP 22:  6 tests
     ]
 
@@ -1733,16 +1313,13 @@ GROUP 8:  get_supported_descriptors                                    ( 4 tests
 GROUP 9:  get_supported_structural_features                            ( 5 tests)
 GROUP 10: _is_valid_property                                           ( 7 tests)
 GROUP 11: _validate_vibrational_data                                   ( 5 tests)
-GROUP 12: _add_scalar_targets_internal                                 ( 9 tests)
-GROUP 13: _calculate_atomization_energy_internal                       ( 8 tests)
-GROUP 14: _add_vector_properties_internal                              ( 6 tests)
-GROUP 15: _add_variable_length_properties_internal                     ( 5 tests)
 GROUP 16: _process_vibmodes_internal                                   ( 7 tests)
-GROUP 17: enrich_pyg_data                                              ( 8 tests)
+Graph-level properties (DatasetHandler.enrich_pyg_data and the shared steps): see
+tests/test_contract_dataset_graph_properties.py and tests/test_property_enrichment_unit.py
 GROUP 18: validate_configuration                                       ( 5 tests)
 GROUP 19: Transform Validation Helpers                                 ( 8 tests)
 GROUP 20: get_processing_statistics                                    ( 5 tests)
-GROUP 21: _process_vibrational_data_internal                           ( 6 tests)
+GROUP 21: prepare_graph_properties (vibrational refinement)             ( 7 tests)
 GROUP 22: Edge Cases and Integration                                   ( 6 tests)
 
 PRODUCTION-READY QUALITIES:

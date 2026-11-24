@@ -51,12 +51,10 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from milia_pipeline.config.config_constants import HAR2EV
 from milia_pipeline.exceptions import (
     DatasetSpecificHandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 from milia_pipeline.handlers.implementations.qm40 import (
     QM40_SUPPORTED_ELEMENTS,
@@ -558,165 +556,6 @@ class TestProcessPassthrough(unittest.TestCase):
 
     def test_unknown_key_none_returns_none(self):
         self.assertIsNone(_make_handler().process_property_value("unknown", None, 0))
-
-
-# ============================================================================
-# GROUP 10: enrich_pyg_data
-# ============================================================================
-
-
-class TestEnrichPygData(unittest.TestCase):
-    def test_sets_dataset_type(self):
-        result = _make_handler().enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "t")
-        self.assertEqual(result.dataset_type, "QM40")
-
-    def test_sets_scalar_target_y(self):
-        result = _make_handler().enrich_pyg_data(_make_pyg_data(), _make_raw_properties(), 0, "t")
-        self.assertTrue(hasattr(result, "y"))
-
-    def test_zero_nodes_raises(self):
-        data = Data()
-        data.z = torch.tensor([], dtype=torch.long)
-        data.num_nodes = 0
-        with self.assertRaises(DatasetSpecificHandlerError) as ctx:
-            _make_handler().enrich_pyg_data(data, _make_raw_properties(), 0, "t")
-        self.assertEqual(ctx.exception.dataset_type, "QM40")
-
-    def test_vector_property_set(self):
-        pc = _make_processing_config(vector_graph_properties=["dipole_vec"])
-        handler = _make_handler(processing_config=pc)
-        props = _make_raw_properties(extra={"dipole_vec": np.array([1.0, 2.0, 3.0], np.float32)})
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "t")
-        self.assertTrue(hasattr(result, "dipole_vec"))
-
-    def test_variable_length_property_set(self):
-        pc = _make_processing_config(variable_len_graph_properties=["bond_lmod_ka"])
-        handler = _make_handler(processing_config=pc)
-        props = _make_raw_properties(bond_lmod_ka=np.array([3.1, 4.2], np.float32))
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "t")
-        self.assertTrue(hasattr(result, "bond_lmod_ka"))
-
-    def test_variable_length_missing_skipped(self):
-        """Missing variable-length property is skipped (DEBUG), not an error."""
-        pc = _make_processing_config(variable_len_graph_properties=["bond_lmod_ka"])
-        handler = _make_handler(processing_config=pc)
-        props = _make_raw_properties()  # no bond_lmod_ka
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "t")
-        self.assertFalse(hasattr(result, "bond_lmod_ka"))
-        self.assertEqual(result.dataset_type, "QM40")
-
-    def test_missing_scalar_target_raises_enrichment_error(self):
-        props = _make_raw_properties()
-        props.pop("Internal_E_0K")
-        with self.assertRaises(PropertyEnrichmentError):
-            _make_handler().enrich_pyg_data(_make_pyg_data(), props, 0, "t")
-
-    def test_multivalue_scalar_target_raises(self):
-        props = _make_raw_properties()
-        props["Internal_E_0K"] = np.array([1.0, 2.0])
-        with self.assertRaises(PropertyEnrichmentError):
-            _make_handler().enrich_pyg_data(_make_pyg_data(), props, 0, "t")
-
-
-# ============================================================================
-# GROUP 11: atomization energy (via enrich + direct)
-# ============================================================================
-
-
-class TestAtomizationEnergy(unittest.TestCase):
-    def test_no_atomization_when_unconfigured(self):
-        pc = _make_processing_config(
-            calculate_atomization_energy_from="", atomization_energy_key_name=""
-        )
-        result = _make_handler(processing_config=pc).enrich_pyg_data(
-            _make_pyg_data(), _make_raw_properties(), 0, "t"
-        )
-        self.assertFalse(hasattr(result, "atomization_energy"))
-
-    def test_atomization_for_hydrogen(self):
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        atomic_H = ATOMIC_ENERGIES_HARTREE.get(1)
-        if atomic_H is not None and HAR2EV is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "t")
-            if hasattr(result, "atomization_energy"):
-                expected_eV = (-0.5 - atomic_H) * HAR2EV
-                self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
-
-    def test_atomization_water_like(self):
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=3, z=torch.tensor([8, 1, 1], dtype=torch.long))
-        props = _make_raw_properties(energy=-76.3)
-        a_O, a_H = ATOMIC_ENERGIES_HARTREE.get(8), ATOMIC_ENERGIES_HARTREE.get(1)
-        if a_O is not None and a_H is not None and HAR2EV is not None:
-            result = handler.enrich_pyg_data(data, props, 0, "t")
-            if hasattr(result, "atomization_energy"):
-                expected_eV = (-76.3 - (a_O + 2 * a_H)) * HAR2EV
-                self.assertAlmostEqual(result.atomization_energy.item(), expected_eV, places=3)
-
-    def test_returns_ev_float_directly(self):
-        """_calculate_atomization_energy_internal returns a float in eV (or None)."""
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([6], dtype=torch.long))
-        props = _make_raw_properties(energy=-37.8, num_atoms=1, atoms=np.array([6]))
-        val = handler._calculate_atomization_energy_internal(props, data, 0, "t")
-        if ATOMIC_ENERGIES_HARTREE.get(6) is not None and HAR2EV is not None:
-            self.assertIsInstance(val, float)
-
-    def test_missing_atomic_energy_no_crash(self):
-        """Element absent from the energy table -> graceful None, enrichment still succeeds."""
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([2], dtype=torch.long))  # He
-        props = _make_raw_properties(energy=-2.9, num_atoms=1, atoms=np.array([2]))
-        result = handler.enrich_pyg_data(data, props, 0, "t")
-        self.assertEqual(result.dataset_type, "QM40")
-
-    @patch("milia_pipeline.handlers.implementations.qm40.get_har2ev", Mock(return_value=None))
-    def test_missing_har2ev_no_atomization(self):
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(energy=-0.5, num_atoms=1, atoms=np.array([1]))
-        result = handler.enrich_pyg_data(data, props, 0, "t")
-        self.assertEqual(result.dataset_type, "QM40")
-        self.assertFalse(hasattr(result, "atomization_energy"))
-
-    def test_missing_base_energy_returns_none(self):
-        handler = _make_handler()
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([1], dtype=torch.long))
-        props = _make_raw_properties(num_atoms=1, atoms=np.array([1]))
-        props.pop("Internal_E_0K")
-        self.assertIsNone(handler._calculate_atomization_energy_internal(props, data, 0, "t"))
-
-
-# ============================================================================
-# GROUP 12: _ensure_tensor
-# ============================================================================
-
-
-class TestEnsureTensor(unittest.TestCase):
-    def test_list_to_tensor(self):
-        t = _make_handler()._ensure_tensor([1.0, 2.0, 3.0], torch.float32, "k", 0, "id")
-        self.assertEqual(t.dtype, torch.float32)
-        self.assertEqual(tuple(t.shape), (3,))
-
-    def test_ndarray_to_tensor(self):
-        t = _make_handler()._ensure_tensor(np.array([1.0, 2.0]), torch.float32, "k", 0, "id")
-        self.assertEqual(t.dtype, torch.float32)
-
-    def test_scalar_to_tensor(self):
-        t = _make_handler()._ensure_tensor(5, torch.float32, "k", 0, "id")
-        self.assertEqual(tuple(t.shape), (1,))
-
-    def test_existing_tensor_cast(self):
-        src = torch.tensor([1, 2, 3], dtype=torch.long)
-        t = _make_handler()._ensure_tensor(src, torch.float32, "k", 0, "id")
-        self.assertEqual(t.dtype, torch.float32)
-
-    def test_unsupported_raises_dataset_specific(self):
-        with self.assertRaises(DatasetSpecificHandlerError) as ctx:
-            _make_handler()._ensure_tensor({"bad": 1}, torch.float32, "k", 0, "id")
-        self.assertEqual(ctx.exception.dataset_type, "QM40")
 
 
 # ============================================================================

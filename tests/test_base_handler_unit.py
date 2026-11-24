@@ -41,6 +41,7 @@ import torch
 from torch_geometric.data import Data
 
 from milia_pipeline.exceptions import (
+    DatasetSpecificHandlerError,
     HandlerCompatibilityError,
     HandlerConfigurationError,
     HandlerNotAvailableError,
@@ -89,6 +90,10 @@ def _make_mock_processing_config(scalar_graph_targets=None):
     mock.scalar_graph_targets = (
         scalar_graph_targets if scalar_graph_targets is not None else ["energy"]
     )
+    mock.vector_graph_properties = []
+    mock.variable_len_graph_properties = []
+    mock.calculate_atomization_energy_from = None
+    mock.atomization_energy_key_name = None
     return mock
 
 
@@ -152,9 +157,6 @@ def _build_concrete_handler_class(
     def _process_property_value(self, key, value, molecule_index, identifier="N/A"):
         return value
 
-    def _enrich_pyg_data(self, pyg_data, raw_properties_dict, molecule_index, identifier="N/A"):
-        return pyg_data
-
     def _get_processing_statistics(self, processed_molecules):
         return {"count": len(processed_molecules)}
 
@@ -191,7 +193,6 @@ def _build_concrete_handler_class(
         "get_required_properties": _get_required_properties,
         "get_identifier_keys": _get_identifier_keys,
         "process_property_value": _process_property_value,
-        "enrich_pyg_data": _enrich_pyg_data,
         "get_processing_statistics": _get_processing_statistics,
         "get_supported_structural_features": _get_supported_structural_features,
         "get_molecular_charge": _get_molecular_charge,
@@ -389,8 +390,43 @@ class TestDatasetHandlerAbstractMethods(unittest.TestCase):
         self.assertEqual(self.handler.process_property_value("energy", 42.0, 0), 42.0)
 
     def test_enrich_pyg_data(self):
-        pyg_data = Data(x=torch.randn(3, 5))
-        self.assertIsInstance(self.handler.enrich_pyg_data(pyg_data, {}, 0), Data)
+        """The shared template builds y and its names from the configured targets."""
+        pyg_data = Data(x=torch.randn(3, 5), z=torch.tensor([6, 1, 1]))
+        result = self.handler.enrich_pyg_data(pyg_data, {"energy": -40.0}, 0)
+        self.assertIsInstance(result, Data)
+        torch.testing.assert_close(result.y, torch.tensor([-40.0]))
+        self.assertEqual(result.y_property_names, ["energy"])
+
+    def test_add_dataset_extras_may_not_change_y(self):
+        """y holds exactly the configured targets: an extra that rewrites it refuses the molecule."""
+        base = _build_concrete_handler_class()
+
+        def rewrite_y(self, pyg_data, properties, molecule_index, identifier):
+            pyg_data.y = torch.zeros(2)
+
+        cls = type("RewritingHandler", (base,), {"add_dataset_extras": rewrite_y})
+        handler = cls(
+            dataset_config=_make_mock_dataset_config(),
+            filter_config=_make_mock_filter_config(),
+            processing_config=_make_mock_processing_config(),
+            logger=_make_mock_logger(),
+        )
+        with self.assertRaises(DatasetSpecificHandlerError):
+            handler.enrich_pyg_data(Data(z=torch.tensor([6, 1])), {"energy": -1.0}, 0)
+
+    def test_molecule_without_atoms_is_refused(self):
+        with self.assertRaises(DatasetSpecificHandlerError):
+            self.handler.enrich_pyg_data(Data(z=torch.tensor([], dtype=torch.long)), {}, 0)
+
+    def test_enrich_pyg_data_cannot_be_overridden(self):
+        """A handler that overrides enrich_pyg_data fails when its class is created."""
+        with self.assertRaises(TypeError) as ctx:
+            type(
+                "OverridingHandler",
+                (DatasetHandler,),
+                {"enrich_pyg_data": lambda self, *a, **k: None},
+            )
+        self.assertIn("prepare_graph_properties", str(ctx.exception))
 
     def test_get_processing_statistics(self):
         result = self.handler.get_processing_statistics([{"mol": 1}, {"mol": 2}])

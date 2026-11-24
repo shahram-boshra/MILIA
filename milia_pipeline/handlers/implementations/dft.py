@@ -26,7 +26,6 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from milia_pipeline.config.config_constants import get_har2ev
 from milia_pipeline.config.validators import (
     is_value_valid_and_not_nan,
     validate_molecular_structure,
@@ -37,11 +36,10 @@ from milia_pipeline.exceptions import (
     HandlerError,
     HandlerValidationError,
     MoleculeProcessingError,
-    PropertyEnrichmentError,
 )
 
 # Import from refactored base handler
-from milia_pipeline.handlers.base_handler import DatasetHandler, handle_transform_errors
+from milia_pipeline.handlers.base_handler import DatasetHandler
 from milia_pipeline.handlers.handler_registry import register_handler
 
 logger = logging.getLogger(__name__)
@@ -227,10 +225,10 @@ class DFTDatasetHandler(DatasetHandler):
     ) -> Any:
         """Process DFT-specific property values with exception handling."""
         try:
-            # Handle 'rots' property homogenization
-            if key == "rots" and isinstance(value, list):
+            # 'rots': rotational constants, (3,); a linear molecule has two, padded with 0.0
+            if key == "rots" and value is not None:
                 try:
-                    return np.array(value, dtype=float)
+                    rots = np.asarray(value, dtype=float)
                 except ValueError as e:
                     raise DatasetSpecificHandlerError(
                         dataset_type="DFT",
@@ -242,6 +240,9 @@ class DFTDatasetHandler(DatasetHandler):
                         details=f"InChI: {identifier}, Value type: {type(value)}, "
                         f"Length: {len(value)}, Conversion error: {str(e)}",
                     ) from e
+                if rots.shape == (2,):
+                    rots = np.pad(rots, (0, 1), "constant", constant_values=0.0)
+                return rots
 
             # Handle vibrational frequencies (can be complex)
             if key == "freqs" and value is not None and not is_value_valid_and_not_nan(value):
@@ -520,217 +521,33 @@ class DFTDatasetHandler(DatasetHandler):
     # Self-contained scalar targets implementation
     # ========================================================================
 
-    def _add_scalar_targets_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """Internal DFT-specific implementation of scalar target addition with enhancements."""
-        try:
-            if not self.processing_config.scalar_graph_targets:
-                return
-
-            collected_targets = []
-
-            for key in self.processing_config.scalar_graph_targets:
-                try:
-                    value = raw_properties_dict.get(key)
-
-                    if value is None:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Required DFT scalar target '{key}' is missing from raw data",
-                            detail="Value retrieved was None",
-                        )
-
-                    # Convert to scalar float with DFT-specific handling
-                    if isinstance(value, (int, float, np.number)):
-                        val_to_add = float(value)
-                    elif isinstance(value, np.ndarray):
-                        if value.size == 1:
-                            val_to_add = float(value.item())
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DFT scalar target '{key}' has array shape {value.shape}, expected single scalar",
-                                detail=f"Shape: {value.shape}, Size: {value.size}",
-                            )
-                    elif isinstance(value, (str, bytes, np.str_, np.bytes_)):
-                        try:
-                            val_to_add = float(value)
-                        except ValueError:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DFT scalar target '{key}' string cannot be converted to number",
-                                detail=f"Value: '{value}'",
-                            ) from None
-                    elif isinstance(value, (list, tuple)):
-                        if len(value) == 1:
-                            val_to_add = float(value[0])
-                        else:
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=key,
-                                reason=f"DFT scalar target '{key}' is a list with {len(value)} elements, expected single scalar",
-                                detail=f"Value: {value}",
-                            )
-                    else:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"DFT scalar target '{key}' has unexpected type {type(value)}",
-                            detail=f"Value type: {type(value)}, Value: {value}",
-                        )
-
-                    # Validate the converted value
-                    if not is_value_valid_and_not_nan(val_to_add):
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"DFT scalar target '{key}' has NaN, Inf, or None value after conversion",
-                            detail=f"Converted value: {val_to_add}",
-                        )
-
-                    collected_targets.append(val_to_add)
-
-                except PropertyEnrichmentError:
-                    raise
-                except Exception as e:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=key,
-                        reason=f"Critical error processing DFT scalar target '{key}'",
-                        detail=str(e),
-                    ) from e
-
-            if collected_targets:
-                pyg_data.y = self._ensure_tensor(
-                    collected_targets,
-                    torch.float32,
-                    "dft_scalar_targets",
-                    molecule_index,
-                    identifier,
-                )
-
-        except PropertyEnrichmentError:
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DFT handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DFT",
-                message=f"DFT scalar targets processing failed: {str(e)}",
-                operation="add_scalar_targets",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
     # ========================================================================
-    # Self-contained variable-length properties
+    # Vibrational data: frequencies and modes are refined together
     # ========================================================================
 
-    def _add_variable_length_properties_internal(
+    def prepare_graph_properties(
         self,
+        properties: dict[str, Any],
         pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
         molecule_index: int,
         identifier: str,
-    ) -> None:
-        """Internal DFT-specific implementation of variable-length property addition with enhancements."""
+    ) -> dict[str, Any]:
+        """Refine ``freqs`` and ``vibmodes`` together when both are configured.
+
+        ``refine_molecular_vibrations`` keeps the frequencies and the modes that belong together;
+        a rejected molecule is refused. ``freqs`` stays complex when the raw data is complex;
+        ``vibmodes`` becomes one (n_atoms, 3) tensor per mode. Missing data is left to the shared
+        step, which refuses the molecule.
+        """
+        configured = self.processing_config.variable_len_graph_properties or []
+        if "freqs" not in configured or "vibmodes" not in configured:
+            return properties
         try:
-            if not self.processing_config.variable_len_graph_properties:
-                return
-
-            if pyg_data.num_nodes == 0:
-                raise DatasetSpecificHandlerError(
-                    dataset_type="DFT",
-                    message="No nodes found for DFT variable-length graph properties",
-                    operation="add_variable_length_properties",
-                    details="Required for DFT variable-length property processing",
-                )
-
-            # Process vibrational data with DFT-specific refinement
-            if (
-                "freqs" in self.processing_config.variable_len_graph_properties
-                and "vibmodes" in self.processing_config.variable_len_graph_properties
-            ):
-                self._process_vibrational_data_internal(
-                    pyg_data, raw_properties_dict, molecule_index, identifier
-                )
-
-            # Process other variable-length properties
-            for key in self.processing_config.variable_len_graph_properties:
-                if key in ["freqs", "vibmodes"]:
-                    continue  # Already processed above
-
-                try:
-                    value = raw_properties_dict.get(key)
-
-                    if not is_value_valid_and_not_nan(value):
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=key,
-                            reason=f"Missing, invalid, or NaN DFT variable-length property '{key}'",
-                            detail=f"Value: {value}",
-                        )
-
-                    # Convert to tensor with appropriate dtype
-                    dtype = torch.complex64 if "freq" in key else torch.float32
-                    property_tensor = self._ensure_tensor(
-                        value, dtype, key, molecule_index, identifier
-                    )
-                    setattr(pyg_data, key, property_tensor)
-
-                except PropertyEnrichmentError:
-                    raise
-                except Exception as e:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=key,
-                        reason=f"Error processing DFT variable-length property '{key}'",
-                        detail=str(e),
-                    ) from e
-
-        except (PropertyEnrichmentError, DatasetSpecificHandlerError):
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DFT handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DFT",
-                message=f"DFT variable-length properties processing failed: {str(e)}",
-                operation="add_variable_length_properties",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    def _process_vibrational_data_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """Internal DFT-specific vibrational data processing with refinement and exception handling."""
-        try:
-            raw_freqs = raw_properties_dict.get("freqs")
-            raw_vibmodes = raw_properties_dict.get("vibmodes")
+            raw_freqs = properties.get("freqs")
+            raw_vibmodes = properties.get("vibmodes")
 
             if raw_freqs is None or raw_vibmodes is None:
-                self.logger.debug(
-                    f"DFT molecule {molecule_index}: Skipping vibrational refinement - missing data"
-                )
-                return
+                return properties
 
             # Log once at the very first vibrational processing (class-level check)
             # NOTE: Logging moved to avoid tqdm progress bar interference
@@ -782,12 +599,12 @@ class DFTDatasetHandler(DatasetHandler):
                     if hasattr(raw_freqs, "dtype") and np.iscomplexobj(raw_freqs)
                     else torch.float32
                 )
-                pyg_data.freqs = self._ensure_tensor(
+                properties["freqs"] = self._ensure_tensor(
                     np.asarray(cleaned_freqs), freqs_dtype, "freqs", molecule_index, identifier
                 )
 
                 # Process vibrational modes
-                pyg_data.vibmodes = self._process_vibmodes_internal(
+                properties["vibmodes"] = self._process_vibmodes_internal(
                     cleaned_vibmodes, pyg_data.num_nodes, molecule_index, identifier
                 )
 
@@ -796,6 +613,7 @@ class DFTDatasetHandler(DatasetHandler):
                     f"DFT molecule {molecule_index}: Vibrational data processed "
                     f"(freqs: {len(cleaned_freqs)}, modes: {len(cleaned_vibmodes)})"
                 )
+                return properties
 
             except DatasetSpecificHandlerError:
                 # Already logged above, just re-raise
@@ -934,177 +752,6 @@ class DFTDatasetHandler(DatasetHandler):
                 dataset_type="DFT",
                 message=f"Unexpected error processing vibmodes: {str(e)}",
                 operation="vibmodes_processing",
-                details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
-            ) from e
-
-    @handle_transform_errors("enrich_pyg_data")
-    def enrich_pyg_data(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str = "N/A",
-    ) -> Data:
-        """DFT-specific PyG data enrichment with exception handling."""
-        try:
-            # Set dataset type
-            pyg_data.dataset_type = "DFT"
-
-            # Ensure num_nodes is set properly
-            if not hasattr(pyg_data, "num_nodes") or pyg_data.num_nodes == 0:
-                pyg_data.num_nodes = (
-                    pyg_data.z.size(0) if hasattr(pyg_data, "z") and pyg_data.z is not None else 0
-                )
-
-            if pyg_data.num_nodes == 0:
-                raise DatasetSpecificHandlerError(
-                    dataset_type="DFT",
-                    message="DFT molecule has 0 nodes, cannot proceed with enrichment",
-                    operation="enrich_pyg_data",
-                    details="No atoms available for processing",
-                )
-
-            # 1. Add scalar graph targets using internal implementation
-            self._add_scalar_targets_internal(
-                pyg_data, raw_properties_dict, molecule_index, identifier
-            )
-
-            # 2. Add vector graph properties (simplified internal implementation)
-            if self.processing_config.vector_graph_properties:
-                self._add_vector_properties_internal(
-                    pyg_data, raw_properties_dict, molecule_index, identifier
-                )
-
-            # 3. Add variable-length properties using internal implementation
-            if self.processing_config.variable_len_graph_properties:
-                self._add_variable_length_properties_internal(
-                    pyg_data, raw_properties_dict, molecule_index, identifier
-                )
-
-            # 4. Add atomization energy if configured
-            if (
-                self.processing_config.calculate_atomization_energy_from
-                and self.processing_config.atomization_energy_key_name
-            ):
-                atomization_energy = self._calculate_atomization_energy_internal(
-                    raw_properties_dict, pyg_data, molecule_index, identifier
-                )
-
-                if atomization_energy is not None:
-                    setattr(
-                        pyg_data,
-                        self.processing_config.atomization_energy_key_name,
-                        self._ensure_tensor(
-                            [atomization_energy],
-                            torch.float32,
-                            "atomization_energy",
-                            molecule_index,
-                            identifier,
-                        ),
-                    )
-
-                    # Also add to targets if y exists
-                    if hasattr(pyg_data, "y") and pyg_data.y is not None:
-                        current_y = pyg_data.y
-                        atomization_tensor = self._ensure_tensor(
-                            [atomization_energy],
-                            torch.float32,
-                            "atomization_energy_target",
-                            molecule_index,
-                            identifier,
-                        )
-                        pyg_data.y = torch.cat([current_y, atomization_tensor])
-
-            self.logger.debug(f"DFT molecule {molecule_index}: Enrichment completed")
-            return pyg_data
-
-        except (PropertyEnrichmentError, DatasetSpecificHandlerError):
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DFT handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DFT",
-                message=f"DFT enrichment failed: {str(e)}",
-                operation="enrich_pyg_data",
-                details=f"Molecule {molecule_index}, Error during DFT-specific enrichment",
-            ) from e
-
-    def _add_vector_properties_internal(
-        self,
-        pyg_data: Data,
-        raw_properties_dict: dict[str, Any],
-        molecule_index: int,
-        identifier: str,
-    ) -> None:
-        """Internal DFT-specific vector properties implementation with exception handling."""
-        try:
-            for prop_key in self.processing_config.vector_graph_properties:
-                try:
-                    value = raw_properties_dict.get(prop_key)
-
-                    if not is_value_valid_and_not_nan(value):
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=prop_key,
-                            reason=f"Missing or invalid DFT vector property '{prop_key}'",
-                            detail=f"Value: {value}",
-                        )
-
-                    # Convert to numpy array if needed
-                    if isinstance(value, (list, tuple)):
-                        value = np.asarray(value, dtype=np.float32)
-
-                    if not isinstance(value, np.ndarray) or value.ndim != 1:
-                        raise PropertyEnrichmentError(
-                            molecule_index=molecule_index,
-                            inchi=identifier,
-                            property_name=prop_key,
-                            reason=f"DFT vector property '{prop_key}' is not a 1D array",
-                            detail=f"Type: {type(value)}, Dims: {getattr(value, 'ndim', 'N/A')}",
-                        )
-
-                    # Special handling for 'rots' - pad (2,) to (3,) for linear molecules
-                    if prop_key == "rots":
-                        if value.shape == (2,):
-                            value = np.pad(value, (0, 1), "constant", constant_values=0.0)
-                            self.logger.debug(
-                                f"DFT molecule {molecule_index}: Padded 'rots' from (2,) to (3,)"
-                            )
-                        elif value.shape != (3,):
-                            raise PropertyEnrichmentError(
-                                molecule_index=molecule_index,
-                                inchi=identifier,
-                                property_name=prop_key,
-                                reason=f"DFT vector property '{prop_key}' has unexpected shape {value.shape}",
-                                detail="Expected (3,) or (2,) for 'rots'",
-                            )
-
-                    # Convert to tensor and set attribute
-                    property_tensor = self._ensure_tensor(
-                        value, torch.float32, prop_key, molecule_index, identifier
-                    )
-                    setattr(pyg_data, prop_key, property_tensor)
-
-                except PropertyEnrichmentError:
-                    raise
-                except Exception as e:
-                    raise PropertyEnrichmentError(
-                        molecule_index=molecule_index,
-                        inchi=identifier,
-                        property_name=prop_key,
-                        reason=f"Error processing DFT vector property '{prop_key}'",
-                        detail=str(e),
-                    ) from e
-
-        except PropertyEnrichmentError:
-            raise
-        except Exception as e:
-            # Convert unexpected errors to DFT handler operation errors
-            raise DatasetSpecificHandlerError(
-                dataset_type="DFT",
-                message=f"DFT vector properties processing failed: {str(e)}",
-                operation="add_vector_properties",
                 details=f"Molecule {molecule_index}, Error: {type(e).__name__}: {str(e)}",
             ) from e
 
@@ -1257,7 +904,7 @@ class DFTDatasetHandler(DatasetHandler):
         Skip detailed validation of vibrational data during initial
         validation phase, as the complex nested structures in milia require specialized
         processing before meaningful validation can occur. The refinement process in
-        _process_vibrational_data_internal() includes comprehensive validation.
+        prepare_graph_properties() includes comprehensive validation.
         """
         try:
             freqs = raw_properties_dict.get("freqs")
@@ -1291,88 +938,3 @@ class DFTDatasetHandler(DatasetHandler):
             self.logger.warning(
                 f"DFT molecule {molecule_index} vibrational validation warning: {str(e)}"
             )
-
-    def _calculate_atomization_energy_internal(
-        self,
-        raw_properties_dict: dict[str, Any],
-        pyg_data: Data,
-        molecule_index: int,
-        identifier: str,
-    ) -> float | None:
-        """
-        Internal DFT-specific atomization energy calculation with exception handling.
-
-        UNIT SAFETY: Always works with original Hartree values to ensure correct
-        unit handling. Converts to eV only at the final step.
-        """
-        try:
-            if not self.processing_config.calculate_atomization_energy_from:
-                return None
-
-            base_energy_key = self.processing_config.calculate_atomization_energy_from
-            base_energy_raw = raw_properties_dict.get(base_energy_key)
-
-            if not is_value_valid_and_not_nan(base_energy_raw):
-                self.logger.warning(
-                    f"DFT molecule {molecule_index} missing {base_energy_key} for atomization energy"
-                )
-                return None
-
-            if not hasattr(pyg_data, "z") or pyg_data.z is None:
-                self.logger.warning(
-                    f"DFT molecule {molecule_index} missing atomic numbers for atomization energy"
-                )
-                return None
-
-            # ✓ Convert to float - keep in original Hartree units
-            if isinstance(base_energy_raw, (str, bytes)):
-                base_energy_hartree = float(base_energy_raw)
-            elif isinstance(base_energy_raw, np.ndarray) and base_energy_raw.size == 1:
-                base_energy_hartree = float(base_energy_raw.item())
-            elif isinstance(base_energy_raw, (int, float, np.number)):
-                base_energy_hartree = float(base_energy_raw)
-            else:
-                self.logger.warning(
-                    f"DFT molecule {molecule_index}: Cannot convert {base_energy_key} to float"
-                )
-                return None
-
-            # Calculate atomization energy using internal logic
-            har2ev = get_har2ev()
-            atomic_energies_hartree = self._atomization_reference_energies(base_energy_key)
-            if atomic_energies_hartree is None:
-                return None
-            if har2ev is None or not atomic_energies_hartree:
-                self.logger.warning(
-                    f"DFT molecule {molecule_index}: Missing atomic energies for atomization calculation"
-                )
-                return None
-
-            # ✓ Sum atomic energies (already in Hartree from constants)
-            sum_atomic_energies_hartree = 0.0
-            for atomic_num in pyg_data.z.tolist():
-                atomic_energy = atomic_energies_hartree.get(atomic_num)
-                if atomic_energy is None:
-                    self.logger.warning(
-                        f"DFT molecule {molecule_index}: Missing atomic energy for element {atomic_num}"
-                    )
-                    return None
-                sum_atomic_energies_hartree += atomic_energy
-
-            # ✓ CORRECT - Do arithmetic in Hartree (same units!)
-            atomization_energy_hartree = base_energy_hartree - sum_atomic_energies_hartree
-
-            # ✓ CORRECT - Convert to eV only at the end
-            atomization_energy_eV = atomization_energy_hartree * har2ev
-
-            self.logger.debug(
-                f"DFT molecule {molecule_index} atomization energy: {atomization_energy_eV:.4f} eV"
-            )
-            return atomization_energy_eV
-
-        except Exception as e:
-            # Log errors but don't fail processing
-            self.logger.error(
-                f"Error calculating DFT atomization energy for molecule {molecule_index}: {e}"
-            )
-            return None

@@ -50,6 +50,7 @@ from milia_pipeline.config.config_accessors import (
     should_enable_stereochemistry_preprocessing,
     should_pass_atomic_charges_to_structural_features,
     should_pass_coordinates_to_structural_features,
+    validate_graph_property_selection,
     validate_node_property_selection,
 )
 from milia_pipeline.config.config_constants import (
@@ -1960,6 +1961,22 @@ class MoleculeDataConverter:
                 (self.structural_features_config or {}).get("atom", [])
                 if self.is_structural_features_enabled
                 else [],
+            )
+
+            # Graph-level properties: in the dataset's schema, one role per name
+            processing = self._processing_config
+            validate_graph_property_selection(
+                dataset_type,
+                {
+                    "scalar_graph_targets_to_include": processing.scalar_graph_targets,
+                    "vector_graph_properties_to_include": processing.vector_graph_properties,
+                    "variable_len_graph_properties_to_include": (
+                        processing.variable_len_graph_properties
+                    ),
+                },
+                processing.calculate_atomization_energy_from,
+                processing.atomization_energy_key_name,
+                [*(processing.node_features or []), *(processing.node_targets or [])],
             )
 
             # Transformation configuration validation
