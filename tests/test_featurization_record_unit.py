@@ -9,7 +9,7 @@ import logging
 import pytest
 import torch
 import torch.nn as nn
-from torch_geometric.data import Data
+from torch_geometric.data import Data, InMemoryDataset
 
 from milia_pipeline.datasets import registry
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
@@ -316,9 +316,53 @@ def test_molecule_creation_is_recorded_for_every_registered_dataset(dataset_type
         "strategy": dataset_class.get_molecule_creation_strategy(),
         "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
         "coordinate_units": dataset_class.get_coordinate_units(),
+        "charges": None,  # no graphs given: unknown
     }
     assert record["strategy"] in ("identifier_coordinate_based", "coordinate_based")
     json.dumps(record)
+    graphs = [Data(z=torch.tensor([8, 1, 1]), molecular_charge=torch.tensor([0]))]
+    assert molecule_creation_record(dataset_type, graphs)["charges"] == [0]
+
+
+def _charged(*charges):
+    return [
+        Data(z=torch.tensor([6, 1]), molecular_charge=torch.tensor([c], dtype=torch.long))
+        for c in charges
+    ]
+
+
+class _Stored(InMemoryDataset):
+    """Graphs stored as one collated object, as a processed MILIA dataset is."""
+
+    def __init__(self, graphs):
+        super().__init__(None)
+        self.data, self.slices = self.collate(graphs)
+
+
+def test_molecular_charges_are_the_distinct_built_charges():
+    from milia_pipeline.molecules.featurization_record import molecular_charges
+
+    assert molecular_charges(_charged(0, -1, 0, 2)) == [-1, 0, 2]
+    assert molecular_charges([]) == []
+
+
+def test_molecular_charges_of_a_stored_dataset_its_views_and_its_training_split():
+    """Read from the collated tensor; a view or ``Subset`` (the training split) only its own."""
+    from milia_pipeline.molecules.featurization_record import molecular_charges
+
+    stored = _Stored(_charged(0, 1, 0, -1))
+    assert molecular_charges(stored) == [-1, 0, 1]
+    assert molecular_charges(stored[[0, 2]]) == [0]
+    assert molecular_charges(torch.utils.data.Subset(stored, [1, 2])) == [0, 1]
+    assert molecular_charges(torch.utils.data.Subset(stored[[1, 3]], [1])) == [-1]
+
+
+def test_a_graph_without_a_built_charge_makes_the_charges_unknown():
+    """Processed before MILIA recorded it: unknown, never assumed neutral."""
+    from milia_pipeline.molecules.featurization_record import molecular_charges
+
+    assert molecular_charges([*_charged(0), Data(z=torch.tensor([6]))]) is None
+    assert molecular_charges(_Stored([Data(z=torch.tensor([6]))] * 2)) is None
 
 
 def test_an_unregistered_dataset_has_no_molecule_creation_record():

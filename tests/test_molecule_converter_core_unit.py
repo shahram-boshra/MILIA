@@ -22,7 +22,6 @@ Phase 6 additions:
 - Registry integration functions (_init_registry, _get_available_dataset_types, etc.)
 - Feature-based dataset processing (_get_dataset_feature)
 - Molecule creation strategy lookup (_get_dataset_molecule_creation_strategy)
-- Enhanced utils determination (_should_use_enhanced_utils)
 - Registry status method (get_registry_integration_status)
 - All 8 refactored hardcoded locations
 
@@ -79,7 +78,6 @@ try:
         _get_dataset_molecule_creation_strategy,
         _init_registry,
         _is_dataset_type_registered,
-        _should_use_enhanced_utils,
     )
 
     PHASE6_IMPORTS_SUCCESSFUL = True
@@ -1460,7 +1458,6 @@ class TestPhase6RegistryIntegrationFunctions(unittest.TestCase):
     - Dataset type registration check (_is_dataset_type_registered)
     - Feature-based queries (_get_dataset_feature)
     - Molecule creation strategy (_get_dataset_molecule_creation_strategy)
-    - Enhanced utils determination (_should_use_enhanced_utils)
     """
 
     @classmethod
@@ -1495,10 +1492,6 @@ class TestPhase6RegistryIntegrationFunctions(unittest.TestCase):
     def test_05_get_dataset_molecule_creation_strategy_function_exists(self):
         """Test _get_dataset_molecule_creation_strategy function is importable."""
         self.assertTrue(callable(_get_dataset_molecule_creation_strategy))
-
-    def test_06_should_use_enhanced_utils_function_exists(self):
-        """Test _should_use_enhanced_utils function is importable."""
-        self.assertTrue(callable(_should_use_enhanced_utils))
 
     def test_07_init_registry_returns_bool(self):
         """Test _init_registry returns a boolean."""
@@ -1628,8 +1621,7 @@ class TestPhase6MoleculeCreationStrategy(unittest.TestCase):
     """
     Test Phase 6 molecule creation strategy functions.
 
-    These tests verify _get_dataset_molecule_creation_strategy and
-    _should_use_enhanced_utils work correctly.
+    These tests verify _get_dataset_molecule_creation_strategy works correctly.
     """
 
     @classmethod
@@ -1662,26 +1654,6 @@ class TestPhase6MoleculeCreationStrategy(unittest.TestCase):
         """Test unknown dataset defaults to identifier_coordinate_based."""
         result = _get_dataset_molecule_creation_strategy("UNKNOWN")
         self.assertEqual(result, "identifier_coordinate_based")
-
-    def test_05_dft_should_use_enhanced_utils(self):
-        """Test DFT should use enhanced utils."""
-        result = _should_use_enhanced_utils("DFT")
-        self.assertTrue(result)
-
-    def test_06_dmc_should_use_enhanced_utils(self):
-        """Test DMC should use enhanced utils."""
-        result = _should_use_enhanced_utils("DMC")
-        self.assertTrue(result)
-
-    def test_07_wavefunction_should_not_use_enhanced_utils(self):
-        """Test Wavefunction should NOT use enhanced utils."""
-        result = _should_use_enhanced_utils("Wavefunction")
-        self.assertFalse(result)
-
-    def test_08_unknown_should_use_enhanced_utils(self):
-        """Test unknown dataset should use enhanced utils (default strategy)."""
-        result = _should_use_enhanced_utils("UNKNOWN")
-        self.assertTrue(result)
 
 
 class TestPhase6RegistryIntegrationStatus(unittest.TestCase):
@@ -2282,7 +2254,6 @@ def run_tests():
         print("✓ Phase 6: Registry integration validated")
         print("✓ Phase 6: Feature-based queries working")
         print("✓ Phase 6: Molecule creation strategy lookup functional")
-        print("✓ Phase 6: Enhanced utils determination working")
         print("✓ Phase 6: get_registry_integration_status method verified")
         print("✓ Phase 6: All 8 refactored locations tested")
         print("✓ Phase 6: Legacy fallback working")

@@ -4117,7 +4117,9 @@ def _run_standard_training(
             (getattr(dataset, "data_config", None) or {}).get("node_features_to_add") or (),
         )
         model_info["qm_input_features"] = list(model_info["qm_input_sources"])
-        model_info["molecule_creation"] = molecule_creation_record(config.get("dataset_type"))
+        model_info["molecule_creation"] = molecule_creation_record(
+            config.get("dataset_type"), train_data
+        )
         if model_info["input_transforms"]:
             logger.info(
                 f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"

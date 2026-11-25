@@ -484,11 +484,38 @@ class TestExtractChargeFromInchi(unittest.TestCase):
     def test_none_returns_zero(self):
         self.assertEqual(self.handler._extract_charge_from_inchi(None), 0)
 
-    def test_q_layer_with_following_layers(self):
-        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/q-1/p+1"), -1)
+    def test_net_charge_is_the_charge_layer_plus_the_protonation_layer(self):
+        """InChI Technical FAQ: /p counts protons added (+) or removed (-)."""
+        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/q-1/p+1"), 0)
+        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/H2O/h1H2/p-1"), -1)
 
-    def test_malformed_q_layer_returns_zero(self):
-        self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/qabc"), 0)
+    def test_malformed_charge_layer_is_refused_not_read_as_neutral(self):
+        with self.assertRaisesRegex(ValueError, "Cannot read the charge"):
+            self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/qabc")
+
+    def test_net_charge_matches_rdkit_for_charged_species(self):
+        """Every component of /q (separated by ';') and /p; stereo and isotopic layers ignored."""
+        from rdkit import Chem, RDLogger
+
+        RDLogger.DisableLog("rdApp.*")
+        for smiles in (
+            "[OH-]",
+            "C[NH3+]",
+            "C[N+](C)(C)C",
+            "[Na+].[Cl-]",
+            "[Ca+2].[Cl-]",
+            "[O-]S(=O)(=O)[O-]",
+            "[Fe+3]",
+            "C[C@H](N)C(=O)[O-]",
+            "[2H]C([2H])([2H])[NH3+]",
+            "[NH3+]CC([O-])=O",
+        ):
+            mol = Chem.MolFromSmiles(smiles)
+            with self.subTest(smiles=smiles):
+                self.assertEqual(
+                    self.handler._extract_charge_from_inchi(Chem.MolToInchi(mol)),
+                    Chem.GetFormalCharge(mol),
+                )
 
     def test_zero_charge_explicit(self):
         self.assertEqual(self.handler._extract_charge_from_inchi("InChI=1S/C2H4/c1-2/q0"), 0)

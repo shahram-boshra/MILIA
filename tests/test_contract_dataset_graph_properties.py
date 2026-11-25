@@ -116,7 +116,8 @@ def _effective_targets(handler: DatasetHandler, properties: dict) -> list[str]:
 
 
 def _enrich(handler: DatasetHandler, properties: dict, index: int = 0) -> Data:
-    return handler.enrich_pyg_data(Data(z=ATOMS.clone(), pos=torch.rand(3, 3)), properties, index)
+    graph = Data(z=ATOMS.clone(), pos=torch.rand(3, 3), molecular_charge=torch.tensor([0]))
+    return handler.enrich_pyg_data(graph, properties, index)
 
 
 def test_every_registered_dataset_is_covered():

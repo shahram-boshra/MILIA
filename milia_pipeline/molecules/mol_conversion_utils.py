@@ -796,6 +796,36 @@ def mol_to_pyg_data(
     return pyg_data
 
 
+def built_molecular_charge(
+    rdkit_mol: Chem.Mol,
+    handler_charge: int,
+    handler: DatasetHandler,
+    molecule_index: int = 0,
+    identifier: str = "N/A",
+) -> int:
+    """The net charge of the molecule as built (the sum of its atoms' formal charges).
+
+    Identifier-based creation: the identifier's own charge (InChI ``/q`` and ``/p``, SMILES
+    formal charges), whatever the handler reported. Coordinate-based creation: bonds were
+    determined for ``handler_charge``, so the built molecule must carry it.
+
+    Raises:
+        RDKitConversionError: A coordinate-built molecule does not carry the charge its bonds
+            were determined for (the molecule is refused, never recorded with either charge).
+    """
+    charge = int(Chem.GetFormalCharge(rdkit_mol))
+    if handler.get_molecule_creation_strategy() == "coordinate_based" and charge != int(
+        handler_charge
+    ):
+        raise RDKitConversionError(
+            molecule_index=molecule_index,
+            inchi=identifier,
+            reason="the molecule built from coordinates does not carry the dataset's charge",
+            detail=f"bonds determined for charge {int(handler_charge)}, built charge {charge}",
+        )
+    return charge
+
+
 @wrap_handler_operation("UNKNOWN", "enrich_pyg_data")
 def enrich_pyg_data_from_handler(
     pyg_data: Data,
@@ -934,7 +964,15 @@ def create_mol_with_dataset_support(
     dataset_type = handler.get_dataset_type()
 
     try:
-        # Step 1: Create RDKit molecule with handler
+        # Step 1: Create RDKit molecule with handler, with the charge the handler gives (as
+        # MoleculeDataConverter does; bond perception from coordinates depends on it)
+        molecular_charge = int(
+            handler.get_molecular_charge(
+                raw_properties_dict=raw_data_dict or {},
+                atomic_numbers=atomic_numbers,
+                mol_identifier=mol_identifier,
+            )
+        )
         rdkit_mol = create_rdkit_mol(
             mol_identifier=mol_identifier,
             coordinates=coordinates,
@@ -943,6 +981,7 @@ def create_mol_with_dataset_support(
             handler=handler,  # Moved before optional params
             molecule_index=molecule_index,
             mol_id_type=mol_id_type,
+            molecular_charge=molecular_charge,
         )
         # ---
         # Step 2: Convert to PyG Data
@@ -951,6 +990,14 @@ def create_mol_with_dataset_support(
             logger=logger,
             handler=handler,  # Moved before optional params
             molecule_index=molecule_index,
+        )
+        pyg_data.molecular_charge = torch.tensor(
+            [
+                built_molecular_charge(
+                    rdkit_mol, molecular_charge, handler, molecule_index, mol_identifier
+                )
+            ],
+            dtype=torch.long,
         )
         # ---
         # Step 3: Enrich with dataset-specific metadata via handler protocol

@@ -29,6 +29,7 @@ __all__ = [
     "SOURCE_COORDINATES",
     "SOURCE_DATASET_PROPERTY",
     "graphs_have_explicit_hydrogens",
+    "molecular_charges",
     "molecule_creation_record",
     "qm_input_features",
     "qm_input_sources",
@@ -115,14 +116,49 @@ def qm_input_sources(
     return {**sources, **dataset_columns}
 
 
-def molecule_creation_record(dataset_type: str | None) -> dict[str, Any] | None:
+def molecular_charges(graphs: Any) -> list[int] | None:
+    """The molecular charges the training molecules were built with (sorted, distinct).
+
+    Read from each graph's ``molecular_charge`` (set when the converter builds the molecule); a
+    dataset stored as one collated object (``InMemoryDataset``), or a ``Subset`` of one (the
+    training split), is read in one pass.
+
+    Returns:
+        The charges, or ``None`` when a graph does not carry one (processed before MILIA recorded
+        it: the charges are unknown, so structure inputs are refused until re-processing).
+    """
+    import torch
+
+    base, indices = graphs, None
+    if isinstance(graphs, torch.utils.data.Subset):
+        base, indices = graphs.dataset, list(graphs.indices)
+    stored = getattr(base, "_data", None)
+    if getattr(base, "_indices", None) is not None:  # a view: map through its own indices
+        view = list(base.indices())
+        indices = view if indices is None else [view[i] for i in indices]
+    if stored is not None and "molecular_charge" in stored:
+        charges = stored.molecular_charge.reshape(-1)
+        if charges.numel() == base.len():  # one entry per stored graph (InMemoryDataset.len)
+            selected = charges if indices is None else charges[torch.as_tensor(indices)]
+            return sorted({int(c) for c in selected.tolist()})
+    seen: set[int] = set()
+    for graph in graphs:
+        charge = getattr(graph, "molecular_charge", None)
+        if charge is None:
+            return None
+        seen.add(int(charge.reshape(-1)[0]))
+    return sorted(seen)
+
+
+def molecule_creation_record(dataset_type: str | None, graphs: Any = None) -> dict[str, Any] | None:
     """How the training dataset built each molecule, from its registered dataset class.
 
     ``strategy``: ``identifier_coordinate_based`` (bonds from the identifier, the given
     coordinates assigned through the atom mapping) or ``coordinate_based`` (bonds determined from
     the given coordinates); ``identifier_keys``: the ``(key, type)`` pairs it reads in priority
-    order; ``coordinate_units``: the units of its coordinates. A structure input must be built the
-    same way to match the training graphs.
+    order; ``coordinate_units``: the units of its coordinates; ``charges``: the molecular charges
+    its molecules were built with (:func:`molecular_charges` of ``graphs``; ``None`` when
+    unknown). A structure input must be built the same way, with a charge among these.
 
     Returns:
         The record, or ``None`` when no dataset class is registered under ``dataset_type``.
@@ -141,6 +177,7 @@ def molecule_creation_record(dataset_type: str | None) -> dict[str, Any] | None:
         "strategy": dataset_class.get_molecule_creation_strategy(),
         "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
         "coordinate_units": dataset_class.get_coordinate_units(),
+        "charges": molecular_charges(graphs) if graphs is not None else None,
     }
 
 

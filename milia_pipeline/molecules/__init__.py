@@ -112,19 +112,16 @@ _logger = logging.getLogger(__name__)
 # ==============================================================================
 # Feature Functions
 # ==============================================================================
-# Structural features from mol_structural_features
+# Structural features from mol_structural_features; conversion utilities from
+# mol_conversion_utils and molecule_converter_core
+# ==============================================================================
+from .mol_conversion_utils import create_mol_with_dataset_support
 from .mol_structural_features import (
     add_structural_features,
     get_available_features,
 )
-
-# ==============================================================================
-# Conversion Functions
-# ==============================================================================
-# Core conversion utilities from molecule_converter_core
 from .molecule_converter_core import (
     MoleculeDataConverter,
-    create_mol_with_dataset_support,
     create_rdkit_mol,
     mol_to_pyg_data,
 )

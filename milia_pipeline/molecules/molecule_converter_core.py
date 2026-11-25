@@ -97,7 +97,7 @@ from milia_pipeline.exceptions import (
     is_recoverable_handler_error,
 )
 from milia_pipeline.molecules.mol_conversion_utils import (
-    create_mol_with_dataset_support,
+    built_molecular_charge,
     create_rdkit_mol,
     mol_to_pyg_data,
 )
@@ -365,25 +365,6 @@ def _get_dataset_molecule_creation_strategy(dataset_type: str) -> str:
 
     # Fallback: return default strategy when registry unavailable
     return "identifier_coordinate_based"
-
-
-def _should_use_enhanced_utils(dataset_type: str) -> bool:
-    """
-    Determine if enhanced utils should be used for a dataset type.
-
-    Enhanced utils are used for dataset types that use identifier_coordinate_based
-    molecule creation strategy (i.e., InChI/SMILES based).
-
-    ADDED Phase 6: Dynamic enhanced utils determination.
-
-    Args:
-        dataset_type: Dataset type name
-
-    Returns:
-        True if enhanced utils should be used, False otherwise
-    """
-    strategy = _get_dataset_molecule_creation_strategy(dataset_type)
-    return strategy == "identifier_coordinate_based"
 
 
 class MoleculeDataConverter:
@@ -2404,67 +2385,69 @@ class MoleculeDataConverter:
         dataset_config = dataset_config or self._dataset_config
 
         try:
-            if RDKIT_AVAILABLE:
-                # Original direct RDKit molecule creation
+            if not RDKIT_AVAILABLE:
+                raise PyGDataCreationError(
+                    message="RDKit is required to build molecules",
+                    molecule_index=current_mol_index,
+                    smiles=current_mol_identifier,
+                    reason="RDKit is not installed",
+                    detail="Install MILIA with its dependencies (rdkit)",
+                )
+            # Validate handler is available
+            if self._dataset_handler is None:
+                raise HandlerNotAvailableError(
+                    message="Dataset handler is required for molecule conversion",
+                    requested_dataset_type=self.dataset_type,
+                    details=f"Handler must be initialized before converting molecule {current_mol_index}",
+                )
 
-                # Validate handler is available
-                if self._dataset_handler is None:
-                    raise HandlerNotAvailableError(
-                        message="Dataset handler is required for molecule conversion",
-                        requested_dataset_type=self.dataset_type,
-                        details=f"Handler must be initialized before converting molecule {current_mol_index}",
+            # Get molecular charge from handler (dataset-agnostic)
+            molecular_charge = self._dataset_handler.get_molecular_charge(
+                raw_properties_dict=raw_properties_dict,
+                atomic_numbers=atomic_numbers,
+                mol_identifier=mol_identifier,
+            )
+
+            self.logger.debug(
+                f"Molecule {current_mol_index}: Handler determined charge = {molecular_charge} "
+                f"(Dataset: {self._dataset_handler.get_dataset_type()})"
+            )
+
+            rdkit_mol: Chem.Mol = create_rdkit_mol(
+                mol_identifier=mol_identifier,
+                coordinates=coordinates,
+                atomic_numbers=atomic_numbers,
+                logger=self.logger,
+                molecule_index=current_mol_index,
+                mol_id_type=mol_id_type,
+                handler=self._dataset_handler,
+                molecular_charge=molecular_charge,
+            )
+
+            # Original direct PyG data creation
+            pyg_data: Data = mol_to_pyg_data(
+                rdkit_mol=rdkit_mol,
+                logger=self.logger,
+                handler=self._dataset_handler,  # Add handler parameter
+                molecule_index=current_mol_index,
+                # Removed inchi parameter - it doesn't exist in mol_to_pyg_data signature
+            )
+            # The charge of the molecule as built, on every graph: training records the charges
+            # seen, and a structure input states its own (models/input_contract.py)
+            pyg_data.molecular_charge = torch.tensor(
+                [
+                    built_molecular_charge(
+                        rdkit_mol,
+                        molecular_charge,
+                        self._dataset_handler,
+                        current_mol_index,
+                        current_mol_identifier,
                     )
+                ],
+                dtype=torch.long,
+            )
 
-                # Get molecular charge from handler (dataset-agnostic)
-                molecular_charge = self._dataset_handler.get_molecular_charge(
-                    raw_properties_dict=raw_properties_dict,
-                    atomic_numbers=atomic_numbers,
-                    mol_identifier=mol_identifier,
-                )
-
-                self.logger.debug(
-                    f"Molecule {current_mol_index}: Handler determined charge = {molecular_charge} "
-                    f"(Dataset: {self._dataset_handler.get_dataset_type()})"
-                )
-
-                rdkit_mol: Chem.Mol = create_rdkit_mol(
-                    mol_identifier=mol_identifier,
-                    coordinates=coordinates,
-                    atomic_numbers=atomic_numbers,
-                    logger=self.logger,
-                    molecule_index=current_mol_index,
-                    mol_id_type=mol_id_type,
-                    handler=self._dataset_handler,
-                    molecular_charge=molecular_charge,
-                )
-
-                # Original direct PyG data creation
-                pyg_data: Data = mol_to_pyg_data(
-                    rdkit_mol=rdkit_mol,
-                    logger=self.logger,
-                    handler=self._dataset_handler,  # Add handler parameter
-                    molecule_index=current_mol_index,
-                    # Removed inchi parameter - it doesn't exist in mol_to_pyg_data signature
-                )
-
-            else:
-                # Fallback to basic PyG data creation when RDKit not available
-                atomic_numbers, coords = validate_molecular_structure(
-                    atomic_numbers,
-                    coordinates,
-                    current_mol_index,
-                    current_mol_identifier,
-                    handler=self._dataset_handler,  # Add handler parameter
-                )
-
-                pyg_data = Data()
-                pyg_data.z = torch.tensor(atomic_numbers, dtype=torch.long)
-                pyg_data.pos = torch.tensor(coords, dtype=torch.float32)
-                pyg_data.num_nodes = len(atomic_numbers)
-                pyg_data.x = pyg_data.z.unsqueeze(1).float()
-                pyg_data.y = torch.zeros(1, dtype=torch.float32)
-
-            # Set dataset type for both paths
+            # Set dataset type
             pyg_data.dataset_type = dataset_config.dataset_type
 
             return pyg_data
@@ -3141,28 +3124,8 @@ class MoleculeDataConverter:
         # Use provided container or fall back to internal one
         dataset_config = dataset_config or self._dataset_config
 
-        # Try enhanced utils first for datasets with identifier_coordinate_based strategy
-        # This includes any dataset using InChI/SMILES identifiers
-        if _should_use_enhanced_utils(dataset_config.dataset_type) and RDKIT_AVAILABLE:
-            try:
-                return self._create_pyg_data_with_enhanced_utils(
-                    molecule_index,
-                    raw_properties_dict,
-                    mol_data["identifier"],
-                    mol_data["id_type"],
-                    mol_data["identifier"],
-                    mol_data["coordinates"],
-                    mol_data["atomic_numbers"],
-                    dataset_config,
-                )
-            except Exception as e:
-                # Log the error and fall back to original approach
-                self.logger.debug(
-                    f"Enhanced utils failed for molecule {molecule_index}, trying fallback: {e}"
-                )
-                # IMPORTANT: Don't return None, try fallback instead
-
-        # Use original direct approach as fallback
+        # One creation path for every molecule (the dataset's strategy, create_rdkit_mol); a
+        # failure refuses the molecule
         return self._create_pyg_data_original_approach(
             molecule_index,
             raw_properties_dict,
@@ -3308,58 +3271,6 @@ class MoleculeDataConverter:
 
         except Exception as e:
             self.logger.warning(f"Error logging structural features capabilities: {e}")
-
-    def _create_pyg_data_with_enhanced_utils(
-        self,
-        current_mol_index: int,
-        raw_properties_dict: dict[str, Any],
-        current_mol_identifier: str,
-        mol_id_type: str,
-        mol_identifier: str,
-        coordinates: np.ndarray,
-        atomic_numbers: np.ndarray,
-        dataset_config: DatasetConfig | None = None,
-    ) -> Data:
-        """
-        Create PyG Data using enhanced utilities for identifier-coordinate-based datasets.
-
-        MIGRATED: Handler-Based Pattern Development -  Enhanced error handling while preserving utility integration.
-        """
-        # Use provided container or fall back to internal one
-        dataset_config = dataset_config or self._dataset_config
-
-        try:
-            # Use the enhanced utility function
-            # ---
-            return create_mol_with_dataset_support(
-                mol_identifier=mol_identifier,
-                coordinates=coordinates,
-                atomic_numbers=atomic_numbers,
-                logger=self.logger,
-                molecule_index=current_mol_index,
-                mol_id_type=mol_id_type,
-                dataset_type=dataset_config.dataset_type,
-                raw_data_dict=raw_properties_dict,
-                uncertainty_config=dataset_config.uncertainty_config,
-                dataset_config=dataset_config,
-            )
-        # ---
-        except Exception as e:
-            # Handler-Based Pattern Development: Enhanced error context
-            error_context = create_handler_error_context(
-                handler_type=dataset_config.dataset_type,
-                operation="create_pyg_with_enhanced_utils",
-                molecule_index=current_mol_index,
-                additional_context={"identifier": current_mol_identifier},
-            )
-            self.logger.debug(f"Error creating PyG data with enhanced utils: {error_context}")
-            raise PyGDataCreationError(
-                message="Error creating PyG Data using enhanced utilities",
-                molecule_index=current_mol_index,
-                smiles=current_mol_identifier,
-                reason="Enhanced utility function failed",
-                detail=f"{type(e).__name__}: {str(e)}",
-            ) from e
 
     def clear_handler_caches(self):
         """
@@ -3772,7 +3683,6 @@ class MoleculeDataConverter:
             - current_dataset_registered: Whether current type is in registry
             - dataset_features: Feature flags for current dataset (if registered)
             - molecule_creation_strategy: Strategy for molecule creation
-            - uses_enhanced_utils: Whether enhanced utils are used
             - phase_6_complete: Marker indicating Phase 6 refactoring is complete
         """
         _init_registry()
@@ -3808,7 +3718,6 @@ class MoleculeDataConverter:
             status["molecule_creation_strategy"] = _get_dataset_molecule_creation_strategy(
                 self.dataset_type
             )
-            status["uses_enhanced_utils"] = _should_use_enhanced_utils(self.dataset_type)
 
         return status
 
@@ -3967,7 +3876,6 @@ class MoleculeDataConverter:
 #    - _is_dataset_type_registered(): Dynamic dataset type validation
 #    - _get_dataset_feature(): Feature-based dataset processing
 #    - _get_dataset_molecule_creation_strategy(): Strategy lookup
-#    - _should_use_enhanced_utils(): Enhanced utils determination
 #
 # 2. HARDCODED DATASET TYPE REPLACEMENTS (8 locations):
 #
@@ -3993,7 +3901,8 @@ class MoleculeDataConverter:
 #
 #    Location 6 - _create_base_pyg_data():
 #    - Before: if dataset_config.dataset_type in ["DMC", "DFT"]
-#    - After:  if _should_use_enhanced_utils(dataset_config.dataset_type)
+#    - After:  one creation path for every dataset (the enhanced-utils branch, which always
+#              failed with a TypeError before falling back, was removed)
 #
 #    Location 7 - validate_configuration_compatibility():
 #    - Before: if dataset_type not in ['DFT', 'DMC', 'Wavefunction']
@@ -4026,7 +3935,7 @@ class MoleculeDataConverter:
 #    - Validate the dataset type as valid
 #    - Apply appropriate transform compatibility checks based on features
 #    - Use appropriate validation logic based on features
-#    - Use enhanced utils if molecule creation strategy is identifier_coordinate_based
+#    - Build each molecule with the dataset's creation strategy and charge (one path)
 #
 # NO MODIFICATIONS TO THIS FILE REQUIRED FOR NEW DATASET TYPES.
 # ============================================================================

@@ -302,6 +302,11 @@ def test_qdpi_references_match_the_committed_psi4_results():
     assert dict(references.for_property("energy")) == computed
 
 
+def _water(charge=0):
+    """A graph as the converter builds it: atoms and the charge it was built with."""
+    return Data(z=torch.tensor([8, 1, 1]), molecular_charge=torch.tensor([charge]))
+
+
 def _qdpi_handler(targets=()):
     handler = QDPiDatasetHandler.__new__(QDPiDatasetHandler)
     handler.logger = Mock(spec=logging.Logger)
@@ -313,7 +318,7 @@ def test_qdpi_neutral_molecule_atomization_uses_its_references():
     """Stored in the dataset's energy unit (Hartree), no conversion."""
     references = get_dataset_atomic_references("QDPi").for_property("energy")
     raw = {"energy": -76.4, "molecular_charge": 0}
-    data = _qdpi_handler().enrich_pyg_data(Data(z=torch.tensor([8, 1, 1])), raw, 0, "water")
+    data = _qdpi_handler().enrich_pyg_data(_water(), raw, 0, "water")
     expected = -76.4 - (references[8] + 2 * references[1])
     assert float(data.energy_ATOM) == pytest.approx(expected, abs=1e-6)
 
@@ -321,12 +326,10 @@ def test_qdpi_neutral_molecule_atomization_uses_its_references():
 def test_atomization_energy_is_a_target_only_when_named():
     """Listed by its configured name, it is a named column of y; never appended unnamed."""
     raw = {"energy": -76.4, "molecular_charge": 0}
-    plain = _qdpi_handler(targets=["energy"]).enrich_pyg_data(
-        Data(z=torch.tensor([8, 1, 1])), raw, 0, "water"
-    )
+    plain = _qdpi_handler(targets=["energy"]).enrich_pyg_data(_water(), raw, 0, "water")
     assert plain.y_property_names == ["energy"] and plain.y.shape == (1,)
     named = _qdpi_handler(targets=["energy", "energy_ATOM"]).enrich_pyg_data(
-        Data(z=torch.tensor([8, 1, 1])), raw, 0, "water"
+        _water(), raw, 0, "water"
     )
     assert named.y_property_names == ["energy", "energy_ATOM"]
     assert float(named.y[1]) == pytest.approx(float(named.energy_ATOM))
@@ -338,4 +341,4 @@ def test_qdpi_charged_molecule_is_refused_when_atomization_is_configured(charge)
     break collation, so the molecule is refused."""
     raw = {"energy": -76.7, "molecular_charge": charge}
     with pytest.raises(PropertyEnrichmentError):
-        _qdpi_handler().enrich_pyg_data(Data(z=torch.tensor([8, 1, 1, 1])), raw, 0, "ion")
+        _qdpi_handler().enrich_pyg_data(_water(charge), raw, 0, "ion")

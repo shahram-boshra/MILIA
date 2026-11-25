@@ -206,6 +206,8 @@ def _make_pyg_data(**overrides):
     data.z = z
     data.pos = pos
     data.num_nodes = num_atoms
+    # the charge the converter builds the molecule with (MoleculeDataConverter)
+    data.molecular_charge = torch.tensor([overrides.get("molecular_charge", 0)], dtype=torch.long)
 
     if "edge_index" in overrides:
         data.edge_index = overrides["edge_index"]
@@ -1253,13 +1255,13 @@ class TestQDPiGraphProperties(unittest.TestCase):
         result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
         self.assertFalse(hasattr(result, "forces"))
 
-    def test_extras_store_charge_formula_and_subset(self):
+    def test_extras_store_formula_and_subset_and_keep_the_built_charge(self):
         handler = self._handler(
             calculate_atomization_energy_from=None, atomization_energy_key_name=None
         )
         props = _make_raw_properties(energy=-76.3, molecular_charge=-1)
         props.update(formula="CHO", subset="charged")
-        result = handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+        result = handler.enrich_pyg_data(_make_pyg_data(molecular_charge=-1), props, 0, "m")
         self.assertEqual(result.molecular_charge.item(), -1)
         self.assertEqual((result.formula, result.subset), ("CHO", "charged"))
 
@@ -1268,7 +1270,7 @@ class TestQDPiGraphProperties(unittest.TestCase):
         handler = self._handler()
         props = _make_raw_properties(energy=-76.3, molecular_charge=1)
         with self.assertRaises(PropertyEnrichmentError):
-            handler.enrich_pyg_data(_make_pyg_data(), props, 0, "m")
+            handler.enrich_pyg_data(_make_pyg_data(molecular_charge=1), props, 0, "m")
 
 
 class TestQDPiIntegrationFlow(unittest.TestCase):
@@ -1313,7 +1315,9 @@ class TestQDPiIntegrationFlow(unittest.TestCase):
         handler.validate_molecule_data(props, 0, "Na+")
         charge = handler.get_molecular_charge(props, props["atoms"], "Na+")
         self.assertEqual(charge, 1)
-        data = _make_pyg_data(num_atoms=1, z=torch.tensor([11], dtype=torch.long))
+        data = _make_pyg_data(
+            num_atoms=1, z=torch.tensor([11], dtype=torch.long), molecular_charge=charge
+        )
         result = handler.enrich_pyg_data(data, props, 0, "Na+")
         self.assertEqual(result.molecular_charge.item(), 1)
 

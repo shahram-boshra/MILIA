@@ -39,7 +39,6 @@ from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
-import torch
 from torch_geometric.data import Data
 
 from milia_pipeline.config.validators import (
@@ -497,10 +496,7 @@ class QDPiDatasetHandler(DatasetHandler):
         molecule_index: int,
         identifier: str,
     ) -> None:
-        """The molecular charge (as used to build the molecule), formula and subset of a QDπ molecule."""
-        atomic_numbers = pyg_data.z.detach().cpu().numpy()
-        charge = self.get_molecular_charge(dict(properties), atomic_numbers, identifier)
-        pyg_data.molecular_charge = torch.tensor([int(charge)], dtype=torch.long)
+        """The formula and subset of a QDπ molecule (its charge is set when it is built)."""
         for name in ("formula", "subset"):
             value = properties.get(name)
             if value is not None:

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Every processed graph carries `molecular_charge`, the net charge of the molecule as built (the sum of its atoms'
+  formal charges), and training records the charges of its training split in `data_info.molecule_creation.charges`
+  (`None` when the graphs were processed before the attribute existed: re-process to record them). A structure input
+  will state its charge and be checked against this record.
 - Input contract: training records how the dataset built each molecule (`data_info.molecule_creation`: creation
   strategy, identifier keys, coordinate units) and where each QM input came from (`data_info.qm_input_sources`:
   `dataset_property` or `coordinates`). The input kinds a model accepts — `identifier`, `structure`, `dataset` — are
@@ -117,6 +121,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- One creation path per molecule-creation strategy: `MoleculeDataConverter` builds every molecule with
+  `create_rdkit_mol` and the dataset's charge, and a molecule that cannot be built is refused. A coordinate-built
+  molecule that does not carry the charge its bonds were determined for is refused. The atomization-energy refusal of
+  ions reads the graph's `molecular_charge`. Processed graphs are unchanged apart from the new attribute; re-process
+  datasets and retrain to record the charges.
 - Identifier inputs (SMILES, InChI, structure files) are refused, with the reason and the accepted kinds, for a model
   that reads atomic positions (they reached SchNet-type models as float features in place of atomic numbers) and for
   a checkpoint that does not record what identifier featurization must reproduce (`explicit_hydrogens`,
@@ -275,6 +284,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The converter's second molecule-creation branch (`_create_pyg_data_with_enhanced_utils`,
+  `_should_use_enhanced_utils`, `uses_enhanced_utils` in the integration status), which raised a `TypeError` for every
+  molecule and fell back to the creation path above, and the branch that built a graph with atomic numbers as `x` when
+  RDKit was missing (RDKit is a dependency; its absence is now an error).
 - The per-handler copies of the graph-property steps (`_add_scalar_targets_internal`,
   `_add_vector_properties_internal`, `_add_variable_length_properties_internal`,
   `_calculate_atomization_energy_internal`, `_add_orbital_properties_internal`) and the unused shared
@@ -291,6 +304,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The molecular charge read from an InChI is its net charge: the `/q` charge layer (every component, separated by
+  `;`) plus the `/p` protonation layer. Only a single-component `/q` was read before, so a hydroxide
+  (`InChI=1S/H2O/h1H2/p-1`) was neutral and `/q+2;/p-1` was read as 0 with a warning; an unreadable layer is now an
+  error, not neutral.
+- `create_mol_with_dataset_support` builds with the charge the dataset handler gives, as the converter does (it built
+  every molecule as neutral, which determined wrong bonds for charged molecules built from coordinates), and sets
+  `molecular_charge`.
 - `data_config.property_selection.<dataset>.node_features_to_add` is applied: the listed per-atom properties are
   appended to `x`, in order, after the structural features, by one step for every dataset type. No code read the
   key before (the Wavefunction handler instead replaced `x` with atomic numbers when it was set; that code is

@@ -1231,8 +1231,20 @@ class DatasetHandler(ABC):
     def _molecular_charge_of(
         self, properties: Mapping[str, Any], pyg_data: Data, identifier: str
     ) -> int:
-        atomic_numbers = pyg_data.z.detach().cpu().numpy()
-        return int(self.get_molecular_charge(dict(properties), atomic_numbers, identifier))
+        """The charge the molecule was built with (``molecular_charge``, set at creation).
+
+        Raises:
+            DatasetSpecificHandlerError: The graph does not carry it (not built by the converter).
+        """
+        charge = getattr(pyg_data, "molecular_charge", None)
+        if charge is None:
+            raise DatasetSpecificHandlerError(
+                dataset_type=self.get_dataset_type(),
+                message="The graph carries no molecular_charge (set when the molecule is built)",
+                operation="atomization_energy",
+                details=f"Molecule {identifier}",
+            )
+        return int(charge.reshape(-1)[0])
 
     @abstractmethod
     def get_processing_statistics(
@@ -1436,30 +1448,40 @@ class DatasetHandler(ABC):
 
     def _extract_charge_from_inchi(self, inchi: str) -> int:
         """
-        Shared utility: Extract charge from InChI /q layer.
+        Shared utility: the net charge of an InChI, its ``/q`` charge layer (one entry per
+        component, separated by ``;``) plus its ``/p`` protonation layer (protons added or
+        removed; InChI Technical FAQ).
 
         InChI charge examples:
             InChI=1S/C2H4/c1-2/h1-2H2           → 0 (neutral)
-            InChI=1S/C2H4/c1-2/h1-2H2/q+1      → +1 (cation)
-            InChI=1S/C2H4/c1-2/h1-2H2/q-2      → -2 (anion)
+            InChI=1S/C4H12N/c1-5(2,3)4/h1-4H3/q+1 → +1 (cation, /q)
+            InChI=1S/H2O/h1H2/p-1               → -1 (hydroxide, /p)
+            InChI=1S/Ca.ClH/h;1H/q+2;/p-1       → +1 (two components and /p)
 
         Args:
             inchi: InChI string
 
         Returns:
-            int: Molecular charge from /q layer (0 if no /q layer)
-        """
-        if not inchi or "/q" not in inchi:
-            return 0
+            int: Net molecular charge (0 when the InChI has neither layer)
 
-        try:
-            # Extract /q layer: everything after /q until next / or end
-            q_layer = inchi.split("/q")[1].split("/")[0]
-            charge = int(q_layer)
-            return charge
-        except (IndexError, ValueError) as e:
-            self.logger.warning(f"Could not parse InChI charge: {e}")
+        Raises:
+            ValueError: A charge or protonation layer that is not integers (never read as 0).
+        """
+        if not inchi:
             return 0
+        charge = 0
+        for layer in inchi.split("/")[2:]:  # after the version and the formula
+            if layer[:1] in ("b", "t", "m", "s", "i", "f", "r"):
+                break  # the main layers end (a fixed-H layer restates /q: counted once)
+            if layer[:1] not in ("q", "p"):
+                continue
+            for component in layer[1:].split(";"):
+                if component:
+                    try:
+                        charge += int(component)
+                    except ValueError as e:
+                        raise ValueError(f"Cannot read the charge of InChI {inchi!r}: {e}") from e
+        return charge
 
     def validate_configuration(self) -> None:
         """Validate dataset-specific configuration with enhancements."""

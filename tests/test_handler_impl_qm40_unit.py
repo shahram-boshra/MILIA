@@ -170,6 +170,8 @@ def _make_pyg_data(**overrides):
     data.z = z
     data.pos = pos
     data.num_nodes = num_atoms
+    # the charge the converter builds the molecule with (MoleculeDataConverter)
+    data.molecular_charge = torch.tensor([overrides.get("molecular_charge", 0)], dtype=torch.long)
     if "edge_index" in overrides:
         data.edge_index = overrides["edge_index"]
     elif num_atoms >= 2:
