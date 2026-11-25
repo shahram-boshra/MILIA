@@ -28,7 +28,12 @@ from milia_pipeline.models.input_contract import (
 from milia_pipeline.models.post_training import convert_to_pyg
 from milia_pipeline.models.post_training.inference.predictor import Predictor
 
-RECORDED = {"explicit_hydrogens": False, "qm_input_features": [], "input_transforms": None}
+RECORDED = {
+    "explicit_hydrogens": False,
+    "qm_input_features": [],
+    "input_transforms": None,
+    "input_filters": {"max_atoms": None, "min_atoms": None, "heavy_atom_filter": None},
+}
 
 
 def test_a_fully_recorded_identifier_model_accepts_identifiers_and_datasets():
@@ -58,6 +63,19 @@ def test_qm_inputs_from_the_dataset_refuse_identifiers_naming_them():
     contract = input_contract(data_info, requires_positions=False)
     assert contract.accepted == [DATASET]
     assert "atom.atomic_charge, x.Vesp from its dataset's QM data" in contract.refused[IDENTIFIER]
+
+
+def test_inputs_from_the_given_coordinates_point_identifiers_to_structures():
+    """A geometric input (bond lengths of the given coordinates) is not dataset QM data: a
+    structure carries it, an identifier does not."""
+    data_info = {
+        **RECORDED,
+        "qm_input_features": ["bond.bond_length"],
+        "qm_input_sources": {"bond.bond_length": "coordinates"},
+    }
+    reason = input_contract(data_info, requires_positions=False).refused[IDENTIFIER]
+    assert "bond.bond_length from the given coordinates" in reason
+    assert "give the molecule as a structure" in reason and "QM data" not in reason
 
 
 def test_a_positional_model_refuses_identifiers():

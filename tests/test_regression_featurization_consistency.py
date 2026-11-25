@@ -1252,6 +1252,7 @@ class TestCheckpointDataInfoStructureIntegrity:
             "qm_input_features",
             "qm_input_sources",
             "molecule_creation",
+            "input_filters",
         }
         assert set(data_info.keys()) == expected_keys, (
             f"data_info keys mismatch.\nExpected: {expected_keys}\nGot: {set(data_info.keys())}"

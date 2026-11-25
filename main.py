@@ -4117,6 +4117,7 @@ def _run_standard_training(
         # each came from, and how the dataset built its molecules: the input contract
         # (models/input_contract.py) is derived from these records
         from milia_pipeline.molecules.featurization_record import (
+            input_filters_record,
             molecule_creation_record,
             qm_input_sources,
         )
@@ -4130,6 +4131,8 @@ def _run_standard_training(
         model_info["molecule_creation"] = molecule_creation_record(
             config.get("dataset_type"), train_data
         )
+        # The structural filters the training molecules passed; inputs outside them are refused
+        model_info["input_filters"] = input_filters_record()
         if model_info["input_transforms"]:
             logger.info(
                 f"Input transforms recorded for inference: {model_info['input_transforms']['repr']}"

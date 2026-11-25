@@ -1435,6 +1435,41 @@ def create_handler_aware_filter_stats() -> dict[str, Any]:
 
 
 @wrap_handler_operation("pre_filter", "apply_pre_filters")
+def input_filter_refusals(
+    graphs: Any, record: dict[str, Any], indices: Any = None
+) -> list[tuple[int, str]]:
+    """The inputs outside a model's training filters, each with the filter's reason.
+
+    Args:
+        graphs: Built input graphs (``z``; before the training pre-transforms, as the training
+            molecules were filtered before them).
+        record: ``data_info.input_filters`` (``featurization_record.input_filters_record``).
+        indices: The graphs' positions in their request (default ``0, 1, ...``).
+
+    Returns:
+        ``(index, reason)`` per refused graph, in order; empty when every graph passes. The rule
+        is the training one: :func:`apply_atom_count_filters` and :func:`apply_heavy_atom_filters`
+        with a ``FilterConfig`` of the record.
+    """
+    from milia_pipeline.config.config_containers import FilterConfig
+
+    filter_config = FilterConfig(
+        max_atoms=record.get("max_atoms"),
+        min_atoms=record.get("min_atoms"),
+        heavy_atom_filter=record.get("heavy_atom_filter"),
+    )
+    quiet = logging.getLogger(f"{__name__}.inputs")
+    refusals = []
+    for position, graph in enumerate(graphs):
+        index = position if indices is None else indices[position]
+        try:
+            apply_atom_count_filters(graph, filter_config, quiet)
+            apply_heavy_atom_filters(graph, filter_config, quiet)
+        except MoleculeFilterRejectedError as error:
+            refusals.append((index, f"outside the training filters: {error.reason}"))
+    return refusals
+
+
 def apply_pre_filters(
     pyg_data: Data,
     dataset_config: DatasetConfig | None = None,

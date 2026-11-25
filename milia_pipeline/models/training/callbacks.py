@@ -614,6 +614,10 @@ class ModelCheckpoint(Callback):
             "molecule_creation": trainer.model_info.get("molecule_creation")
             if hasattr(trainer, "model_info") and trainer.model_info
             else None,
+            # The structural filters its molecules passed (inputs outside them are refused)
+            "input_filters": trainer.model_info.get("input_filters")
+            if hasattr(trainer, "model_info") and trainer.model_info
+            else None,
         }
 
         # Version info for format detection

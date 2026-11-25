@@ -2236,6 +2236,9 @@ class Trainer:
                     "molecule_creation": self.model_info.get("molecule_creation")
                     if self.model_info
                     else None,
+                    "input_filters": self.model_info.get("input_filters")
+                    if self.model_info
+                    else None,
                 }
 
             # =================================================================

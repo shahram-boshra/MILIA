@@ -113,6 +113,31 @@ class StructureInput:
             name=name,
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """JSON form (a serving request instance; a package's structure example)."""
+        return {
+            "atomic_numbers": list(self.atomic_numbers),
+            "coordinates": [list(xyz) for xyz in self.coordinates],
+            "charge": self.charge,
+            "identifier": self.identifier,
+            "identifier_type": self.identifier_type,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> StructureInput:
+        """The structure of :meth:`to_dict`'s form (``coordinates`` in ångström).
+
+        Raises:
+            ValueError: An unknown key, or a field :class:`StructureInput` refuses.
+        """
+        unknown = set(data) - set(cls.__dataclass_fields__)
+        if unknown:
+            raise ValueError(f"unknown structure fields {sorted(unknown)}")
+        if "atomic_numbers" not in data or "coordinates" not in data:
+            raise ValueError("a structure needs atomic_numbers and coordinates")
+        return cls.create(**data)
+
     @classmethod
     def from_mol(cls, mol: Any, name: str | None = None) -> StructureInput:
         """A structure from an RDKit molecule with a 3D conformer and all its hydrogens.

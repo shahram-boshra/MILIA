@@ -241,6 +241,7 @@ def test_identifier_inputs_are_refused_for_a_qm_model():
                 "qm_input_features": ["atom.atomic_charge"],
                 "explicit_hydrogens": True,
                 "input_transforms": None,
+                "input_filters": {"max_atoms": None, "min_atoms": None, "heavy_atom_filter": None},
             }
         },
     )
@@ -280,6 +281,7 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
             "qm_input_features": ["atom.atomic_charge"],
             "explicit_hydrogens": True,
             "input_transforms": None,
+            "input_filters": {"max_atoms": None, "min_atoms": None, "heavy_atom_filter": None},
         },
         hyper_parameters={
             "model_name": "GCN",

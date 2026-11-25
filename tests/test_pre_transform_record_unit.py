@@ -161,7 +161,12 @@ class TestMiliaDataset:
 def _predictor(data_info, **records):
     """A predictor whose checkpoint records ``data_info`` and, by default, the other input
     contract records of a heavy-atom run without QM inputs."""
-    records = {"explicit_hydrogens": False, "qm_input_features": [], **records}
+    records = {
+        "explicit_hydrogens": False,
+        "qm_input_features": [],
+        "input_filters": {"max_atoms": None, "min_atoms": None, "heavy_atom_filter": None},
+        **records,
+    }
     return Predictor(
         model=nn.Identity(),
         working_root_dir=".",

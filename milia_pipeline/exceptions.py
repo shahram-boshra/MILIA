@@ -2917,19 +2917,29 @@ class ExportError(ModelError):
     """Exporting a model to another format (ONNX, TorchScript, ...) failed."""
 
 
-class StructureInputError(ModelError):
-    """A structure input (a molecule with given coordinates) is refused, with the reason.
+class InputRefusedError(ModelError):
+    """Inputs of a request refused by the model, each with its reason.
 
-    ``refusals``: ``(index, reason)`` for every refused structure of the request
-    (``molecules/structure_inputs.py``).
+    ``refusals``: ``(index, reason)`` for every refused input, by its position in the request: a
+    molecule outside the training filters (``data_info.input_filters``), or a structure that
+    cannot be built as the training molecules were (:class:`StructureInputError`).
     """
+
+    kind = "input"
 
     def __init__(self, refusals: list[tuple[int, str]], details: str | None = None, **kwargs):
         self.refusals = list(refusals)
-        summary = "; ".join(f"structure {index}: {reason}" for index, reason in self.refusals)
+        summary = "; ".join(f"{self.kind} {index}: {reason}" for index, reason in self.refusals)
         super().__init__(
-            f"Refused {len(self.refusals)} structure input(s): {summary}", details=details, **kwargs
+            f"Refused {len(self.refusals)} {self.kind}(s): {summary}", details=details, **kwargs
         )
+
+
+class StructureInputError(InputRefusedError):
+    """A structure input (a molecule with given coordinates) is refused, with the reason
+    (``molecules/structure_inputs.py``)."""
+
+    kind = "structure"
 
 
 class MonitoringError(ModelError):

@@ -374,6 +374,7 @@ def _recorded(dataset="QDPi", charges=(0,), **changes):
         "qm_input_features": [],
         "qm_input_sources": {},
         "input_transforms": None,
+        "input_filters": {"max_atoms": None, "min_atoms": None, "heavy_atom_filter": None},
         "structural_features_config": FEATURES,
         "molecule_creation": creation,
         **changes,

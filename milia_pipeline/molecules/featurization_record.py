@@ -30,6 +30,7 @@ __all__ = [
     "SOURCE_DATASET_PROPERTY",
     "creation_switches",
     "graphs_have_explicit_hydrogens",
+    "input_filters_record",
     "molecular_charges",
     "molecule_creation_record",
     "qm_input_features",
@@ -181,6 +182,29 @@ def molecule_creation_record(dataset_type: str | None, graphs: Any = None) -> di
         "coordinate_units": dataset_class.get_coordinate_units(),
         "charges": molecular_charges(graphs) if graphs is not None else None,
         "featurization": creation_switches(),
+    }
+
+
+def input_filters_record(filter_config: Any = None) -> dict[str, Any]:
+    """The structural filters the training molecules passed (``FilterConfig``; the global one when
+    ``None``): ``max_atoms``, ``min_atoms`` (atoms of the built graph) and ``heavy_atom_filter``
+    (``mode`` ``include``/``exclude`` and its ``atoms``), each ``None`` when not configured.
+
+    Inference refuses an input outside them (OECD (Q)SAR principle 3: a defined domain of
+    applicability) with the training filter code (``molecule_filters.input_filter_refusals``).
+    Label filters (DMC uncertainty) are not structural and are not recorded.
+    """
+    if filter_config is None:
+        from milia_pipeline.config.config_containers import create_filter_config_from_global
+
+        filter_config = create_filter_config_from_global()
+    heavy = filter_config.heavy_atom_filter
+    return {
+        "max_atoms": filter_config.max_atoms,
+        "min_atoms": filter_config.min_atoms,
+        "heavy_atom_filter": (
+            {"mode": heavy.get("mode"), "atoms": list(heavy.get("atoms") or [])} if heavy else None
+        ),
     }
 
 

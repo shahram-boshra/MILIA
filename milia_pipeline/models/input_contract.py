@@ -53,14 +53,39 @@ DATASET = "dataset"
 INPUT_KINDS = (IDENTIFIER, STRUCTURE, DATASET)
 
 # data_info entries identifier featurization reproduces; a checkpoint without one cannot say
-IDENTIFIER_RECORDS = ("explicit_hydrogens", "qm_input_features", "input_transforms")
+IDENTIFIER_RECORDS = (
+    "explicit_hydrogens",
+    "qm_input_features",
+    "input_transforms",
+    "input_filters",
+)
 # data_info entries a structure input is built from; a checkpoint without one cannot say
 STRUCTURE_RECORDS = (
     "structural_features_config",
     "input_transforms",
     "qm_input_sources",
     "molecule_creation",
+    "input_filters",
 )
+# Records whose writer always gives a value: ``None`` means the run did not record it (a
+# checkpoint writer stores ``None`` for a record its training path did not compute), never
+# "nothing". ``input_transforms`` ``None`` is "no pre-transform", ``explicit_hydrogens`` ``None``
+# "no atomic numbers", ``structural_features_config`` ``None`` "no features".
+_NONE_IS_UNRECORDED = (
+    "qm_input_features",
+    "qm_input_sources",
+    "molecule_creation",
+    "input_filters",
+)
+
+
+def _unrecorded(data_info: Mapping[str, Any], names: tuple[str, ...]) -> list[str]:
+    return [
+        name
+        for name in names
+        if name not in data_info or (name in _NONE_IS_UNRECORDED and data_info[name] is None)
+    ]
+
 
 _DATASET_ADVICE = (
     "predict from a dataset of the same type (milia --predict --test-path <dataset directory>)"
@@ -125,7 +150,7 @@ def input_contract(
     data_info = data_info or {}
     refused: dict[str, str] = {}
 
-    missing = [name for name in IDENTIFIER_RECORDS if name not in data_info]
+    missing = _unrecorded(data_info, IDENTIFIER_RECORDS)
     qm_features = list(data_info.get("qm_input_features") or [])
     if missing:
         refused[IDENTIFIER] = (
@@ -134,10 +159,20 @@ def input_contract(
             f"{_DATASET_ADVICE}"
         )
     elif qm_features:
-        refused[IDENTIFIER] = (
-            f"the model takes {', '.join(qm_features)} from its dataset's QM data, which a "
-            f"SMILES, InChI or structure file does not carry; {_DATASET_ADVICE}"
-        )
+        sources = data_info.get("qm_input_sources") or {}
+        geometric = [name for name in qm_features if sources.get(name) == "coordinates"]
+        dataset_only = [name for name in qm_features if name not in geometric]
+        if dataset_only:
+            refused[IDENTIFIER] = (
+                f"the model takes {', '.join(dataset_only)} from its dataset's QM data, which a "
+                f"SMILES or InChI does not carry; {_DATASET_ADVICE}"
+            )
+        else:
+            refused[IDENTIFIER] = (
+                f"the model takes {', '.join(geometric)} from the given coordinates, which a "
+                "SMILES or InChI does not carry; give the molecule as a structure (XYZ, SDF, MOL "
+                f"with its coordinates) when the model accepts structures, or {_DATASET_ADVICE}"
+            )
     elif requires_positions:
         refused[IDENTIFIER] = (
             "the model reads atomic positions; an identifier has none, and MILIA does not "
@@ -154,10 +189,10 @@ def _structure_refusal(data_info: Mapping[str, Any]) -> str | None:
     """Why the model cannot take structure inputs, or ``None`` when it can."""
     from milia_pipeline.molecules.featurization_record import SOURCE_DATASET_PROPERTY
 
-    missing = [name for name in STRUCTURE_RECORDS if name not in data_info]
+    missing = _unrecorded(data_info, STRUCTURE_RECORDS)
     creation = data_info.get("molecule_creation") or {}
-    if missing or not creation:
-        names = ", ".join(missing) or "molecule_creation"
+    if missing:
+        names = ", ".join(missing)
         return (
             f"the checkpoint does not record {names} (written before MILIA recorded them), so a "
             f"structure cannot be built as its training molecules were; retrain, or {_DATASET_ADVICE}"

@@ -4,7 +4,7 @@ A checkpoint is packaged and served long after its run, possibly by another MILI
 without the run's configuration or data. ``run_info`` keeps what describing the model needs and
 cannot be recovered from the weights: the dataset, the target names, a hash of the
 resolved configuration, the data split, the source data's declared units, the code version (MILIA, git commit, libraries) and a few
-training molecules as SMILES (the package's input example). MLflow records the same facts with a
+training molecules as SMILES and as structures (the package's input examples). MLflow records the same facts with a
 logged model: its signature and input example, and the run's source commit.
 
 :func:`collect_run_info` never raises for a missing optional fact: it records ``None`` instead,
@@ -31,6 +31,7 @@ __all__ = [
     "collect_run_info",
     "config_sha256",
     "example_smiles",
+    "example_structures",
     "target_names_for",
 ]
 
@@ -61,6 +62,64 @@ def example_smiles(graphs: Iterable[Any], limit: int = MAX_INPUT_EXAMPLES) -> li
             smiles = _smiles_from_inchi(getattr(graph, "inchi", None))
         if smiles:
             found.append(smiles)
+    return found
+
+
+def example_structures(
+    graphs: Iterable[Any], dataset_type: str | None, limit: int = MAX_INPUT_EXAMPLES
+) -> list[dict[str, Any]]:
+    """Up to ``limit`` training molecules as structure inputs (``StructureInput.to_dict``).
+
+    Each from a graph's atomic numbers, coordinates and built charge, with its identifier when
+    the dataset reads bonds from one (an InChI, else its SMILES). Coordinates are in ångström:
+    the graph's ``pos`` is the conformer RDKit built, in ångström for coordinate-based creation
+    and in the dataset's units for identifier-based creation (converted). A graph without
+    ``z``, ``pos`` or ``molecular_charge`` is skipped; an unregistered dataset gives ``[]``.
+    """
+    from milia_pipeline.datasets import registry
+    from milia_pipeline.exceptions import DatasetNotFoundError
+    from milia_pipeline.molecules.structure_inputs import StructureInput
+
+    try:
+        dataset_class = registry.get(dataset_type) if dataset_type else None
+    except DatasetNotFoundError:
+        dataset_class = None
+    if dataset_class is None:
+        return []
+    identifier_based = (
+        dataset_class.get_molecule_creation_strategy() == "identifier_coordinate_based"
+    )
+    to_angstrom = 1.0
+    if identifier_based and dataset_class.get_coordinate_units() == "bohr":
+        from milia_pipeline.config.config_constants import get_bohr_to_angstrom
+
+        to_angstrom = get_bohr_to_angstrom()
+    found: list[dict[str, Any]] = []
+    for graph in itertools.islice(graphs, _MAX_SCANNED):
+        if len(found) >= limit:
+            break
+        z, pos, charge = (getattr(graph, name, None) for name in ("z", "pos", "molecular_charge"))
+        if z is None or pos is None or charge is None:
+            continue
+        identifier, kind = None, None
+        if identifier_based:
+            inchi, smiles = getattr(graph, "inchi", None), getattr(graph, "smiles", None)
+            if isinstance(inchi, str) and inchi.startswith("InChI="):
+                identifier, kind = inchi, "inchi"
+            elif isinstance(smiles, str) and smiles:
+                identifier, kind = smiles, "smiles"
+            else:
+                continue
+        found.append(
+            StructureInput.create(
+                z.tolist(),
+                pos.double().numpy() * to_angstrom,
+                charge=int(charge.reshape(-1)[0]),
+                identifier=identifier,
+                identifier_type=kind,
+                name=f"training molecule {len(found)}",
+            ).to_dict()
+        )
     return found
 
 
@@ -163,9 +222,11 @@ def collect_run_info(
         target_names: Names of the model's outputs in order; recorded only when there is one name
             per output.
         data_split: The split settings (ratios, seed).
-        train_graphs: Training molecules; up to five become the input example.
+        train_graphs: Training molecules; up to five become the input examples (as SMILES and
+            as structures).
     """
     dataset_type = config.get("dataset_type")
+    sample = list(itertools.islice(train_graphs, _MAX_SCANNED))  # read once, for both examples
     names = list(target_names) if target_names else None
     if names is not None and out_channels is not None and len(names) != out_channels:
         logger.warning(
@@ -181,5 +242,6 @@ def collect_run_info(
         "config_sha256": config_sha256(config),
         "git_commit": _git_commit(),
         "versions": _versions(),
-        "input_example": example_smiles(train_graphs),
+        "input_example": example_smiles(sample),
+        "structure_example": example_structures(sample, dataset_type),
     }

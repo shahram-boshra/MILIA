@@ -2,11 +2,19 @@
 HTTP serving of a MILIA deployment package (one FastAPI app for every serving target).
 
 The app loads a verified package (:func:`.package.verify_package`) once at startup with
-``Predictor.from_checkpoint``. It featurizes each SMILES with the training run's
-``structural_features_config`` and applies the training data's recorded pre-transforms, exactly
-as ``main.py --predict`` does, and returns one row of model outputs per molecule. Input is
+``Predictor.from_checkpoint``. An instance is a SMILES string (an identifier input, featurized
+with the training run's ``structural_features_config``) or a structure object (atomic numbers,
+coordinates in ångström, charge, identifier; built as the training dataset built its molecules,
+``Predictor.prepare_structures``). Both pass the training filters and pre-transforms, exactly as
+``main.py --predict`` does, and the app returns one row of model outputs per molecule. A string is
 always parsed as SMILES (``format="smiles"``): automatic format detection would let a request
 string name a file on the server.
+
+Each instance kind is served when the model accepts it (``models/input_contract.py``) and, for
+structures, when the package records a verified structure example; the app starts when it serves
+at least one kind. A refused instance (a kind the model does not accept, outside the training
+filters, a structure that cannot be built as the training molecules were) fails the request with
+status 422, every refused instance named with its reason.
 
 Routes, one app for every target:
 
@@ -18,16 +26,19 @@ Routes, one app for every target:
 
 Request body (the Vertex AI shape, used for every predict route)::
 
-    {"instances": ["CCO", "c1ccccc1"]}
+    {"instances": ["CCO",
+                   {"atomic_numbers": [8, 1, 1],
+                    "coordinates": [[0, 0, 0.117], [0, 0.757, -0.469], [0, -0.757, -0.469]],
+                    "charge": 0, "identifier": "InChI=1S/H2O/h1H2", "identifier_type": "inchi"}]}
 
 Response::
 
     {"predictions": [[...], [...]], "model_name": "...", "task_type": "...",
      "output_names": ["...", ...]}
 
-At startup the app featurizes the package's input example and checks it against the package's
-signature (:meth:`PackagedPredictor.check_signature`), so a MILIA that featurizes differently
-from the one that trained the model refuses to serve it.
+At startup the app featurizes the package's examples (input example, structure example) and
+checks them against the package's signature (:meth:`PackagedPredictor.check_signature`), so a
+MILIA that featurizes differently from the one that trained the model refuses to serve it.
 
 Run: ``python -m milia_pipeline.models.deployment.serving --package /opt/ml/model``.
 Requires the ``serve`` extra (FastAPI, Uvicorn), which MILIA's Docker images install.
@@ -41,21 +52,22 @@ import os
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from milia_pipeline.exceptions import ConfigurationError, DeploymentError
+from milia_pipeline.exceptions import DeploymentError, InputRefusedError
 from milia_pipeline.models.deployment.drift import DriftMonitor, drift_settings
 from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
-from milia_pipeline.models.input_contract import IDENTIFIER
+from milia_pipeline.models.input_contract import IDENTIFIER, STRUCTURE
 
 __all__ = [
     "DEFAULT_PACKAGE_DIR",
     "PackagedPredictor",
     "PredictRequest",
     "PredictResponse",
+    "StructureInstance",
     "create_app",
     "default_base_image",
     "main",
@@ -68,13 +80,37 @@ logger = logging.getLogger(__name__)
 DEFAULT_PACKAGE_DIR = "/opt/ml/model"  # SageMaker's model directory; the image copies packages here
 DEFAULT_PORT = 8080  # SageMaker requires 8080; Vertex AI's AIP_HTTP_PORT defaults to it
 DEFAULT_MAX_INSTANCES = 1000  # MILIA_SERVE_MAX_INSTANCES overrides it
+MAX_STRUCTURE_ATOMS = (
+    1000  # atoms of one structure instance (the request is bounded before it is built)
+)
+
+
+class StructureInstance(BaseModel):
+    """A structure instance: a molecule with given coordinates (``StructureInput``'s fields).
+
+    ``coordinates`` in ångström, one ``[x, y, z]`` per atomic number; ``charge``: the molecular
+    charge (required by coordinate-based creation); ``identifier``/``identifier_type`` (``inchi``
+    or ``smiles``): its identifier (required by identifier-based creation). Unknown fields are
+    rejected.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    atomic_numbers: list[int] = Field(min_length=1, max_length=MAX_STRUCTURE_ATOMS)
+    coordinates: list[list[float]] = Field(min_length=1, max_length=MAX_STRUCTURE_ATOMS)
+    charge: int | None = None
+    identifier: str | None = Field(default=None, max_length=MAX_SMILES_LENGTH)
+    identifier_type: Literal["inchi", "smiles"] | None = None
+    name: str | None = Field(default=None, max_length=200)
 
 
 class PredictRequest(BaseModel):
-    """Request body of every predict route (the Vertex AI shape); unknown fields are rejected."""
+    """Request body of every predict route (the Vertex AI shape); unknown fields are rejected.
+
+    Each instance is a SMILES string or a :class:`StructureInstance`.
+    """
 
     model_config = ConfigDict(extra="forbid")
-    instances: list[str] = Field(min_length=1)
+    instances: list[str | StructureInstance] = Field(min_length=1)
     parameters: dict[str, Any] | None = None
 
 
@@ -95,7 +131,7 @@ class PredictResponse(BaseModel):
 
 
 class PackagedPredictor:
-    """A deployment package's model, ready to predict from SMILES."""
+    """A deployment package's model, ready to predict from SMILES and structures."""
 
     def __init__(self, predictor: Any, manifest: dict[str, Any]):
         self.predictor = predictor
@@ -114,13 +150,12 @@ class PackagedPredictor:
         predictor = Predictor.from_checkpoint(
             checkpoint_path=checkpoint, working_root_dir=Path(package_dir), device=device
         )
-        # The app serves identifier inputs; a model that refuses them is not started
-        # (models/input_contract.py, read from the checkpoint, so older packages are checked too)
-        try:
-            predictor.input_contract.require(IDENTIFIER)
-        except ConfigurationError as exc:
-            raise DeploymentError(f"Cannot serve {package_dir}: {exc}") from exc
+        # The app serves the input kinds the model accepts (models/input_contract.py, read from
+        # the checkpoint, so older packages are checked too); with none it is not started
         packaged = cls(predictor, manifest)
+        reason = packaged.unservable_reason()
+        if reason is not None:
+            raise DeploymentError(f"Cannot serve {package_dir}: {reason}")
         packaged.check_signature()
         # Requests compared with the training inputs (deployment/drift.py); after the signature
         # check, so only served molecules enter the window
@@ -129,17 +164,54 @@ class PackagedPredictor:
         return packaged
 
     @property
+    def serves_identifiers(self) -> bool:
+        """SMILES instances are served: the model accepts identifier inputs."""
+        return self.predictor.input_contract.accepts(IDENTIFIER)
+
+    @property
+    def structure_example(self) -> list[dict[str, Any]]:
+        """The package's verified structure example (``[]``: none recorded)."""
+        return list(self.manifest.get("structure_example") or [])
+
+    @property
+    def serves_structures(self) -> bool:
+        """Structure instances are served: the model accepts them and the package records a
+        structure example, verified when the package was written (a structure path that was
+        never verified is not served)."""
+        return self.predictor.input_contract.accepts(STRUCTURE) and bool(self.structure_example)
+
+    def unservable_reason(self) -> str | None:
+        """Why no instance kind can be served, or ``None`` when one can."""
+        if self.serves_identifiers or self.serves_structures:
+            return None
+        contract = self.predictor.input_contract
+        reasons = [str(contract.refused.get(IDENTIFIER))]
+        if contract.accepts(STRUCTURE):
+            reasons.append(
+                "the package records no structure example (its checkpoint was trained before "
+                "MILIA recorded one), so structure inputs were not verified; retrain"
+            )
+        else:
+            reasons.append(str(contract.refused.get(STRUCTURE)))
+        return (
+            f"the model accepts neither SMILES (identifier: {reasons[0]}) nor structure "
+            f"instances (structure: {reasons[1]})"
+        )
+
+    @property
     def output_names(self) -> list[str] | None:
         """The output column names of the package's signature (``None``: not recorded)."""
         names = ((self.manifest.get("signature") or {}).get("outputs") or {}).get("names")
         return list(names) if names else None
 
     def check_signature(self) -> None:
-        """Featurize a molecule as requests are featurized and compare it with the signature.
+        """Featurize the package's examples as requests are featurized; compare with the signature.
 
         The model was trained on ``signature.inputs.node_features`` columns; MILIA code that
         featurizes differently would compute wrong values rather than fail, so the server refuses
-        to start instead. A version-1 package has no signature and is not checked.
+        to start instead. Checked: the input example (a SMILES) when SMILES are served, the first
+        structure example when structures are. A version-1 package has no signature and is not
+        checked.
 
         Raises:
             DeploymentError: The featurized width or the output count differs from the signature.
@@ -147,14 +219,23 @@ class PackagedPredictor:
         signature = self.manifest.get("signature")
         if not signature:
             return
+        examples: list[Any] = []
+        if self.serves_identifiers:
+            examples.append((self.manifest.get("input_example") or ["C"])[0])
+        if self.serves_structures:
+            examples.append(self.structure_example[0])
+        for example in examples:
+            self._check_example(signature, example)
+
+    def _check_example(self, signature: dict[str, Any], example: Any) -> None:
         expected_inputs = (signature.get("inputs") or {}).get("node_features")
         expected_outputs = (signature.get("outputs") or {}).get("count")
-        smiles = (self.manifest.get("input_example") or ["C"])[0]
-        (graph,) = self.featurize([smiles])
+        shown = example if isinstance(example, str) else example.get("name") or "a structure"
+        (graph,) = self.featurize([example], observe=False)
         width = graph.x.size(-1) if getattr(graph, "x", None) is not None else None
         if expected_inputs is not None and width != expected_inputs:
             raise DeploymentError(
-                f"This MILIA featurizes {smiles!r} into {width} node features; the package's "
+                f"This MILIA featurizes {shown!r} into {width} node features; the package's "
                 f"model was trained on {expected_inputs}. Serve it with the MILIA version that "
                 f"wrote it ({self.manifest.get('milia_version')})."
             )
@@ -166,53 +247,127 @@ class PackagedPredictor:
                     f"signature records {expected_outputs}"
                 )
 
-    def featurize(self, smiles: Sequence[str]) -> list[Any]:
-        """Graphs for SMILES, prepared as the training graphs were.
+    def featurize(self, instances: Sequence[Any], observe: bool = True) -> list[Any]:
+        """Graphs for request instances, in order, prepared as the training graphs were.
 
-        Featurized with the training run's ``structural_features_config``, then passed through
-        the training data's pre-transforms (``Predictor.prepare_inputs``).
+        A string is a SMILES: featurized with the training run's ``structural_features_config``
+        and passed through the training filters and pre-transforms (``Predictor.prepare_inputs``).
+        A structure (a :class:`StructureInstance`, or its fields as a mapping) is built as the
+        training dataset built its molecules (``Predictor.prepare_structures``). Observed by the
+        drift monitor when ``observe``.
 
         Raises:
-            ValueError: A SMILES cannot be parsed; the message names its index.
+            ValueError: A SMILES cannot be parsed, or an instance's kind is not served; the
+                message names its index.
+            InputRefusedError: Instances refused (outside the training filters, a structure that
+                cannot be built), every one named with its reason.
         """
         from milia_pipeline.models.post_training import convert_to_pyg
+        from milia_pipeline.molecules.structure_inputs import StructureInput
 
-        config = self.predictor.structural_features_config
-        graphs = []
-        for index, text in enumerate(smiles):
+        smiles_at, structures_at = [], []
+        for index, instance in enumerate(instances):
+            (smiles_at if isinstance(instance, str) else structures_at).append(index)
+        refused = []
+        if smiles_at and not self.serves_identifiers:
+            reason = self.predictor.input_contract.refused.get(IDENTIFIER)
+            refused += [(i, f"this model does not accept SMILES: {reason}") for i in smiles_at]
+        if structures_at and not self.serves_structures:
+            reason = self.unserved_structures_reason()
+            refused += [(i, f"structures are not served: {reason}") for i in structures_at]
+        if refused:
+            raise InputRefusedError(refused)
+
+        graphs: dict[int, Any] = {}
+        refusals: list[tuple[int, str]] = []
+        if smiles_at:
+            config = self.predictor.structural_features_config
+            featurized = []
+            for index in smiles_at:
+                try:
+                    featurized.append(
+                        convert_to_pyg(
+                            instances[index],
+                            format="smiles",
+                            structural_features_config=config,
+                            **self.predictor.featurization_kwargs,
+                        )
+                    )
+                except ValueError as exc:
+                    raise ValueError(f"instances[{index}]: {exc}") from exc
             try:
-                graphs.append(
-                    convert_to_pyg(
-                        text,
-                        format="smiles",
-                        structural_features_config=config,
-                        **self.predictor.featurization_kwargs,
+                graphs.update(
+                    zip(
+                        smiles_at, self.predictor.prepare_inputs(featurized, smiles_at), strict=True
                     )
                 )
-            except ValueError as exc:
-                raise ValueError(f"instances[{index}]: {exc}") from exc
-        graphs = self.predictor.prepare_inputs(graphs)
-        if self.drift is not None:
-            self.drift.observe(graphs)
-        return graphs
+            except InputRefusedError as error:
+                refusals += error.refusals
+        if structures_at:
+            structures = []
+            for index in structures_at:
+                instance = instances[index]
+                fields = instance.model_dump() if isinstance(instance, BaseModel) else instance
+                try:
+                    structures.append(StructureInput.from_dict(fields))
+                except ValueError as exc:
+                    raise ValueError(f"instances[{index}]: {exc}") from exc
+            try:
+                graphs.update(
+                    zip(
+                        structures_at,
+                        self.predictor.prepare_structures(structures, structures_at),
+                        strict=True,
+                    )
+                )
+            except InputRefusedError as error:
+                refusals += error.refusals
+        if refusals:
+            raise InputRefusedError(sorted(refusals))
+        ordered = [graphs[index] for index in range(len(instances))]
+        if observe and self.drift is not None:
+            self.drift.observe(ordered)
+        return ordered
 
-    def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
-        """One row of model outputs per SMILES, in input order.
+    def unserved_structures_reason(self) -> str:
+        """Why structure instances are not served (when :attr:`serves_structures` is false)."""
+        contract = self.predictor.input_contract
+        if not contract.accepts(STRUCTURE):
+            return str(contract.refused.get(STRUCTURE))
+        return (
+            "the package records no verified structure example (its checkpoint was trained "
+            "before MILIA recorded one); retrain and repackage"
+        )
+
+    def predict_instances(
+        self, instances: Sequence[Any], batch_size: int = 32
+    ) -> list[list[float]]:
+        """One row of model outputs per instance (SMILES or structure), in request order.
 
         Raises:
-            ValueError: A SMILES cannot be parsed; the message names its index.
+            ValueError, InputRefusedError: As :meth:`featurize`.
         """
-        graphs = self.featurize(smiles)
+        graphs = self.featurize(instances)
         predictions = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
         return predictions.reshape(len(graphs), -1).tolist()
+
+    def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
+        """One row of model outputs per SMILES, in input order (:meth:`predict_instances`)."""
+        return self.predict_instances(smiles, batch_size)
 
     def predict_smiles_with_intervals(
         self, smiles: Sequence[str], batch_size: int = 32
     ) -> tuple[list[list[float]], dict[str, Any] | None]:
-        """Rows as :meth:`predict_smiles`, plus conformal intervals when the package has them."""
+        """As :meth:`predict_instances_with_intervals` (kept for SMILES-only callers)."""
+        return self.predict_instances_with_intervals(smiles, batch_size)
+
+    def predict_instances_with_intervals(
+        self, instances: Sequence[Any], batch_size: int = 32
+    ) -> tuple[list[list[float]], dict[str, Any] | None]:
+        """Rows as :meth:`predict_instances`, plus conformal intervals when the package has them."""
         if not self.predictor.calibration:
-            return self.predict_smiles(smiles, batch_size), None
-        graphs = self.featurize(smiles)
+            return self.predict_instances(instances, batch_size), None
+        graphs = self.featurize(instances)
         result = self.predictor.predict_with_intervals(graphs, batch_size=batch_size)
         intervals = {
             "alpha": result["alpha"],
@@ -263,7 +418,11 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
                 status_code=422,
                 detail=f"{len(request.instances)} instances; at most {max_instances} per request",
             )
-        too_long = [i for i, s in enumerate(request.instances) if len(s) > MAX_SMILES_LENGTH]
+        too_long = [
+            i
+            for i, s in enumerate(request.instances)
+            if isinstance(s, str) and len(s) > MAX_SMILES_LENGTH
+        ]
         if too_long:
             raise HTTPException(
                 status_code=422,
@@ -272,8 +431,16 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
         try:
             # Featurization and the forward pass are CPU-bound: run them off the event loop.
             rows, intervals = await run_in_threadpool(
-                model.predict_smiles_with_intervals, request.instances
+                model.predict_instances_with_intervals, request.instances
             )
+        except InputRefusedError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": exc.message,
+                    "refused": [{"index": i, "reason": r} for i, r in exc.refusals],
+                },
+            ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return PredictResponse(
@@ -325,27 +492,27 @@ ENTRYPOINT ["python", "-m", "milia_pipeline.models.deployment.serving"]
 
 
 def require_servable(package_dir: str | Path) -> None:
-    """Refuse a package whose model the server cannot serve (identifier inputs refused).
+    """Refuse a package whose model the server cannot serve (neither SMILES nor structures).
 
-    The contract is read from the package's checkpoint (``Predictor.input_contract``), as the
-    server reads it at start, so packages written before the contract are checked the same way.
+    Decided as the server decides at start (:meth:`PackagedPredictor.unservable_reason`, the
+    contract read from the package's checkpoint), so packages written before the contract are
+    checked the same way.
 
     Raises:
-        DeploymentError: The package is invalid, or the model refuses identifier inputs (the
-            reason names what to do instead).
+        DeploymentError: The package is invalid, or no instance kind is served (the reason
+            names what to do instead).
     """
     from milia_pipeline.models.post_training.inference.predictor import Predictor
 
-    checkpoint, _ = verify_package(package_dir)
+    checkpoint, manifest = verify_package(package_dir)
     predictor = Predictor.from_checkpoint(
         checkpoint_path=checkpoint, working_root_dir=Path(package_dir), device=torch.device("cpu")
     )
-    try:
-        predictor.input_contract.require(IDENTIFIER)
-    except ConfigurationError as exc:
+    reason = PackagedPredictor(predictor, manifest).unservable_reason()
+    if reason is not None:
         raise DeploymentError(
-            f"Cannot serve {package_dir}: {exc} Deploy it with the 'local' target instead."
-        ) from exc
+            f"Cannot serve {package_dir}: {reason}. Deploy it with the 'local' target instead."
+        )
 
 
 def default_base_image() -> str:

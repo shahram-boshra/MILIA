@@ -193,37 +193,63 @@ class Predictor:
         """Whether the checkpoint says which pre-transforms its training graphs went through."""
         return "input_transforms" in (self.model_info.get("data_info") or {})
 
-    def prepare_inputs(self, graphs: list[Data]) -> list[Data]:
-        """Apply the training pre-transforms to graphs featurized from raw inputs.
+    def prepare_inputs(self, graphs: list[Data], indices: list[int] | None = None) -> list[Data]:
+        """Check graphs featurized from raw inputs against the training filters, then transform them.
 
-        Training graphs went through the dataset's ``pre_transform`` when the dataset was
-        processed; a graph built at inference (``convert_to_pyg``) has not. Call this on every
-        such graph before predicting, and never on graphs taken from a processed dataset (they
-        already carry the transforms).
+        Training molecules passed the dataset's structural filters (``data_info.input_filters``)
+        and then its ``pre_transform`` when the dataset was processed; a graph built at inference
+        (``convert_to_pyg``) has done neither. Call this on every such graph before predicting,
+        and never on graphs taken from a processed dataset (they already passed both).
+
+        Args:
+            indices: The graphs' positions in their request, for refusals (default ``0, 1, ...``).
 
         Raises:
             ConfigurationError: The model does not accept identifier inputs
                 (:attr:`input_contract`: QM inputs from its dataset, atomic positions, or a
                 checkpoint without the records featurization must reproduce); or the recorded
                 pipeline cannot be rebuilt (``load_input_transform``).
+            InputRefusedError: Inputs outside the training filters, each with its reason; none is
+                returned then.
         """
         self.input_contract.require(IDENTIFIER)
+        refusals = self._filter_refusals(graphs, indices)
+        if refusals:
+            from milia_pipeline.exceptions import InputRefusedError
+
+            raise InputRefusedError(refusals)
         return self._apply_input_transform(graphs)
 
-    def prepare_structures(self, structures: list[Any]) -> list[Data]:
+    def _filter_refusals(self, graphs: list[Data], indices: list[int] | None) -> list[Any]:
+        """``(index, reason)`` of graphs outside ``data_info.input_filters`` (OECD principle 3)."""
+        from milia_pipeline.molecules.molecule_filters import input_filter_refusals
+
+        record = (self.model_info.get("data_info") or {})["input_filters"]
+        return input_filter_refusals(graphs, record, indices)
+
+    def prepare_structures(
+        self, structures: list[Any], indices: list[int] | None = None
+    ) -> list[Data]:
         """Build structure inputs as the training dataset built its molecules, then transform them.
 
         Each structure (``molecules.structure_inputs.StructureInput``: atomic numbers, coordinates
         in ångström, charge, identifier) is built with the checkpoint's ``molecule_creation`` and
-        featurization records and goes through the training pre-transforms, so a structure taken
-        from the training data gives its training graph.
+        featurization records, checked against the training filters, and goes through the training
+        pre-transforms, so a structure taken from the training data gives its training graph.
+
+        Args:
+            indices: The structures' positions in their request, for refusals (default
+                ``0, 1, ...``).
 
         Raises:
             ConfigurationError: The model does not accept structure inputs (:attr:`input_contract`).
             StructureInputError: Structures refused (each with its reason: no charge for
                 coordinate-based creation, a charge the model was not trained on, no identifier for
-                identifier-based creation, a molecule that cannot be built); none is returned then.
+                identifier-based creation, a molecule that cannot be built, outside the training
+                filters); none is returned then.
         """
+        from milia_pipeline.exceptions import StructureInputError
+
         self.input_contract.require(STRUCTURE)
         if self._structure_builder is None:
             from milia_pipeline.molecules.structure_inputs import StructureBuilder
@@ -232,7 +258,18 @@ class Predictor:
             self._structure_builder = StructureBuilder(
                 data_info["molecule_creation"], data_info.get("structural_features_config")
             )
-        return self._apply_input_transform(self._structure_builder.build(structures))
+        indices = list(range(len(structures))) if indices is None else list(indices)
+        graphs, built, refusals = [], [], []
+        for index, structure in zip(indices, structures, strict=True):
+            try:
+                graphs.append(self._structure_builder.build_one(structure, index))
+                built.append(index)
+            except StructureInputError as error:
+                refusals.extend(error.refusals)
+        refusals.extend(self._filter_refusals(graphs, built))
+        if refusals:
+            raise StructureInputError(sorted(refusals))
+        return self._apply_input_transform(graphs)
 
     def _apply_input_transform(self, graphs: list[Data]) -> list[Data]:
         """The training pre-transforms (``data_info.input_transforms``) applied to ``graphs``."""

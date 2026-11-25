@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The server takes structure instances (`{"atomic_numbers", "coordinates", "charge", "identifier", "identifier_type",
+  "name"}`, ångström) alongside SMILES in one request, in order, when the model accepts structures and its package
+  records a verified structure example; a model that reads atomic positions is now served from structures. The
+  server starts when it serves at least one instance kind. A refused instance fails the request with HTTP 422 and a
+  `detail.refused` list of `{index, reason}`.
+- Training records `run_info.structure_example` (up to five training molecules as structure inputs) and
+  `data_info.input_filters` (the structural filters its molecules passed: `max_atoms`, `min_atoms`,
+  `heavy_atom_filter`). Packaging (`milia-deployment/4`, `structure_example`) verifies the package reproduces the
+  source checkpoint's predictions on the structure example; the model card lists it.
+- Inputs outside the training filters, identifiers and structures alike, are refused, each with its index and reason
+  (`molecule_filters.input_filter_refusals`, the training filter code; `InputRefusedError`, of which
+  `StructureInputError` is now a kind). Identifier graphs carry `z`, as the training graphs do.
 - Structure inputs: `milia --predict --test-path <file>.xyz|.sdf|.mol` builds each molecule with its given coordinates
   as the model's training dataset built its molecules (`molecules/structure_inputs.py`: `StructureInput`,
   `read_structures`, `StructureBuilder`; `MoleculeDataConverter.convert_inputs`; `Predictor.prepare_structures`),
@@ -137,6 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Identifier and structure inputs need `data_info.input_filters`: a checkpoint trained before this release accepts
+  dataset inputs only until it is retrained (fail closed: its training filters are unknown, so its domain is).
 - One creation path per molecule-creation strategy: `MoleculeDataConverter` builds every molecule with
   `create_rdkit_mol` and the dataset's charge, and a molecule that cannot be built is refused. A coordinate-built
   molecule that does not carry the charge its bonds were determined for is refused. The atomization-energy refusal of
@@ -320,6 +334,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The input contract treats a record whose value is `None` (`qm_input_features`, `qm_input_sources`,
+  `molecule_creation`, `input_filters`) as unrecorded: a checkpoint written by a training path that does not compute
+  the records (the HPO final model stores `None` for each) was accepted for identifiers as if it had no QM inputs.
 - The molecular charge read from an InChI is its net charge: the `/q` charge layer (every component, separated by
   `;`) plus the `/p` protonation layer. Only a single-component `/q` was read before, so a hydroxide
   (`InChI=1S/H2O/h1H2/p-1`) was neutral and `/q+2;/p-1` was read as 0 with a warning; an unreadable layer is now an

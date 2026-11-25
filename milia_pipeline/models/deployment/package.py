@@ -19,6 +19,9 @@ A package is a directory holding:
     ``structural_features_config`` into ``node_features`` columns) and the outputs (count, names,
     task type);
   - ``input_example``: up to five training molecules as SMILES;
+  - ``structure_example``: up to five training molecules as structure inputs (atomic numbers,
+    coordinates in ångström, charge, identifier; ``StructureInput.to_dict``), for a model that
+    accepts structures;
   - ``metrics``: the checkpoint's epoch, its monitored metric, its validation metrics at that
     epoch, and its test metrics (when training tested this checkpoint);
   - ``lineage``: the source checkpoint's SHA-256, when and with which versions it was written,
@@ -32,8 +35,10 @@ trainer records (``milia_pipeline.models.training.run_info``). A checkpoint with
 it still packages; those fields are ``null`` and the card says "not recorded".
 
 :func:`package_checkpoint` verifies what it wrote: the package, loaded as the server loads it,
-must predict the input example as the source checkpoint does, or its files are removed (for a
-model that accepts identifier inputs; the checksums are verified for every package).
+must predict its examples as the source checkpoint does, or its files are removed (the input
+example for a model that accepts identifiers, the structure example for one that accepts
+structures; the checksums are verified for every package). A model that accepts structures but
+whose checkpoint records no structure example still packages, and is not served structures.
 :func:`publish_package` writes each package to a new integer version folder
 (``<output_dir>/<model_name>/<N>/``) through a temporary sibling and a rename, so a version is
 either complete and verified or absent, and is never overwritten.
@@ -60,7 +65,7 @@ import torch.nn as nn
 
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
-from milia_pipeline.models.input_contract import IDENTIFIER, InputContract
+from milia_pipeline.models.input_contract import IDENTIFIER, STRUCTURE, InputContract
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +87,14 @@ __all__ = [
     "verify_package",
 ]
 
-PACKAGE_FORMAT = "milia-deployment/3"  # 3: signature.inputs.kinds (the input contract)
-SUPPORTED_FORMATS = ("milia-deployment/1", "milia-deployment/2", PACKAGE_FORMAT)
+# 3: signature.inputs.kinds (the input contract); 4: structure_example (verified when recorded)
+PACKAGE_FORMAT = "milia-deployment/4"
+SUPPORTED_FORMATS = (
+    "milia-deployment/1",
+    "milia-deployment/2",
+    "milia-deployment/3",
+    PACKAGE_FORMAT,
+)
 PACKAGE_MANIFEST = "deployment.json"
 PACKAGE_CHECKPOINT = "model.pt"
 MODEL_CARD = "MODEL_CARD.md"
@@ -179,6 +190,9 @@ def package_checkpoint(
         "checkpoint_format_version": version_info.get("checkpoint_format_version"),
         "signature": _signature(checkpoint, run_info, contract),
         "input_example": list(run_info.get("input_example") or []),
+        "structure_example": (
+            list(run_info.get("structure_example") or []) if contract.accepts(STRUCTURE) else []
+        ),
         "metrics": _metrics(checkpoint),
         "calibration": checkpoint.get("calibration"),
         "target_scaler": checkpoint.get("target_scaler"),
@@ -198,11 +212,16 @@ def package_checkpoint(
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
     (package / MODEL_CARD).write_text(model_card(manifest))
-    # Reproduction is checked on identifier inputs; a model that refuses them (QM inputs,
-    # positions, records missing) is checked by its checksums only.
-    if verify and contract.accepts(IDENTIFIER):
+    # Reproduction is checked on each input kind the model accepts and has an example for; a
+    # model accepting neither (QM inputs from its dataset, records missing) by its checksums only.
+    if verify:
         try:
-            _check_reproduces(source, package, manifest["input_example"], rtol=rtol, atol=atol)
+            if contract.accepts(IDENTIFIER):
+                _check_reproduces(source, package, manifest["input_example"], rtol=rtol, atol=atol)
+            if manifest["structure_example"]:
+                _check_reproduces_structures(
+                    source, package, manifest["structure_example"], rtol=rtol, atol=atol
+                )
         except DeploymentError:
             for name in (PACKAGE_CHECKPOINT, PACKAGE_MANIFEST, MODEL_CARD):
                 (package / name).unlink(missing_ok=True)
@@ -265,6 +284,34 @@ def _check_reproduces(
         raise DeploymentError(
             f"The package in {package} does not reproduce the predictions of {source} on "
             f"{smiles}: {exc}"
+        ) from exc
+
+
+def _structure_predictions(checkpoint: Path, example: list[dict[str, Any]]) -> torch.Tensor:
+    from milia_pipeline.models.post_training.inference.predictor import Predictor
+    from milia_pipeline.molecules.structure_inputs import StructureInput
+
+    predictor = Predictor.from_checkpoint(
+        checkpoint_path=checkpoint, working_root_dir=checkpoint.parent, device=torch.device("cpu")
+    )
+    graphs = predictor.prepare_structures([StructureInput.from_dict(s) for s in example])
+    out = predictor.predict_batch(graphs, return_numpy=True)
+    return torch.as_tensor(out).reshape(len(graphs), -1)
+
+
+def _check_reproduces_structures(
+    source: Path, package: Path, example: list[dict[str, Any]], *, rtol: float, atol: float
+) -> None:
+    """The package, loaded as a server loads it, predicts the structure example as the source."""
+    try:
+        checkpoint, _ = verify_package(package)
+        expected = _structure_predictions(source, example)
+        actual = _structure_predictions(checkpoint, example)
+        torch.testing.assert_close(actual, expected, rtol=rtol, atol=atol)
+    except Exception as exc:
+        raise DeploymentError(
+            f"The package in {package} does not reproduce the predictions of {source} on its "
+            f"{len(example)} structure example(s): {exc}"
         ) from exc
 
 
@@ -439,6 +486,22 @@ def checkpoint_scores(checkpoint_path: str | Path) -> dict[str, float]:
     return manifest_scores(_metrics(checkpoint))
 
 
+def _structures_line(manifest: dict[str, Any]) -> str:
+    examples = manifest.get("structure_example") or []
+    accepted = (((manifest.get("signature") or {}).get("inputs") or {}).get("kinds") or {}).get(
+        "accepted"
+    ) or []
+    if examples:
+        names = ", ".join(f"`{s.get('name')}` ({len(s['atomic_numbers'])} atoms)" for s in examples)
+        return f"{len(examples)} training molecules, verified at packaging: {names}."
+    if STRUCTURE in accepted:
+        return (
+            "not recorded (trained before MILIA recorded them): structures are not served; "
+            "retrain to serve them."
+        )
+    return "none (the model does not accept structure inputs)."
+
+
 def _show(value: Any) -> str:
     if value is None or value == [] or value == {}:
         return "not recorded"
@@ -584,6 +647,7 @@ def model_card(manifest: dict[str, Any]) -> str:
         f"- Target scaling: {_target_scaling_line(manifest.get('target_scaler'))}",
         f"- Input drift reference: {_drift_line(manifest.get('input_reference'))}",
         f"- Example input: {_show(manifest.get('input_example'))}",
+        f"- Example structures: {_structures_line(manifest)}",
         "",
         "## Training data",
         "",

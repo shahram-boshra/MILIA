@@ -49,6 +49,12 @@ logger = logging.getLogger(__name__)
 _3D_BOND_FEATURES = {"bond_length", "bond_length_binned"}
 
 
+def _atomic_numbers(mol: Any) -> torch.Tensor:
+    """``z``: the molecule's atomic numbers in node order, as the training graphs carry them (the
+    training filters count and check atoms on it, ``molecule_filters.input_filter_refusals``)."""
+    return torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()], dtype=torch.long)
+
+
 def _requires_3d_conformer(structural_features_config: dict[str, Any] | None) -> bool:
     """
     Check if the structural features config requires 3D coordinates.
@@ -552,6 +558,7 @@ class SMILESConverter(BaseDataConverter):
                 edge_index=edge_index,
                 edge_attr=edge_attr if edge_attr.numel() > 0 else None,
                 smiles=smiles,
+                z=_atomic_numbers(mol),
             )
 
             # Apply structural features (same as training) - this sets data.x
@@ -573,6 +580,7 @@ class SMILESConverter(BaseDataConverter):
                 edge_index=edge_index,
                 edge_attr=edge_attr if edge_attr.numel() > 0 else None,
                 smiles=smiles,
+                z=_atomic_numbers(mol),
             )
 
     def _get_atom_features(self, mol) -> torch.Tensor:
@@ -696,6 +704,7 @@ class InChIConverter(BaseDataConverter):
             edge_index=edge_index,
             edge_attr=edge_attr if edge_attr.numel() > 0 else None,
             inchi=inchi,
+            z=_atomic_numbers(mol),
         )
 
 
@@ -916,6 +925,7 @@ class SDFConverter(BaseDataConverter):
             edge_attr=edge_attr if edge_attr.numel() > 0 else None,
             pos=pos,
             smiles=smiles,  # Preserved for dynamic featurization
+            z=_atomic_numbers(mol),
         )
 
     def convert_all(self, input_data: Any, **kwargs) -> list[Data]:
@@ -1101,6 +1111,7 @@ def _apply_structural_features_if_available(
             feature_config=structural_features_config,
             logger=logger,
         )
+        enhanced_data.z = _atomic_numbers(mol)  # the nodes x now describes
 
         logger.debug(
             f"Applied structural features from checkpoint config: "
