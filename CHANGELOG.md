@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The server refuses to start for a model whose outputs are not one row per molecule: a node-level (`node_*`) or
+  edge-level (`edge_*`, `link_*`) model, or a task type that names no output level, with the reason
+  (`serving.output_level_refusal`); `require_servable` refuses it the same way.
+
 - The server takes structure instances (`{"atomic_numbers", "coordinates", "charge", "identifier", "identifier_type",
   "name"}`, ångström) alongside SMILES in one request, in order, when the model accepts structures and its package
   records a verified structure example; a model that reads atomic positions is now served from structures. The
@@ -149,6 +153,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `milia --predict` names its prediction columns by the model's targets (`run_info.targets.names`): `Etot`, `gap`, ...
+  instead of `prediction_0`, `prediction_1`, ..., and interval columns `lower_<name>`, `upper_<name>`, `std_<name>`;
+  `json` output records `output_names`. A checkpoint without usable names (none recorded, not one per column, or
+  duplicated) keeps `prediction_<i>` and `lower_<i>`.
 - Identifier and structure inputs need `data_info.input_filters`: a checkpoint trained before this release accepts
   dataset inputs only until it is retrained (fail closed: its training filters are unknown, so its domain is).
 - One creation path per molecule-creation strategy: `MoleculeDataConverter` builds every molecule with

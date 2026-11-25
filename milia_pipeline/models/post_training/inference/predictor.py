@@ -84,6 +84,7 @@ class Predictor:
         model_info: dict[str, Any] | None = None,  # FIX 19: NEW PARAMETER
         calibration: dict[str, Any] | None = None,
         target_scaler: dict[str, Any] | None = None,
+        output_names: list[str] | None = None,
     ):
         """
         Initialize predictor.
@@ -100,8 +101,11 @@ class Predictor:
             target_scaler: The checkpoint's training-split target scaler
                 (``training/target_scaling.py``); predictions are unscaled with it, so they are
                 in the targets' own units
+            output_names: Names of the model's outputs in order (the checkpoint's
+                ``run_info.targets.names``); :meth:`save_predictions` names its columns with them
         """
         self.model = model
+        self.output_names = list(output_names) if output_names else None
         self.calibration = calibration
         self.target_scaler = target_scaler
         self._working_root_dir = Path(working_root_dir).expanduser().resolve()
@@ -365,6 +369,7 @@ class Predictor:
             model_info=model_info,  # FIX 19: Pass model_info for featurization config access
             calibration=checkpoint.get("calibration"),
             target_scaler=checkpoint.get("target_scaler"),
+            output_names=((checkpoint.get("run_info") or {}).get("targets") or {}).get("names"),
         )
 
     def predict(
@@ -610,6 +615,22 @@ class Predictor:
             return output.argmax(dim=-1)
         return output
 
+    def output_labels(self, count: int) -> list[str] | None:
+        """The output names for ``count`` prediction columns, or ``None`` when they cannot name them.
+
+        The names name the columns only when there is one per column and they are unique and
+        distinct from the ``input`` column (a classifier's class index is one column for several
+        outputs, so it stays unnamed).
+        """
+        names = [str(name) for name in self.output_names or []]
+        if len(names) != count or len(set(names)) != count or "input" in names:
+            if names:
+                logger.warning(
+                    f"{len(names)} output names for {count} prediction columns; columns unnamed"
+                )
+            return None
+        return names
+
     def predict_batch(
         self,
         dataset: list[Data] | Dataset,
@@ -716,8 +737,12 @@ class Predictor:
             format: Output format ('csv', 'json', 'npy', 'pt')
             include_inputs: Include input identifiers in output
             input_identifiers: List of input identifiers (e.g., SMILES)
-            intervals: :meth:`predict_with_intervals` output; ``csv`` adds ``lower_<i>`` and
-                ``upper_<i>`` (and ``std_<i>``) columns, ``json`` an ``intervals`` object
+            intervals: :meth:`predict_with_intervals` output; ``csv`` adds ``lower_<name>`` and
+                ``upper_<name>`` (and ``std_<name>``) columns, ``json`` an ``intervals`` object
+
+        Columns are named by the model's outputs (:meth:`output_labels`); without names,
+        ``prediction_<i>`` (``prediction`` for one column) and ``lower_<i>``. ``json`` records
+        ``output_names`` when they are known.
 
         Returns:
             Resolved output path
@@ -736,25 +761,27 @@ class Predictor:
         if isinstance(predictions, torch.Tensor):
             predictions = predictions.cpu().numpy()
 
+        width = 1 if predictions.ndim == 1 else predictions.shape[1]
+        names = self.output_labels(width) if format in ("csv", "json") else None
+
         # Save based on format
         if format == "csv":
             import pandas as pd
 
-            # Handle multi-dimensional predictions
             if predictions.ndim == 1:
-                df = pd.DataFrame({"prediction": predictions})
+                df = pd.DataFrame({names[0] if names else "prediction": predictions})
             else:
-                # Multiple columns for multi-output
                 df = pd.DataFrame(
-                    predictions, columns=[f"prediction_{i}" for i in range(predictions.shape[1])]
+                    predictions, columns=names or [f"prediction_{i}" for i in range(width)]
                 )
 
             if intervals is not None:
                 for key in ("lower", "upper", "std"):
                     if key in intervals:
                         values = np.asarray(intervals[key]).reshape(len(df), -1)
+                        labels = names if names and values.shape[1] == width else None
                         for i in range(values.shape[1]):
-                            df[f"{key}_{i}"] = values[:, i]
+                            df[f"{key}_{labels[i] if labels else i}"] = values[:, i]
             if include_inputs and input_identifiers:
                 df.insert(0, "input", input_identifiers)
             df.to_csv(resolved_path, index=False)
@@ -763,6 +790,8 @@ class Predictor:
             import json
 
             output_data = {"predictions": predictions.tolist()}
+            if names:
+                output_data["output_names"] = names
             if intervals is not None:
                 output_data["intervals"] = {
                     key: (value.tolist() if hasattr(value, "tolist") else value)

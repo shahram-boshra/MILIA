@@ -36,6 +36,9 @@ Response::
     {"predictions": [[...], [...]], "model_name": "...", "task_type": "...",
      "output_names": ["...", ...]}
 
+A row is one molecule's outputs, so the app serves graph-level models (task type ``graph_*``) and
+refuses to start for a node- or edge-level one (:func:`output_level_refusal`).
+
 At startup the app featurizes the package's examples (input example, structure example) and
 checks them against the package's signature (:meth:`PackagedPredictor.check_signature`), so a
 MILIA that featurizes differently from the one that trained the model refuses to serve it.
@@ -130,6 +133,32 @@ class PredictResponse(BaseModel):
     intervals: dict[str, Any] | None = None
 
 
+def output_level_refusal(task_type: str | None) -> str | None:
+    """Why the server cannot answer a model of ``task_type``, or ``None`` for a graph-level model.
+
+    A response holds one row of outputs per molecule (``PredictResponse``). The task type's prefix
+    names the output level, as in training (``graph_``, ``node_``, ``edge_``/``link_``,
+    ``TargetLevel``): a node- or edge-level model gives one row per atom or bond, and a task type
+    without a known prefix names no level, so it is refused rather than guessed.
+    """
+    task = (task_type or "").lower()
+    if task.startswith("graph_"):
+        return None
+    for prefixes, level, row in (
+        (("node_",), "node", "atom"),
+        (("edge_", "link_"), "edge", "bond"),
+    ):
+        if task.startswith(prefixes):
+            return (
+                f"the server answers one row of outputs per molecule, and this {level}-level "
+                f"model ({task_type}) gives one row per {row}"
+            )
+    return (
+        f"task type {task_type!r} names no output level (graph_, node_, edge_ or link_), so the "
+        "server cannot tell what one row of its outputs is"
+    )
+
+
 class PackagedPredictor:
     """A deployment package's model, ready to predict from SMILES and structures."""
 
@@ -181,7 +210,11 @@ class PackagedPredictor:
         return self.predictor.input_contract.accepts(STRUCTURE) and bool(self.structure_example)
 
     def unservable_reason(self) -> str | None:
-        """Why no instance kind can be served, or ``None`` when one can."""
+        """Why the model cannot be served, or ``None`` when it can: its output level
+        (:func:`output_level_refusal`), or no instance kind it accepts."""
+        refusal = output_level_refusal(self.manifest.get("task_type"))
+        if refusal is not None:
+            return refusal
         if self.serves_identifiers or self.serves_structures:
             return None
         contract = self.predictor.input_contract
@@ -492,7 +525,8 @@ ENTRYPOINT ["python", "-m", "milia_pipeline.models.deployment.serving"]
 
 
 def require_servable(package_dir: str | Path) -> None:
-    """Refuse a package whose model the server cannot serve (neither SMILES nor structures).
+    """Refuse a package whose model the server cannot serve (its output level, or neither SMILES
+    nor structures).
 
     Decided as the server decides at start (:meth:`PackagedPredictor.unservable_reason`, the
     contract read from the package's checkpoint), so packages written before the contract are
