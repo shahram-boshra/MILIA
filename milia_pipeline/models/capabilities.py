@@ -41,6 +41,7 @@ __all__ = [
     "select_primary_output",
     "attach_capabilities",
     "attached_capabilities",
+    "output_level",
 ]
 
 OutputLevel = Literal["node", "graph"]
@@ -124,6 +125,25 @@ class ModelCapabilities:
     def primary(self) -> OutputSpec:
         """The output MILIA trains on and predicts."""
         return self.outputs[0]
+
+
+def output_level(task_type: str | None) -> Literal["graph", "node", "edge"] | None:
+    """What one row of a task's outputs describes: ``"graph"`` (a molecule), ``"node"`` (an atom),
+    ``"edge"`` (a bond or atom pair), or ``None`` for a task type without a known prefix.
+
+    The prefix names the level, as in training (``TargetLevel``): ``graph_``, ``node_`` (including
+    ``node_embedding``), ``edge_`` or ``link_``. Unlike training's inference, an unknown prefix is
+    not read as graph-level: a caller that needs the level refuses rather than guesses.
+    """
+    task = (task_type or "").lower()
+    for prefixes, level in (
+        (("graph_",), "graph"),
+        (("node_",), "node"),
+        (("edge_", "link_"), "edge"),
+    ):
+        if task.startswith(prefixes):
+            return level
+    return None
 
 
 def supported_tasks(capabilities: ModelCapabilities) -> tuple[str, ...]:

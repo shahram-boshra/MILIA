@@ -348,7 +348,7 @@ milia --predict \
     --preds-path ./predictions.csv
 ```
 
-After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `{working_root_dir}/predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row. Its columns are named by the targets the model was trained on (`run_info.targets.names`, e.g. `Etot`, `gap`; `json` output lists them as `output_names`); a checkpoint that records no names writes `prediction_<i>`.
+After step 5 or 6, your `{working_root_dir}/checkpoints/` directory contains a `best.pt` checkpoint. Step 7 reads that checkpoint and writes per-molecule predictions to `{working_root_dir}/predictions.csv` for the molecules in your `--test-path` input — a CSV with a `smiles,molecule_id` header and one molecule (SMILES) per row. Its columns are named by the targets the model was trained on (`run_info.targets.names`, e.g. `Etot`, `gap`; `json` output lists them as `output_names`); a checkpoint that records no names writes `prediction_<i>`. A node-level model (`task_type` `node_*`, per-atom targets from `node_targets_to_include`) writes one CSV row per atom (`molecule`, `atom`, `atomic_number`, then its outputs) and one JSON entry per molecule (its atoms' rows, with `output_level` and `atomic_numbers`); its conformal intervals are calibrated per molecule and cover all atoms of a molecule at once.
 
 ### Where the outputs live
 

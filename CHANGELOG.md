@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Node-level prediction files: `milia --predict` with a node-level model (`node_*`) writes one CSV row per atom
+  (`molecule`, `atom`, `atomic_number`, the outputs and their intervals; `input` repeats the molecule's identifier)
+  and one JSON entry per molecule of its atoms' rows, with `output_level` and `atomic_numbers`.
+  `capabilities.output_level(task_type)` names what one output row describes (graph, node, edge) and refuses to
+  guess an unknown task prefix.
+
 - The server refuses to start for a model whose outputs are not one row per molecule: a node-level (`node_*`) or
   edge-level (`edge_*`, `link_*`) model, or a task type that names no output level, with the reason
   (`serving.output_level_refusal`); `require_servable` refuses it the same way.
@@ -153,6 +159,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A node-level model is calibrated per molecule: a molecule's conformal score is the largest score among its atoms,
+  `n` counts molecules and the calibration records `"scope": "molecule"`, so a new molecule's intervals cover all its
+  atoms at once with probability at least 1 − α (per target). Pooling the atoms of a molecule as independent
+  calibration points is not covered by the split conformal guarantee. `--predict-uncertainty` refuses a node-level
+  checkpoint calibrated before this; retrain it. Edge-level models are not calibrated (their rows are not mapped to
+  molecules); they were calibrated on pooled edges before.
 - `milia --predict` names its prediction columns by the model's targets (`run_info.targets.names`): `Etot`, `gap`, ...
   instead of `prediction_0`, `prediction_1`, ..., and interval columns `lower_<name>`, `upper_<name>`, `std_<name>`;
   `json` output records `output_names`. A checkpoint without usable names (none recorded, not one per column, or
@@ -342,6 +354,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A node-level model recorded the graph targets' names as its own (`run_info.targets.names`; the DFT dataset:
+  `Etot` ... `Edisp` for a model of `Qmulliken`): names now come from the attribute the targets are taken from
+  (`node_y` for node tasks, or the target selection's source), and none when it is unknown.
+- Packaging compares the source's and the package's predictions as the model returns them; it reshaped them to one
+  row per molecule, which failed for a node-level model whose molecules differ in size.
 - The input contract treats a record whose value is `None` (`qm_input_features`, `qm_input_sources`,
   `molecule_creation`, `input_filters`) as unrecorded: a checkpoint written by a training path that does not compute
   the records (the HPO final model stores `None` for each) was accepted for identifiers as if it had no QM inputs.

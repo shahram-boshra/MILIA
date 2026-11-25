@@ -25,7 +25,7 @@ from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
 from milia_pipeline.models._batch_input import consumes_batch
-from milia_pipeline.models.capabilities import attached_capabilities
+from milia_pipeline.models.capabilities import attached_capabilities, output_level
 from milia_pipeline.models.input_contract import (
     IDENTIFIER,
     STRUCTURE,
@@ -615,15 +615,28 @@ class Predictor:
             return output.argmax(dim=-1)
         return output
 
+    #: Columns ``save_predictions`` writes besides the outputs (an output name may not take one).
+    RESERVED_COLUMNS = ("input", "molecule", "atom", "atomic_number")
+
+    @property
+    def output_level(self) -> str | None:
+        """What one row of the model's outputs describes (``"graph"``, ``"node"``, ``"edge"``),
+        from its task type (:func:`~milia_pipeline.models.capabilities.output_level`)."""
+        return output_level(self.task_type)
+
     def output_labels(self, count: int) -> list[str] | None:
         """The output names for ``count`` prediction columns, or ``None`` when they cannot name them.
 
         The names name the columns only when there is one per column and they are unique and
-        distinct from the ``input`` column (a classifier's class index is one column for several
-        outputs, so it stays unnamed).
+        distinct from the columns written besides them (:attr:`RESERVED_COLUMNS`; a classifier's
+        class index is one column for several outputs, so it stays unnamed).
         """
         names = [str(name) for name in self.output_names or []]
-        if len(names) != count or len(set(names)) != count or "input" in names:
+        if (
+            len(names) != count
+            or len(set(names)) != count
+            or set(names) & set(self.RESERVED_COLUMNS)
+        ):
             if names:
                 logger.warning(
                     f"{len(names)} output names for {count} prediction columns; columns unnamed"
@@ -679,7 +692,8 @@ class Predictor:
 
         Raises:
             ValueError: The checkpoint has no calibration (trained before it was recorded, or
-                not a regression task).
+                not a regression task), or a node-level model's calibration pooled its atoms
+                (recorded before it was calibrated per molecule, ``"scope": "molecule"``).
         """
         from ..conformal import intervals, member_spread, recording_members
 
@@ -687,6 +701,12 @@ class Predictor:
             raise ValueError(
                 "This checkpoint has no conformal calibration: retrain it with a MILIA version "
                 "that records one (regression tasks with a validation set)"
+            )
+        if self.output_level == "node" and self.calibration.get("scope") != "molecule":
+            raise ValueError(
+                "This node-level checkpoint's calibration pooled the atoms of its molecules as "
+                "independent calibration points, which the conformal guarantee does not cover: "
+                "retrain it with a MILIA version that calibrates per molecule"
             )
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
         means, lowers, uppers, spreads = [], [], [], []
@@ -721,6 +741,7 @@ class Predictor:
         include_inputs: bool = False,
         input_identifiers: list[str] | None = None,
         intervals: dict[str, Any] | None = None,
+        molecule_atoms: list[Any] | None = None,
     ) -> Path:
         """
         Save predictions to file.
@@ -739,6 +760,13 @@ class Predictor:
             input_identifiers: List of input identifiers (e.g., SMILES)
             intervals: :meth:`predict_with_intervals` output; ``csv`` adds ``lower_<name>`` and
                 ``upper_<name>`` (and ``std_<name>``) columns, ``json`` an ``intervals`` object
+            molecule_atoms: Each molecule's atomic numbers, in node order; needed for the
+                ``csv`` and ``json`` files of a node-level model (one prediction row per atom)
+
+        A node-level model's ``csv`` has one row per atom (``molecule``, ``atom``,
+        ``atomic_number``, then the outputs; ``input`` repeats the molecule's identifier), and its
+        ``json`` one entry per molecule of its atoms' rows (``predictions``, each interval),
+        with ``output_level`` and ``atomic_numbers``.
 
         Columns are named by the model's outputs (:meth:`output_labels`); without names,
         ``prediction_<i>`` (``prediction`` for one column) and ``lower_<i>``. ``json`` records
@@ -763,6 +791,20 @@ class Predictor:
 
         width = 1 if predictions.ndim == 1 else predictions.shape[1]
         names = self.output_labels(width) if format in ("csv", "json") else None
+        per_atom = self.output_level == "node" and format in ("csv", "json")
+        if per_atom:
+            if molecule_atoms is None:
+                raise ValueError(
+                    "A node-level model's predictions are written one row per atom: pass "
+                    "molecule_atoms (each molecule's atomic numbers, in node order)"
+                )
+            counts = [len(atoms) for atoms in molecule_atoms]
+            if sum(counts) != len(predictions):
+                raise ValueError(
+                    f"{len(predictions)} prediction rows for {sum(counts)} atoms in "
+                    f"{len(counts)} molecules"
+                )
+            bounds = np.cumsum(counts)[:-1]
 
         # Save based on format
         if format == "csv":
@@ -782,21 +824,44 @@ class Predictor:
                         labels = names if names and values.shape[1] == width else None
                         for i in range(values.shape[1]):
                             df[f"{key}_{labels[i] if labels else i}"] = values[:, i]
-            if include_inputs and input_identifiers:
+            if per_atom:
+                df.insert(0, "molecule", np.repeat(np.arange(len(counts)), counts))
+                df.insert(1, "atom", np.concatenate([np.arange(c) for c in counts] or [[]]))
+                df.insert(
+                    2,
+                    "atomic_number",
+                    np.concatenate([np.asarray(a) for a in molecule_atoms] or [[]]).astype(int),
+                )
+                if include_inputs and input_identifiers:
+                    df.insert(
+                        0, "input", np.repeat(np.asarray(input_identifiers, dtype=object), counts)
+                    )
+            elif include_inputs and input_identifiers:
                 df.insert(0, "input", input_identifiers)
             df.to_csv(resolved_path, index=False)
 
         elif format == "json":
             import json
 
-            output_data = {"predictions": predictions.tolist()}
+            def nested(values: Any) -> Any:
+                if not hasattr(values, "tolist"):
+                    return values
+                values = np.asarray(values)
+                if not per_atom:
+                    return values.tolist()
+                return [part.tolist() for part in np.split(values, bounds)]
+
+            output_data = {"predictions": nested(predictions)}
             if names:
                 output_data["output_names"] = names
+            if per_atom:
+                output_data["output_level"] = "node"
+                output_data["atomic_numbers"] = [
+                    np.asarray(a).astype(int).tolist() for a in molecule_atoms
+                ]
             if intervals is not None:
                 output_data["intervals"] = {
-                    key: (value.tolist() if hasattr(value, "tolist") else value)
-                    for key, value in intervals.items()
-                    if key != "mean"
+                    key: nested(value) for key, value in intervals.items() if key != "mean"
                 }
             if include_inputs and input_identifiers:
                 output_data["inputs"] = input_identifiers

@@ -61,6 +61,7 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 
 from milia_pipeline.exceptions import DeploymentError, InputRefusedError
+from milia_pipeline.models.capabilities import output_level
 from milia_pipeline.models.deployment.drift import DriftMonitor, drift_settings
 from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
 from milia_pipeline.models.input_contract import IDENTIFIER, STRUCTURE
@@ -137,22 +138,19 @@ def output_level_refusal(task_type: str | None) -> str | None:
     """Why the server cannot answer a model of ``task_type``, or ``None`` for a graph-level model.
 
     A response holds one row of outputs per molecule (``PredictResponse``). The task type's prefix
-    names the output level, as in training (``graph_``, ``node_``, ``edge_``/``link_``,
-    ``TargetLevel``): a node- or edge-level model gives one row per atom or bond, and a task type
-    without a known prefix names no level, so it is refused rather than guessed.
+    names the output level (:func:`~milia_pipeline.models.capabilities.output_level`): a node- or
+    edge-level model gives one row per atom or bond, and a task type without a known prefix names
+    no level, so it is refused rather than guessed.
     """
-    task = (task_type or "").lower()
-    if task.startswith("graph_"):
+    level = output_level(task_type)
+    if level == "graph":
         return None
-    for prefixes, level, row in (
-        (("node_",), "node", "atom"),
-        (("edge_", "link_"), "edge", "bond"),
-    ):
-        if task.startswith(prefixes):
-            return (
-                f"the server answers one row of outputs per molecule, and this {level}-level "
-                f"model ({task_type}) gives one row per {row}"
-            )
+    if level is not None:
+        row = {"node": "atom", "edge": "bond"}[level]
+        return (
+            f"the server answers one row of outputs per molecule, and this {level}-level "
+            f"model ({task_type}) gives one row per {row}"
+        )
     return (
         f"task type {task_type!r} names no output level (graph_, node_, edge_ or link_), so the "
         "server cannot tell what one row of its outputs is"

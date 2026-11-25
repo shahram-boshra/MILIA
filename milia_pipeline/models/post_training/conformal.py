@@ -12,7 +12,15 @@ Under exchangeability of the calibration set and the new molecules, each target'
 covers the true value with probability at least 1−α, whatever the model (split conformal;
 Angelopoulos & Bates, https://arxiv.org/abs/2107.07511). The guarantee is marginal (on average
 over molecules), holds per target and not jointly, and says nothing about molecules unlike the
-calibration set. The members of a MILIA ensemble are trained jointly, so their spread on its own
+calibration set.
+
+A node-level model predicts one row per atom. Molecules are the exchangeable units, not atoms:
+the atoms of one molecule are dependent, and pooling them as calibration points is not covered
+by the split conformal guarantee (with hierarchical data "standard notions of exchangeability may
+not hold", Lee, Barber & Willett, https://arxiv.org/abs/2306.06342). Given each row's molecule
+(``groups``), the score of a molecule is the largest score among its atoms, one per molecule, and
+the calibration records ``"scope": "molecule"``: a new molecule's intervals then cover the true
+values of all its atoms at once with probability at least 1−α (per target). The members of a MILIA ensemble are trained jointly, so their spread on its own
 understates the error (Jeffares et al. 2023, https://arxiv.org/abs/2301.11323); conformal scaling
 is what makes it usable.
 """
@@ -80,6 +88,7 @@ def conformal_quantiles(
     predictions: torch.Tensor,
     alpha: float = DEFAULT_ALPHA,
     spread: torch.Tensor | None = None,
+    groups: torch.Tensor | None = None,
 ) -> dict[str, Any]:
     """The split conformal calibration of a model on a calibration set.
 
@@ -87,10 +96,12 @@ def conformal_quantiles(
         targets, predictions: ``[n, k]`` (or ``[n]``) true and predicted values.
         alpha: Miscoverage level, ``0 < alpha < 1``.
         spread: ``[n, k]`` member spread; given, the score is normalized by it.
+        groups: ``[n]`` index of the molecule of each row (a node-level model's atoms); given,
+            a molecule's score is the largest of its rows' and ``n`` counts molecules.
 
     Returns:
-        ``{"method", "alpha", "n", "quantiles"}``; a quantile is ``inf`` when
-        ⌈(n+1)(1−α)⌉ > n (too few calibration samples for this α).
+        ``{"method", "alpha", "n", "quantiles"}``, plus ``"scope": "molecule"`` with ``groups``;
+        a quantile is ``inf`` when ⌈(n+1)(1−α)⌉ > n (too few calibration samples for this α).
     """
     if not 0 < alpha < 1:
         raise ValueError(f"alpha must be in (0, 1), got {alpha}")
@@ -101,13 +112,25 @@ def conformal_quantiles(
     if spread is not None:
         scores = scores / spread.detach().float().reshape(targets.shape)
         method = CALIBRATION_METHODS[1]
+    if groups is not None:
+        groups = groups.reshape(-1).long()
+        if groups.numel() != scores.size(0):
+            raise ValueError(f"{groups.numel()} group indices for {scores.size(0)} rows")
+        _, groups = torch.unique(groups, return_inverse=True)
+        per_group = scores.new_full((int(groups.max()) + 1, scores.size(1)), -math.inf)
+        scores = per_group.scatter_reduce(
+            0, groups.unsqueeze(1).expand_as(scores), scores, reduce="amax"
+        )
     n = scores.size(0)
     rank = math.ceil((n + 1) * (1 - alpha))
     if rank > n:
         quantiles = [math.inf] * scores.size(1)
     else:
         quantiles = scores.sort(dim=0).values[rank - 1].tolist()
-    return {"method": method, "alpha": float(alpha), "n": int(n), "quantiles": quantiles}
+    calibration = {"method": method, "alpha": float(alpha), "n": int(n), "quantiles": quantiles}
+    if groups is not None:
+        calibration["scope"] = "molecule"
+    return calibration
 
 
 def intervals(

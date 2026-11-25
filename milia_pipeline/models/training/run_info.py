@@ -139,14 +139,26 @@ def _smiles_from_inchi(inchi: Any) -> str | None:
         return None
 
 
-def target_names_for(selection: dict[str, Any] | None, sample: Any) -> list[str] | None:
+def target_names_for(
+    selection: dict[str, Any] | None, sample: Any, task_type: str | None = None
+) -> list[str] | None:
     """Names of the model's outputs, in order, or ``None`` when the run cannot tell.
 
-    The dataset stores the names of ``y``'s columns on each molecule (``y_property_names``). A
-    target selection (``TargetSelectionConfig.to_dict()``) keeps its ``resolved_names``, or the
-    columns at its ``resolved_indices``.
+    The dataset stores the names of each target attribute's columns on each molecule
+    (``<attr>_property_names``: ``y`` for graph targets, ``node_y`` for per-atom targets). The
+    targets come from the selection's ``resolved_source_attr``, else from the attribute training
+    reads for the task's output level (graph: ``y``, node: ``node_y``); an edge-level task without
+    a resolved source has no known names. A target selection (``TargetSelectionConfig.to_dict()``)
+    keeps its ``resolved_names``, or the columns at its ``resolved_indices``.
     """
-    available = getattr(sample, "y_property_names", None)
+    from milia_pipeline.models.capabilities import output_level
+
+    source = (selection or {}).get("resolved_source_attr") or {"graph": "y", "node": "node_y"}.get(
+        output_level(task_type) if task_type else "graph"
+    )
+    if source is None and not (selection or {}).get("resolved_names"):
+        return None
+    available = getattr(sample, f"{source}_property_names", None) if source else None
     available = list(available) if isinstance(available, list | tuple) and available else None
     if not selection:
         return available

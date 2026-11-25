@@ -40,6 +40,7 @@ from torch_geometric.data import Batch, Data
 
 from milia_pipeline.exceptions import CheckpointError, TrainingError
 from milia_pipeline.models._batch_input import consumes_batch
+from milia_pipeline.models.capabilities import output_level
 from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 from milia_pipeline.models.post_training.conformal import (
     DEFAULT_ALPHA,
@@ -537,12 +538,18 @@ class Trainer:
                 and best is not None
                 and self.val_loader is not None
                 and self.is_regression
+                and output_level(self._task_type) in ("graph", "node")
             ):
                 calibration = self.calibrate(ckpt_path=best, alpha=self.calibration_alpha)
                 self._record_in_checkpoint(best, "calibration", calibration)
                 logger.info(
                     f"Conformal calibration ({calibration['method']}, alpha "
                     f"{calibration['alpha']}, n {calibration['n']}) stored in {best}"
+                )
+            elif self.is_regression and output_level(self._task_type) not in ("graph", "node"):
+                logger.info(
+                    f"No conformal calibration for {self._task_type}: its output rows are not "
+                    "mapped to molecules"
                 )
 
             # Find best epoch
@@ -841,18 +848,29 @@ class Trainer:
                 ``None`` calibrates the current weights, which are restored afterwards either way.
             alpha: Miscoverage level of the intervals.
 
+        A node-level model is calibrated per molecule (``conformal_quantiles(groups=...)``): its
+        atoms are not exchangeable calibration points. An edge-level model is not calibrated:
+        its rows are not mapped to molecules here.
+
         Returns:
-            ``{"method", "alpha", "n", "quantiles"}`` (one quantile per target).
+            ``{"method", "alpha", "n", "quantiles"}`` (one quantile per target), plus
+            ``"scope": "molecule"`` for a node-level model.
 
         Raises:
-            TrainingError: No validation loader, a task that is not regression, or
-                ``ckpt_path="best"`` without a best checkpoint.
+            TrainingError: No validation loader, a task that is not graph- or node-level
+                regression, or ``ckpt_path="best"`` without a best checkpoint.
         """
         if self.val_loader is None:
             raise TrainingError("Conformal calibration needs a validation loader")
         if not self.is_regression:
             raise TrainingError(
                 f"Conformal calibration applies to regression, not {self._task_type}"
+            )
+        level = output_level(self._task_type)
+        if level not in ("graph", "node"):
+            raise TrainingError(
+                f"Conformal calibration applies to graph- and node-level regression, not "
+                f"{self._task_type}: its output rows are not mapped to molecules"
             )
         path = self.best_checkpoint_path if ckpt_path == "best" else ckpt_path
         if ckpt_path == "best" and path is None:
@@ -862,7 +880,8 @@ class Trainer:
             if path is not None
             else contextlib.nullcontext()
         )
-        targets, predictions, spreads = [], [], []
+        targets, predictions, spreads, groups = [], [], [], []
+        molecules = 0
         with context:
             self.model.eval()
             for batch in self.val_loader:
@@ -875,9 +894,20 @@ class Trainer:
                 targets.append(target.detach().float().reshape(out.size(0), -1).cpu())
                 if spread is not None:
                     spreads.append(spread.reshape(out.size(0), -1).cpu())
+                if level == "node":
+                    if out.size(0) != batch.num_nodes:
+                        raise TrainingError(
+                            f"A node-level model gave {out.size(0)} rows for {batch.num_nodes} atoms"
+                        )
+                    groups.append(batch.batch.cpu() + molecules)
+                    molecules += batch.num_graphs
         spread_all = torch.cat(spreads) if spreads and len(spreads) == len(predictions) else None
         return conformal_quantiles(
-            torch.cat(targets), torch.cat(predictions), alpha=alpha, spread=spread_all
+            torch.cat(targets),
+            torch.cat(predictions),
+            alpha=alpha,
+            spread=spread_all,
+            groups=torch.cat(groups) if groups else None,
         )
 
     def _target_labels(self, count: int) -> list[str]:

@@ -3661,6 +3661,11 @@ def handle_predict_mode(
             include_inputs=include_inputs,
             input_identifiers=input_identifiers,
             intervals=intervals,
+            molecule_atoms=(
+                [data.z.tolist() for data in data_list]
+                if predictor.output_level == "node"
+                else None
+            ),
         )
 
         logger.info("=" * 60)
@@ -4143,7 +4148,9 @@ def _run_standard_training(
         from milia_pipeline.models.training.run_info import collect_run_info, target_names_for
 
         target_names = target_names_for(
-            model_info.get("target_selection"), train_data[0] if len(train_data) > 0 else dataset[0]
+            model_info.get("target_selection"),
+            train_data[0] if len(train_data) > 0 else dataset[0],
+            task_type=task_type,
         )
         run_info = collect_run_info(
             config,

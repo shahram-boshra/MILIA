@@ -266,8 +266,8 @@ def _predictions(checkpoint: Path, smiles: list[str]) -> torch.Tensor:
             for s in smiles
         ]
     )
-    out = predictor.predict_batch(graphs, return_numpy=True)
-    return torch.as_tensor(out).reshape(len(graphs), -1)
+    # As the model returns them: one row per molecule, or per atom for a node-level model
+    return torch.as_tensor(predictor.predict_batch(graphs, return_numpy=True))
 
 
 def _check_reproduces(
@@ -295,8 +295,8 @@ def _structure_predictions(checkpoint: Path, example: list[dict[str, Any]]) -> t
         checkpoint_path=checkpoint, working_root_dir=checkpoint.parent, device=torch.device("cpu")
     )
     graphs = predictor.prepare_structures([StructureInput.from_dict(s) for s in example])
-    out = predictor.predict_batch(graphs, return_numpy=True)
-    return torch.as_tensor(out).reshape(len(graphs), -1)
+    # As the model returns them: one row per molecule, or per atom for a node-level model
+    return torch.as_tensor(predictor.predict_batch(graphs, return_numpy=True))
 
 
 def _check_reproduces_structures(
