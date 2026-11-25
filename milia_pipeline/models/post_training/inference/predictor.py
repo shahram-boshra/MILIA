@@ -28,6 +28,7 @@ from milia_pipeline.models._batch_input import consumes_batch
 from milia_pipeline.models.capabilities import attached_capabilities
 from milia_pipeline.models.input_contract import (
     IDENTIFIER,
+    STRUCTURE,
     InputContract,
     input_contract,
     model_requires_positions,
@@ -119,6 +120,7 @@ class Predictor:
         self._input_transform: Any = None
         self._input_transform_loaded = False
         self._input_contract: InputContract | None = None
+        self._structure_builder: Any = None  # built on first use (prepare_structures)
 
         # Ensure model is on correct device and in eval mode
         self.model.to(self.device)
@@ -206,6 +208,34 @@ class Predictor:
                 pipeline cannot be rebuilt (``load_input_transform``).
         """
         self.input_contract.require(IDENTIFIER)
+        return self._apply_input_transform(graphs)
+
+    def prepare_structures(self, structures: list[Any]) -> list[Data]:
+        """Build structure inputs as the training dataset built its molecules, then transform them.
+
+        Each structure (``molecules.structure_inputs.StructureInput``: atomic numbers, coordinates
+        in ångström, charge, identifier) is built with the checkpoint's ``molecule_creation`` and
+        featurization records and goes through the training pre-transforms, so a structure taken
+        from the training data gives its training graph.
+
+        Raises:
+            ConfigurationError: The model does not accept structure inputs (:attr:`input_contract`).
+            StructureInputError: Structures refused (each with its reason: no charge for
+                coordinate-based creation, a charge the model was not trained on, no identifier for
+                identifier-based creation, a molecule that cannot be built); none is returned then.
+        """
+        self.input_contract.require(STRUCTURE)
+        if self._structure_builder is None:
+            from milia_pipeline.molecules.structure_inputs import StructureBuilder
+
+            data_info = self.model_info.get("data_info") or {}
+            self._structure_builder = StructureBuilder(
+                data_info["molecule_creation"], data_info.get("structural_features_config")
+            )
+        return self._apply_input_transform(self._structure_builder.build(structures))
+
+    def _apply_input_transform(self, graphs: list[Data]) -> list[Data]:
+        """The training pre-transforms (``data_info.input_transforms``) applied to ``graphs``."""
         if not self._input_transform_loaded:
             from milia_pipeline.transformations.pre_transform_record import load_input_transform
 

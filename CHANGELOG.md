@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Structure inputs: `milia --predict --test-path <file>.xyz|.sdf|.mol` builds each molecule with its given coordinates
+  as the model's training dataset built its molecules (`molecules/structure_inputs.py`: `StructureInput`,
+  `read_structures`, `StructureBuilder`; `MoleculeDataConverter.convert_inputs`; `Predictor.prepare_structures`),
+  through the training pre-transforms. A molecule taken from the training data gives its training graph (`x`,
+  `edge_index`, `edge_attr`, `pos`, `z`), tested for every registered dataset and both creation strategies. The input
+  contract accepts `structure` when the checkpoint records `structural_features_config`, `input_transforms`,
+  `qm_input_sources` and `molecule_creation` (with `charges` and `featurization`) and no input is a
+  `dataset_property`. Coordinate-based creation needs the stated charge; identifier-based creation takes the
+  identifier's charge (an InChI or SMILES given with the coordinates, converted to the dataset's identifier kind); a
+  charge outside the training charges is refused. Refusals name every refused structure with its reason
+  (`StructureInputError`). Coordinates are in ångström and converted to the dataset's units.
+- XYZ (multi-frame, extended-XYZ `charge`, `inchi`, `smiles`, `name` comment pairs) and SDF/MOL readers for structure
+  inputs; SDF/MOL keep every hydrogen (`removeHs=False`) and a record without 3D coordinates is refused.
+- `data_info.molecule_creation.featurization`: the converter switches training read (structural features, passing
+  the given coordinates, stereochemistry assignment and its cleanup), which structure inputs are built with.
+  Retrain to record them.
 - Every processed graph carries `molecular_charge`, the net charge of the molecule as built (the sum of its atoms'
   formal charges), and training records the charges of its training split in `data_info.molecule_creation.charges`
   (`None` when the graphs were processed before the attribute existed: re-process to record them). A structure input

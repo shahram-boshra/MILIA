@@ -2917,6 +2917,21 @@ class ExportError(ModelError):
     """Exporting a model to another format (ONNX, TorchScript, ...) failed."""
 
 
+class StructureInputError(ModelError):
+    """A structure input (a molecule with given coordinates) is refused, with the reason.
+
+    ``refusals``: ``(index, reason)`` for every refused structure of the request
+    (``molecules/structure_inputs.py``).
+    """
+
+    def __init__(self, refusals: list[tuple[int, str]], details: str | None = None, **kwargs):
+        self.refusals = list(refusals)
+        summary = "; ".join(f"structure {index}: {reason}" for index, reason in self.refusals)
+        super().__init__(
+            f"Refused {len(self.refusals)} structure input(s): {summary}", details=details, **kwargs
+        )
+
+
 class MonitoringError(ModelError):
     """Production monitoring of a deployed model failed."""
 

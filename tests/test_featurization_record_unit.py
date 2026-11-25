@@ -307,7 +307,10 @@ def test_a_qm_model_packages_but_is_neither_served_nor_exported(tmp_path):
 @pytest.mark.parametrize("dataset_type", sorted(registry.list_all()))
 def test_molecule_creation_is_recorded_for_every_registered_dataset(dataset_type):
     """Read from the dataset class, so a dataset registered later is recorded the same way."""
-    from milia_pipeline.molecules.featurization_record import molecule_creation_record
+    from milia_pipeline.molecules.featurization_record import (
+        creation_switches,
+        molecule_creation_record,
+    )
 
     dataset_class = registry.get(dataset_type)
     record = molecule_creation_record(dataset_type)
@@ -317,11 +320,37 @@ def test_molecule_creation_is_recorded_for_every_registered_dataset(dataset_type
         "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
         "coordinate_units": dataset_class.get_coordinate_units(),
         "charges": None,  # no graphs given: unknown
+        "featurization": creation_switches(),  # the converter switches of this configuration
     }
     assert record["strategy"] in ("identifier_coordinate_based", "coordinate_based")
     json.dumps(record)
     graphs = [Data(z=torch.tensor([8, 1, 1]), molecular_charge=torch.tensor([0]))]
     assert molecule_creation_record(dataset_type, graphs)["charges"] == [0]
+
+
+def test_the_creation_switches_follow_the_configuration(monkeypatch):
+    """Each switch is read from the accessor the converter reads while it builds a molecule."""
+    from milia_pipeline.config import config_accessors
+    from milia_pipeline.molecules.featurization_record import creation_switches
+
+    switches = {
+        "is_structural_features_enabled": False,
+        "should_pass_coordinates_to_structural_features": False,
+        "should_enable_stereochemistry_preprocessing": False,
+    }
+    for name, value in switches.items():
+        monkeypatch.setattr(config_accessors, name, lambda value=value: value)
+    monkeypatch.setattr(
+        config_accessors,
+        "get_stereochemistry_config",
+        lambda: {"assign_stereochemistry": True, "cleanup_stereochemistry": False},
+    )
+    assert creation_switches() == {
+        "structural_features": False,
+        "pass_coordinates": False,
+        "stereochemistry": False,
+        "stereochemistry_cleanup": False,
+    }
 
 
 def _charged(*charges):

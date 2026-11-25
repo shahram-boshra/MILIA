@@ -3423,6 +3423,9 @@ def handle_predict_mode(
         # Track input identifiers for include_inputs option
         input_identifiers = None
 
+        from milia_pipeline.models.input_contract import IDENTIFIER, STRUCTURE
+        from milia_pipeline.molecules.structure_inputs import STRUCTURE_SUFFIXES, read_structures
+
         if test_path.is_dir():
             # Assume miliaDataset directory
             from milia_pipeline.datasets import miliaDataset
@@ -3477,11 +3480,18 @@ def handle_predict_mode(
                 data_list = [collated_data]
             else:
                 raise ValueError(f"Could not determine number of graphs from slices: {slices}")
+        elif test_path.suffix.lower() in STRUCTURE_SUFFIXES and predictor.input_contract.accepts(
+            STRUCTURE
+        ):
+            # A structure file (XYZ, SDF, MOL) for a model that takes structures: each molecule is
+            # built with its given coordinates as the training dataset built its molecules, then
+            # goes through the training pre-transforms (refused molecules are named with reasons)
+            structures = read_structures(test_path)
+            data_list = predictor.prepare_structures(structures)
+            input_identifiers = [structure.name for structure in structures]
         else:
-            # File input (CSV, XYZ, SDF, etc.): molecules featurized here, which the model must
-            # accept (models/input_contract.py); refused before any molecule is featurized
-            from milia_pipeline.models.input_contract import IDENTIFIER
-
+            # File input (CSV, XYZ, SDF, etc.): molecules featurized from their identifiers, which
+            # the model must accept (models/input_contract.py); refused before any is featurized
             predictor.input_contract.require(IDENTIFIER)
             if test_path.suffix == ".csv":
                 import pandas as pd

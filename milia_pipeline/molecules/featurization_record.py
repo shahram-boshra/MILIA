@@ -28,6 +28,7 @@ __all__ = [
     "SAMPLE_GRAPHS",
     "SOURCE_COORDINATES",
     "SOURCE_DATASET_PROPERTY",
+    "creation_switches",
     "graphs_have_explicit_hydrogens",
     "molecular_charges",
     "molecule_creation_record",
@@ -158,7 +159,8 @@ def molecule_creation_record(dataset_type: str | None, graphs: Any = None) -> di
     the given coordinates); ``identifier_keys``: the ``(key, type)`` pairs it reads in priority
     order; ``coordinate_units``: the units of its coordinates; ``charges``: the molecular charges
     its molecules were built with (:func:`molecular_charges` of ``graphs``; ``None`` when
-    unknown). A structure input must be built the same way, with a charge among these.
+    unknown); ``featurization``: the converter switches the run read (:func:`creation_switches`).
+    A structure input must be built the same way, with a charge among these.
 
     Returns:
         The record, or ``None`` when no dataset class is registered under ``dataset_type``.
@@ -178,6 +180,33 @@ def molecule_creation_record(dataset_type: str | None, graphs: Any = None) -> di
         "identifier_keys": [list(pair) for pair in dataset_class.get_identifier_keys()],
         "coordinate_units": dataset_class.get_coordinate_units(),
         "charges": molecular_charges(graphs) if graphs is not None else None,
+        "featurization": creation_switches(),
+    }
+
+
+def creation_switches() -> dict[str, bool]:
+    """The configuration switches ``MoleculeDataConverter`` reads while it builds a molecule.
+
+    ``structural_features``: structural features are computed (``x``, ``edge_attr``);
+    ``pass_coordinates``: the given coordinates, not the molecule's conformer, are passed to them;
+    ``stereochemistry`` / ``stereochemistry_cleanup``: ``Chem.AssignStereochemistry`` runs first,
+    and with ``cleanIt``. The dataset's atomic charges are not a switch here: a feature reading them
+    is a ``dataset_property`` input (``qm_input_sources``), which no structure input carries.
+    """
+    from milia_pipeline.config.config_accessors import (
+        get_stereochemistry_config,
+        is_structural_features_enabled,
+        should_enable_stereochemistry_preprocessing,
+        should_pass_coordinates_to_structural_features,
+    )
+
+    return {
+        "structural_features": bool(is_structural_features_enabled()),
+        "pass_coordinates": bool(should_pass_coordinates_to_structural_features()),
+        "stereochemistry": bool(should_enable_stereochemistry_preprocessing()),
+        "stereochemistry_cleanup": bool(
+            get_stereochemistry_config().get("cleanup_stereochemistry", True)
+        ),
     }
 
 

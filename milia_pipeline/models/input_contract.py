@@ -5,9 +5,9 @@ A model is served only the inputs that reproduce its training graphs. Three kind
 * ``identifier``: a molecule given by its molecular graph alone (SMILES, InChI, or a structure
   file whose coordinates the model does not use). MILIA featurizes it as training did
   (``structural_features_config``, hydrogens, pre-transforms).
-* ``structure``: a molecule with given coordinates, built the way the training dataset built its
-  molecules (``data_info.molecule_creation``). Not yet built by this MILIA: refused with the
-  reason, and the model is predicted from a dataset.
+* ``structure``: a molecule with given coordinates (an XYZ, SDF or MOL file), built the way the
+  training dataset built its molecules (``data_info.molecule_creation``,
+  ``molecules/structure_inputs.py``) and through the training pre-transforms.
 * ``dataset``: graphs from a processed dataset of the same type, which carry every value the
   model was trained on. Always accepted.
 
@@ -16,6 +16,13 @@ must reproduce (``explicit_hydrogens``, ``qm_input_features``, ``input_transform
 takes no value from its dataset's QM data, and it does not read atomic positions. A checkpoint
 written before a record existed accepts ``dataset`` only: its answer is unknown, and serving it
 as if it were "no" would feed the model inputs unlike its training data (fail closed).
+
+``structure`` is accepted only when the checkpoint records how its molecules were built
+(``molecule_creation`` with the charges seen and the converter switches), its featurization and
+pre-transforms (``structural_features_config``, ``input_transforms``) and where every QM input came
+from (``qm_input_sources``), and no input came from a per-atom value only the dataset holds
+(``dataset_property``: a structure carries coordinates and a charge, not the dataset's QM data).
+A model reading atomic positions accepts structures: they carry the positions.
 """
 
 from __future__ import annotations
@@ -34,6 +41,7 @@ __all__ = [
     "DATASET",
     "INPUT_KINDS",
     "IDENTIFIER_RECORDS",
+    "STRUCTURE_RECORDS",
     "InputContract",
     "input_contract",
     "model_requires_positions",
@@ -46,6 +54,13 @@ INPUT_KINDS = (IDENTIFIER, STRUCTURE, DATASET)
 
 # data_info entries identifier featurization reproduces; a checkpoint without one cannot say
 IDENTIFIER_RECORDS = ("explicit_hydrogens", "qm_input_features", "input_transforms")
+# data_info entries a structure input is built from; a checkpoint without one cannot say
+STRUCTURE_RECORDS = (
+    "structural_features_config",
+    "input_transforms",
+    "qm_input_sources",
+    "molecule_creation",
+)
 
 _DATASET_ADVICE = (
     "predict from a dataset of the same type (milia --predict --test-path <dataset directory>)"
@@ -129,8 +144,39 @@ def input_contract(
             f"generate coordinates for a model trained on given ones; {_DATASET_ADVICE}"
         )
 
-    refused[STRUCTURE] = (
-        "this MILIA does not build structure inputs with the training dataset's molecule "
-        f"creation yet; {_DATASET_ADVICE}"
-    )
+    reason = _structure_refusal(data_info)
+    if reason is not None:
+        refused[STRUCTURE] = reason
     return InputContract(refused)
+
+
+def _structure_refusal(data_info: Mapping[str, Any]) -> str | None:
+    """Why the model cannot take structure inputs, or ``None`` when it can."""
+    from milia_pipeline.molecules.featurization_record import SOURCE_DATASET_PROPERTY
+
+    missing = [name for name in STRUCTURE_RECORDS if name not in data_info]
+    creation = data_info.get("molecule_creation") or {}
+    if missing or not creation:
+        names = ", ".join(missing) or "molecule_creation"
+        return (
+            f"the checkpoint does not record {names} (written before MILIA recorded them), so a "
+            f"structure cannot be built as its training molecules were; retrain, or {_DATASET_ADVICE}"
+        )
+    unrecorded = [name for name in ("charges", "featurization") if creation.get(name) is None]
+    if unrecorded:
+        return (
+            f"the checkpoint does not record molecule_creation.{', '.join(unrecorded)} (its "
+            "dataset was processed, or the model trained, before MILIA recorded them); re-process "
+            f"the dataset and retrain, or {_DATASET_ADVICE}"
+        )
+    dataset_inputs = [
+        name
+        for name, source in (data_info.get("qm_input_sources") or {}).items()
+        if source == SOURCE_DATASET_PROPERTY
+    ]
+    if dataset_inputs:
+        return (
+            f"the model takes {', '.join(dataset_inputs)} from its dataset's QM data, which a "
+            f"structure does not carry; {_DATASET_ADVICE}"
+        )
+    return None

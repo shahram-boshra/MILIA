@@ -2342,6 +2342,91 @@ class MoleculeDataConverter:
             self.logger.debug(f"Error context: {error_context}")
             return None
 
+    def convert_inputs(
+        self,
+        molecule_index: int,
+        atomic_numbers: np.ndarray,
+        coordinates: np.ndarray,
+        molecular_charge: int | None,
+        switches: dict[str, bool],
+        identifier: str | None = None,
+        identifier_type: str | None = None,
+    ) -> Data:
+        """Build the input graph of a structure (a molecule with given coordinates).
+
+        The steps of :meth:`convert` that build a molecule and its input features, in its order:
+        molecule creation with the dataset's strategy (:meth:`_create_pyg_data_original_approach`),
+        structural features (:meth:`_add_structural_features_enhanced`), identifiers, tensor
+        conversion. Not run, as a structure carries no dataset entry: the entry's validation,
+        label enrichment, per-atom dataset properties, pre-filters and the label completeness
+        check. The input contract (``models/input_contract.py``) accepts structure inputs only for
+        a model that needs none of them.
+
+        Args:
+            molecule_index: The structure's position in its request (error reporting).
+            atomic_numbers: Atomic numbers, in the order of ``coordinates``.
+            coordinates: Coordinates in the dataset's units (``molecule_creation.coordinate_units``).
+            molecular_charge: The charge to build with; ``None`` takes the handler's rule (an
+                identifier's own charge for identifier-based creation).
+            switches: The converter switches the model's training recorded
+                (``molecule_creation.featurization``).
+            identifier: The molecule's identifier (InChI, SMILES), which identifier-based creation
+                reads its bonds from; ``identifier_type`` names its kind.
+
+        Returns:
+            The graph (``z``, ``pos``, ``edge_index``, ``x``, ``edge_attr`` when the model's
+            features are on, ``molecular_charge``), without labels.
+
+        Raises:
+            RDKitConversionError, PyGDataCreationError, StructuralFeatureError: The molecule cannot
+                be built; never ``None`` (a structure is refused with its reason).
+        """
+        raw_entry: dict[str, Any] = {
+            "atoms": np.asarray(atomic_numbers),
+            "coordinates": np.asarray(coordinates),
+        }
+        if identifier is not None:
+            for key, kind in get_identifier_keys(self.dataset_type):
+                if kind == identifier_type:
+                    raw_entry[key] = identifier  # where the dataset entry holds it
+                    break
+            else:
+                raise RDKitConversionError(
+                    molecule_index=molecule_index,
+                    inchi=identifier,
+                    reason=f"{self.dataset_type} reads no {identifier_type!r} identifier",
+                    detail=f"identifier keys: {get_identifier_keys(self.dataset_type)}",
+                )
+            mol_identifier, mol_id_type = identifier, identifier_type
+        else:
+            mol_identifier, mol_id_type = f"molecule_{molecule_index}", "index"
+
+        pyg_data = self._create_pyg_data_original_approach(
+            molecule_index,
+            raw_entry,
+            mol_identifier,
+            mol_id_type,
+            mol_identifier,
+            raw_entry["coordinates"],
+            raw_entry["atoms"],
+            self._dataset_config,
+            molecular_charge=molecular_charge,
+        )
+        pyg_data = self._add_structural_features_enhanced(
+            pyg_data,
+            molecule_index,
+            mol_identifier,
+            raw_entry,
+            switches=switches,
+            molecular_charge=molecular_charge,
+        )
+        self._attach_identifiers_original_logic(
+            pyg_data, mol_identifier, mol_id_type, molecule_index
+        )
+        pyg_data = self._ensure_pyg_data_tensors(pyg_data, molecule_index, mol_identifier)
+        pyg_data.dataset_type = self._dataset_config.dataset_type
+        return pyg_data
+
     def get_rdkit_mol(self) -> Optional["Chem.Mol"]:
         """
         Get the RDKit molecule from the most recent conversion.
@@ -2375,11 +2460,13 @@ class MoleculeDataConverter:
         coordinates: np.ndarray,
         atomic_numbers: np.ndarray,
         dataset_config: DatasetConfig | None = None,
+        molecular_charge: int | None = None,
     ) -> Data:
         """
         Create PyG Data using original direct approach for maximum compatibility.
 
-        MIGRATED: Handler-Based Pattern Development -  Enhanced error handling while preserving original logic.
+        ``molecular_charge``: the charge to build with; ``None`` (a dataset entry) takes the
+        handler's charge rule (``get_molecular_charge``), a structure input states its own.
         """
         # Use provided container or fall back to internal one
         dataset_config = dataset_config or self._dataset_config
@@ -2401,15 +2488,15 @@ class MoleculeDataConverter:
                     details=f"Handler must be initialized before converting molecule {current_mol_index}",
                 )
 
-            # Get molecular charge from handler (dataset-agnostic)
-            molecular_charge = self._dataset_handler.get_molecular_charge(
-                raw_properties_dict=raw_properties_dict,
-                atomic_numbers=atomic_numbers,
-                mol_identifier=mol_identifier,
-            )
+            if molecular_charge is None:  # a dataset entry: the handler's charge rule
+                molecular_charge = self._dataset_handler.get_molecular_charge(
+                    raw_properties_dict=raw_properties_dict,
+                    atomic_numbers=atomic_numbers,
+                    mol_identifier=mol_identifier,
+                )
 
             self.logger.debug(
-                f"Molecule {current_mol_index}: Handler determined charge = {molecular_charge} "
+                f"Molecule {current_mol_index}: charge = {molecular_charge} "
                 f"(Dataset: {self._dataset_handler.get_dataset_type()})"
             )
 
@@ -2469,9 +2556,17 @@ class MoleculeDataConverter:
         current_mol_index: int,
         current_mol_identifier: str,
         raw_properties_dict: dict[str, Any],
+        switches: dict[str, bool] | None = None,
+        molecular_charge: int | None = None,
     ) -> Data:
         """
-        Handler-Based Pattern Development: Enhanced structural features addition with better error handling.
+        Add the structural features (``x``, ``edge_attr``) of one molecule.
+
+        ``switches``: ``None`` for a dataset entry (the configuration's switches, its atomic
+        charges, and validation of the whole entry); for a structure input, the switches its
+        model's training recorded (``featurization_record.creation_switches``), no dataset atomic
+        charges, and structure-only validation. ``molecular_charge``: as in
+        :meth:`_create_pyg_data_original_approach`.
         """
         try:
             # Check pyg_data validity first
@@ -2486,7 +2581,12 @@ class MoleculeDataConverter:
                 )
 
             # Check if structural features are enabled and configured
-            if not self.is_structural_features_enabled or not self.structural_features_config:
+            enabled = (
+                self.is_structural_features_enabled
+                if switches is None
+                else switches["structural_features"]
+            )
+            if not enabled or not self.structural_features_config:
                 self.logger.info(
                     f"No structural features configured for molecule {current_mol_index}, identifier '{current_mol_identifier}'. Skipping feature addition."
                 )
@@ -2519,15 +2619,28 @@ class MoleculeDataConverter:
                 pyg_data.edge_attr = None
                 return pyg_data
 
-            # Validate and convert structure - PASS COMPLETE DATA for full validation
-            atomic_numbers, coords = validate_molecular_structure(
-                atoms,
-                coordinates,
-                current_mol_index,
-                current_mol_identifier,
-                handler=self._dataset_handler,  # Handler for validation
-                raw_properties_dict=raw_properties_dict,  # Complete data including Etot!
-            )
+            # Validate and convert structure: a dataset entry whole, through its handler (labels
+            # such as Etot); a structure input, which carries no labels, by its structure alone
+            if switches is None:
+                atomic_numbers, coords = validate_molecular_structure(
+                    atoms,
+                    coordinates,
+                    current_mol_index,
+                    current_mol_identifier,
+                    handler=self._dataset_handler,
+                    raw_properties_dict=raw_properties_dict,
+                )
+            else:
+                from milia_pipeline.config.validators import (
+                    validate_molecular_structure as validate_structure_only,
+                )
+
+                atomic_numbers, coords = validate_structure_only(
+                    np.asarray(atoms),
+                    np.asarray(coordinates),
+                    current_mol_index,
+                    current_mol_identifier,
+                )
 
             # Create RDKit molecule for feature extraction
             # Extract identifier dynamically based on handler configuration
@@ -2562,15 +2675,15 @@ class MoleculeDataConverter:
                     details=f"Handler must be initialized before processing molecule {current_mol_index}",
                 )
 
-            # Get molecular charge from handler (dataset-agnostic)
-            molecular_charge = self._dataset_handler.get_molecular_charge(
-                raw_properties_dict=raw_properties_dict,
-                atomic_numbers=atomic_numbers,
-                mol_identifier=mol_identifier,
-            )
+            if molecular_charge is None:  # a dataset entry: the handler's charge rule
+                molecular_charge = self._dataset_handler.get_molecular_charge(
+                    raw_properties_dict=raw_properties_dict,
+                    atomic_numbers=atomic_numbers,
+                    mol_identifier=mol_identifier,
+                )
 
             self.logger.debug(
-                f"Molecule {current_mol_index}: Handler determined charge = {molecular_charge} "
+                f"Molecule {current_mol_index}: charge = {molecular_charge} "
                 f"(Dataset: {self._dataset_handler.get_dataset_type()})"
             )
 
@@ -2590,14 +2703,19 @@ class MoleculeDataConverter:
             atomic_charges = None
 
             # Pass coordinates if configured and available
-            if should_pass_coordinates_to_structural_features():
+            if (
+                should_pass_coordinates_to_structural_features()
+                if switches is None
+                else switches["pass_coordinates"]
+            ):
                 enhanced_coordinates = coords
                 self.logger.debug(
                     f"Passing coordinates to structural features for molecule {current_mol_index}"
                 )
 
-            # Pass the dataset's configured per-atom charges (atomic_charges_property)
-            if should_pass_atomic_charges_to_structural_features():
+            # Pass the dataset's configured per-atom charges (atomic_charges_property); a
+            # structure input carries none (a model reading them refuses it, input_contract.py)
+            if switches is None and should_pass_atomic_charges_to_structural_features():
                 charges_property = get_atomic_charges_property()
                 raw_charges = raw_properties_dict.get(charges_property)
                 if raw_charges is not None and is_value_valid_and_not_nan(raw_charges):
@@ -2613,12 +2731,20 @@ class MoleculeDataConverter:
                     )
 
             # Apply stereochemistry preprocessing if enabled
-            if should_enable_stereochemistry_preprocessing():
+            if (
+                should_enable_stereochemistry_preprocessing()
+                if switches is None
+                else switches["stereochemistry"]
+            ):
                 try:
                     # Use already imported Chem module instead of importing rdMolOps
                     Chem.AssignStereochemistry(
                         rdkit_mol,
-                        cleanIt=self.stereochemistry_config.get("cleanup_stereochemistry", True),
+                        cleanIt=(
+                            self.stereochemistry_config.get("cleanup_stereochemistry", True)
+                            if switches is None
+                            else switches["stereochemistry_cleanup"]
+                        ),
                     )
                     self.logger.debug(
                         f"Applied stereochemistry preprocessing for molecule {current_mol_index}"

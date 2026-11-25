@@ -1486,7 +1486,11 @@ class DatasetHandler(ABC):
     def validate_configuration(self) -> None:
         """Validate dataset-specific configuration with enhancements."""
         try:
-            if not self.processing_config.scalar_graph_targets:
+            # validated before each molecule is converted: warned once per handler
+            if not self.processing_config.scalar_graph_targets and not getattr(
+                self, "_warned_no_scalar_targets", False
+            ):
+                self._warned_no_scalar_targets = True
                 self.logger.warning(
                     f"No scalar graph targets configured for {self.get_dataset_type()} dataset"
                 )
