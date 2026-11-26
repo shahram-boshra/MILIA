@@ -843,13 +843,16 @@ class Predictor:
         elif format == "json":
             import json
 
-            def nested(values: Any) -> Any:
+            from ..conformal import json_bounds, unbounded_outputs
+
+            def nested(values: Any, bound: bool = False) -> Any:
                 if not hasattr(values, "tolist"):
                     return values
                 values = np.asarray(values)
+                as_list = json_bounds if bound else (lambda part: part.tolist())
                 if not per_atom:
-                    return values.tolist()
-                return [part.tolist() for part in np.split(values, bounds)]
+                    return as_list(values)
+                return [as_list(part) for part in np.split(values, bounds)]
 
             output_data = {"predictions": nested(predictions)}
             if names:
@@ -861,12 +864,22 @@ class Predictor:
                 ]
             if intervals is not None:
                 output_data["intervals"] = {
-                    key: nested(value) for key, value in intervals.items() if key != "mean"
+                    key: nested(value, bound=key in ("lower", "upper", "std"))
+                    for key, value in intervals.items()
+                    if key != "mean"
                 }
+                unbounded = unbounded_outputs(
+                    *(intervals[key] for key in ("lower", "upper") if key in intervals)
+                )
+                if unbounded:
+                    output_data["intervals"]["unbounded"] = [
+                        names[i] if names else i for i in unbounded
+                    ]
             if include_inputs and input_identifiers:
                 output_data["inputs"] = input_identifiers
             with open(resolved_path, "w") as f:
-                json.dump(output_data, f, indent=2)
+                # strict JSON (RFC 8259): a non-finite prediction raises instead of writing NaN
+                json.dump(output_data, f, indent=2, allow_nan=False)
 
         elif intervals is not None:
             raise ValueError(f"Prediction intervals are written as csv or json, not {format}")

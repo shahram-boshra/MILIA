@@ -69,6 +69,7 @@ from milia_pipeline.models.capabilities import output_level
 from milia_pipeline.models.deployment.drift import DriftMonitor, drift_settings
 from milia_pipeline.models.deployment.package import MAX_SMILES_LENGTH, verify_package
 from milia_pipeline.models.input_contract import IDENTIFIER, STRUCTURE
+from milia_pipeline.models.post_training.conformal import json_bounds, unbounded_outputs
 
 __all__ = [
     "DEFAULT_PACKAGE_DIR",
@@ -131,6 +132,8 @@ class PredictResponse(BaseModel):
     calibration): ``alpha``, ``method`` and ``lower``/``upper`` shaped as ``predictions``, each
     covering the true value with probability at least ``1 - alpha`` per target for molecules like
     the calibration set (a node-level model's intervals cover all atoms of a molecule at once).
+    An output whose calibration set was too small for ``1 - alpha`` has no finite bound: its
+    bounds are ``null`` and ``intervals.unbounded`` names it.
     """
 
     predictions: list[list[float]] | list[list[list[float]]]
@@ -398,22 +401,23 @@ class PackagedPredictor:
         predictions = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
         return self.per_instance(predictions, graphs)
 
-    def per_instance(self, rows: Any, graphs: Sequence[Any]) -> list[Any]:
+    def per_instance(self, rows: Any, graphs: Sequence[Any], bound: bool = False) -> list[Any]:
         """``rows`` (the model's output rows for ``graphs``) grouped by instance: one row per
         graph, or for a node-level model each graph's atom rows (``num_nodes`` of them, in node
-        order).
+        order). ``bound``: interval bounds, a non-finite one as ``None`` (``json_bounds``).
 
         Raises:
             ValueError: The row count is not the graphs' (molecules, or atoms).
         """
         rows = np.asarray(rows)
+        as_list = json_bounds if bound else (lambda part: part.tolist())
         if self.output_level != "node":
-            return rows.reshape(len(graphs), -1).tolist()
+            return as_list(rows.reshape(len(graphs), -1))
         counts = [int(graph.num_nodes) for graph in graphs]
         if len(rows) != sum(counts):
             raise ValueError(f"{len(rows)} output rows for {sum(counts)} atoms")
         rows = rows.reshape(sum(counts), -1)
-        return [part.tolist() for part in np.split(rows, np.cumsum(counts)[:-1])]
+        return [as_list(part) for part in np.split(rows, np.cumsum(counts)[:-1])]
 
     def atomic_numbers(self, graphs: Sequence[Any]) -> list[list[int]] | None:
         """Each instance's atomic numbers in node order, for a node-level model (else ``None``)."""
@@ -451,9 +455,13 @@ class PackagedPredictor:
         intervals = {
             "alpha": result["alpha"],
             "method": result["method"],
-            "lower": self.per_instance(result["lower"], graphs),
-            "upper": self.per_instance(result["upper"], graphs),
+            "lower": self.per_instance(result["lower"], graphs, bound=True),
+            "upper": self.per_instance(result["upper"], graphs, bound=True),
         }
+        unbounded = unbounded_outputs(result["lower"], result["upper"])
+        if unbounded:
+            names = self.output_names
+            intervals["unbounded"] = [names[i] if names else i for i in unbounded]
         return self.per_instance(result["mean"], graphs), intervals, self.atomic_numbers(graphs)
 
 

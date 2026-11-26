@@ -32,6 +32,7 @@ import math
 from collections.abc import Iterator
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -131,6 +132,28 @@ def conformal_quantiles(
     if groups is not None:
         calibration["scope"] = "molecule"
     return calibration
+
+
+def unbounded_outputs(*bounds: Any) -> list[int]:
+    """The output columns whose interval bounds are not finite in any of ``bounds``.
+
+    A quantile is ``inf`` when the calibration set is too small for 1−α (:func:`conformal_quantiles`),
+    so that output's interval is unbounded for every molecule. JSON has no number for it (numeric
+    values "such as Infinity and NaN" are not permitted, RFC 8259 §6): JSON outputs write such a bound as ``null``
+    and name the output in ``unbounded`` (:func:`json_bounds`).
+    """
+    columns: set[int] = set()
+    for values in bounds:
+        values = np.asarray(values, dtype=float)
+        values = values.reshape(len(values), -1) if values.ndim else values.reshape(1, 1)
+        columns.update(np.flatnonzero(~np.isfinite(values).all(axis=0)).tolist())
+    return sorted(columns)
+
+
+def json_bounds(values: Any) -> Any:
+    """``values`` as nested lists for JSON, with every non-finite bound as ``None`` (``null``)."""
+    values = np.asarray(values, dtype=float)
+    return np.where(np.isfinite(values), values, None).tolist()
 
 
 def intervals(

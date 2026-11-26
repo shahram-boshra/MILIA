@@ -359,6 +359,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- An unbounded conformal interval (a calibration set too small for 1 − α gives an infinite quantile) was written as
+  `Infinity` in `--predict` JSON, which is not JSON (RFC 8259 §6: numeric values "such as Infinity and NaN" are not permitted), and as an
+  unexplained `null` by the server. Both now write `null` bounds and name the output in `intervals.unbounded`;
+  `--predict` JSON is strict (a non-finite prediction raises instead of writing `NaN`).
 - A node-level model recorded the graph targets' names as its own (`run_info.targets.names`; the DFT dataset:
   `Etot` ... `Edisp` for a model of `Qmulliken`): names now come from the attribute the targets are taken from
   (`node_y` for node tasks, or the target selection's source), and none when it is unknown.
