@@ -3705,6 +3705,12 @@ def _run_standard_training(
         selection = models_config.get("selection", {})
         training_config = models_config.get("training", {})
 
+        # Seed training (weight initialization, shuffling, dropout) before anything draws from it
+        from milia_pipeline.models.training.seeding import resolve_seed, seed_everything
+
+        training_seed = seed_everything(resolve_seed(training_config.get("seed")))
+        logger.info(f"Training seed: {training_seed}")
+
         # CLI overrides (getattr with None default, then fallback to config)
         mode = getattr(args, "mode", None) or selection.get("mode", "single")
         model_name = getattr(args, "model_name", None) or selection.get("model_name", "GCN")
@@ -3799,10 +3805,15 @@ def _run_standard_training(
         # 3. Create data loaders (PA-2: shared factory; current defaults unless acceleration
         # enables models.acceleration.computation.dataloader)
         from milia_pipeline.models.training.loaders import loader_options_from_config, make_loader
+        from milia_pipeline.models.training.seeding import loader_generator
 
         loader_options = loader_options_from_config(models_config)
         train_loader = make_loader(
-            train_data, batch_size=batch_size, shuffle=True, options=loader_options
+            train_data,
+            batch_size=batch_size,
+            shuffle=True,
+            options=loader_options,
+            generator=loader_generator(training_seed),
         )
         val_loader = make_loader(
             val_data, batch_size=batch_size, shuffle=False, options=loader_options
@@ -4161,6 +4172,7 @@ def _run_standard_training(
             train_graphs=(train_data[i] for i in range(len(train_data))),
             model_name=model_info.get("name", model_name),
             hyperparameters=model_info.get("hyperparameters_values"),
+            training_seed=training_seed,
         )
 
         # 7. Create trainer with model_info for target selection

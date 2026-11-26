@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `models.training.seed` seeds a training run (`training.seeding`): Python's `random`, NumPy and PyTorch before the
+  model is built, and the training loader shuffles with its own seeded generator (workers seeded from it). The
+  shipped configuration sets 42; `null` draws a seed. `run_info.training_seed` and `lineage.training_seed` record it.
+  Before, only the data split was seeded, and two runs of the same code, data and configuration gave different
+  models (a calibration quantile of 7.20 in one run, 4.59 in the next).
+
 - `run_info.model_source` and a package's `lineage.model_source` record where the model's classes come from
   (`models.model_source`): `pyg` (`torch-geometric`), `milia` (a plugin shipped with MILIA), `distribution` (a plugin
   from an installed distribution, by its entry point) or `directory` (a plugin directory: its path and a SHA-256 of

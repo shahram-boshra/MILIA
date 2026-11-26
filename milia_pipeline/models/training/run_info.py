@@ -234,6 +234,7 @@ def collect_run_info(
     train_graphs: Iterable[Any] = (),
     model_name: str | None = None,
     hyperparameters: dict[str, Any] | None = None,
+    training_seed: int | None = None,
 ) -> dict[str, Any]:
     """The ``run_info`` entry of a training run's checkpoints.
 
@@ -267,6 +268,7 @@ def collect_run_info(
         "input_example": example_smiles(sample),
         "structure_example": example_structures(sample, dataset_type),
         "model_source": _model_source(model_name, hyperparameters),
+        "training_seed": training_seed,
     }
 
 

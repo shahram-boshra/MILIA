@@ -525,6 +525,10 @@ models:
 
   # Training Configuration
   training:
+    # Seeds weight initialization, training-loader shuffling and dropout (the split has its own
+    # random_seed below): the same code, data and configuration then give the same model on the
+    # same platform. null: a seed is drawn; either way it is recorded in run_info.training_seed.
+    seed: 42
     # Data Splitting
     data_split:
       method: "random"                   # random, stratified, temporal, scaffold

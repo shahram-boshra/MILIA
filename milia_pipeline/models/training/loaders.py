@@ -70,12 +70,19 @@ def make_loader(
     batch_size: int,
     shuffle: bool,
     options: LoaderOptions | None = None,
+    generator: torch.Generator | None = None,
 ) -> pyg_loader.DataLoader:
     """Build a PyG ``DataLoader`` with the shared options (``None`` → current defaults).
+
+    ``generator`` (``seeding.loader_generator``) makes the shuffling repeatable; its workers are
+    then seeded from it (``seeding.seed_worker``).
 
     The class is looked up on ``torch_geometric.loader`` at call time (as the replaced call sites
     did), so patching ``torch_geometric.loader.DataLoader`` keeps working as a test seam.
     """
-    return pyg_loader.DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, **(options or LoaderOptions()).as_kwargs()
-    )
+    kwargs = (options or LoaderOptions()).as_kwargs()
+    if generator is not None:
+        from .seeding import seed_worker
+
+        kwargs.update(generator=generator, worker_init_fn=seed_worker)
+    return pyg_loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)

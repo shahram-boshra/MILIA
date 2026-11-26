@@ -217,6 +217,7 @@ def package_checkpoint(
             "git_commit": run_info.get("git_commit"),
             "versions": run_info.get("versions"),
             "model_source": run_info.get("model_source"),
+            "training_seed": run_info.get("training_seed"),
         },
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
