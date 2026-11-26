@@ -3,8 +3,8 @@
 * ``milia --predict`` writes its columns under the names the training run recorded
   (``run_info.targets.names``), interval columns as ``lower_<name>``; without usable names the
   columns stay ``prediction_<i>``.
-* The server answers one row per molecule, so it serves graph-level models and refuses to start
-  for node- and edge-level ones, and for a task type that names no level.
+* The server answers per molecule (one row, or one row per atom), so it serves graph- and
+  node-level models and refuses to start for edge-level ones and a task type naming no level.
 """
 
 from __future__ import annotations
@@ -155,17 +155,22 @@ def test_from_checkpoint_reads_the_recorded_target_names(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "task_type", ["graph_regression", "graph_classification", "Graph_Regression"]
+    "task_type",
+    [
+        "graph_regression",
+        "graph_classification",
+        "Graph_Regression",
+        "node_regression",
+        "node_embedding",
+    ],
 )
-def test_graph_level_models_are_served(task_type):
+def test_graph_and_node_level_models_are_served(task_type):
     assert output_level_refusal(task_type) is None
 
 
 @pytest.mark.parametrize(
     ("task_type", "reason"),
     [
-        ("node_regression", "node-level model (node_regression) gives one row per atom"),
-        ("node_classification", "one row per atom"),
         ("edge_regression", "edge-level model (edge_regression) gives one row per bond"),
         ("link_prediction", "one row per bond"),
         ("regression", "names no output level"),
@@ -175,16 +180,16 @@ def test_graph_level_models_are_served(task_type):
 def test_other_output_levels_are_refused_with_the_reason(task_type, reason):
     refusal = output_level_refusal(task_type)
     assert reason in refusal
-    if task_type and task_type.startswith(("node_", "edge_", "link_")):
-        assert "one row of outputs per molecule" in refusal
+    if task_type and task_type.startswith(("edge_", "link_")):
+        assert "which it does not map to its molecule" in refusal
 
 
-def test_a_node_level_package_is_not_served(tmp_path):
+def test_an_edge_level_package_is_not_served(tmp_path):
     from milia_pipeline.models.deployment.package import package_checkpoint
     from milia_pipeline.models.deployment.serving import PackagedPredictor, require_servable
 
-    package = package_checkpoint(_checkpoint(tmp_path, "node_regression"), tmp_path / "package")
-    with pytest.raises(DeploymentError, match="node-level model"):
+    package = package_checkpoint(_checkpoint(tmp_path, "edge_regression"), tmp_path / "package")
+    with pytest.raises(DeploymentError, match="edge-level model"):
         PackagedPredictor.from_package(package)
     with pytest.raises(DeploymentError, match="'local' target"):
         require_servable(package)

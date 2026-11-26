@@ -34,10 +34,13 @@ Request body (the Vertex AI shape, used for every predict route)::
 Response::
 
     {"predictions": [[...], [...]], "model_name": "...", "task_type": "...",
-     "output_names": ["...", ...]}
+     "output_names": ["...", ...], "output_level": "graph"}
 
-A row is one molecule's outputs, so the app serves graph-level models (task type ``graph_*``) and
-refuses to start for a node- or edge-level one (:func:`output_level_refusal`).
+A graph-level model (task type ``graph_*``) answers one row of outputs per instance. A node-level
+model (``node_*``) answers, per instance, one row per atom (``predictions[i][j]``: atom ``j`` of
+instance ``i``), with ``"output_level": "node"`` and each instance's ``atomic_numbers`` in that
+order. The app refuses to start for an edge-level model, or a task type naming no level
+(:func:`output_level_refusal`).
 
 At startup the app featurizes the package's examples (input example, structure example) and
 checks them against the package's signature (:meth:`PackagedPredictor.check_signature`), so a
@@ -57,6 +60,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
+import numpy as np
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -119,37 +123,43 @@ class PredictRequest(BaseModel):
 
 
 class PredictResponse(BaseModel):
-    """One row of model outputs per instance, in request order.
+    """Model outputs per instance, in request order.
 
-    ``output_names`` names the columns, when the package's signature records them.
-    ``intervals`` (when the package has a conformal calibration): ``alpha``, ``method`` and
-    ``lower``/``upper`` rows, each covering the true value with probability at least
-    ``1 - alpha`` per target for molecules like the calibration set.
+    ``output_level`` ``"graph"``: one row of outputs per instance. ``"node"``: per instance, one
+    row per atom, in the order of its ``atomic_numbers``. ``output_names`` names the columns, when
+    the package's signature records them. ``intervals`` (when the package has a conformal
+    calibration): ``alpha``, ``method`` and ``lower``/``upper`` shaped as ``predictions``, each
+    covering the true value with probability at least ``1 - alpha`` per target for molecules like
+    the calibration set (a node-level model's intervals cover all atoms of a molecule at once).
     """
 
-    predictions: list[list[float]]
+    predictions: list[list[float]] | list[list[list[float]]]
     model_name: str
     task_type: str
     output_names: list[str] | None = None
+    output_level: Literal["graph", "node"] = "graph"
+    atomic_numbers: list[list[int]] | None = None
     intervals: dict[str, Any] | None = None
 
 
 def output_level_refusal(task_type: str | None) -> str | None:
-    """Why the server cannot answer a model of ``task_type``, or ``None`` for a graph-level model.
+    """Why the server cannot answer a model of ``task_type``, or ``None`` when it can.
 
-    A response holds one row of outputs per molecule (``PredictResponse``). The task type's prefix
-    names the output level (:func:`~milia_pipeline.models.capabilities.output_level`): a node- or
-    edge-level model gives one row per atom or bond, and a task type without a known prefix names
-    no level, so it is refused rather than guessed.
+    The task type's prefix names the output level
+    (:func:`~milia_pipeline.models.capabilities.output_level`). A graph-level model gives one row
+    per molecule and a node-level one one row per atom, which the response nests per instance
+    (``PredictResponse``). An edge-level model gives one row per bond or atom pair, which the
+    server does not map to its molecule; a task type without a known prefix names no level, so it
+    is refused rather than guessed.
     """
     level = output_level(task_type)
-    if level == "graph":
+    if level in ("graph", "node"):
         return None
-    if level is not None:
-        row = {"node": "atom", "edge": "bond"}[level]
+    if level == "edge":
         return (
-            f"the server answers one row of outputs per molecule, and this {level}-level "
-            f"model ({task_type}) gives one row per {row}"
+            "the server answers per molecule (one row, or one row per atom), and this "
+            f"edge-level model ({task_type}) gives one row per bond, which it does not map to "
+            "its molecule"
         )
     return (
         f"task type {task_type!r} names no output level (graph_, node_, edge_ or link_), so the "
@@ -230,6 +240,11 @@ class PackagedPredictor:
         )
 
     @property
+    def output_level(self) -> str | None:
+        """What one row of the model's outputs describes, from the package's task type."""
+        return output_level(self.manifest.get("task_type"))
+
+    @property
     def output_names(self) -> list[str] | None:
         """The output column names of the package's signature (``None``: not recorded)."""
         names = ((self.manifest.get("signature") or {}).get("outputs") or {}).get("names")
@@ -271,10 +286,12 @@ class PackagedPredictor:
                 f"wrote it ({self.manifest.get('milia_version')})."
             )
         if expected_outputs is not None:
-            out = self.predictor.predict_batch([graph], return_numpy=True).reshape(1, -1)
+            per = "atom" if self.output_level == "node" else "molecule"
+            rows = graph.num_nodes if per == "atom" else 1
+            out = self.predictor.predict_batch([graph], return_numpy=True).reshape(rows, -1)
             if out.shape[1] != expected_outputs:
                 raise DeploymentError(
-                    f"The model returns {out.shape[1]} values per molecule; the package's "
+                    f"The model returns {out.shape[1]} values per {per}; the package's "
                     f"signature records {expected_outputs}"
                 )
 
@@ -370,17 +387,39 @@ class PackagedPredictor:
             "before MILIA recorded one); retrain and repackage"
         )
 
-    def predict_instances(
-        self, instances: Sequence[Any], batch_size: int = 32
-    ) -> list[list[float]]:
-        """One row of model outputs per instance (SMILES or structure), in request order.
+    def predict_instances(self, instances: Sequence[Any], batch_size: int = 32) -> list[Any]:
+        """Model outputs per instance (SMILES or structure), in request order: one row each, or
+        one row per atom for a node-level model (:meth:`per_instance`).
 
         Raises:
             ValueError, InputRefusedError: As :meth:`featurize`.
         """
         graphs = self.featurize(instances)
         predictions = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
-        return predictions.reshape(len(graphs), -1).tolist()
+        return self.per_instance(predictions, graphs)
+
+    def per_instance(self, rows: Any, graphs: Sequence[Any]) -> list[Any]:
+        """``rows`` (the model's output rows for ``graphs``) grouped by instance: one row per
+        graph, or for a node-level model each graph's atom rows (``num_nodes`` of them, in node
+        order).
+
+        Raises:
+            ValueError: The row count is not the graphs' (molecules, or atoms).
+        """
+        rows = np.asarray(rows)
+        if self.output_level != "node":
+            return rows.reshape(len(graphs), -1).tolist()
+        counts = [int(graph.num_nodes) for graph in graphs]
+        if len(rows) != sum(counts):
+            raise ValueError(f"{len(rows)} output rows for {sum(counts)} atoms")
+        rows = rows.reshape(sum(counts), -1)
+        return [part.tolist() for part in np.split(rows, np.cumsum(counts)[:-1])]
+
+    def atomic_numbers(self, graphs: Sequence[Any]) -> list[list[int]] | None:
+        """Each instance's atomic numbers in node order, for a node-level model (else ``None``)."""
+        if self.output_level != "node":
+            return None
+        return [graph.z.tolist() for graph in graphs]
 
     def predict_smiles(self, smiles: Sequence[str], batch_size: int = 32) -> list[list[float]]:
         """One row of model outputs per SMILES, in input order (:meth:`predict_instances`)."""
@@ -394,19 +433,28 @@ class PackagedPredictor:
 
     def predict_instances_with_intervals(
         self, instances: Sequence[Any], batch_size: int = 32
-    ) -> tuple[list[list[float]], dict[str, Any] | None]:
-        """Rows as :meth:`predict_instances`, plus conformal intervals when the package has them."""
-        if not self.predictor.calibration:
-            return self.predict_instances(instances, batch_size), None
+    ) -> tuple[list[Any], dict[str, Any] | None]:
+        """Rows as :meth:`predict_instances`, plus conformal intervals (shaped alike) when the
+        package has them."""
+        return self.predict_response(instances, batch_size)[:2]
+
+    def predict_response(
+        self, instances: Sequence[Any], batch_size: int = 32
+    ) -> tuple[list[Any], dict[str, Any] | None, list[list[int]] | None]:
+        """Rows and intervals as :meth:`predict_instances_with_intervals`, and each instance's
+        atomic numbers for a node-level model (:meth:`atomic_numbers`)."""
         graphs = self.featurize(instances)
+        if not self.predictor.calibration:
+            rows = self.predictor.predict_batch(graphs, batch_size=batch_size, return_numpy=True)
+            return self.per_instance(rows, graphs), None, self.atomic_numbers(graphs)
         result = self.predictor.predict_with_intervals(graphs, batch_size=batch_size)
         intervals = {
             "alpha": result["alpha"],
             "method": result["method"],
-            "lower": result["lower"].tolist(),
-            "upper": result["upper"].tolist(),
+            "lower": self.per_instance(result["lower"], graphs),
+            "upper": self.per_instance(result["upper"], graphs),
         }
-        return result["mean"].tolist(), intervals
+        return self.per_instance(result["mean"], graphs), intervals, self.atomic_numbers(graphs)
 
 
 def _max_instances() -> int:
@@ -461,8 +509,8 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             )
         try:
             # Featurization and the forward pass are CPU-bound: run them off the event loop.
-            rows, intervals = await run_in_threadpool(
-                model.predict_instances_with_intervals, request.instances
+            rows, intervals, atomic_numbers = await run_in_threadpool(
+                model.predict_response, request.instances
             )
         except InputRefusedError as exc:
             raise HTTPException(
@@ -479,6 +527,8 @@ def create_app(package_dir: str | Path, device: torch.device | None = None) -> A
             model_name=model.manifest["model_name"],
             task_type=model.manifest["task_type"],
             output_names=model.output_names,
+            output_level=model.output_level,
+            atomic_numbers=atomic_numbers,
             intervals=intervals,
         )
 

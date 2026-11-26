@@ -9,15 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The server serves node-level models: per instance, one row of outputs per atom (`predictions[i][j]`, atom `j` of
+  instance `i`), with `"output_level": "node"` and each instance's `atomic_numbers` in that order; conformal
+  intervals are nested alike. Graph-level responses carry `"output_level": "graph"`. The start-up check counts a
+  node-level model's outputs per atom. Edge-level models, and task types naming no level, are still refused.
+
 - Node-level prediction files: `milia --predict` with a node-level model (`node_*`) writes one CSV row per atom
   (`molecule`, `atom`, `atomic_number`, the outputs and their intervals; `input` repeats the molecule's identifier)
   and one JSON entry per molecule of its atoms' rows, with `output_level` and `atomic_numbers`.
   `capabilities.output_level(task_type)` names what one output row describes (graph, node, edge) and refuses to
   guess an unknown task prefix.
 
-- The server refuses to start for a model whose outputs are not one row per molecule: a node-level (`node_*`) or
-  edge-level (`edge_*`, `link_*`) model, or a task type that names no output level, with the reason
-  (`serving.output_level_refusal`); `require_servable` refuses it the same way.
+- The server refuses to start for a model whose outputs it does not map to molecules: an edge-level (`edge_*`,
+  `link_*`) model, or a task type that names no output level, with the reason (`serving.output_level_refusal`);
+  `require_servable` refuses it the same way.
 
 - The server takes structure instances (`{"atomic_numbers", "coordinates", "charge", "identifier", "identifier_type",
   "name"}`, ångström) alongside SMILES in one request, in order, when the model accepts structures and its package
