@@ -402,14 +402,14 @@ from milia_pipeline.models.deployment.package import publish_package
 publish_package("~/Chem_Data/Milia_PyG_Dataset/checkpoints/best.pt", "models")  # models/<name>/1
 ```
 
-From the command line, `milia --deploy` publishes a checkpoint (or an existing package) as the next version, with the target's `Dockerfile` and, if asked, `model.onnx`; `milia --predict` accepts the version folder and checks its SHA-256 first:
+Versions are numbered per model family: `<output_dir>/<family>/<N>/`, where a family is what the model predicts (dataset type, task type, target names and count, source units: `<dataset>-<task>-<digest>`, recorded in the folder's `family.json`), so a GCN and a GAT on the same targets are versions of one family and a GCN on QM9 and one on DFT are not. From the command line, `milia --deploy` publishes a checkpoint (or an existing package) as the next version, with the target's `Dockerfile` and, if asked, `model.onnx`; `milia --predict` accepts the version folder and checks its SHA-256 first:
 
 ```bash
-milia --deploy --model-path best.pt --deploy-target container   # {working_root_dir}/deployments/<name>/1
-milia --predict --model-path deployments/<name>/1 --test-path molecules.csv
+milia --deploy --model-path best.pt --deploy-target container   # {working_root_dir}/deployments/<family>/1
+milia --predict --model-path deployments/<family>/1 --test-path molecules.csv
 ```
 
-The `models.deployment` section of `configs/models.yaml` holds the deployment settings (target, base image, output folder, ONNX export, a molecules file to predict, and a gate on a checkpoint metric). With `enabled: true`, standard training gates its best checkpoint on `gate.metric` (threshold, and optionally the newest published version), records the decision in `training_output/gate.json`, and when the gate passes publishes the next version as `milia --deploy` does and predicts `predict.input_path`; a failed gate deploys nothing and the run still succeeds. The section is validated before training: an unknown key is an error, and the keys of the earlier section (`strategy`, `edge`, `cloud`, `federated`, `optimization`, `monitoring`) warn and are ignored until their removal in 2.0.0.
+The `models.deployment` section of `configs/models.yaml` holds the deployment settings (target, base image, output folder, ONNX export, a molecules file to predict, and a gate on a checkpoint metric). With `enabled: true`, standard training gates its best checkpoint on `gate.metric` (threshold, and optionally the newest published version of its model family, compared only when scored on the same data split and, for `val_loss`, the same target scaling; otherwise `gate.json` records why it was not compared), records the decision in `training_output/gate.json`, and when the gate passes publishes the next version as `milia --deploy` does and predicts `predict.input_path`; a failed gate deploys nothing and the run still succeeds. The section is validated before training: an unknown key is an error, and the keys of the earlier section (`strategy`, `edge`, `cloud`, `federated`, `optimization`, `monitoring`) warn and are ignored until their removal in 2.0.0.
 
 MILIA prepares the image but creates no endpoint, so `predict()` on these four targets raises `DeploymentError` naming the route and request body to call. Predict through the endpoint, or in-process with the `local` target.
 

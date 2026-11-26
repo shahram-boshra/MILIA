@@ -610,7 +610,7 @@ class CLIManager:
 
         deployment = parser.add_argument_group(
             "Deployment",
-            "Publish a trained model as <output_dir>/<model_name>/<N>/ (verified package, plus "
+            "Publish a trained model as <output_dir>/<family>/<N>/ (verified package, plus "
             "a serving Dockerfile and optional ONNX export); defaults from models.deployment",
         )
         deployment.add_argument(

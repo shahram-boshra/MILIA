@@ -1039,7 +1039,7 @@ models:
     enabled: false                       # true: gate, package, verify (export, predict) after training
     target: "container"                  # aws, gcp, azure, container, local
     base_image: null                     # serving image to build on; null: the published MILIA image
-    output_dir: "deployments"            # <output_dir>/<model_name>/<N>/; relative: to working_root_dir
+    output_dir: "deployments"            # <output_dir>/<family>/<N>/; relative: to working_root_dir
     onnx:
       enabled: false                     # also export the packaged model to ONNX
     predict:
@@ -1048,7 +1048,7 @@ models:
       metric: "val_loss"                 # checkpoint metric that decides deployment
       mode: "min"                        # min: lower is better; max: higher is better
       threshold: null                    # deploy only if at least this good; null: no threshold
-      compare_to_current: false          # deploy only if better than the newest package
+      compare_to_current: false          # deploy only if better than the newest package of the model family
 
   # ───────────────────────────────────────────────────────────
   # PLUGIN SYSTEM

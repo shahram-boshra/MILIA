@@ -7,7 +7,7 @@
         enabled: false          # true: gate, package, verify (export, predict) after standard training
         target: container       # aws, gcp, azure, container, local (DeploymentManager targets)
         base_image: null        # serving image the Dockerfile builds on; null: the published MILIA image
-        output_dir: deployments # versioned packages: <output_dir>/<model_name>/<N>/ (relative: to working_root_dir)
+        output_dir: deployments # versioned packages: <output_dir>/<family>/<N>/ (relative: to working_root_dir)
         onnx:
           enabled: false        # also export the packaged model to ONNX
         predict:
@@ -16,7 +16,7 @@
           metric: val_loss      # the checkpoint metric that decides whether it is deployed
           mode: min             # min: lower is better; max: higher is better
           threshold: null       # deploy only if the metric is at least this good (null: no threshold)
-          compare_to_current: false  # deploy only if better than the newest package's recorded metric
+          compare_to_current: false  # deploy only if better than the newest package of the model family
 
 :func:`load_deployment_settings` validates a section: an unknown key is a
 :class:`~milia_pipeline.exceptions.ConfigurationError`. The keys of the earlier section, which no

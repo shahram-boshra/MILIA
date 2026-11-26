@@ -2,7 +2,7 @@
 
 :func:`deploy` is what ``milia --deploy`` runs. From a MILIA checkpoint or an existing package
 and the ``models.deployment`` settings (:mod:`.settings`) it writes
-``<output_dir>/<model_name>/<N>/`` with :func:`~.package.publish_package` and adds, before the
+``<output_dir>/<family>/<N>/`` with :func:`~.package.publish_package` and adds, before the
 version becomes visible:
 
 - for the ``aws``, ``gcp``, ``azure`` and ``container`` targets, the ``Dockerfile`` that serves the

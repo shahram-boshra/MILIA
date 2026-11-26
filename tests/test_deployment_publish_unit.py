@@ -15,6 +15,7 @@ from milia_pipeline.models.deployment.package import (
     PACKAGE_CHECKPOINT,
     PACKAGE_MANIFEST,
     load_package,
+    model_family,
     package_checkpoint,
     publish_package,
     verify_package,
@@ -22,6 +23,11 @@ from milia_pipeline.models.deployment.package import (
 from milia_pipeline.models.factory.model_factory import ModelFactory
 from milia_pipeline.models.post_training import convert_to_pyg
 from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import CheckpointManager
+
+# The family folder of these tests' checkpoints (no run_info: dataset type and target names unknown)
+FAMILY = model_family(
+    dataset_type=None, task_type="graph_regression", target_names=None, target_count=2
+)["id"]
 
 
 @pytest.fixture
@@ -60,7 +66,7 @@ def test_each_publish_is_a_new_verified_version(checkpoint, tmp_path):
     first = publish_package(checkpoint, output)
     second = publish_package(checkpoint, output)
 
-    assert first == output / "GCN" / "1" and second == output / "GCN" / "2"
+    assert first == output / FAMILY / "1" and second == output / FAMILY / "2"
     for version in (first, second):
         assert sorted(p.name for p in version.iterdir()) == sorted(
             [MODEL_CARD, PACKAGE_CHECKPOINT, PACKAGE_MANIFEST]
@@ -71,7 +77,7 @@ def test_each_publish_is_a_new_verified_version(checkpoint, tmp_path):
 
 
 def test_the_next_version_follows_the_highest_existing_one(checkpoint, tmp_path):
-    model_dir = tmp_path / "models" / "GCN"
+    model_dir = tmp_path / "models" / FAMILY
     for name in ("1", "3", "notes"):
         (model_dir / name).mkdir(parents=True)
     (model_dir / "4").write_text("a file named like a version is never replaced")
@@ -89,7 +95,7 @@ def test_a_package_that_does_not_reproduce_leaves_nothing(checkpoint, tmp_path):
         pytest.raises(DeploymentError, match="does not reproduce the predictions"),
     ):
         publish_package(checkpoint, output)
-    assert not (output / "GCN").exists() and _leftovers(output) == []
+    assert not (output / FAMILY).exists() and _leftovers(output) == []
 
 
 def test_package_checkpoint_removes_only_its_own_files_on_a_mismatch(checkpoint, tmp_path):

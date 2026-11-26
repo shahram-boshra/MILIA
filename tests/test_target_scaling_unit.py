@@ -328,9 +328,15 @@ class TestPerTargetMetrics:
 
 class TestDeployGate:
     def _setup(self, tmp_path, current_scaler, candidate_scaler):
-        from milia_pipeline.models.deployment.package import PACKAGE_MANIFEST
+        from milia_pipeline.models.deployment.package import PACKAGE_MANIFEST, checkpoint_family
 
-        version = tmp_path / "deployments" / "GCN" / "1"
+        record = {
+            "hyper_parameters": {"model_name": "GCN"},
+            "metrics_history": {"val_loss": [0.5], "val_mae": [4.0]},
+            "target_scaler": candidate_scaler,
+        }
+        # the newest version of the candidate's family (versions are numbered per family)
+        version = tmp_path / "deployments" / checkpoint_family(record)["id"] / "1"
         version.mkdir(parents=True)
         (version / PACKAGE_MANIFEST).write_text(
             json.dumps(
@@ -341,14 +347,7 @@ class TestDeployGate:
             )
         )
         checkpoint = tmp_path / "best.pt"
-        torch.save(
-            {
-                "hyper_parameters": {"model_name": "GCN"},
-                "metrics_history": {"val_loss": [0.5], "val_mae": [4.0]},
-                "target_scaler": candidate_scaler,
-            },
-            checkpoint,
-        )
+        torch.save(record, checkpoint)
         return checkpoint, tmp_path / "deployments"
 
     def test_val_loss_on_another_target_scale_is_not_compared(self, tmp_path):

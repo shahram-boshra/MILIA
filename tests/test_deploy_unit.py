@@ -14,11 +14,20 @@ from checkpoint_records import IDENTIFIER_DATA_INFO
 from milia_pipeline.exceptions import DeploymentError
 from milia_pipeline.models.deployment import deploy as deploy_module
 from milia_pipeline.models.deployment.deploy import deploy, manifest_summary
-from milia_pipeline.models.deployment.package import PACKAGE_CHECKPOINT, PACKAGE_MANIFEST
+from milia_pipeline.models.deployment.package import (
+    PACKAGE_CHECKPOINT,
+    PACKAGE_MANIFEST,
+    model_family,
+)
 from milia_pipeline.models.deployment.settings import load_deployment_settings
 from milia_pipeline.models.factory.model_factory import ModelFactory
 from milia_pipeline.models.post_training import convert_to_pyg
 from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import CheckpointManager
+
+# The family folder of these tests' checkpoints (no run_info: dataset type and target names unknown)
+FAMILY = model_family(
+    dataset_type=None, task_type="graph_regression", target_names=None, target_count=2
+)["id"]
 
 
 @pytest.fixture
@@ -56,7 +65,7 @@ def test_container_deploys_a_versioned_package_with_a_dockerfile(checkpoint, tmp
     first = deploy(checkpoint, _settings(output_dir=str(tmp_path / "out")), tmp_path)
     second = deploy(checkpoint, _settings(output_dir=str(tmp_path / "out")), tmp_path)
 
-    assert first.version_dir == tmp_path / "out" / "GCN" / "1"
+    assert first.version_dir == tmp_path / "out" / FAMILY / "1"
     assert second.version_dir.name == "2" and first.target == "container"
     assert first.files == ("Dockerfile", "MODEL_CARD.md", PACKAGE_MANIFEST, PACKAGE_CHECKPOINT)
     assert "USER root" not in (first.version_dir / "Dockerfile").read_text()
@@ -71,7 +80,7 @@ def test_aws_serves_as_root_and_local_needs_no_dockerfile(checkpoint, tmp_path):
 
 def test_a_relative_output_dir_is_under_the_working_root(checkpoint, tmp_path):
     result = deploy(checkpoint, _settings(output_dir="deployments"), tmp_path / "root")
-    assert result.version_dir == tmp_path / "root" / "deployments" / "GCN" / "1"
+    assert result.version_dir == tmp_path / "root" / "deployments" / FAMILY / "1"
 
 
 def test_deploying_a_package_copies_it_unchanged_as_a_new_version(checkpoint, tmp_path):
@@ -89,7 +98,7 @@ def test_a_tampered_package_is_not_deployed(checkpoint, tmp_path):
         stream.write(b"\0")
     with pytest.raises(DeploymentError, match="does not match the SHA-256"):
         deploy(first.version_dir, _settings(output_dir="out"), tmp_path)
-    assert sorted(p.name for p in (tmp_path / "out" / "GCN").iterdir()) == ["1"]
+    assert sorted(p.name for p in (tmp_path / "out" / FAMILY).iterdir()) == ["1", "family.json"]
 
 
 def test_a_failing_target_step_publishes_nothing(checkpoint, tmp_path):
@@ -100,7 +109,7 @@ def test_a_failing_target_step_publishes_nothing(checkpoint, tmp_path):
         pytest.raises(DeploymentError, match="no docker"),
     ):
         deploy(checkpoint, _settings(output_dir="out"), tmp_path)
-    assert not (tmp_path / "out" / "GCN").exists()
+    assert not (tmp_path / "out" / FAMILY).exists()
     assert not [p for p in (tmp_path / "out").iterdir() if p.name.startswith(".staging-")]
 
 
@@ -182,13 +191,13 @@ class TestHandleDeployMode:
             deploy_output_dir="from_flag",
         )
         assert code == 0
-        version = tmp_path / "from_flag" / "GCN" / "1"
+        version = tmp_path / "from_flag" / FAMILY / "1"
         assert version.is_dir() and not (version / "Dockerfile").exists()
         assert not (tmp_path / "from_config").exists()
 
     def test_the_section_gives_the_defaults(self, checkpoint, tmp_path):
         assert self._run(checkpoint, tmp_path, {"output_dir": "from_config"}) == 0
-        assert (tmp_path / "from_config" / "GCN" / "1" / "Dockerfile").is_file()
+        assert (tmp_path / "from_config" / FAMILY / "1" / "Dockerfile").is_file()
 
     def test_an_invalid_section_fails(self, checkpoint, tmp_path):
         assert self._run(checkpoint, tmp_path, {"tagret": "aws"}) == 1
@@ -201,7 +210,7 @@ class TestHandleDeployMode:
             deploy_module, "write_serving_dockerfile", side_effect=DeploymentError("boom")
         ):
             assert self._run(checkpoint, tmp_path, {"output_dir": "out"}) == 1
-        assert not (tmp_path / "out" / "GCN").exists()
+        assert not (tmp_path / "out" / FAMILY).exists()
 
 
 def test_predict_refuses_a_tampered_package(checkpoint, tmp_path):

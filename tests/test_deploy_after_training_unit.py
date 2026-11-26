@@ -15,11 +15,16 @@ from milia_pipeline.models.deployment.after_training import (
     deploy_after_training,
     evaluate_gate,
 )
-from milia_pipeline.models.deployment.package import PACKAGE_MANIFEST, publish_package
+from milia_pipeline.models.deployment.package import PACKAGE_MANIFEST, model_family, publish_package
 from milia_pipeline.models.deployment.settings import GateSettings, load_deployment_settings
 from milia_pipeline.models.factory.model_factory import ModelFactory
 from milia_pipeline.models.post_training import convert_to_pyg
 from milia_pipeline.models.post_training.checkpoint.checkpoint_manager import CheckpointManager
+
+# The family folder of these tests' checkpoints (no run_info: dataset type and target names unknown)
+FAMILY = model_family(
+    dataset_type=None, task_type="graph_regression", target_names=None, target_count=2
+)["id"]
 
 
 def _checkpoint(root, val_loss: float, name: str = "best.pt"):
@@ -89,7 +94,7 @@ class TestGate:
         worse = evaluate_gate(_checkpoint(tmp_path, 1.5), gate, out)
         better = evaluate_gate(_checkpoint(tmp_path, 0.5), gate, out)
         assert not worse.passed and worse.current_value == 1.0
-        assert worse.current_version == str(out / "GCN" / "1")
+        assert worse.current_version == str(out / FAMILY / "1")
         assert "does not beat 1" in worse.reasons[0]
         assert better.passed
 
@@ -100,7 +105,7 @@ class TestDeployAfterTraining:
         decision, result = deploy_after_training(
             _checkpoint(tmp_path, 1.5), settings, tmp_path, tmp_path / "training_output"
         )
-        assert decision.passed and result.version_dir == tmp_path / "deployments" / "GCN" / "1"
+        assert decision.passed and result.version_dir == tmp_path / "deployments" / FAMILY / "1"
         gate = json.loads((tmp_path / "training_output" / GATE_FILE).read_text())
         assert gate["passed"] is True and gate["metric"] == "val_loss" and gate["value"] == 1.5
 
@@ -175,14 +180,18 @@ class TestTrainingWorkflow:
             tmp_path,
             {"enabled": True, "target": "container", "predict": {"input_path": str(molecules)}},
         )
-        version = tmp_path / "deployments" / "GCN" / "1"
+        (version,) = (tmp_path / "deployments").glob("*/1")
+        # trained on a DFT dataset: its family names the dataset type and the task
+        assert version.parent.name.startswith("DFT-graph_regression-")
         assert code == 0 and (version / "Dockerfile").is_file()
         manifest = json.loads((version / PACKAGE_MANIFEST).read_text())
         assert manifest["signature"]["outputs"]["names"] == ["Etot", "gap"]
         assert manifest["metrics"]["test"]  # the best checkpoint's test metrics
         gate = json.loads((tmp_path / "training_output" / GATE_FILE).read_text())
         assert gate["passed"] is True
-        predictions = (tmp_path / "training_output" / "predictions_GCN_v1.csv").read_text()
+        predictions = (
+            tmp_path / "training_output" / f"predictions_{version.parent.name}_v1.csv"
+        ).read_text()
         assert len(predictions.strip().splitlines()) == 3
 
     def test_a_failing_gate_keeps_the_run_successful(self, tmp_path):

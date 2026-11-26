@@ -39,9 +39,13 @@ must predict its examples as the source checkpoint does, or its files are remove
 example for a model that accepts identifiers, the structure example for one that accepts
 structures; the checksums are verified for every package). A model that accepts structures but
 whose checkpoint records no structure example still packages, and is not served structures.
-:func:`publish_package` writes each package to a new integer version folder
-(``<output_dir>/<model_name>/<N>/``) through a temporary sibling and a rename, so a version is
-either complete and verified or absent, and is never overwritten.
+:func:`publish_package` writes each package to a new integer version folder of its model
+family (``<output_dir>/<family>/<N>/``) through a temporary sibling and a rename, so a version is
+either complete and verified or absent, and is never overwritten. A family (:func:`model_family`)
+is what the model predicts: the dataset type, the task type, the targets (names and count) and
+the source data's units. Versions of one family may come from different architectures, as the
+versions of one registered model in a registry (MLflow: "A registered model has a unique name,
+contains versions, aliases, tags"); the folder records its family in ``family.json``.
 
 :func:`load_package` checks the format (``milia-deployment/1`` and ``/2`` packages still load) and
 the digest, then rebuilds the model with ``ModelLoader``. Every read uses
@@ -81,6 +85,10 @@ __all__ = [
     "is_package",
     "load_package",
     "model_card",
+    "FAMILY_FILE",
+    "checkpoint_family",
+    "manifest_family",
+    "model_family",
     "model_folder_name",
     "package_checkpoint",
     "publish_package",
@@ -321,6 +329,86 @@ def model_folder_name(model_name: str) -> str:
     return name or "model"
 
 
+FAMILY_FILE = "family.json"
+
+
+def model_family(
+    *,
+    dataset_type: str | None,
+    task_type: str | None,
+    target_names: list[str] | None,
+    target_count: int | None,
+    source_units: Any = None,
+) -> dict[str, Any]:
+    """The model family of a model: what it predicts, and a folder name for it.
+
+    Two models are of one family when they predict the same targets of the same dataset type for
+    the same task, in the same source units; only then do their metrics measure the same thing.
+    The architecture is not part of it (a GCN and a GAT of one family are versions of one
+    family). ``id`` is ``<dataset>-<task>-<digest>``: the digest is the first 12 hex digits of
+    SHA-256 over the canonical JSON of ``key``.
+    """
+    key = {
+        "dataset_type": dataset_type,
+        "task_type": task_type,
+        "targets": {
+            "names": list(target_names) if target_names else None,
+            "count": target_count,
+        },
+        "source_units": source_units,
+    }
+    canonical = json.dumps(key, sort_keys=True, separators=(",", ":"), default=_json)
+    digest = hashlib.sha256(canonical.encode()).hexdigest()[:12]
+    slug = model_folder_name(f"{dataset_type or 'unknown'}-{task_type or 'unknown'}")
+    return {"id": f"{slug}-{digest}", "key": key}
+
+
+def checkpoint_family(checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """The family (:func:`model_family`) of a loaded checkpoint, from what its package records."""
+    hyper_parameters = checkpoint.get("hyper_parameters") or {}
+    values = hyper_parameters.get("hyperparameters") or {}
+    model_info = hyper_parameters.get("model_info") or {}
+    run_info = checkpoint.get("run_info") or {}
+    dataset = run_info.get("dataset") or {}
+    return model_family(
+        dataset_type=dataset.get("type"),
+        task_type=hyper_parameters.get("task_type"),
+        target_names=(run_info.get("targets") or {}).get("names"),
+        target_count=model_info.get("out_channels", values.get("out_channels")),
+        source_units=dataset.get("source_units"),
+    )
+
+
+def manifest_family(manifest: dict[str, Any]) -> dict[str, Any]:
+    """The family (:func:`model_family`) of a package, from its manifest."""
+    dataset = (manifest.get("lineage") or {}).get("dataset") or {}
+    outputs = (manifest.get("signature") or {}).get("outputs") or {}
+    return model_family(
+        dataset_type=dataset.get("type"),
+        task_type=manifest.get("task_type"),
+        target_names=outputs.get("names"),
+        target_count=outputs.get("count"),
+        source_units=dataset.get("source_units"),
+    )
+
+
+def _family_dir(output: Path, family: dict[str, Any]) -> Path:
+    """``<output>/<family id>/``, created with its ``family.json``; an existing folder must record
+    the same family (a digest collision, or a folder edited by hand, is refused)."""
+    folder = output / family["id"]
+    folder.mkdir(exist_ok=True)
+    record = folder / FAMILY_FILE
+    if record.is_file():
+        recorded = json.loads(record.read_text())
+        if recorded.get("key") != json.loads(json.dumps(family["key"], default=_json)):
+            raise DeploymentError(
+                f"{folder} records another model family ({record}); not publishing into it"
+            )
+    else:
+        record.write_text(json.dumps(family, indent=2, default=_json) + "\n")
+    return folder
+
+
 def _next_version(model_dir: Path) -> int:
     versions = [int(p.name) for p in model_dir.iterdir() if p.name.isdigit()]
     return max(versions, default=0) + 1
@@ -334,7 +422,7 @@ def publish_package(
     rtol: float = 1e-4,
     atol: float = 1e-5,
 ) -> Path:
-    """Write a verified package as a new version: ``<output_dir>/<model_name>/<N>/``.
+    """Write a verified package as a new version of its family: ``<output_dir>/<family>/<N>/``.
 
     The package is written to a temporary sibling, verified (:func:`package_checkpoint`) and
     then renamed into the next free integer version, so a version folder is either complete and
@@ -343,7 +431,7 @@ def publish_package(
     Args:
         checkpoint_path: A MILIA checkpoint, or an existing package (verified with
             :func:`verify_package`, then copied: its manifest, card and checkpoint unchanged).
-        output_dir: The folder holding ``<model_name>/<N>/``.
+        output_dir: The folder holding ``<family>/<N>/`` (:func:`model_family`).
         prepare: Called with the staged package after verification and before the rename, to
             add files to the version (a serving ``Dockerfile``, an ONNX export); an exception
             from it publishes nothing.
@@ -367,9 +455,8 @@ def publish_package(
             package_checkpoint(source, staging, rtol=rtol, atol=atol)
         if prepare is not None:
             prepare(staging)
-        model_name = json.loads((staging / PACKAGE_MANIFEST).read_text())["model_name"]
-        model_dir = output / model_folder_name(str(model_name))
-        model_dir.mkdir(exist_ok=True)
+        manifest = json.loads((staging / PACKAGE_MANIFEST).read_text())
+        model_dir = _family_dir(output, manifest_family(manifest))
         while True:
             target = model_dir / str(_next_version(model_dir))
             if target.exists():

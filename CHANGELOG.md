@@ -164,6 +164,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Deployment versions and the gate are keyed by model family, not by architecture: `<output_dir>/<family>/<N>/`,
+  a family being what the model predicts (dataset type, task type, target names and count, source units;
+  `<dataset>-<task>-<digest>`, recorded in `family.json`). `gate.compare_to_current` compares only with the newest
+  version of the same family scored on the same data split (and, for `val_loss`, the same target scaling); otherwise
+  `gate.json` records `not_compared` with the reason and the gate rests on its threshold. Before, a GCN on QM9 and a
+  GCN on DFT shared one version sequence and were compared with each other. Versions published before stay in
+  `<output_dir>/<model_name>/<N>/` and are not compared with.
 - A node-level model is calibrated per molecule: a molecule's conformal score is the largest score among its atoms,
   `n` counts molecules and the calibration records `"scope": "molecule"`, so a new molecule's intervals cover all its
   atoms at once with probability at least 1 − α (per target). Pooling the atoms of a molecule as independent

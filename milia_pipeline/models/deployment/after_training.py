@@ -4,9 +4,12 @@ After training and the test evaluation, MILIA:
 
 1. **Gates** the best checkpoint (:func:`evaluate_gate`): ``gate.metric`` must meet
    ``gate.threshold`` (when set) and, with ``gate.compare_to_current``, beat the same metric recorded
-   by the newest published version of this model. ``gate.mode`` says whether lower (``min``) or
-   higher (``max``) is better. The decision is written to ``gate.json`` next to the training
-   results, whether it passes or not.
+   by the newest published version of its model family (:func:`~.package.model_family`: same
+   dataset type, task, targets and units). The two are compared only when they were scored on the
+   same data split and, for ``val_loss``, the same target scaling; otherwise the decision records
+   why they were not compared and rests on the threshold. ``gate.mode`` says whether lower
+   (``min``) or higher (``max``) is better. The decision is written to ``gate.json`` next to the
+   training results, whether it passes or not.
 2. When the gate passes, **deploys** it (:func:`.deploy.deploy`): a verified, versioned package with
    the target's ``Dockerfile`` and, with ``onnx.enabled``, ``model.onnx``.
 
@@ -26,9 +29,9 @@ from milia_pipeline.models.checkpoint_io import load_checkpoint_file
 from milia_pipeline.models.deployment.deploy import DeployResult, deploy
 from milia_pipeline.models.deployment.package import (
     PACKAGE_MANIFEST,
+    checkpoint_family,
     checkpoint_scores,
     manifest_scores,
-    model_folder_name,
 )
 from milia_pipeline.models.deployment.settings import DeploymentSettings, GateSettings
 
@@ -53,6 +56,8 @@ class GateDecision:
     current_value: float | None
     passed: bool
     reasons: list[str] = field(default_factory=list)
+    family: str | None = None
+    not_compared: str | None = None
     decided_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
@@ -71,13 +76,6 @@ def _newest_version(model_dir: Path) -> Path | None:
     return max(versions, key=lambda p: int(p.name), default=None)
 
 
-def _model_folder(checkpoint: Path) -> str:
-    hyper_parameters = (load_checkpoint_file(checkpoint, map_location="cpu") or {}).get(
-        "hyper_parameters"
-    ) or {}
-    return model_folder_name(str(hyper_parameters.get("model_name", "model")))
-
-
 # The metric scored on the standardized targets when target scaling is on
 SCALED_METRIC = "val_loss"
 
@@ -94,7 +92,9 @@ def evaluate_gate(
     scores = checkpoint_scores(checkpoint)
     value = scores.get(gate.metric)
     reasons: list[str] = []
-    current_version = current_value = None
+    current_version = current_value = not_compared = None
+    candidate = load_checkpoint_file(checkpoint, map_location="cpu") or {}
+    family = checkpoint_family(candidate)
 
     if value is None:
         reasons.append(
@@ -108,33 +108,34 @@ def evaluate_gate(
         bound = "at most" if gate.mode == "min" else "at least"
         reasons.append(f"{gate.metric} = {value:.6g}; the threshold is {bound} {gate.threshold:g}")
     if gate.compare_to_current:
-        newest = _newest_version(Path(output_dir) / _model_folder(checkpoint))
-        if newest is not None:
+        newest = _newest_version(Path(output_dir) / family["id"])
+        if newest is None:
+            not_compared = f"no published version of this model family ({family['id']})"
+        else:
             current_version = str(newest)
             manifest = json.loads((newest / PACKAGE_MANIFEST).read_text())
             current_value = manifest_scores(manifest.get("metrics")).get(gate.metric)
-            candidate_scaler = (load_checkpoint_file(checkpoint, map_location="cpu") or {}).get(
+            split = (candidate.get("run_info") or {}).get("data_split")
+            if current_value is None:
+                not_compared = f"{newest} records no {gate.metric}"
+            elif (manifest.get("lineage") or {}).get("data_split") != split:
+                # Each run's metrics are scored on its own validation and test sets
+                not_compared = f"{newest} was scored on another data split"
+            elif gate.metric == SCALED_METRIC and manifest.get("target_scaler") != candidate.get(
                 "target_scaler"
-            )
-            if (
-                current_value is not None
-                and gate.metric == SCALED_METRIC
-                and manifest.get("target_scaler") != candidate_scaler
             ):
                 # val_loss is scored on targets standardized with each run's own training-split
                 # scaler (training/target_scaling.py): two runs with different scalers measure it
                 # on different scales.
-                logger.warning(
-                    f"{gate.metric} of {newest} is on another target scale than this checkpoint's "
-                    "(different target_scaler): not compared"
-                )
-                current_value = None
-            elif current_value is None:
-                logger.info(f"{newest} records no {gate.metric}: nothing to compare with")
+                not_compared = f"{gate.metric} of {newest} is on another target scale"
             elif value is not None and not _better(value, current_value, gate.mode):
                 reasons.append(
                     f"{gate.metric} = {value:.6g} does not beat {current_value:.6g} of {newest}"
                 )
+            if not_compared is not None:
+                current_value = None
+        if not_compared is not None:
+            logger.info(f"Gate: not compared: {not_compared}")
     return GateDecision(
         checkpoint=str(checkpoint),
         metric=gate.metric,
@@ -146,6 +147,8 @@ def evaluate_gate(
         current_value=current_value,
         passed=not reasons,
         reasons=reasons,
+        family=family["id"],
+        not_compared=not_compared,
     )
 
 
