@@ -4159,6 +4159,8 @@ def _run_standard_training(
             target_names=target_names,
             data_split=data_split_config,
             train_graphs=(train_data[i] for i in range(len(train_data))),
+            model_name=model_info.get("name", model_name),
+            hyperparameters=model_info.get("hyperparameters_values"),
         )
 
         # 7. Create trainer with model_info for target selection

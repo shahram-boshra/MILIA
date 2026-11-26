@@ -188,8 +188,16 @@ def _git_commit() -> str | None:
 
 
 def _versions() -> dict[str, str | None]:
+    """The versions of Python and the libraries the run used. MILIA's is the running code's
+    (``milia_pipeline.__version__``): installed metadata can be stale (a ``milia-py`` install
+    that predates the code, or metadata left under another name)."""
+    import milia_pipeline
+
     versions: dict[str, str | None] = {"python": platform.python_version()}
     for name in _LIBRARIES:
+        if name == "milia-py":
+            versions[name] = milia_pipeline.__version__
+            continue
         try:
             versions[name] = metadata.version(name)
         except metadata.PackageNotFoundError:
@@ -224,6 +232,8 @@ def collect_run_info(
     target_names: Sequence[str] | None,
     data_split: dict[str, Any] | None,
     train_graphs: Iterable[Any] = (),
+    model_name: str | None = None,
+    hyperparameters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The ``run_info`` entry of a training run's checkpoints.
 
@@ -256,4 +266,15 @@ def collect_run_info(
         "versions": _versions(),
         "input_example": example_smiles(sample),
         "structure_example": example_structures(sample, dataset_type),
+        "model_source": _model_source(model_name, hyperparameters),
     }
+
+
+def _model_source(model_name: str | None, hyperparameters: dict[str, Any] | None) -> Any:
+    """Where the model's classes come from (:func:`~milia_pipeline.models.model_source.model_source`),
+    or ``None`` when the run names no model."""
+    if not model_name:
+        return None
+    from milia_pipeline.models.model_source import model_source
+
+    return model_source(model_name, hyperparameters)

@@ -36,6 +36,13 @@ RUN_INFO = {
     "git_commit": "b" * 40,
     "versions": {"python": "3.12.0", "milia-py": "1.21.0", "torch": "2.12.1"},
     "input_example": ["CCO", "c1ccccc1"],
+    "model_source": {
+        "model": "GCN",
+        "class": "torch_geometric.nn.models.basic_gnn.GCN",
+        "kind": "pyg",
+        "requirement": "torch-geometric==2.8.1",
+        "requirements": ["milia-py==1.21.0", "torch-geometric==2.8.1"],
+    },
 }
 HISTORY = {"train_loss": [3.0, 2.0], "val_loss": [2.5, 1.5], "val_mae": [1.2, 0.9]}
 INPUT_REFERENCE = {  # deployment/drift.py: one node-feature column and atoms per molecule

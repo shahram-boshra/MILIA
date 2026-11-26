@@ -216,6 +216,7 @@ def package_checkpoint(
             "config_sha256": run_info.get("config_sha256"),
             "git_commit": run_info.get("git_commit"),
             "versions": run_info.get("versions"),
+            "model_source": run_info.get("model_source"),
         },
     }
     (package / PACKAGE_MANIFEST).write_text(json.dumps(manifest, indent=2, default=_json) + "\n")
@@ -687,6 +688,21 @@ def _transforms_line(inputs: dict[str, Any]) -> str:
     )
 
 
+def _source_line(source: dict[str, Any] | None) -> str:
+    """The model card's line on where the model's classes come from (``lineage.model_source``)."""
+    if not source:
+        return "not recorded (trained before MILIA recorded it)"
+    records = source.get("members") or [source]
+    kinds = ", ".join(
+        f"`{r.get('model')}` ({r.get('kind')}"
+        + (f", {r['path']}, SHA-256 `{r.get('sha256')}`" if r.get("kind") == "directory" else "")
+        + ")"
+        for r in records
+    )
+    pins = ", ".join(f"`{pin}`" for pin in source.get("requirements") or []) or "none"
+    return f"{kinds}; install: {pins}"
+
+
 def model_card(manifest: dict[str, Any]) -> str:
     """``MODEL_CARD.md`` for a package manifest (Hugging Face / Mitchell et al. sections)."""
     signature = manifest.get("signature") or {}
@@ -709,6 +725,7 @@ def model_card(manifest: dict[str, Any]) -> str:
         "## Model details",
         "",
         f"- Architecture: `{manifest.get('model_name')}`; task: `{manifest.get('task_type')}`",
+        f"- Model code: {_source_line((manifest.get('lineage') or {}).get('model_source'))}",
         f"- Weights: `{manifest.get('checkpoint')}` (SHA-256 `{manifest.get('sha256')}`)",
         f"- Checkpoint epoch: {_show(metrics.get('epoch'))}; written "
         f"{_show(lineage.get('checkpoint_created_at'))} with PyTorch "

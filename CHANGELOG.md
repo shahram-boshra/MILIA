@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `run_info.model_source` and a package's `lineage.model_source` record where the model's classes come from
+  (`models.model_source`): `pyg` (`torch-geometric`), `milia` (a plugin shipped with MILIA), `distribution` (a plugin
+  from an installed distribution, by its entry point) or `directory` (a plugin directory: its path and a SHA-256 of
+  its files), each member of an ensemble, and the `name==version` pins that install them; the model card lists them.
+  A checkpoint trained before this records none (the card says so).
+
 - The server serves node-level models: per instance, one row of outputs per atom (`predictions[i][j]`, atom `j` of
   instance `i`), with `"output_level": "node"` and each instance's `atomic_numbers` in that order; conformal
   intervals are nested alike. Graph-level responses carry `"output_level": "graph"`. The start-up check counts a
