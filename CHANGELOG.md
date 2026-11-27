@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- MLflow model registry for deployment packages (`models.deployment.registry`, the `mlflow` extra; off by default).
+  Each published version (after a passing gate, or `milia --deploy`) is logged as a pyfunc model (Models from Code,
+  nothing pickled; the package folder as its artifact) and registered under one registered model per model family
+  (`milia.<family id>`); the alias (`champion`) moves to it, and the version records its package SHA-256, folder,
+  approval (gate or manual) and the training commit. A package already registered is not registered again.
+  The pyfunc model takes one row per instance (`smiles`, or a structure's `atomic_numbers` and `coordinates`), as
+  the package serves them, and returns one column per output (per-atom arrays for node-level models, conformal
+  bounds when calibrated); MLflow checks requests against its signature. A package that serves neither input kind
+  is published but not registered (the reason is logged). The store is `registry.tracking_uri`, else
+  `MLFLOW_TRACKING_URI`, else `sqlite:///<working_root_dir>/mlflow.db`; artifacts go to
+  `<working_root_dir>/mlartifacts`. A failed registration leaves the version published and exits 1.
+  `--deploy-register` / `--no-deploy-register` override the setting for `milia --deploy`. Enabling the registry
+  without MLflow installed is a configuration error. The test image sets `GIT_PYTHON_REFRESH=quiet` (it has no
+  git; MLflow's git probe would print a GitPython notice).
 - `models.training.seed` seeds a training run (`training.seeding`): Python's `random`, NumPy and PyTorch before the
   model is built, and the training loader shuffles with its own seeded generator (workers seeded from it). The
   shipped configuration sets 42; `null` draws a seed. `run_info.training_seed` and `lineage.training_seed` record it.

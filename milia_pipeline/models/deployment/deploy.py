@@ -10,7 +10,9 @@ version becomes visible:
 - with ``onnx.enabled``, ``model.onnx`` exported from the package's model on its input example
   (:func:`~.onnx_export.export_onnx`, which verifies the export).
 
-A failure in any of these steps publishes nothing.
+A failure in any of these steps publishes nothing. With ``registry.enabled`` the published version
+is then registered in the MLflow model registry (:func:`~.registry.register_package`); a failed
+registration leaves the version published and is reported in :attr:`DeployResult.registry_error`.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -34,9 +36,12 @@ from milia_pipeline.models.deployment.serving import write_serving_dockerfile
 from milia_pipeline.models.deployment.settings import DeploymentSettings
 from milia_pipeline.models.input_contract import IDENTIFIER
 
+if TYPE_CHECKING:
+    from milia_pipeline.models.deployment.registry import RegistryResult
+
 logger = logging.getLogger(__name__)
 
-__all__ = ["ONNX_FILE", "DeployResult", "deploy", "manifest_summary"]
+__all__ = ["ONNX_FILE", "DeployResult", "deploy", "manifest_summary", "registry_summary"]
 
 ONNX_FILE = "model.onnx"
 _FALLBACK_EXAMPLE = ("CCO",)
@@ -50,6 +55,9 @@ class DeployResult:
     target: str
     files: tuple[str, ...]
     manifest: dict[str, Any]
+    # The registration (registry.enabled), and why it failed (the version stays published)
+    registry: RegistryResult | None = None
+    registry_error: str | None = None
 
 
 def _export_onnx(package_dir: Path) -> None:
@@ -100,11 +108,16 @@ def _prepare(settings: DeploymentSettings):
 
 
 def deploy(
-    model_path: str | Path, settings: DeploymentSettings, working_root_dir: str | Path
+    model_path: str | Path,
+    settings: DeploymentSettings,
+    working_root_dir: str | Path,
+    approval: dict[str, Any] | None = None,
 ) -> DeployResult:
-    """Publish ``model_path`` (checkpoint or package) for ``settings.target``.
+    """Publish ``model_path`` (checkpoint or package) for ``settings.target``; with
+    ``registry.enabled``, register the version.
 
-    A relative ``settings.output_dir`` is taken relative to ``working_root_dir``.
+    A relative ``settings.output_dir`` is taken relative to ``working_root_dir``. ``approval``:
+    who approved the version, recorded by the registry (``None``: ``milia --deploy``).
 
     Raises:
         DeploymentError: Packaging or verification failed.
@@ -116,7 +129,33 @@ def deploy(
     version_dir = publish_package(model_path, output_dir, prepare=_prepare(settings))
     manifest = json.loads((version_dir / PACKAGE_MANIFEST).read_text())
     files = tuple(sorted(p.name for p in version_dir.iterdir()))
-    return DeployResult(version_dir, settings.target, files, manifest)
+    registry, registry_error = None, None
+    if settings.registry.enabled:
+        from milia_pipeline.models.deployment.registry import RegistryError, register_package
+
+        try:
+            registry = register_package(
+                version_dir, settings.registry, working_root_dir, approval=approval
+            )
+        except RegistryError as exc:
+            registry_error = str(exc)
+    return DeployResult(version_dir, settings.target, files, manifest, registry, registry_error)
+
+
+def registry_summary(result: DeployResult) -> tuple[int, list[str]]:
+    """Log level and lines describing a deployment's registration (none when not enabled)."""
+    if result.registry_error is not None:
+        return logging.ERROR, [f"Published {result.version_dir}, but {result.registry_error}"]
+    registry = result.registry
+    if registry is None:
+        return logging.INFO, []
+    if registry.skipped is not None:
+        return logging.WARNING, [f"Not registered in {registry.tracking_uri}: {registry.skipped}"]
+    how = "already registered as version" if registry.reused else "registered as version"
+    return logging.INFO, [
+        f"{registry.model_name}: {how} {registry.version}, alias {registry.alias!r} "
+        f"({registry.tracking_uri}; load models:/{registry.model_name}@{registry.alias})"
+    ]
 
 
 def manifest_summary(manifest: dict[str, Any]) -> list[str]:

@@ -212,6 +212,47 @@ class TestHandleDeployMode:
             assert self._run(checkpoint, tmp_path, {"output_dir": "out"}) == 1
         assert not (tmp_path / "out" / FAMILY).exists()
 
+    @pytest.fixture
+    def no_mlflow(self, monkeypatch):
+        import importlib.util
+
+        real = importlib.util.find_spec
+        monkeypatch.setattr(
+            importlib.util, "find_spec", lambda n, *a: None if n == "mlflow" else real(n, *a)
+        )
+
+    def test_no_deploy_register_publishes_without_mlflow(self, checkpoint, tmp_path, no_mlflow):
+        from milia_pipeline.models.deployment import registry
+
+        with patch.object(registry, "register_package") as register:
+            code = self._run(
+                checkpoint,
+                tmp_path,
+                {"output_dir": "out", "registry": {"enabled": True}},
+                deploy_register=False,
+            )
+        assert code == 0 and not register.called
+        assert (tmp_path / "out" / FAMILY / "1").is_dir()
+
+    def test_deploy_register_without_mlflow_fails_and_publishes_nothing(
+        self, checkpoint, tmp_path, no_mlflow
+    ):
+        code = self._run(checkpoint, tmp_path, {"output_dir": "out"}, deploy_register=True)
+        assert code == 1 and not (tmp_path / "out").exists()
+
+    def test_a_failed_registration_fails_and_keeps_the_version(self, checkpoint, tmp_path):
+        from milia_pipeline.models.deployment import registry
+
+        with (
+            # MLflow counts as installed; the registration itself fails
+            patch("milia_pipeline.models.deployment.settings.check_registry_backend"),
+            patch.object(
+                registry, "register_package", side_effect=registry.RegistryError("unreachable")
+            ),
+        ):
+            code = self._run(checkpoint, tmp_path, {"output_dir": "out"}, deploy_register=True)
+        assert code == 1 and (tmp_path / "out" / FAMILY / "1" / PACKAGE_MANIFEST).is_file()
+
 
 def test_predict_refuses_a_tampered_package(checkpoint, tmp_path):
     import main

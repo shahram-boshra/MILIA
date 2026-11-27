@@ -107,8 +107,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --extra ${ACCEL} --extra dev --extra descriptors-cdk --extra hpo-postgres \
         --extra serve --extra onnx --extra mlflow
 RUN /app/.venv/bin/python /app/docker/verify_build.py --accel "${ACCEL}"
+# GIT_PYTHON_REFRESH: the image has no git executable; MLflow (the mlflow extra) probes for a git
+# commit through GitPython, which then prints a notice on every probe; "quiet" is GitPython's
+# documented setting for that (MILIA records the training commit itself, deployment/registry.py).
 ENV PATH="/app/.venv/bin:$PATH" \
-    MILIA_LOG_DIR=/tmp
+    MILIA_LOG_DIR=/tmp \
+    GIT_PYTHON_REFRESH=quiet
 # e.g. docker run --rm <test-image> pytest -m smoke -q tests/
 
 # ---- Stage 5: runtime — minimal, non-root, production (DEFAULT build target) ----

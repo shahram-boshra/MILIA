@@ -649,6 +649,14 @@ class CLIManager:
             dest="deploy_onnx",
             help="Also export model.onnx (default: models.deployment.onnx.enabled)",
         )
+        deployment.add_argument(
+            "--deploy-register",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            dest="deploy_register",
+            help="Register the published version in the MLflow model registry and move its "
+            "alias (default: models.deployment.registry.enabled; needs the mlflow extra)",
+        )
 
     def _add_basic_arguments(self, parser: argparse.ArgumentParser) -> None:
         """Add basic operation arguments."""

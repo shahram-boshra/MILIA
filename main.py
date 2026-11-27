@@ -3222,18 +3222,26 @@ def handle_deploy_mode(
     """``milia --deploy``: publish ``--model-path`` (checkpoint or package) as a new version.
 
     ``models.deployment`` gives the defaults; ``--deploy-target``, ``--deploy-output-dir``,
-    ``--deploy-base-image`` and ``--deploy-onnx`` override them.
+    ``--deploy-base-image``, ``--deploy-onnx`` and ``--deploy-register`` override them.
 
     Returns:
-        0 when the version was published; 1 on an invalid section, a missing input, or a failed
-        packaging, verification or export (nothing is published then).
+        0 when the version was published (and, with the registry enabled, registered or not
+        registered for a stated reason); 1 on an invalid section, a missing input, a failed
+        packaging, verification or export (nothing is published then), or a failed registration
+        (the version stays published).
     """
     from milia_pipeline.exceptions import DeploymentError, ExportError
-    from milia_pipeline.models.deployment.deploy import deploy, manifest_summary
-    from milia_pipeline.models.deployment.settings import load_deployment_settings
+    from milia_pipeline.models.deployment.deploy import deploy, manifest_summary, registry_summary
+    from milia_pipeline.models.deployment.settings import (
+        check_registry_backend,
+        load_deployment_settings,
+    )
 
     try:
-        settings = load_deployment_settings(config.get("models", {}).get("deployment"))
+        # The MLflow check follows the --deploy-register override (check_registry_backend below)
+        settings = load_deployment_settings(
+            config.get("models", {}).get("deployment"), require_backend=False
+        )
     except ConfigurationError as exc:
         logger.error(str(exc))
         return 1
@@ -3248,7 +3256,16 @@ def handle_deploy_mode(
     }
     if getattr(args, "deploy_onnx", None) is not None:
         overrides["onnx"] = settings.onnx.model_copy(update={"enabled": args.deploy_onnx})
+    if getattr(args, "deploy_register", None) is not None:
+        overrides["registry"] = settings.registry.model_copy(
+            update={"enabled": args.deploy_register}
+        )
     settings = settings.model_copy(update=overrides)
+    try:
+        check_registry_backend(settings)
+    except ConfigurationError as exc:
+        logger.error(str(exc))
+        return 1
 
     working_root_dir = _get_working_root_dir(config, logger)
     try:
@@ -3268,7 +3285,10 @@ def handle_deploy_mode(
     logger.info(f"Published {result.version_dir}: {', '.join(result.files)}")
     for line in manifest_summary(result.manifest):
         logger.info(line)
-    return 0
+    level, lines = registry_summary(result)
+    for line in lines:
+        logger.log(level, line)
+    return 1 if result.registry_error is not None else 0
 
 
 def handle_predict_mode(
@@ -4385,11 +4405,12 @@ def _deploy_after_training(
     """Gate, deploy and (with ``predict.input_path``) predict with the best checkpoint.
 
     A failed gate skips the deployment and returns 0 (``gate.json`` records why). A failed
-    packaging, verification, export or prediction returns 1; training itself has completed.
+    packaging, verification, export, registration (the version stays published) or prediction
+    returns 1; training itself has completed.
     """
     from milia_pipeline.exceptions import DeploymentError, ExportError
     from milia_pipeline.models.deployment.after_training import GATE_FILE, deploy_after_training
-    from milia_pipeline.models.deployment.deploy import manifest_summary
+    from milia_pipeline.models.deployment.deploy import manifest_summary, registry_summary
 
     if checkpoint is None:
         logger.warning(
@@ -4415,6 +4436,11 @@ def _deploy_after_training(
     logger.info(f"Published {result.version_dir}: {', '.join(result.files)}")
     for line in manifest_summary(result.manifest):
         logger.info(line)
+    level, lines = registry_summary(result)
+    for line in lines:
+        logger.log(level, line)
+    if result.registry_error is not None:
+        return 1
 
     if settings.predict.input_path:
         version = result.version_dir

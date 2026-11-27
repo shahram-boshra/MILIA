@@ -1053,6 +1053,13 @@ models:
       mode: "min"                        # min: lower is better; max: higher is better
       threshold: null                    # deploy only if at least this good; null: no threshold
       compare_to_current: false          # deploy only if better than the newest package of the model family
+    registry:                            # MLflow model registry; needs the mlflow extra (uv sync --extra mlflow)
+      enabled: false                     # true: register each published version and move the alias to it
+      tracking_uri: null                 # null: MLFLOW_TRACKING_URI, else sqlite:///<working_root_dir>/mlflow.db
+      artifact_location: null            # a new experiment's artifact store; null: <working_root_dir>/mlartifacts
+      experiment: "milia"                # the experiment holding one run per registration
+      model_name: null                   # registered model; null: milia.<family id> (one per model family)
+      alias: "champion"                  # moved to each newly registered version
 
   # ───────────────────────────────────────────────────────────
   # PLUGIN SYSTEM

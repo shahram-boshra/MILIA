@@ -11,7 +11,8 @@ After training and the test evaluation, MILIA:
    (``min``) or higher (``max``) is better. The decision is written to ``gate.json`` next to the
    training results, whether it passes or not.
 2. When the gate passes, **deploys** it (:func:`.deploy.deploy`): a verified, versioned package with
-   the target's ``Dockerfile`` and, with ``onnx.enabled``, ``model.onnx``.
+   the target's ``Dockerfile`` and, with ``onnx.enabled``, ``model.onnx``; with
+   ``registry.enabled``, registered in the MLflow model registry, the gate recorded as its approval.
 
 A failed gate is a valid outcome, not a failed run: nothing is deployed, a warning is logged and
 training still succeeds. The same pattern as TFX's Pusher, which pushes only a blessed model.
@@ -180,4 +181,5 @@ def deploy_after_training(
             f"({'; '.join(decision.reasons)}). Decision: {results / GATE_FILE}"
         )
         return decision, None
-    return decision, deploy(checkpoint, settings, working_root_dir)
+    approval = {"by": "gate", "metric": decision.metric, "value": decision.value}
+    return decision, deploy(checkpoint, settings, working_root_dir, approval=approval)
