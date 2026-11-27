@@ -118,6 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Errors:** invalid input returns 422 with the failing index.
   - **Startup:** the package's SHA-256 is checked before the model loads.
 - `onnx` extra: onnx, onnxscript and onnxruntime, which ONNX export needs. The test image installs it.
+- `mlflow` extra: MLflow 3.18.0, for registering deployment packages in an MLflow model registry. Its packages
+  are added to the lock; no locked version moves. The test image installs it; the published image does not.
 - `milia_pipeline.models.capabilities`: typed capability tags for model classes (`ModelCapabilities`,
   `OutputSpec`). They record what a model returns (per-node features, one property per graph, a per-node vector
   such as forces, or a node embedding), whether it needs `z` and `pos`, and whether it uses the graph's edges.

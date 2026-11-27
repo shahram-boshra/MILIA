@@ -160,6 +160,12 @@ onnx = [
     "onnxscript>=0.7.2",
     "onnxruntime>=1.32.0",
 ]
+# Opt-in: the MLflow model registry for deployment packages (P10: register a published version, alias
+# `champion`). Full `mlflow`, not `mlflow-skinny`: its SQLite/database registry store needs SQLAlchemy and
+# Alembic, and `mlflow server` (to view the registry) needs Flask, which only the full package declares.
+# 3.18.0 = the tested release (2026-11-03). The test image installs it; the runtime image does not.
+# Install: `uv sync --extra cpu --extra mlflow`.
+mlflow = ["mlflow>=3.18.0"]
 # Mutually-exclusive accelerator variants (choose one: `uv sync --extra cpu` | cu126 | cu130).
 # torch + the compiled PyG companions are gated to the matching index in [tool.uv.sources].
 # torch 2.12 is the newest minor with a PyG release declaring support (PyG 2.8.0) and PyG wheels for
