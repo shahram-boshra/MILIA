@@ -553,6 +553,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- certifi 2026.11.20 (before, 2026.10.18; installed with requests). 2026.10.18, the first fix of
+  GHSA-6q48-6c7w-9gw2 (eMudhra intermediates with compromised keys), removed every emSign root; the advisory
+  recommends 2026.10.19 or later, which trust again the emSign roots those intermediates do not chain to.
+  2026.11.20 trusts `emSign Root CA - G1` and no longer trusts Buypass Class 2 Root CA, Buypass Class 3 Root CA,
+  Certigna Root CA, QuoVadis Root CA 1 G3 and QuoVadis Root CA 3 G3 (113 roots; before, 117).
 - Checkpoint loading no longer falls back to full unpickling. `CheckpointManager.load`, `Trainer.load_checkpoint`,
   `Trainer.get_checkpoint_info` and `DistributedManager.load_checkpoint` read files with
   `torch.load(weights_only=True)` only (new `milia_pipeline.models.checkpoint_io.load_checkpoint_file`); before,
