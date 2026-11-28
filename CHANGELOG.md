@@ -394,6 +394,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The graph-level readout (`models.selection.pooling_method`) now reaches every model in standard training and HPO.
+  Before, a single model pooled with the mean whatever was configured, while its checkpoint recorded the configured
+  value (the setting was filtered out as not one of the model's parameters), and an ensemble pooled with the mean
+  even when HPO passed it the setting (its members were pooled with a default instead). The readout is validated
+  when training or HPO starts (`mean`, `add`, `max`; another name is refused, where it used to become the mean with a
+  warning), applied to single models, model plugins and every ensemble strategy, and recorded in the checkpoint
+  (`model_info.readout`), so prediction, packages, serving and the registry rebuild the readout trained. A
+  checkpoint from before is rebuilt as it was trained (mean), with a warning if it records another value. `add`
+  suits targets that are sums of atomic contributions (total energies); `mean` stays the default.
 - An unbounded conformal interval (a calibration set too small for 1 − α gives an infinite quantile) was written as
   `Infinity` in `--predict` JSON, which is not JSON (RFC 8259 §6: numeric values "such as Infinity and NaN" are not permitted), and as an
   unexplained `null` by the server. Both now write `null` bounds and name the output in `intervals.unbounded`;

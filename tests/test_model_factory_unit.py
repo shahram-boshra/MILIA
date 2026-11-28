@@ -3059,17 +3059,19 @@ class TestGraphLevelModelWrapperApplyGlobalPooling:
 
         assert result.shape == (2, 5)
 
-    def test_unknown_pooling_defaults_to_mean(self):
-        """Test unknown pooling method defaults to mean."""
+    def test_unknown_pooling_is_refused(self):
+        """An unknown readout is refused, naming the options, never pooled as the mean
+        (models.readout); so is a wrapper built with one."""
         mock_model = nn.Linear(10, 5)
         wrapper = GraphLevelModelWrapper(mock_model, task_type="graph_regression")
 
         x = torch.randn(10, 5)
         batch = torch.tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
 
-        result = wrapper._apply_global_pooling(x, batch, "unknown_method")
-
-        assert result.shape == (2, 5)
+        with pytest.raises(ValueError, match="not a readout; use one of mean, add, max"):
+            wrapper._apply_global_pooling(x, batch, "unknown_method")
+        with pytest.raises(ValueError, match="unknown_method"):
+            GraphLevelModelWrapper(mock_model, "graph_regression", pooling_method="unknown_method")
 
     def test_single_graph_with_none_batch(self):
         """Test pooling with None batch (single graph case)."""

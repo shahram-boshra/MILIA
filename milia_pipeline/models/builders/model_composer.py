@@ -27,6 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from milia_pipeline.exceptions import ModelError
 from milia_pipeline.models._graph_output import produces_graph_output
 from milia_pipeline.models.capabilities import attached_capabilities, select_primary_output
+from milia_pipeline.models.readout import DEFAULT_READOUT, validate_readout
 
 logger = logging.getLogger(__name__)
 
@@ -46,23 +47,11 @@ def _global_pool(
     pooling_method: str = "mean",
     size: int | None = None,
 ) -> torch.Tensor:
-    """Pool node features to graph features; ``size`` (graph count) avoids PyG's inferred size."""
-    from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
+    """Pool node features to graph features with a readout (``models.readout``; another name is
+    refused); ``size`` (graph count) avoids PyG's inferred size."""
+    from milia_pipeline.models.readout import global_pool
 
-    if batch is None:
-        # Single graph case - pool all nodes into one representation
-        if pooling_method == "max":
-            return x.max(dim=0, keepdim=True)[0]
-        if pooling_method == "add":
-            return x.sum(dim=0, keepdim=True)
-        return x.mean(dim=0, keepdim=True)
-
-    pools = {"mean": global_mean_pool, "max": global_max_pool, "add": global_add_pool}
-    pool = pools.get(pooling_method)
-    if pool is None:
-        logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
-        pool = global_mean_pool
-    return pool(x, batch, size=size)
+    return global_pool(x, batch, pooling_method, size=size)
 
 
 def _resolve_num_graphs(num_graphs: int | None, batch: torch.Tensor | None) -> int | None:
@@ -250,8 +239,14 @@ class ModelComposer:
         self.models: list[ModelSpec] = []
         self.strategy = "parallel"
         self.fusion = "mean"
+        self.readout = DEFAULT_READOUT
 
         logger.debug(f"Initialized ModelComposer: task={task_type}, name={name}")
+
+    def set_readout(self, readout: str) -> "ModelComposer":
+        """The graph-level readout of the composed model (``models.readout``; validated)."""
+        self.readout = validate_readout(readout)
+        return self
 
     # =========================================================================
     # MODEL MANAGEMENT
@@ -578,6 +573,7 @@ class ModelComposer:
                 fusion=self.fusion,
                 task_type=self.task_type,
                 name=self.name,
+                pooling_method=self.readout,
             )
 
         elif self.strategy == "sequential":
@@ -585,6 +581,7 @@ class ModelComposer:
                 models=[spec.model for spec in self.models],
                 task_type=self.task_type,
                 name=self.name,
+                pooling_method=self.readout,
             )
 
         elif self.strategy == "hierarchical":
@@ -600,6 +597,7 @@ class ModelComposer:
                 fusion=self.fusion,
                 task_type=self.task_type,
                 name=self.name,
+                pooling_method=self.readout,
             )
 
         else:
@@ -756,6 +754,7 @@ class ParallelEnsemble(nn.Module):
         task_type: str,
         name: str = "ParallelEnsemble",
         readout: bool = True,
+        pooling_method: str = DEFAULT_READOUT,
     ):
         """
         Initialize parallel ensemble.
@@ -770,12 +769,14 @@ class ParallelEnsemble(nn.Module):
                 task, ``True`` pools node outputs per graph; ``False`` keeps one row per
                 node, for an ensemble whose output feeds further message passing (an
                 intermediate level of a ``HierarchicalComposition``).
+            pooling_method: The readout that pools node outputs per graph (``models.readout``).
         """
         super().__init__()
         self.name = name
         self.fusion = fusion
         self.task_type = task_type
         self.readout = readout
+        self.pooling_method = validate_readout(pooling_method)
 
         # Store models as ModuleList for proper parameter registration
         self.models = nn.ModuleList(models)
@@ -1295,7 +1296,7 @@ class ParallelEnsemble(nn.Module):
         is_graph_task = self.readout and self._is_graph_level_task()
 
         # Extract pooling method from kwargs (don't pass to _call_model_with_signature)
-        pooling_method = kwargs.pop("pooling_method", "mean")
+        pooling_method = kwargs.pop("pooling_method", self.pooling_method)
 
         # Number of graphs for shape validation — without a device sync (PA-1d / F19)
         num_graphs = _resolve_num_graphs(num_graphs, batch)
@@ -1496,7 +1497,11 @@ class SequentialStack(nn.Module):
     accepts_num_graphs = True
 
     def __init__(
-        self, models: list[nn.Module], task_type: str | None = None, name: str = "SequentialStack"
+        self,
+        models: list[nn.Module],
+        task_type: str | None = None,
+        name: str = "SequentialStack",
+        pooling_method: str = DEFAULT_READOUT,
     ):
         """
         Initialize sequential stack.
@@ -1507,10 +1512,12 @@ class SequentialStack(nn.Module):
                        Used to determine if global pooling should be applied to
                        the final output for graph-level tasks.
             name: Stack name
+            pooling_method: The readout that pools the final output per graph (``models.readout``).
         """
         super().__init__()
         self.name = name
         self.task_type = task_type
+        self.pooling_method = validate_readout(pooling_method)
         self.models = nn.ModuleList(models)
 
         logger.debug(f"Initialized SequentialStack: {len(models)} models, task_type={task_type}")
@@ -1988,7 +1995,7 @@ class SequentialStack(nn.Module):
         is_graph_task = self._is_graph_level_task()
 
         # Extract pooling method from kwargs (don't pass to _call_model_with_signature)
-        pooling_method = kwargs.pop("pooling_method", "mean")
+        pooling_method = kwargs.pop("pooling_method", self.pooling_method)
 
         # Number of graphs for shape validation — without a device sync (PA-1d / F19)
         num_graphs = _resolve_num_graphs(num_graphs, batch)
@@ -2075,6 +2082,7 @@ class HierarchicalComposition(nn.Module):
         fusion: str,
         task_type: str,
         name: str = "HierarchicalComposition",
+        pooling_method: str = DEFAULT_READOUT,
     ):
         """
         Initialize hierarchical composition.
@@ -2084,11 +2092,13 @@ class HierarchicalComposition(nn.Module):
             fusion: Fusion method for combining models within each level
             task_type: Task type
             name: Composition name
+            pooling_method: The readout of the last level (``models.readout``).
         """
         super().__init__()
         self.name = name
         self.fusion = fusion
         self.task_type = task_type
+        self.pooling_method = validate_readout(pooling_method)
 
         # Sort levels
         self.levels = sorted(levels_dict.keys())
@@ -2115,6 +2125,7 @@ class HierarchicalComposition(nn.Module):
                 task_type=task_type,
                 name=f"{name}_Level{level}",
                 readout=level == self.levels[-1],
+                pooling_method=pooling_method,
             )
 
             self.level_ensembles.append(ensemble)

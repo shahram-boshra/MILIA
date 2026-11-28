@@ -26,6 +26,36 @@ from ..checkpoint.checkpoint_manager import CheckpointManager
 logger = logging.getLogger(__name__)
 
 
+def _as_trained_readout(
+    hyperparameters: dict[str, Any], model_info: dict[str, Any], model_name: str
+) -> dict[str, Any]:
+    """The hyperparameters that rebuild a checkpoint's readout as it was trained.
+
+    A checkpoint that records ``model_info["readout"]`` (from ``models.readout``) rebuilds with
+    its hyperparameters as they are. One without it was trained before the configured readout
+    reached the model: its single model or ensemble pooled with the mean even when
+    ``pooling_method`` was recorded (a single model's was filtered out, an ensemble's was not
+    read), so that record is dropped, with a warning naming it.
+    """
+    from milia_pipeline.models.readout import READOUT_KEY
+
+    if "readout" in model_info:
+        return hyperparameters
+    result = dict(hyperparameters)
+    recorded = result.pop(READOUT_KEY, None)
+    ensemble = result.get("ensemble_config")
+    if isinstance(ensemble, dict) and READOUT_KEY in ensemble:
+        ensemble = dict(ensemble)
+        recorded = recorded or ensemble.pop(READOUT_KEY)
+        result["ensemble_config"] = ensemble
+    if recorded not in (None, "mean"):
+        logger.warning(
+            f"{model_name}: this checkpoint records pooling_method={recorded!r} but predates "
+            "models.readout, so it was trained with mean pooling; it is rebuilt with mean"
+        )
+    return result
+
+
 class ModelLoader:
     """
     Load models from checkpoints for inference.
@@ -270,6 +300,12 @@ class ModelLoader:
                 "task_type is required but not found in checkpoint. "
                 "This may be a v1.0 checkpoint. Please provide task_type parameter."
             )
+
+        # A checkpoint from before models.readout (no model_info.readout) pooled with the mean
+        # whatever its hyperparameters say: rebuild it as it was trained
+        resolved_hyperparams = _as_trained_readout(
+            resolved_hyperparams, hyper_params.get("model_info") or {}, resolved_model_name
+        )
 
         # ═══════════════════════════════════════════════════════════════
         # DYNAMIC MODEL RECREATION

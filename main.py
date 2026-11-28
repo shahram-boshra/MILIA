@@ -3731,6 +3731,15 @@ def _run_standard_training(
         training_seed = seed_everything(resolve_seed(training_config.get("seed")))
         logger.info(f"Training seed: {training_seed}")
 
+        # The graph-level readout (models.selection.pooling_method), validated before training
+        from milia_pipeline.models.readout import configured_readout, with_readout
+
+        try:
+            readout = configured_readout(models_config)
+        except ValueError as exc:
+            logger.error(str(exc))
+            return 1
+
         # CLI overrides (getattr with None default, then fallback to config)
         mode = getattr(args, "mode", None) or selection.get("mode", "single")
         model_name = getattr(args, "model_name", None) or selection.get("model_name", "GCN")
@@ -3762,8 +3771,18 @@ def _run_standard_training(
         else:
             task_type = inferred_task_type
 
+        from milia_pipeline.models.capabilities import output_level
+
+        graph_level = output_level(task_type) == "graph"
+
+        def _with_readout(name: str, hyperparameters: dict[str, Any]) -> dict[str, Any]:
+            # A graph-level model pools with the configured readout (an explicit one is kept)
+            return with_readout(name, hyperparameters, readout) if graph_level else hyperparameters
+
         logger.info(f"Mode: {mode}")
         logger.info(f"Model: {model_name}")
+        if graph_level:
+            logger.info(f"Readout: {readout} (models.selection.pooling_method)")
         logger.info(
             f"Task: {task_type}"
             + (f" (inferred: {inferred_task_type})" if task_type != inferred_task_type else "")
@@ -3844,6 +3863,7 @@ def _run_standard_training(
 
         # 4. Create model via factory
         factory = get_factory()
+        from milia_pipeline.models.factory.model_factory import applied_readout
 
         # Initialize model_info to None (will be populated below based on mode)
         model_info = None
@@ -3974,7 +3994,9 @@ def _run_standard_training(
             # PRODUCTION-READY: Ensures correct output dimension per task type
             # FUTURE-PROOF: Works with any ensemble strategy (parallel, hierarchical, etc.)
             # ================================================================
-            ensemble_hyperparameters = {"ensemble_config": ensemble_config}
+            ensemble_hyperparameters = _with_readout(
+                "ensemble", {"ensemble_config": ensemble_config}
+            )
             is_edge_classification = task_type.lower() == "edge_classification"
 
             # For edge_classification: DON'T inject out_channels into model hyperparameters
@@ -4043,6 +4065,7 @@ def _run_standard_training(
                 "target_selection": None,  # Ensemble doesn't support target selection yet
                 "hyperparameters_values": ensemble_hyperparams_for_checkpoint,  # CRITICAL: Required for model recreation
                 "wrapper_info": {},  # For consistency with create_model_with_info()
+                "readout": applied_readout(model),
             }
 
         else:
@@ -4060,7 +4083,7 @@ def _run_standard_training(
 
             model, model_info = factory.create_model_with_info(
                 name=model_name,
-                hyperparameters=models_config.get("hyperparameters", {}),
+                hyperparameters=_with_readout(model_name, models_config.get("hyperparameters", {})),
                 task_type=task_type,
                 sample_data=sample_data,
                 target_selection_config=target_selection_config,
@@ -4486,6 +4509,17 @@ def _build_hpo_config(
     # 1. Get HPO configuration
     models_config = config.get("models", {})
     hpo_config_dict = models_config.get("hpo", {})
+
+    # The graph-level readout every trial uses (models.readout), validated before any trial
+    from milia_pipeline.exceptions import HPOConfigurationError
+    from milia_pipeline.models.readout import configured_readout
+
+    try:
+        logger.info(
+            f"Readout: {configured_readout(models_config)} (models.selection.pooling_method)"
+        )
+    except ValueError as exc:
+        raise HPOConfigurationError(str(exc)) from exc
 
     # CLI overrides (CLI > YAML > default; P1-3a)
     n_trials = _cli_override(args, "n_trials", hpo_config_dict.get("n_trials", 100))

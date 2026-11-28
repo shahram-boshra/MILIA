@@ -60,9 +60,11 @@ except ImportError:
     ModelFactory = None
     get_factory = None
 
+from milia_pipeline.models.capabilities import output_level
 from milia_pipeline.models.factory.target_selection_config import (
     refuse_input_attribute_as_target,
 )
+from milia_pipeline.models.readout import configured_readout, with_readout
 
 # Import TargetSelectionConfig for node/edge level task support
 try:
@@ -1489,6 +1491,13 @@ class HPOManager:
                 else:
                     task_type = inferred_task_type
 
+                # The graph-level readout, as in standard training (models.readout): the configured
+                # models.selection.pooling_method, unless the trial or the ensemble sets one
+                if output_level(task_type) == "graph" and str(model_name).lower() != "custom":
+                    model_params = with_readout(
+                        model_name, model_params, configured_readout(models_config)
+                    )
+
                 # 5. Create model with metadata for intelligent forward pass
                 # ============================================================
                 # TARGET SELECTION: Read from config and pass to factory
@@ -1821,18 +1830,7 @@ class HPOManager:
                 return trial_model_params
 
             ensemble_config: dict[str, Any] = deepcopy(ensemble_yaml)
-
-            # Hoist pooling_method from selection.* if not already set on ensemble_config
-            # — _create_ensemble_model reads ensemble_config['pooling_method'] for the
-            # graph-level wrapper (model_factory.py:2568).
-            if "pooling_method" not in ensemble_config:
-                pooling = (
-                    models_config.get("selection", {}).get("pooling_method")
-                    if isinstance(models_config, dict)
-                    else None
-                )
-                if pooling is not None:
-                    ensemble_config["pooling_method"] = pooling
+            # The readout is applied by objective() for every model (models.readout.with_readout)
 
             # Apply trial overlay to each submodel, filtered by registry metadata.
             submodels = ensemble_config.get("models")

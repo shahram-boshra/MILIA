@@ -42,7 +42,10 @@ models:
     # PyG Reference: torch_geometric.nn.global_mean_pool,
     #                global_max_pool, global_add_pool
     # ─────────────────────────────────────────────────────────
-    pooling_method: "mean"               # Options: "mean", "max", "add"
+    # Graph-level readout of per-atom outputs (models/readout.py): "mean" (size-independent targets),
+    # "add" (sums of atomic contributions: total energies), "max". Applied in training and HPO to single
+    # models and ensembles, recorded in the checkpoint; a model's or the ensemble's own value wins.
+    pooling_method: "mean"
 
     # Optional baseline for comparison
     baseline_model: null

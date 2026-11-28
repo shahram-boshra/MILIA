@@ -22,7 +22,6 @@ from typing import Any
 
 import torch
 from torch_geometric.data import Data
-from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 from torch_geometric.nn import pool as pyg_pool
 
 # Import exceptions
@@ -50,6 +49,7 @@ from ..capabilities import (
     get_model_capabilities,
     select_primary_output,
 )
+from ..readout import DEFAULT_READOUT, READOUT_KEY, global_pool, validate_readout
 from ..registry.model_registry import ModelRegistry
 
 # Dynamic introspection replaces static model_categories (Phase 4 Migration)
@@ -198,6 +198,21 @@ def validate_model_dependencies(model_class: type, model_name: str) -> None:
 # =============================================================================
 
 
+def applied_readout(model: torch.nn.Module) -> str | None:
+    """The graph-level readout MILIA applies in ``model`` (``models.readout``), or ``None``: not a
+    graph-level task, or a model that reads out itself (SchNet, DimeNet).
+
+    The wrapper's readout when it pools; else, for an inner MILIA ensemble that pools per graph
+    itself, the ensemble's.
+    """
+    if not isinstance(model, GraphLevelModelWrapper) or not model._is_graph_level_task():
+        return None
+    inner = model.model
+    if not produces_graph_output(inner):
+        return model.pooling_method
+    return getattr(inner, "pooling_method", None)
+
+
 class GraphLevelModelWrapper(torch.nn.Module):
     """
     Wrapper for single models to handle graph-level tasks.
@@ -256,7 +271,7 @@ class GraphLevelModelWrapper(torch.nn.Module):
         Args:
             model: The model to wrap (e.g., GCN, GAT, GraphSAGE, SchNet)
             task_type: Task type string (e.g., 'graph_regression', 'node_classification')
-            pooling_method: Pooling method for graph-level tasks ('mean', 'max', 'add')
+            pooling_method: The graph-level readout (``readout.READOUTS``; validated)
             out_channels: Target output channels. If provided and model's output
                          doesn't match, an output projection layer is added.
                          This is essential for models like SchNet that have
@@ -265,7 +280,7 @@ class GraphLevelModelWrapper(torch.nn.Module):
         super().__init__()
         self.model = model
         self.task_type = task_type
-        self.pooling_method = pooling_method
+        self.pooling_method = validate_readout(pooling_method)
         self.out_channels = out_channels
         self._forwards_batch = forward_accepts(model, "batch")
         # A model built without edge features (PNA/GAT without edge_dim) must not receive them;
@@ -317,28 +332,14 @@ class GraphLevelModelWrapper(torch.nn.Module):
         Args:
             x: Node features [num_nodes, features]
             batch: Batch assignment vector [num_nodes]
-            pooling_method: One of 'mean', 'max', 'add'
+            pooling_method: A readout (``readout.READOUTS``); another is refused
             size: Number of graphs (PA-1d). When given, PyG does not infer it from
                   ``batch`` (which costs a device→host sync).
 
         Returns:
             Graph features [num_graphs, features]
         """
-        # Handle single graph case (no batch vector): one graph, size known
-        if batch is None:
-            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
-            size = 1
-
-        # Apply pooling based on method
-        if pooling_method == "mean":
-            return global_mean_pool(x, batch, size=size)
-        elif pooling_method == "max":
-            return global_max_pool(x, batch, size=size)
-        elif pooling_method == "add":
-            return global_add_pool(x, batch, size=size)
-        else:
-            logger.warning(f"Unknown pooling method '{pooling_method}', using 'mean'")
-            return global_mean_pool(x, batch, size=size)
+        return global_pool(x, batch, pooling_method, size=size)
 
     def forward(self, *args, **kwargs) -> torch.Tensor:
         """
@@ -1457,7 +1458,9 @@ class ModelFactory:
         # CRITICAL: Skip wrapping when _skip_wrapper=True (used for ensemble models)
         # Ensembles handle graph-level pooling at the composition level, not per-model
         if self._is_graph_level_task(task_type) and not _skip_wrapper:
-            pooling_method = processed_params.get("pooling_method", "mean")
+            # The readout is a wrapper setting, not a model parameter: read it from the given
+            # hyperparameters (processed_params keeps only the model's own parameters)
+            pooling_method = self._readout(hyperparameters.get(READOUT_KEY), name)
 
             # Infer required out_channels for models that need output projection
             # This is needed for 3D models like SchNet that have fixed output (1 scalar)
@@ -2060,8 +2063,20 @@ class ModelFactory:
             )
 
         model_info["hyperparameters_values"] = processed_hyperparams
+        # The readout MILIA applies (None: not a graph-level task, or a model with its own readout)
+        model_info["readout"] = applied_readout(model)
 
         return model, model_info
+
+    @staticmethod
+    def _readout(value: Any, name: str) -> str:
+        """A model's graph-level readout: ``value`` validated, else the default."""
+        if value is None:
+            return DEFAULT_READOUT
+        try:
+            return validate_readout(value)
+        except ValueError as exc:
+            raise ModelValidationError(str(exc), model_name=name) from exc
 
     @staticmethod
     def _detect_edge_feature_params(hyperparameter_schema: dict[str, Any]) -> list[str]:
@@ -2264,6 +2279,8 @@ class ModelFactory:
             raise ModelInstantiationError(
                 f"Failed to parse ensemble config: {e}", model_name="ensemble"
             ) from e
+        # The ensemble pools its members' node outputs itself (its last level reads out)
+        composer.set_readout(self._readout(config.get(READOUT_KEY), "ensemble"))
 
         # Add models to ensemble from config
         if "models" in config and isinstance(config, dict):
@@ -2520,8 +2537,8 @@ class ModelFactory:
         # FUTURE-PROOF: Uses same wrapper pattern as single models
         # =====================================================================
         if self._is_graph_level_task(task_type):
-            # Determine pooling method from config or default
-            pooling_method = config.get("pooling_method", "mean")
+            # The readout of the ensemble's combined node outputs
+            pooling_method = self._readout(config.get(READOUT_KEY), "ensemble")
 
             # Determine out_channels for output projection
             # Priority: 1. num_classes_override (for classification)
